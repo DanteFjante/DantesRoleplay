@@ -138,6 +138,11 @@ type FactionPageLoader = (
   signal: AbortSignal,
 ) => Promise<FactionDirectoryPage>;
 type CampaignDetailsLoader = (envelope: ReadyHubEnvelope, signal: AbortSignal) => Promise<CampaignReadModel>;
+type CampaignDetailsViewState = {
+  status: "unloaded" | "loading" | "ready" | "error";
+  data: CampaignReadModel | null;
+  error: string;
+};
 
 export function DndInformationHub({
   initialEnvelope,
@@ -232,7 +237,11 @@ export function DndInformationHub({
     initialEnvelope.world.factions[0]?.id ?? "",
     createHubObjectUiState,
   );
-  const { selectedFactionId, campaignDetailsLoaded } = objectUi;
+  const { selectedFactionId } = objectUi;
+  const [campaignDetails, setCampaignDetails] = useState<CampaignDetailsViewState>(() =>
+    loadCampaignDetails
+      ? { status: "unloaded", data: null, error: "" }
+      : { status: "ready", data: initialEnvelope.campaign, error: "" });
   const [selectedPersonId, setSelectedPersonId] = useState(initialEnvelope.world.people[0]?.id ?? "");
   const [activeMapId, setActiveMapId] = useState(
     normalizeMapId(initialEnvelope.world.maps, initialEnvelope.world.rootMapId, initialEnvelope.world.rootMapId) as string,
@@ -248,6 +257,7 @@ export function DndInformationHub({
   const changeSequence = useRef(0);
   const [bootstrapGeneration, setBootstrapGeneration] = useState(0);
   const sectionAbort = useRef<AbortController | null>(null);
+  const campaignDetailsAbort = useRef<AbortController | null>(null);
   const deferredAbort = useRef<AbortController | null>(null);
   const contextAbort = useRef<AbortController | null>(null);
   const worldScopeAbort = useRef<AbortController | null>(null);
@@ -327,11 +337,12 @@ export function DndInformationHub({
     if (
       (!force && requested === perspective && nextCampaignId === contextSelection.selectedCampaignId) ||
       !envelope.audience.allowedPerspectives.includes(requested)
-    ) return;
+    ) return false;
 
     const requestId = ++hubRequestSequence.current;
     const observedChange = changeSequence.current;
     sectionAbort.current?.abort();
+    campaignDetailsAbort.current?.abort();
     deferredAbort.current?.abort();
     contextAbort.current?.abort();
     campaignWriteAbort.current?.abort();
@@ -355,7 +366,7 @@ export function DndInformationHub({
           throw new Error("The perspective response was unavailable.");
         }
       }
-      if (requestId !== hubRequestSequence.current) return;
+      if (requestId !== hubRequestSequence.current) return false;
       if (!isReadyHubEnvelope(nextEnvelope)) {
         throw new Error("The perspective response was unavailable.");
       }
@@ -368,10 +379,14 @@ export function DndInformationHub({
         ? loadedEnvelope
         : preserveLastGoodPartyData(envelope, loadedEnvelope);
       setEnvelope(readyEnvelope);
+      setCampaignDetails((current) => !loadCampaignDetails
+        ? { status: "ready", data: readyEnvelope.campaign, error: "" }
+        : campaignChanged || perspectiveChanged
+          ? { status: "unloaded", data: null, error: "" }
+          : { status: "unloaded", data: current.data, error: "" });
       setDeferredStates({});
       setDeferredErrors({});
       loadedWorldScopes.current.clear();
-      dispatchObjectUi({ type: "campaign-details-invalidated" });
       setBootstrapGeneration((generation) => generation + 1);
       if (campaignChanged || perspectiveChanged) {
         dispatchObjectUi({
@@ -420,13 +435,15 @@ export function DndInformationHub({
           ? `${readyEnvelope.campaign.title} opened in ${readyEnvelope.world.name}`
           : `${readyEnvelope.audience.perspective === "dm" ? "DM" : "Player"} perspective active`);
       }
+      return true;
     } catch (error) {
       if (requestId !== hubRequestSequence.current ||
-          (error instanceof ViewReadError && error.category === "cancelled")) return;
+          (error instanceof ViewReadError && error.category === "cancelled")) return false;
       setHubError(error instanceof ViewReadError && error.category === "transport"
         ? error.message
         : "The view could not be changed. Your current information is still available.");
       setAnnouncement("World or campaign change unavailable");
+      return false;
     } finally {
       if (requestId === hubRequestSequence.current) setHubBusy(false);
     }
@@ -541,8 +558,9 @@ export function DndInformationHub({
   const deferredState = deferredSection && loadDeferredSection
     ? deferredStates[deferredSection] ?? "unloaded" : "ready";
   useEffect(() => {
-    if (deferredState === "ready" && !hubBusy) markActiveViewReady(activeTab);
-  }, [activeTab, deferredState, hubBusy]);
+    const campaignReady = activeTab !== "campaign" || campaignDetails.status === "ready";
+    if (deferredState === "ready" && campaignReady && !hubBusy) markActiveViewReady(activeTab);
+  }, [activeTab, campaignDetails.status, deferredState, hubBusy]);
   useEffect(() => {
     if (deferredSection && !hubBusy && !deferredRestricted) void requestDeferred(deferredSection);
     return () => { deferredAbort.current?.abort(); };
@@ -551,7 +569,7 @@ export function DndInformationHub({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deferredSection, perspective, contextSelection.selectedCampaignId, hubBusy, loadDeferredSection, deferredRestricted]);
   useEffect(() => () => {
-    sectionAbort.current?.abort(); deferredAbort.current?.abort(); contextAbort.current?.abort();
+    sectionAbort.current?.abort(); campaignDetailsAbort.current?.abort(); deferredAbort.current?.abort(); contextAbort.current?.abort();
     worldScopeAbort.current?.abort(); campaignWriteAbort.current?.abort();
   }, []);
 
@@ -604,39 +622,45 @@ export function DndInformationHub({
   }
 
   async function requestCampaignDetails() {
-    if (!loadCampaignDetails || campaignDetailsLoaded || hubBusy) return;
-    sectionAbort.current?.abort();
+    if (!loadCampaignDetails) return;
+    campaignDetailsAbort.current?.abort();
     const controller = new AbortController();
-    sectionAbort.current = controller;
-    setHubBusy(true);
-    setHubError("");
+    campaignDetailsAbort.current = controller;
+    setCampaignDetails((current) => ({ status: "loading", data: current.data, error: "" }));
     try {
       const campaign = await loadCampaignDetails(envelope, controller.signal);
       if (controller.signal.aborted) return;
       setEnvelope((current) => ({ ...current, campaign }));
-      dispatchObjectUi({ type: "campaign-details-loaded" });
+      setCampaignDetails({ status: "ready", data: campaign, error: "" });
     } catch (error) {
-      if (!controller.signal.aborted) setHubError(error instanceof Error ? error.message : "The campaign details are unavailable.");
+      if (controller.signal.aborted) return;
+      const interrupted = (error instanceof ViewReadError && error.category === "cancelled") ||
+        (error instanceof DOMException && error.name === "AbortError");
+      const message = interrupted
+        ? "Campaign details changed while they were loading. Retry to read the current version."
+        : error instanceof Error ? error.message : "The campaign details are unavailable.";
+      setCampaignDetails((current) => ({ status: "error", data: current.data, error: message }));
     } finally {
-      if (!controller.signal.aborted) setHubBusy(false);
+      if (campaignDetailsAbort.current === controller) campaignDetailsAbort.current = null;
     }
   }
 
   useEffect(() => {
+    if (activeTab === "campaign") void requestCampaignDetails();
+    return () => { campaignDetailsAbort.current?.abort(); };
+    // The selected route deliberately asks the resource owner for Campaign details. Fresh
+    // cached results return immediately; expired, invalidated, and failed results stay distinct.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, bootstrapGeneration, perspective, contextSelection.selectedCampaignId]);
+
+  useEffect(() => {
     if (bootstrapGeneration === 0) return;
     // A refresh returns a minimal bootstrap even when the selected view is unchanged.
-    // Rehydrate that view once; failed reads remain explicit and do not start a retry loop.
-    if (activeTab === "campaign" && campaignSection !== "overview") void requestCampaignDetails();
+    // Rehydrate other selected views once; failed reads remain explicit and do not start a retry loop.
     if (activeTab === "world" && worldSection === "factions" && !envelope.world.factionDirectory)
       void requestFactionPage(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bootstrapGeneration]);
-
-  useEffect(() => {
-    if (activeTab === "campaign" && campaignSection !== "overview") void requestCampaignDetails();
-    // Navigation, including Back/Forward, owns lazy Campaign detail activation.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, campaignSection]);
 
   function selectTab(tab: MainTabId) {
     const nextTab = normalizeMainTab(tab) as MainTabId;
@@ -698,16 +722,25 @@ export function DndInformationHub({
       const result = await writeCampaignPremise({ envelope, premise }, controller.signal);
       if (controller.signal.aborted) return;
       campaignWriteAbort.current = null;
+      campaignDetailsAbort.current?.abort();
       setEnvelope((current) => ({
         ...current,
         campaign: { ...current.campaign, premise: result.premise },
         objectQueries: {},
       }));
+      setCampaignDetails((current) => current.data
+        ? { ...current, data: { ...current.data, premise: result.premise } }
+        : current);
       dispatchObjectUi({ type: "write-confirmed", objectId: CAMPAIGN_SUMMARY_OBJECT_ID });
       setAnnouncement(result.replayed
         ? "Campaign premise confirmed after retry"
         : result.noOp ? "Campaign premise already matched the saved campaign" : "Campaign premise saved");
-      await requestHub(perspective, contextSelection.selectedCampaignId, false, true);
+      const refreshed = await requestHub(perspective, contextSelection.selectedCampaignId, false, true);
+      if (refreshed) {
+        // The authoritative refresh covers a Campaign notice delivered while this write was
+        // completing. A later independent notice remains queued by the event listener.
+        setPendingChange((current) => current === CAMPAIGN_SUMMARY_OBJECT_ID ? null : current);
+      }
     } catch (error) {
       if (controller.signal.aborted) return;
       const message = error instanceof Error ? error.message : "The campaign premise was not changed.";
@@ -747,12 +780,24 @@ export function DndInformationHub({
     focusWorldEntityCard("faction", factionId);
   }
 
+  const visibleCampaign = campaignDetails.data ? {
+    ...campaignDetails.data,
+    title: envelope.campaign.title,
+    subtitle: envelope.campaign.subtitle,
+    status: envelope.campaign.status,
+    premise: envelope.campaign.premise,
+    objective: envelope.campaign.objective,
+  } : envelope.campaign;
+
   function renderActiveView() {
     switch (activeTab) {
       case "campaign":
         return (
           <CampaignView
-            campaign={envelope.campaign}
+            campaign={visibleCampaign}
+            detailsError={campaignDetails.error}
+            detailsStatus={campaignDetails.status}
+            hasValidatedDetails={campaignDetails.data !== null}
             premiseEdit={objectUi.edits[CAMPAIGN_SUMMARY_OBJECT_ID]}
             onOpenFaction={openCampaignFaction}
             onOpenLocation={openCampaignLocation}
@@ -769,6 +814,7 @@ export function DndInformationHub({
               type: "edit-staged", objectId: CAMPAIGN_SUMMARY_OBJECT_ID, draft: { premise },
             }) : undefined}
             onSavePremise={writeCampaignPremise ? (premise) => void saveCampaignPremise(premise) : undefined}
+            onRetryDetails={loadCampaignDetails ? () => void requestCampaignDetails() : undefined}
             onSectionChange={selectCampaignSection}
             section={campaignSection}
             worldName={envelope.world.name}
@@ -949,7 +995,9 @@ export function DndInformationHub({
       <div className="information-hub__body">
         <MainNavigation
           activeTab={activeTab}
-          chapter={envelope.campaign.chapter}
+          chapter={campaignDetails.data?.chapter ?? (loadCampaignDetails
+            ? campaignDetails.status === "error" ? "Campaign details unavailable" : "Campaign details loading"
+            : envelope.campaign.chapter)}
           onSelect={selectTab}
         />
         <main className="information-content" id="information-content">

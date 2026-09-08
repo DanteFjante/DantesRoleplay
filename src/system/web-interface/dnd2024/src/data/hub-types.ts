@@ -995,8 +995,8 @@ export type ConnectedCampaignEnvelope = {
       status: "active" | "closed";
       title: string;
       partyQuestion: string;
-      createdAtUtc: string | null;
-      updatedAtUtc: string | null;
+      createdAtUtc?: string | null;
+      updatedAtUtc?: string | null;
       closingSummary?: string;
       gmContext?: string;
       worldEntityIds?: string[];
@@ -1006,8 +1006,8 @@ export type ConnectedCampaignEnvelope = {
       status: "active" | "resolved" | "abandoned";
       title: string;
       partyStake: string;
-      createdAtUtc: string | null;
-      updatedAtUtc: string | null;
+      createdAtUtc?: string | null;
+      updatedAtUtc?: string | null;
       closingSummary?: string;
       gmContext?: string;
       worldEntityIds?: string[];
@@ -1016,7 +1016,7 @@ export type ConnectedCampaignEnvelope = {
       id: string;
       status: "active" | "ended";
       ordinal: number;
-      updatedAtUtc: string | null;
+      updatedAtUtc?: string | null;
       worldEntityIds?: string[];
       recap?: {
         chapter: { id: string; status: "active"; title: string; partyQuestion: string };
@@ -1139,6 +1139,12 @@ export type ConnectedCampaignEnvelope = {
   };
   rules?: RuleReadModel[];
 };
+
+/** The registered Campaign-detail transport after its audience-safe parser has accepted it. */
+export type ConnectedCampaignDetails = Pick<
+  ConnectedCampaignEnvelope["campaign"],
+  "chapters" | "arcs" | "sessions" | "visits"
+>;
 
 export type CharacterCreationRequiredEnvelope = {
   version: 1;

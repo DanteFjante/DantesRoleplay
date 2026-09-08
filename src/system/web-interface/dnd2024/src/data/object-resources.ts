@@ -2,6 +2,7 @@ import type { CampaignReadModel, DeferredHubUpdate, HubEnvelope, InventoryContai
 import { ResourceStore, type KeyedResource } from "./resource-store";
 import type { ResourceState } from "./resource-state";
 import { ViewReadError } from "./view-read-client";
+import { isCampaignReadModel } from "../state.js";
 
 export const CAMPAIGN_SUMMARY_OBJECT_ID = "dnd2024.object.campaign-summary";
 export const FACTION_DIRECTORY_OBJECT_ID = "dnd2024.object.faction-directory-page";
@@ -117,11 +118,7 @@ function isCharacterResource(value: unknown): value is PartyMemberReadModel {
 }
 
 function isCampaignDetails(value: unknown): value is CampaignReadModel {
-  if (!value || typeof value !== "object") return false;
-  const campaign = value as Record<string, unknown>;
-  return validText(campaign.id, 200) && validText(campaign.title, 160) &&
-    [campaign.chapters, campaign.arcs, campaign.sessions, campaign.visitedLocations]
-      .every((items) => Array.isArray(items));
+  return isCampaignReadModel(value);
 }
 
 function isCampaignContextUpdate(value: unknown): value is CampaignContextUpdate {

@@ -4417,6 +4417,39 @@ strong {
   color: var(--muted);
 }
 
+.campaign-detail-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 16px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+}
+
+.campaign-detail-status strong,
+.campaign-detail-status p,
+.campaign-detail-status small {
+  display: block;
+}
+
+.campaign-detail-status p {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+.campaign-detail-status small {
+  margin-top: 6px;
+  color: var(--muted);
+}
+
+.campaign-detail-status--error {
+  border-color: rgba(201, 155, 82, 0.48);
+}
+
 .campaign-hero {
   position: relative;
   display: grid;

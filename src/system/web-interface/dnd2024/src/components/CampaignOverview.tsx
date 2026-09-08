@@ -5,6 +5,7 @@ import { Icon } from "./Icon";
 
 export function CampaignOverview({
   campaign,
+  detailsAvailable,
   premiseEdit,
   worldName,
   onBeginPremiseEdit,
@@ -14,6 +15,7 @@ export function CampaignOverview({
   onSectionChange,
 }: {
   campaign: CampaignReadModel;
+  detailsAvailable: boolean;
   premiseEdit?: ResourceEdit;
   worldName: string;
   onBeginPremiseEdit?: () => void;
@@ -44,12 +46,12 @@ export function CampaignOverview({
           ) : null}
           <div className="campaign-hero__meta">
             <span><Icon name="Sparkles" size={14} /> {campaign.status}</span>
-            <span><Icon name="BookOpen" size={14} /> {campaign.chapter}</span>
+            {detailsAvailable ? <span><Icon name="BookOpen" size={14} /> {campaign.chapter}</span> : null}
           </div>
         </div>
       </header>
 
-      <section aria-label="Campaign summary" className="campaign-fact-grid">
+      {detailsAvailable ? <section aria-label="Campaign summary" className="campaign-fact-grid">
         {campaign.facts.map((fact) => (
           <article className="campaign-fact" key={fact.label}>
             <span>{fact.label}</span>
@@ -57,9 +59,9 @@ export function CampaignOverview({
             <small>{fact.detail}</small>
           </article>
         ))}
-      </section>
+      </section> : null}
 
-      <section className="campaign-overview-grid">
+      {detailsAvailable ? <section className="campaign-overview-grid">
         <article className="panel campaign-question">
           <span className="eyebrow">The question before the party</span>
           <blockquote>{campaign.question}</blockquote>
@@ -77,9 +79,9 @@ export function CampaignOverview({
             <p>{campaign.nextMilestone}</p>
           </div>
         </article>
-      </section>
+      </section> : null}
 
-      <section className="campaign-overview-grid campaign-overview-grid--lower">
+      {detailsAvailable ? <section className="campaign-overview-grid campaign-overview-grid--lower">
         <article className="panel">
           <div className="panel-heading">
             <div><span className="eyebrow">Latest memory</span><h2>{latest?.title ?? "No completed entries yet"}</h2></div>
@@ -99,9 +101,9 @@ export function CampaignOverview({
             : "No explicit visit records exist yet; the page never guesses them from the current location or map."}</p>
           <button className="text-action" onClick={() => onSectionChange("places")} type="button">Browse visited places <Icon name="ArrowRight" size={15} /></button>
         </article>
-      </section>
+      </section> : null}
 
-      <section className="campaign-overview-grid campaign-overview-grid--lower">
+      {detailsAvailable ? <section className="campaign-overview-grid campaign-overview-grid--lower">
         <article className="panel">
           <div className="panel-heading">
             <div><span className="eyebrow">Pursuits and pressure</span><h2>{campaign.quests.length} quests · {campaign.threads.length} open threads</h2></div>
@@ -120,9 +122,9 @@ export function CampaignOverview({
             : "No campaign-owned clues are recorded yet. Player-safe setting knowledge remains available in the World tab."}</p>
           <button className="text-action" onClick={() => onSectionChange("clues")} type="button">Browse clues <Icon name="ArrowRight" size={15} /></button>
         </article>
-      </section>
+      </section> : null}
 
-      {campaign.dmContext ? (
+      {detailsAvailable && campaign.dmContext ? (
         <aside className="campaign-dm-banner">
           <span>DM campaign context</span>
           <p>{campaign.dmContext}</p>

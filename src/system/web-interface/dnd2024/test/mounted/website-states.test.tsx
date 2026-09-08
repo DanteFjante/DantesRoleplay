@@ -1074,6 +1074,108 @@ test("same-scope bootstrap refresh rehydrates the selected Campaign details and 
   });
 });
 
+test("Campaign details load on Overview before counts render and every Campaign section uses the validated result", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const initial = envelope("dm");
+  const details = structuredClone(initial.campaign);
+  let finish: (value: typeof details) => void = () => {};
+  let reads = 0;
+  const mounted = await mount(<DndInformationHub
+    initialEnvelope={initial}
+    loadContent={async () => { throw new Error("not used"); }}
+    loadCampaignDetails={() => {
+      reads += 1;
+      return new Promise((resolve) => { finish = resolve; });
+    }}
+  />);
+  try {
+    await click(button(mounted.container, "Campaign"));
+    assert.equal(reads, 1);
+    assert.match(mounted.container.textContent ?? "", /Loading campaign details/u);
+    assert.doesNotMatch(mounted.container.textContent ?? "", /0 places remembered|0 quests · 0 open threads|0 recorded clues/u);
+
+    await act(async () => {
+      finish(details);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    assert.equal(mounted.container.querySelector(".campaign-detail-status"), null);
+
+    const sections = [
+      ["Adventure Log", "Adventure log"],
+      ["Places Visited", "Places visited"],
+      ["Outcomes", "Situation outcomes"],
+      ["Quests", "Quests"],
+      ["Open Threads", "Open threads"],
+      ["Clues", "Clues"],
+    ];
+    for (const [navigation, heading] of sections) {
+      await click(button(mounted.container, navigation));
+      assert.equal(mounted.container.querySelector("#main-view-heading")?.textContent?.trim(), heading);
+    }
+    assert.equal(reads, 1, "section navigation reuses the validated Campaign result");
+  } finally { await mounted.cleanup(); }
+});
+
+test("Campaign detail failures stay local, preserve the last validated result, and retry", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const initial = envelope("dm");
+  const details = structuredClone(initial.campaign);
+  let fail = false;
+  let reads = 0;
+  const mounted = await mount(<DndInformationHub
+    initialEnvelope={initial}
+    loadContent={async () => { throw new Error("not used"); }}
+    loadCampaignDetails={async () => {
+      reads += 1;
+      if (fail) throw new Error("Campaign detail transport failed.");
+      return details;
+    }}
+  />);
+  try {
+    await click(button(mounted.container, "Campaign"));
+    assert.equal(reads, 1);
+    const retainedChapter = details.chapter;
+    assert.match(mounted.container.textContent ?? "", new RegExp(retainedChapter, "u"));
+
+    await click(button(mounted.container, "Party"));
+    fail = true;
+    await click(button(mounted.container, "Campaign"));
+    assert.equal(reads, 2);
+    assert.match(mounted.container.querySelector('[role="alert"]')?.textContent ?? "", /Latest campaign details unavailable/u);
+    assert.match(mounted.container.textContent ?? "", new RegExp(retainedChapter, "u"));
+
+    fail = false;
+    await click(button(mounted.container, "Retry campaign details"));
+    assert.equal(reads, 3);
+    assert.equal(mounted.container.querySelector(".campaign-detail-status"), null);
+    await click(button(mounted.container, "Party"));
+    assert.doesNotMatch(mounted.container.textContent ?? "", /Campaign detail transport failed/u);
+  } finally { await mounted.cleanup(); }
+});
+
+test("an invalidated Campaign detail read becomes a local retry instead of remaining loading", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const initial = envelope("dm");
+  let reads = 0;
+  const mounted = await mount(<DndInformationHub
+    initialEnvelope={initial}
+    loadContent={async () => { throw new Error("not used"); }}
+    loadCampaignDetails={async () => {
+      reads += 1;
+      if (reads === 1) throw new DOMException("Resource invalidated", "AbortError");
+      return initial.campaign;
+    }}
+  />);
+  try {
+    await click(button(mounted.container, "Campaign"));
+    assert.match(mounted.container.textContent ?? "", /Campaign details changed while they were loading/u);
+    assert.doesNotMatch(mounted.container.textContent ?? "", /Loading campaign details/u);
+    await click(button(mounted.container, "Retry campaign details"));
+    assert.equal(reads, 2);
+    assert.equal(mounted.container.querySelector(".campaign-detail-status"), null);
+  } finally { await mounted.cleanup(); }
+});
+
 test("a narrow notice cannot hide broader changes or acknowledge a notice received during refresh", async () => {
   const { DndInformationHub } = await import("../../src/components/DndInformationHub");
   const initial = envelope("dm");
@@ -1415,7 +1517,13 @@ test("mounted Campaign premise edit uses the production PATCH client once and re
   const mounted = await mount(<DndInformationHub
     initialEnvelope={initial}
     loadContent={async () => { throw new Error("not used"); }}
-    loadEnvelope={async () => { refreshes += 1; return refreshed; }}
+    loadEnvelope={async () => {
+      refreshes += 1;
+      window.dispatchEvent(new window.CustomEvent("dnd2024-object-changed", {
+        detail: { object: { qualifiedId: "dnd2024.object.campaign-summary" } },
+      }));
+      return refreshed;
+    }}
     writeCampaignPremise={writer}
   />);
   try {
@@ -1457,6 +1565,7 @@ test("mounted Campaign premise edit uses the production PATCH client once and re
     assert.equal(mounted.container.querySelector(".campaign-premise-current")?.textContent, premise);
     assert.equal(mounted.container.querySelector("#campaign-premise-draft"), null);
     assert.match(mounted.container.textContent ?? "", /Campaign premise saved/);
+    assert.doesNotMatch(mounted.container.textContent ?? "", /The server changed or the live connection was interrupted/);
   } finally { await mounted.cleanup(); }
 });
 

@@ -806,12 +806,27 @@ function isCampaignClue(value) {
     typeof value.partyConclusion === "string" &&
     typeof value.discoveredAt === "string" &&
     isCampaignLinks(value.links) &&
+    (value.handout === undefined || isVisualMedia(value.handout)) &&
     (value.dmTruth === undefined || typeof value.dmTruth === "string") &&
     (value.dmConnection === undefined || typeof value.dmConnection === "string")
   );
 }
 
-function isCampaign(value) {
+function isCampaignMapOverlay(value) {
+  return (
+    value &&
+    typeof value.id === "string" &&
+    typeof value.mapId === "string" &&
+    (value.featureId === null || typeof value.featureId === "string") &&
+    (value.kind === "note" || value.kind === "reveal") &&
+    typeof value.label === "string" &&
+    typeof value.detail === "string" &&
+    typeof value.recordedOn === "string"
+  );
+}
+
+/** Runtime validator for the Campaign presentation boundary consumed by mounted views and caches. */
+export function isCampaignReadModel(value) {
   return (
     value &&
     typeof value.title === "string" &&
@@ -877,6 +892,8 @@ function isCampaign(value) {
         isCampaignLinks(outcome.links) &&
         (outcome.dmRamification === undefined || typeof outcome.dmRamification === "string"),
     ) &&
+    Array.isArray(value.mapOverlays) &&
+    value.mapOverlays.every(isCampaignMapOverlay) &&
     Array.isArray(value.quests) &&
     value.quests.every(isCampaignQuest) &&
     Array.isArray(value.threads) &&
@@ -1221,7 +1238,7 @@ export function isReadyHubEnvelope(value) {
       world.locations.some((location) => location.id === world.currentLocationId)) &&
     typeof world.rootMapId === "string" &&
     isValidMapHierarchy(world.maps, world.rootMapId) &&
-    isCampaign(campaign) &&
+    isCampaignReadModel(campaign) &&
     overlaysResolveAgainstMaps(campaign.mapOverlays, world.maps) &&
     Array.isArray(party) &&
     party.every(isPartyMember) &&

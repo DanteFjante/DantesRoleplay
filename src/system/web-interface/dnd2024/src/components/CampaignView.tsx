@@ -11,6 +11,9 @@ import { CampaignThreads } from "./CampaignThreads";
 
 export function CampaignView({
   campaign,
+  detailsError,
+  detailsStatus,
+  hasValidatedDetails,
   premiseEdit,
   section,
   worldName,
@@ -20,10 +23,14 @@ export function CampaignView({
   onBeginPremiseEdit,
   onCancelPremiseEdit,
   onPremiseDraftChange,
+  onRetryDetails,
   onSavePremise,
   onSectionChange,
 }: {
   campaign: CampaignReadModel;
+  detailsError: string;
+  detailsStatus: "unloaded" | "loading" | "ready" | "error";
+  hasValidatedDetails: boolean;
   premiseEdit?: ResourceEdit;
   section: CampaignSectionId;
   worldName: string;
@@ -33,13 +40,40 @@ export function CampaignView({
   onBeginPremiseEdit?: () => void;
   onCancelPremiseEdit?: () => void;
   onPremiseDraftChange?: (premise: string) => void;
+  onRetryDetails?: () => void;
   onSavePremise?: (premise: string) => void;
   onSectionChange: (section: CampaignSectionId) => void;
 }) {
+  const detailNotice = detailsStatus === "ready" ? null : (
+    <section
+      aria-busy={detailsStatus === "loading" || detailsStatus === "unloaded"}
+      className={`campaign-detail-status campaign-detail-status--${detailsStatus}`}
+      role={detailsStatus === "error" ? "alert" : "status"}
+    >
+      <div>
+        <strong>{detailsStatus === "error"
+          ? hasValidatedDetails ? "Latest campaign details unavailable" : "Campaign details unavailable"
+          : hasValidatedDetails ? "Refreshing campaign details" : "Loading campaign details"}</strong>
+        <p>{detailsStatus === "error"
+          ? hasValidatedDetails
+            ? "Showing the last validated campaign details. Try again to check for newer chapters, arcs, and visits."
+            : detailsError || "The campaign details could not be loaded."
+          : hasValidatedDetails
+            ? "The last validated details remain available while the campaign refreshes."
+            : "Loading the selected campaign's chapters, arcs, sessions, and recorded visits."}</p>
+        {detailsStatus === "error" && hasValidatedDetails && detailsError
+          ? <small>{detailsError}</small> : null}
+      </div>
+      {detailsStatus === "error" && onRetryDetails
+        ? <button onClick={onRetryDetails} type="button">Retry campaign details</button> : null}
+    </section>
+  );
+
   return (
     <div className="campaign-view">
       <CampaignSectionNavigation activeSection={section} onSelect={onSectionChange} />
-      {section === "log" ? (
+      {detailNotice}
+      {!hasValidatedDetails && section !== "overview" ? null : section === "log" ? (
         <CampaignAdventureLog campaign={campaign} onOpenFaction={onOpenFaction} onOpenLocation={onOpenLocation} onOpenPerson={onOpenPerson} />
       ) : section === "places" ? (
         <CampaignPlacesVisited campaign={campaign} onOpenLocation={onOpenLocation} />
@@ -54,6 +88,7 @@ export function CampaignView({
       ) : (
         <CampaignOverview
           campaign={campaign}
+          detailsAvailable={hasValidatedDetails}
           premiseEdit={premiseEdit}
           worldName={worldName}
           onBeginPremiseEdit={onBeginPremiseEdit}

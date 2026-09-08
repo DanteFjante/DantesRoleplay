@@ -20,7 +20,7 @@ import {
   type WorldInformationUpdate,
 } from "../data/object-resources";
 import { resolveHubSurface } from "../data/hub-availability.js";
-import type { CampaignReadModel, CanonicalCharacterResult, CharacterSheetResult, ConnectedCampaignEnvelope, DeferredHubSection, DeferredHubUpdate, HubEnvelope, InventoryContainerResult, Perspective, ReadyHubEnvelope, RuleReadModel } from "../data/hub-types";
+import type { CampaignReadModel, CanonicalCharacterResult, CharacterSheetResult, ConnectedCampaignDetails, ConnectedCampaignEnvelope, DeferredHubSection, DeferredHubUpdate, HubEnvelope, InventoryContainerResult, Perspective, ReadyHubEnvelope, RuleReadModel } from "../data/hub-types";
 import { ViewReadError } from "../data/view-read-client";
 import { loadInitialHub } from "../data/hub-preferences";
 import { objectConsumers, subscribeScopedChanges } from "../data/scoped-change-stream";
@@ -36,6 +36,18 @@ import "../styles.css";
 
 const characterSources = new Map<string, ConnectedCampaignEnvelope>();
 const characterScope = (state: string, campaign: string, perspective?: Perspective) => `${state}:${campaign}:${perspective ?? "player"}`;
+
+function sameCampaignProjection(left: ConnectedCampaignEnvelope, right: ConnectedCampaignEnvelope) {
+  const previous = left.campaign.projection;
+  const current = right.campaign.projection;
+  return Boolean(previous && current &&
+    previous.qualifiedQueryId === current.qualifiedQueryId &&
+    previous.stateSpaceFingerprint === current.stateSpaceFingerprint &&
+    previous.resolutionFingerprint === current.resolutionFingerprint &&
+    previous.outputSchemaHash === current.outputSchemaHash &&
+    previous.resultFingerprint === current.resultFingerprint &&
+    previous.sourceRevisionFingerprint === current.sourceRevisionFingerprint);
+}
 const DndInformationHub = lazy(() => import("../components/DndInformationHub")
   .then((module) => ({ default: module.DndInformationHub })));
 const ApplicationStartupError = lazy(() => import("../components/ApplicationStartupError")
@@ -259,24 +271,21 @@ async function readCampaignDetailsObject(
   const source = characterSources.get(characterScope(envelope.stateSpaceId,
     envelope.contextSelection?.selectedCampaignId ?? "", envelope.audience.perspective));
   if (!source || signal.aborted) throw new Error("The campaign details are unavailable.");
-  const [{ readDeferredCampaignDetails }, { connectedCampaignToHubEnvelope }] = await Promise.all([
+  const [{ readDeferredCampaignDetails }, { connectedCampaignToHubEnvelope, mergeConnectedCampaignDetails }] = await Promise.all([
     import("../server/game-server-context.js"), import("../server/connected-hub-envelope"),
   ]);
-  const details = await readDeferredCampaignDetails({
+  const details: ConnectedCampaignDetails = await readDeferredCampaignDetails({
     fetchImpl: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, { ...init, signal }),
     origin: window.location.origin,
     source,
   });
-  if (details?.incomplete) throw new Error("The campaign details could not be read completely.");
   if (signal.aborted) throw new DOMException("View replaced", "AbortError");
   const key = characterScope(source.stateSpaceId, source.campaign.id, source.audience.perspective);
   const latest = characterSources.get(key);
-  if (!latest) throw new DOMException("View replaced", "AbortError");
-  characterSources.set(key, { ...latest, campaign: { ...latest.campaign, ...details } });
+  if (!latest || !sameCampaignProjection(source, latest))
+    throw new DOMException("View replaced", "AbortError");
   return connectedCampaignToHubEnvelope({
-    ...latest,
-    campaign: { ...latest.campaign, ...details },
-    rules: [],
+    ...mergeConnectedCampaignDetails(latest, details), rules: [],
   }).campaign;
 }
 

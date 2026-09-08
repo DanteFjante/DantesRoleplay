@@ -1,5 +1,6 @@
 import type {
   CampaignMapOverlay,
+  ConnectedCampaignDetails,
   ConnectedCampaignEnvelope,
   DeferredHubSection,
   DeferredHubUpdate,
@@ -43,6 +44,14 @@ function initials(name: string): string {
 }
 
 type ConnectedPartyMember = NonNullable<ConnectedCampaignEnvelope["party"]>[number];
+
+/** Applies one validated registered Campaign-detail response without mutating the retained source. */
+export function mergeConnectedCampaignDetails(
+  connection: ConnectedCampaignEnvelope,
+  details: ConnectedCampaignDetails,
+): ConnectedCampaignEnvelope {
+  return { ...connection, campaign: { ...connection.campaign, ...details } };
+}
 
 /** Bootstrap projection: identity and participation only; character details are feature resources. */
 export function projectPartySummary(connection: ConnectedCampaignEnvelope): PartyMemberReadModel[] {

@@ -16,6 +16,7 @@ import {
 import { createHubObjectUiState, hubObjectUiReducer } from "../../src/data/hub-object-ui";
 import type {
   CampaignReadModel,
+  ConnectedCampaignEnvelope,
   HubEnvelope,
   InventoryContainerResult,
   PartyMemberReadModel,
@@ -23,6 +24,10 @@ import type {
   ReadyHubEnvelope,
 } from "../../src/data/hub-types";
 import { ViewReadError } from "../../src/data/view-read-client";
+import { connectedCampaignToHubEnvelope, mergeConnectedCampaignDetails } from "../../src/server/connected-hub-envelope";
+import { readDeferredCampaignDetails } from "../../src/server/game-server-context.js";
+import { contract as campaignDetailsContract } from "../../src/server/campaign-details-contract.js";
+import { contract as campaignLocationVisitsContract } from "../../src/server/campaign-location-visits-contract.js";
 
 const evidence = (sourceRevisionFingerprint = "A".repeat(64)) => ({
   qualifiedQueryId: "dnd2024.query.faction-directory-page",
@@ -98,6 +103,80 @@ function inventory(id: string): InventoryContainerResult {
       },
     },
   };
+}
+
+function connectedCampaignSource(campaignId = "campaign.fixture"): ConnectedCampaignEnvelope {
+  return {
+    version: 1,
+    status: "connected",
+    applicationId: "dnd2024",
+    stateSpaceId: "state.fixture",
+    audience: { seat: "dm", perspective: "dm", allowedPerspectives: ["dm"] },
+    contextSelection: {
+      selectedCampaignId: campaignId,
+      selectedWorldId: "world.fixture",
+      worlds: [{ id: "world.fixture", name: "Fixture World", campaigns: [{ id: campaignId, name: "Fixture Campaign" }] }],
+    },
+    campaign: {
+      id: campaignId,
+      name: "Fixture Campaign",
+      status: "active",
+      premise: "A production-shaped campaign fixture.",
+      partyGoals: ["Reach the next chapter."],
+      toneAndBoundaries: [],
+      projection: {
+        qualifiedQueryId: "dnd2024.query.campaign-summary",
+        stateSpaceFingerprint: "1".repeat(64),
+        resolutionFingerprint: "2".repeat(64),
+        outputSchemaHash: "3".repeat(64),
+        resultFingerprint: "4".repeat(64),
+        sourceRevisionFingerprint: "A".repeat(64),
+      },
+      chapters: [], arcs: [], sessions: [], visits: [],
+    },
+    actor: { id: "local-game-master", name: "Dungeon Master", state: null, entries: [] },
+    party: [],
+    knowledge: { status: "empty", entries: [], locations: [] },
+    chronology: { status: "empty", perspective: "dm", entries: [] },
+  };
+}
+
+function jsonResponse(status: number, body: unknown) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "content-type": "application/json" },
+  });
+}
+
+async function productionCampaignDetails(
+  source: ConnectedCampaignEnvelope,
+  data: Record<string, unknown>,
+): Promise<CampaignReadModel> {
+  const details = await readDeferredCampaignDetails({
+    origin: "http://localhost:6217",
+    source,
+    fetchImpl: async (input: RequestInfo | URL) => {
+      const request = new URL(input);
+      const contract = request.pathname.includes(campaignDetailsContract.id)
+        ? campaignDetailsContract
+        : campaignLocationVisitsContract;
+      const responseData = contract === campaignDetailsContract
+        ? data
+        : { campaignTitle: source.campaign.name, visits: [], totalCount: 0, complete: true, nextCursor: null };
+      return jsonResponse(200, {
+        applicationId: source.applicationId,
+        stateSpaceId: source.stateSpaceId,
+        qualifiedQueryId: contract.id,
+        stateSpaceFingerprint: "1".repeat(64),
+        resolutionFingerprint: "2".repeat(64),
+        outputSchemaHash: contract.outputSchemaHash,
+        resultFingerprint: "3".repeat(64),
+        sourceRevisionFingerprint: "A".repeat(64),
+        data: responseData,
+      });
+    },
+  });
+  return connectedCampaignToHubEnvelope(mergeConnectedCampaignDetails(source, details)).campaign;
 }
 
 test("Campaign requests isolate audiences and late perspective responses cannot refill the cache", async () => {
@@ -181,13 +260,26 @@ test("Faction pages reject incompatible and stale responses without retaining th
   assert.equal(state.peekFactionPage(first), null, "a stale page retires the whole Factions query cache");
 });
 
-test("Campaign details and context use independent bounded shared resources", async () => {
+test("production Campaign details pass their presentation contract and use an independent bounded resource", async () => {
   let detailReads = 0;
   let contextReads = 0;
-  const envelope = scope();
-  const details = {
-    id: "campaign.fixture", title: "Fixture", chapters: [], arcs: [], sessions: [], visitedLocations: [],
-  } as unknown as CampaignReadModel;
+  const source = connectedCampaignSource();
+  const envelope = connectedCampaignToHubEnvelope(source);
+  const transport = {
+    version: 1,
+    campaignId: source.campaign.id,
+    chapters: [{
+      id: "chapter.fixture.one", name: "Chapter One", status: "active",
+      title: "The First Chapter", partyQuestion: "What will the party choose?",
+      gmContext: "The decision changes the road ahead.",
+    }],
+    arcs: [{
+      id: "arc.fixture.one", name: "Arc One", status: "active",
+      title: "Mercy Has a Cost", partyStake: "The party's promise is at risk.",
+      gmContext: "The rival is watching.",
+    }],
+    sessions: [],
+  };
   const context = { section: "context" as const, contextSelection: {
     selectedCampaignId: "campaign.fixture", selectedWorldId: "world.fixture",
     worlds: [{ id: "world.fixture", name: "Fixture", campaigns: [{ id: "campaign.fixture", name: "Fixture" }] }],
@@ -195,12 +287,20 @@ test("Campaign details and context use independent bounded shared resources", as
   const state = new TableResourceOwner({
     readCampaign: async ({ perspective, campaignId }) => campaign(perspective, campaignId ?? "bound"),
     readFactionPage: async () => page(),
-    readCampaignDetails: async () => { detailReads += 1; return details; },
+    readCampaignDetails: async () => {
+      detailReads += 1;
+      return productionCampaignDetails(source, transport);
+    },
     readCampaignContext: async () => { contextReads += 1; return context; },
     validateCampaign: isCampaign,
   });
-  await state.loadCampaignDetails({ envelope });
-  await state.loadCampaignDetails({ envelope });
+  const first = await state.loadCampaignDetails({ envelope });
+  const second = await state.loadCampaignDetails({ envelope });
+  assert.equal(first, second);
+  assert.equal(first.chapter, "The First Chapter");
+  assert.equal(first.progress, "1 chapter · 1 arc");
+  assert.deepEqual(first.threads.map((entry) => entry.title), ["The First Chapter", "Mercy Has a Cost"]);
+  assert.equal(Object.hasOwn(first, "chapters"), false, "the cache owns the presentation model, not the transport DTO");
   await state.loadCampaignContext({ envelope });
   await state.loadCampaignContext({ envelope });
   assert.equal(detailReads, 1);
@@ -213,6 +313,34 @@ test("Campaign details and context use independent bounded shared resources", as
   assert.equal(state.invalidateObject(WORLD_CAMPAIGN_DIRECTORY_OBJECT_ID), true);
   await state.loadCampaignContext({ envelope });
   assert.equal(contextReads, 2);
+});
+
+test("production Campaign conversion distinguishes a true empty campaign from multiple chapters and arcs", async () => {
+  const source = connectedCampaignSource();
+  const empty = await productionCampaignDetails(source, {
+    version: 1, campaignId: source.campaign.id, chapters: [], arcs: [], sessions: [],
+  });
+  assert.equal(empty.progress, "Live campaign structure has not been recorded yet");
+  assert.deepEqual(empty.adventureLog, []);
+  assert.deepEqual(empty.threads, []);
+
+  const populated = await productionCampaignDetails(source, {
+    version: 1,
+    campaignId: source.campaign.id,
+    chapters: [
+      { id: "chapter.one", name: "One", status: "active", title: "First road", partyQuestion: "Where next?" },
+      { id: "chapter.two", name: "Two", status: "active", title: "Second road", partyQuestion: "Who follows?" },
+    ],
+    arcs: [
+      { id: "arc.one", name: "One", status: "active", title: "First promise", partyStake: "A promise." },
+      { id: "arc.two", name: "Two", status: "active", title: "Second promise", partyStake: "Another promise." },
+    ],
+    sessions: [],
+  });
+  assert.equal(populated.progress, "2 chapters · 2 arcs");
+  assert.deepEqual(populated.threads.map((entry) => entry.title), [
+    "First road", "Second road", "First promise", "Second promise",
+  ]);
 });
 
 test("scope replacement retires prior Campaign resources and cache expiry remains bounded", async () => {
@@ -241,6 +369,42 @@ test("scope replacement retires prior Campaign resources and cache expiry remain
   });
   await expiring.loadCampaign({ perspective: "player", campaignId: "one" });
   assert.equal(expiring.peekCampaign({ perspective: "player", campaignId: "one" }), null);
+});
+
+test("a fast Campaign switch fences a late detail conversion from the replacement scope", async () => {
+  const firstSource = connectedCampaignSource("campaign.one");
+  const secondSource = connectedCampaignSource("campaign.two");
+  const firstEnvelope = connectedCampaignToHubEnvelope(firstSource);
+  const secondEnvelope = connectedCampaignToHubEnvelope(secondSource);
+  const firstModel = await productionCampaignDetails(firstSource, {
+    version: 1, campaignId: "campaign.one",
+    chapters: [{ id: "chapter.one", name: "One", status: "active", title: "Old chapter", partyQuestion: "Old?" }],
+    arcs: [], sessions: [],
+  });
+  const secondModel = await productionCampaignDetails(secondSource, {
+    version: 1, campaignId: "campaign.two",
+    chapters: [{ id: "chapter.two", name: "Two", status: "active", title: "New chapter", partyQuestion: "New?" }],
+    arcs: [], sessions: [],
+  });
+  let finishFirst: (value: CampaignReadModel) => void = () => {};
+  const state = new TableResourceOwner({
+    readCampaign: async ({ campaignId }) => campaign("dm", campaignId ?? "bound"),
+    readFactionPage: async () => page(),
+    readCampaignDetails: ({ envelope }) => envelope.contextSelection.selectedCampaignId === "campaign.one"
+      ? new Promise((resolve) => { finishFirst = resolve; })
+      : Promise.resolve(secondModel),
+    readCampaignContext: async () => { throw new Error("not used"); },
+    validateCampaign: isCampaign,
+  });
+
+  await state.loadCampaign({ perspective: "dm", campaignId: "campaign.one" });
+  const obsolete = state.loadCampaignDetails({ envelope: firstEnvelope });
+  await state.loadCampaign({ perspective: "dm", campaignId: "campaign.two" });
+  finishFirst(firstModel);
+  await assert.rejects(obsolete, (error) =>
+    error instanceof ViewReadError && error.category === "cancelled");
+  const current = await state.loadCampaignDetails({ envelope: secondEnvelope });
+  assert.equal(current.chapter, "New chapter");
 });
 
 test("Character sheet, detail, and inventory resources deduplicate independently and invalidate transfers", async () => {
