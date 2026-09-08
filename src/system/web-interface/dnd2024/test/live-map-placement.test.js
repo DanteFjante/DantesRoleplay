@@ -69,16 +69,27 @@ function directory(perspective) {
   ];
 }
 
-function connected(perspective, entries = directory(perspective)) {
+function connected(perspective, entries = directory(perspective), campaign = CAMPAIGN) {
+  const world = campaign.id === "campaign.caldris.measure-of-mercy"
+    ? { id: "world.caldris", name: "Caldris" }
+    : { id: "world.thalorien", name: "Thalorien" };
   return {
     version: 1,
     status: "connected",
     applicationId: "dnd2024",
     stateSpaceId: "space.test",
+    contextSelection: {
+      selectedWorldId: world.id,
+      selectedCampaignId: campaign.id,
+      worlds: [{
+        ...world,
+        campaigns: [{ id: campaign.id, name: campaign.name }],
+      }],
+    },
     audience: perspective === "dm"
       ? { seat: "dm", perspective: "dm", allowedPerspectives: ["dm", "player"] }
       : { seat: "player", perspective: "player", allowedPerspectives: ["player"] },
-    campaign: CAMPAIGN,
+    campaign,
     actor: { id: "actor.test", name: "Tester", state: null, entries: [] },
     knowledge: {
       status: "ready",
@@ -115,7 +126,7 @@ test("live anchors keep the same location stable between DM and Player projectio
   );
 });
 
-test("Thalos is the main map and uses the reviewed public atlas for both perspectives", () => {
+test("Thalos is the main map and uses authorized media for both perspectives", () => {
   const dm = connectedCampaignToHubEnvelope(connected("dm"));
   const player = connectedCampaignToHubEnvelope(connected("player"));
   assert.equal(dm.world.rootMapId, "map.live.location.thalorien.thalos");
@@ -125,7 +136,7 @@ test("Thalos is the main map and uses the reviewed public atlas for both perspec
   assert.equal(JSON.stringify(player).includes("thalos-map-dm.svg"), false);
 });
 
-test("Caldris map keys resolve only to the reviewed world and Eredane atlas bytes", () => {
+test("Caldris map owners resolve only to authorized World and Eredane media", () => {
   const entries = [
     {
       id: "location.caldris.eredane",
@@ -155,10 +166,8 @@ test("Caldris map keys resolve only to the reviewed world and Eredane atlas byte
       mapVisual: visual("caldris.town.bramblebridge.player", "Bramblebridge town map"),
     },
   ];
-  const envelope = connectedCampaignToHubEnvelope({
-    ...connected("player", entries),
-    campaign: { ...CAMPAIGN, id: "campaign.caldris.measure-of-mercy", name: "The Measure of Mercy" },
-  });
+  const envelope = connectedCampaignToHubEnvelope(connected("player", entries,
+    { ...CAMPAIGN, id: "campaign.caldris.measure-of-mercy", name: "The Measure of Mercy" }));
 
   assert.equal(mapFor(envelope, "location.caldris.eredane")?.base?.imageUrl,
     visual("caldris.world.player", "").imageUrl);
@@ -197,7 +206,7 @@ test("containment builds Thalos, region, and city scopes without an entity-id ma
   assert.equal(isReadyHubEnvelope(envelope), true);
 });
 
-test("a new live city can reuse reviewed bytes without adding its entity id to code", () => {
+test("a new live city can reuse authorized media without adding its entity id to code", () => {
   const entries = directory("dm");
   entries.push({
     id: "location.thalorien.new-port",

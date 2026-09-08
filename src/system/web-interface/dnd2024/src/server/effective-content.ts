@@ -1,9 +1,11 @@
 import { normalizeGameServerOrigin } from "./game-server-context.js";
+import { readBoundedJson } from "./read-model-response.js";
 
 const APPLICATION_ID = "dnd2024";
 const PAGE_SIZE = 100;
 const MAXIMUM_RECORDS = 20_000;
-const MAXIMUM_PAGES = 10_000;
+const MAXIMUM_PAGES = Math.ceil(MAXIMUM_RECORDS / PAGE_SIZE);
+const MAXIMUM_PAGE_BYTES = 524_288;
 const CLASSIFICATIONS = new Set(["homebrew", "compatibility", "third-party"]);
 
 export type InstalledExtension = {
@@ -105,7 +107,8 @@ export async function readInstalledContent({
     if (cursor) url.searchParams.set("cursor", cursor);
     const response = await fetchImpl(url, { headers: { Accept: "application/json" }, cache: "no-store" });
     if (!response.ok) throw new Error("Installed content is unavailable.");
-    const page = object(await response.json());
+    const decoded = await readBoundedJson(response, MAXIMUM_PAGE_BYTES);
+    const page = decoded.status === "ready" ? object(decoded.value) : null;
     const pageFingerprint = text(page?.resolutionFingerprint, 64);
     const pageExtensions = Array.isArray(page?.activeExtensions)
       ? page.activeExtensions.map(extension) : null;

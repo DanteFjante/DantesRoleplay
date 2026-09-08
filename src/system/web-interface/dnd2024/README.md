@@ -115,5 +115,6 @@ v1 character payload or infer missing labels, inventory hierarchy, or wallet val
 - `src/data/` contains presentation-only types, filters, and asset routing.
 - `src/server/` adapts already-authorized local server responses into the UI envelope.
 - `server-host/` contains the page entry point.
-- `public/` contains reviewed page-owned image assets.
+- Authorized images are served by the game server's media owners; the production build has no
+  page-owned public asset directory.
 - `test/` contains focused React data and envelope tests.

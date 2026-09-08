@@ -1,9 +1,11 @@
 import type { RuleReadModel } from "../data/hub-types";
 import { normalizeGameServerOrigin } from "./game-server-context.js";
+import { readBoundedJson } from "./read-model-response.js";
 
 const APPLICATION_ID = "dnd2024";
 const MAXIMUM_SECTIONS = 128;
 const MAXIMUM_RULES = 4_096;
+const MAXIMUM_RESPONSE_BYTES = 2_097_152;
 
 function object(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -173,7 +175,8 @@ export async function readRulesReference({
       cache: "no-store",
     });
     if (!response.ok) return [];
-    return projectResolvedRules(await response.json()) ?? [];
+    const decoded = await readBoundedJson(response, MAXIMUM_RESPONSE_BYTES);
+    return decoded.status === "ready" ? projectResolvedRules(decoded.value) ?? [] : [];
   } catch {
     return [];
   }

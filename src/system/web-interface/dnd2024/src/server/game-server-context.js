@@ -1365,7 +1365,6 @@ async function attachAuthorizedKnowledgeMedia({
   stateSpaceId,
   projectedKnowledge,
   perspective,
-  mediaAssetBaseUrl: __,
 }) {
   if (projectedKnowledge.status !== "ready") return projectedKnowledge;
   const ownerIds = [...new Set([
@@ -2275,7 +2274,7 @@ export async function readAuthorizedWorldLore({ fetchImpl = fetch, origin, sourc
   return {
     knowledge: await attachAuthorizedKnowledgeMedia({
       fetchImpl, origin, applicationId, stateSpaceId, perspective,
-      mediaAssetBaseUrl: "/ui/dnd2024-play/assets/", projectedKnowledge: result,
+      projectedKnowledge: result,
     }),
   };
 }
@@ -2308,7 +2307,7 @@ export async function readWorldPeopleHoldings({ fetchImpl = fetch, origin, sourc
   };
 }
 
-/** Composes registered play projections and only the bounded adapters without a registered owner. */
+/** Composes registered play projections and only the bounded adapters listed in the release contract. */
 export async function readCurrentViewPatch({ fetchImpl = fetch, origin, source }) {
   const { applicationId, stateSpaceId } = source;
   const campaignId = source.campaign.id;
@@ -2420,8 +2419,8 @@ export async function readCurrentViewPatch({ fetchImpl = fetch, origin, source }
 /**
  * Completes only the requested deferred view. The existing private endpoints remain the
  * authorization boundary; no ambient DM knowledge or media is requested for Player preview.
- * Legacy directory adapters remain bounded and follow every continuation. They are not a
- * claim that the complete-workload request budget has been met.
+ * Registered collection adapters remain bounded and follow every continuation. The named-record
+ * Current/Play adapters are retained only where the catalog does not yet expose a closed query.
  * @param {{fetchImpl?: typeof fetch, origin: string, source: any, section: string}} options
  * @returns {Promise<any>}
  */
@@ -2441,7 +2440,7 @@ export async function readDeferredHubSection({ fetchImpl = fetch, origin, source
     try {
       const response = await fetchImpl(input, init);
       // A missing optional component is legitimate; transport failures and denied directories
-      // must never be converted by a legacy adapter into a credible empty collection.
+      // must never be converted by an adapter into a credible empty collection.
       if (response.status >= 500 || response.status === 429 ||
           (!response.ok && /\/(entities|containments)$/.test(target.pathname)))
         failure = "The view could not be read completely.";

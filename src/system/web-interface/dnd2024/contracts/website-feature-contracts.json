@@ -19,30 +19,30 @@
       "typed mechanic prepare/confirm/execute",
       "scoped change notifications"
     ],
-    "missingCapabilities": [
+    "capabilityDelivery": [
       {
         "label": "context-directory-read-model",
         "owner": "generic object projection over authorized world and campaign membership",
         "neededBy": ["W02", "W03"],
-        "reason": "Context discovery currently scans the entity directory and infers world identity from campaign IDs."
+        "reason": "Delivered in W03 by the campaign-context and world-campaign-directory projections; W11 removed campaign-ID inference."
       },
       {
         "label": "world-directory-read-models",
         "owner": "catalog-declared world, location, people, holdings, knowledge, chronology, and route projections",
         "neededBy": ["W05", "W06"],
-        "reason": "These views still assemble many private entity, component, relationship, containment, media, and notebook reads in the browser adapter."
+        "reason": "Delivered for World scopes in W06 and People/Holdings in W07; authorized lore/history endpoints and the documented bounded route adapter remain separate owners."
       },
       {
         "label": "campaign-detail-read-model",
         "owner": "catalog-declared campaign records and existing campaign relationships",
         "neededBy": ["W03"],
-        "reason": "Campaign detail sections still scan and assemble legacy records after the registered summary read."
+        "reason": "Delivered in W03 by registered campaign details and location-visit projections."
       },
       {
         "label": "bounded-rule-and-content-responses",
         "owner": "existing rules and effective-content protocols",
         "neededBy": ["W10"],
-        "reason": "The protocols exist, but their clients do not yet enforce response-byte and first-screen retention gates."
+        "reason": "Delivered in W11 by bounded rules bodies and bounded installed-content pages."
       }
     ],
     "newPermanentIdsRegisteredByW01": []
@@ -69,6 +69,42 @@
     ],
     "notClaimed": "This pilot does not migrate every D&D mechanic and does not add a generic host capability."
   },
+  "cleanupBoundary": {
+    "slice": "W11",
+    "retired": [
+      "campaign-id-derived World identity and display name",
+      "page-owned map and social-preview assets excluded from every production build",
+      "unused page-asset base URL argument in authorized knowledge media assembly"
+    ],
+    "migratedPathsWithNoRawDirectoryScans": [
+      "campaign-and-party",
+      "campaign-details-and-visits",
+      "world-context-directory",
+      "world-location-scopes",
+      "world-people-and-holdings",
+      "faction-directory"
+    ],
+    "retainedAdapters": [
+      {
+        "path": "actor-bootstrap-identity",
+        "reason": "The bound Actor still needs one exact named-entity identity read because Player campaign-summary deliberately omits other actor identities."
+      },
+      {
+        "path": "current-play-session-fallback",
+        "reason": "An exact campaign play-session read distinguishes a recorded situation when the registered Current Scene projection is empty."
+      },
+      {
+        "path": "conversation-and-known-route-composition",
+        "reason": "These use bounded exact named-record, component, and relationship reads because no closed conversation or route query owner exists yet."
+      },
+      {
+        "path": "authorized-media-batch-and-change-stream",
+        "reason": "These are intentional bounded transport owners, not legacy directory fan-out."
+      }
+    ],
+    "removedProductionConsumers": "none",
+    "rollback": "Keep the previously active page revision and frozen W00 catalog source available; never restore its database backup over newer gameplay without an explicit reconciliation decision."
+  },
   "versioning": {
     "rule": "Reuse an existing contract only when meaning and closed response shape are unchanged. Otherwise add a new immutable version and keep the prior version readable through the compatibility window.",
     "compatibilityOrder": [
@@ -91,7 +127,7 @@
       { "feature": "inventory-and-items", "current": "inventory item details/uses/recipes version 1", "target": "reuse version 1; containment remains generic and mutations remain mechanics" },
       { "feature": "factions", "current": "dnd2024.object.faction-directory-page v1", "target": "reuse version 1" },
       { "feature": "board", "current": "encounter board and draft version 1", "target": "reuse version 1; do not redesign the protocol" },
-      { "feature": "world-context-and-directories", "current": "legacy private API assembly", "target": "first registered versions after their IDs and schemas are separately confirmed in their implementation slices" }
+      { "feature": "world-context-and-directories", "current": "registered campaign-context, world-campaign-directory, location-scope, and people-holdings queries", "target": "retain the first registered versions until a closed response-shape change requires a new version" }
     ]
   },
   "fixtures": {
@@ -197,13 +233,13 @@
     {
       "id": "context-and-shell",
       "screens": ["bootstrap", "world/campaign selector", "DM/player perspective switch"],
-      "currentOwner": ["host audience binding", "dnd2024.query.campaign-summary", "legacy entity directory plus campaign-root component reads"],
-      "browserAssembly": "readGameServerContext then connectedCampaignToHubEnvelope; BrowserObjectQueryState caches at most eight audience scopes",
+      "currentOwner": ["host audience binding", "dnd2024.query.campaign-summary", "dnd2024.query.campaign-context and dnd2024.query.world-campaign-directory"],
+      "browserAssembly": "readGameServerContext then connectedCampaignToHubEnvelope; TableResourceOwner caches at most eight audience scopes",
       "authority": "host binding, SQLite campaign records, and registered campaign summary projection",
       "audience": { "game-master": "full", "gm-player-preview": "projected", "actor": "bound-campaign-only", "unbound": "reference-shell-only" },
       "editCapability": "selection and perspective are browser preferences only; they do not mutate game state",
       "completeness": "ready requires an unchanged binding plus a complete authorized context directory; unavailable and denied are never treated as empty",
-      "currentCost": "Initial Campaign is frozen at at most eight data reads; legacy GM context discovery may scan up to 1000 pages and 100000 entities.",
+      "currentCost": "Initial Campaign is frozen at at most eight data reads; context discovery uses stable 25-record registered pages capped at 40 pages and 1000 campaigns.",
       "target": { "slice": "W02-W03", "owner": "existing campaign summary plus missing context-directory-read-model", "pageSize": 25, "maximumPages": 40, "maximumRecords": 1000 },
       "gates": { "requests": 3, "sqlStatements": 12, "responseBytes": 262144, "retainedResponseBytes": 1048576 },
       "fixtureCases": ["small", "large", "unauthorized"]
@@ -211,13 +247,13 @@
     {
       "id": "campaign",
       "screens": ["Campaign overview", "Adventure Log", "Places Visited", "Outcomes", "Quests", "Open Threads", "Clues"],
-      "currentOwner": ["dnd2024.object.campaign-summary v3", "dnd2024.query.campaign-summary", "legacy campaign chapter/arc/session/visit relationships and components"],
+      "currentOwner": ["dnd2024.object.campaign-summary v3", "dnd2024.query.campaign-summary", "dnd2024.query.campaign-details and dnd2024.query.campaign-location-visits"],
       "browserAssembly": "summary arrives in bootstrap; non-overview sections call readDeferredCampaignDetails; CampaignPremiseEditor keeps a local draft and submits one source-revision-bound mapped PATCH before refetching Campaign Summary",
       "authority": "SQLite campaign components and relationships through object/query projections",
       "audience": { "game-master": "full", "gm-player-preview": "player-projected", "actor": "player-projected", "unbound": "forbidden" },
       "editCapability": "W09 exposes only the existing DM premise set mapping with validation, idempotent uncertain-response retry, pending state, conflict recovery, and confirmed refetch; participation and Player writes remain intentionally unavailable",
       "completeness": "summary is source-revision-bound and limited to 20 participation records; premise edits require exact Campaign Summary evidence and retain drafts across stale refreshes; every detail collection must be complete or the view fails",
-      "currentCost": "Campaign SQL is frozen at 12 statements; the first mapped edit adds one PATCH and one confirmed summary refetch. Legacy details may scan up to 1000 pages and 100000 entities before following bounded relationships.",
+      "currentCost": "Campaign Summary is frozen at 12 statements; details use one registered projection and visits use stable 100-record continuation pages. The first mapped edit adds one PATCH and one confirmed summary refetch.",
       "target": { "slice": "W03+W09", "owner": "reuse campaign summary v3 for reads, membership, and the first mapped premise edit", "pageSize": 25, "maximumPages": 40, "maximumRecords": 1000 },
       "gates": { "requests": 2, "sqlStatements": 12, "responseBytes": 524288, "retainedResponseBytes": 2097152 },
       "fixtureCases": ["small", "large", "unauthorized"]
@@ -272,7 +308,7 @@
       "authority": "SQLite world and location records",
       "audience": { "game-master": "full", "gm-player-preview": "player-projected", "actor": "player-projected", "unbound": "forbidden" },
       "editCapability": "read-only until a typed world mechanic is explicitly exposed",
-      "completeness": "world identity, selected campaign, and root map must agree; inferred identity is a compatibility fallback, not authority",
+      "completeness": "registered world identity, selected campaign, and root map must agree; campaign IDs are never parsed to invent World identity or display names",
       "currentCost": "One exact root-scope query plus one optional media batch, both bounded independently from unrelated world data.",
       "target": { "slice": "W06", "owner": "dnd2024.query.world-location-scope over the exact campaign-context World", "pageSize": 1, "maximumPages": 1, "maximumRecords": 1 },
       "gates": { "requests": 1, "sqlStatements": 8, "responseBytes": 131072, "retainedResponseBytes": 524288 },
@@ -310,7 +346,7 @@
       "id": "factions",
       "screens": ["World Factions", "faction details"],
       "currentOwner": ["dnd2024.object.faction-directory-page v1", "dnd2024.query.faction-directory-page"],
-      "browserAssembly": "BrowserObjectQueryState loads and revision-checks 25-item pages, then merges unique factions",
+      "browserAssembly": "TableResourceOwner loads and revision-checks 25-item pages, then merges unique factions",
       "authority": "SQLite faction components and declared member/control/territory/ally/opponent relationships through object projection",
       "audience": { "game-master": "full", "gm-player-preview": "forbidden", "actor": "knowledge-projected fallback", "unbound": "forbidden" },
       "editCapability": "current website is read-only; future edits require object writes or typed mechanics with confirmation",
@@ -385,7 +421,7 @@
       "audience": { "game-master": "full", "gm-player-preview": "metadata", "actor": "metadata", "unbound": "metadata" },
       "editCapability": "read-only; installation and extension ordering remain outside the website",
       "completeness": "every page must share one resolution fingerprint; cursor repetition, duplicate IDs, malformed records, or more than 20000 winners fails the view",
-      "currentCost": "Eager complete load uses 100-record pages, permits up to 10000 pages, and retains at most 20000 non-base winners.",
+      "currentCost": "Eager complete load uses 100-record pages, permits at most 200 pages, rejects pages over 524288 bytes, and retains at most 20000 non-base winners.",
       "target": { "slice": "W10", "owner": "reuse existing effective-content protocol with first-screen paging", "pageSize": 100, "maximumPages": 200, "maximumRecords": 20000 },
       "gates": { "requests": 1, "sqlStatements": 8, "responseBytes": 524288, "retainedResponseBytes": 2097152 },
       "fixtureCases": ["small", "large", "unauthorized"]

@@ -38,6 +38,15 @@ function connectedFixture({
     status: "connected",
     applicationId: "dnd2024",
     stateSpaceId: "dnd2024-main",
+    contextSelection: {
+      selectedWorldId: "world.thalorien",
+      selectedCampaignId: "campaign.thalorien.brackenford",
+      worlds: [{
+        id: "world.thalorien",
+        name: "Thalorien",
+        campaigns: [{ id: "campaign.thalorien.brackenford", name: "The Waystone at Brackenford" }],
+      }],
+    },
     ...(currentLocationId ? { currentLocationId } : {}),
     ...(currentSituation ? { currentSituation } : {}),
     ...(knownRoutes ? { knownRoutes } : {}),

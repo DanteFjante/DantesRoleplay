@@ -26,11 +26,9 @@ function normalizeSlugWords(value: string | null): string | null {
 }
 
 function deriveWorldName(connection: ConnectedCampaignEnvelope): string {
-  const idParts = connection.campaign.id?.split(".")?.filter(Boolean) ?? [];
-  const worldFromId = idParts.length >= 3 && idParts[0] === "campaign"
-    ? normalizeSlugWords(idParts[1])
-    : null;
-  return worldFromId ?? normalizeSlugWords(connection.campaign.id) ?? connection.campaign.name ?? "Unprojected world";
+  return connection.contextSelection.worlds.find(
+    (world) => world.id === connection.contextSelection.selectedWorldId,
+  )?.name ?? "Unprojected world";
 }
 
 function initials(name: string): string {
@@ -829,15 +827,7 @@ export function connectedCampaignToHubEnvelope(
       ? { status: "ready" as const, kind: "exploration" as const, locationId: currentLocationId }
       : { status: "unavailable" as const, message: "No authoritative current scene is available." });
   const worldName = deriveWorldName(connection);
-  const contextSelection = connection.contextSelection ?? {
-    selectedWorldId: `world.${connection.campaign.id.split(".")[1] ?? "live"}`,
-    selectedCampaignId: connection.campaign.id,
-    worlds: [{
-      id: `world.${connection.campaign.id.split(".")[1] ?? "live"}`,
-      name: worldName,
-      campaigns: [{ id: connection.campaign.id, name: connection.campaign.name }],
-    }],
-  };
+  const contextSelection = connection.contextSelection;
   const knowledgeEntries = connection.knowledge.status === "ready" ? connection.knowledge.entries : [];
   const classifiedKnowledge = classifyThalorienKnowledge(
     knowledgeEntries.filter((entry) => entry.presentationKind !== "evidence"),
@@ -1019,7 +1009,7 @@ export function connectedCampaignToHubEnvelope(
     count,
   }));
   const rootMap = liveMapTree.maps.find((map) => map.id === rootMapId) ?? liveMapTree.maps[0]!;
-  const legacyWorldMap = rootMap.base ?? { imageUrl: "", alt: "No reviewed map is available." };
+  const rootMapVisual = rootMap.base ?? { imageUrl: "", alt: "No reviewed map is available." };
 
   return {
     version: 1,
@@ -1045,7 +1035,7 @@ export function connectedCampaignToHubEnvelope(
         ?? "This world view is reading the campaign context currently available from the game server.",
       premise,
       currentLocationId,
-      map: { ...legacyWorldMap },
+      map: { ...rootMapVisual },
       rootMapId,
       maps: liveMapTree.maps,
       regions: hasSourceLocations

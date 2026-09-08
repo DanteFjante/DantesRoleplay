@@ -4,7 +4,10 @@ import test from "node:test";
 import { readInstalledContent } from "../src/server/effective-content.ts";
 
 function response(payload) {
-  return { ok: true, json: async () => payload };
+  return new Response(JSON.stringify(payload), {
+    status: 200,
+    headers: { "Content-Type": "application/json" },
+  });
 }
 
 test("installed content reads active extension provenance and keeps additive records", async () => {
@@ -52,4 +55,15 @@ test("installed content reads active extension provenance and keeps additive rec
   assert.equal(requested.length, 1);
   assert.match(requested[0], /\/api\/applications\/dnd2024\/content\?limit=100/u);
   assert.doesNotMatch(requested[0], /extensionId|overlay/u);
+});
+
+test("installed content rejects an oversized page before retaining response data", async () => {
+  await assert.rejects(readInstalledContent({
+    serverOrigin: "https://localhost:5144",
+    applicationId: "dnd2024",
+    fetchImpl: async () => new Response("x", {
+      status: 200,
+      headers: { "Content-Length": "524289" },
+    }),
+  }), /invalid/u);
 });

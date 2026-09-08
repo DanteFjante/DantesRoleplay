@@ -166,6 +166,31 @@ test("W10 records one exact mechanic-input pilot without claiming a ruleset-wide
   assert.equal(object?.limits?.outputBytes, pilot.object.outputBytes);
 });
 
+test("W11 retires only replaced compatibility paths and inventories every retained adapter", () => {
+  const cleanup = contract.cleanupBoundary;
+  assert.equal(cleanup.slice, "W11");
+  assert.equal(Object.hasOwn(contract.decisions, "missingCapabilities"), false);
+  assert.ok(contract.decisions.capabilityDelivery.every(({ reason }) => /^Delivered|remain separate/u.test(reason)));
+  assert.match(cleanup.retired.join(" "), /campaign-id-derived World identity/u);
+  assert.deepEqual(cleanup.migratedPathsWithNoRawDirectoryScans, [
+    "campaign-and-party",
+    "campaign-details-and-visits",
+    "world-context-directory",
+    "world-location-scopes",
+    "world-people-and-holdings",
+    "faction-directory",
+  ]);
+  assert.deepEqual(cleanup.retainedAdapters.map(({ path }) => path), [
+    "actor-bootstrap-identity",
+    "current-play-session-fallback",
+    "conversation-and-known-route-composition",
+    "authorized-media-batch-and-change-stream",
+  ]);
+  assert.ok(cleanup.retainedAdapters.every(({ reason }) => reason.length > 40));
+  assert.equal(cleanup.removedProductionConsumers, "none");
+  assert.match(cleanup.rollback, /never restore.*over newer gameplay/u);
+});
+
 test("W01 coverage follows every current navigation section and item/board route", () => {
   const coverage = contract.navigationCoverage;
   assert.deepEqual(coverage.persistentShell, ["context-and-shell"]);

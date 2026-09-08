@@ -6,7 +6,7 @@ function source(path) {
   return readFileSync(new URL(path, import.meta.url), "utf8");
 }
 
-test("bootstrap renders the navigation shell before the private v1 adapter resolves", () => {
+test("bootstrap renders the navigation shell before the connected resource adapter resolves", () => {
   const main = source("../src/server-host/main.tsx");
   const hub = source("../src/components/DndInformationHub.tsx");
   const shellRender = main.indexOf("<BootstrapShell />");
@@ -21,7 +21,7 @@ test("bootstrap renders the navigation shell before the private v1 adapter resol
   assert.match(main, /new CharacterResourceOwner/u);
   assert.doesNotMatch(main, /new ViewReadClient</u);
   assert.match(main, /fetchImpl: fetchWithSignal/u);
-  assert.match(main, /readGameServerContext/u, "the v1 adapter remains available for rollback");
+  assert.match(main, /readGameServerContext/u, "the connected resource adapter owns bootstrap reads");
 });
 
 test("inactive high-cost views are lazy module boundaries", () => {

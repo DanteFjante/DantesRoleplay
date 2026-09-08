@@ -131,6 +131,18 @@ test("does not request rules for a credential-bearing origin or another applicat
   assert.equal(requests, 0);
 });
 
+test("rules reject an oversized response before retaining or parsing it", async () => {
+  const result = await readRulesReference({
+    serverOrigin: "https://localhost:5144",
+    applicationId: "dnd2024",
+    fetchImpl: async () => new Response("x", {
+      status: 200,
+      headers: { "Content-Length": "2097153" },
+    }),
+  });
+  assert.deepEqual(result, []);
+});
+
 test("section navigation and search use readable content rather than directory names", () => {
   const projected = projectResolvedRules(payload([
     { id: "resting", label: "Resting", order: 30, rules: [rule({ id: "dnd2024.rule.resting.long-rest", resolutionKey: "rule.resting.long-rest", title: "Long Rest" })] },
