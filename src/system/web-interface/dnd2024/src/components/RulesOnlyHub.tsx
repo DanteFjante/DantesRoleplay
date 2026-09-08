@@ -50,7 +50,6 @@ export function RulesOnlyHub({
           onSelect={(tab) => {
             if (tab === "rules" || tab === "content") setActiveTab(tab);
           }}
-          progress="Private campaign views require authorization"
         />
         <main className="information-content" id="information-content">
           <ViewErrorBoundary key={activeTab} viewLabel={activeTab === "content" ? "Installed Content" : "Rules"}>

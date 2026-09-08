@@ -7,13 +7,11 @@ export function MainNavigation({
   availableTabs,
   chapter,
   onSelect,
-  progress,
 }: {
   activeTab: MainTabId;
   availableTabs?: readonly MainTabId[];
   chapter: string;
   onSelect: (tab: MainTabId) => void;
-  progress: string;
 }) {
   return (
     <aside className="main-nav-shell">
@@ -40,10 +38,6 @@ export function MainNavigation({
       <div className="main-nav__chapter">
         <span className="eyebrow">Current chapter</span>
         <strong>{chapter}</strong>
-        <small>{progress}</small>
-        <div className="chapter-progress" aria-hidden="true">
-          <span style={{ width: "100%" }} />
-        </div>
       </div>
     </aside>
   );

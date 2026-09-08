@@ -109,6 +109,8 @@ public sealed class ApplicationObjectContractTests : IDisposable
             File.ReadAllText(Path.Combine(Catalog(), "components", "game", "core", "world", "faction.schema.json"))));
         types.Define(new(game, "game.core.world.root",
             File.ReadAllText(Path.Combine(Catalog(), "components", "game", "core", "world", "root.schema.json"))));
+        types.Define(new(game, "game.core.campaign.location-visit",
+            File.ReadAllText(Path.Combine(Catalog(), "components", "game", "core", "campaign", "location-visit.schema.json"))));
         var clockType = types.Define(new(game, "game.core.world.clock",
             File.ReadAllText(Path.Combine(Catalog(), "components", "game", "core", "world", "clock.schema.json"))));
         var hpType = types.Define(new(application, "dnd2024.creature.hit-points",
@@ -133,6 +135,10 @@ public sealed class ApplicationObjectContractTests : IDisposable
             objects, "rest", "dnd2024.object.rest-begin-world.json")), application));
         var restPolicy = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
             objects, "rest", "dnd2024.object.rest-begin-policy.json")), application));
+        var campaignLocationVisits = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
+            objects, "campaign", "dnd2024.object.campaign-location-visits.json")), application));
+        var worldCampaignDirectory = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
+            objects, "campaign", "dnd2024.object.world-campaign-directory.json")), application));
 
         Assert.Equal("3AE6FD831B4319BA96E15A1501896549030C80FDBFA49D5503D0568DB9B61DEB", campaignV1.ContentHash);
         Assert.Equal(2, campaign.Version);
@@ -157,6 +163,18 @@ public sealed class ApplicationObjectContractTests : IDisposable
         Assert.Equal("858D347ED0CB9ADD8F937647703CD89F08F3AE313379037CFDD71B641F670F0C", restCreature.ContentHash);
         Assert.Equal("6D22CE1103C1E66FC163C8AEF2DF8FAB0C106D21C3EDA0D6A95D0984210B83A9", restWorld.ContentHash);
         Assert.Equal("4B1B67101E0CE06088AD997A3B8DAFED335EFEB3040851226E08D593A3EE19AD", restPolicy.ContentHash);
+        Assert.Equal("1097CC80B1D7866604305C830BB568D4E972B083C25EDCEDF8FFE06E183B32F9", campaignLocationVisits.ContentHash);
+        Assert.Equal("9417995A10D17B3EA16BBF0155C56BD2ACE9FC49FBF91B7B63384019EEA93215", worldCampaignDirectory.ContentHash);
+        foreach (var (file, expected) in new[]
+        {
+            ("dnd2024.query.campaign-location-visits.json", campaignLocationVisits.ContentHash),
+            ("dnd2024.query.world-campaign-directory.json", worldCampaignDirectory.ContentHash)
+        })
+        {
+            using var query = JsonDocument.Parse(File.ReadAllText(Path.Combine(Catalog(), "applications", "dnd2024",
+                "queries", "campaign", file)));
+            Assert.Equal(expected, query.RootElement.GetProperty("object").GetProperty("contentFingerprint").GetString());
+        }
     }
 
     [Fact]

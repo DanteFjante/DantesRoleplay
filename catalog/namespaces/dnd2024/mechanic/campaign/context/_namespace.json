@@ -1,0 +1,12 @@
+{
+  "id": "dnd2024.mechanic.campaign.context",
+  "owner": "dnd2024",
+  "description": "Reviewed namespace for the Campaign-to-World context projection.",
+  "allowedKinds": [
+    "mechanic"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "W03 admits the exact Campaign context projection for registered website reads; it does not authorize directory scans or identifier-derived World ownership."
+}

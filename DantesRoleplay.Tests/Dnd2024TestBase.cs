@@ -815,6 +815,7 @@ public abstract class Dnd2024TestBase
                          "game.core.world.root", "game.core.world.clock",
                          "game.core.world.fact", "game.core.campaign.root",
                          "game.core.campaign.character-participation",
+                         "game.core.campaign.location-visit",
                          "game.core.world.location", "game.core.world.faction", "game.core.world.route",
                          "game.core.world.route.availability", "game.core.world.traveller",
                          "game.core.media.visual", "game.core.world.media.visual", "game.core.rules.readable"

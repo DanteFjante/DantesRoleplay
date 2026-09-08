@@ -4,11 +4,14 @@ import { lazy, Suspense, useCallback, useEffect, useReducer, useRef, useState } 
 
 import {
   CAMPAIGN_SUMMARY_OBJECT_ID,
+  CAMPAIGN_LOCATION_VISITS_OBJECT_ID,
   FACTION_DIRECTORY_OBJECT_ID,
+  WORLD_CAMPAIGN_DIRECTORY_OBJECT_ID,
   type FactionDirectoryPage,
 } from "../data/object-resources";
 import { createHubObjectUiState, hubObjectUiReducer } from "../data/hub-object-ui";
 import { resolveCampaignWorldTarget } from "../data/campaign-navigation";
+import { HUB_ROUTE_EVENT, navigateHubRoute, parseHubRoute } from "../data/hub-route";
 import { ITEM_ROUTE_EVENT, navigateItemRoute, parseItemRoute } from "../data/item-view-route";
 import { applyDeferredHubUpdate, preserveLastGoodPartyData } from "../data/section-state";
 import { ViewReadError } from "../data/view-read-client";
@@ -159,18 +162,38 @@ export function DndInformationHub({
     return loadCharacter(envelope, id, signal);
   }, [envelope, loadCharacter]);
   const [itemRoute, setItemRoute] = useState(() => parseItemRoute(window.location.hash));
-  const [activeTab, setActiveTab] = useState<MainTabId>(() => parseItemRoute(window.location.hash).kind === "none" ? "world" : "party");
+  const [activeTab, setActiveTab] = useState<MainTabId>(() => {
+    const item = parseItemRoute(window.location.hash);
+    if (item.kind !== "none") return "party";
+    const route = parseHubRoute(window.location.hash);
+    return route.kind === "hub" ? route.tab : "world";
+  });
+  const [campaignSection, setCampaignSection] = useState<CampaignSectionId>(() => {
+    const route = parseHubRoute(window.location.hash);
+    return route.kind === "hub" ? route.campaignSection : "overview";
+  });
   useEffect(() => {
     const changed = () => {
       const next = parseItemRoute(window.location.hash);
       setItemRoute(next);
       if (next.kind !== "none") setActiveTab("party");
-      else if (window.history.state?.itemMainTab) setActiveTab(normalizeMainTab(window.history.state.itemMainTab) as MainTabId);
+      else {
+        const hub = parseHubRoute(window.location.hash);
+        if (hub.kind === "hub") {
+          setActiveTab(hub.tab);
+          setCampaignSection(hub.campaignSection);
+        } else if (window.history.state?.itemMainTab) {
+          setActiveTab(normalizeMainTab(window.history.state.itemMainTab) as MainTabId);
+        }
+      }
     };
-    for (const event of ["popstate", "hashchange", ITEM_ROUTE_EVENT]) window.addEventListener(event, changed);
-    return () => { for (const event of ["popstate", "hashchange", ITEM_ROUTE_EVENT]) window.removeEventListener(event, changed); };
+    for (const event of ["popstate", "hashchange", ITEM_ROUTE_EVENT, HUB_ROUTE_EVENT])
+      window.addEventListener(event, changed);
+    return () => {
+      for (const event of ["popstate", "hashchange", ITEM_ROUTE_EVENT, HUB_ROUTE_EVENT])
+        window.removeEventListener(event, changed);
+    };
   }, []);
-  const [campaignSection, setCampaignSection] = useState<CampaignSectionId>("overview");
   const [worldSection, setWorldSection] = useState<WorldSectionId>("overview");
   const [locationSection, setLocationSection] = useState<LocationSectionId>("details");
   const [selectedLocationId, setSelectedLocationId] = useState(initialEnvelope.world.currentLocationId);
@@ -206,7 +229,8 @@ export function DndInformationHub({
     };
     const objectChanged = (event: Event) => {
       const qualifiedId = (event as CustomEvent).detail?.object?.qualifiedId;
-      if (qualifiedId !== CAMPAIGN_SUMMARY_OBJECT_ID && qualifiedId !== FACTION_DIRECTORY_OBJECT_ID) return;
+      if (![CAMPAIGN_SUMMARY_OBJECT_ID, CAMPAIGN_LOCATION_VISITS_OBJECT_ID,
+        WORLD_CAMPAIGN_DIRECTORY_OBJECT_ID, FACTION_DIRECTORY_OBJECT_ID].includes(qualifiedId)) return;
       ++changeSequence.current;
       setPendingChange((current) => current === null || current === qualifiedId ? qualifiedId : "scope");
     };
@@ -546,12 +570,17 @@ export function DndInformationHub({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bootstrapGeneration]);
 
+  useEffect(() => {
+    if (activeTab === "campaign" && campaignSection !== "overview") void requestCampaignDetails();
+    // Navigation, including Back/Forward, owns lazy Campaign detail activation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, campaignSection]);
+
   function selectTab(tab: MainTabId) {
     const nextTab = normalizeMainTab(tab) as MainTabId;
     if (nextTab === activeTab) return;
-    if (itemRoute.kind !== "none") navigateItemRoute(null, false, null, nextTab);
+    navigateHubRoute(nextTab, campaignSection);
     setActiveTab(nextTab);
-    if (nextTab === "campaign" && campaignSection !== "overview") void requestCampaignDetails();
     if (nextTab === "world" && worldSection === "factions" && !envelope.world.factionDirectory)
       void requestFactionPage(null);
     setAnnouncement(`${nextTab === "current" ? "Current view" : nextTab} opened`);
@@ -568,8 +597,9 @@ export function DndInformationHub({
 
   function selectCampaignSection(section: CampaignSectionId) {
     const nextSection = normalizeCampaignSection(section) as CampaignSectionId;
+    if (nextSection === campaignSection) return;
+    navigateHubRoute("campaign", nextSection);
     setCampaignSection(nextSection);
-    if (nextSection !== "overview") void requestCampaignDetails();
     setAnnouncement(`Campaign ${nextSection === "log" ? "adventure log" : nextSection} opened`);
     focusViewHeading();
   }
@@ -580,6 +610,7 @@ export function DndInformationHub({
     setSelectedLocationId(locationId);
     setLocationSection("details");
     setWorldSection("locations");
+    navigateHubRoute("world");
     setActiveTab("world");
     setAnnouncement(`${location.name} opened from Campaign`);
     focusViewHeading();
@@ -775,7 +806,6 @@ export function DndInformationHub({
         <MainNavigation
           activeTab={activeTab}
           chapter={envelope.campaign.chapter}
-          progress={envelope.campaign.progress}
           onSelect={selectTab}
         />
         <main className="information-content" id="information-content">

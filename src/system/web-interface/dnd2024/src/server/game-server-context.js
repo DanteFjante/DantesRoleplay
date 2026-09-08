@@ -1,9 +1,15 @@
 import { createHubReadScope } from "./hub-read-scope.js";
 import { readCompletePages } from "./complete-pagination.js";
 import { readBoundedJson, readModelResponse } from "./read-model-response.js";
-import { contract as campaignSummaryContract } from "./campaign-summary-contract.js";
+import { projectRegisteredPartyReferences, readRegisteredCampaignSummary } from "./campaign-summary.js";
+import { contract as campaignContextContract } from "./campaign-context-contract.js";
+import { contract as campaignDetailsContract } from "./campaign-details-contract.js";
+import { contract as campaignLocationVisitsContract } from "./campaign-location-visits-contract.js";
+import { contract as worldCampaignDirectoryContract } from "./world-campaign-directory-contract.js";
 import { contract as characterDossierContract } from "./character-dossier-contract.js";
 import { contract as factionDirectoryContract } from "./faction-directory-contract.js";
+
+export { readRegisteredCampaignSummary } from "./campaign-summary.js";
 
 const TOKEN_MAXIMUM = 200;
 const LOCATION_COMPONENT_TYPE_ID = "game.core.world.location";
@@ -15,22 +21,9 @@ const WORLD_ROUTE_RELATIONSHIP_KINDS = {
   origin: "game.core.world.route.from",
   destination: "game.core.world.route.to",
 };
-const CAMPAIGN_ROOT_COMPONENT_TYPE_ID = "game.core.campaign.root";
 const CAMPAIGN_CURRENT_SCENE_COMPONENT_TYPE_ID = "game.core.campaign.current-scene";
 const CAMPAIGN_SCENE_AFFORDANCES_COMPONENT_TYPE_ID =
   "game.core.campaign.scene-affordances";
-const CAMPAIGN_CHAPTER_COMPONENT_TYPE_ID = "game.core.campaign.chapter";
-const CAMPAIGN_ARC_COMPONENT_TYPE_ID = "game.core.campaign.arc";
-const CAMPAIGN_SESSION_COMPONENT_TYPE_ID = "game.core.campaign.session";
-const CAMPAIGN_SESSION_RECAP_COMPONENT_TYPE_ID = "game.core.campaign.session-recap";
-const CAMPAIGN_LOCATION_VISIT_COMPONENT_TYPE_ID = "game.core.campaign.location-visit";
-const CAMPAIGN_HAS_SESSION_RELATIONSHIP_KIND = "game.core.campaign.has-session";
-const CAMPAIGN_HAS_LOCATION_VISIT_RELATIONSHIP_KIND =
-  "game.core.campaign.has-location-visit";
-const CAMPAIGN_LOCATION_VISIT_AT_LOCATION_RELATIONSHIP_KIND =
-  "game.core.campaign.location-visit.at-location";
-const CAMPAIGN_RECORD_WORLD_REFERENCE_RELATIONSHIP_KIND =
-  "game.core.campaign.record.references-world-entity";
 const WORLD_INTERACTION_COMPONENT_TYPE_ID = "game.core.world.interaction";
 const WORLD_INTERACTION_PARTICIPANT_RELATIONSHIP_KIND =
   "game.core.world.interaction.participant";
@@ -990,138 +983,6 @@ function campaignWorldId(campaignId) {
   return parts.length >= 3 && parts[0] === "campaign" ? token(parts[1]) : null;
 }
 
-function titleFromSlug(value) {
-  if (typeof value !== "string") return null;
-  const words = value.split(/[-_]/u).map((word) => word.trim()).filter(Boolean);
-  if (words.length === 0) return null;
-  return words.map((word) => `${word[0]?.toUpperCase() ?? ""}${word.slice(1).toLowerCase()}`).join(" ");
-}
-
-function worldIdentityForCampaign(campaignId) {
-  const worldKey = campaignWorldId(campaignId);
-  return worldKey
-    ? { id: `world.${worldKey}`, name: titleFromSlug(worldKey) ?? worldKey }
-    : null;
-}
-
-function fallbackContextSelection(campaignId) {
-  const world = worldIdentityForCampaign(campaignId);
-  if (!world) return null;
-  return {
-    selectedWorldId: world.id,
-    selectedCampaignId: campaignId,
-    worlds: [{
-      ...world,
-      campaigns: [{ id: campaignId, name: titleFromSlug(campaignId.split(".").at(-1)) ?? campaignId }],
-    }],
-  };
-}
-
-function selectContext(selection, campaignId) {
-  if (!selection || !campaignId) return null;
-  const world = selection.worlds.find((candidate) =>
-    candidate.campaigns.some((campaign) => campaign.id === campaignId));
-  return world ? { ...selection, selectedWorldId: world.id, selectedCampaignId: campaignId } : null;
-}
-
-function updateSelectedCampaignName(selection, campaign) {
-  if (!selection || !campaign) return selection;
-  return {
-    ...selection,
-    worlds: selection.worlds.map((world) => ({
-      ...world,
-      campaigns: world.campaigns.map((candidate) =>
-        candidate.id === campaign.id ? { ...candidate, name: campaign.name } : candidate),
-    })),
-  };
-}
-
-async function readContextSelection({
-  fetchImpl,
-  origin,
-  applicationId,
-  stateSpaceId,
-  boundCampaignId,
-  isGameMaster,
-}) {
-  const fallback = fallbackContextSelection(boundCampaignId);
-  if (!fallback || !isGameMaster) return fallback;
-
-  const listRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
-    `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities`;
-  const headers = { Accept: "application/json" };
-  const campaignCandidates = new Map();
-  const worldNames = new Map();
-  const directory = await readJsonPages({
-    fetchImpl, origin, path: listRoot, maximumPages: 1_000, maximumItems: 100_000,
-  });
-  if (directory.status !== "complete") {
-    return unavailableOnFirstPage(directory) ? fallback : { ...fallback, incomplete: true };
-  }
-
-  for (const item of directory.items) {
-    const id = token(typeof item?.entityId === "string" ? item.entityId : item?.id);
-    const name = text(item?.name, 200);
-    if (!id || !name) continue;
-    if (id.startsWith("world.")) worldNames.set(id, name);
-    if (id.startsWith("campaign.")) {
-      if (!campaignCandidates.has(id) && campaignCandidates.size >= 1_000) {
-        return { ...fallback, incomplete: true };
-      }
-      campaignCandidates.set(id, { id, name });
-    }
-  }
-
-  const verified = await Promise.all(Array.from(campaignCandidates.values()).map(async (candidate) => {
-    const componentPath = `${listRoot}/${encodeURIComponent(candidate.id)}` +
-      `/components/${CAMPAIGN_ROOT_COMPONENT_TYPE_ID}`;
-    try {
-      const response = await fetchImpl(url(origin, componentPath), { headers, cache: "no-store" });
-      if (!response?.ok) return null;
-      const payload = await json(response);
-      return componentValue(payload, candidate.id, CAMPAIGN_ROOT_COMPONENT_TYPE_ID)
-        ? candidate
-        : null;
-    } catch {
-      return null;
-    }
-  }));
-
-  const readableCampaigns = verified.filter(Boolean);
-  if (!readableCampaigns.some((campaign) => campaign.id === boundCampaignId)) {
-    const bound = fallback.worlds[0].campaigns[0];
-    readableCampaigns.push(bound);
-  }
-
-  const worlds = new Map();
-  for (const campaign of readableCampaigns) {
-    const identity = worldIdentityForCampaign(campaign.id);
-    if (!identity) continue;
-    const current = worlds.get(identity.id) ?? {
-      id: identity.id,
-      name: worldNames.get(identity.id) ?? identity.name,
-      campaigns: [],
-    };
-    if (!current.campaigns.some((candidate) => candidate.id === campaign.id)) {
-      current.campaigns.push({ id: campaign.id, name: campaign.name });
-    }
-    worlds.set(identity.id, current);
-  }
-
-  const orderedWorlds = Array.from(worlds.values())
-    .map((world) => ({
-      ...world,
-      campaigns: world.campaigns.sort((left, right) =>
-        left.name.localeCompare(right.name) || left.id.localeCompare(right.id)),
-    }))
-    .sort((left, right) => left.name.localeCompare(right.name) || left.id.localeCompare(right.id));
-  const selectedWorld = orderedWorlds.find((world) =>
-    world.campaigns.some((campaign) => campaign.id === boundCampaignId));
-  return selectedWorld
-    ? { selectedWorldId: selectedWorld.id, selectedCampaignId: boundCampaignId, worlds: orderedWorlds }
-    : fallback;
-}
-
 function isLocationEntity(item, worldId) {
   const candidateId = typeof item?.entityId === "string" ? item.entityId : (typeof item?.id === "string" ? item.id : null);
   return typeof candidateId === "string" && typeof item?.name === "string" && typeof worldId === "string"
@@ -1361,24 +1222,6 @@ async function readExactRelationshipTargets(
   return targets === null ? null : [...new Set(targets)];
 }
 
-function projectRegisteredPartyReferences(party) {
-  const actors = new Map();
-  for (const entry of party.filter((value) => value.status === "active")) {
-    // All identities come from one source-revision-bound object response. Never
-    // fall back to per-member requests or filter a failed join into a partial roster.
-    if (!Array.isArray(entry.actors) || entry.actors.length !== 1) return null;
-    const actor = entry.actors[0];
-    if (actors.has(actor.id) && actors.get(actor.id).name !== actor.name) return null;
-    actors.set(actor.id, actor);
-  }
-  return [...actors.values()].map((actor) => ({
-    ...actor,
-    state: "active",
-    current: false,
-    entries: [],
-    detailsDeferred: true,
-  }));
-}
 
 async function readSingleExactRelationshipTarget(
   fetchImpl,
@@ -1695,80 +1538,6 @@ export async function readCombatCurrentScene({
   };
 }
 
-async function campaignRecordWorldEntityIds({ fetchImpl, origin, relationshipRoot, recordId }) {
-  const path = `${relationshipRoot}?fromEntityId=${encodeURIComponent(recordId)}` +
-    `&qualifiedKind=${encodeURIComponent(CAMPAIGN_RECORD_WORLD_REFERENCE_RELATIONSHIP_KIND)}`;
-  const pages = await readJsonPages({
-    fetchImpl, origin, path, maximumPages: 10, maximumItems: 1_000,
-  });
-  if (pages.status !== "complete") return unavailableOnFirstPage(pages) ? [] : null;
-  const targets = relationshipTargetIds(
-    { items: pages.items },
-    recordId,
-    CAMPAIGN_RECORD_WORLD_REFERENCE_RELATIONSHIP_KIND,
-  );
-  return targets.length === pages.items.length ? [...new Set(targets)] : null;
-}
-
-async function readCampaignLocationVisits({
-  fetchImpl,
-  origin,
-  listRoot,
-  campaignId,
-  includeGmContext,
-}) {
-  if (!includeGmContext) return [];
-  try {
-    const visitIds = await readExactRelationshipTargets(
-      fetchImpl,
-      origin,
-      listRoot,
-      campaignId,
-      CAMPAIGN_HAS_LOCATION_VISIT_RELATIONSHIP_KIND,
-      { unavailableFirstPageIsEmpty: true },
-    );
-    if (visitIds === null) return null;
-    const visits = (await Promise.all(visitIds.map(async (visitId) => {
-      const componentPath = `${listRoot}/${encodeURIComponent(visitId)}` +
-        `/components/${CAMPAIGN_LOCATION_VISIT_COMPONENT_TYPE_ID}`;
-      try {
-        const [componentResponse, locationIds] = await Promise.all([
-          fetchImpl(url(origin, componentPath), { headers: { Accept: "application/json" }, cache: "no-store" }),
-          readExactRelationshipTargets(
-            fetchImpl,
-            origin,
-            listRoot,
-            visitId,
-            CAMPAIGN_LOCATION_VISIT_AT_LOCATION_RELATIONSHIP_KIND,
-            { unavailableFirstPageIsEmpty: true },
-          ),
-        ]);
-        if (!componentResponse?.ok) return null;
-        if (locationIds === null) return { incomplete: true };
-        const componentPayload = await json(componentResponse);
-        const value = campaignLocationVisit(componentValue(
-          componentPayload,
-          visitId,
-          CAMPAIGN_LOCATION_VISIT_COMPONENT_TYPE_ID,
-        ), includeGmContext);
-        return value && locationIds.length === 1
-          ? { id: visitId, locationId: locationIds[0], ...value }
-          : null;
-      } catch {
-        return null;
-      }
-    })));
-    if (visits.some((visit) => visit?.incomplete)) return null;
-    const completeVisits = visits.filter(Boolean);
-    const counts = new Map();
-    for (const visit of completeVisits) counts.set(visit.locationId, (counts.get(visit.locationId) ?? 0) + 1);
-    return completeVisits.filter((visit) => counts.get(visit.locationId) === 1)
-      .sort((left, right) => right.lastVisitedMinute - left.lastVisitedMinute || left.id.localeCompare(right.id));
-  } catch {
-    return null;
-  }
-}
-
 async function readWorldDirectory({
   fetchImpl,
   origin,
@@ -1910,167 +1679,6 @@ async function readWorldDirectory({
   };
 }
 
-function campaignChildType(entityId, campaignId) {
-  if (entityId.startsWith(`${campaignId}.chapter.`)) return "chapter";
-  if (entityId.startsWith(`${campaignId}.arc.`)) return "arc";
-  return null;
-}
-
-async function readCampaignStructure({
-  fetchImpl,
-  origin,
-  applicationId,
-  stateSpaceId,
-  campaignId,
-  includeGmContext,
-}) {
-  const empty = { chapters: [], arcs: [], sessions: [], visits: [] };
-  const incomplete = { ...empty, incomplete: true };
-  if (!applicationId || !stateSpaceId || !campaignId) return empty;
-  const listRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
-    `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities`;
-  const relationshipRoot = listRoot.replace(/\/entities$/u, "/relationships");
-  const headers = { Accept: "application/json" };
-  const candidates = new Map();
-  const directory = await readJsonPages({
-    fetchImpl, origin, path: listRoot, maximumPages: 1_000, maximumItems: 100_000,
-  });
-  if (directory.status !== "complete") return unavailableOnFirstPage(directory) ? empty : incomplete;
-  for (const item of directory.items) {
-    const id = token(typeof item?.entityId === "string" ? item.entityId : item?.id);
-    const kind = id ? campaignChildType(id, campaignId) : null;
-    if (!id || !kind) continue;
-    if (!candidates.has(id) && candidates.size >= 1_000) return incomplete;
-    candidates.set(id, {
-      id,
-      kind,
-      createdAtUtc: text(item?.createdAtUtc, 64),
-    });
-  }
-
-  const records = await Promise.all(Array.from(candidates.values()).map(async (candidate) => {
-    const typeId = candidate.kind === "chapter"
-      ? CAMPAIGN_CHAPTER_COMPONENT_TYPE_ID
-      : CAMPAIGN_ARC_COMPONENT_TYPE_ID;
-    const componentPath = `${listRoot}/${encodeURIComponent(candidate.id)}` +
-      `/components/${typeId}`;
-    try {
-      const response = await fetchImpl(url(origin, componentPath), { headers, cache: "no-store" });
-      if (!response?.ok) return null;
-      const payload = await json(response);
-      const parsed = componentValue(payload, candidate.id, typeId);
-      const value = candidate.kind === "chapter"
-        ? campaignChapter(parsed, includeGmContext)
-        : campaignArc(parsed, includeGmContext);
-      if (!value) return null;
-      const terminal = candidate.kind === "chapter"
-        ? value.status === "closed"
-        : value.status !== "active";
-      const worldEntityIds = includeGmContext && terminal
-        ? await campaignRecordWorldEntityIds({
-            fetchImpl, origin, relationshipRoot, recordId: candidate.id,
-          })
-        : [];
-      if (worldEntityIds === null) return { incomplete: true };
-      return {
-        kind: candidate.kind,
-        record: {
-          id: candidate.id,
-          createdAtUtc: candidate.createdAtUtc,
-          updatedAtUtc: text(payload?.updatedAtUtc, 64),
-          ...value,
-          ...(worldEntityIds.length > 0 ? { worldEntityIds } : {}),
-        },
-      };
-    } catch {
-      return null;
-    }
-  }));
-  if (records.some((record) => record?.incomplete)) return incomplete;
-
-  const compare = (left, right) =>
-    (left.createdAtUtc ?? "").localeCompare(right.createdAtUtc ?? "") || left.id.localeCompare(right.id);
-  let sessions = [];
-  if (includeGmContext) try {
-    const relationshipPath = `${relationshipRoot}` +
-      `?fromEntityId=${encodeURIComponent(campaignId)}` +
-      `&qualifiedKind=${encodeURIComponent(CAMPAIGN_HAS_SESSION_RELATIONSHIP_KIND)}`;
-    const relationshipPages = await readJsonPages({
-      fetchImpl, origin, path: relationshipPath, maximumPages: 10, maximumItems: 1_000,
-    });
-    if (relationshipPages.status !== "complete") {
-      if (!unavailableOnFirstPage(relationshipPages)) return incomplete;
-    }
-    const sessionIds = relationshipTargetIds(
-      { items: relationshipPages.items },
-      campaignId,
-      CAMPAIGN_HAS_SESSION_RELATIONSHIP_KIND,
-    );
-    if (sessionIds.length !== relationshipPages.items.length) return incomplete;
-    sessions = (await Promise.all(sessionIds.map(async (sessionId) => {
-      const componentRoot = `${listRoot}/${encodeURIComponent(sessionId)}/components`;
-      try {
-        const [sessionResponse, recapResponse] = await Promise.all([
-          fetchImpl(url(origin, `${componentRoot}/${CAMPAIGN_SESSION_COMPONENT_TYPE_ID}`),
-            { headers, cache: "no-store" }),
-          fetchImpl(url(origin, `${componentRoot}/${CAMPAIGN_SESSION_RECAP_COMPONENT_TYPE_ID}`),
-            { headers, cache: "no-store" }).catch(() => null),
-        ]);
-        if (!sessionResponse?.ok) return null;
-        const [sessionPayload, recapPayload] = await Promise.all([
-          json(sessionResponse),
-          recapResponse?.ok ? json(recapResponse) : Promise.resolve(null),
-        ]);
-        const session = campaignSession(componentValue(
-          sessionPayload,
-          sessionId,
-          CAMPAIGN_SESSION_COMPONENT_TYPE_ID,
-        ));
-        if (!session) return null;
-        const recap = session.status === "ended"
-          ? campaignSessionRecap(componentValue(
-            recapPayload,
-            sessionId,
-            CAMPAIGN_SESSION_RECAP_COMPONENT_TYPE_ID,
-          ))
-          : null;
-        if (session.status === "ended" && !recap) return null;
-        const worldEntityIds = session.status === "ended"
-          ? await campaignRecordWorldEntityIds({ fetchImpl, origin, relationshipRoot, recordId: sessionId })
-          : [];
-        if (worldEntityIds === null) return { incomplete: true };
-        return {
-          id: sessionId,
-          ...session,
-          updatedAtUtc: text(sessionPayload?.updatedAtUtc, 64),
-          ...(recap ? { recap } : {}),
-          ...(worldEntityIds.length > 0 ? { worldEntityIds } : {}),
-        };
-      } catch {
-        return null;
-      }
-    })));
-    if (sessions.some((session) => session?.incomplete)) return incomplete;
-    sessions = sessions.filter(Boolean)
-      .sort((left, right) => left.ordinal - right.ordinal || left.id.localeCompare(right.id));
-  } catch {
-    return incomplete;
-  }
-  const visits = await readCampaignLocationVisits({
-    fetchImpl,
-    origin,
-    listRoot,
-    campaignId,
-    includeGmContext,
-  });
-  if (visits === null) return incomplete;
-  return {
-    chapters: records.filter((value) => value?.kind === "chapter").map((value) => value.record).sort(compare),
-    arcs: records.filter((value) => value?.kind === "arc").map((value) => value.record).sort(compare),
-    sessions,
-    visits,
-  };
-}
 
 /**
  * Reads the host-selected application/state-space/seat binding and a server-validated campaign
@@ -2146,75 +1754,55 @@ async function readGameServerContextCore({
   if (requestedCampaignId !== null && !requestedCampaign) {
     return denied("That campaign is not available to this local table.");
   }
-  const contextSelection = (!requestedCampaign || requestedCampaign === binding.campaignId)
-    ? fallbackContextSelection(binding.campaignId)
-    : await readContextSelection({
-      fetchImpl,
-      origin,
-      applicationId: binding.applicationId,
-      stateSpaceId: binding.stateSpaceId,
-      boundCampaignId: binding.campaignId,
-      isGameMaster: serverRole.role === "game-master",
-    });
-  if (contextSelection?.incomplete) {
-    return unavailable("The campaign directory could not be loaded completely. Please try again.");
-  }
-  const selectedContext = selectContext(contextSelection, requestedCampaign ?? binding.campaignId);
-  if (!selectedContext) {
+  if (!isGameMaster && requestedCampaign && requestedCampaign !== binding.campaignId) {
     return denied("That campaign is not available to this local table.");
   }
-  const selectedCampaignId = selectedContext.selectedCampaignId;
+  const selectedCampaignId = requestedCampaign ?? binding.campaignId;
 
   const root = `/api/applications/${encodeURIComponent(binding.applicationId)}` +
     `/state-spaces/${encodeURIComponent(binding.stateSpaceId)}/entities`;
-  let campaignResponse;
   let actorResponse;
-  let campaignSummaryRead;
+  let registeredCampaign;
+  let campaignContextRead;
   try {
-    [campaignResponse, actorResponse, campaignSummaryRead] = await Promise.all([
-      fetchImpl(url(origin, `${root}/${encodeURIComponent(selectedCampaignId)}`), {
-        headers: { Accept: "application/json" }, cache: "no-store",
+    [campaignContextRead, actorResponse, registeredCampaign] = await Promise.all([
+      readRegisteredCampaignContext({
+        fetchImpl, origin, applicationId: binding.applicationId, stateSpaceId: binding.stateSpaceId,
+        campaignId: selectedCampaignId,
+        endpointEntityId: shouldReadBoundActor ? binding.actorId : selectedCampaignId,
+        perspective: effectivePerspective,
       }),
       shouldReadBoundActor
         ? fetchImpl(url(origin, `${root}/${encodeURIComponent(binding.actorId)}`), {
           headers: { Accept: "application/json" }, cache: "no-store",
         })
         : Promise.resolve(null),
-      readModelResponse({
-        fetchImpl,
-        resource: url(origin, `${root}/${encodeURIComponent(selectedCampaignId)}/read-models/` +
-          `${encodeURIComponent(campaignSummaryContract.id)}?` + new URLSearchParams({
-            perspective: contextAudience.perspective ?? "player", campaignId: selectedCampaignId, limit: "20",
-          })),
-        init: { headers: { Accept: "application/json" }, cache: "no-store" },
-        applicationId: binding.applicationId,
-        stateSpaceId: binding.stateSpaceId,
-        query: campaignSummaryContract,
-        maximumBodyBytes: 70_000,
-        maximumDataBytes: 65_536,
-        statusPolicy: { ready: [200], unavailable: "remaining" },
-        validate: (value) => registeredCampaignSummary(value, null, effectivePerspective) !== null,
+      readRegisteredCampaignSummary({
+        fetchImpl, origin, applicationId: binding.applicationId, stateSpaceId: binding.stateSpaceId,
+        campaignId: selectedCampaignId, perspective: effectivePerspective,
       }),
     ]);
   } catch {
     return unavailable("The campaign binding was found, but the game state could not be read.");
   }
 
-  const [campaign, actor] = await Promise.all([
-    json(campaignResponse),
-    json(actorResponse),
-  ]);
-  const campaignEntity = campaignResponse?.ok ? entity(campaign, selectedCampaignId) : null;
-  const registeredCampaign = campaignSummaryRead.status === "ready"
-    ? registeredCampaignSummary(campaignSummaryRead.data, campaignSummaryRead.evidence, effectivePerspective)
-    : null;
+  const actor = await json(actorResponse);
+  const campaignEntity = campaignContextRead?.campaign ?? null;
+  const selectedContext = campaignContextRead ? {
+    selectedWorldId: campaignContextRead.world.id,
+    selectedCampaignId,
+    worlds: [{
+      ...campaignContextRead.world,
+      campaigns: [campaignContextRead.campaign],
+    }],
+  } : null;
   const boundActorEntity = shouldReadBoundActor && actorResponse?.ok
     ? entity(actor, binding.actorId)
     : null;
   const actorEntity = isGameMaster
     ? { id: "local-game-master", name: "Dungeon Master" }
     : boundActorEntity;
-  if (!campaignEntity || !actorEntity || !registeredCampaign) {
+  if (!campaignEntity || !selectedContext || !actorEntity || !registeredCampaign) {
     return unavailable("The campaign binding no longer matches readable game state.");
   }
   if (!registeredCampaign.complete || registeredCampaign.totalCount !== registeredCampaign.party.length) {
@@ -2245,7 +1833,7 @@ async function readGameServerContextCore({
     applicationId: binding.applicationId,
     stateSpaceId: binding.stateSpaceId,
     audience: contextAudience,
-    contextSelection: updateSelectedCampaignName(selectedContext, campaignEntity),
+    contextSelection: selectedContext,
     campaign: {
       ...campaignEntity,
       name: registeredCampaign.title,
@@ -2369,58 +1957,259 @@ async function resolveCurrentSituation({
   return { currentSituation, currentLocationId, knownRoutes };
 }
 
-function registeredCampaignSummary(data, projection, perspective) {
-  if (!hasExactKeys(data, ["status", "title", "premise", "partyGoals", "toneAndBoundaries", "party",
-    "totalCount", "complete", "nextCursor"]) || data.status !== "active") return null;
-  const title = text(data.title, 160);
-  const premise = text(data.premise, 1_000);
-  const partyGoals = textList(data.partyGoals, 3, 500);
-  const toneAndBoundaries = textList(data.toneAndBoundaries, 8, 300);
-  if (!title || !premise || partyGoals.length === 0 || toneAndBoundaries.length === 0 ||
-      !Array.isArray(data.party) || data.party.length > 20 || !Number.isInteger(data.totalCount) ||
-      data.totalCount < data.party.length || data.totalCount > 20 || typeof data.complete !== "boolean" ||
-      !(data.nextCursor === null || token(data.nextCursor)) || data.complete !== (data.nextCursor === null)) return null;
-  const party = data.party.map((entry) => {
-    // v2 participation-only records remain readable, but cannot satisfy a DM actor roster.
-    const fields = ["id", "name", "status", ...(Object.hasOwn(entry ?? {}, "actors") ? ["actors"] : [])];
-    if (!hasExactKeys(entry, fields) || !token(entry.id) || !text(entry.name, 400) ||
-        !["active", "withdrawn"].includes(entry.status)) return null;
-    if (Object.hasOwn(entry, "actors") && (!Array.isArray(entry.actors) || entry.actors.length > 1 ||
-        perspective !== "dm" && entry.actors.length !== 0 || entry.actors.some(actor =>
-          !hasExactKeys(actor, ["id", "name"]) || !token(actor.id) || !text(actor.name, 400)))) return null;
-    return { id: entry.id, name: entry.name, status: entry.status,
-      ...(Object.hasOwn(entry, "actors") ? { actors: entry.actors.map(actor => ({ id: actor.id, name: actor.name })) } : {}) };
-  });
-  if (party.some((entry) => entry === null) || new Set(party.map((entry) => entry.id)).size !== party.length)
-    return null;
-  return { status: data.status, title, premise, partyGoals, toneAndBoundaries, party,
-    totalCount: data.totalCount, complete: data.complete, nextCursor: data.nextCursor, projection };
+
+function registeredCampaignContext(data, projection, campaignId) {
+  if (!hasExactKeys(data, ["version", "campaignId", "worldId", "campaign", "world"]) ||
+      data.version !== 1 || token(data.campaignId) !== campaignId) return null;
+  const worldId = token(data.worldId);
+  const campaign = hasExactKeys(data.campaign, ["id", "name"])
+    ? { id: token(data.campaign.id), name: text(data.campaign.name, 400) }
+    : null;
+  const world = hasExactKeys(data.world, ["id", "name"])
+    ? { id: token(data.world.id), name: text(data.world.name, 400) }
+    : null;
+  return worldId && campaign?.id === campaignId && campaign.name && world?.id === worldId && world.name
+    ? { version: 1, campaignId, worldId, campaign, world, projection }
+    : null;
 }
 
-/** Reads the registered Campaign summary without loading its deeper narrative records. */
-/** @param {{fetchImpl?: typeof fetch, origin: string, applicationId: string, stateSpaceId: string, campaignId: string, perspective: string}} options */
-export async function readRegisteredCampaignSummary({
+/** Reads the selected Campaign and its exact declared World from a registered read model. */
+export async function readRegisteredCampaignContext({
+  fetchImpl = fetch, origin, applicationId, stateSpaceId, campaignId,
+  endpointEntityId = campaignId, perspective,
+}) {
+  const entityRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
+    `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities`;
+  const parameters = new URLSearchParams({ perspective, campaignId });
+  const result = await readModelResponse({
+    fetchImpl,
+    resource: url(origin, `${entityRoot}/${encodeURIComponent(endpointEntityId)}` +
+      `/read-models/${encodeURIComponent(campaignContextContract.id)}?${parameters}`),
+    init: { headers: { Accept: "application/json" }, cache: "no-store" },
+    applicationId,
+    stateSpaceId,
+    query: campaignContextContract,
+    maximumBodyBytes: 70_000,
+    maximumDataBytes: 65_536,
+    statusPolicy: { ready: [200], forbidden: [403], unavailable: "remaining" },
+    validate: (value) => registeredCampaignContext(value, null, campaignId) !== null,
+  });
+  return result.status === "ready"
+    ? registeredCampaignContext(result.data, result.evidence, campaignId)
+    : null;
+}
+
+function registeredCampaignDetails(data, projection, campaignId, perspective) {
+  if (!hasExactKeys(data, ["version", "campaignId", "chapters", "arcs", "sessions"]) ||
+      data.version !== 1 || token(data.campaignId) !== campaignId ||
+      !Array.isArray(data.chapters) || data.chapters.length > 100 ||
+      !Array.isArray(data.arcs) || data.arcs.length > 100 ||
+      !Array.isArray(data.sessions) || data.sessions.length > 100 ||
+      (perspective !== "dm" && data.sessions.length !== 0)) return null;
+  const includeGmContext = perspective === "dm";
+  const chapters = data.chapters.map((item) => {
+    const optional = ["closingSummary", ...(includeGmContext ? ["gmContext"] : [])]
+      .filter((key) => Object.hasOwn(item ?? {}, key));
+    if (!hasExactKeys(item, ["id", "name", "status", "title", "partyQuestion", ...optional]) ||
+        (!includeGmContext && Object.hasOwn(item, "gmContext"))) return null;
+    const id = token(item.id);
+    const name = text(item.name, 400);
+    const record = campaignChapter(item, includeGmContext);
+    return id && name && record ? { id, name, ...record } : null;
+  });
+  const arcs = data.arcs.map((item) => {
+    const optional = ["closingSummary", ...(includeGmContext ? ["gmContext"] : [])]
+      .filter((key) => Object.hasOwn(item ?? {}, key));
+    if (!hasExactKeys(item, ["id", "name", "status", "title", "partyStake", ...optional]) ||
+        (!includeGmContext && Object.hasOwn(item, "gmContext"))) return null;
+    const id = token(item.id);
+    const name = text(item.name, 400);
+    const record = campaignArc(item, includeGmContext);
+    return id && name && record ? { id, name, ...record } : null;
+  });
+  const sessions = data.sessions.map((item) => {
+    const optional = Object.hasOwn(item ?? {}, "recap") ? ["recap"] : [];
+    if (!hasExactKeys(item, ["id", "name", "status", "ordinal", ...optional])) return null;
+    const id = token(item.id);
+    const name = text(item.name, 400);
+    const record = campaignSession(item);
+    const recap = item.recap === undefined ? null : campaignSessionRecap(item.recap);
+    if (!id || !name || !record || (item.recap !== undefined && !recap) ||
+        (record.status === "ended" && !recap)) return null;
+    return { id, name, ...record, ...(recap ? { recap } : {}) };
+  });
+  const all = [...chapters, ...arcs, ...sessions];
+  if (all.some((item) => item === null) || new Set(all.map((item) => item.id)).size !== all.length)
+    return null;
+  return { version: 1, campaignId, chapters, arcs, sessions, projection };
+}
+
+/** Reads the bounded Campaign chapter, arc, and session read model. */
+export async function readRegisteredCampaignDetails({
   fetchImpl = fetch, origin, applicationId, stateSpaceId, campaignId, perspective,
 }) {
   const entityRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
     `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities`;
-  const parameters = new URLSearchParams({ perspective, campaignId, limit: "20" });
+  const parameters = new URLSearchParams({ perspective, campaignId });
   const result = await readModelResponse({
     fetchImpl,
     resource: url(origin, `${entityRoot}/${encodeURIComponent(campaignId)}` +
-      `/read-models/${encodeURIComponent(campaignSummaryContract.id)}?${parameters}`),
+      `/read-models/${encodeURIComponent(campaignDetailsContract.id)}?${parameters}`),
     init: { headers: { Accept: "application/json" }, cache: "no-store" },
     applicationId,
     stateSpaceId,
-    query: campaignSummaryContract,
-    maximumBodyBytes: 70_000,
-    maximumDataBytes: 65_536,
-    statusPolicy: { ready: [200], unavailable: "remaining" },
-    validate: (value) => registeredCampaignSummary(value, null, perspective) !== null,
+    query: campaignDetailsContract,
+    maximumBodyBytes: 524_288,
+    maximumDataBytes: 500_000,
+    statusPolicy: { ready: [200], forbidden: [403], unavailable: "remaining" },
+    validate: (value) => registeredCampaignDetails(value, null, campaignId, perspective) !== null,
   });
   return result.status === "ready"
-    ? registeredCampaignSummary(result.data, result.evidence, perspective)
+    ? registeredCampaignDetails(result.data, result.evidence, campaignId, perspective)
     : null;
+}
+
+function registeredCampaignVisitPage(data, projection) {
+  if (!hasExactKeys(data, ["campaignTitle", "visits", "totalCount", "complete", "nextCursor"]) ||
+      !text(data.campaignTitle, 160) || !Array.isArray(data.visits) || data.visits.length > 25 ||
+      !Number.isInteger(data.totalCount) || data.totalCount < data.visits.length || data.totalCount > 256 ||
+      typeof data.complete !== "boolean" || !(data.nextCursor === null || token(data.nextCursor)) ||
+      data.complete !== (data.nextCursor === null)) return null;
+  const visits = data.visits.map((item) => {
+    const optional = Object.hasOwn(item ?? {}, "gmContext") ? ["gmContext"] : [];
+    if (!hasExactKeys(item, ["id", "name", "firstVisitedMinute", "lastVisitedMinute", "visitCount",
+      "status", "summary", "memory", "locations", ...optional]) ||
+      !Array.isArray(item.locations) || item.locations.length !== 1 ||
+      !hasExactKeys(item.locations[0], ["id", "name"])) return null;
+    const id = token(item.id);
+    const name = text(item.name, 400);
+    const locationId = token(item.locations[0].id);
+    const locationName = text(item.locations[0].name, 400);
+    const record = campaignLocationVisit(item, true);
+    return id && name && locationId && locationName && record
+      ? { id, name, ...record, locationId, locationName }
+      : null;
+  });
+  if (visits.some((item) => item === null) || new Set(visits.map((item) => item.id)).size !== visits.length)
+    return null;
+  return {
+    visits,
+    totalCount: data.totalCount,
+    complete: data.complete,
+    nextCursor: data.nextCursor,
+    sourceRevisionFingerprint: projection?.sourceRevisionFingerprint ?? null,
+    projection,
+  };
+}
+
+export async function readRegisteredCampaignVisitPage({
+  fetchImpl = fetch, origin, applicationId, stateSpaceId, campaignId, cursor = null,
+  expectedSourceRevision = null,
+}) {
+  const entityRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
+    `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities`;
+  const parameters = new URLSearchParams({ perspective: "dm", campaignId, limit: "25" });
+  if (cursor) parameters.set("cursor", cursor);
+  const result = await readModelResponse({
+    fetchImpl,
+    resource: url(origin, `${entityRoot}/${encodeURIComponent(campaignId)}` +
+      `/read-models/${encodeURIComponent(campaignLocationVisitsContract.id)}?${parameters}`),
+    init: { headers: { Accept: "application/json" }, cache: "no-store" },
+    applicationId,
+    stateSpaceId,
+    query: campaignLocationVisitsContract,
+    maximumBodyBytes: 300_000,
+    maximumDataBytes: 262_144,
+    statusPolicy: { ready: [200], forbidden: [403], stale: [409], unavailable: "remaining" },
+    expectedSourceRevision,
+    validate: (value) => registeredCampaignVisitPage(value, null) !== null,
+  });
+  return result.status === "ready" ? registeredCampaignVisitPage(result.data, result.evidence) : null;
+}
+
+function registeredWorldCampaignPage(data, projection, worldId) {
+  if (!hasExactKeys(data, ["worldSummary", "selectedWorld", "campaigns", "totalCount", "complete", "nextCursor"]) ||
+      !text(data.worldSummary, 1_000) || !hasExactKeys(data.selectedWorld, ["id", "name"]) ||
+      token(data.selectedWorld.id) !== worldId || !text(data.selectedWorld.name, 400) ||
+      !Array.isArray(data.campaigns) || data.campaigns.length > 25 ||
+      !Number.isInteger(data.totalCount) || data.totalCount < data.campaigns.length || data.totalCount > 256 ||
+      typeof data.complete !== "boolean" || !(data.nextCursor === null || token(data.nextCursor)) ||
+      data.complete !== (data.nextCursor === null)) return null;
+  const campaigns = data.campaigns.map((item) => {
+    if (!hasExactKeys(item, ["id", "name", "status", "title", "premise", "partyGoals",
+      "toneAndBoundaries", "rulesetScope", "creationMethod", "reviewFingerprint"]) ||
+      item.status !== "active" || item.rulesetScope !== "dnd2024" || item.creationMethod !== "manual" ||
+      !/^[a-f0-9]{64}$/u.test(item.reviewFingerprint)) return null;
+    const id = token(item.id);
+    const name = text(item.name, 400);
+    return id && name && text(item.title, 160) && text(item.premise, 1_000) &&
+      textList(item.partyGoals, 3, 500).length > 0 &&
+      textList(item.toneAndBoundaries, 8, 300).length > 0 ? { id, name } : null;
+  });
+  if (campaigns.some((item) => item === null) ||
+      new Set(campaigns.map((item) => item.id)).size !== campaigns.length) return null;
+  return {
+    world: { id: worldId, name: data.selectedWorld.name }, campaigns,
+    totalCount: data.totalCount, complete: data.complete, nextCursor: data.nextCursor,
+    sourceRevisionFingerprint: projection?.sourceRevisionFingerprint ?? null, projection,
+  };
+}
+
+export async function readRegisteredWorldCampaignPage({
+  fetchImpl = fetch, origin, applicationId, stateSpaceId, campaignId, worldId, cursor = null,
+  expectedSourceRevision = null,
+}) {
+  const entityRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
+    `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities`;
+  const parameters = new URLSearchParams({ perspective: "dm", campaignId, worldId, limit: "25" });
+  if (cursor) parameters.set("cursor", cursor);
+  const result = await readModelResponse({
+    fetchImpl,
+    resource: url(origin, `${entityRoot}/${encodeURIComponent(worldId)}` +
+      `/read-models/${encodeURIComponent(worldCampaignDirectoryContract.id)}?${parameters}`),
+    init: { headers: { Accept: "application/json" }, cache: "no-store" },
+    applicationId,
+    stateSpaceId,
+    query: worldCampaignDirectoryContract,
+    maximumBodyBytes: 300_000,
+    maximumDataBytes: 262_144,
+    statusPolicy: { ready: [200], forbidden: [403], stale: [409], unavailable: "remaining" },
+    expectedSourceRevision,
+    validate: (value) => registeredWorldCampaignPage(value, null, worldId) !== null,
+  });
+  return result.status === "ready"
+    ? registeredWorldCampaignPage(result.data, result.evidence, worldId)
+    : null;
+}
+
+async function readAllRegisteredPages(readPage, itemKey) {
+  const items = [];
+  const seenIds = new Set();
+  const seenCursors = new Set();
+  let cursor = null;
+  let expectedSourceRevision = null;
+  let expectedTotalCount = null;
+  let identity = null;
+  for (let pageNumber = 0; pageNumber < 11; pageNumber += 1) {
+    const page = await readPage(cursor, expectedSourceRevision);
+    if (!page || (expectedTotalCount !== null && page.totalCount !== expectedTotalCount)) return null;
+    expectedTotalCount = page.totalCount;
+    expectedSourceRevision ??= page.sourceRevisionFingerprint;
+    if (identity && page.world && (identity.id !== page.world.id || identity.name !== page.world.name)) return null;
+    identity ??= page.world ?? null;
+    for (const item of page[itemKey]) {
+      if (seenIds.has(item.id) || items.length >= 256) return null;
+      seenIds.add(item.id);
+      items.push(item);
+    }
+    if (page.nextCursor === null) {
+      return items.length === expectedTotalCount ? { items, identity, sourceRevisionFingerprint: expectedSourceRevision } : null;
+    }
+    if (seenCursors.has(page.nextCursor)) return null;
+    seenCursors.add(page.nextCursor);
+    cursor = page.nextCursor;
+  }
+  return null;
 }
 
 function registeredFactionDirectoryPage(data, projection) {
@@ -2504,18 +2293,34 @@ export async function readRegisteredFactionDirectoryPage({
     : null;
 }
 
-/** Lazily retains the legacy campaign-record adapter until its records receive registered objects. */
+/** Loads Campaign narrative records from registered read models only. */
 /** @param {{fetchImpl?: typeof fetch, origin: string, source: any}} options */
 /** @returns {Promise<any>} */
 export async function readDeferredCampaignDetails({ fetchImpl = fetch, origin, source }) {
-  return readCampaignStructure({
-    fetchImpl,
-    origin,
-    applicationId: source.applicationId,
-    stateSpaceId: source.stateSpaceId,
-    campaignId: source.campaign.id,
-    includeGmContext: source.audience.perspective === "dm",
-  });
+  const options = {
+    fetchImpl, origin, applicationId: source.applicationId, stateSpaceId: source.stateSpaceId,
+    campaignId: source.campaign.id, perspective: source.audience.perspective ?? "player",
+  };
+  const [details, visitPages] = await Promise.all([
+    readRegisteredCampaignDetails(options),
+    options.perspective === "dm"
+      ? readAllRegisteredPages(
+        (cursor, expectedSourceRevision) => readRegisteredCampaignVisitPage({
+          ...options, cursor, expectedSourceRevision,
+        }),
+        "visits",
+      )
+      : Promise.resolve({ items: [] }),
+  ]);
+  if (!details || !visitPages) throw new Error("The campaign details are incomplete.");
+  if (new Set(visitPages.items.map((visit) => visit.locationId)).size !== visitPages.items.length)
+    throw new Error("The campaign location visits are ambiguous.");
+  return {
+    chapters: details.chapters,
+    arcs: details.arcs,
+    sessions: details.sessions,
+    visits: visitPages.items,
+  };
 }
 
 /**
@@ -2564,10 +2369,30 @@ export async function readDeferredHubSection({ fetchImpl = fetch, origin, source
   };
   const patch = {};
   if (section === "context") {
-    const selection = await readContextSelection({ ...options, boundCampaignId: campaignId,
-      isGameMaster: source.audience.seat === "dm" });
-    if (!selection || selection.incomplete) throw new Error("The campaign directory is incomplete.");
-    patch.contextSelection = updateSelectedCampaignName(selection, source.campaign);
+    if (source.audience.seat !== "dm") {
+      patch.contextSelection = source.contextSelection;
+    } else {
+      const directory = await readAllRegisteredPages(
+        (cursor, expectedSourceRevision) => readRegisteredWorldCampaignPage({
+          fetchImpl: read,
+          origin,
+          applicationId,
+          stateSpaceId,
+          campaignId,
+          worldId: source.contextSelection.selectedWorldId,
+          cursor,
+          expectedSourceRevision,
+        }),
+        "campaigns",
+      );
+      if (!directory?.identity || !directory.items.some((item) => item.id === campaignId))
+        throw new Error("The campaign directory is incomplete.");
+      patch.contextSelection = {
+        selectedWorldId: directory.identity.id,
+        selectedCampaignId: campaignId,
+        worlds: [{ ...directory.identity, campaigns: directory.items }],
+      };
+    }
   } else if (section === "history" || section === "lore") {
     if (section === "lore" && preview)
       throw new Error("Campaign knowledge is unavailable in Player preview; an Actor binding is required.");

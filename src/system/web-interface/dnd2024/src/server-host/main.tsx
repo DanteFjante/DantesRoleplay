@@ -4,6 +4,9 @@ import { createRoot } from "react-dom/client";
 import { BootstrapShell } from "../components/BootstrapShell";
 import {
   TableResourceOwner,
+  type CampaignContextObjectRequest,
+  type CampaignContextUpdate,
+  type CampaignDetailsObjectRequest,
   type FactionObjectRequest,
 } from "../data/object-resources";
 import { resolveHubSurface } from "../data/hub-availability.js";
@@ -112,6 +115,8 @@ async function readEnvelope(
 const tableResources = new TableResourceOwner({
   readCampaign: ({ perspective, campaignId }, signal) => readEnvelope(perspective, campaignId, signal),
   readFactionPage: readFactionObjectPage,
+  readCampaignDetails: readCampaignDetailsObject,
+  readCampaignContext: readCampaignContextObject,
   validateCampaign: isHubEnvelope,
 });
 
@@ -212,8 +217,8 @@ async function loadFactionPage(envelope: ReadyHubEnvelope, cursor: string | null
   return tableResources.loadFactionPage({ envelope, cursor }, signal);
 }
 
-async function loadCampaignDetails(
-  envelope: ReadyHubEnvelope,
+async function readCampaignDetailsObject(
+  { envelope }: CampaignDetailsObjectRequest,
   signal: AbortSignal,
 ): Promise<CampaignReadModel> {
   const source = characterSources.get(characterScope(envelope.stateSpaceId,
@@ -240,6 +245,10 @@ async function loadCampaignDetails(
   }).campaign;
 }
 
+async function loadCampaignDetails(envelope: ReadyHubEnvelope, signal: AbortSignal) {
+  return tableResources.loadCampaignDetails({ envelope }, signal);
+}
+
 async function loadEnvelope(
   perspective: Perspective,
   campaignId?: string,
@@ -247,8 +256,8 @@ async function loadEnvelope(
   return tableResources.loadCampaign({ perspective, campaignId });
 }
 
-async function loadDeferredSection(
-  envelope: ReadyHubEnvelope,
+async function readDeferredSectionObject(
+  { envelope }: CampaignContextObjectRequest,
   section: DeferredHubSection,
   signal: AbortSignal,
 ): Promise<DeferredHubUpdate> {
@@ -271,6 +280,25 @@ async function loadDeferredSection(
   const updated = { ...latest, ...patch };
   characterSources.set(key, updated);
   return connectedCampaignToDeferredHubUpdate({ ...updated, rules: [] }, section);
+}
+
+async function readCampaignContextObject(
+  request: CampaignContextObjectRequest,
+  signal: AbortSignal,
+): Promise<CampaignContextUpdate> {
+  const update = await readDeferredSectionObject(request, "context", signal);
+  if (update.section !== "context") throw new Error("The campaign context response is incompatible.");
+  return update;
+}
+
+async function loadDeferredSection(
+  envelope: ReadyHubEnvelope,
+  section: DeferredHubSection,
+  signal: AbortSignal,
+): Promise<DeferredHubUpdate> {
+  return section === "context"
+    ? tableResources.loadCampaignContext({ envelope }, signal)
+    : readDeferredSectionObject({ envelope }, section, signal);
 }
 
 async function loadRulesReference(): Promise<RuleReadModel[]> {

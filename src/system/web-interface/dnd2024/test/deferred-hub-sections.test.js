@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readDeferredHubSection } from "../src/server/game-server-context.js";
+import { contract as worldCampaignDirectoryContract } from "../src/server/world-campaign-directory-contract.js";
 
 const origin = "http://localhost:6217";
 const source = {
@@ -134,24 +135,41 @@ test("Current reuses loaded authorized locations and resolves the existing curre
   assert.ok(calls.every((target) => !target.pathname.endsWith("/entities")));
 });
 
-test("context discovery follows every continuation without hydrating characters or worlds", async () => {
+test("context discovery follows every registered continuation without hydrating entities", async () => {
   const calls = [];
   const result = await readDeferredHubSection({
     origin, section: "context", source,
     fetchImpl: async (input) => {
       const target = new URL(input); calls.push(target);
-      if (target.pathname.endsWith("/entities")) {
-        const second = target.searchParams.has("cursor");
-        return response({ items: [{ entityId: second ? "campaign.other.fixture" : source.campaign.id,
-          name: second ? "Other campaign" : "Fixture" }], nextCursor: second ? null : "next" });
-      }
-      assert.ok(target.pathname.endsWith("/components/game.core.campaign.root"));
-      return component(target.pathname.split("/").at(-3), "game.core.campaign.root", { status: "active" });
+      assert.match(target.pathname, /dnd2024\.query\.world-campaign-directory/u);
+      const second = target.searchParams.has("cursor");
+      const campaign = {
+        id: second ? "campaign.caldris.other" : source.campaign.id,
+        name: second ? "Other campaign" : "Fixture",
+        status: "active", title: second ? "Other campaign" : "Fixture",
+        premise: "A bounded campaign.", partyGoals: ["Continue."],
+        toneAndBoundaries: ["Keep it safe."], rulesetScope: "dnd2024",
+        creationMethod: "manual", reviewFingerprint: "a".repeat(64),
+      };
+      return response({
+        applicationId: "dnd2024", stateSpaceId: "state.fixture",
+        qualifiedQueryId: worldCampaignDirectoryContract.id,
+        stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
+        outputSchemaHash: worldCampaignDirectoryContract.outputSchemaHash,
+        resultFingerprint: "3".repeat(64), sourceRevisionFingerprint: "4".repeat(64),
+        data: {
+          worldSummary: "A fixture world.", selectedWorld: { id: "world.caldris", name: "Caldris" },
+          campaigns: [campaign], totalCount: 2, complete: second, nextCursor: second ? null : "next",
+        },
+      });
     },
   });
-  assert.equal(result.contextSelection.worlds.length, 2);
+  assert.equal(result.contextSelection.worlds.length, 1);
+  assert.equal(result.contextSelection.worlds[0].campaigns.length, 2);
   assert.equal(result.contextSelection.selectedCampaignId, source.campaign.id);
-  assert.equal(calls.length, 4);
+  assert.equal(calls.length, 2);
+  assert.ok(calls.every((target) => !target.pathname.endsWith("/entities") &&
+    !target.pathname.includes("/components/")));
 });
 
 test("people discovery reuses locations and does not read faction graphs", async () => {

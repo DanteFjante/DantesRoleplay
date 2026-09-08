@@ -1,0 +1,12 @@
+{
+  "id": "dnd2024.mechanic.campaign.details",
+  "owner": "dnd2024",
+  "description": "Reviewed namespace for bounded Campaign narrative-detail projection.",
+  "allowedKinds": [
+    "mechanic"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "W03 admits the exact Campaign chapter, arc, and session projection with audience filtering and fixed relationship bounds."
+}

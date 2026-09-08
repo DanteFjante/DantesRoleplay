@@ -15,7 +15,6 @@ export function BootstrapShell() {
         <MainNavigation
           activeTab="world"
           chapter="Campaign"
-          progress="Loading current world"
           onSelect={() => {}}
         />
         <main className="information-content" id="information-content">

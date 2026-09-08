@@ -1,0 +1,58 @@
+{
+  "id": "dnd2024.query.campaign-details",
+  "category": "game.core.campaign.read-model",
+  "name": "Campaign details",
+  "description": "Returns complete bounded chapter, arc, and DM session structure for the selected campaign.",
+  "matches": ["show campaign details", "show campaign chapters and arcs", "show campaign adventure history"],
+  "roles": { "campaign": "The exact audience-authorized campaign." },
+  "executor": "mechanic-projection",
+  "campaignSelection": { "queryId": "dnd2024.query.recent-consequences", "entityIdField": "campaignId" },
+  "projection": {
+    "qualifiedId": "dnd2024.mechanic.campaign.details.project",
+    "version": 1,
+    "contentHash": "D168F60981941205BA4BCFF01FB007E0CAC93FCC60F3288C95856E4245466BC8",
+    "outputSchemaHash": "338C7A7C6DC89F38E43EC43DDB71DF7B3FCA3C7AE7BD6A4BC341514FF1207C13"
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object", "additionalProperties": false,
+    "required": ["version", "campaignId", "chapters", "arcs", "sessions"],
+    "properties": {
+      "version": { "const": 1 },
+      "campaignId": { "$ref": "#/$defs/id" },
+      "chapters": { "type": "array", "maxItems": 100, "items": { "$ref": "#/$defs/chapter" } },
+      "arcs": { "type": "array", "maxItems": 100, "items": { "$ref": "#/$defs/arc" } },
+      "sessions": { "type": "array", "maxItems": 100, "items": { "$ref": "#/$defs/session" } }
+    },
+    "$defs": {
+      "id": { "type": "string", "minLength": 1, "maxLength": 200 },
+      "text": { "type": "string", "minLength": 1, "maxLength": 400 },
+      "summary": { "type": "string", "minLength": 1, "maxLength": 2000 },
+      "chapter": {
+        "type": "object", "additionalProperties": false, "required": ["id", "name", "status", "title", "partyQuestion"],
+        "properties": { "id": { "$ref": "#/$defs/id" }, "name": { "$ref": "#/$defs/text" }, "status": { "enum": ["active", "closed"] }, "title": { "$ref": "#/$defs/text" }, "partyQuestion": { "$ref": "#/$defs/summary" }, "gmContext": { "$ref": "#/$defs/summary" }, "closingSummary": { "$ref": "#/$defs/summary" } }
+      },
+      "arc": {
+        "type": "object", "additionalProperties": false, "required": ["id", "name", "status", "title", "partyStake"],
+        "properties": { "id": { "$ref": "#/$defs/id" }, "name": { "$ref": "#/$defs/text" }, "status": { "enum": ["active", "resolved", "abandoned"] }, "title": { "$ref": "#/$defs/text" }, "partyStake": { "$ref": "#/$defs/summary" }, "gmContext": { "$ref": "#/$defs/summary" }, "closingSummary": { "$ref": "#/$defs/summary" } }
+      },
+      "session": {
+        "type": "object", "additionalProperties": false, "required": ["id", "name", "status", "ordinal"],
+        "properties": { "id": { "$ref": "#/$defs/id" }, "name": { "$ref": "#/$defs/text" }, "status": { "enum": ["active", "ended"] }, "ordinal": { "type": "integer", "minimum": 1 }, "recap": { "$ref": "#/$defs/recap" } }
+      },
+      "recap": {
+        "type": "object", "additionalProperties": false, "required": ["protocolVersion", "chapter", "arc", "milestones"],
+        "properties": {
+          "protocolVersion": { "const": "session.s0.c3-only.v1" },
+          "chapter": { "$ref": "#/$defs/recapChapter" }, "arc": { "$ref": "#/$defs/recapArc" },
+          "milestones": { "type": "array", "maxItems": 5, "items": { "$ref": "#/$defs/milestone" } }
+        }
+      },
+      "recapChapter": { "type": "object", "additionalProperties": false, "required": ["id", "status", "title", "partyQuestion"], "properties": { "id": { "$ref": "#/$defs/id" }, "status": { "const": "active" }, "title": { "$ref": "#/$defs/text" }, "partyQuestion": { "$ref": "#/$defs/summary" } } },
+      "recapArc": { "type": "object", "additionalProperties": false, "required": ["id", "status", "title", "partyStake"], "properties": { "id": { "$ref": "#/$defs/id" }, "status": { "const": "active" }, "title": { "$ref": "#/$defs/text" }, "partyStake": { "$ref": "#/$defs/summary" } } },
+      "milestone": { "type": "object", "additionalProperties": false, "required": ["chapterId", "title", "closingSummary", "timestamp", "sequence"], "properties": { "chapterId": { "$ref": "#/$defs/id" }, "title": { "$ref": "#/$defs/text" }, "closingSummary": { "$ref": "#/$defs/summary" }, "timestamp": { "type": "string", "format": "date-time" }, "sequence": { "type": "integer", "minimum": 0 } } }
+    }
+  },
+  "exposure": "model-visible",
+  "status": "active"
+}

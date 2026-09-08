@@ -5,6 +5,7 @@ import { JSDOM } from "jsdom";
 import { ItemWorkspace } from "../../src/components/items/ItemWorkspace";
 import { DndInformationHub } from "../../src/components/DndInformationHub";
 import { ITEM_ROUTE_EVENT, itemRouteHash, navigateItemRoute, parseItemRoute, readInventoryReturn, type InventoryRoute } from "../../src/data/item-view-route";
+import { hubRouteHash, parseHubRoute } from "../../src/data/hub-route";
 import { hubSource } from "../support/hub-source.js";
 import { projectHubEnvelope } from "../support/hub-envelope.js";
 import { resolveAudience } from "../support/audience-policy.js";
@@ -68,6 +69,19 @@ test("item fragment bounds, tab fallback and return context never accept binding
   assert.equal(parseItemRoute(itemRouteHash(route).replace("item%3Aa.b-1", "%3Cscript%3E")).kind, "invalid");
   assert.equal(parseItemRoute("#information-content").kind, "none");
   assert.equal(readInventoryReturn({ itemInventoryReturn: { characterId: "actor.other" } }, inventory.characterId), null);
+});
+
+test("Campaign and Party routes are closed, addressable fragments", () => {
+  assert.deepEqual(parseHubRoute(hubRouteHash("campaign", "log")), {
+    kind: "hub", tab: "campaign", campaignSection: "log",
+  });
+  assert.deepEqual(parseHubRoute(hubRouteHash("party")), {
+    kind: "hub", tab: "party", campaignSection: "overview",
+  });
+  for (const hash of ["#view?tab=campaign&section=unknown", "#view?tab=party&section=log",
+    "#view?tab=campaign&principal=gm", "#view?tab=campaign&tab=party", "#view?tab=%zz"]) {
+    assert.equal(parseHubRoute(hash).kind, "invalid");
+  }
 });
 
 test("opening image/name is independent of disclosure; Back and Forward restore character, focus, scroll and nested contents", async () => {
@@ -156,5 +170,30 @@ test("hub deep links request the authorized perspective once across tabs and dis
     assert.equal(mounted.container.querySelectorAll('[role="tab"]').length, 3);
     await perform(() => window.history.forward());
     assert.equal(mounted.container.querySelector('.main-nav [aria-current="page"]')?.textContent?.trim(), "World");
+  } finally { await mounted.cleanup(); }
+});
+
+test("Campaign section and Party navigation survive Back and Forward", async () => {
+  const projected = projectHubEnvelope(hubSource, "fixture", resolveAudience({
+    authenticatedUserId: "dm.fixture", authenticatedUserEmail: "", requestedPerspective: "dm",
+    dmPrincipalIds: ["dm.fixture"],
+  })) as ReadyHubEnvelope;
+  const initial = { ...projected, applicationId: "dnd2024-main", stateSpaceId: "state.fixture", party,
+    contextSelection: { selectedWorldId: projected.world.id, selectedCampaignId: "campaign.test",
+      worlds: [{ id: projected.world.id, name: projected.world.name,
+        campaigns: [{ id: "campaign.test", name: "Fixture" }] }] } };
+  const mounted = await mount(hubRouteHash("campaign", "log"),
+    <DndInformationHub initialEnvelope={initial} loadContent={async () => ({}) as never} />);
+  try {
+    assert.equal(mounted.container.querySelector('.main-nav [aria-current="page"]')?.textContent?.trim(), "Campaign");
+    assert.equal(mounted.container.querySelector('.section-tabs [aria-current="page"]')?.textContent?.trim(), "Adventure Log");
+    await perform(() => button(mounted.container, "Party").click());
+    assert.equal(parseHubRoute(window.location.hash).kind, "hub");
+    assert.equal(mounted.container.querySelector('.main-nav [aria-current="page"]')?.textContent?.trim(), "Party");
+    await perform(() => window.history.back());
+    assert.equal(mounted.container.querySelector('.main-nav [aria-current="page"]')?.textContent?.trim(), "Campaign");
+    assert.equal(mounted.container.querySelector('.section-tabs [aria-current="page"]')?.textContent?.trim(), "Adventure Log");
+    await perform(() => window.history.forward());
+    assert.equal(mounted.container.querySelector('.main-nav [aria-current="page"]')?.textContent?.trim(), "Party");
   } finally { await mounted.cleanup(); }
 });

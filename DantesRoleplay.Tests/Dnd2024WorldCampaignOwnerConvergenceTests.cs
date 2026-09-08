@@ -36,12 +36,20 @@ public sealed class Dnd2024WorldCampaignOwnerConvergenceTests
             "root.json"));
         var campaignDefinition = File.ReadAllText(Path.Combine(root, "catalog", "components", "game", "core",
             "campaign", "root.json"));
+        var campaignDirectoryObject = File.ReadAllText(Path.Combine(root, "catalog", "applications", "dnd2024",
+            "objects", "campaign", "dnd2024.object.world-campaign-directory.json"));
+        var campaignContextContract = File.ReadAllText(Path.Combine(root, "src", "system", "web-interface",
+            "dnd2024", "src", "server", "campaign-context-contract.js"));
 
         Assert.Contains("game.core.world.root", binding);
         Assert.Contains("game.core.world.location", binding);
         Assert.Contains("game.core.campaign.root", binding);
         Assert.Contains("game.core.world.location", server);
-        Assert.Contains("game.core.campaign.root", server);
+        Assert.Contains("campaign-context-contract.js", server);
+        Assert.Contains("dnd2024.query.campaign-context", campaignContextContract);
+        Assert.DoesNotContain("game.core.campaign.root", server);
+        Assert.Contains("game.core.world.root", campaignDirectoryObject);
+        Assert.Contains("game.core.campaign.root", campaignDirectoryObject);
         Assert.Contains("mapping.Components.TryGetValue(localId", resolver);
         Assert.Contains("game.core.world.root", worldDefinition);
         Assert.Contains("game.core.campaign.root", campaignDefinition);

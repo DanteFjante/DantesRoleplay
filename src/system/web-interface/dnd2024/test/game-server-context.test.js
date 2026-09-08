@@ -4,6 +4,8 @@ import { boardEnvelope } from "./fixtures/encounter-board.js";
 import { connectedCampaignToHubEnvelope } from "../src/server/connected-hub-envelope.ts";
 import { resolveHubSurface } from "../src/data/hub-availability.js";
 import { contract as campaignSummaryContract } from "../src/server/campaign-summary-contract.js";
+import { contract as campaignContextContract } from "../src/server/campaign-context-contract.js";
+import { contract as campaignDetailsContract } from "../src/server/campaign-details-contract.js";
 import { contract as characterDossierContract } from "../src/server/character-dossier-contract.js";
 import { contract as factionDirectoryContract } from "../src/server/faction-directory-contract.js";
 
@@ -16,6 +18,7 @@ import {
   readConversationCurrentScene,
   readGameServerContext,
   readRegisteredCampaignSummary,
+  readRegisteredCampaignDetails,
   readRegisteredFactionDirectoryPage,
   readKnownOpenRoutes,
   resolveCurrentSceneRecord,
@@ -51,6 +54,35 @@ test("registered Campaign summary stays bounded and preserves read-only party re
   assert.equal(calls.length, 1);
   assert.equal(calls[0].searchParams.get("perspective"), "player");
   assert.ok(calls.every((call) => !call.pathname.includes("knowledge") && !call.pathname.includes("inventory")));
+});
+
+test("Player Campaign details reject GM fields and session records", async () => {
+  const load = (data) => readRegisteredCampaignDetails({
+    origin: "http://localhost:6217", applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
+    campaignId: "campaign.caldris.measure-of-mercy", perspective: "player",
+    fetchImpl: async () => response(200, {
+      applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
+      qualifiedQueryId: campaignDetailsContract.id,
+      stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
+      outputSchemaHash: campaignDetailsContract.outputSchemaHash, resultFingerprint: "3".repeat(64),
+      sourceRevisionFingerprint: "4".repeat(64), data,
+    }),
+  });
+  const visible = await load({
+    version: 1, campaignId: "campaign.caldris.measure-of-mercy",
+    chapters: [{ id: "chapter.one", name: "One", status: "active", title: "One",
+      partyQuestion: "What now?" }], arcs: [], sessions: [],
+  });
+  assert.equal(visible.chapters.length, 1);
+  assert.equal(await load({
+    version: 1, campaignId: "campaign.caldris.measure-of-mercy",
+    chapters: [{ id: "chapter.one", name: "One", status: "active", title: "One",
+      partyQuestion: "What now?", gmContext: "Secret" }], arcs: [], sessions: [],
+  }), null);
+  assert.equal(await load({
+    version: 1, campaignId: "campaign.caldris.measure-of-mercy", chapters: [], arcs: [],
+    sessions: [{ id: "session.one", name: "One", status: "active", ordinal: 1 }],
+  }), null);
 });
 
 test("registered faction pages stay bounded and do not fan out into knowledge or inventory reads", async () => {
@@ -127,11 +159,23 @@ async function readRegisteredPartyBootstrap({
         campaignId: "campaign.caldris.measure-of-mercy", role,
         ...(role === "actor" ? { actorId: "actor.0" } : {}),
       });
-      if (request.pathname.endsWith("/campaign.caldris.measure-of-mercy")) return response(200, {
-        entityId: "campaign.caldris.measure-of-mercy", name: "The Measure of Mercy",
-      });
       if (role === "actor" && request.pathname.endsWith("/entities/actor.0"))
         return response(200, { entityId: "actor.0", name: "Actor 0" });
+      if (request.pathname.includes("dnd2024.query.campaign-context")) {
+        return response(200, {
+          applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
+          qualifiedQueryId: campaignContextContract.id,
+          stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
+          outputSchemaHash: campaignContextContract.outputSchemaHash, resultFingerprint: "3".repeat(64),
+          sourceRevisionFingerprint: "4".repeat(64), data: {
+            version: 1,
+            campaignId: "campaign.caldris.measure-of-mercy",
+            worldId: "world.caldris",
+            campaign: { id: "campaign.caldris.measure-of-mercy", name: "The Measure of Mercy" },
+            world: { id: "world.caldris", name: "Caldris" },
+          },
+        });
+      }
       if (request.pathname.includes("dnd2024.query.campaign-summary")) {
         if (queryResponse) return queryResponse();
         return response(200, {
@@ -166,6 +210,9 @@ test("registered bootstrap keeps the server actor seat despite obsolete local DM
   });
   assert.deepEqual(value.party.map((entry) => entry.id), ["actor.0"]);
   assert.equal(calls.length, 4);
+  assert.ok(calls.some((path) => path.endsWith(
+    "/entities/actor.0/read-models/dnd2024.query.campaign-context",
+  )));
 });
 
 for (const count of [0, 1, 3, 20]) {

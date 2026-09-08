@@ -1,0 +1,35 @@
+{
+  "id": "dnd2024.query.campaign-context",
+  "category": "game.core.campaign.read-model",
+  "name": "Campaign context",
+  "description": "Returns the selected active campaign and its exact declared World identity without identifier inference.",
+  "matches": ["show campaign context", "resolve campaign world", "open table context"],
+  "roles": { "campaign": "The exact audience-authorized campaign." },
+  "executor": "mechanic-projection",
+  "projection": {
+    "qualifiedId": "dnd2024.mechanic.campaign.context.project",
+    "version": 1,
+    "contentHash": "13E9DE5800D9DA6868759E918C8138EE503DD7F08DCF4BE76D149728F16B4164",
+    "outputSchemaHash": "913FEFED347345E2511B460492EE00E325B5D165F7F2E64503CD3B82EE847ACF"
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object", "additionalProperties": false,
+    "required": ["version", "campaignId", "worldId", "campaign", "world"],
+    "properties": {
+      "version": { "const": 1 },
+      "campaignId": { "type": "string", "minLength": 1, "maxLength": 200 },
+      "worldId": { "type": "string", "minLength": 1, "maxLength": 200 },
+      "campaign": { "$ref": "#/$defs/entityReference" },
+      "world": { "$ref": "#/$defs/entityReference" }
+    },
+    "$defs": {
+      "entityReference": {
+        "type": "object", "additionalProperties": false, "required": ["id", "name"],
+        "properties": { "id": { "type": "string", "minLength": 1, "maxLength": 200 }, "name": { "type": "string", "minLength": 1, "maxLength": 400 } }
+      }
+    }
+  },
+  "exposure": "model-visible",
+  "status": "active"
+}

@@ -1,10 +1,12 @@
-import type { HubEnvelope, ObjectReadEvidence, Perspective, ReadyHubEnvelope, WorldFaction } from "./hub-types";
-import { ResourceStore } from "./resource-store";
+import type { CampaignReadModel, DeferredHubUpdate, HubEnvelope, ObjectReadEvidence, Perspective, ReadyHubEnvelope, WorldFaction } from "./hub-types";
+import { ResourceStore, type KeyedResource } from "./resource-store";
 import type { ResourceState } from "./resource-state";
 import { ViewReadError } from "./view-read-client";
 
 export const CAMPAIGN_SUMMARY_OBJECT_ID = "dnd2024.object.campaign-summary";
 export const FACTION_DIRECTORY_OBJECT_ID = "dnd2024.object.faction-directory-page";
+export const CAMPAIGN_LOCATION_VISITS_OBJECT_ID = "dnd2024.object.campaign-location-visits";
+export const WORLD_CAMPAIGN_DIRECTORY_OBJECT_ID = "dnd2024.object.world-campaign-directory";
 
 export type CampaignObjectRequest = {
   perspective: Perspective;
@@ -25,9 +27,15 @@ export type FactionObjectRequest = {
   cursor: string | null;
 };
 
+export type CampaignDetailsObjectRequest = { envelope: ReadyHubEnvelope };
+export type CampaignContextObjectRequest = { envelope: ReadyHubEnvelope };
+export type CampaignContextUpdate = Extract<DeferredHubUpdate, { section: "context" }>;
+
 type TableResourceOwnerOptions = {
   readCampaign: (request: CampaignObjectRequest, signal: AbortSignal) => Promise<HubEnvelope>;
   readFactionPage: (request: FactionObjectRequest, signal: AbortSignal) => Promise<FactionDirectoryPage>;
+  readCampaignDetails: (request: CampaignDetailsObjectRequest, signal: AbortSignal) => Promise<CampaignReadModel>;
+  readCampaignContext: (request: CampaignContextObjectRequest, signal: AbortSignal) => Promise<CampaignContextUpdate>;
   validateCampaign: (value: unknown) => value is HubEnvelope;
   maximumEntries?: number;
   maximumRetainedBytes?: number;
@@ -47,6 +55,34 @@ function factionScope({ envelope, cursor }: FactionObjectRequest) {
     campaignEvidence?.resolutionFingerprint ?? "no-resolution",
     campaignEvidence?.sourceRevisionFingerprint ?? "no-source-revision",
     cursor ?? "first"].join(":");
+}
+
+function scopedCampaignResource({ envelope }: CampaignDetailsObjectRequest | CampaignContextObjectRequest) {
+  const campaignId = envelope.contextSelection?.selectedCampaignId ?? envelope.revision;
+  const worldId = envelope.contextSelection?.selectedWorldId ?? envelope.world.id;
+  const evidence = envelope.objectQueries?.campaignSummary;
+  return [envelope.applicationId, envelope.stateSpaceId, campaignId, worldId,
+    envelope.audience.seat, envelope.audience.perspective,
+    evidence?.resolutionFingerprint ?? "no-resolution",
+    evidence?.sourceRevisionFingerprint ?? "no-source-revision"].join(":");
+}
+
+function isCampaignDetails(value: unknown): value is CampaignReadModel {
+  if (!value || typeof value !== "object") return false;
+  const campaign = value as Record<string, unknown>;
+  return validText(campaign.id, 200) && validText(campaign.title, 160) &&
+    [campaign.chapters, campaign.arcs, campaign.sessions, campaign.visitedLocations]
+      .every((items) => Array.isArray(items));
+}
+
+function isCampaignContextUpdate(value: unknown): value is CampaignContextUpdate {
+  if (!value || typeof value !== "object") return false;
+  const update = value as Record<string, unknown>;
+  if (Object.keys(update).sort().join("|") !== "contextSelection|section" || update.section !== "context" ||
+      !update.contextSelection || typeof update.contextSelection !== "object") return false;
+  const selection = update.contextSelection as Record<string, unknown>;
+  return validText(selection.selectedCampaignId, 200) && validText(selection.selectedWorldId, 200) &&
+    Array.isArray(selection.worlds) && selection.worlds.length > 0;
 }
 
 function validText(value: unknown, maximumLength: number) {
@@ -89,6 +125,8 @@ export class TableResourceOwner {
   readonly #store: ResourceStore;
   readonly #campaign;
   readonly #factions;
+  readonly #campaignDetails: KeyedResource<CampaignDetailsObjectRequest, CampaignReadModel>;
+  readonly #campaignContext: KeyedResource<CampaignContextObjectRequest, CampaignContextUpdate>;
   #activeSelection: string | null = null;
 
   constructor(options: TableResourceOwnerOptions) {
@@ -110,6 +148,22 @@ export class TableResourceOwner {
       cacheKey: factionScope,
       read: options.readFactionPage,
       validate: isFactionDirectoryPage,
+      maximumAgeMs,
+      maximumEntryBytes: 524_288,
+    });
+    this.#campaignDetails = this.#store.define({
+      name: "campaign-details",
+      cacheKey: scopedCampaignResource,
+      read: options.readCampaignDetails,
+      validate: isCampaignDetails,
+      maximumAgeMs,
+      maximumEntryBytes: 2 * 1024 * 1024,
+    });
+    this.#campaignContext = this.#store.define({
+      name: "campaign-context",
+      cacheKey: scopedCampaignResource,
+      read: options.readCampaignContext,
+      validate: isCampaignContextUpdate,
       maximumAgeMs,
       maximumEntryBytes: 524_288,
     });
@@ -162,13 +216,31 @@ export class TableResourceOwner {
     return this.#factions.subscribe(request, listener);
   }
 
+  async loadCampaignDetails(request: CampaignDetailsObjectRequest, signal?: AbortSignal, preferCached = true) {
+    return (await this.#campaignDetails.load(request, { preferCached, signal })).value;
+  }
+
+  async loadCampaignContext(request: CampaignContextObjectRequest, signal?: AbortSignal, preferCached = true) {
+    return (await this.#campaignContext.load(request, { preferCached, signal })).value;
+  }
+
   invalidateObject(qualifiedId: string) {
     if (qualifiedId === CAMPAIGN_SUMMARY_OBJECT_ID) {
       this.#campaign.invalidate();
+      this.#campaignDetails.invalidate();
+      this.#campaignContext.invalidate();
       return true;
     }
     if (qualifiedId === FACTION_DIRECTORY_OBJECT_ID) {
       this.#factions.invalidate();
+      return true;
+    }
+    if (qualifiedId === CAMPAIGN_LOCATION_VISITS_OBJECT_ID) {
+      this.#campaignDetails.invalidate();
+      return true;
+    }
+    if (qualifiedId === WORLD_CAMPAIGN_DIRECTORY_OBJECT_ID) {
+      this.#campaignContext.invalidate();
       return true;
     }
     return false;

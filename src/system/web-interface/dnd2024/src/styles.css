@@ -552,26 +552,6 @@ strong {
   font-weight: 600;
 }
 
-.main-nav__chapter small {
-  color: var(--quiet);
-  font-size: 0.62rem;
-}
-
-.chapter-progress {
-  height: 3px;
-  margin-top: 9px;
-  overflow: hidden;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.chapter-progress span {
-  display: block;
-  width: 68%;
-  height: 100%;
-  background: var(--gold);
-}
-
 .information-content {
   min-width: 0;
   padding: 26px clamp(18px, 3vw, 46px) 64px;

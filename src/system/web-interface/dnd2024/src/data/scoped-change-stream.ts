@@ -9,7 +9,11 @@ export function objectConsumers(id: string) {
   ].includes(id);
   const character = item || id === "dnd2024.object.character-dossier-records" ||
     id === "dnd2024.object.campaign-summary";
-  const known = item || character || id === "dnd2024.object.faction-directory-page";
+  const known = item || character || [
+    "dnd2024.object.faction-directory-page",
+    "dnd2024.object.campaign-location-visits",
+    "dnd2024.object.world-campaign-directory",
+  ].includes(id);
   return { item, character, known };
 }
 

@@ -4,11 +4,13 @@ import test from "node:test";
 import {
   TableResourceOwner,
   CAMPAIGN_SUMMARY_OBJECT_ID,
+  CAMPAIGN_LOCATION_VISITS_OBJECT_ID,
   FACTION_DIRECTORY_OBJECT_ID,
+  WORLD_CAMPAIGN_DIRECTORY_OBJECT_ID,
   type FactionDirectoryPage,
 } from "../../src/data/object-resources";
 import { createHubObjectUiState, hubObjectUiReducer } from "../../src/data/hub-object-ui";
-import type { HubEnvelope, Perspective, ReadyHubEnvelope } from "../../src/data/hub-types";
+import type { CampaignReadModel, HubEnvelope, Perspective, ReadyHubEnvelope } from "../../src/data/hub-types";
 import { ViewReadError } from "../../src/data/view-read-client";
 
 const evidence = (sourceRevisionFingerprint = "A".repeat(64)) => ({
@@ -70,6 +72,8 @@ test("Campaign requests isolate audiences and late perspective responses cannot 
       pending.set(`${perspective}:${campaignId}`, resolve);
     }),
     readFactionPage: async () => page(),
+    readCampaignDetails: async () => { throw new Error("not used"); },
+    readCampaignContext: async () => { throw new Error("not used"); },
     validateCampaign: isCampaign,
   });
 
@@ -88,6 +92,8 @@ test("object notices invalidate only their migrated cache and reconnect invalida
   const state = new TableResourceOwner({
     readCampaign: async ({ perspective, campaignId }) => campaign(perspective, campaignId ?? "bound"),
     readFactionPage: async () => page(),
+    readCampaignDetails: async () => { throw new Error("not used"); },
+    readCampaignContext: async () => { throw new Error("not used"); },
     validateCampaign: isCampaign,
   });
   const campaignRequest = { perspective: "dm" as const, campaignId: "campaign.fixture" };
@@ -116,6 +122,8 @@ test("Faction pages reject incompatible and stale responses without retaining th
   const state = new TableResourceOwner({
     readCampaign: async ({ perspective, campaignId }) => campaign(perspective, campaignId ?? "bound"),
     readFactionPage: async () => result as FactionDirectoryPage,
+    readCampaignDetails: async () => { throw new Error("not used"); },
+    readCampaignContext: async () => { throw new Error("not used"); },
     validateCampaign: isCampaign,
   });
   const first = { envelope, cursor: null };
@@ -138,11 +146,47 @@ test("Faction pages reject incompatible and stale responses without retaining th
   assert.equal(state.peekFactionPage(first), null, "a stale page retires the whole Factions query cache");
 });
 
+test("Campaign details and context use independent bounded shared resources", async () => {
+  let detailReads = 0;
+  let contextReads = 0;
+  const envelope = scope();
+  const details = {
+    id: "campaign.fixture", title: "Fixture", chapters: [], arcs: [], sessions: [], visitedLocations: [],
+  } as unknown as CampaignReadModel;
+  const context = { section: "context" as const, contextSelection: {
+    selectedCampaignId: "campaign.fixture", selectedWorldId: "world.fixture",
+    worlds: [{ id: "world.fixture", name: "Fixture", campaigns: [{ id: "campaign.fixture", name: "Fixture" }] }],
+  } };
+  const state = new TableResourceOwner({
+    readCampaign: async ({ perspective, campaignId }) => campaign(perspective, campaignId ?? "bound"),
+    readFactionPage: async () => page(),
+    readCampaignDetails: async () => { detailReads += 1; return details; },
+    readCampaignContext: async () => { contextReads += 1; return context; },
+    validateCampaign: isCampaign,
+  });
+  await state.loadCampaignDetails({ envelope });
+  await state.loadCampaignDetails({ envelope });
+  await state.loadCampaignContext({ envelope });
+  await state.loadCampaignContext({ envelope });
+  assert.equal(detailReads, 1);
+  assert.equal(contextReads, 1);
+  assert.equal(state.invalidateObject(CAMPAIGN_LOCATION_VISITS_OBJECT_ID), true);
+  await state.loadCampaignDetails({ envelope });
+  await state.loadCampaignContext({ envelope });
+  assert.equal(detailReads, 2);
+  assert.equal(contextReads, 1);
+  assert.equal(state.invalidateObject(WORLD_CAMPAIGN_DIRECTORY_OBJECT_ID), true);
+  await state.loadCampaignContext({ envelope });
+  assert.equal(contextReads, 2);
+});
+
 test("scope replacement retires prior Campaign resources and cache expiry remains bounded", async () => {
   const state = new TableResourceOwner({
     maximumEntries: 2,
     readCampaign: async ({ perspective, campaignId }) => campaign(perspective, campaignId ?? "bound"),
     readFactionPage: async () => page(),
+    readCampaignDetails: async () => { throw new Error("not used"); },
+    readCampaignContext: async () => { throw new Error("not used"); },
     validateCampaign: isCampaign,
   });
   for (const campaignId of ["one", "two", "three"]) {
@@ -156,6 +200,8 @@ test("scope replacement retires prior Campaign resources and cache expiry remain
     maximumAgeMs: 0,
     readCampaign: async ({ perspective, campaignId }) => campaign(perspective, campaignId ?? "bound"),
     readFactionPage: async () => page(),
+    readCampaignDetails: async () => { throw new Error("not used"); },
+    readCampaignContext: async () => { throw new Error("not used"); },
     validateCampaign: isCampaign,
   });
   await expiring.loadCampaign({ perspective: "player", campaignId: "one" });
