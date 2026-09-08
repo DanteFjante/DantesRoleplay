@@ -54,7 +54,7 @@ public sealed class ProjectionRelevanceFilterTests : IDisposable
     public async Task An_oversized_world_still_projects_the_path_to_the_declared_role()
     {
         await using var db = _fixture.CreateContext();
-        await LargeWorldAsync(db, 80); // 160 nodes: well past MaxContainedNodes of 100.
+        await LargeWorldAsync(db, 110); // 220 nodes: past the 200-node containment ceiling.
         var resolver = new ProjectionResolver(db);
         var roles = new Dictionary<string, string>
         {

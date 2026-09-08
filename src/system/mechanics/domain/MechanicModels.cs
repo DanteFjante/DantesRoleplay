@@ -620,7 +620,7 @@ public sealed record RelationshipComponentRequirement(
 public static class ProjectionLimits
 {
     public const int MaxContentsDepth = 4;
-    public const int MaxContainedNodes = 100;
+    public const int MaxContainedNodes = 200;
     public const int MaxContentsRelevantToRoles = 12;
     public const int MaxContentComponentIds = 12;
     public const int MaxRelationshipComponentDeclarations = 12;
