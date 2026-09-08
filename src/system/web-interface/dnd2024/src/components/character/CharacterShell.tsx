@@ -2,8 +2,8 @@ import type { ReactNode } from "react";
 
 import type { PartyMemberReadModel, PartySectionId } from "../../data/hub-types";
 import { Icon } from "../Icon";
-import { MediaImage } from "../MediaImage";
 import { CharacterHero } from "./CharacterHero";
+import { CharacterIdentityText, CharacterPortrait } from "./CharacterIdentitySummary";
 
 export const CHARACTER_SECTIONS: ReadonlyArray<{ id: PartySectionId; label: string; icon: string }> = [
   { id: "overview", label: "Overview", icon: "CircleUserRound" },
@@ -56,12 +56,11 @@ export function CharacterShell({
                 type="button"
               >
                 <span className="character-roster__portrait">
-                  <MediaImage fallback={<span aria-hidden="true">{member.initials}</span>} media={member.portrait} />
+                  <CharacterPortrait member={member} />
                 </span>
                 <span>
                   <small>{member.isCurrent ? "Current character" : member.recordStatus}</small>
-                  <strong>{member.name}</strong>
-                  <span>{member.detail}</span>
+                  <CharacterIdentityText member={member} />
                 </span>
                 <Icon name="ChevronRight" size={17} />
               </button>

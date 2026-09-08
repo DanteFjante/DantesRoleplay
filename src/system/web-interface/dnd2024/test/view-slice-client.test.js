@@ -18,7 +18,8 @@ test("bootstrap renders the navigation shell before the private v1 adapter resol
   assert.doesNotMatch(main, /BrowserObjectQueryState/u);
   assert.doesNotMatch(hub, /TableResourceOwner|new ResourceStore/u,
     "the navigation shell does not own resource loading or retention");
-  assert.match(main, /new ViewReadClient</u);
+  assert.match(main, /new CharacterResourceOwner/u);
+  assert.doesNotMatch(main, /new ViewReadClient</u);
   assert.match(main, /fetchImpl: fetchWithSignal/u);
   assert.match(main, /readGameServerContext/u, "the v1 adapter remains available for rollback");
 });
@@ -33,6 +34,7 @@ test("inactive high-cost views are lazy module boundaries", () => {
     "CampaignView",
     "InstalledContentView",
     "items/ItemWorkspaceFeature",
+    "character/CharacterWorkspaceFeature",
     "PlayConversationPanel",
     "PreviewViewsFeature",
     "RulesView",

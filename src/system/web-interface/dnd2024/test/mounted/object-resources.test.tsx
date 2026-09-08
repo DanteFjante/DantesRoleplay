@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  CharacterResourceOwner,
+  CHARACTER_DOSSIER_OBJECT_ID,
   TableResourceOwner,
   CAMPAIGN_SUMMARY_OBJECT_ID,
   CAMPAIGN_LOCATION_VISITS_OBJECT_ID,
@@ -10,7 +12,7 @@ import {
   type FactionDirectoryPage,
 } from "../../src/data/object-resources";
 import { createHubObjectUiState, hubObjectUiReducer } from "../../src/data/hub-object-ui";
-import type { CampaignReadModel, HubEnvelope, Perspective, ReadyHubEnvelope } from "../../src/data/hub-types";
+import type { CampaignReadModel, HubEnvelope, PartyMemberReadModel, Perspective, ReadyHubEnvelope } from "../../src/data/hub-types";
 import { ViewReadError } from "../../src/data/view-read-client";
 
 const evidence = (sourceRevisionFingerprint = "A".repeat(64)) => ({
@@ -62,6 +64,15 @@ function page(
     nextCursor: null,
     sourceRevisionFingerprint,
     projection: evidence(sourceRevisionFingerprint),
+  };
+}
+
+function character(id: string): PartyMemberReadModel {
+  return {
+    id, initials: "CF", name: `Character ${id}`, detail: "Summary", status: "Active participant",
+    isCurrent: false, recordStatus: "Character summary", sheetStatus: "empty", inventoryStatus: "empty",
+    sheetState: { status: "idle", data: null }, inventoryState: { status: "idle", data: null },
+    sheet: [], knowledge: [], backstory: [], origin: [], inventory: [],
   };
 }
 
@@ -206,6 +217,44 @@ test("scope replacement retires prior Campaign resources and cache expiry remain
   });
   await expiring.loadCampaign({ perspective: "player", campaignId: "one" });
   assert.equal(expiring.peekCampaign({ perspective: "player", campaignId: "one" }), null);
+});
+
+test("Character sheet and detail resources deduplicate independently and reuse same-character cache", async () => {
+  let sheetReads = 0;
+  let detailReads = 0;
+  const owner = new CharacterResourceOwner({
+    readSheet: async ({ actorId }) => { sheetReads += 1; return character(actorId); },
+    readDetails: async ({ actorId }) => { detailReads += 1; return character(actorId); },
+  });
+  const envelope = scope();
+  const first = { envelope, actorId: "actor.first" };
+  await Promise.all([owner.loadSheet(first), owner.loadSheet(first)]);
+  await owner.loadDetails(first);
+  await owner.loadSheet(first);
+  assert.equal(sheetReads, 1);
+  assert.equal(detailReads, 1);
+
+  await owner.loadSheet({ envelope, actorId: "actor.second" });
+  await owner.loadSheet(first);
+  assert.equal(sheetReads, 2, "switching back reuses the first character sheet");
+
+  assert.equal(owner.invalidateObject(CHARACTER_DOSSIER_OBJECT_ID), true);
+  await owner.loadSheet(first);
+  await owner.loadDetails(first);
+  assert.equal(sheetReads, 3);
+  assert.equal(detailReads, 2);
+});
+
+test("Character scope replacement fences cached actors across perspectives", async () => {
+  let reads = 0;
+  const owner = new CharacterResourceOwner({
+    readSheet: async ({ actorId }) => { reads += 1; return character(actorId); },
+    readDetails: async ({ actorId }) => character(actorId),
+  });
+  await owner.loadSheet({ envelope: scope("dm"), actorId: "actor.first" });
+  await owner.loadSheet({ envelope: scope("player"), actorId: "actor.first" });
+  await owner.loadSheet({ envelope: scope("dm"), actorId: "actor.first" });
+  assert.equal(reads, 3);
 });
 
 test("local edit state remains pending through submit and retains failed drafts until server confirmation", () => {

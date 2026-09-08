@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { connectedCampaignToHubEnvelope } from "../src/server/connected-hub-envelope.ts";
+import { projectCharacterDetails } from "../src/features/character/project-character.ts";
 import { isReadyHubEnvelope } from "../src/state.js";
 
 function visual(id, alt) {
@@ -161,7 +162,7 @@ test("projects authorized location imagery into its parent map marker preview", 
   assert.equal(isReadyHubEnvelope(envelope), true);
 });
 
-test("projects party records into distinct dossier sections without inventing sheet values", () => {
+test("projects Party bootstrap as identity and knowledge without eager character details", () => {
   const envelope = connectedCampaignToHubEnvelope(connectedFixture({
     audience: { seat: "player", allowedPerspectives: ["player"] },
     knowledgeEntries: [{ text: "The old road is watched.", stance: "known", presentationKind: "statement" }],
@@ -180,17 +181,12 @@ test("projects party records into distinct dossier sections without inventing sh
   }));
 
   assert.equal(envelope.party[0].id, "actor.thalorien.brackenford.orban");
-  assert.equal(envelope.party[0].recordStatus, "Provisional character record");
-  assert.deepEqual(envelope.party[0].sheet.map((entry) => entry.title), ["Provisional Bard direction"]);
-  assert.deepEqual(envelope.party[0].origin.map((entry) => entry.title), [
-    "Provisional Bard direction",
-    "Raised in a traveling troupe",
-  ]);
-  assert.deepEqual(envelope.party[0].backstory.map((entry) => entry.title), [
-    "Raised in a traveling troupe",
-    "Nara",
-  ]);
-  assert.deepEqual(envelope.party[0].inventory.map((entry) => entry.title), ["Blue metal ocarina"]);
+  assert.equal(envelope.party[0].recordStatus, "Identity only");
+  assert.equal(envelope.party[0].sheetState.status, "idle");
+  assert.deepEqual(envelope.party[0].sheet, []);
+  assert.deepEqual(envelope.party[0].origin, []);
+  assert.deepEqual(envelope.party[0].backstory, []);
+  assert.deepEqual(envelope.party[0].inventory, []);
   assert.deepEqual(envelope.party[0].knowledge.map((entry) => entry.text), ["The old road is watched."]);
   assert.equal(JSON.stringify(envelope.party).includes("armor class"), false);
 });
@@ -208,7 +204,7 @@ test("prefers canonical character state and direct inventory over provisional no
     width: 800,
     height: 800,
   };
-  const envelope = connectedCampaignToHubEnvelope(connectedFixture({
+  const source = connectedFixture({
     audience: { seat: "player", allowedPerspectives: ["player"] },
     party: [{
       id: "actor.thalorien.brackenford.orban",
@@ -315,9 +311,13 @@ test("prefers canonical character state and direct inventory over provisional no
         },
       },
     }],
-  }));
+  });
 
-  const member = envelope.party[0];
+  const envelope = connectedCampaignToHubEnvelope(source);
+  const member = projectCharacterDetails(envelope.party[0], {
+    status: "ready", data: source.party[0].canonical,
+    failureCategory: null, diagnosticId: "fixture-ready",
+  });
   assert.deepEqual(member.portrait, portrait);
   assert.equal(member.recordStatus, "Canonical character state");
   assert.equal(member.sheetStatus, "canonical");
@@ -340,7 +340,7 @@ test("prefers canonical character state and direct inventory over provisional no
 });
 
 test("canonical failures remain errors and never fall back to provisional character values", () => {
-  const envelope = connectedCampaignToHubEnvelope(connectedFixture({
+  const source = connectedFixture({
     audience: { seat: "player", allowedPerspectives: ["player"] },
     party: [{
       id: "actor.one",
@@ -358,9 +358,10 @@ test("canonical failures remain errors and never fall back to provisional charac
         diagnosticId: "projection-malformed-1",
       },
     }],
-  }));
+  });
 
-  const member = envelope.party[0];
+  const envelope = connectedCampaignToHubEnvelope(source);
+  const member = projectCharacterDetails(envelope.party[0], source.party[0].canonicalResult);
   assert.equal(member.sheetState.status, "error");
   assert.equal(member.sheetState.failureCategory, "incompatible-data");
   assert.equal(member.inventoryState.status, "error");
@@ -372,7 +373,7 @@ test("canonical failures remain errors and never fall back to provisional charac
 });
 
 test("catalog HTTP failures retain their status as explicit error sections", () => {
-  const envelope = connectedCampaignToHubEnvelope(connectedFixture({
+  const source = connectedFixture({
     audience: { seat: "player", allowedPerspectives: ["player"] },
     party: [{
       id: "actor.one",
@@ -388,7 +389,9 @@ test("catalog HTTP failures retain their status as explicit error sections", () 
         httpStatus: 422,
       },
     }],
-  }));
+  });
+  const envelope = connectedCampaignToHubEnvelope(source);
+  envelope.party[0] = projectCharacterDetails(envelope.party[0], source.party[0].canonicalResult);
 
   assert.deepEqual(envelope.party[0].sheetState, {
     status: "error",
@@ -401,7 +404,7 @@ test("catalog HTTP failures retain their status as explicit error sections", () 
 });
 
 test("authorization failures are represented as forbidden section states", () => {
-  const envelope = connectedCampaignToHubEnvelope(connectedFixture({
+  const source = connectedFixture({
     audience: { seat: "player", allowedPerspectives: ["player"] },
     party: [{
       id: "actor.one",
@@ -417,7 +420,9 @@ test("authorization failures are represented as forbidden section states", () =>
         httpStatus: 403,
       },
     }],
-  }));
+  });
+  const envelope = connectedCampaignToHubEnvelope(source);
+  envelope.party[0] = projectCharacterDetails(envelope.party[0], source.party[0].canonicalResult);
 
   assert.equal(envelope.party[0].sheetState.status, "forbidden");
   assert.equal(envelope.party[0].inventoryState.status, "forbidden");

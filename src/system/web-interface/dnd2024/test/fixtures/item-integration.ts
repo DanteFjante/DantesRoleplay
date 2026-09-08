@@ -1,7 +1,7 @@
 import { hubSource } from "../support/hub-source.js";
 import { projectHubEnvelope } from "../support/hub-envelope.js";
 import { resolveAudience } from "../support/audience-policy.js";
-import type { PartyMemberReadModel, Perspective, ReadyHubEnvelope } from "../../src/data/hub-types";
+import type { CanonicalCharacterData, PartyMemberReadModel, Perspective, ReadyHubEnvelope } from "../../src/data/hub-types";
 import { itemData, itemEnvelope, itemRequest } from "./item-details";
 import { recipeData, recipeEnvelope } from "./item-recipes";
 import { usesData, usesEnvelope } from "./item-uses";
@@ -28,7 +28,7 @@ export function integrationParty(): PartyMemberReadModel[] {
         levelOneRules: { test: "character-level-one-rules-project", subjectId: id, armorClass: {}, attacks: [], senses: [], savingThrowCircumstances: [], spellAccess: {}, equipment: {}, entitlements: [] },
         provenance: { sheetQueryId: "dnd2024.query.character-sheet-v2", sheetProjectionId: "dnd2024.mechanic.character-sheet-v2.project", dossierProjectionId: "dnd2024.mechanic.character-dossier-v1.project", definitionCount: 0, inventoryDepth: 4, ruleTextPolicy: "canonical-only" },
       },
-    };
+    } as CanonicalCharacterData;
     return member;
   });
 }

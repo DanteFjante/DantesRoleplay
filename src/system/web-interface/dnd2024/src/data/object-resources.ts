@@ -1,4 +1,4 @@
-import type { CampaignReadModel, DeferredHubUpdate, HubEnvelope, ObjectReadEvidence, Perspective, ReadyHubEnvelope, WorldFaction } from "./hub-types";
+import type { CampaignReadModel, DeferredHubUpdate, HubEnvelope, ObjectReadEvidence, PartyMemberReadModel, Perspective, ReadyHubEnvelope, WorldFaction } from "./hub-types";
 import { ResourceStore, type KeyedResource } from "./resource-store";
 import type { ResourceState } from "./resource-state";
 import { ViewReadError } from "./view-read-client";
@@ -7,6 +7,7 @@ export const CAMPAIGN_SUMMARY_OBJECT_ID = "dnd2024.object.campaign-summary";
 export const FACTION_DIRECTORY_OBJECT_ID = "dnd2024.object.faction-directory-page";
 export const CAMPAIGN_LOCATION_VISITS_OBJECT_ID = "dnd2024.object.campaign-location-visits";
 export const WORLD_CAMPAIGN_DIRECTORY_OBJECT_ID = "dnd2024.object.world-campaign-directory";
+export const CHARACTER_DOSSIER_OBJECT_ID = "dnd2024.object.character-dossier-records";
 
 export type CampaignObjectRequest = {
   perspective: Perspective;
@@ -30,6 +31,7 @@ export type FactionObjectRequest = {
 export type CampaignDetailsObjectRequest = { envelope: ReadyHubEnvelope };
 export type CampaignContextObjectRequest = { envelope: ReadyHubEnvelope };
 export type CampaignContextUpdate = Extract<DeferredHubUpdate, { section: "context" }>;
+export type CharacterResourceRequest = { envelope: ReadyHubEnvelope; actorId: string };
 
 type TableResourceOwnerOptions = {
   readCampaign: (request: CampaignObjectRequest, signal: AbortSignal) => Promise<HubEnvelope>;
@@ -65,6 +67,28 @@ function scopedCampaignResource({ envelope }: CampaignDetailsObjectRequest | Cam
     envelope.audience.seat, envelope.audience.perspective,
     evidence?.resolutionFingerprint ?? "no-resolution",
     evidence?.sourceRevisionFingerprint ?? "no-source-revision"].join(":");
+}
+
+function characterResourceScope({ envelope, actorId }: CharacterResourceRequest) {
+  const campaignId = envelope.contextSelection?.selectedCampaignId ?? envelope.revision;
+  const evidence = envelope.objectQueries?.campaignSummary;
+  return [envelope.applicationId, envelope.stateSpaceId, campaignId,
+    envelope.audience.seat, envelope.audience.perspective,
+    evidence?.resolutionFingerprint ?? "no-resolution",
+    evidence?.sourceRevisionFingerprint ?? "no-source-revision", actorId].join(":");
+}
+
+function characterTableScope(envelope: ReadyHubEnvelope) {
+  return characterResourceScope({ envelope, actorId: "all-characters" });
+}
+
+function isCharacterResource(value: unknown): value is PartyMemberReadModel {
+  if (!value || typeof value !== "object") return false;
+  const member = value as Partial<PartyMemberReadModel>;
+  return validText(member.id, 200) && validText(member.name, 400) &&
+    Array.isArray(member.sheet) && Array.isArray(member.inventory) &&
+    Boolean(member.sheetState && typeof member.sheetState === "object") &&
+    Boolean(member.inventoryState && typeof member.inventoryState === "object");
 }
 
 function isCampaignDetails(value: unknown): value is CampaignReadModel {
@@ -241,6 +265,77 @@ export class TableResourceOwner {
     }
     if (qualifiedId === WORLD_CAMPAIGN_DIRECTORY_OBJECT_ID) {
       this.#campaignContext.invalidate();
+      return true;
+    }
+    return false;
+  }
+
+  invalidateAll() {
+    this.#store.invalidateAll();
+  }
+}
+
+type CharacterResourceOwnerOptions = {
+  readSheet: (request: CharacterResourceRequest, signal: AbortSignal) => Promise<PartyMemberReadModel>;
+  readDetails: (request: CharacterResourceRequest, signal: AbortSignal) => Promise<PartyMemberReadModel>;
+  maximumEntries?: number;
+  maximumRetainedBytes?: number;
+  maximumAgeMs?: number;
+};
+
+/** Independent selected-character resources sharing the bounded table cache and scope fence. */
+export class CharacterResourceOwner {
+  readonly #store: ResourceStore;
+  readonly #sheet: KeyedResource<CharacterResourceRequest, PartyMemberReadModel>;
+  readonly #details: KeyedResource<CharacterResourceRequest, PartyMemberReadModel>;
+  #activeScope: string | null = null;
+
+  constructor(options: CharacterResourceOwnerOptions) {
+    this.#store = new ResourceStore({
+      maximumEntries: options.maximumEntries ?? 12,
+      maximumRetainedBytes: options.maximumRetainedBytes ?? 4 * 1024 * 1024,
+    });
+    const maximumAgeMs = options.maximumAgeMs ?? 30_000;
+    this.#sheet = this.#store.define({
+      name: "character-sheet", cacheKey: characterResourceScope,
+      read: options.readSheet, validate: isCharacterResource,
+      maximumAgeMs, maximumEntryBytes: 1_100_000,
+    });
+    this.#details = this.#store.define({
+      name: "character-details", cacheKey: characterResourceScope,
+      read: options.readDetails, validate: isCharacterResource,
+      maximumAgeMs, maximumEntryBytes: 1_100_000,
+    });
+  }
+
+  replaceScope(envelope: ReadyHubEnvelope) {
+    const scope = characterTableScope(envelope);
+    if (this.#activeScope !== null && this.#activeScope !== scope) this.#store.invalidateAll();
+    this.#activeScope = scope;
+  }
+
+  async loadSheet(request: CharacterResourceRequest, signal?: AbortSignal, preferCached = true) {
+    this.replaceScope(request.envelope);
+    const value = (await this.#sheet.load(request, { signal, preferCached })).value;
+    if (value.sheetState.status === "error") this.#sheet.invalidate();
+    return value;
+  }
+
+  async loadDetails(request: CharacterResourceRequest, signal?: AbortSignal, preferCached = true) {
+    this.replaceScope(request.envelope);
+    const value = (await this.#details.load(request, { signal, preferCached })).value;
+    if (value.sheetState.status === "error" || value.inventoryState.status === "error") this.#details.invalidate();
+    return value;
+  }
+
+  invalidateObject(qualifiedId: string) {
+    if (qualifiedId === CHARACTER_DOSSIER_OBJECT_ID || qualifiedId === CAMPAIGN_SUMMARY_OBJECT_ID) {
+      this.#sheet.invalidate();
+      this.#details.invalidate();
+      return true;
+    }
+    if (qualifiedId.startsWith("dnd2024.object.inventory-item-")) {
+      this.#details.invalidate();
       return true;
     }
     return false;

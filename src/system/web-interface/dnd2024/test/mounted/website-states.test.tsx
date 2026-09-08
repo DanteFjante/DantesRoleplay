@@ -476,18 +476,45 @@ test("party fetches only the selected dossier and ignores an obsolete completion
     calls.push(id);
     return new Promise<PartyMemberReadModel>((resolve) => pending.set(id, resolve));
   };
-  const mounted = await mount(<PartyView party={[first, second]} loadCharacter={loadCharacter} />);
+  const mounted = await mount(<PartyView party={[first, second]}
+    loadCharacterSheet={loadCharacter} loadCharacterDetails={loadCharacter} />);
   try {
+    assert.deepEqual(calls, []);
+    await click(button(mounted.container, "Character"));
     assert.deepEqual(calls, [first.id]);
     const chooseSecond = [...mounted.container.querySelectorAll<HTMLButtonElement>(".character-roster__member")]
       .find((control) => control.textContent?.includes("Second"));
     assert.ok(chooseSecond);
     await click(chooseSecond);
+    await click(button(mounted.container, "Character"));
     assert.deepEqual(calls, [first.id, second.id]);
     await act(async () => pending.get(second.id)?.({ ...second, recordStatus: "Second loaded" }));
     await act(async () => pending.get(first.id)?.({ ...first, recordStatus: "OBSOLETE_PRIVATE_DOSSIER" }));
     assert.ok(mounted.container.textContent?.includes("Second loaded"));
     assert.ok(!mounted.container.textContent?.includes("OBSOLETE_PRIVATE_DOSSIER"));
+  } finally { await mounted.cleanup(); }
+});
+
+test("Character overview stays query-free while sheet and detail resources load on demand", async () => {
+  const { PartyView } = await import("../../src/components/PartyView");
+  const member = partyMember({ status: "idle", data: null });
+  let sheetReads = 0;
+  let detailReads = 0;
+  const mounted = await mount(<PartyView party={[member]}
+    loadCharacterSheet={async () => { sheetReads += 1; return { ...member, recordStatus: "Sheet loaded" }; }}
+    loadCharacterDetails={async () => { detailReads += 1; return { ...member, recordStatus: "Details loaded" }; }} />);
+  try {
+    assert.equal(sheetReads, 0);
+    assert.equal(detailReads, 0);
+    await click(button(mounted.container, "Character"));
+    assert.equal(sheetReads, 1);
+    assert.equal(detailReads, 0);
+    await click(button(mounted.container, "Overview"));
+    assert.equal(sheetReads, 1);
+    await click(button(mounted.container, "Biography"));
+    assert.equal(detailReads, 1);
+    await click(button(mounted.container, "Character"));
+    assert.equal(sheetReads, 1, "the complete details satisfy a later sheet visit");
   } finally { await mounted.cleanup(); }
 });
 
@@ -1218,7 +1245,8 @@ test("Player preview exposes Actor-only views as unavailable without making priv
   let reads = 0;
   const mounted = await mount(<DndInformationHub initialEnvelope={envelope("player")}
     loadContent={async () => { throw new Error("not used"); }}
-    loadCharacter={async () => { ++reads; throw new Error("private character"); }}
+    loadCharacterSheet={async () => { ++reads; throw new Error("private character"); }}
+    loadCharacterDetails={async () => { ++reads; throw new Error("private character"); }}
     loadDeferredSection={async () => { ++reads; throw new Error("private directory"); }} />);
   try {
     for (const label of ["Lore", "People", "Factions", "Party"]) {
@@ -1280,9 +1308,12 @@ test("mounted Character reloads for its object and legacy notices without a focu
   let calls = 0;
   const mounted = await mount(<DndInformationHub initialEnvelope={fixture}
     loadContent={async () => { throw new Error("not used"); }}
-    loadCharacter={async () => ({ ...fixture.party[0], name: `Revision ${++calls}` })} />);
+    loadCharacterSheet={async () => ({ ...fixture.party[0], name: `Revision ${++calls}` })}
+    loadCharacterDetails={async () => ({ ...fixture.party[0], name: `Revision ${++calls}` })} />);
   try {
     await click(button(mounted.container, "Party"));
+    assert.equal(calls, 0);
+    await click(button(mounted.container, "Character"));
     assert.equal(calls, 1);
     await act(async () => window.dispatchEvent(new window.CustomEvent("dnd2024-object-changed", { detail: {
       object: { qualifiedId: "dnd2024.object.character-dossier-records", version: 1 },

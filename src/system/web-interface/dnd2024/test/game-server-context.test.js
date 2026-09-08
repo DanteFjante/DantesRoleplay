@@ -6,6 +6,7 @@ import { resolveHubSurface } from "../src/data/hub-availability.js";
 import { contract as campaignSummaryContract } from "../src/server/campaign-summary-contract.js";
 import { contract as campaignContextContract } from "../src/server/campaign-context-contract.js";
 import { contract as campaignDetailsContract } from "../src/server/campaign-details-contract.js";
+import { contract as characterSheetContract } from "../src/server/character-sheet-contract.js";
 import { contract as characterDossierContract } from "../src/server/character-dossier-contract.js";
 import { contract as factionDirectoryContract } from "../src/server/faction-directory-contract.js";
 
@@ -15,6 +16,7 @@ import {
   projectMediaVisual,
   readCombatCurrentScene,
   readCanonicalCharacter,
+  readCanonicalCharacterSheet,
   readConversationCurrentScene,
   readGameServerContext,
   readRegisteredCampaignSummary,
@@ -382,6 +384,35 @@ function mediaAttachment(role = "portrait", alt = "A reviewed portrait", mediaId
     contentUrl: `/api/applications/dnd2024/state-spaces/dnd2024-main/entities/owner/media/${mediaId}/content`,
   };
 }
+
+test("character sheet resource reads the existing calculated query without dossier or media fan-out", async () => {
+  const sheet = {
+    version: 2, subject: { id: "actor.fixture", label: "Fixture Hero" },
+    origin: { species: { id: "species.fixture", label: "Fixture Species" },
+      background: { id: "background.fixture", label: "Fixture Background" } },
+    classes: [{ id: "membership.fixture", name: "Fixture membership",
+      class: { id: "class.fixture", label: "Fixture Class" }, level: 1, subclass: null }],
+    inventory: { items: [], contentsDepth: 4, mayOmitDeeperContents: true },
+    wallet: { coinCount: 0, copperValue: 0, gpCount: 0, denominations: [] },
+  };
+  const calls = [];
+  const result = await readCanonicalCharacterSheet({
+    origin: "http://localhost:6217", applicationId: "dnd2024", stateSpaceId: "fixture",
+    actorId: "actor.fixture", perspective: "player",
+    fetchImpl: async (input) => {
+      calls.push(new URL(input));
+      return response(200, { applicationId: "dnd2024", stateSpaceId: "fixture",
+        qualifiedQueryId: characterSheetContract.id, outputSchemaHash: characterSheetContract.outputSchemaHash,
+        stateSpaceFingerprint: "A".repeat(64), resolutionFingerprint: "B".repeat(64),
+        resultFingerprint: "C".repeat(64), sourceRevisionFingerprint: "D".repeat(64), data: sheet });
+    },
+  });
+  assert.equal(result.status, "ready");
+  assert.equal(result.data.subject.id, "actor.fixture");
+  assert.equal(calls.length, 1);
+  assert.match(calls[0].pathname, /\/entities\/actor\.fixture\/read-models\/dnd2024\.query\.character-sheet-v2$/u);
+  assert.equal(calls[0].searchParams.get("perspective"), "player");
+});
 
 test("canonical senses use named references and reject legacy or partial measurements before rendering", async () => {
   const namedSense = { sense: { id: "dnd2024.vocabulary.sense.darkvision", label: "Darkvision" },

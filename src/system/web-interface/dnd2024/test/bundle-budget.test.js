@@ -7,6 +7,7 @@ import { measureJavaScriptBundle } from '../scripts/bundle-budget.mjs';
 const entrySource = readFileSync(new URL('../src/server-host/main.tsx', import.meta.url), 'utf8');
 const hubSource = readFileSync(new URL('../src/components/DndInformationHub.tsx', import.meta.url), 'utf8');
 const itemFeatureSource = readFileSync(new URL('../src/components/items/ItemWorkspaceFeature.tsx', import.meta.url), 'utf8');
+const characterFeatureSource = readFileSync(new URL('../src/components/character/CharacterWorkspaceFeature.tsx', import.meta.url), 'utf8');
 const previewFeatureSource = readFileSync(new URL('../src/components/PreviewViewsFeature.tsx', import.meta.url), 'utf8');
 const sharedStyles = readFileSync(new URL('../src/styles.css', import.meta.url), 'utf8');
 
@@ -54,9 +55,10 @@ test('feature styles are awaited inside their existing lazy view boundaries', ()
     hubSource.indexOf('const PlayConversationPanel'),
   );
   assert.match(itemBoundary, /import\("\.\/items\/ItemWorkspaceFeature"\)/u);
-  assert.match(itemFeatureSource, /import "\.\.\/\.\.\/character-page\.css";/u);
   assert.match(itemFeatureSource, /import "\.\.\/\.\.\/item-page\.css";/u);
   assert.match(itemFeatureSource, /export \{ ItemWorkspace \} from "\.\/ItemWorkspace";/u);
+  assert.match(characterFeatureSource, /import "\.\.\/\.\.\/character-page\.css";/u);
+  assert.match(characterFeatureSource, /export \{ CharacterWorkspace \} from "\.\.\/PartyView";/u);
 
   const previewBoundary = hubSource.slice(
     hubSource.indexOf('const CurrentViewPreview'),

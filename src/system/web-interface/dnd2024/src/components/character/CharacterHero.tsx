@@ -1,25 +1,15 @@
 import type { PartyMemberReadModel } from "../../data/hub-types";
-import { MediaImage } from "../MediaImage";
+import { CharacterIdentityText, CharacterPortrait } from "./CharacterIdentitySummary";
 
 export function CharacterHero({ member }: { member: PartyMemberReadModel }) {
-  const classLine = member.characterSheet?.classes
-    ?.map((entry) => `${entry.class.label} ${entry.level}`)
-    .join(" / ") ?? member.detail;
-  const origin = member.characterSheet?.origin;
   return (
     <header className="character-hero">
       <span className="character-hero__portrait">
-        <MediaImage
-          fallback={<span aria-hidden="true" className="character-hero__monogram">{member.initials}</span>}
-          loading="eager"
-          media={member.portrait}
-        />
+        <CharacterPortrait eager hero member={member} />
       </span>
       <div className="character-hero__identity">
         <span className="eyebrow">{member.isCurrent ? "Your character" : "Party character"}</span>
-        <h2>{member.name}</h2>
-        <p>{classLine}</p>
-        {origin ? <small>{origin.species.label} · {origin.background.label}</small> : null}
+        <CharacterIdentityText hero member={member} showOrigin />
       </div>
       <dl className="character-hero__status">
         <div><dt>Campaign</dt><dd>{member.status}</dd></div>

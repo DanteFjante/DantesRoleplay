@@ -1,5 +1,6 @@
 import type {
   CanonicalCharacterData,
+  CharacterSheetData,
   CharacterSheetProjectionV2,
   NamedCharacterReference,
 } from "../../data/hub-types";
@@ -94,7 +95,8 @@ export function SavesAndSkills({ sheet }: { sheet: CharacterSheetProjectionV2 })
   );
 }
 
-export function FeatureGroups({ sheet }: { sheet: CanonicalCharacterData }) {
+export function FeatureGroups({ sheet }: { sheet: CharacterSheetData }) {
+  const dossier = (sheet as CanonicalCharacterData).dossier ?? null;
   const hasState = sheet.movement?.length || sheet.senses?.length || sheet.conditions?.length;
   const hasTraining = sheet.proficiencies?.length || sheet.features?.length || sheet.resources?.length;
   if (!hasState && !hasTraining) return null;
@@ -106,15 +108,15 @@ export function FeatureGroups({ sheet }: { sheet: CanonicalCharacterData }) {
           <li key={`${entry.feature.id}:${entry.grantedBy.id}`}>
             <strong>{entry.feature.label}</strong>
             <span>{entry.grantKind.label}{entry.classLevel ? ` · level ${entry.classLevel}` : ""}</span>
-            {sheet.dossier.features.find((detail) => detail.definition.id === entry.feature.id)?.definition.summary
-              ? <small>{sheet.dossier.features.find((detail) => detail.definition.id === entry.feature.id)?.definition.summary}</small>
+            {dossier?.features.find((detail) => detail.definition.id === entry.feature.id)?.definition.summary
+              ? <small>{dossier.features.find((detail) => detail.definition.id === entry.feature.id)?.definition.summary}</small>
               : null}
-            {sheet.dossier.features.find((detail) => detail.definition.id === entry.feature.id)?.implementation.status === "pending"
-              ? <small>Pending: {sheet.dossier.features.find((detail) => detail.definition.id === entry.feature.id)?.implementation.reason?.replaceAll("-", " ") ?? "a required choice"}.</small>
-              : <small>Executable from current canonical state.</small>}
+            {dossier?.features.find((detail) => detail.definition.id === entry.feature.id)?.implementation.status === "pending"
+              ? <small>Pending: {dossier.features.find((detail) => detail.definition.id === entry.feature.id)?.implementation.reason?.replaceAll("-", " ") ?? "a required choice"}.</small>
+              : dossier ? <small>Executable from current canonical state.</small> : null}
           </li>
         ))}</ul></div> : null}
-        {sheet.dossier.origin.traits.length ? <div><h4>Origin traits</h4><ul>{sheet.dossier.origin.traits.map((trait) => (
+        {dossier?.origin.traits.length ? <div><h4>Origin traits</h4><ul>{dossier.origin.traits.map((trait) => (
           <li key={trait.key}><strong>{trait.label}</strong><span>{trait.status === "active" ? "Active canonical rule" : `Pending · ${trait.reason?.replaceAll("-", " ") ?? "missing rule owner"}`}</span></li>
         ))}</ul></div> : null}
         {sheet.proficiencies?.length ? <div><h4>Proficiencies</h4><ul>{sheet.proficiencies.map((entry) => (
@@ -173,7 +175,7 @@ export function ActionList({ sheet }: { sheet: CharacterSheetProjectionV2 }) {
   );
 }
 
-export function CharacterSheet({ sheet }: { sheet: CanonicalCharacterData }) {
+export function CharacterSheet({ sheet }: { sheet: CharacterSheetData }) {
   return (
     <div className="character-sheet-v2">
       <VitalStrip sheet={sheet} />

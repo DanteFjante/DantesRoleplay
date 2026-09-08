@@ -12,7 +12,7 @@ import {
 import { createHubObjectUiState, hubObjectUiReducer } from "../data/hub-object-ui";
 import { resolveCampaignWorldTarget } from "../data/campaign-navigation";
 import { HUB_ROUTE_EVENT, navigateHubRoute, parseHubRoute } from "../data/hub-route";
-import { ITEM_ROUTE_EVENT, navigateItemRoute, parseItemRoute } from "../data/item-view-route";
+import { ITEM_ROUTE_EVENT, navigateItemRoute, parseItemRoute, readInventoryReturn } from "../data/item-view-route";
 import { applyDeferredHubUpdate, preserveLastGoodPartyData } from "../data/section-state";
 import { ViewReadError } from "../data/view-read-client";
 import type {
@@ -46,6 +46,7 @@ import {
 } from "../state.js";
 import { MainNavigation } from "./MainNavigation";
 import type { InstalledContentModel } from "../server/effective-content";
+import type { ItemViewClient } from "../server/item-view-client";
 import { TopBar } from "./TopBar";
 import { WorldView } from "./WorldView";
 import { markActiveViewReady } from "../observability/performance.js";
@@ -59,6 +60,8 @@ const InstalledContentView = lazy(() => import("./InstalledContentView")
   .then((module) => ({ default: module.InstalledContentView })));
 const ItemWorkspace = lazy(() => import("./items/ItemWorkspaceFeature")
   .then((module) => ({ default: module.ItemWorkspace })));
+const CharacterWorkspace = lazy(() => import("./character/CharacterWorkspaceFeature")
+  .then((module) => ({ default: module.CharacterWorkspace })));
 const PlayConversationPanel = lazy(() => import("./PlayConversationPanel")
   .then((module) => ({ default: module.PlayConversationPanel })));
 const CurrentViewPreview = lazy(() => import("./PreviewViewsFeature")
@@ -140,7 +143,8 @@ export function DndInformationHub({
   loadEnvelope,
   loadRules,
   loadContent,
-  loadCharacter,
+  loadCharacterSheet,
+  loadCharacterDetails,
   loadFactionPage,
   loadCampaignDetails,
   loadDeferredSection,
@@ -150,17 +154,32 @@ export function DndInformationHub({
   loadEnvelope?: HubEnvelopeLoader;
   loadRules?: RulesLoader;
   loadContent: ContentLoader;
-  loadCharacter?: (envelope: ReadyHubEnvelope, actorId: string, signal: AbortSignal) => Promise<import("../data/hub-types").PartyMemberReadModel>;
+  loadCharacterSheet?: (envelope: ReadyHubEnvelope, actorId: string, signal: AbortSignal) => Promise<import("../data/hub-types").PartyMemberReadModel>;
+  loadCharacterDetails?: (envelope: ReadyHubEnvelope, actorId: string, signal: AbortSignal) => Promise<import("../data/hub-types").PartyMemberReadModel>;
   loadFactionPage?: FactionPageLoader;
   loadCampaignDetails?: CampaignDetailsLoader;
   loadDeferredSection?: (envelope: ReadyHubEnvelope, section: DeferredHubSection, signal: AbortSignal) => Promise<DeferredHubUpdate>;
   subscribeChanges?: (envelope: ReadyHubEnvelope) => () => void;
 }) {
   const [envelope, setEnvelope] = useState(initialEnvelope);
-  const readCharacter = useCallback((id: string, signal: AbortSignal) => {
-    if (!loadCharacter) throw new Error("Character loading is unavailable.");
-    return loadCharacter(envelope, id, signal);
-  }, [envelope, loadCharacter]);
+  const itemClientScope = `${envelope.applicationId}:${envelope.stateSpaceId}:${envelope.revision}:${envelope.audience.seat}:${envelope.audience.perspective}`;
+  const itemClientScopeRef = useRef(itemClientScope);
+  itemClientScopeRef.current = itemClientScope;
+  const itemClientCache = useRef<{ scope: string; client: ItemViewClient } | null>(null);
+  const retainItemClient = useCallback((client: ItemViewClient) => {
+    const previous = itemClientCache.current;
+    if (previous && previous.client !== client) previous.client.invalidate();
+    itemClientCache.current = { scope: itemClientScopeRef.current, client };
+  }, []);
+  useEffect(() => () => itemClientCache.current?.client.invalidate(), []);
+  const readCharacterSheet = useCallback((id: string, signal: AbortSignal) => {
+    if (!loadCharacterSheet) throw new Error("Character sheet loading is unavailable.");
+    return loadCharacterSheet(envelope, id, signal);
+  }, [envelope, loadCharacterSheet]);
+  const readCharacterDetails = useCallback((id: string, signal: AbortSignal) => {
+    if (!loadCharacterDetails) throw new Error("Character detail loading is unavailable.");
+    return loadCharacterDetails(envelope, id, signal);
+  }, [envelope, loadCharacterDetails]);
   const [itemRoute, setItemRoute] = useState(() => parseItemRoute(window.location.hash));
   const [activeTab, setActiveTab] = useState<MainTabId>(() => {
     const item = parseItemRoute(window.location.hash);
@@ -664,13 +683,39 @@ export function DndInformationHub({
         );
       case "party":
         if (loadDeferredSection && playerPreview) return <ActorBindingRequired />;
+        if (itemRoute.kind === "none" || itemRoute.kind === "inventory" &&
+            itemRoute.campaignId === contextSelection.selectedCampaignId &&
+            itemRoute.perspective === perspective &&
+            envelope.party.some((member) => member.id === itemRoute.characterId)) {
+          const selectedId = itemRoute.kind === "inventory" ? itemRoute.characterId : undefined;
+          const inventoryReturn = selectedId ? readInventoryReturn(window.history.state, selectedId) : null;
+          return <CharacterWorkspace
+            key={`${envelope.applicationId}:${envelope.stateSpaceId}:${contextSelection.selectedCampaignId}:${envelope.audience.seat}:${perspective}:${selectedId ?? "party"}`}
+            navigationCharacterId={selectedId}
+            inventoryReturn={inventoryReturn}
+            loadCharacterSheet={loadCharacterSheet ? readCharacterSheet : undefined}
+            loadCharacterDetails={loadCharacterDetails ? readCharacterDetails : undefined}
+            loading={hubBusy}
+            onRetry={() => void requestHub(perspective, contextSelection.selectedCampaignId, false, true)}
+            onOpenItem={(characterId, itemId, context) => {
+              const inventory = { kind: "inventory" as const, characterId,
+                campaignId: contextSelection.selectedCampaignId, perspective };
+              navigateItemRoute(inventory, true, context);
+              navigateItemRoute({ ...inventory, kind: "item", itemId, tab: "details" }, false, context);
+            }}
+            party={envelope.party}
+          />;
+        }
         return <ItemWorkspace
           key={`${envelope.applicationId}:${envelope.stateSpaceId}:${contextSelection.selectedCampaignId}:${envelope.audience.seat}:${perspective}`}
           route={itemRoute}
           context={envelope}
           campaignId={contextSelection.selectedCampaignId}
           perspective={perspective}
-          loadCharacter={loadCharacter ? readCharacter : undefined}
+          itemClient={itemClientCache.current?.scope === itemClientScope ? itemClientCache.current.client : undefined}
+          retainItemClient={retainItemClient}
+          loadCharacterSheet={loadCharacterSheet ? readCharacterSheet : undefined}
+          loadCharacterDetails={loadCharacterDetails ? readCharacterDetails : undefined}
           loading={hubBusy}
           onRetry={() => void requestHub(perspective, contextSelection.selectedCampaignId, false, true)}
           party={envelope.party}

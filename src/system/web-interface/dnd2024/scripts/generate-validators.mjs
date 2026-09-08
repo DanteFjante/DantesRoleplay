@@ -76,6 +76,13 @@ const targets = [
     contractOnly: true,
   },
   {
+    name: "character-sheet-contract",
+    source: "character/dnd2024.query.character-sheet-v2.json",
+    output: "character-sheet-contract.js",
+    label: "character sheet v2",
+    contractOnly: true,
+  },
+  {
     name: "character-dossier-contract",
     source: "character/dnd2024.query.character-dossier-v1.json",
     output: "character-dossier-contract.js",

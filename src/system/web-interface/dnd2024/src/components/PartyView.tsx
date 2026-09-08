@@ -5,6 +5,7 @@ import { objectConsumers } from "../data/scoped-change-stream";
 import type { InventoryReturnContext } from "../data/item-view-route";
 
 import type {
+  CanonicalCharacterData,
   PartyDossierEntry,
   PartyKnowledgeEntry,
   PartyMemberReadModel,
@@ -96,11 +97,12 @@ function SectionHeader({ count, member, section }: {
   );
 }
 
-export function PartyView({
+export function CharacterWorkspace({
   loading = false,
   onRetry,
   party,
-  loadCharacter,
+  loadCharacterSheet,
+  loadCharacterDetails,
   navigationCharacterId,
   inventoryReturn,
   onOpenItem,
@@ -108,7 +110,8 @@ export function PartyView({
   loading?: boolean;
   onRetry?: () => void;
   party: PartyMemberReadModel[];
-  loadCharacter?: (id: string, signal: AbortSignal) => Promise<PartyMemberReadModel>;
+  loadCharacterSheet?: (id: string, signal: AbortSignal) => Promise<PartyMemberReadModel>;
+  loadCharacterDetails?: (id: string, signal: AbortSignal) => Promise<PartyMemberReadModel>;
   navigationCharacterId?: string;
   inventoryReturn?: InventoryReturnContext | null;
   onOpenItem?: (characterId: string, itemId: string, context: InventoryReturnContext) => void;
@@ -119,11 +122,12 @@ export function PartyView({
   const restored = useRef(false);
   const [query, setQuery] = useState("");
   const [detail, setDetail] = useState<PartyMemberReadModel | null>(null);
+  const [detailKind, setDetailKind] = useState<"sheet" | "details" | null>(null);
   const [detailBusy, setDetailBusy] = useState(false);
   const [detailError, setDetailError] = useState(false);
   const [retry, setRetry] = useState(0);
   useEffect(() => {
-    const invalidate = () => { setDetail(null); setRetry((value) => value + 1); };
+    const invalidate = () => { setDetail(null); setDetailKind(null); setRetry((value) => value + 1); };
     const changed = (event: Event) => {
       if (objectConsumers((event as CustomEvent).detail?.object?.qualifiedId).character) invalidate();
     };
@@ -135,20 +139,30 @@ export function PartyView({
     };
   }, []);
   useEffect(() => {
-    if (!loadCharacter || !selectedMemberId || !party.some((member) => member.id === selectedMemberId)) return;
+    const requiredKind = section === "sheet" ? "sheet"
+      : section === "overview" ? null : "details";
+    const loader = requiredKind === "sheet" ? loadCharacterSheet
+      : requiredKind === "details" ? loadCharacterDetails : null;
+    if (!requiredKind || !loader || !selectedMemberId ||
+        !party.some((member) => member.id === selectedMemberId) ||
+        detail?.id === selectedMemberId && (detailKind === "details" || detailKind === requiredKind)) return;
     const controller = new AbortController();
     setDetail(null);
+    setDetailKind(null);
     setDetailError(false);
     setDetailBusy(true);
-    void loadCharacter(selectedMemberId, controller.signal).then((value) => {
-      if (!controller.signal.aborted && value.id === selectedMemberId) setDetail(value);
+    void loader(selectedMemberId, controller.signal).then((value) => {
+      if (!controller.signal.aborted && value.id === selectedMemberId) {
+        setDetail(value);
+        setDetailKind(requiredKind);
+      }
     }).catch(() => {
       if (!controller.signal.aborted) setDetailError(true);
     }).finally(() => {
       if (!controller.signal.aborted) setDetailBusy(false);
     });
     return () => controller.abort();
-  }, [loadCharacter, selectedMemberId, retry]);
+  }, [loadCharacterDetails, loadCharacterSheet, selectedMemberId, section, retry, detail, detailKind, party]);
 
   useEffect(() => {
     if (!navigationCharacterId && !party.some((member) => member.id === selectedMemberId)) {
@@ -160,6 +174,11 @@ export function PartyView({
 
   const selectedMember = detail?.id === selectedMemberId ? detail
     : party.find((member) => member.id === selectedMemberId);
+  const retryCharacter = () => {
+    setDetail(null);
+    setDetailKind(null);
+    setRetry((value) => value + 1);
+  };
   useLayoutEffect(() => {
     if (restored.current || !inventoryReturn || detailBusy || section !== "inventory" || !selectedMember?.characterSheet) return;
     const target = [...document.querySelectorAll<HTMLElement>("[data-item-open]")]
@@ -209,7 +228,7 @@ export function PartyView({
     >
       {detailBusy ? <p role="status">Loading this character’s authorized dossier…</p> : null}
       {detailError ? <div role="alert"><p>This character could not be loaded. No empty inventory or wallet is inferred.</p>
-        <button type="button" onClick={() => setRetry((value) => value + 1)}>Retry character</button></div> : null}
+        <button type="button" onClick={retryCharacter}>Retry character</button></div> : null}
       {section === "overview" ? (
         <CharacterOverview member={selectedMember} onOpenSection={selectSection} />
       ) : (
@@ -218,7 +237,7 @@ export function PartyView({
           {state ? <CharacterSectionState
             label={section === "sheet" ? "character sheet" : "inventory"}
             loading={loading || detailBusy}
-            onRetry={onRetry}
+            onRetry={loadCharacterSheet || loadCharacterDetails ? retryCharacter : onRetry}
             state={state}
           /> : null}
           {entries.length > 8 && section !== "sheet" && section !== "inventory" ? (
@@ -239,7 +258,7 @@ export function PartyView({
                 onOpenItem={onOpenItem ? (itemId) => onOpenItem(selectedMember.id, itemId, {
                   characterId: selectedMember.id, expandedIds, focusItemId: itemId, scrollY: window.scrollY,
                 }) : undefined}
-                definitions={selectedMember.characterSheet.dossier?.inventory.definitions ?? []}
+                definitions={(selectedMember.characterSheet as CanonicalCharacterData).dossier?.inventory.definitions ?? []}
                 items={selectedMember.characterSheet.inventory.items}
               />
               <WalletSummary wallet={selectedMember.characterSheet.wallet} />
@@ -258,3 +277,6 @@ export function PartyView({
     </CharacterShell>
   );
 }
+
+/** Compatibility name for fixtures while production imports the Character feature directly. */
+export const PartyView = CharacterWorkspace;

@@ -7,12 +7,14 @@ import { ItemViewClient } from "../../server/item-view-client";
 import { ConnectedItemView } from "./ConnectedItemView";
 import { objectConsumers } from "../../data/scoped-change-stream";
 
-export function ItemWorkspace({ route, campaignId, perspective, context, itemClient, ...partyProps }: ComponentProps<typeof PartyView> & {
+export function ItemWorkspace({ route, campaignId, perspective, context, itemClient, retainItemClient, ...partyProps }: ComponentProps<typeof PartyView> & {
   route: ItemNavigationRoute; campaignId: string; perspective: Perspective;
   context?: Pick<ReadyHubEnvelope, "applicationId" | "stateSpaceId" | "revision">;
   itemClient?: ItemViewClient;
+  retainItemClient?: (client: ItemViewClient) => void;
 }) {
   const client = useMemo(() => itemClient ?? new ItemViewClient(), [context, itemClient]);
+  useEffect(() => retainItemClient?.(client), [client, retainItemClient]);
   useEffect(() => {
     const changed = (event: Event) => {
       if (objectConsumers((event as CustomEvent).detail?.object?.qualifiedId).item) client.invalidate();
@@ -24,9 +26,9 @@ export function ItemWorkspace({ route, campaignId, perspective, context, itemCli
       window.removeEventListener("dnd2024-object-changed", changed);
       for (const event of ["dnd2024-view-invalidated", "focus", "pagehide"]) window.removeEventListener(event, client.invalidate);
       document.removeEventListener("visibilitychange", client.invalidate);
-      client.invalidate();
+      if (!retainItemClient) client.invalidate();
     };
-  }, [client]);
+  }, [client, retainItemClient]);
   const selected = route.kind === "item" || route.kind === "inventory" ? route : null;
   const compatible = selected && selected.campaignId === campaignId && selected.perspective === perspective &&
     partyProps.party.some((member) => member.id === selected.characterId);

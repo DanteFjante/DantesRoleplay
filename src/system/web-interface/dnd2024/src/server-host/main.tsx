@@ -3,15 +3,17 @@ import { createRoot } from "react-dom/client";
 
 import { BootstrapShell } from "../components/BootstrapShell";
 import {
+  CharacterResourceOwner,
   TableResourceOwner,
   type CampaignContextObjectRequest,
   type CampaignContextUpdate,
   type CampaignDetailsObjectRequest,
+  type CharacterResourceRequest,
   type FactionObjectRequest,
 } from "../data/object-resources";
 import { resolveHubSurface } from "../data/hub-availability.js";
-import type { CampaignReadModel, CanonicalCharacterResult, ConnectedCampaignEnvelope, DeferredHubSection, DeferredHubUpdate, HubEnvelope, PartyMemberReadModel, Perspective, ReadyHubEnvelope, RuleReadModel } from "../data/hub-types";
-import { ViewReadClient, ViewReadError } from "../data/view-read-client";
+import type { CampaignReadModel, CanonicalCharacterResult, CharacterSheetResult, ConnectedCampaignEnvelope, DeferredHubSection, DeferredHubUpdate, HubEnvelope, Perspective, ReadyHubEnvelope, RuleReadModel } from "../data/hub-types";
+import { ViewReadError } from "../data/view-read-client";
 import { loadInitialHub } from "../data/hub-preferences";
 import { objectConsumers, subscribeScopedChanges } from "../data/scoped-change-stream";
 import { isReadyHubEnvelope } from "../state.js";
@@ -82,11 +84,10 @@ async function readEnvelope(
   characterSources.delete(scope);
   characterSources.set(scope, sourceEnvelope);
   if (characterSources.size > 8) characterSources.delete(characterSources.keys().next().value!);
-  characterClient.invalidate();
-
   const projected = connectedCampaignToHubEnvelope(
     { ...sourceEnvelope, rules: [] },
   );
+  characterResources.replaceScope(projected);
   recordDevelopmentDiagnostic("party-read", {
     applicationId: projected.applicationId,
     stateSpaceId: projected.stateSpaceId,
@@ -120,50 +121,54 @@ const tableResources = new TableResourceOwner({
   validateCampaign: isHubEnvelope,
 });
 
-const characterClient = new ViewReadClient<{
-  source: ConnectedCampaignEnvelope; actorId: string;
-}, PartyMemberReadModel>({
-  cacheKey: ({ source, actorId }) => `${source.stateSpaceId}:${source.campaign.id}:${source.audience.perspective}:${actorId}`,
-  validate: (value): value is PartyMemberReadModel => Boolean(value && typeof value === "object" && "sheetState" in value),
-  read: async ({ source, actorId }, signal) => {
-    const [{ readCanonicalCharacter }, { projectParty }] = await Promise.all([
-      import("../server/game-server-context.js"), import("../server/connected-hub-envelope"),
-    ]);
-    if (signal.aborted) throw new DOMException("Character replaced", "AbortError");
-    const member = source.party?.find((candidate) => candidate.id === actorId);
-    if (!member) throw new Error("This character is not in the authorized roster.");
-    const request = {
-      fetchImpl: (input: RequestInfo | URL, init?: RequestInit) => {
-        const target = new URL(input instanceof Request ? input.url : input.toString(), window.location.origin);
-        if (target.pathname.includes("/read-models/")) target.searchParams.set("perspective", source.audience.perspective ?? "player");
-        // Media discovery currently uses the ambient host seat, not the narrower preview.
-        if (source.audience.perspective === "player" && target.pathname.endsWith("/media"))
-          return Promise.resolve(new Response(null, { status: 404 }));
-        return fetch(target, { ...init, signal });
-      },
-      origin: window.location.origin, applicationId: source.applicationId, stateSpaceId: source.stateSpaceId,
-      actorId, perspective: source.audience.perspective,
-    };
-    const canonicalResult = await readCanonicalCharacter(request) as CanonicalCharacterResult;
-    return projectParty({ ...source, party: [{ ...member, detailsDeferred: false, canonicalResult,
-      ...(canonicalResult.status === "ready" ? { canonical: canonicalResult.data } : {}),
-    }] })[0];
-  },
+const characterResources = new CharacterResourceOwner({
+  readSheet: readCharacterSheetResource,
+  readDetails: readCharacterDetailsResource,
 });
 
-async function loadCharacter(envelope: ReadyHubEnvelope, actorId: string, signal: AbortSignal) {
-  const source = characterSources.get(characterScope(envelope.stateSpaceId,
-    envelope.contextSelection?.selectedCampaignId ?? "", envelope.audience.perspective));
-  if (!source || source.campaign.id !== envelope.contextSelection?.selectedCampaignId ||
-      source.audience.perspective !== envelope.audience.perspective || signal.aborted)
-    throw new Error("Refresh this view before opening a character.");
-  const request = { source, actorId };
-  const cached = characterClient.peek(request);
-  if (cached && cached.value.sheetState.status !== "error" && cached.value.sheetState.status !== "forbidden") return cached.value;
-  const cancel = () => characterClient.cancel();
-  signal.addEventListener("abort", cancel, { once: true });
-  try { return (await characterClient.load(request)).value; }
-  finally { signal.removeEventListener("abort", cancel); }
+function authorizedCharacter({ envelope, actorId }: CharacterResourceRequest) {
+  const member = envelope.party.find((candidate) => candidate.id === actorId);
+  if (!member) throw new Error("This character is not in the authorized roster.");
+  return member;
+}
+
+function characterReadRequest({ envelope, actorId }: CharacterResourceRequest, signal: AbortSignal) {
+  return {
+    fetchImpl: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, { ...init, signal }),
+    origin: window.location.origin,
+    applicationId: envelope.applicationId,
+    stateSpaceId: envelope.stateSpaceId,
+    actorId,
+    perspective: envelope.audience.perspective,
+  };
+}
+
+async function readCharacterSheetResource(request: CharacterResourceRequest, signal: AbortSignal) {
+  const member = authorizedCharacter(request);
+  const [{ readCanonicalCharacterSheet }, { projectCharacterSheet }] = await Promise.all([
+    import("../server/game-server-context.js"), import("../features/character/project-character"),
+  ]);
+  if (signal.aborted) throw new DOMException("Character replaced", "AbortError");
+  return projectCharacterSheet(member,
+    await readCanonicalCharacterSheet(characterReadRequest(request, signal)) as CharacterSheetResult);
+}
+
+async function readCharacterDetailsResource(request: CharacterResourceRequest, signal: AbortSignal) {
+  const member = authorizedCharacter(request);
+  const [{ readCanonicalCharacter }, { projectCharacterDetails }] = await Promise.all([
+    import("../server/game-server-context.js"), import("../features/character/project-character"),
+  ]);
+  if (signal.aborted) throw new DOMException("Character replaced", "AbortError");
+  return projectCharacterDetails(member,
+    await readCanonicalCharacter(characterReadRequest(request, signal)) as CanonicalCharacterResult);
+}
+
+async function loadCharacterSheet(envelope: ReadyHubEnvelope, actorId: string, signal: AbortSignal) {
+  return characterResources.loadSheet({ envelope, actorId }, signal);
+}
+
+async function loadCharacterDetails(envelope: ReadyHubEnvelope, actorId: string, signal: AbortSignal) {
+  return characterResources.loadDetails({ envelope, actorId }, signal);
 }
 
 async function readFactionObjectPage(
@@ -341,7 +346,7 @@ function subscribeChanges(envelope: ReadyHubEnvelope) {
   if (typeof EventSource === "undefined") return () => {};
   const invalidate = () => {
     tableResources.invalidateAll();
-    characterClient.invalidate();
+    characterResources.invalidateAll();
     window.dispatchEvent(new Event("dnd2024-view-invalidated"));
   };
   return subscribeScopedChanges(envelope, {
@@ -350,7 +355,7 @@ function subscribeChanges(envelope: ReadyHubEnvelope) {
       const consumers = objectConsumers(notice.object.qualifiedId);
       if (!consumers.known) { invalidate(); return; }
       tableResources.invalidateObject(notice.object.qualifiedId);
-      if (consumers.character) characterClient.invalidate();
+      if (consumers.character) characterResources.invalidateObject(notice.object.qualifiedId);
       window.dispatchEvent(new CustomEvent("dnd2024-object-changed", { detail: notice }));
     },
   });
@@ -377,7 +382,8 @@ try {
             initialEnvelope={initialEnvelope}
             subscribeChanges={subscribeChanges}
             loadEnvelope={loadReadyEnvelope}
-            loadCharacter={loadCharacter}
+            loadCharacterSheet={loadCharacterSheet}
+            loadCharacterDetails={loadCharacterDetails}
             loadFactionPage={loadFactionPage}
             loadCampaignDetails={loadCampaignDetails}
             loadDeferredSection={loadDeferredSection}

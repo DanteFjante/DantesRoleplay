@@ -1,4 +1,4 @@
-import type { PartyMemberReadModel, PartySectionId } from "../../data/hub-types";
+import type { CanonicalCharacterData, PartyMemberReadModel, PartySectionId } from "../../data/hub-types";
 import { Icon } from "../Icon";
 
 export function CharacterOverview({
@@ -9,6 +9,7 @@ export function CharacterOverview({
   onOpenSection: (section: PartySectionId) => void;
 }) {
   const sheet = member.characterSheet;
+  const dossier = (sheet as CanonicalCharacterData | undefined)?.dossier ?? null;
   const biography = sheet?.identity?.biography ?? member.backstory[0]?.detail;
   const facts = [
     sheet?.origin ? { label: "Species", value: sheet.origin.species.label } : null,
@@ -40,7 +41,7 @@ export function CharacterOverview({
         <div>
           <strong>{member.recordStatus}</strong>
           <p>Only information authorized for this perspective appears in the dossier.</p>
-          {sheet?.dossier ? <p>Canonical dossier · {sheet.dossier.definitions.length} referenced definitions · inventory depth {sheet.dossier.provenance.inventoryDepth}</p> : null}
+          {dossier ? <p>Canonical dossier · {dossier.definitions.length} referenced definitions · inventory depth {dossier.provenance.inventoryDepth}</p> : null}
         </div>
       </section>
     </div>

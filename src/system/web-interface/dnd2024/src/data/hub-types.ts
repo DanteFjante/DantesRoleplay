@@ -627,8 +627,7 @@ export type CharacterDossierMetadata = {
   };
 };
 
-export type CanonicalCharacterData = CharacterSheetProjectionV2 & {
-  dossier: CharacterDossierMetadata;
+export type CharacterSheetData = CharacterSheetProjectionV2 & {
   projection?: {
     stateSpaceFingerprint: string;
     resolutionFingerprint: string;
@@ -674,7 +673,7 @@ export type PartyMemberReadModel = {
   backstory: PartyDossierEntry[];
   origin: PartyDossierEntry[];
   inventory: PartyDossierEntry[];
-  characterSheet?: CanonicalCharacterData;
+  characterSheet?: CharacterSheetData;
 };
 
 export type RuleReadModel = {
@@ -887,6 +886,29 @@ export type ReadyHubEnvelope = {
   };
 };
 
+export type CanonicalCharacterData = CharacterSheetData & {
+  dossier: CharacterDossierMetadata;
+};
+
+export type CharacterSheetResult =
+  | { status: "ready"; data: CharacterSheetData; failureCategory: null; diagnosticId: string }
+  | {
+      status: "error";
+      data: null;
+      failureCategory: Exclude<SectionFailureCategory, "authorization">;
+      diagnosticId: string;
+      errorCode?: string;
+      httpStatus?: number;
+    }
+  | {
+      status: "forbidden";
+      data: null;
+      failureCategory: "authorization";
+      diagnosticId: string;
+      errorCode?: string;
+      httpStatus?: number;
+    };
+
 export type ObjectReadEvidence = {
   qualifiedQueryId: string;
   stateSpaceFingerprint: string;
@@ -989,8 +1011,6 @@ export type ConnectedCampaignEnvelope = {
     current: boolean;
     media?: EntityVisualMedia;
     entries: Array<{ kind: string; key: string; label: string; details?: string }>;
-    canonical?: CanonicalCharacterData;
-    canonicalResult?: CanonicalCharacterResult;
     detailsDeferred?: boolean;
   }>;
   knowledge: {

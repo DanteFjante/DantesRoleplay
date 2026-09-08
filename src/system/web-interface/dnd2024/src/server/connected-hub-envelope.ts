@@ -7,12 +7,10 @@ import type {
   MapFeature,
   MapLayer,
   MapScope,
-  PartyDossierEntry,
   PartyMemberReadModel,
   ReadyHubEnvelope,
   WorldHistoryEvent,
 } from "../data/hub-types";
-import { legacyReferenceLabel } from "../data/legacy-reference-label.ts";
 import { classifyThalorienKnowledge } from "../data/thalorien-presentation.ts";
 
 function normalizeSlugWords(value: string | null): string | null {
@@ -48,285 +46,36 @@ function initials(name: string): string {
 
 type ConnectedPartyMember = NonNullable<ConnectedCampaignEnvelope["party"]>[number];
 
-function partyEntries(
-  member: ConnectedPartyMember,
-  kinds: readonly string[],
-): PartyDossierEntry[] {
-  const allowedKinds = new Set(kinds);
-  return member.entries
-    .filter((entry) => allowedKinds.has(entry.kind))
-    .map((entry) => ({
-      id: `${member.id}:${entry.kind}:${entry.key}`,
-      kind: entry.kind,
-      title: entry.label,
-      detail: entry.details ?? "No further detail has been recorded.",
-    }));
-}
-
-function canonicalSheetEntries(member: ConnectedPartyMember): PartyDossierEntry[] {
-  const canonical = member.canonical;
-  if (!canonical) return [];
-  const entries: PartyDossierEntry[] = [];
-  for (const membership of canonical.classes ?? []) {
-    const detail = canonical.dossier.classes.find((entry) => entry.id === membership.id)?.definition;
-    entries.push({
-      id: `${member.id}:canonical:class:${membership.id}`,
-      kind: "class",
-      title: `${membership.class.label} · Level ${membership.level}`,
-      detail: detail?.summary ?? (membership.subclass
-        ? `${membership.subclass.label} subclass. Stored canonical class membership.`
-        : "Stored canonical class membership."),
-    });
-  }
-  if (canonical.hitPoints) {
-    const reduction = canonical.hitPoints.maximumReduction
-      ? ` Maximum reduced by ${canonical.hitPoints.maximumReduction}.`
-      : "";
-    entries.push({
-      id: `${member.id}:canonical:hit-points`,
-      kind: "vital",
-      title: "Hit Points",
-      detail: `${canonical.hitPoints.current} of ${canonical.hitPoints.maximum}.${reduction}`,
-    });
-  }
-  if (canonical.temporaryHitPoints) {
-    entries.push({
-      id: `${member.id}:canonical:temporary-hit-points`,
-      kind: "vital",
-      title: "Temporary Hit Points",
-      detail: String(canonical.temporaryHitPoints.amount),
-    });
-  }
-  for (const ability of canonical.abilities ?? []) {
-    entries.push({
-      id: `${member.id}:canonical:ability:${ability.ability.id}`,
-      kind: "ability score",
-      title: ability.ability.label,
-      detail: `Score ${ability.score}; ${ability.modifier >= 0 ? "+" : ""}${ability.modifier} modifier.`,
-    });
-  }
-  for (const speed of canonical.movement ?? []) {
-    const amount = speed.denominator === 1
-      ? String(speed.numerator)
-      : `${speed.numerator}/${speed.denominator}`;
-    entries.push({
-      id: `${member.id}:canonical:movement:${speed.kind.id}`,
-      kind: "movement",
-      title: `${speed.kind.label} speed`,
-      detail: `${amount} ${speed.unit.label}.`,
-    });
-  }
-  if (canonical.body) {
-    entries.push({
-      id: `${member.id}:canonical:size`,
-      kind: "body",
-      title: "Size",
-      detail: canonical.body.size.label,
-    });
-  }
-  if (canonical.experience) {
-    entries.push({
-      id: `${member.id}:canonical:experience`,
-      kind: "advancement",
-      title: "Experience",
-      detail: `${canonical.experience.total} recorded XP.`,
-    });
-  }
-  for (const proficiency of canonical.proficiencies ?? []) {
-    entries.push({
-      id: `${member.id}:canonical:proficiency:${proficiency.proficiency.id}`,
-      kind: "proficiency",
-      title: proficiency.proficiency.label,
-      detail: `${proficiency.rank.label} rank.`,
-    });
-  }
-  return entries;
-}
-
-function canonicalBackstoryEntries(member: ConnectedPartyMember): PartyDossierEntry[] {
-  const identity = member.canonical?.identity;
-  if (!identity) return [];
-  return ([
-    ["pronouns", "Pronouns", identity.pronouns],
-    ["appearance", "Appearance", identity.appearance],
-    ["biography", "Biography", identity.biography],
-    ["player-notes", "Player notes", identity.playerNotes],
-  ] as const).flatMap(([key, title, detail]) => detail ? [{
-    id: `${member.id}:canonical:identity:${key}`,
-    kind: "identity",
-    title,
-    detail,
-  }] : []);
-}
-
-function canonicalOriginEntries(member: ConnectedPartyMember): PartyDossierEntry[] {
-  const canonical = member.canonical;
-  const origin = canonical?.origin;
-  if (!canonical || !origin) return [];
-  return [
-    {
-      id: `${member.id}:canonical:origin:species`,
-      kind: "species",
-      title: origin.species.label,
-      detail: canonical.dossier.origin.species.summary ?? "Stored canonical species selection.",
-    },
-    {
-      id: `${member.id}:canonical:origin:background`,
-      kind: "background",
-      title: origin.background.label,
-      detail: canonical.dossier.origin.background.summary ?? "Stored canonical background selection.",
-    },
-    ...canonical.dossier.origin.traits.map((trait) => ({
-      id: `${member.id}:canonical:origin:trait:${trait.key}`,
-      kind: "trait",
-      title: trait.label,
-      detail: trait.status === "active"
-        ? "Active canonical origin trait."
-        : `Recorded origin trait; ${trait.reason?.replaceAll("-", " ") ?? "executable rules behavior is pending"}.`,
-    })),
-  ];
-}
-
-function canonicalInventoryEntries(member: ConnectedPartyMember): PartyDossierEntry[] {
-  const canonical = member.canonical;
-  if (!canonical) return [];
-  return canonical.inventory.items.map((item) => {
-    const definition = canonical.dossier.inventory.definitions.find((entry) => entry.id === item.definition.id);
-    const placement = legacyReferenceLabel(item.slot);
-    const equipped = item.equipmentSlots.length > 0
-      ? ` Equipped in ${item.equipmentSlots.map((entry) => entry.label).join(", ")}.`
-      : "";
-    return {
-      id: `${member.id}:canonical:inventory:${item.id}`,
-      kind: item.equipmentSlots.length > 0 ? "equipped" : "inventory",
-      title: item.name,
-      detail: `${definition?.summary ? `${definition.summary} ` : ""}Quantity ${item.quantity}. Placement: ${placement}.${equipped}`,
-      ...(item.media?.illustration || item.media?.icon
-        ? { media: item.media.illustration ?? item.media.icon }
-        : {}),
-    };
-  });
-}
-
-function failedSectionState(result: Extract<
-  NonNullable<ConnectedPartyMember["canonicalResult"]>,
-  { status: "error" | "forbidden" }
->) {
-  return result.status === "forbidden"
-    ? {
-        status: "forbidden" as const,
-        data: null,
-        failureCategory: "authorization" as const,
-        diagnosticId: result.diagnosticId,
-        ...(result.errorCode === undefined ? {} : { errorCode: result.errorCode }),
-      }
-    : {
-        status: "error" as const,
-        data: null,
-        failureCategory: result.failureCategory,
-        diagnosticId: result.diagnosticId,
-        ...(result.errorCode === undefined ? {} : { errorCode: result.errorCode }),
-        ...(result.httpStatus === undefined ? {} : { httpStatus: result.httpStatus }),
-      };
-}
-
-export function projectParty(connection: ConnectedCampaignEnvelope): PartyMemberReadModel[] {
-  const members: ConnectedPartyMember[] = connection.party ?? [{
-    ...connection.actor,
-    current: true,
-  }];
-  const canAttachBoundKnowledge = connection.audience.seat === "player" &&
-    connection.knowledge.status === "ready";
-
-  return members.map((member) => {
-    const canonicalResult = member.canonicalResult ?? (member.canonical ? {
-      status: "ready" as const,
-      data: member.canonical,
-      failureCategory: null,
-      diagnosticId: `canonical-character:${member.id}:legacy-ready`,
-    } : null);
-    const canonicalFailure = canonicalResult?.status === "error" || canonicalResult?.status === "forbidden"
-      ? canonicalResult
-      : null;
-    const canonicalFailed = canonicalFailure !== null;
-    const provisionalSheet = partyEntries(member, ["class", "feature"]);
-    const provisionalBackstory = partyEntries(member, ["background", "note"]);
-    const provisionalOrigin = partyEntries(member, ["class", "background"]);
-    const provisionalInventory = partyEntries(member, ["equipment"]);
-    const projectedSheet = canonicalSheetEntries(member);
-    const projectedBackstory = canonicalBackstoryEntries(member);
-    const projectedOrigin = canonicalOriginEntries(member);
-    const projectedInventory = canonicalInventoryEntries(member);
-    const sheet = member.canonical
-      ? projectedSheet
-      : (canonicalFailed ? [] : provisionalSheet);
-    const backstory = canonicalFailed
-      ? []
-      : (projectedBackstory.length > 0 ? projectedBackstory : provisionalBackstory);
-    const origin = canonicalFailed
-      ? []
-      : (projectedOrigin.length > 0 ? projectedOrigin : provisionalOrigin);
-    const inventoryIsCanonical = Boolean(member.canonical);
-    const inventory = inventoryIsCanonical
-      ? projectedInventory
-      : (canonicalFailed ? [] : provisionalInventory);
-    const sheetState = member.detailsDeferred ? { status: "idle" as const, data: null } : canonicalFailed
-      ? failedSectionState(canonicalFailure)
-      : {
-          status: sheet.length > 0 ? "ready" as const : "empty" as const,
-          data: sheet,
-          source: member.canonical ? "canonical" as const : "provisional" as const,
-        };
-    const inventoryState = member.detailsDeferred ? { status: "idle" as const, data: null } : canonicalFailed
-      ? failedSectionState(canonicalFailure)
-      : {
-          status: inventory.length > 0 ? "ready" as const : "empty" as const,
-          data: inventory,
-          source: inventoryIsCanonical ? "canonical" as const : "provisional" as const,
-        };
-    const primaryDirection = origin[0]?.title ?? sheet[0]?.title ?? (canonicalFailed
-      ? "Character details temporarily unavailable"
-      : "Character details not yet recorded");
-    return {
-      id: member.id,
-      initials: initials(member.name),
-      name: member.name,
-      detail: primaryDirection,
-      status: member.state ? displayStatus(member.state) : "Active participant",
-      isCurrent: member.current,
-      ...(member.media?.portrait ? { portrait: member.media.portrait } : {}),
-      recordStatus: member.canonical
-        ? "Canonical character state"
-        : (canonicalFailed
-          ? "Canonical character unavailable"
-          : (member.entries.length > 0 ? "Provisional character record" : "Identity only")),
-      sheetStatus: member.canonical
-        ? "canonical"
-        : (canonicalFailed ? "unavailable" : (provisionalSheet.length > 0 ? "provisional" : "empty")),
-      inventoryStatus: inventoryIsCanonical
-        ? (projectedInventory.length > 0 ? "canonical" : "empty")
-        : (canonicalFailed
-          ? "unavailable"
-          : member.canonical
-          ? "unavailable"
-          : (provisionalInventory.length > 0 ? "provisional" : "empty")),
-      sheetState,
-      inventoryState,
-      sheet,
-      knowledge: canAttachBoundKnowledge && member.current
-        ? connection.knowledge.entries.map((entry, index) => ({
+/** Bootstrap projection: identity and participation only; character details are feature resources. */
+export function projectPartySummary(connection: ConnectedCampaignEnvelope): PartyMemberReadModel[] {
+  const members: ConnectedPartyMember[] = connection.party ?? [{ ...connection.actor, current: true }];
+  const canAttachBoundKnowledge = connection.audience.seat === "player" && connection.knowledge.status === "ready";
+  return members.map((member) => ({
+    id: member.id,
+    initials: initials(member.name),
+    name: member.name,
+    detail: "Character details not yet loaded",
+    status: member.state ? displayStatus(member.state) : "Active participant",
+    isCurrent: member.current,
+    ...(member.media?.portrait ? { portrait: member.media.portrait } : {}),
+    recordStatus: "Identity only",
+    sheetStatus: "empty",
+    inventoryStatus: "empty",
+    sheetState: { status: "idle", data: null },
+    inventoryState: { status: "idle", data: null },
+    sheet: [],
+    knowledge: canAttachBoundKnowledge && member.current
+      ? connection.knowledge.entries.map((entry, index) => ({
           id: `${member.id}:knowledge:${index + 1}`,
           stance: displayStatus(entry.stance, "Known"),
           kind: displayStatus(entry.presentationKind, "Knowledge"),
           text: entry.text,
         }))
-        : [],
-      backstory,
-      origin,
-      inventory,
-      ...(member.canonical ? { characterSheet: member.canonical } : {}),
-    };
-  });
+      : [],
+    backstory: [],
+    origin: [],
+    inventory: [],
+  }));
 }
 
 function normalizeRegion(value: string | null): string | null {
@@ -1371,7 +1120,7 @@ export function connectedCampaignToHubEnvelope(
       clues: campaignClues,
       ...(dmCampaignContext ? { dmContext: dmCampaignContext } : {}),
     },
-    party: projectParty(connection),
+    party: projectPartySummary(connection),
     rules: connection.rules ?? [],
   };
 }

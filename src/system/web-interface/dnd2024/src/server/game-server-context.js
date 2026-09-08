@@ -6,6 +6,7 @@ import { contract as campaignContextContract } from "./campaign-context-contract
 import { contract as campaignDetailsContract } from "./campaign-details-contract.js";
 import { contract as campaignLocationVisitsContract } from "./campaign-location-visits-contract.js";
 import { contract as worldCampaignDirectoryContract } from "./world-campaign-directory-contract.js";
+import { contract as characterSheetContract } from "./character-sheet-contract.js";
 import { contract as characterDossierContract } from "./character-dossier-contract.js";
 import { contract as factionDirectoryContract } from "./faction-directory-contract.js";
 
@@ -735,6 +736,68 @@ function validCharacterDossier(value, actorId) {
       value.provenance.ruleTextPolicy !== "canonical-only") return false;
   return value.sheet.origin?.species?.id === value.origin.species.id &&
     value.sheet.origin?.background?.id === value.origin.background.id;
+}
+
+/** Reads only the calculated v2 sheet. Full dossier metadata remains a separate resource. */
+export async function readCanonicalCharacterSheet({
+  fetchImpl, origin, applicationId, stateSpaceId, actorId, perspective,
+}) {
+  const entityRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
+    `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities`;
+  try {
+    const result = await readModelResponse({
+      fetchImpl,
+      resource: url(origin, `${entityRoot}/${encodeURIComponent(actorId)}` +
+        `/read-models/${encodeURIComponent(characterSheetContract.id)}` +
+        (perspective ? `?perspective=${encodeURIComponent(perspective)}` : "")),
+      init: { headers: { Accept: "application/json" }, cache: "no-store" },
+      applicationId,
+      stateSpaceId,
+      query: characterSheetContract,
+      maximumBodyBytes: 1_060_000,
+      maximumDataBytes: 1_048_576,
+      statusPolicy: { ready: [200], forbidden: [403], stale: [409], unavailable: "remaining" },
+      validate: (value) => validCharacterSheetV2(value, actorId),
+    });
+    if (result.status !== "ready") {
+      if (result.status === "incompatible") return {
+        status: "error", data: null, failureCategory: "incompatible-data",
+        diagnosticId: canonicalCharacterDiagnosticId(result.response, actorId, "incompatible-data"),
+      };
+      const response = result.response;
+      const failureBody = await readBoundedJson(response, 8_192);
+      const failure = failureBody.status === "ready" ? failureBody.value : null;
+      const errorCode = token(failure?.code);
+      const category = canonicalCharacterFailureCategory(response, errorCode);
+      return {
+        status: category === "authorization" ? "forbidden" : "error",
+        data: null,
+        failureCategory: category,
+        diagnosticId: canonicalCharacterDiagnosticId(response, actorId, category),
+        ...(errorCode ? { errorCode } : {}),
+        ...(Number.isInteger(response?.status) ? { httpStatus: response.status } : {}),
+      };
+    }
+    return {
+      status: "ready", failureCategory: null,
+      diagnosticId: canonicalCharacterDiagnosticId(result.response, actorId, "ready"),
+      data: {
+        ...result.data,
+        projection: {
+          stateSpaceFingerprint: result.evidence.stateSpaceFingerprint,
+          resolutionFingerprint: result.evidence.resolutionFingerprint,
+          resultFingerprint: result.evidence.resultFingerprint,
+          sourceRevisionFingerprint: result.evidence.sourceRevisionFingerprint,
+        },
+      },
+    };
+  } catch (error) {
+    if (error?.name === "AbortError") throw error;
+    return {
+      status: "error", data: null, failureCategory: "transport",
+      diagnosticId: canonicalCharacterDiagnosticId(null, actorId, "transport"),
+    };
+  }
 }
 
 export async function readCanonicalCharacter({ fetchImpl, origin, applicationId, stateSpaceId, actorId, perspective }) {
