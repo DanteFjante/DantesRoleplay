@@ -2,13 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  BrowserObjectQueryState,
+  TableResourceOwner,
   CAMPAIGN_SUMMARY_OBJECT_ID,
   FACTION_DIRECTORY_OBJECT_ID,
-  browserObjectUiReducer,
-  createBrowserObjectUiState,
   type FactionDirectoryPage,
-} from "../../src/data/browser-object-state";
+} from "../../src/data/object-resources";
+import { createHubObjectUiState, hubObjectUiReducer } from "../../src/data/hub-object-ui";
 import type { HubEnvelope, Perspective, ReadyHubEnvelope } from "../../src/data/hub-types";
 import { ViewReadError } from "../../src/data/view-read-client";
 
@@ -66,7 +65,7 @@ function page(
 
 test("Campaign requests isolate audiences and late perspective responses cannot refill the cache", async () => {
   const pending = new Map<string, (value: HubEnvelope) => void>();
-  const state = new BrowserObjectQueryState({
+  const state = new TableResourceOwner({
     readCampaign: ({ perspective, campaignId }) => new Promise((resolve) => {
       pending.set(`${perspective}:${campaignId}`, resolve);
     }),
@@ -86,7 +85,7 @@ test("Campaign requests isolate audiences and late perspective responses cannot 
 
 test("object notices invalidate only their migrated cache and reconnect invalidates both", async () => {
   const envelope = scope();
-  const state = new BrowserObjectQueryState({
+  const state = new TableResourceOwner({
     readCampaign: async ({ perspective, campaignId }) => campaign(perspective, campaignId ?? "bound"),
     readFactionPage: async () => page(),
     validateCampaign: isCampaign,
@@ -114,7 +113,7 @@ test("object notices invalidate only their migrated cache and reconnect invalida
 test("Faction pages reject incompatible and stale responses without retaining them", async () => {
   let result: unknown = page();
   const envelope = scope("dm", "A".repeat(64));
-  const state = new BrowserObjectQueryState({
+  const state = new TableResourceOwner({
     readCampaign: async ({ perspective, campaignId }) => campaign(perspective, campaignId ?? "bound"),
     readFactionPage: async () => result as FactionDirectoryPage,
     validateCampaign: isCampaign,
@@ -139,9 +138,9 @@ test("Faction pages reject incompatible and stale responses without retaining th
   assert.equal(state.peekFactionPage(first), null, "a stale page retires the whole Factions query cache");
 });
 
-test("query retention is bounded by count and expiry", async () => {
-  const state = new BrowserObjectQueryState({
-    maximumCachedScopes: 2,
+test("scope replacement retires prior Campaign resources and cache expiry remains bounded", async () => {
+  const state = new TableResourceOwner({
+    maximumEntries: 2,
     readCampaign: async ({ perspective, campaignId }) => campaign(perspective, campaignId ?? "bound"),
     readFactionPage: async () => page(),
     validateCampaign: isCampaign,
@@ -150,11 +149,11 @@ test("query retention is bounded by count and expiry", async () => {
     await state.loadCampaign({ perspective: "dm", campaignId });
   }
   assert.equal(state.peekCampaign({ perspective: "dm", campaignId: "one" }), null);
-  assert.notEqual(state.peekCampaign({ perspective: "dm", campaignId: "two" }), null);
+  assert.equal(state.peekCampaign({ perspective: "dm", campaignId: "two" }), null);
   assert.notEqual(state.peekCampaign({ perspective: "dm", campaignId: "three" }), null);
 
-  const expiring = new BrowserObjectQueryState({
-    maximumCacheAgeMs: 0,
+  const expiring = new TableResourceOwner({
+    maximumAgeMs: 0,
     readCampaign: async ({ perspective, campaignId }) => campaign(perspective, campaignId ?? "bound"),
     readFactionPage: async () => page(),
     validateCampaign: isCampaign,
@@ -164,15 +163,15 @@ test("query retention is bounded by count and expiry", async () => {
 });
 
 test("local edit state remains pending through submit and retains failed drafts until server confirmation", () => {
-  let state = createBrowserObjectUiState("faction.one");
-  state = browserObjectUiReducer(state,
+  let state = createHubObjectUiState("faction.one");
+  state = hubObjectUiReducer(state,
     { type: "edit-staged", objectId: CAMPAIGN_SUMMARY_OBJECT_ID, draft: { premise: "Mercy has a cost." } });
-  state = browserObjectUiReducer(state, { type: "write-submitted", objectId: CAMPAIGN_SUMMARY_OBJECT_ID });
+  state = hubObjectUiReducer(state, { type: "write-submitted", objectId: CAMPAIGN_SUMMARY_OBJECT_ID });
   assert.equal(state.edits[CAMPAIGN_SUMMARY_OBJECT_ID].status, "pending");
   assert.deepEqual(state.edits[CAMPAIGN_SUMMARY_OBJECT_ID].draft, { premise: "Mercy has a cost." });
 
-  const prematureConfirmation = browserObjectUiReducer(
-    browserObjectUiReducer(state, {
+  const prematureConfirmation = hubObjectUiReducer(
+    hubObjectUiReducer(state, {
       type: "write-failed", objectId: CAMPAIGN_SUMMARY_OBJECT_ID, error: "The source revision changed.",
     }),
     { type: "write-confirmed", objectId: CAMPAIGN_SUMMARY_OBJECT_ID },
@@ -180,8 +179,8 @@ test("local edit state remains pending through submit and retains failed drafts 
   assert.equal(prematureConfirmation.edits[CAMPAIGN_SUMMARY_OBJECT_ID].status, "failed");
   assert.equal(prematureConfirmation.edits[CAMPAIGN_SUMMARY_OBJECT_ID].error, "The source revision changed.");
 
-  state = browserObjectUiReducer(state, { type: "write-confirmed", objectId: CAMPAIGN_SUMMARY_OBJECT_ID });
+  state = hubObjectUiReducer(state, { type: "write-confirmed", objectId: CAMPAIGN_SUMMARY_OBJECT_ID });
   assert.equal(state.edits[CAMPAIGN_SUMMARY_OBJECT_ID], undefined);
-  state = browserObjectUiReducer(state, { type: "scope-replaced", factionId: "faction.two" });
-  assert.deepEqual(state, createBrowserObjectUiState("faction.two"));
+  state = hubObjectUiReducer(state, { type: "scope-replaced", factionId: "faction.two" });
+  assert.deepEqual(state, createHubObjectUiState("faction.two"));
 });

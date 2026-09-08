@@ -1,13 +1,16 @@
 export type ViewReadErrorCategory = "cancelled" | "incompatible-data" | "stale-data" | "transport";
 
 export class ViewReadError extends Error {
+  public readonly category: ViewReadErrorCategory;
+
   constructor(
-    public readonly category: ViewReadErrorCategory,
+    category: ViewReadErrorCategory,
     message: string,
     options?: ErrorOptions,
   ) {
     super(message, options);
     this.name = "ViewReadError";
+    this.category = category;
   }
 }
 

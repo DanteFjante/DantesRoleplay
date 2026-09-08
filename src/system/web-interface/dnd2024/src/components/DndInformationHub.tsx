@@ -5,10 +5,9 @@ import { lazy, Suspense, useCallback, useEffect, useReducer, useRef, useState } 
 import {
   CAMPAIGN_SUMMARY_OBJECT_ID,
   FACTION_DIRECTORY_OBJECT_ID,
-  browserObjectUiReducer,
-  createBrowserObjectUiState,
   type FactionDirectoryPage,
-} from "../data/browser-object-state";
+} from "../data/object-resources";
+import { createHubObjectUiState, hubObjectUiReducer } from "../data/hub-object-ui";
 import { resolveCampaignWorldTarget } from "../data/campaign-navigation";
 import { ITEM_ROUTE_EVENT, navigateItemRoute, parseItemRoute } from "../data/item-view-route";
 import { applyDeferredHubUpdate, preserveLastGoodPartyData } from "../data/section-state";
@@ -176,9 +175,9 @@ export function DndInformationHub({
   const [locationSection, setLocationSection] = useState<LocationSectionId>("details");
   const [selectedLocationId, setSelectedLocationId] = useState(initialEnvelope.world.currentLocationId);
   const [objectUi, dispatchObjectUi] = useReducer(
-    browserObjectUiReducer,
+    hubObjectUiReducer,
     initialEnvelope.world.factions[0]?.id ?? "",
-    createBrowserObjectUiState,
+    createHubObjectUiState,
   );
   const { selectedFactionId, campaignDetailsLoaded } = objectUi;
   const [selectedPersonId, setSelectedPersonId] = useState(initialEnvelope.world.people[0]?.id ?? "");

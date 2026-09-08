@@ -3,9 +3,9 @@ import { createRoot } from "react-dom/client";
 
 import { BootstrapShell } from "../components/BootstrapShell";
 import {
-  BrowserObjectQueryState,
+  TableResourceOwner,
   type FactionObjectRequest,
-} from "../data/browser-object-state";
+} from "../data/object-resources";
 import { resolveHubSurface } from "../data/hub-availability.js";
 import type { CampaignReadModel, CanonicalCharacterResult, ConnectedCampaignEnvelope, DeferredHubSection, DeferredHubUpdate, HubEnvelope, PartyMemberReadModel, Perspective, ReadyHubEnvelope, RuleReadModel } from "../data/hub-types";
 import { ViewReadClient, ViewReadError } from "../data/view-read-client";
@@ -109,7 +109,7 @@ async function readEnvelope(
   return projected;
 }
 
-const browserObjectState = new BrowserObjectQueryState({
+const tableResources = new TableResourceOwner({
   readCampaign: ({ perspective, campaignId }, signal) => readEnvelope(perspective, campaignId, signal),
   readFactionPage: readFactionObjectPage,
   validateCampaign: isHubEnvelope,
@@ -209,7 +209,7 @@ async function readFactionObjectPage(
 }
 
 async function loadFactionPage(envelope: ReadyHubEnvelope, cursor: string | null, signal: AbortSignal) {
-  return browserObjectState.loadFactionPage({ envelope, cursor }, signal);
+  return tableResources.loadFactionPage({ envelope, cursor }, signal);
 }
 
 async function loadCampaignDetails(
@@ -244,7 +244,7 @@ async function loadEnvelope(
   perspective: Perspective,
   campaignId?: string,
 ): Promise<HubEnvelope> {
-  return browserObjectState.loadCampaign({ perspective, campaignId });
+  return tableResources.loadCampaign({ perspective, campaignId });
 }
 
 async function loadDeferredSection(
@@ -293,9 +293,9 @@ async function loadReadyEnvelope(
   preferCached = false,
 ): Promise<ReadyHubEnvelope> {
   const request = { perspective, campaignId };
-  const explicit = preferCached ? browserObjectState.peekCampaign(request) : null;
+  const explicit = preferCached ? tableResources.peekCampaign(request) : null;
   const bound = preferCached && explicit === null
-    ? browserObjectState.peekCampaign({ perspective })
+    ? tableResources.peekCampaign({ perspective })
     : null;
   const cached = explicit ?? (bound?.value.status === "ready" &&
     bound.value.contextSelection?.selectedCampaignId === campaignId
@@ -312,7 +312,7 @@ const rootElement = document.querySelector<HTMLElement>("#root");
 function subscribeChanges(envelope: ReadyHubEnvelope) {
   if (typeof EventSource === "undefined") return () => {};
   const invalidate = () => {
-    browserObjectState.invalidateAll();
+    tableResources.invalidateAll();
     characterClient.invalidate();
     window.dispatchEvent(new Event("dnd2024-view-invalidated"));
   };
@@ -321,7 +321,7 @@ function subscribeChanges(envelope: ReadyHubEnvelope) {
     changed: (notice) => {
       const consumers = objectConsumers(notice.object.qualifiedId);
       if (!consumers.known) { invalidate(); return; }
-      browserObjectState.invalidateObject(notice.object.qualifiedId);
+      tableResources.invalidateObject(notice.object.qualifiedId);
       if (consumers.character) characterClient.invalidate();
       window.dispatchEvent(new CustomEvent("dnd2024-object-changed", { detail: notice }));
     },

@@ -8,11 +8,16 @@ function source(path) {
 
 test("bootstrap renders the navigation shell before the private v1 adapter resolves", () => {
   const main = source("../src/server-host/main.tsx");
+  const hub = source("../src/components/DndInformationHub.tsx");
   const shellRender = main.indexOf("<BootstrapShell />");
   const initialRead = main.indexOf('await loadInitialHub(loadEnvelope,');
 
   assert.ok(shellRender >= 0);
   assert.ok(initialRead > shellRender);
+  assert.match(main, /new TableResourceOwner/u);
+  assert.doesNotMatch(main, /BrowserObjectQueryState/u);
+  assert.doesNotMatch(hub, /TableResourceOwner|new ResourceStore/u,
+    "the navigation shell does not own resource loading or retention");
   assert.match(main, /new ViewReadClient</u);
   assert.match(main, /fetchImpl: fetchWithSignal/u);
   assert.match(main, /readGameServerContext/u, "the v1 adapter remains available for rollback");
