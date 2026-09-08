@@ -130,6 +130,20 @@ test("W08 composes Current View from the registered resume, scene, and board own
   }
 });
 
+test("W09 limits the first website write to the existing mapped DM premise field", async () => {
+  const feature = contract.features.find(({ id }) => id === "campaign");
+  assert.match(feature?.target?.slice ?? "", /W09/u);
+  assert.match(feature?.browserAssembly ?? "", /CampaignPremiseEditor/u);
+  assert.match(feature?.editCapability ?? "", /only the existing DM premise set mapping/u);
+  assert.match(feature?.editCapability ?? "", /Player writes remain intentionally unavailable/u);
+  const object = await findCatalogRecord(catalogObjectRoot, "dnd2024.object.campaign-summary");
+  assert.equal(object?.version, 3);
+  assert.deepEqual(object?.access?.write, ["dm"]);
+  assert.deepEqual(object?.writes?.schema?.properties?.premise,
+    { type: "string", minLength: 1, maxLength: 1000 });
+  assert.deepEqual(object?.writes?.paths?.find(({ path }) => path === "/premise")?.operations, ["set"]);
+});
+
 test("W01 coverage follows every current navigation section and item/board route", () => {
   const coverage = contract.navigationCoverage;
   assert.deepEqual(coverage.persistentShell, ["context-and-shell"]);

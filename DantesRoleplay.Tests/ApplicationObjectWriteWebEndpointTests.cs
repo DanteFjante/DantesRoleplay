@@ -62,6 +62,26 @@ public sealed class ApplicationObjectWriteWebEndpointTests
     }
 
     [Fact]
+    public async Task No_op_replay_is_returned_as_a_confirmed_idempotent_result()
+    {
+        var writes = new Writes
+        {
+            Result = new(false, true, true, "operation.replayed", "{\"value\":\"changed\"}",
+                new string('E', 64), [])
+        };
+
+        var response = await WriteAsync(new(true, "gm", Application, "scope.fixture", null,
+            KnowledgeAudienceRole.GameMaster), writes, Body("edit-replayed"));
+
+        Assert.Equal(StatusCodes.Status200OK, response.StatusCode);
+        Assert.False(response.Body.GetProperty("applied").GetBoolean());
+        Assert.True(response.Body.GetProperty("replayed").GetBoolean());
+        Assert.True(response.Body.GetProperty("noOp").GetBoolean());
+        Assert.Equal("operation.replayed", response.Body.GetProperty("operationId").GetString());
+        Assert.Equal(new string('E', 64), response.Body.GetProperty("sourceRevisionFingerprint").GetString());
+    }
+
+    [Fact]
     public async Task Write_rejects_a_state_space_outside_the_current_authorized_binding()
     {
         var writes = new Writes();
@@ -144,6 +164,7 @@ public sealed class ApplicationObjectWriteWebEndpointTests
         public int Calls { get; private set; }
         public ApplicationObjectWriteRequest? LastRequest { get; private set; }
         public string? FailureCode { get; init; }
+        public ApplicationObjectWriteResult? Result { get; init; }
 
         public Task<ApplicationObjectWriteResult> WriteAsync(
             ApplicationObjectWriteRequest request,
@@ -153,7 +174,7 @@ public sealed class ApplicationObjectWriteWebEndpointTests
             LastRequest = request;
             if (FailureCode is not null)
                 throw new ApplicationObjectWriteException(FailureCode, "SECRET implementation detail");
-            return Task.FromResult(new ApplicationObjectWriteResult(
+            return Task.FromResult(Result ?? new ApplicationObjectWriteResult(
                 true, false, false, "operation.fixture", "{\"value\":\"changed\"}",
                 new string('D', 64), []));
         }

@@ -13,6 +13,7 @@ export type HubObjectUiAction =
   | { type: "campaign-details-loaded" }
   | { type: "campaign-details-invalidated" }
   | { type: "edit-staged"; objectId: string; draft: unknown }
+  | { type: "edit-cancelled"; objectId: string }
   | { type: "write-submitted"; objectId: string }
   | { type: "write-failed"; objectId: string; error: string }
   | { type: "write-confirmed"; objectId: string };

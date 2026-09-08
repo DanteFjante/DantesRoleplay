@@ -98,6 +98,15 @@ async function click(control: HTMLButtonElement) {
   });
 }
 
+async function enterTextarea(control: HTMLTextAreaElement, value: string) {
+  await act(async () => {
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value")?.set;
+    setter?.call(control, value);
+    control.dispatchEvent(new window.Event("input", { bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+}
+
 function pointerEvent(type: string, {
   clientX,
   clientY,
@@ -542,6 +551,12 @@ function envelope(perspective: Perspective): ReadyHubEnvelope {
         campaigns: [{ id: "campaign.fixture.eldervale", name: projected.campaign.title }],
       }],
     },
+    objectQueries: { campaignSummary: {
+      qualifiedQueryId: "dnd2024.query.campaign-summary",
+      stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
+      outputSchemaHash: "3".repeat(64), resultFingerprint: "4".repeat(64),
+      sourceRevisionFingerprint: "A".repeat(64),
+    } },
   };
 }
 
@@ -1374,4 +1389,162 @@ test("a mounted view error boundary keeps a rendering failure local", async () =
   } finally {
     console.error = originalConsoleError;
   }
+});
+
+test("mounted Campaign premise edit uses the production PATCH client once and refetches the committed result", async () => {
+  const [{ DndInformationHub }, { createCampaignPremiseWriter }] = await Promise.all([
+    import("../../src/components/DndInformationHub"),
+    import("../../src/server/campaign-premise-write"),
+  ]);
+  const initial = envelope("dm");
+  const premise = "The party must decide what mercy costs.";
+  const refreshed = structuredClone(initial);
+  refreshed.campaign.premise = premise;
+  refreshed.objectQueries!.campaignSummary!.sourceRevisionFingerprint = "B".repeat(64);
+  let respond: ((value: Response) => void) | undefined;
+  const writes: Array<{ input: RequestInfo | URL; init?: RequestInit }> = [];
+  const writer = createCampaignPremiseWriter((input, init) => {
+    writes.push({ input, init });
+    return new Promise<Response>((resolve) => { respond = resolve; });
+  }, 0);
+  let refreshes = 0;
+  const mounted = await mount(<DndInformationHub
+    initialEnvelope={initial}
+    loadContent={async () => { throw new Error("not used"); }}
+    loadEnvelope={async () => { refreshes += 1; return refreshed; }}
+    writeCampaignPremise={writer}
+  />);
+  try {
+    await click(button(mounted.container, "Campaign"));
+    await click(button(mounted.container, "Edit campaign premise"));
+    const textarea = mounted.container.querySelector("#campaign-premise-draft") as HTMLTextAreaElement;
+    const unchanged = button(mounted.container, "Save premise");
+    assert.equal(unchanged.disabled, true, "the readable existing value is a client-side no-op");
+    assert.equal(writes.length, 0);
+
+    await enterTextarea(textarea, premise);
+    const save = button(mounted.container, "Save premise");
+    await click(save);
+    assert.equal(writes.length, 1);
+    assert.equal(save.disabled, true, "pending state blocks duplicate submission");
+    save.dispatchEvent(new window.MouseEvent("click", { bubbles: true }));
+    assert.equal(writes.length, 1);
+
+    const body = JSON.parse(String(writes[0].init?.body));
+    await act(async () => {
+      respond?.(new Response(JSON.stringify({
+        applicationId: initial.applicationId,
+        stateSpaceId: initial.stateSpaceId,
+        qualifiedQueryId: "dnd2024.query.campaign-summary",
+        applied: true, replayed: false, noOp: false,
+        operationId: "operation.premise.fixture",
+        sourceRevisionFingerprint: "B".repeat(64),
+        data: {
+          status: "active", title: initial.campaign.title, premise,
+          partyGoals: ["Continue the campaign."], toneAndBoundaries: ["Respect the table."],
+          party: [], totalCount: 0, complete: true, nextCursor: null,
+        },
+      }), { status: 200 }));
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    });
+    assert.equal(body.expectedSourceRevisionFingerprint, "A".repeat(64));
+    assert.deepEqual(body.changes, { premise });
+    assert.equal(refreshes, 1, "a confirmed write refetches the Campaign object");
+    assert.equal(mounted.container.querySelector(".campaign-premise-current")?.textContent, premise);
+    assert.equal(mounted.container.querySelector("#campaign-premise-draft"), null);
+    assert.match(mounted.container.textContent ?? "", /Campaign premise saved/);
+  } finally { await mounted.cleanup(); }
+});
+
+test("stale Campaign premise recovery refreshes authority, retains the draft, and retries cleanly", async () => {
+  const [{ DndInformationHub }, { CampaignPremiseWriteError }] = await Promise.all([
+    import("../../src/components/DndInformationHub"),
+    import("../../src/server/campaign-premise-write"),
+  ]);
+  const initial = envelope("dm");
+  const concurrent = structuredClone(initial);
+  concurrent.campaign.premise = "A premise saved by another DM.";
+  concurrent.objectQueries!.campaignSummary!.sourceRevisionFingerprint = "B".repeat(64);
+  const committed = structuredClone(concurrent);
+  committed.campaign.premise = "My retained draft.";
+  committed.objectQueries!.campaignSummary!.sourceRevisionFingerprint = "C".repeat(64);
+  let writes = 0;
+  let refreshes = 0;
+  const observedRevisions: string[] = [];
+  const mounted = await mount(<DndInformationHub
+    initialEnvelope={initial}
+    loadContent={async () => { throw new Error("not used"); }}
+    loadEnvelope={async () => (++refreshes === 1 ? concurrent : committed)}
+    writeCampaignPremise={async ({ envelope: requestEnvelope, premise }) => {
+      writes += 1;
+      observedRevisions.push(requestEnvelope.objectQueries!.campaignSummary!.sourceRevisionFingerprint);
+      if (writes === 1) throw new CampaignPremiseWriteError("stale", "OBJECT_WRITE_SOURCE_STALE",
+        "The campaign changed. It has been refreshed; review your draft and retry.");
+      return {
+        premise, applied: true, replayed: false, noOp: false,
+        operationId: "operation.retry.fixture", sourceRevisionFingerprint: "C".repeat(64),
+      };
+    }}
+  />);
+  try {
+    await click(button(mounted.container, "Campaign"));
+    await click(button(mounted.container, "Edit campaign premise"));
+    await enterTextarea(mounted.container.querySelector("#campaign-premise-draft") as HTMLTextAreaElement,
+      "My retained draft.");
+    await click(button(mounted.container, "Save premise"));
+    assert.equal(refreshes, 1);
+    assert.equal(mounted.container.querySelector(".campaign-premise-current")?.textContent,
+      "A premise saved by another DM.");
+    assert.equal((mounted.container.querySelector("#campaign-premise-draft") as HTMLTextAreaElement).value,
+      "My retained draft.");
+    assert.match(mounted.container.querySelector("[role=alert]")?.textContent ?? "", /review your draft and retry/i);
+
+    await click(button(mounted.container, "Retry save"));
+    assert.equal(writes, 2);
+    assert.equal(refreshes, 2);
+    assert.deepEqual(observedRevisions, ["A".repeat(64), "B".repeat(64)]);
+    assert.equal(mounted.container.querySelector(".campaign-premise-current")?.textContent, "My retained draft.");
+  } finally { await mounted.cleanup(); }
+});
+
+test("rejected Campaign premise edits roll back locally and Actors receive no edit control", async () => {
+  const [{ DndInformationHub }, { CampaignPremiseWriteError }] = await Promise.all([
+    import("../../src/components/DndInformationHub"),
+    import("../../src/server/campaign-premise-write"),
+  ]);
+  const initial = envelope("dm");
+  const mounted = await mount(<DndInformationHub
+    initialEnvelope={initial}
+    loadContent={async () => { throw new Error("not used"); }}
+    writeCampaignPremise={async () => {
+      throw new CampaignPremiseWriteError("rejected", "OBJECT_WRITE_REJECTED",
+        "The campaign premise edit was rejected without changing the campaign.");
+    }}
+  />);
+  try {
+    await click(button(mounted.container, "Campaign"));
+    const original = initial.campaign.premise;
+    await click(button(mounted.container, "Edit campaign premise"));
+    await enterTextarea(mounted.container.querySelector("#campaign-premise-draft") as HTMLTextAreaElement,
+      "A rejected draft.");
+    await click(button(mounted.container, "Save premise"));
+    assert.equal(mounted.container.querySelector(".campaign-premise-current")?.textContent, original);
+    assert.match(mounted.container.querySelector("[role=alert]")?.textContent ?? "", /rejected without changing/i);
+    await click(button(mounted.container, "Cancel"));
+    assert.equal(mounted.container.querySelector("#campaign-premise-draft"), null);
+    assert.equal(mounted.container.querySelector(".campaign-premise-current")?.textContent, original);
+  } finally { await mounted.cleanup(); }
+
+  const actor = envelope("player");
+  actor.audience.seat = "player";
+  const actorMounted = await mount(<DndInformationHub
+    initialEnvelope={actor}
+    loadContent={async () => { throw new Error("not used"); }}
+    writeCampaignPremise={async () => { throw new Error("must not be called"); }}
+  />);
+  try {
+    await click(button(actorMounted.container, "Campaign"));
+    assert.equal([...actorMounted.container.querySelectorAll("button")]
+      .some((candidate) => candidate.textContent?.includes("Edit campaign premise")), false);
+  } finally { await actorMounted.cleanup(); }
 });

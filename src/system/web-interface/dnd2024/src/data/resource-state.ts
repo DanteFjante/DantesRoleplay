@@ -26,6 +26,7 @@ export type ResourceEdit = {
 
 export type ResourceEditAction =
   | { type: "edit-staged"; resourceKey: string; draft: unknown }
+  | { type: "edit-cancelled"; resourceKey: string }
   | { type: "write-submitted"; resourceKey: string }
   | { type: "write-failed"; resourceKey: string; error: string }
   | { type: "write-confirmed"; resourceKey: string };
@@ -38,6 +39,12 @@ export function reduceResourceEdits(
   switch (action.type) {
     case "edit-staged":
       return { ...edits, [action.resourceKey]: { draft: action.draft, status: "editing" } };
+    case "edit-cancelled": {
+      if (!edits[action.resourceKey] || edits[action.resourceKey].status === "pending") return edits;
+      const next = { ...edits };
+      delete next[action.resourceKey];
+      return next;
+    }
     case "write-submitted": {
       const edit = edits[action.resourceKey];
       return !edit ? edits : { ...edits,

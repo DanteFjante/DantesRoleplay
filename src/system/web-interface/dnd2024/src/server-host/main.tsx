@@ -26,6 +26,7 @@ import { loadInitialHub } from "../data/hub-preferences";
 import { objectConsumers, subscribeScopedChanges } from "../data/scoped-change-stream";
 import { isReadyHubEnvelope } from "../state.js";
 import { markBootstrapResponse } from "../observability/performance.js";
+import type { CampaignPremiseWriteRequest, CampaignPremiseWriteResult } from "../server/campaign-premise-write";
 import {
   installDevelopmentRequestLedger,
   recordDevelopmentDiagnostic,
@@ -445,6 +446,14 @@ function subscribeChanges(envelope: ReadyHubEnvelope) {
     },
   });
 }
+
+async function saveCampaignPremise(
+  request: CampaignPremiseWriteRequest,
+  signal?: AbortSignal,
+): Promise<CampaignPremiseWriteResult> {
+  const { writeCampaignPremise } = await import("../server/campaign-premise-write");
+  return writeCampaignPremise(request, signal);
+}
 if (!rootElement) throw new Error("The React mount is unavailable.");
 const root = createRoot(rootElement);
 root.render(
@@ -474,6 +483,7 @@ try {
             loadCampaignDetails={loadCampaignDetails}
             loadDeferredSection={loadDeferredSection}
             loadWorldScope={loadWorldScope}
+            writeCampaignPremise={saveCampaignPremise}
             loadRules={loadRulesReference}
             loadContent={loadInstalledContent}
           />

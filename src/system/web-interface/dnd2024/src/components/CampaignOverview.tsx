@@ -1,13 +1,25 @@
 import type { CampaignReadModel, CampaignSectionId } from "../data/hub-types";
+import type { ResourceEdit } from "../data/resource-state";
+import { CampaignPremiseEditor } from "./CampaignPremiseEditor";
 import { Icon } from "./Icon";
 
 export function CampaignOverview({
   campaign,
+  premiseEdit,
   worldName,
+  onBeginPremiseEdit,
+  onCancelPremiseEdit,
+  onPremiseDraftChange,
+  onSavePremise,
   onSectionChange,
 }: {
   campaign: CampaignReadModel;
+  premiseEdit?: ResourceEdit;
   worldName: string;
+  onBeginPremiseEdit?: () => void;
+  onCancelPremiseEdit?: () => void;
+  onPremiseDraftChange?: (premise: string) => void;
+  onSavePremise?: (premise: string) => void;
   onSectionChange: (section: CampaignSectionId) => void;
 }) {
   const latest = [...campaign.adventureLog].sort((left, right) => right.sortOrder - left.sortOrder)[0];
@@ -19,7 +31,17 @@ export function CampaignOverview({
         <div>
           <span className="eyebrow">{campaign.subtitle} · {worldName}</span>
           <h1 id="main-view-heading" tabIndex={-1}>{campaign.title}</h1>
-          <p>{campaign.premise}</p>
+          <p className="campaign-premise-current">{campaign.premise}</p>
+          {onBeginPremiseEdit && onCancelPremiseEdit && onPremiseDraftChange && onSavePremise ? (
+            <CampaignPremiseEditor
+              currentPremise={campaign.premise}
+              edit={premiseEdit}
+              onBegin={onBeginPremiseEdit}
+              onCancel={onCancelPremiseEdit}
+              onChange={onPremiseDraftChange}
+              onSave={onSavePremise}
+            />
+          ) : null}
           <div className="campaign-hero__meta">
             <span><Icon name="Sparkles" size={14} /> {campaign.status}</span>
             <span><Icon name="BookOpen" size={14} /> {campaign.chapter}</span>

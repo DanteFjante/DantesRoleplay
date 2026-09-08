@@ -47,6 +47,7 @@ import {
 import { MainNavigation } from "./MainNavigation";
 import type { InstalledContentModel } from "../server/effective-content";
 import type { ItemViewClient } from "../server/item-view-client";
+import type { CampaignPremiseWriter } from "../server/campaign-premise-write";
 import { TopBar } from "./TopBar";
 import { WorldView } from "./WorldView";
 import { markActiveViewReady } from "../observability/performance.js";
@@ -150,6 +151,7 @@ export function DndInformationHub({
   loadCampaignDetails,
   loadDeferredSection,
   loadWorldScope,
+  writeCampaignPremise,
   subscribeChanges,
 }: {
   initialEnvelope: ReadyHubEnvelope;
@@ -163,6 +165,7 @@ export function DndInformationHub({
   loadCampaignDetails?: CampaignDetailsLoader;
   loadDeferredSection?: (envelope: ReadyHubEnvelope, section: DeferredHubSection, signal: AbortSignal) => Promise<DeferredHubUpdate>;
   loadWorldScope?: (envelope: ReadyHubEnvelope, scopeId: string, signal: AbortSignal) => Promise<Extract<DeferredHubUpdate, { section: "locations" }>>;
+  writeCampaignPremise?: CampaignPremiseWriter;
   subscribeChanges?: (envelope: ReadyHubEnvelope) => () => void;
 }) {
   const [envelope, setEnvelope] = useState(initialEnvelope);
@@ -248,6 +251,8 @@ export function DndInformationHub({
   const deferredAbort = useRef<AbortController | null>(null);
   const contextAbort = useRef<AbortController | null>(null);
   const worldScopeAbort = useRef<AbortController | null>(null);
+  const campaignWriteAbort = useRef<AbortController | null>(null);
+  const campaignWritePending = useRef(false);
   const loadedWorldScopes = useRef(new Set<string>());
   const [deferredStates, setDeferredStates] = useState<Partial<Record<DeferredHubSection, DeferredViewState>>>({});
   const [deferredErrors, setDeferredErrors] = useState<Partial<Record<DeferredHubSection, string>>>({});
@@ -329,6 +334,7 @@ export function DndInformationHub({
     sectionAbort.current?.abort();
     deferredAbort.current?.abort();
     contextAbort.current?.abort();
+    campaignWriteAbort.current?.abort();
     setHubBusy(true);
     setHubError("");
     try {
@@ -540,7 +546,7 @@ export function DndInformationHub({
   }, [deferredSection, perspective, contextSelection.selectedCampaignId, hubBusy, loadDeferredSection, deferredRestricted]);
   useEffect(() => () => {
     sectionAbort.current?.abort(); deferredAbort.current?.abort(); contextAbort.current?.abort();
-    worldScopeAbort.current?.abort();
+    worldScopeAbort.current?.abort(); campaignWriteAbort.current?.abort();
   }, []);
 
   const deferredNotice = deferredRestricted ? <ActorBindingRequired /> : deferredState !== "ready" ? (
@@ -674,6 +680,43 @@ export function DndInformationHub({
     void requestHub(perspective, contextSelection.selectedCampaignId, false, true);
   }
 
+  async function saveCampaignPremise(premise: string) {
+    if (!writeCampaignPremise || campaignWritePending.current ||
+        envelope.audience.seat !== "dm" || perspective !== "dm") return;
+    campaignWritePending.current = true;
+    campaignWriteAbort.current?.abort();
+    const controller = new AbortController();
+    campaignWriteAbort.current = controller;
+    dispatchObjectUi({ type: "write-submitted", objectId: CAMPAIGN_SUMMARY_OBJECT_ID });
+    try {
+      const result = await writeCampaignPremise({ envelope, premise }, controller.signal);
+      if (controller.signal.aborted) return;
+      campaignWriteAbort.current = null;
+      setEnvelope((current) => ({
+        ...current,
+        campaign: { ...current.campaign, premise: result.premise },
+        objectQueries: {},
+      }));
+      dispatchObjectUi({ type: "write-confirmed", objectId: CAMPAIGN_SUMMARY_OBJECT_ID });
+      setAnnouncement(result.replayed
+        ? "Campaign premise confirmed after retry"
+        : result.noOp ? "Campaign premise already matched the saved campaign" : "Campaign premise saved");
+      await requestHub(perspective, contextSelection.selectedCampaignId, false, true);
+    } catch (error) {
+      if (controller.signal.aborted) return;
+      const message = error instanceof Error ? error.message : "The campaign premise was not changed.";
+      dispatchObjectUi({ type: "write-failed", objectId: CAMPAIGN_SUMMARY_OBJECT_ID, error: message });
+      setAnnouncement("Campaign premise was not changed");
+      const category = error && typeof error === "object" && "category" in error
+        ? String(error.category) : "";
+      if (category === "stale")
+        await requestHub(perspective, contextSelection.selectedCampaignId, false, true);
+    } finally {
+      if (campaignWriteAbort.current === controller) campaignWriteAbort.current = null;
+      campaignWritePending.current = false;
+    }
+  }
+
   function focusWorldEntityCard(kind: "person" | "faction", entityId: string) {
     window.requestAnimationFrame(() => document.getElementById(`world-${kind}-${entityId}`)?.focus());
   }
@@ -704,9 +747,22 @@ export function DndInformationHub({
         return (
           <CampaignView
             campaign={envelope.campaign}
+            premiseEdit={objectUi.edits[CAMPAIGN_SUMMARY_OBJECT_ID]}
             onOpenFaction={openCampaignFaction}
             onOpenLocation={openCampaignLocation}
             onOpenPerson={openCampaignPerson}
+            onBeginPremiseEdit={writeCampaignPremise && envelope.audience.seat === "dm" && perspective === "dm" &&
+              envelope.objectQueries?.campaignSummary ? () => dispatchObjectUi({
+                type: "edit-staged", objectId: CAMPAIGN_SUMMARY_OBJECT_ID,
+                draft: { premise: envelope.campaign.premise },
+              }) : undefined}
+            onCancelPremiseEdit={writeCampaignPremise ? () => dispatchObjectUi({
+              type: "edit-cancelled", objectId: CAMPAIGN_SUMMARY_OBJECT_ID,
+            }) : undefined}
+            onPremiseDraftChange={writeCampaignPremise ? (premise) => dispatchObjectUi({
+              type: "edit-staged", objectId: CAMPAIGN_SUMMARY_OBJECT_ID, draft: { premise },
+            }) : undefined}
+            onSavePremise={writeCampaignPremise ? (premise) => void saveCampaignPremise(premise) : undefined}
             onSectionChange={selectCampaignSection}
             section={campaignSection}
             worldName={envelope.world.name}

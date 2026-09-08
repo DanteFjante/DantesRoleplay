@@ -427,6 +427,14 @@ test("local edit state remains pending through submit and retains failed drafts 
   assert.equal(prematureConfirmation.edits[CAMPAIGN_SUMMARY_OBJECT_ID].status, "failed");
   assert.equal(prematureConfirmation.edits[CAMPAIGN_SUMMARY_OBJECT_ID].error, "The source revision changed.");
 
+  state = hubObjectUiReducer(prematureConfirmation,
+    { type: "edit-cancelled", objectId: CAMPAIGN_SUMMARY_OBJECT_ID });
+  assert.equal(state.edits[CAMPAIGN_SUMMARY_OBJECT_ID], undefined,
+    "a failed local draft can be rolled back without changing server data");
+  state = hubObjectUiReducer(state,
+    { type: "edit-staged", objectId: CAMPAIGN_SUMMARY_OBJECT_ID, draft: { premise: "Mercy has a cost." } });
+  state = hubObjectUiReducer(state, { type: "write-submitted", objectId: CAMPAIGN_SUMMARY_OBJECT_ID });
+
   state = hubObjectUiReducer(state, { type: "write-confirmed", objectId: CAMPAIGN_SUMMARY_OBJECT_ID });
   assert.equal(state.edits[CAMPAIGN_SUMMARY_OBJECT_ID], undefined);
   state = hubObjectUiReducer(state, { type: "scope-replaced", factionId: "faction.two" });
