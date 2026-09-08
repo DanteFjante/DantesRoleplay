@@ -39,14 +39,14 @@ function worldProjection(count) {
     sourceRevisionFingerprint: "4".repeat(64),
     data: {
       version: 1, state: "ready", world: { id: "world.thalorien", name: "Thalorien" },
-      locations: count < 100 ? [{ id: "pagination-hall", name: "Pagination Hall",
+      locations: count < 200 ? [{ id: "pagination-hall", name: "Pagination Hall",
         parentId: "world.thalorien", kind: "region", status: "active", summary: "A hall." }] : [],
-      people, holdings: [], limits: { contentsDepth: 4, recordCount: 100, complete: true },
+      people, holdings: [], limits: { contentsDepth: 4, recordCount: 200, complete: true },
     },
   };
 }
 
-test("deferred people loader retains the complete 100-record projection bound", async () => {
+test("deferred people loader retains the complete 200-record projection bound", async () => {
   const calls = [];
   const value = await readDeferredHubSection({
     origin: ORIGIN, source: SOURCE, section: "people",
@@ -55,12 +55,12 @@ test("deferred people loader retains the complete 100-record projection bound", 
       if (target.pathname.endsWith("/media-batch")) return response(200, {
         applicationId: "dnd2024", stateSpaceId: "dnd2024-main", items: [],
       });
-      const projected = worldProjection(99);
+      const projected = worldProjection(199);
       return response(200, projected);
     },
   });
 
-  assert.equal(value.worldDirectory.people.length, 99);
+  assert.equal(value.worldDirectory.people.length, 199);
   assert.equal(value.locationDirectory.length, 1);
   assert.equal(calls.length, 2);
   assert.ok(calls.every((target) => !/\/(entities|containments)$/u.test(target.pathname)));
@@ -69,7 +69,7 @@ test("deferred people loader retains the complete 100-record projection bound", 
 test("deferred people rejects a projection beyond its complete record bound", async () => {
   await assert.rejects(readDeferredHubSection({
     origin: ORIGIN, source: SOURCE, section: "people",
-    fetchImpl: async () => response(200, worldProjection(101)),
+    fetchImpl: async () => response(200, worldProjection(201)),
   }), /incomplete/u);
 });
 

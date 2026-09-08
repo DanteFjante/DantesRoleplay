@@ -110,8 +110,8 @@ test("W07 registers the component-owned People and Holdings projection", async (
   assert.equal(query?.exposure, "binding-only");
   assert.deepEqual(query?.roles, { world: "The exact selected World." });
   assert.equal(query?.outputSchema?.properties?.limits?.properties?.contentsDepth?.const, 4);
-  assert.equal(query?.outputSchema?.properties?.people?.maxItems, 100);
-  assert.equal(query?.outputSchema?.properties?.holdings?.maxItems, 100);
+  assert.equal(query?.outputSchema?.properties?.people?.maxItems, 200);
+  assert.equal(query?.outputSchema?.properties?.holdings?.maxItems, 200);
 });
 
 test("W08 composes Current View from the registered resume, scene, and board owners", async () => {

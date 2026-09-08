@@ -369,6 +369,7 @@ public sealed class ProjectionResolver(DantesRoleplayDbContext db) : IProjection
                         requirement.ContentComponentIds ?? [], requirement.ContentsDepth is not null || (requirement.ContentComponentIds?.Count ?? 0) > 0,
                         RelevantContentIds(requirement, needed),
                         requirement.FilterContentsByComponents,
+                        requirement.ContentFilterComponentIds ?? requirement.ContentComponentIds ?? [],
                         contentsByContainer, contentComponentsByEntity, role, problems)
                     : null,
                 requirement.IncludeRelationships
@@ -457,6 +458,7 @@ public sealed class ProjectionResolver(DantesRoleplayDbContext db) : IProjection
         bool enforceNodeLimit,
         IReadOnlySet<string>? relevant,
         bool filterByComponents,
+        IReadOnlyList<string> filterComponentIds,
         IReadOnlyDictionary<string, List<ContainmentNode>> contentsByContainer,
         IReadOnlyDictionary<string, Dictionary<string, string>> componentsByEntity,
         string role,
@@ -498,7 +500,10 @@ public sealed class ProjectionResolver(DantesRoleplayDbContext db) : IProjection
                             .ToDictionary(component => component.Key, component => component.Value, StringComparer.Ordinal)
                         : new Dictionary<string, string>(StringComparer.Ordinal);
                 }
-                if (filterByComponents && declaredComponents?.Count == 0 && (nested is null || nested.Count == 0))
+                if (filterByComponents &&
+                    !(componentsByEntity.TryGetValue(child.Id, out var filterValues) &&
+                      filterValues.Keys.Any(value => filterComponentIds.Contains(value, StringComparer.Ordinal))) &&
+                    (nested is null || nested.Count == 0))
                     continue;
 
                 count++;

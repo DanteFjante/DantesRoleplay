@@ -224,6 +224,7 @@ public sealed class ApplicationMechanicProjectionResolver(
                         || (requirement.ContentComponentIds?.Count ?? 0) > 0,
                     RelevantContentIds(requirement, needed),
                     requirement.FilterContentsByComponents,
+                    requirement.ContentFilterComponentIds ?? requirement.ContentComponentIds ?? [],
                     contents, components, role, problems) : null,
                 projectedRelationships,
                 projectedRelated);
@@ -236,8 +237,8 @@ public sealed class ApplicationMechanicProjectionResolver(
                 // them: guarding them would both invent conflicts and, on a large world, blow the
                 // snapshot's own content limit.
                 var surviving = SurvivingContentIds(entityId, requirement.ContentsDepth ?? 1,
-                    RelevantContentIds(requirement, needed), requirement.ContentComponentIds ?? [],
-                    requirement.FilterContentsByComponents, contents, components);
+                    RelevantContentIds(requirement, needed), requirement.FilterContentsByComponents,
+                    requirement.ContentFilterComponentIds ?? requirement.ContentComponentIds ?? [], contents, components);
                 foreach (var child in Descendants(entityId, requirement.ContentsDepth ?? 1, contents))
                     if (surviving is null || surviving.Contains(child.Id))
                         RecordComponentRevisions(child.Id, requirement.ContentComponentIds ?? []);
@@ -358,8 +359,8 @@ public sealed class ApplicationMechanicProjectionResolver(
         string root,
         int depth,
         IReadOnlySet<string>? relevant,
-        IReadOnlyList<string> allowed,
         bool filterByComponents,
+        IReadOnlyList<string> filterComponents,
         IReadOnlyDictionary<string, List<Node>> contents,
         IReadOnlyDictionary<string, Dictionary<string, string>> components)
     {
@@ -379,7 +380,7 @@ public sealed class ApplicationMechanicProjectionResolver(
                 if (relevant is not null && !relevant.Contains(child.Id) && !deeper) continue;
                 if (filterByComponents &&
                     !(components.TryGetValue(child.Id, out var values) &&
-                      values.Keys.Any(value => allowed.Contains(value, StringComparer.Ordinal))) && !deeper)
+                      values.Keys.Any(value => filterComponents.Contains(value, StringComparer.Ordinal))) && !deeper)
                     continue;
                 surviving.Add(child.Id);
                 kept = true;
@@ -398,6 +399,7 @@ public sealed class ApplicationMechanicProjectionResolver(
         bool enforceNodeLimit,
         IReadOnlySet<string>? relevant,
         bool filterByComponents,
+        IReadOnlyList<string> filterComponents,
         IReadOnlyDictionary<string, List<Node>> contents,
         IReadOnlyDictionary<string, Dictionary<string, string>> components,
         string role,
@@ -430,7 +432,10 @@ public sealed class ApplicationMechanicProjectionResolver(
                     : components.TryGetValue(child.Id, out var values)
                         ? values.Where(value => allowed.Contains(value.Key, StringComparer.Ordinal)).ToDictionary(StringComparer.Ordinal)
                         : new Dictionary<string, string>(StringComparer.Ordinal);
-                if (filterByComponents && selected?.Count == 0 && (nested is null || nested.Count == 0))
+                if (filterByComponents &&
+                    !(components.TryGetValue(child.Id, out var filterValues) &&
+                      filterValues.Keys.Any(value => filterComponents.Contains(value, StringComparer.Ordinal))) &&
+                    (nested is null || nested.Count == 0))
                     continue;
 
                 count++;

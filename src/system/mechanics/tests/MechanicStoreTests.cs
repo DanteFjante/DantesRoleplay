@@ -429,7 +429,10 @@ public sealed class MechanicStoreTests : IDisposable
               "empty":{"components":[],"contentComponentIds":[]},
               "deep":{"components":[],"includeContents":true,"contentsDepth":5},
               "nested":{"components":[],"includeContents":true,"contentComponentIds":["stats","stats"]},
-              "filtered":{"components":[],"includeContents":true,"filterContentsByComponents":true}
+              "filtered":{"components":[],"includeContents":true,"filterContentsByComponents":true},
+              "emptyFilter":{"components":[],"includeContents":true,"contentComponentIds":["stats"],"filterContentsByComponents":true,"contentFilterComponentIds":[]},
+              "filterWithoutOptIn":{"components":[],"includeContents":true,"contentComponentIds":["stats"],"contentFilterComponentIds":["stats"]},
+              "filterOutsideProjection":{"components":[],"includeContents":true,"contentComponentIds":["stats"],"filterContentsByComponents":true,"contentFilterComponentIds":["marks"]}
             }}
             """));
 
@@ -439,6 +442,8 @@ public sealed class MechanicStoreTests : IDisposable
         Assert.Contains("between 1 and 4", declaration.Detail);
         Assert.Contains("distinct", declaration.Detail);
         Assert.Contains("filterContentsByComponents", declaration.Detail);
+        Assert.Contains("contentFilterComponentIds", declaration.Detail);
+        Assert.Contains("contentComponentIds", declaration.Detail);
     }
 
     [Fact]

@@ -72,14 +72,14 @@ test("World people and holdings use containment and components rather than ident
 test("World people and holdings are a DM-only directory with an explicit empty denial", () => {
   assert.deepEqual(project(context("player")).data, {
     version: 1, state: "forbidden", world: null, locations: [], people: [], holdings: [],
-    limits: { contentsDepth: 4, recordCount: 100, complete: true },
+    limits: { contentsDepth: 4, recordCount: 200, complete: true },
   });
 });
 
 test("World people projection rejects results beyond its fixed complete bound", () => {
   const value = context();
   value.roles.world.contains = [location("large-place", "Large Place",
-    Array.from({ length: 101 }, (_, index) => ({
+    Array.from({ length: 201 }, (_, index) => ({
       id: `person-${index}`, name: `Person ${index}`,
       components: { "game.core.world.motive": component({
         status: "active", summary: "A bounded person.", visibility: "gm",

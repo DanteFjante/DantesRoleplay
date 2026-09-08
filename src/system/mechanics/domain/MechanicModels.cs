@@ -375,6 +375,17 @@ public sealed record MechanicRequirements
             if (requirement.FilterContentsByComponents &&
                 (!requirement.IncludeContents || descendantComponents.Count == 0))
                 problems.Add($"Role '{role}' filterContentsByComponents requires includeContents and at least one contentComponentId.");
+            var contentFilterComponents = requirement.ContentFilterComponentIds ?? [];
+            if (requirement.ContentFilterComponentIds is not null && contentFilterComponents.Count == 0)
+                problems.Add($"Role '{role}' contentFilterComponentIds must not be empty when declared.");
+            if (contentFilterComponents.Count > 0 && !requirement.FilterContentsByComponents)
+                problems.Add($"Role '{role}' contentFilterComponentIds requires filterContentsByComponents.");
+            if (contentFilterComponents.Count > ProjectionLimits.MaxContentComponentIds)
+                problems.Add($"Role '{role}' may declare at most {ProjectionLimits.MaxContentComponentIds} contentFilterComponentIds.");
+            if (contentFilterComponents.Distinct(StringComparer.Ordinal).Count() != contentFilterComponents.Count)
+                problems.Add($"Role '{role}' contentFilterComponentIds must be distinct.");
+            if (contentFilterComponents.Any(component => !descendantComponents.Contains(component, StringComparer.Ordinal)))
+                problems.Add($"Role '{role}' contentFilterComponentIds must also appear in contentComponentIds.");
             var references = requirement.ComponentReferences ?? [];
             if (references.Count > ProjectionLimits.MaxContentComponentIds)
                 problems.Add($"Role '{role}' may declare at most {ProjectionLimits.MaxContentComponentIds} componentReferences.");
@@ -545,6 +556,10 @@ public sealed record EventMechanicRequirement
 /// the ancestors needed to reach such a node. This opt-in keeps unrelated contents out of bounded
 /// projections without changing the compatible identity-only containment view.
 /// </param>
+/// <param name="ContentFilterComponentIds">
+/// Optional subset of contentComponentIds used to decide which contained nodes survive filtering.
+/// Retained ancestors still project every declared content component.
+/// </param>
 public sealed record RoleRequirement(
     IReadOnlyList<string> Components,
     bool Optional = false,
@@ -557,7 +572,8 @@ public sealed record RoleRequirement(
     IReadOnlyList<RelationshipComponentRequirement>? RelationshipComponents = null,
     IReadOnlyList<string>? OptionalComponents = null,
     IReadOnlyList<string>? ContentsRelevantToRoles = null,
-    bool FilterContentsByComponents = false);
+    bool FilterContentsByComponents = false,
+    IReadOnlyList<string>? ContentFilterComponentIds = null);
 
 /// <summary>One exact application-object input for a pure catalog reducer.</summary>
 public sealed record MechanicObjectRoleRequirement

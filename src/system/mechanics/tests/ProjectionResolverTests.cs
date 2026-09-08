@@ -305,8 +305,11 @@ public sealed class ProjectionResolverTests : IDisposable
         await using var db = _fixture.CreateContext();
         var world = await WorldAsync(db);
         await world.CreateEntityAsync("Mapped place", "mapped-place");
-        await world.SetComponentAsync("mapped-place", "marks", """{"mapped":true}""");
+        await world.CreateEntityAsync("Mapped person", "mapped-person");
+        await world.SetComponentAsync("mapped-place", "secrets", """{"mapped":true}""");
+        await world.SetComponentAsync("mapped-person", "marks", """{"person":true}""");
         await world.MoveAsync("mapped-place", "orban", "location");
+        await world.MoveAsync("mapped-person", "mapped-place", "resident");
         for (var index = 0; index <= ProjectionLimits.MaxContainedNodes; index++)
         {
             var id = $"unrelated-{index}";
@@ -315,14 +318,18 @@ public sealed class ProjectionResolverTests : IDisposable
         }
 
         var result = await new ProjectionResolver(db).ResolveAsync(
-            Requires("""{"roles":{"subject":{"components":[],"includeContents":true,"contentsDepth":1,"contentComponentIds":["marks"],"filterContentsByComponents":true}}}"""),
+            Requires("""{"roles":{"subject":{"components":[],"includeContents":true,"contentsDepth":2,"contentComponentIds":["marks","secrets"],"filterContentsByComponents":true,"contentFilterComponentIds":["marks"]}}}"""),
             new Dictionary<string, string> { ["subject"] = "orban" });
 
         Assert.True(result.Ok, string.Join("; ", result.Problems));
         var mapped = Assert.Single(result.Projection!.Roles["subject"].Contains!);
         Assert.Equal("mapped-place", mapped.Id);
-        Assert.Equal("true", JsonDocument.Parse(mapped.Components!["marks"]).RootElement
+        Assert.Equal("true", JsonDocument.Parse(mapped.Components!["secrets"]).RootElement
             .GetProperty("mapped").GetRawText());
+        var person = Assert.Single(mapped.Contains!);
+        Assert.Equal("mapped-person", person.Id);
+        Assert.Equal("true", JsonDocument.Parse(person.Components!["marks"]).RootElement
+            .GetProperty("person").GetRawText());
     }
 
     [Fact]

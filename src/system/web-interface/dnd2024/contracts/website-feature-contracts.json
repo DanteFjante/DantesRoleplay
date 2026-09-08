@@ -336,9 +336,9 @@
       "authority": "SQLite containment, location/person/holding components, campaign knowledge, and media grants",
       "audience": { "game-master": "full", "gm-player-preview": "forbidden", "actor": "knowledge-projected", "unbound": "forbidden" },
       "editCapability": "read-only; changes require typed world/social mechanics",
-      "completeness": "the DM projection is a complete fixed 100-record hierarchy or fails closed; Actor People contain only explicitly authorized knowledge and cannot expose DM holdings",
+      "completeness": "the DM projection is a complete fixed 200-record hierarchy or fails closed; Actor People contain only explicitly authorized knowledge and cannot expose DM holdings",
       "currentCost": "DM People and Holdings use one exact read-model response plus one bounded media batch; Actor People reuse one knowledge response plus one bounded media batch.",
-      "target": { "slice": "W07", "owner": "dnd2024.query.world-people-holdings for DM and authorized campaign knowledge for Actors", "pageSize": 100, "maximumPages": 1, "maximumRecords": 100 },
+      "target": { "slice": "W07", "owner": "dnd2024.query.world-people-holdings for DM and authorized campaign knowledge for Actors", "pageSize": 200, "maximumPages": 1, "maximumRecords": 200 },
       "gates": { "requests": 2, "sqlStatements": 16, "responseBytes": 524288, "retainedResponseBytes": 2097152 },
       "fixtureCases": ["small", "large", "unauthorized"]
     },

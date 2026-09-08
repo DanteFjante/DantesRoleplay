@@ -227,7 +227,7 @@ test("DM people and holdings use one bounded projection and one authorized media
           people: [{ id: "subject-9", name: "Person", locationId: "place-azure", kind: "NPC",
             motive: null }],
           holdings: [{ id: "plain-identity", name: "Rope", locationId: "place-azure", kind: "Item" }],
-          limits: { contentsDepth: 4, recordCount: 100, complete: true },
+          limits: { contentsDepth: 4, recordCount: 200, complete: true },
         },
       });
     },
@@ -279,7 +279,7 @@ test("empty DM People is distinct from a denied directory", async () => {
     fetchImpl: async () => response(envelope({
       version: 1, state: "ready", world: { id: "world.caldris", name: "Caldris" },
       locations: [], people: [], holdings: [],
-      limits: { contentsDepth: 4, recordCount: 100, complete: true },
+      limits: { contentsDepth: 4, recordCount: 200, complete: true },
     })),
   });
   assert.deepEqual(empty.worldDirectory.people, []);
@@ -289,7 +289,7 @@ test("empty DM People is distinct from a denied directory", async () => {
     origin, section: "people", source,
     fetchImpl: async () => response(envelope({
       version: 1, state: "forbidden", world: null, locations: [], people: [], holdings: [],
-      limits: { contentsDepth: 4, recordCount: 100, complete: true },
+      limits: { contentsDepth: 4, recordCount: 200, complete: true },
     })),
   }), /unavailable to this audience/u);
 });

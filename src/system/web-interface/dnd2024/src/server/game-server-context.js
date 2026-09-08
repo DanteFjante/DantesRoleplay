@@ -945,9 +945,9 @@ function validWorldPeopleHoldings(value, worldId) {
   if (!hasExactKeys(value, ["version", "state", "world", "locations", "people", "holdings", "limits"]) ||
       value.version !== 1 || !["ready", "forbidden"].includes(value.state) ||
       !Array.isArray(value.locations) || !Array.isArray(value.people) || !Array.isArray(value.holdings) ||
-      value.locations.length + value.people.length + value.holdings.length > 100 ||
+      value.locations.length + value.people.length + value.holdings.length > 200 ||
       !hasExactKeys(value.limits, ["contentsDepth", "recordCount", "complete"]) ||
-      value.limits.contentsDepth !== 4 || value.limits.recordCount !== 100 ||
+      value.limits.contentsDepth !== 4 || value.limits.recordCount !== 200 ||
       value.limits.complete !== true) return false;
   if (value.state === "forbidden") return value.world === null && value.locations.length === 0 &&
     value.people.length === 0 && value.holdings.length === 0;
