@@ -95,16 +95,21 @@ public sealed class SchemaCacheTests
         GC.Collect();
         GC.WaitForPendingFinalizers();
         GC.Collect();
-        Assert.False(evicted.IsAlive);
+        Assert.False(evicted.Compilation.IsAlive);
+        Assert.False(evicted.Graph.IsAlive);
         Assert.Equal(BoundedJsonSchemaValidator.MaximumCachedSchemas, validator.CacheUsage.Count);
         Assert.Equal(SchemaValueStatus.Valid, validator.Validate(Schema(0), "0").Status);
         Assert.InRange(validator.CacheUsage.Count, 1, BoundedJsonSchemaValidator.MaximumCachedSchemas);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static WeakReference FillCacheAndEvictFirst(BoundedJsonSchemaValidator validator)
+    private static (WeakReference Compilation, WeakReference Graph) FillCacheAndEvictFirst(
+        BoundedJsonSchemaValidator validator)
     {
-        var first = new WeakReference(validator.Compile(Schema(0)));
+        var firstCompilation = validator.Compile(Schema(0));
+        var first = new WeakReference(firstCompilation);
+        var firstGraph = validator.ObserveCachedSchemaGraph(Schema(0));
+        Assert.Same(firstCompilation, validator.Compile(Schema(0)));
         var hot = validator.Compile(Schema(1));
         for (var index = 2; index <= BoundedJsonSchemaValidator.MaximumCachedSchemas; index++)
         {
@@ -112,7 +117,7 @@ public sealed class SchemaCacheTests
             Assert.True(validator.Compile(Schema(index)).IsAccepted);
         }
         Assert.Same(hot, validator.Compile(Schema(1)));
-        return first;
+        return (first, firstGraph);
     }
 
     [Theory]

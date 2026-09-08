@@ -10,10 +10,10 @@ public sealed class SchemaRetentionCollection;
 public sealed class SchemaRetentionTests
 {
     [Fact]
-    public void Repeated_compilation_and_validation_do_not_retain_schema_graphs()
+    public void Distinct_schema_compilation_and_validation_do_not_retain_evicted_graphs()
     {
         // Run alone so concurrent tests cannot affect the live-heap measurement.
-        ExerciseValidator(64);
+        ExerciseValidator(BoundedJsonSchemaValidator.MaximumCachedSchemas + 1);
         var before = CollectRetainedBytes();
         ExerciseValidator(2_000);
         var retained = CollectRetainedBytes() - before;
@@ -25,15 +25,17 @@ public sealed class SchemaRetentionTests
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void ExerciseValidator(int count)
     {
-        const string schema = """
-            {"$schema":"https://json-schema.org/draft/2020-12/schema",
-             "$defs":{"name":{"type":"string","minLength":1}},
-             "type":"object","additionalProperties":false,"required":["name"],
-             "properties":{"name":{"$ref":"#/$defs/name"}}}
-            """;
+        Assert.True(count > BoundedJsonSchemaValidator.MaximumCachedSchemas);
         var validator = new BoundedJsonSchemaValidator();
         for (var index = 0; index < count; index++)
         {
+            var schema = $$$$"""
+                {"$schema":"https://json-schema.org/draft/2020-12/schema",
+                 "title":"retention-{{{{index}}}}",
+                 "$defs":{"name":{"type":"string","minLength":1}},
+                 "type":"object","additionalProperties":false,"required":["name"],
+                 "properties":{"name":{"$ref":"#/$defs/name"}}}
+                """;
             var compilation = validator.Compile(schema);
             Assert.True(compilation.IsAccepted);
             Assert.Equal(SchemaValueStatus.Valid,

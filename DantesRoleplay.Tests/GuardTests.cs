@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 using DantesRoleplay.MCPServer.Mcp;
 
 namespace DantesRoleplay.Tests;
@@ -43,36 +44,65 @@ public sealed class GuardTests
     public void The_kernel_contains_no_game_vocabulary()
     {
         var root = RepositoryRoot();
-        var offences = new List<string>();
-
-        foreach (var project in KernelProjects)
-        {
-            var directory = Path.Combine(root, project);
-
-            if (!Directory.Exists(directory))
-            {
-                continue;
-            }
-
-            foreach (var file in EnumerateSource(directory))
-            {
-                var code = StripCommentsAndStrings(File.ReadAllText(file));
-
-                foreach (var word in ForbiddenInKernel)
-                {
-                    if (Regex.IsMatch(code, $@"\b{word}\b", RegexOptions.IgnoreCase))
-                    {
-                        offences.Add($"{Path.GetRelativePath(root, file)}: '{word}'");
-                    }
-                }
-            }
-        }
+        var source = EnumerateKernelSource(root).ToArray();
+        var offences = FindForbiddenVocabulary(root, source, ForbiddenInKernel);
 
         Assert.True(
             offences.Count == 0,
             "Game vocabulary found in the kernel. It belongs in JavaScript or in a component "
             + "definition, not in C# (ARCHITECTURE.md §3.11):\n  "
             + string.Join("\n  ", offences));
+    }
+
+    [Fact]
+    public void Kernel_vocabulary_scanner_follows_project_and_capability_source_ownership()
+    {
+        using var tree = new TemporarySourceTree();
+        tree.Write("Directory.Build.targets", """
+            <Project>
+              <Target Name="ValidateCapabilitySourceLayout">
+                <ItemGroup>
+                  <_ExpectedCapabilitySource Include="$(MSBuildThisFileDirectory)src\system\**\domain\**\*.cs"
+                    Condition="'$(MSBuildProjectName)' == 'DantesRoleplay'" />
+                  <_ExpectedCapabilitySource Include="$(MSBuildThisFileDirectory)src\system\**\hosting\**\*.cs;
+                    $(MSBuildThisFileDirectory)src\system\**\persistence\**\*.cs;
+                    $(MSBuildThisFileDirectory)src\system\projection-materialization\sqlite\SqliteChangeRecovery.cs"
+                    Condition="'$(MSBuildProjectName)' == 'DantesRoleplay.DataAccess'" />
+                </ItemGroup>
+              </Target>
+            </Project>
+            """);
+        tree.Write("DantesRoleplay/DantesRoleplay.csproj", "<Project />");
+        tree.Write("DantesRoleplay.DataAccess/DantesRoleplay.DataAccess.csproj", "<Project />");
+        tree.Write("DantesRoleplay/ProjectOwner.cs",
+            "namespace Fixture; internal sealed class ProjectOwner { public int attack; }");
+        tree.Write("DantesRoleplay.DataAccess/SafeOwner.cs", """
+            namespace Fixture;
+            // attack is harmless in a comment.
+            internal sealed class SafeOwner { private const string Text = "damage"; }
+            """);
+        tree.Write("src/system/example/domain/DomainOwner.cs",
+            "namespace Fixture; internal sealed class DomainOwner { public int damage; }");
+        tree.Write("src/system/example/hosting/HostingOwner.cs",
+            "namespace Fixture; internal sealed class HostingOwner;");
+        tree.Write("src/system/example/persistence/PersistenceOwner.cs",
+            "namespace Fixture; internal sealed class PersistenceOwner;");
+        tree.Write("src/system/projection-materialization/sqlite/SqliteChangeRecovery.cs",
+            "namespace Fixture; internal sealed class SharedOwner;");
+        tree.Write("src/system/example/tests/IgnoredTests.cs",
+            "namespace Fixture; internal sealed class IgnoredTests { public int spell; }");
+
+        var offences = FindForbiddenVocabulary(
+            tree.Root,
+            EnumerateKernelSource(tree.Root),
+            ["attack", "damage", "spell"]);
+
+        Assert.Equal(
+            [
+                "DantesRoleplay/ProjectOwner.cs: 'attack'",
+                "src/system/example/domain/DomainOwner.cs: 'damage'"
+            ],
+            offences);
     }
 
     [Fact]
@@ -555,6 +585,109 @@ public sealed class GuardTests
             // Migrations are generated, and their content mirrors the schema rather than adding to it.
             .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}Migrations{Path.DirectorySeparatorChar}"));
 
+    private static IEnumerable<string> EnumerateKernelSource(string root)
+    {
+        foreach (var project in KernelProjects)
+        {
+            var directory = Path.Combine(root, project);
+            var projectFile = Path.Combine(directory, $"{project}.csproj");
+            if (!File.Exists(projectFile))
+                throw new InvalidOperationException($"Expected kernel project at {projectFile}.");
+            foreach (var file in EnumerateSource(directory)) yield return file;
+        }
+
+        var ownership = ReadKernelCapabilityOwnership(root);
+        var system = Path.Combine(root, "src", "system");
+        if (!Directory.Exists(system))
+            throw new InvalidOperationException($"Expected capability source at {system}.");
+
+        foreach (var role in ownership.Roles)
+        {
+            var roleFiles = Directory.EnumerateDirectories(system)
+                .Select(directory => Path.Combine(directory, role))
+                .Where(Directory.Exists)
+                .SelectMany(EnumerateSource)
+                .ToArray();
+            if (roleFiles.Length == 0)
+                throw new InvalidOperationException(
+                    $"The build declares kernel capability role '{role}', but no source was found.");
+            foreach (var file in roleFiles) yield return file;
+        }
+
+        foreach (var relativePath in ownership.ExplicitFiles)
+        {
+            var file = Path.Combine(root, relativePath.Replace('/', Path.DirectorySeparatorChar));
+            if (!File.Exists(file))
+                throw new InvalidOperationException(
+                    $"The build declares kernel source '{relativePath}', but the file was not found.");
+            yield return file;
+        }
+    }
+
+    private static KernelSourceOwnership ReadKernelCapabilityOwnership(string root)
+    {
+        var targetsPath = Path.Combine(root, "Directory.Build.targets");
+        if (!File.Exists(targetsPath))
+            throw new InvalidOperationException($"Expected capability ownership at {targetsPath}.");
+
+        var targets = XDocument.Load(targetsPath);
+        var expected = targets.Descendants("_ExpectedCapabilitySource")
+            .Where(element => KernelProjects.Any(project =>
+                ((string?)element.Attribute("Condition"))?.Contains(
+                    $"'$(MSBuildProjectName)' == '{project}'", StringComparison.Ordinal) == true))
+            .ToArray();
+        if (expected.Length != KernelProjects.Length)
+            throw new InvalidOperationException(
+                "Directory.Build.targets must declare source ownership for every kernel project.");
+
+        var roles = new SortedSet<string>(StringComparer.Ordinal);
+        var explicitFiles = new SortedSet<string>(StringComparer.Ordinal);
+        foreach (var entry in expected.SelectMany(element =>
+                     (((string?)element.Attribute("Include")) ?? "")
+                     .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)))
+        {
+            var normalized = entry.Replace('\\', '/');
+            var role = Regex.Match(normalized,
+                @"src/system/\*\*/(?<role>[^/*]+)/\*\*/\*\.cs$", RegexOptions.CultureInvariant);
+            if (role.Success)
+            {
+                roles.Add(role.Groups["role"].Value);
+                continue;
+            }
+
+            var explicitFile = Regex.Match(normalized,
+                @"src/system/(?<path>[^*]+\.cs)$", RegexOptions.CultureInvariant);
+            if (explicitFile.Success)
+            {
+                explicitFiles.Add("src/system/" + explicitFile.Groups["path"].Value);
+                continue;
+            }
+
+            throw new InvalidOperationException(
+                $"Unsupported kernel source ownership pattern in Directory.Build.targets: {entry}");
+        }
+
+        if (roles.Count == 0)
+            throw new InvalidOperationException("The build declares no kernel capability source roles.");
+        return new([.. roles], [.. explicitFiles]);
+    }
+
+    private static IReadOnlyList<string> FindForbiddenVocabulary(
+        string root,
+        IEnumerable<string> files,
+        IReadOnlyList<string> forbidden)
+    {
+        var offences = new List<string>();
+        foreach (var file in files.Distinct(StringComparer.OrdinalIgnoreCase).Order(StringComparer.OrdinalIgnoreCase))
+        {
+            var code = StripCommentsAndStrings(File.ReadAllText(file));
+            foreach (var word in forbidden)
+                if (Regex.IsMatch(code, $@"\b{Regex.Escape(word)}\b", RegexOptions.IgnoreCase))
+                    offences.Add($"{NormalizedRelativePath(root, file)}: '{word}'");
+        }
+        return offences;
+    }
+
     private static IEnumerable<string> EnumerateAllSource(string directory) =>
         Directory.EnumerateFiles(directory, "*.cs", SearchOption.AllDirectories)
             .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
@@ -609,4 +742,43 @@ public sealed class GuardTests
         string Status,
         IReadOnlyList<string> Owns,
         IReadOnlyList<string> MayDependOn);
+
+    private sealed record KernelSourceOwnership(
+        IReadOnlyList<string> Roles,
+        IReadOnlyList<string> ExplicitFiles);
+
+    private sealed class TemporarySourceTree : IDisposable
+    {
+        public TemporarySourceTree()
+        {
+            Root = Path.Combine(Path.GetTempPath(), $"kernel-source-guard-{Guid.NewGuid():N}");
+            Directory.CreateDirectory(Root);
+        }
+
+        public string Root { get; }
+
+        public void Write(string relativePath, string contents)
+        {
+            var rootPrefix = Path.GetFullPath(Root)
+                .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                + Path.DirectorySeparatorChar;
+            var path = Path.GetFullPath(Path.Combine(Root,
+                relativePath.Replace('/', Path.DirectorySeparatorChar)));
+            if (!path.StartsWith(rootPrefix, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("Fixture source must remain inside its temporary root.");
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllText(path, contents);
+        }
+
+        public void Dispose()
+        {
+            var temporaryPrefix = Path.GetFullPath(Path.GetTempPath())
+                .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                + Path.DirectorySeparatorChar;
+            var root = Path.GetFullPath(Root);
+            if (!root.StartsWith(temporaryPrefix, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("Fixture source must remain inside the temporary directory.");
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
 }

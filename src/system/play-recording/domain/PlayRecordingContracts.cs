@@ -6,7 +6,7 @@ public static class PlaySituationKinds
 {
     public const string OutOfCharacter = "out-of-character";
     public const string Conversation = "conversation";
-    public const string Combat = "combat";
+    public const string Conflict = "combat";
     public const string Exploration = "exploration";
     public const string Investigation = "investigation";
     public const string Travel = "travel";
@@ -14,7 +14,7 @@ public static class PlaySituationKinds
     public const string Downtime = "downtime";
     public const string Other = "other";
 
-    public static bool IsKnown(string? value) => value is OutOfCharacter or Conversation or Combat
+    public static bool IsKnown(string? value) => value is OutOfCharacter or Conversation or Conflict
         or Exploration or Investigation or Travel or Rest or Downtime or Other;
 }
 

@@ -59,7 +59,7 @@ public sealed class InteractionOuterProviderTests
 
         Assert.True(result.Available);
         Assert.Equal("The blow lands.", result.Narration);
-        Assert.Equal(PlaySituationKinds.Combat, result.Situation!.Kind);
+        Assert.Equal(PlaySituationKinds.Conflict, result.Situation!.Kind);
         Assert.Equal("The blow landed.", Assert.Single(result.Truths!).Statement);
         Assert.False(rejected.Available);
     }

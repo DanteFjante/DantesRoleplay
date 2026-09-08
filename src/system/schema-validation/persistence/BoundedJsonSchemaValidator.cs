@@ -27,6 +27,15 @@ public sealed class BoundedJsonSchemaValidator : IBoundedJsonSchemaValidator
         get { lock (cacheLock) return (cache.Count, cachedTextBytes, cachedSchemaNodes); }
     }
 
+    /// <summary>Observes graph lifetime without exposing the third-party schema object to tests.</summary>
+    internal WeakReference ObserveCachedSchemaGraph(string schemaJson, string? requiredProfileId = null)
+    {
+        var cached = GetSchema(schemaJson, requiredProfileId);
+        if (!cached.Compilation.IsAccepted || cached.Schema is null)
+            throw new InvalidOperationException("Only a successfully compiled schema has a graph to observe.");
+        return new(cached.Schema);
+    }
+
     private static readonly HashSet<string> AllowedKeywords = new(StringComparer.Ordinal)
     {
         "$schema", "$comment", "$defs", "$ref", "title", "description", "type", "enum", "const", "allOf", "anyOf", "oneOf", "not",

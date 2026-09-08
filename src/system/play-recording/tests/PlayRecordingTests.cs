@@ -65,11 +65,11 @@ public sealed class PlayRecordingTests : IDisposable
             new("player", "I draw my sword.", null, DateTime.UtcNow), "ready");
         conversation = store.AppendNarrative(conversation.Id, new(
             new("assistant", "The ambushers rush from the hedges.", null, DateTime.UtcNow),
-            new(PlaySituationTransitions.Replace, PlaySituationKinds.Combat,
+            new(PlaySituationTransitions.Replace, PlaySituationKinds.Conflict,
                 "Combat with the roadside ambushers.", [new("Roadside ambushers", null)]),
             [new("Ambushers were concealed beside the road.", [])]), "ready");
 
-        Assert.Equal(PlaySituationKinds.Combat, conversation.CurrentSituation!.Kind);
+        Assert.Equal(PlaySituationKinds.Conflict, conversation.CurrentSituation!.Kind);
         var prior = db.ApplicationPlaySituations.Single(value => value.Id == conversationSituation);
         Assert.Equal(PlaySituationStatuses.Completed, prior.Status);
         Assert.NotNull(prior.CompletedAtUtc);
