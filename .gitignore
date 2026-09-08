@@ -395,3 +395,6 @@ DantesRoleplay.MCPServer/data/dantesroleplay.db
 /DantesRoleplay.Tests/bin-slice2/
 /DantesRoleplay.Tools/.codex-build/
 /DantesRoleplay.Tools/.codex-obj/
+
+# Local test-suite inventories, traces and timing experiments.
+/.tmp/test-suite/

@@ -8,6 +8,7 @@ This directory is the maintained entry point for humans and LLMs working on Dant
 | --- | --- |
 | Decide where behavior belongs or understand runtime boundaries | [ARCHITECTURE.md](ARCHITECTURE.md) |
 | Change code, tests, schemas, or catalog content | [DEVELOPMENT.md](DEVELOPMENT.md) |
+| Improve test runtime, select affected domains, or remove obsolete/redundant tests in slices | [TEST-SUITE-IMPROVEMENT.md](TEST-SUITE-IMPROVEMENT.md) |
 | Compare, validate, export, or import catalog/database records | [CATALOG.md](CATALOG.md) |
 | Run the server, connect a client, or verify the protocol | [OPERATIONS.md](OPERATIONS.md) |
 | Inspect the delivered item dossier, supported boundaries and closed IV00–IV10 release | [ITEM-VIEW-IMPLEMENTATION.md](ITEM-VIEW-IMPLEMENTATION.md) |
