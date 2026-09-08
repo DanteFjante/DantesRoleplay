@@ -23,11 +23,11 @@ export function MapScopeLinks({
   onOpenScope: (mapId: string) => void;
 }) {
   return (
-    <section className="panel map-scope-links" aria-label="Closer maps">
-      <span className="eyebrow">Closer maps</span>
+    <section className="panel map-scope-links" aria-label="Closer areas">
+      <span className="eyebrow">Closer areas</span>
       {childScopes.length === 0 ? (
         <p className="map-scope-links__empty">
-          No closer map is available from this scope.
+          No closer area is loaded from this scope.
         </p>
       ) : (
         <ul>
@@ -37,7 +37,9 @@ export function MapScopeLinks({
                 <span aria-hidden="true"><Icon name={SCOPE_ICONS[child.scope] ?? "MapPin"} size={16} /></span>
                 <span>
                   <strong>{child.name}</strong>
-                  <small>{SCOPE_LABELS[child.scope] ?? child.scope} map</small>
+                  <small>{SCOPE_LABELS[child.scope] ?? child.scope}{child.baseState === "ready"
+                    ? " map"
+                    : child.baseState === "unavailable" ? " · map unavailable" : " · list view"}</small>
                 </span>
                 <Icon name="ArrowRight" size={16} />
               </button>

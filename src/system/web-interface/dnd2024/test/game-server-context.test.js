@@ -150,10 +150,27 @@ test("world location scope reads a non-conventional exact identity and batches o
   ]);
   assert.equal(result.items[0].isWorldRoot, true);
   assert.match(result.items[0].mapVisual.imageUrl, /map\.realm-7\/content$/u);
+  assert.deepEqual({ width: result.items[0].mapVisual.width, height: result.items[0].mapVisual.height },
+    { width: 1000, height: 1000 });
+  assert.equal(result.items[0].mapVisualState, "ready");
+  assert.equal(result.items[1].mapVisualState, "absent");
   assert.equal(calls.length, 2);
   assert.match(calls[0].url.pathname, /entities\/realm-root-7\/read-models\/dnd2024\.query\.world-location-scope$/u);
   assert.deepEqual(JSON.parse(calls[1].init.body).entityIds, ["realm-root-7", "place-azure"]);
   assert.ok(calls.every(({ url }) => !/\/entities$/u.test(url.pathname)));
+});
+
+test("a failed location media batch remains unavailable instead of becoming false map absence", async () => {
+  const result = await readRegisteredWorldLocationScope({
+    origin: "http://localhost:6217", applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
+    scopeId: "realm-root-7", perspective: "player",
+    fetchImpl: async (input) => new URL(input).pathname.endsWith("/media-batch")
+      ? response(503, {})
+      : response(200, worldScopeEnvelope(worldLocationScopeData())),
+  });
+  assert.equal(result.status, "ready");
+  assert.deepEqual(result.items.map((item) => item.mapVisualState), ["unavailable", "unavailable"]);
+  assert.equal(result.items.some((item) => item.mapVisual), false);
 });
 
 test("paged location scopes bind continuation to the first page source revision", async () => {

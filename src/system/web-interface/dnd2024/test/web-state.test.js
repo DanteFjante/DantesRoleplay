@@ -346,6 +346,7 @@ function mapFixture(overrides = {}) {
     parentMapId: null,
     subject: { kind: "world", id: "world.test", name: "Testvale" },
     coordinateSpace: { id: "space.world", unit: "percent", width: 100, height: 100 },
+    baseState: "ready",
     base: { imageUrl: "/map.png", alt: "Unlabelled map" },
     layers: [{ id: "layer.markers", kind: "markers", order: 1, label: "Places" }],
     features: [
@@ -644,6 +645,7 @@ test("client envelope validation accepts only the closed ready shape", () => {
         id: "world.eldervale", name: "Eldervale", parentId: null, childIds: ["archive"],
         totalCount: 1, complete: true, nextCursor: null, sourceRevisionFingerprint: "1".repeat(64),
       }],
+      mapOwnerId: "world.test",
       rootMapId: "map.world",
       maps: [worldMapFixture],
     },

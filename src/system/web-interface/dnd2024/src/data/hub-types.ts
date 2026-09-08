@@ -152,6 +152,7 @@ export type WorldLoreEntry = {
 };
 
 export type MapScope = "world" | "region" | "city" | "location";
+export type MapBaseState = "ready" | "absent" | "unavailable";
 
 export type MapCoordinateSpace = {
   id: string;
@@ -193,7 +194,8 @@ export type MapDocument = {
   parentMapId: string | null;
   subject: { kind: string; id: string; name: string };
   coordinateSpace: MapCoordinateSpace;
-  base: { imageUrl: string; alt: string } | null;
+  baseState: MapBaseState;
+  base: { imageUrl: string; alt: string; width?: number; height?: number } | null;
   layers: MapLayer[];
   features: MapFeature[];
   scopeLinks: MapScopeLink[];
@@ -216,6 +218,7 @@ export type MapChildScope = {
   mapId: string;
   name: string;
   scope: MapScope;
+  baseState: MapBaseState;
   viaFeatureId: string | null;
 };
 
@@ -249,6 +252,7 @@ export type WorldReadModel = {
   premise: string;
   currentLocationId: string;
   map: { imageUrl: string; alt: string };
+  mapOwnerId: string | null;
   rootMapId: string;
   maps: MapDocument[];
   regions: Array<{ name: string; detail: string; count: number }>;
@@ -913,7 +917,7 @@ export type DeferredHubUpdate =
   | {
       section: "locations";
       world: Pick<WorldReadModel,
-        "currentLocationId" | "map" | "rootMapId" | "maps" | "regions" | "facts" | "locations" | "locationScopes">;
+        "currentLocationId" | "map" | "mapOwnerId" | "rootMapId" | "maps" | "regions" | "facts" | "locations" | "locationScopes">;
       campaign: Pick<CampaignReadModel, "mapOverlays">;
     }
   | { section: "people"; world: Pick<WorldReadModel, "locations" | "people"> }
@@ -1121,7 +1125,8 @@ export type ConnectedCampaignEnvelope = {
     containerId?: string;
     containmentSlot?: string;
     mapAnchor?: { x: number; y: number };
-    mapVisual?: { imageUrl: string; alt: string };
+    mapVisualState?: MapBaseState;
+    mapVisual?: { imageUrl: string; alt: string; width?: number; height?: number };
     media?: EntityVisualMedia;
   }>;
   worldDirectory?: {

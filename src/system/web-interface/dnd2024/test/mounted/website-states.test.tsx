@@ -134,6 +134,7 @@ const mountedMap: MapDocument = {
   parentMapId: null,
   subject: { kind: "region", id: "region.mounted", name: "Mounted Vale" },
   coordinateSpace: { id: "space.mounted", unit: "illustrative", width: 100, height: 100 },
+  baseState: "absent",
   base: null,
   layers: [{ id: "layer.places", kind: "markers", order: 1, label: "Places" }],
   features: [{
@@ -221,7 +222,7 @@ async function dispatch(target: Element, event: Event) {
 
 test("a failed map image has a retry action and does not leave a broken image", async () => {
   const mounted = await mount(<MapCanvas map={{ ...mountedMap,
-    base: { imageUrl: "/map.png", alt: "Test map" } }} selectedFeatureId="" currentLocationId=""
+    baseState: "ready", base: { imageUrl: "/map.png", alt: "Test map" } }} selectedFeatureId="" currentLocationId=""
     scopeLinkFeatureIds={new Map()} annotatedFeatureIds={new Set()} influencedFeatureIds={new Set()}
     viewport={DEFAULT_MAP_VIEWPORT} onViewportChange={() => {}} onFeatureSelect={() => {}} onOpenScope={() => {}} />);
   try {
@@ -527,6 +528,27 @@ test("Character overview stays query-free while sheet and detail resources load 
   } finally { await mounted.cleanup(); }
 });
 
+test("a map image exposes loading state and its authored dimensions until decoded", async () => {
+  const mounted = await mount(<MapCanvas map={{ ...mountedMap,
+    baseState: "ready", base: { imageUrl: "/atlas.png", alt: "Caldris atlas", width: 2000, height: 1500 } }}
+    selectedFeatureId="" currentLocationId="" scopeLinkFeatureIds={new Map()}
+    annotatedFeatureIds={new Set()} influencedFeatureIds={new Set()}
+    viewport={DEFAULT_MAP_VIEWPORT} onViewportChange={() => {}} onFeatureSelect={() => {}}
+    onOpenScope={() => {}} />);
+  try {
+    const canvas = mounted.container.querySelector(".world-map-canvas");
+    const image = mounted.container.querySelector<HTMLImageElement>(".world-map-stage > img");
+    assert.equal(canvas?.getAttribute("data-image-state"), "loading");
+    assert.equal(image?.getAttribute("width"), "2000");
+    assert.equal(image?.getAttribute("height"), "1500");
+    assert.match(mounted.container.textContent!, /Loading map image/);
+
+    await act(async () => image!.dispatchEvent(new window.Event("load")));
+    assert.equal(canvas?.getAttribute("data-image-state"), "ready");
+    assert.equal(mounted.container.querySelector(".map-base-loading"), null);
+  } finally { await mounted.cleanup(); }
+});
+
 function envelope(perspective: Perspective): ReadyHubEnvelope {
   const projected = projectHubEnvelope(
     hubSource,
@@ -573,8 +595,10 @@ function deferredUpdate(section: DeferredHubSection, ready = envelope("dm")): De
     case "locations":
       return { section, world: {
         currentLocationId: ready.world.currentLocationId, map: ready.world.map,
+        mapOwnerId: ready.world.mapOwnerId,
         rootMapId: ready.world.rootMapId, maps: ready.world.maps, regions: ready.world.regions,
         facts: ready.world.facts, locations: ready.world.locations,
+        locationScopes: ready.world.locationScopes,
       }, campaign: { mapOverlays: ready.campaign.mapOverlays } };
     case "people":
       return { section, world: { locations: ready.world.locations, people: ready.world.people } };

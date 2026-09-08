@@ -42,6 +42,13 @@ test("map viewport state stays local and touch policy leaves browser gestures av
   assert.doesNotMatch(workspace, /fetch\([^)]*MAP_VIEW_SESSION_KEY/);
 });
 
+test("map scope loading and retry controls stack within a narrow viewport", () => {
+  assert.match(styles,
+    /@media \(max-width: 620px\)\s*\{[\s\S]*?\.map-scope-status\s*\{[^}]*flex-direction:\s*column;/u);
+  assert.match(styles,
+    /@media \(max-width: 620px\)\s*\{[\s\S]*?\.map-scope-status button\s*\{[^}]*width:\s*100%;/u);
+});
+
 test("marker previews use only projected feature imagery and retain an accessible button name", () => {
   assert.match(component, /feature\.preview \? <img alt="" draggable=\{false\} src=\{feature\.preview\.imageUrl\}/);
   assert.match(component, /aria-label=\{`\$\{feature\.name\}\. \$\{feature\.detail\}/);

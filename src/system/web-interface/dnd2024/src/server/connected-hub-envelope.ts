@@ -4,6 +4,7 @@ import type {
   ConnectedCampaignEnvelope,
   DeferredHubSection,
   DeferredHubUpdate,
+  MapBaseState,
   MapDocument,
   MapFeature,
   MapLayer,
@@ -304,12 +305,22 @@ function validAnchor(value: LiveDirectoryEntry["mapAnchor"]): value is { x: numb
 
 function resolvedMapBase(
   value: LiveDirectoryEntry,
-): { imageUrl: string; alt: string } | null {
+): { imageUrl: string; alt: string; width?: number; height?: number } | null {
   if (!value.mapVisual || typeof value.mapVisual.imageUrl !== "string") return null;
-  return value.mapVisual.imageUrl.startsWith("/api/applications/") &&
-    value.mapVisual.imageUrl.endsWith("/content")
-    ? { imageUrl: value.mapVisual.imageUrl, alt: value.mapVisual.alt }
-    : null;
+  if (!value.mapVisual.imageUrl.startsWith("/api/applications/") ||
+      !value.mapVisual.imageUrl.endsWith("/content")) return null;
+  const dimensions = Number.isInteger(value.mapVisual.width) && value.mapVisual.width! > 0 &&
+    Number.isInteger(value.mapVisual.height) && value.mapVisual.height! > 0
+    ? { width: value.mapVisual.width, height: value.mapVisual.height }
+    : {};
+  return { imageUrl: value.mapVisual.imageUrl, alt: value.mapVisual.alt, ...dimensions };
+}
+
+function mapBaseState(value: LiveDirectoryEntry): MapBaseState {
+  if (resolvedMapBase(value)) return "ready";
+  return value.mapVisualState === "unavailable" || value.mapVisualState === "ready" || !!value.mapVisual
+    ? "unavailable"
+    : "absent";
 }
 
 function mapIdForLocation(locationId: string): string {
@@ -325,33 +336,58 @@ function scopeForMap(value: LiveDirectoryEntry, isRoot: boolean): MapScope {
   }
 }
 
-function buildLiveMapTree(entries: readonly LiveDirectoryEntry[]): {
+function buildLiveMapTree(
+  entries: readonly LiveDirectoryEntry[],
+  worldRootId: string,
+  worldName: string,
+): {
+  mapOwnerId: string | null;
   rootMapId: string;
   maps: MapDocument[];
 } {
   const byId = new Map(entries.map((entry) => [entry.id, entry]));
-  const mapOwners = new Map(entries
-    .filter((entry) => resolvedMapBase(entry) !== null)
-    .map((entry) => [entry.id, entry]));
-  const rootOwner = [...mapOwners.values()]
-    // A missing parent image never promotes its child to the world root.
-    .filter((entry) => !entry.containerId || !byId.has(entry.containerId))
-    .sort((left, right) => left.name.localeCompare(right.name) || left.id.localeCompare(right.id))[0] ?? null;
+  const depthBelowWorld = (entry: LiveDirectoryEntry): number | null => {
+    if (entry.id === worldRootId) return 0;
+    const seen = new Set([entry.id]);
+    let current: LiveDirectoryEntry | undefined = entry;
+    let depth = 0;
+    while (current?.containerId && depth <= entries.length) {
+      depth += 1;
+      if (current.containerId === worldRootId) return depth;
+      if (seen.has(current.containerId)) return null;
+      seen.add(current.containerId);
+      current = byId.get(current.containerId);
+    }
+    return null;
+  };
+  const slotRank = (entry: LiveDirectoryEntry) =>
+    /^(?:atlas|map)$/iu.test(entry.containmentSlot ?? "") ? 0 : 1;
+  const rootOwner = entries
+    .filter((entry) => depthBelowWorld(entry) !== null &&
+      (slotRank(entry) === 0 || mapBaseState(entry) !== "absent"))
+    .sort((left, right) =>
+      (slotRank(left) - slotRank(right)) ||
+      (depthBelowWorld(left)! - depthBelowWorld(right)!) ||
+      left.name.localeCompare(right.name) || left.id.localeCompare(right.id))[0] ?? null;
   if (!rootOwner) {
-    const rootMapId = "map.live.world.unavailable";
+    const rootEntry = byId.get(worldRootId);
+    const rootMapId = mapIdForLocation(worldRootId);
+    const unavailable = entries.some((entry) => entry.mapVisualState === "unavailable");
     return {
+      mapOwnerId: null,
       rootMapId,
       maps: [{
         id: rootMapId,
         scope: "world",
         parentMapId: null,
-        subject: { kind: "world", id: "world.unavailable", name: "Map unavailable" },
+        subject: { kind: "world", id: worldRootId, name: rootEntry?.name ?? worldName },
         coordinateSpace: {
-          id: "space.live.world.unavailable",
+          id: `space.live.${worldRootId}`,
           unit: "normalized",
           width: LIVE_MAP_SPACE_SIZE,
           height: LIVE_MAP_SPACE_SIZE,
         },
+        baseState: unavailable ? "unavailable" : "absent",
         base: null,
         layers: [],
         features: [],
@@ -366,15 +402,14 @@ function buildLiveMapTree(entries: readonly LiveDirectoryEntry[]): {
   const visit = (owner: LiveDirectoryEntry, parentMapId: string | null, isRoot: boolean) => {
     if (visiting.has(owner.id) || visited.has(owner.id)) return;
     const base = resolvedMapBase(owner);
-    if (!base) return;
     visiting.add(owner.id);
     const scope = scopeForMap(owner, isRoot);
     const mapId = mapIdForLocation(owner.id);
     const coordinateSpaceId = `space.live.${owner.id}`;
     const children = entries
-      .filter((entry) => entry.containerId === owner.id && validAnchor(entry.mapAnchor))
+      .filter((entry) => entry.containerId === owner.id)
       .sort((left, right) => left.name.localeCompare(right.name) || left.id.localeCompare(right.id));
-    const features: MapFeature[] = children.map((child) => {
+    const features: MapFeature[] = children.filter((child) => validAnchor(child.mapAnchor)).map((child) => {
       const preview = child.media?.setting ?? child.media?.scene ?? child.media?.portrait;
       return {
         id: `feature.live.${owner.id}.${child.id}`,
@@ -399,6 +434,7 @@ function buildLiveMapTree(entries: readonly LiveDirectoryEntry[]): {
         width: LIVE_MAP_SPACE_SIZE,
         height: LIVE_MAP_SPACE_SIZE,
       },
+      baseState: mapBaseState(owner),
       base,
       layers: liveLayersForFeatures(scope, features),
       features,
@@ -406,7 +442,6 @@ function buildLiveMapTree(entries: readonly LiveDirectoryEntry[]): {
     };
     maps.push(document);
     for (const child of children) {
-      if (!mapOwners.has(child.id)) continue;
       visit(child, mapId, false);
       const childMapId = mapIdForLocation(child.id);
       if (!maps.some((candidate) => candidate.id === childMapId && candidate.parentMapId === mapId)) continue;
@@ -415,14 +450,16 @@ function buildLiveMapTree(entries: readonly LiveDirectoryEntry[]): {
         childMapId,
         childScope: scopeForMap(child, false),
         childName: child.name,
-        viaFeatureId: `feature.live.${owner.id}.${child.id}`,
+        viaFeatureId: validAnchor(child.mapAnchor)
+          ? `feature.live.${owner.id}.${child.id}`
+          : null,
       });
     }
     visiting.delete(owner.id);
     visited.add(owner.id);
   };
   visit(rootOwner, null, true);
-  return { rootMapId: mapIdForLocation(rootOwner.id), maps };
+  return { mapOwnerId: rootOwner.id, rootMapId: mapIdForLocation(rootOwner.id), maps };
 }
 
 function campaignDate(value: string | null | undefined): string {
@@ -537,6 +574,7 @@ export function connectedCampaignToHubEnvelope(
         containerId: entry.containerId ?? null,
         containmentSlot: entry.containmentSlot,
         mapAnchor: entry.mapAnchor,
+        mapVisualState: entry.mapVisualState,
         mapVisual: entry.mapVisual,
         media: entry.media,
       };
@@ -590,7 +628,11 @@ export function connectedCampaignToHubEnvelope(
   const directoryRegionMaps = hasLocationDirectory
     ? buildDirectoryRegionMaps(sourceLocations)
     : null;
-  const liveMapTree = buildLiveMapTree(sourceLocations);
+  const liveMapTree = buildLiveMapTree(
+    sourceLocations,
+    connection.contextSelection.selectedWorldId,
+    deriveWorldName(connection),
+  );
   const rootMapId = liveMapTree.rootMapId;
   const liveKnowledgeOverlays: CampaignMapOverlay[] = (() => {
     // A DM's Player toggle is a local rehearsal over a GM-authorized server request. Until the
@@ -1058,6 +1100,7 @@ export function connectedCampaignToHubEnvelope(
       premise,
       currentLocationId,
       map: { ...rootMapVisual },
+      mapOwnerId: liveMapTree.mapOwnerId,
       rootMapId,
       maps: liveMapTree.maps,
       regions: hasSourceLocations
@@ -1168,6 +1211,7 @@ export function connectedCampaignToDeferredHubUpdate(
         world: {
           currentLocationId: projected.world.currentLocationId,
           map: projected.world.map,
+          mapOwnerId: projected.world.mapOwnerId,
           rootMapId: projected.world.rootMapId,
           maps: projected.world.maps,
           regions: projected.world.regions,

@@ -44,6 +44,7 @@ export function MapCanvas({
   onViewportChange,
   onFeatureSelect,
   onOpenScope,
+  readyToReport = true,
 }: {
   map: MapDocument;
   selectedFeatureId: string;
@@ -55,18 +56,23 @@ export function MapCanvas({
   onViewportChange: (viewport: MapViewportState) => void;
   onFeatureSelect: (featureId: string) => void;
   onOpenScope: (mapId: string) => void;
+  readyToReport?: boolean;
 }) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const gestureRef = useRef<DragGesture | null>(null);
   const movedRef = useRef(false);
   const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
+  const [loadedImageUrl, setLoadedImageUrl] = useState<string | null>(null);
   const [imageAttempt, setImageAttempt] = useState(0);
   const imageFailed = !!map.base && failedImageUrl === map.base.imageUrl;
+  const imageLoading = !!map.base && !imageFailed && loadedImageUrl !== map.base.imageUrl;
 
   useEffect(() => {
-    if (!map.base) markMapReady(map.id);
-  }, [map.id, map.base]);
+    if (readyToReport && (map.baseState !== "ready" || loadedImageUrl === map.base?.imageUrl || imageFailed)) {
+      markMapReady(map.id);
+    }
+  }, [imageFailed, loadedImageUrl, map.base?.imageUrl, map.baseState, map.id, readyToReport]);
 
   const constrain = (candidate: MapViewportState): MapViewportState => {
     const viewportElement = viewportRef.current;
@@ -209,6 +215,7 @@ export function MapCanvas({
         className="world-map-canvas"
         data-record-id={map.id}
         data-base={map.base && !imageFailed ? "present" : "absent"}
+        data-image-state={imageFailed ? "failed" : imageLoading ? "loading" : map.baseState}
         onClick={() => {
           if (movedRef.current) { movedRef.current = false; return; }
           onFeatureSelect("");
@@ -228,24 +235,39 @@ export function MapCanvas({
         >
           {map.base && !imageFailed ? (
             <img alt={map.base.alt} draggable={false} src={map.base.imageUrl}
+              {...(map.base.width && map.base.height
+                ? { width: map.base.width, height: map.base.height }
+                : {})}
               key={`${map.base.imageUrl}:${imageAttempt}`}
-              onLoad={() => markMapReady(map.id)}
-              onError={() => setFailedImageUrl(map.base!.imageUrl)} />
+              onLoad={() => setLoadedImageUrl(map.base!.imageUrl)}
+              onError={() => {
+                setLoadedImageUrl(null);
+                setFailedImageUrl(map.base!.imageUrl);
+              }} />
           ) : imageFailed ? (
             <div className="map-base-absent" role="alert">
               <p>The map image could not be loaded. The places below are still available.</p>
               <button type="button" onClick={(event) => {
                 event.stopPropagation();
                 setFailedImageUrl(null);
+                setLoadedImageUrl(null);
                 setImageAttempt((attempt) => attempt + 1);
               }}>Try loading the map again</button>
             </div>
+          ) : map.baseState === "unavailable" ? (
+            <p className="map-base-absent" role="status">
+              <Icon name="Map" size={20} />
+              Map image information could not be loaded. The places below remain available.
+            </p>
           ) : (
             <p className="map-base-absent">
               <Icon name="Map" size={20} />
               Map not available for {map.subject.name}. The places below remain readable as information.
             </p>
           )}
+          {imageLoading ? (
+            <p className="map-base-loading" role="status">Loading map image…</p>
+          ) : null}
           <div className="world-map-markers" aria-label={`${map.subject.name} places`}>
             {map.features.map((feature) => {
               const childMapId = scopeLinkFeatureIds.get(feature.id);

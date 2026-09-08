@@ -775,6 +775,7 @@ export async function readRegisteredWorldLocationScope({
     };
     const records = [result.data.scope, ...result.data.locations];
     const mediaById = new Map();
+    let mediaResolved = false;
     if (includeMedia && records.length > 0) {
       try {
         const response = await fetchImpl(url(origin, `${applicationRoot}/media-batch`), {
@@ -789,9 +790,12 @@ export async function readRegisteredWorldLocationScope({
             Array.isArray(media.items) && media.items.length <= records.length &&
             new Set(media.items.map((item) => item.entityId)).size === media.items.length &&
             media.items.every((item) => allowed.has(item.entityId))) {
-          for (const item of media.items) {
-            const projected = projectMediaVisual(item);
-            if (projected) mediaById.set(item.entityId, projected);
+          const projectedItems = media.items.map((item) => ({
+            entityId: item.entityId, media: projectMediaVisual(item),
+          }));
+          if (projectedItems.every((item) => item.media !== null)) {
+            for (const item of projectedItems) mediaById.set(item.entityId, item.media);
+            mediaResolved = true;
           }
         }
       } catch (error) { if (error?.name === "AbortError") throw error; }
@@ -809,7 +813,11 @@ export async function readRegisteredWorldLocationScope({
         ...(record.slot ? { containmentSlot: record.slot } : {}),
         ...(record.mapAnchor ? { mapAnchor: record.mapAnchor } : {}),
         ...(index === 0 && record.kind === "world" ? { isWorldRoot: true } : {}),
-        ...(selectedMap ? { mapVisual: { imageUrl: selectedMap.imageUrl, alt: selectedMap.alt } } : {}),
+        mapVisualState: selectedMap ? "ready" : mediaResolved ? "absent" : "unavailable",
+        ...(selectedMap ? { mapVisual: {
+          imageUrl: selectedMap.imageUrl, alt: selectedMap.alt,
+          width: selectedMap.width, height: selectedMap.height,
+        } } : {}),
         ...(Object.keys(entityMedia).length > 0 ? { media: entityMedia } : {}),
       };
     });
@@ -870,6 +878,7 @@ export async function readRegisteredWorldLocationScopePage({
     };
     const records = [result.data.scope, ...result.data.locations];
     const mediaById = new Map();
+    let mediaResolved = false;
     if (includeMedia && records.length > 0) {
       try {
         const response = await fetchImpl(url(origin, `${applicationRoot}/media-batch`), {
@@ -884,9 +893,12 @@ export async function readRegisteredWorldLocationScopePage({
             Array.isArray(media.items) && media.items.length <= records.length &&
             new Set(media.items.map((item) => item.entityId)).size === media.items.length &&
             media.items.every((item) => allowed.has(item.entityId))) {
-          for (const item of media.items) {
-            const projected = projectMediaVisual(item);
-            if (projected) mediaById.set(item.entityId, projected);
+          const projectedItems = media.items.map((item) => ({
+            entityId: item.entityId, media: projectMediaVisual(item),
+          }));
+          if (projectedItems.every((item) => item.media !== null)) {
+            for (const item of projectedItems) mediaById.set(item.entityId, item.media);
+            mediaResolved = true;
           }
         }
       } catch (error) { if (error?.name === "AbortError") throw error; }
@@ -901,7 +913,11 @@ export async function readRegisteredWorldLocationScopePage({
         ...(record.slot ? { containmentSlot: record.slot } : {}),
         ...(record.mapAnchor ? { mapAnchor: record.mapAnchor } : {}),
         ...(index === 0 && record.kind === "world" ? { isWorldRoot: true } : {}),
-        ...(selectedMap ? { mapVisual: { imageUrl: selectedMap.imageUrl, alt: selectedMap.alt } } : {}),
+        mapVisualState: selectedMap ? "ready" : mediaResolved ? "absent" : "unavailable",
+        ...(selectedMap ? { mapVisual: {
+          imageUrl: selectedMap.imageUrl, alt: selectedMap.alt,
+          width: selectedMap.width, height: selectedMap.height,
+        } } : {}),
         ...(Object.keys(entityMedia).length > 0 ? { media: entityMedia } : {}),
       };
     });

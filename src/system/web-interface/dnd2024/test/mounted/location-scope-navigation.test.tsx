@@ -8,6 +8,7 @@ import { DndInformationHub } from "../../src/components/DndInformationHub";
 import { hubRouteHash } from "../../src/data/hub-route";
 import type {
   DeferredHubUpdate,
+  MapDocument,
   ReadyHubEnvelope,
   WorldLocation,
   WorldLocationScope,
@@ -126,6 +127,7 @@ function locationUpdate(source: ReadyHubEnvelope, locations: WorldLocation[], sc
     world: {
       currentLocationId: source.world.currentLocationId,
       map: source.world.map,
+      mapOwnerId: source.world.mapOwnerId,
       rootMapId: source.world.rootMapId,
       maps: source.world.maps,
       regions: source.world.regions,
@@ -136,6 +138,116 @@ function locationUpdate(source: ReadyHubEnvelope, locations: WorldLocation[], sc
     campaign: { mapOverlays: source.campaign.mapOverlays },
   };
 }
+
+test("Map waits for its declared atlas scope, renders exact markers, and returns from a child map", async () => {
+  const initial = initialEnvelope();
+  const atlas = initial.world.locations[0]!;
+  const eredane = location(atlas, "region.eredane", "Eredane", "Eredane", "region");
+  const lanternSea = location(atlas, "region.lantern-sea", "Lantern Sea", "Lantern Sea", "region");
+  const solasca = location(atlas, "region.solasca", "Solasca", "Solasca", "region");
+  const childMaps = [eredane, lanternSea, solasca].map((entry): MapDocument => ({
+    id: `map.live.${entry.id}`,
+    scope: "region",
+    parentMapId: `map.live.${atlas.id}`,
+    subject: { kind: "region", id: entry.id, name: entry.name },
+    coordinateSpace: { id: `space.live.${entry.id}`, unit: "normalized", width: 1000, height: 1000 },
+    baseState: "absent",
+    base: null,
+    layers: [],
+    features: [],
+    scopeLinks: [],
+  }));
+  const atlasMap: MapDocument = {
+    id: `map.live.${atlas.id}`,
+    scope: "world",
+    parentMapId: null,
+    subject: { kind: "region", id: atlas.id, name: atlas.name },
+    coordinateSpace: { id: `space.live.${atlas.id}`, unit: "normalized", width: 1000, height: 1000 },
+    baseState: "ready",
+    base: { imageUrl: "/api/applications/dnd2024/state-spaces/test/media/atlas/content",
+      alt: "Caldris atlas", width: 2000, height: 1500 },
+    layers: [{ id: "layer.live.world.regions", kind: "markers", order: 1, label: "Regions" }],
+    features: [
+      { id: "feature.eredane", kind: "point", layerId: "layer.live.world.regions",
+        coordinateSpaceId: `space.live.${atlas.id}`, geometry: { x: 255, y: 380 },
+        name: "Eredane", detail: "Western continent.", locationId: eredane.id },
+      { id: "feature.lantern", kind: "point", layerId: "layer.live.world.regions",
+        coordinateSpaceId: `space.live.${atlas.id}`, geometry: { x: 510, y: 570 },
+        name: "Lantern Sea", detail: "The sea between continents.", locationId: lanternSea.id },
+      { id: "feature.solasca", kind: "point", layerId: "layer.live.world.regions",
+        coordinateSpaceId: `space.live.${atlas.id}`, geometry: { x: 765, y: 490 },
+        name: "Solasca", detail: "Eastern continent.", locationId: solasca.id },
+    ],
+    scopeLinks: childMaps.map((map, index) => ({
+      id: `scope.${map.subject.id}`,
+      childMapId: map.id,
+      childScope: "region",
+      childName: map.subject.name,
+      viaFeatureId: atlasMapFeatureId(index),
+    })),
+  };
+  function atlasMapFeatureId(index: number) {
+    return ["feature.eredane", "feature.lantern", "feature.solasca"][index]!;
+  }
+  initial.world = {
+    ...initial.world,
+    mapOwnerId: atlas.id,
+    rootMapId: atlasMap.id,
+    maps: [{ ...atlasMap, features: [], layers: [], scopeLinks: [] }],
+  };
+  let finishAtlas!: (update: Extract<DeferredHubUpdate, { section: "locations" }>) => void;
+  const calls: string[] = [];
+  const loader = async (source: ReadyHubEnvelope, scopeId: string) => {
+    calls.push(scopeId);
+    if (scopeId === atlas.id) return new Promise<Extract<DeferredHubUpdate, { section: "locations" }>>(
+      (resolve) => { finishAtlas = resolve; });
+    assert.equal(scopeId, eredane.id);
+    return locationUpdate(source, source.world.locations, [
+      ...source.world.locationScopes,
+      scope(eredane.id, eredane.name, atlas.id, []),
+    ]);
+  };
+  const mounted = await mount(hubRouteHash("world", "overview", { worldSection: "map" }),
+    <DndInformationHub initialEnvelope={initial} loadWorldScope={loader} />);
+  try {
+    assert.deepEqual(calls, [atlas.id]);
+    assert.match(mounted.container.textContent!, /Loading the places on this map/);
+    await act(async () => {
+      finishAtlas({
+        ...locationUpdate(initial, [atlas, eredane, lanternSea, solasca], [
+          initial.world.locationScopes[0]!,
+          scope(atlas.id, atlas.name, "world.caldris", [eredane.id, lanternSea.id, solasca.id]),
+        ]),
+        world: {
+          ...locationUpdate(initial, [], []).world,
+          locations: [atlas, eredane, lanternSea, solasca],
+          locationScopes: [initial.world.locationScopes[0]!,
+            scope(atlas.id, atlas.name, "world.caldris", [eredane.id, lanternSea.id, solasca.id])],
+          maps: [atlasMap, ...childMaps],
+        },
+      });
+      await tick();
+    });
+    assert.equal(mounted.container.querySelector(".map-scope-status"), null);
+    assert.deepEqual([...mounted.container.querySelectorAll(".world-map-marker")]
+      .map((marker) => marker.getAttribute("data-feature-id")),
+    ["feature.eredane", "feature.lantern", "feature.solasca"]);
+    const image = mounted.container.querySelector<HTMLImageElement>(".world-map-stage > img");
+    assert.equal(image?.getAttribute("width"), "2000");
+    assert.equal(image?.getAttribute("height"), "1500");
+    const eredaneScope = [...mounted.container.querySelectorAll<HTMLButtonElement>(".map-scope-links button")]
+      .find((button) => button.textContent?.includes("Eredane"));
+    assert.ok(eredaneScope);
+    await click(eredaneScope);
+    assert.match(mounted.container.textContent!, /Eredane map/);
+    const parent = [...mounted.container.querySelectorAll<HTMLButtonElement>(".map-breadcrumbs button")]
+      .find((button) => button.textContent?.includes(atlas.name));
+    assert.ok(parent);
+    await click(parent);
+    assert.match(mounted.container.textContent!, new RegExp(`${atlas.name} map`));
+    assert.deepEqual(calls, [atlas.id, eredane.id]);
+  } finally { await mounted.cleanup(); }
+});
 
 function byLabel(container: Element, label: string) {
   const match = container.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`);

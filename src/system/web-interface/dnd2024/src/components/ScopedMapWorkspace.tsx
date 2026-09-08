@@ -49,10 +49,13 @@ export function ScopedMapWorkspace({
   currentLocationId,
   campaignTitle,
   overlays,
+  scopeState,
+  scopeError,
   onMapChange,
   onNavigateToFeature,
   onFeatureSelect,
   onOpenLocation,
+  onRetryScope,
 }: {
   world: WorldReadModel;
   activeMapId: string;
@@ -60,10 +63,13 @@ export function ScopedMapWorkspace({
   currentLocationId: string;
   campaignTitle: string;
   overlays: CampaignMapOverlay[];
+  scopeState: "loading" | "ready" | "error";
+  scopeError: string;
   onMapChange: (mapId: string) => void;
   onNavigateToFeature: (mapId: string, featureId: string) => void;
   onFeatureSelect: (featureId: string) => void;
   onOpenLocation: (locationId: string) => void;
+  onRetryScope: () => void;
 }) {
   const [hiddenLayerIdsByMap, setHiddenLayerIdsByMap] = useState<Record<string, string[]>>({});
   const [selectedFactionOverlayId, setSelectedFactionOverlayId] = useState("");
@@ -153,6 +159,20 @@ export function ScopedMapWorkspace({
 
       <MapBreadcrumbs onSelect={onMapChange} trail={trail} />
 
+      {scopeState === "loading" ? (
+        <section aria-busy="true" className="map-scope-status" role="status">
+          Loading the places on this map…
+        </section>
+      ) : scopeState === "error" ? (
+        <section className="map-scope-status map-scope-status--error" role="alert">
+          <div>
+            <strong>The places on this map could not be loaded.</strong>
+            <span>{scopeError}</span>
+          </div>
+          <button onClick={onRetryScope} type="button">Retry places</button>
+        </section>
+      ) : null}
+
       <MapAtlasSearch
         activeMapId={map.id}
         onNavigate={onNavigateToFeature}
@@ -200,6 +220,7 @@ export function ScopedMapWorkspace({
             scopeLinkFeatureIds={scopeLinkFeatureIds}
             selectedFeatureId={selectedFeatureId}
             viewport={mapViews[map.id] ?? DEFAULT_MAP_VIEWPORT}
+            readyToReport={scopeState === "ready"}
           />
         ) : (
           <MapFeatureList

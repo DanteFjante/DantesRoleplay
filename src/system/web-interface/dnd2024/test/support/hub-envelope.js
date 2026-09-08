@@ -449,13 +449,15 @@ function projectMaps(sourceMaps, perspective, locationById) {
       .filter(Boolean);
     const featureIds = new Set(features.map((feature) => feature.id));
 
+    const base = projectMapBase(map, perspective);
     return {
       id: map.id,
       scope: map.scope,
       parentMapId: map.parentMapId,
       subject: { ...map.subject },
       coordinateSpace: { ...map.coordinateSpace },
-      base: projectMapBase(map, perspective),
+      baseState: base ? "ready" : "absent",
+      base,
       layers,
       features,
       scopeLinks: map.scopeLinks
@@ -604,6 +606,7 @@ export function projectHubEnvelope(source, sourceRevision, audience) {
       premise: source.world.premise,
       currentLocationId: source.world.currentLocationId,
       map: { ...source.world.map },
+      mapOwnerId: projectedMaps.find((map) => map.id === source.world.rootMapId)?.subject.id ?? null,
       rootMapId: source.world.rootMapId,
       maps: projectedMaps,
       regions: projectedRegions,

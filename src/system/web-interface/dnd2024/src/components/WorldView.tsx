@@ -35,6 +35,8 @@ export function WorldView({
   locationScope,
   locationScopeBusy,
   locationScopeError,
+  mapScopeState,
+  mapScopeError,
   locationSection,
   perspective,
   selectedFactionId,
@@ -48,6 +50,7 @@ export function WorldView({
   onLocationScopeBack,
   onLoadMoreLocations,
   onRetryLocationScope,
+  onRetryMapScope,
   onLocationSectionChange,
   onFactionSelect,
   factionDirectoryBusy,
@@ -67,6 +70,8 @@ export function WorldView({
   locationScope: WorldLocationScope | null;
   locationScopeBusy: boolean;
   locationScopeError: string;
+  mapScopeState: "loading" | "ready" | "error";
+  mapScopeError: string;
   locationSection: LocationSectionId;
   perspective: Perspective;
   selectedFactionId: string;
@@ -80,6 +85,7 @@ export function WorldView({
   onLocationScopeBack: () => void;
   onLoadMoreLocations: () => void;
   onRetryLocationScope: () => void;
+  onRetryMapScope: () => void;
   onLocationSectionChange: (section: LocationSectionId) => void;
   onFactionSelect: (factionId: string) => void;
   factionDirectoryBusy?: boolean;
@@ -105,6 +111,8 @@ export function WorldView({
             activeMapId={activeMapId}
             campaignTitle={campaign.title}
             overlays={campaign.mapOverlays}
+            scopeError={mapScopeError}
+            scopeState={mapScopeState}
             currentLocationId={world.currentLocationId}
             onFeatureSelect={onMapFeatureSelect}
             onMapChange={onMapChange}
@@ -113,6 +121,7 @@ export function WorldView({
               onLocationSelect(locationId);
               onSectionChange("locations");
             }}
+            onRetryScope={onRetryMapScope}
             selectedFeatureId={selectedMapFeatureId}
             world={world}
           />

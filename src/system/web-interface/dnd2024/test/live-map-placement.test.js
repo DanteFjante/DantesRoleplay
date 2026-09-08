@@ -177,6 +177,83 @@ test("Caldris map owners resolve only to authorized World and Eredane media", ()
     visual("caldris.town.bramblebridge.player", "").imageUrl);
 });
 
+test("Caldris resolves its 2000×1500 atlas below the non-map World and keeps exact top-level anchors", () => {
+  const atlasVisual = {
+    ...visual("caldris.atlas.player", "Caldris atlas"),
+    width: 2000,
+    height: 1500,
+  };
+  const entries = [
+    {
+      id: "world.caldris", name: "Caldris", kind: "world", isWorldRoot: true,
+      mapVisualState: "absent",
+    },
+    {
+      id: "location.caldris.atlas", name: "Caldris", kind: "region",
+      containerId: "world.caldris", containmentSlot: "atlas", mapVisualState: "ready",
+      mapVisual: atlasVisual,
+    },
+    {
+      id: "location.caldris.eredane", name: "Eredane", kind: "region",
+      containerId: "location.caldris.atlas", mapAnchor: { x: 255, y: 380 },
+      mapVisualState: "absent",
+    },
+    {
+      id: "location.caldris.atlas.lantern-sea", name: "Lantern Sea", kind: "region",
+      containerId: "location.caldris.atlas", mapAnchor: { x: 510, y: 570 },
+      mapVisualState: "absent",
+    },
+    {
+      id: "location.caldris.solasca", name: "Solasca", kind: "region",
+      containerId: "location.caldris.atlas", mapAnchor: { x: 765, y: 490 },
+      mapVisualState: "absent",
+    },
+  ];
+  const envelope = connectedCampaignToHubEnvelope(connected("player", entries,
+    { ...CAMPAIGN, id: "campaign.caldris.measure-of-mercy", name: "The Measure of Mercy" }));
+  const atlas = mapFor(envelope, "location.caldris.atlas");
+
+  assert.equal(envelope.world.mapOwnerId, "location.caldris.atlas");
+  assert.equal(envelope.world.rootMapId, "map.live.location.caldris.atlas");
+  assert.deepEqual(atlas?.base, atlasVisual);
+  assert.deepEqual(atlas?.features.map(({ name, geometry }) => ({ name, geometry })), [
+    { name: "Eredane", geometry: { x: 255, y: 380 } },
+    { name: "Lantern Sea", geometry: { x: 510, y: 570 } },
+    { name: "Solasca", geometry: { x: 765, y: 490 } },
+  ]);
+  assert.equal(isReadyHubEnvelope(envelope), true);
+});
+
+test("a declared atlas remains the map owner when its media lookup is unavailable", () => {
+  const entries = [
+    {
+      id: "world.caldris", name: "Caldris", kind: "world", isWorldRoot: true,
+      mapVisualState: "absent",
+    },
+    {
+      id: "location.caldris.atlas", name: "Caldris Atlas", kind: "region",
+      containerId: "world.caldris", containmentSlot: "atlas", mapVisualState: "unavailable",
+    },
+    {
+      id: "location.caldris.eredane", name: "Eredane", kind: "region",
+      containerId: "location.caldris.atlas", mapAnchor: { x: 255, y: 380 },
+      mapVisualState: "absent",
+    },
+  ];
+  const envelope = connectedCampaignToHubEnvelope(connected("player", entries,
+    { ...CAMPAIGN, id: "campaign.caldris.measure-of-mercy", name: "The Measure of Mercy" }));
+  const atlas = mapFor(envelope, "location.caldris.atlas");
+
+  assert.equal(envelope.world.mapOwnerId, "location.caldris.atlas");
+  assert.equal(envelope.world.rootMapId, "map.live.location.caldris.atlas");
+  assert.equal(atlas?.baseState, "unavailable");
+  assert.equal(atlas?.base, null);
+  assert.deepEqual(atlas?.features.map(({ name, geometry }) => ({ name, geometry })), [
+    { name: "Eredane", geometry: { x: 255, y: 380 } },
+  ]);
+  assert.equal(isReadyHubEnvelope(envelope), true);
+});
+
 test("server page bundles preserve owner-bound media routes", () => {
   const envelope = connectedCampaignToHubEnvelope(connected("player"));
   assert.equal(
@@ -228,7 +305,8 @@ test("unknown media keys fail closed while the location information remains", ()
   const crownmere = entries.find((entry) => entry.id === "location.thalorien.crownmere");
   crownmere.mapVisual = { imageUrl: "/components/maps/unknown.png", alt: "CANARY UNKNOWN MAP" };
   const envelope = connectedCampaignToHubEnvelope(connected("player", entries));
-  assert.equal(mapFor(envelope, "location.thalorien.crownmere"), null);
+  assert.equal(mapFor(envelope, "location.thalorien.crownmere")?.baseState, "unavailable");
+  assert.equal(mapFor(envelope, "location.thalorien.crownmere")?.base, null);
   assert.equal(envelope.world.locations.some((location) => location.id === crownmere.id), true);
   assert.equal(JSON.stringify(envelope).includes("unknown.secret.player"), false);
   assert.equal(JSON.stringify(envelope).includes("CANARY UNKNOWN MAP"), false);
@@ -244,6 +322,15 @@ test("an unanchored child is omitted from maps rather than assigned an invented 
     containmentSlot: "location",
   });
   const envelope = connectedCampaignToHubEnvelope(connected("dm", entries));
-  assert.equal(featureFor(mapFor(envelope, "location.thalorien.valeros"), "location.thalorien.unplaced"), null);
+  const parent = mapFor(envelope, "location.thalorien.valeros");
+  assert.equal(featureFor(parent, "location.thalorien.unplaced"), null);
+  assert.deepEqual(parent?.scopeLinks.find((link) => link.childName === "Nowhere Yet"), {
+    id: "scopelink.live.location.thalorien.valeros.location.thalorien.unplaced",
+    childMapId: "map.live.location.thalorien.unplaced",
+    childScope: "location",
+    childName: "Nowhere Yet",
+    viaFeatureId: null,
+  });
+  assert.equal(mapFor(envelope, "location.thalorien.unplaced")?.baseState, "absent");
   assert.equal(envelope.world.locations.some((location) => location.id === "location.thalorien.unplaced"), true);
 });

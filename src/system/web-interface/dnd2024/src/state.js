@@ -382,13 +382,17 @@ export function resolveMapChildScopes(maps, mapId) {
   if (!map) return [];
   return map.scopeLinks
     .filter((link) => resolveMapDocument(maps, link.childMapId))
-    .map((link) => ({
-      id: link.id,
-      mapId: link.childMapId,
-      name: link.childName,
-      scope: link.childScope,
-      viaFeatureId: link.viaFeatureId,
-    }));
+    .map((link) => {
+      const child = resolveMapDocument(maps, link.childMapId);
+      return {
+        id: link.id,
+        mapId: link.childMapId,
+        name: link.childName,
+        scope: link.childScope,
+        baseState: child.baseState,
+        viaFeatureId: link.viaFeatureId,
+      };
+    });
 }
 
 export function resolveSelectedMapFeature(map, featureId) {
@@ -522,10 +526,15 @@ function isMapDocument(value) {
     Number.isFinite(value.coordinateSpace.height) &&
     value.coordinateSpace.width > 0 &&
     value.coordinateSpace.height > 0 &&
+    ["ready", "absent", "unavailable"].includes(value.baseState) &&
+    (value.baseState === "ready") === (value.base !== null) &&
     (value.base === null ||
       (value.base &&
         typeof value.base.imageUrl === "string" &&
-        typeof value.base.alt === "string")) &&
+        typeof value.base.alt === "string" &&
+        (value.base.width === undefined || Number.isInteger(value.base.width) && value.base.width > 0) &&
+        (value.base.height === undefined || Number.isInteger(value.base.height) && value.base.height > 0) &&
+        (value.base.width === undefined) === (value.base.height === undefined))) &&
     Array.isArray(value.layers) &&
     value.layers.every(
       (layer) =>
@@ -1243,6 +1252,9 @@ export function isReadyHubEnvelope(value) {
       scope.complete === (scope.nextCursor === null) &&
       (scope.sourceRevisionFingerprint === null || /^[0-9A-F]{64}$/u.test(scope.sourceRevisionFingerprint))) &&
     typeof world.rootMapId === "string" &&
+    (world.mapOwnerId === null || typeof world.mapOwnerId === "string") &&
+    (world.mapOwnerId === null || world.maps.some((map) =>
+      map.id === world.rootMapId && map.subject.id === world.mapOwnerId)) &&
     isValidMapHierarchy(world.maps, world.rootMapId) &&
     isCampaignReadModel(campaign) &&
     overlaysResolveAgainstMaps(campaign.mapOverlays, world.maps) &&

@@ -155,7 +155,7 @@ test("projects authorized location imagery into its parent map marker preview", 
     locationDirectoryAudience: "player",
     locationDirectory: [
       {
-        id: "location.root", name: "Known World", kind: "region", containerId: "world.root",
+        id: "location.root", name: "Known World", kind: "region", containerId: "world.thalorien",
         mapVisual: visual("location.root", "Known world map"),
       },
       {
@@ -1115,7 +1115,7 @@ test("infers region names from location container hierarchy", () => {
   assert.equal(locationsById["location.thalorien.southwestern-volcano"], "Southwestern Volcanic Region");
 });
 
-test("a child with an unloaded parent image cannot become the world map", () => {
+test("a declared atlas becomes the map owner beneath a non-map World parent", () => {
   const envelope = connectedCampaignToHubEnvelope(connectedFixture({
     audience: { seat: "dm", perspective: "dm", allowedPerspectives: ["dm", "player"] },
     locationDirectory: [
@@ -1126,6 +1126,7 @@ test("a child with an unloaded parent image cannot become the world map", () => 
         mapVisual: visual("child", "Local map"), mapAnchor: { x: 500, y: 500 } },
     ],
   }));
+  assert.equal(envelope.world.mapOwnerId, "location.world");
   assert.equal(envelope.world.maps.find((map) => map.id === envelope.world.rootMapId).subject.name, "World atlas");
 });
 
@@ -1162,7 +1163,8 @@ test("uses exact live containment for cropped Region map membership", () => {
     (map) => map.subject.id === "location.thalorien.world-tree-grounds",
   );
   assert.deepEqual(aldros?.features.map((feature) => feature.name), ["The World Tree"]);
-  assert.equal(grounds, undefined);
+  assert.equal(grounds?.baseState, "absent");
+  assert.equal(grounds?.parentMapId, "map.live.location.thalorien.thalos");
   assert.equal(isReadyHubEnvelope(envelope), true);
 });
 

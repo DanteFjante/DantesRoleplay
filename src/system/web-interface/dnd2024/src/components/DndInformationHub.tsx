@@ -278,6 +278,7 @@ export function DndInformationHub({
   const campaignWritePending = useRef(false);
   const loadedWorldScopes = useRef(new Set<string>());
   const loadingWorldScopes = useRef(new Set<string>());
+  const failedWorldScopes = useRef(new Set<string>());
   const [locationScopeBusy, setLocationScopeBusy] = useState(false);
   const [locationScopeError, setLocationScopeError] = useState("");
   const [deferredStates, setDeferredStates] = useState<Partial<Record<DeferredHubSection, DeferredViewState>>>({});
@@ -346,6 +347,25 @@ export function DndInformationHub({
     ? currentSituation.scene
     : currentSceneLocation?.media?.scene ?? currentSceneLocation?.media?.setting ?? null;
   const selectedLocation = locationById.get(selectedLocationId) ?? null;
+  const effectiveActiveMapId = normalizeMapId(
+    envelope.world.maps,
+    activeMapId,
+    envelope.world.rootMapId,
+  ) as string;
+  const activeMapDocument = resolveMapDocument(envelope.world.maps, effectiveActiveMapId);
+  const activeMapScopeId = activeMapDocument?.subject.id ?? null;
+  const activeMapScopeReady = !loadWorldScope || activeMapScopeId === null ||
+    envelope.world.mapOwnerId === null ||
+    envelope.world.locationScopes.some((scope) => scope.id === activeMapScopeId);
+  const activeMapScopeFailed = activeMapScopeId !== null && failedWorldScopes.current.has(activeMapScopeId);
+  const mapScopeState: "loading" | "ready" | "error" = activeMapScopeReady
+    ? "ready"
+    : activeMapScopeFailed ? "error" : "loading";
+  useEffect(() => {
+    if (effectiveActiveMapId === activeMapId) return;
+    setActiveMapId(effectiveActiveMapId);
+    setSelectedMapFeatureId("");
+  }, [activeMapId, effectiveActiveMapId]);
 
   async function requestHub(
     nextPerspective: Perspective,
@@ -407,6 +427,7 @@ export function DndInformationHub({
       setDeferredStates({});
       setDeferredErrors({});
       loadedWorldScopes.current.clear();
+      failedWorldScopes.current.clear();
       setLocationScopeError("");
       setBootstrapGeneration((generation) => generation + 1);
       if (campaignChanged || perspectiveChanged) {
@@ -558,6 +579,7 @@ export function DndInformationHub({
   async function requestWorldScope(scopeId: string, cursor: string | null = null, force = false) {
     if (!loadWorldScope || cursor === null && !force && loadedWorldScopes.current.has(scopeId)) return true;
     if (loadingWorldScopes.current.has(scopeId)) return true;
+    if (force) failedWorldScopes.current.delete(scopeId);
     worldScopeAbort.current?.abort();
     const controller = new AbortController();
     worldScopeAbort.current = controller;
@@ -568,10 +590,12 @@ export function DndInformationHub({
       const loaded = await loadWorldScope(envelope, scopeId, cursor, controller.signal);
       if (controller.signal.aborted) return false;
       loadedWorldScopes.current.add(scopeId);
+      failedWorldScopes.current.delete(scopeId);
       setEnvelope((current) => applyDeferredHubUpdate(current, loaded));
       return true;
     } catch (error) {
       if (controller.signal.aborted) return false;
+      failedWorldScopes.current.add(scopeId);
       setLocationScopeError(error instanceof Error ? error.message : "This location level is unavailable.");
       return false;
     } finally {
@@ -590,8 +614,9 @@ export function DndInformationHub({
     ? deferredStates[deferredSection] ?? "unloaded" : "ready";
   useEffect(() => {
     const campaignReady = activeTab !== "campaign" || campaignDetails.status === "ready";
-    if (deferredState === "ready" && campaignReady && !hubBusy) markActiveViewReady(activeTab);
-  }, [activeTab, campaignDetails.status, deferredState, hubBusy]);
+    const mapReady = activeTab !== "world" || worldSection !== "map" || mapScopeState !== "loading";
+    if (deferredState === "ready" && campaignReady && mapReady && !hubBusy) markActiveViewReady(activeTab);
+  }, [activeTab, campaignDetails.status, deferredState, hubBusy, mapScopeState, worldSection]);
   useEffect(() => {
     if (deferredSection && !hubBusy && !deferredRestricted) void requestDeferred(deferredSection);
     return () => { deferredAbort.current?.abort(); };
@@ -599,6 +624,15 @@ export function DndInformationHub({
     // incremental envelope merge. Errors retry only through the explicit retry button.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deferredSection, perspective, contextSelection.selectedCampaignId, hubBusy, loadDeferredSection, deferredRestricted]);
+  useEffect(() => {
+    if (activeTab !== "world" || worldSection !== "map" || deferredState !== "ready" ||
+        mapScopeState !== "loading" || !activeMapScopeId ||
+        loadingWorldScopes.current.has(activeMapScopeId)) return;
+    void requestWorldScope(activeMapScopeId);
+    // The active map's direct location scope supplies its markers and child-map links.
+    // It is loaded only after the root location scope has identified the actual map owner.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, worldSection, deferredState, activeMapScopeId, mapScopeState, bootstrapGeneration]);
   useEffect(() => {
     if (activeTab !== "world" || worldSection !== "locations" || deferredState !== "ready" ||
         locationScopePath.length === 0) return;
@@ -1004,6 +1038,8 @@ export function DndInformationHub({
             locationScope={activeLocationScope}
             locationScopeBusy={locationScopeBusy}
             locationScopeError={locationScopeError}
+            mapScopeError={activeMapScopeFailed ? locationScopeError : ""}
+            mapScopeState={mapScopeState}
             locationSection={locationSection}
             perspective={perspective}
             selectedFactionId={selectedFactionId}
@@ -1014,6 +1050,9 @@ export function DndInformationHub({
               ? void requestWorldScope(activeLocationScope.id, activeLocationScope.nextCursor)
               : undefined}
             onRetryLocationScope={() => void requestWorldScope(activeLocationScopeId, null, true)}
+            onRetryMapScope={() => activeMapScopeId
+              ? void requestWorldScope(activeMapScopeId, null, true)
+              : undefined}
             onQueryChange={(query) => setLocationQuery(query.slice(0, 80))}
             onLocationSectionChange={(section) => {
               const nextSection = normalizeLocationSection(section, perspective) as LocationSectionId;
@@ -1028,14 +1067,14 @@ export function DndInformationHub({
             }}
             factionDirectoryBusy={hubBusy && worldSection === "factions"}
             onLoadMoreFactions={() => void requestFactionPage(envelope.world.factionDirectory?.nextCursor ?? null)}
-            activeMapId={activeMapId}
+            activeMapId={effectiveActiveMapId}
             onMapChange={(mapId) => {
               const nextMapId = normalizeMapId(
                 envelope.world.maps,
                 mapId,
                 envelope.world.rootMapId,
               ) as string;
-              if (nextMapId === activeMapId) return;
+              if (nextMapId === effectiveActiveMapId) return;
               setActiveMapId(nextMapId);
               setSelectedMapFeatureId("");
               const map = resolveMapDocument(envelope.world.maps, nextMapId);
@@ -1045,7 +1084,7 @@ export function DndInformationHub({
               );
             }}
             onMapFeatureSelect={(featureId) => {
-              const map = resolveMapDocument(envelope.world.maps, activeMapId);
+              const map = resolveMapDocument(envelope.world.maps, effectiveActiveMapId);
               const feature = resolveSelectedMapFeature(map, featureId);
               setSelectedMapFeatureId(feature ? feature.id : "");
               setAnnouncement(feature ? `${feature.name} selected` : "Map selection cleared");

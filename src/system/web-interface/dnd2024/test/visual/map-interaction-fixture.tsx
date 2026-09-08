@@ -10,6 +10,7 @@ const map: MapDocument = {
   id: "map.test", scope: "region", parentMapId: null,
   subject: { kind: "region", id: "region.test", name: "Test Vale" },
   coordinateSpace: { id: "space.test", unit: "illustrative", width: 100, height: 100 },
+  baseState: "ready",
   base: {
     imageUrl: "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900"><rect width="1600" height="900" fill="#354d36"/></svg>'),
     alt: "Synthetic map background",
