@@ -926,8 +926,7 @@ export async function readRegisteredCurrentPlay({
     });
     if (scene.status !== "ready") return { status: scene.status === "forbidden" ? "forbidden" : "error" };
     const resumeScene = resume.data.scene;
-    if (scene.evidence.sourceRevisionFingerprint !== resume.evidence.sourceRevisionFingerprint ||
-        scene.data.location.id !== resumeScene.locationId ||
+    if (scene.data.location.id !== resumeScene.locationId ||
         scene.data.conversationId !== resumeScene.conversationId ||
         scene.data.encounterId !== resumeScene.encounterId ||
         JSON.stringify(scene.data.affordances) !== JSON.stringify(resume.data.affordances)) return { status: "stale" };

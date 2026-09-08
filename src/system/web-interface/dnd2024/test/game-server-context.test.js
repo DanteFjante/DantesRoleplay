@@ -1170,7 +1170,11 @@ test("registered current play cross-checks exact exploration, conversation, and 
         const data = contract === campaignResumeContract
           ? campaignResumeData(resumeScene, scene.affordances)
           : scene;
-        return response(200, currentPlayEnvelope(contract, data));
+        return response(200, currentPlayEnvelope(
+          contract,
+          data,
+          contract === campaignResumeContract ? "a".repeat(64) : "b".repeat(64),
+        ));
       },
     });
     assert.equal(result.status, "ready");
@@ -1198,17 +1202,17 @@ test("registered current play treats a Resume null scene as explicit and skips C
   assert.ok(calls[0].pathname.endsWith(campaignResumeContract.id));
 });
 
-test("registered current play rejects stale cross-query state and preserves Player denial", async () => {
+test("registered current play rejects incoherent cross-query state and preserves Player denial", async () => {
   const scene = currentSceneData("combat");
   const resume = campaignResumeData({
-    locationId: scene.location.id, conversationId: null, encounterId: scene.encounterId,
+    locationId: "location.thalorien.somewhere-else", conversationId: null, encounterId: scene.encounterId,
   });
   const stale = await readRegisteredCurrentPlay({
     origin: "http://localhost:6217", applicationId: "dnd2024",
     stateSpaceId: "dnd2024-main", campaignId: "campaign.thalorien", perspective: "player",
     fetchImpl: async (input) => new URL(input).pathname.endsWith(campaignResumeContract.id)
-      ? response(200, currentPlayEnvelope(campaignResumeContract, resume, "a".repeat(64)))
-      : response(200, currentPlayEnvelope(currentSceneContract, scene, "b".repeat(64))),
+      ? response(200, currentPlayEnvelope(campaignResumeContract, resume))
+      : response(200, currentPlayEnvelope(currentSceneContract, scene)),
   });
   assert.equal(stale.status, "stale");
 
