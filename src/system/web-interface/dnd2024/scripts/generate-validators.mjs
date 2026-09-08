@@ -103,6 +103,13 @@ const targets = [
     label: "faction directory page",
     contractOnly: true,
   },
+  {
+    name: "world-location-scope-page-contract",
+    source: "world/dnd2024.query.world-location-scope-page.json",
+    output: "world-location-scope-page-contract.js",
+    label: "world location scope page",
+    contractOnly: true,
+  },
 ];
 
 function usesVersionTwo(value) {

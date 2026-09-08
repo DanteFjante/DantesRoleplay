@@ -327,7 +327,7 @@ async function readDeferredSectionObject(
 }
 
 async function readWorldScopeObject(
-  { envelope, scopeId }: WorldScopeRequest,
+  { envelope, scopeId, cursor }: WorldScopeRequest,
   signal: AbortSignal,
 ): Promise<WorldScopeUpdate> {
   const key = characterScope(envelope.stateSpaceId,
@@ -339,7 +339,7 @@ async function readWorldScopeObject(
   ]);
   const patch = await readWorldLocationScopePatch({
     fetchImpl: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, { ...init, signal }),
-    origin: window.location.origin, source, scopeId,
+    origin: window.location.origin, source, scopeId, cursor,
   });
   const latest = characterSources.get(key);
   if (signal.aborted || !latest) throw new DOMException("World scope replaced", "AbortError");
@@ -350,8 +350,13 @@ async function readWorldScopeObject(
   return projected;
 }
 
-async function loadWorldScope(envelope: ReadyHubEnvelope, scopeId: string, signal: AbortSignal) {
-  return worldResources.loadScope({ envelope, scopeId }, signal);
+async function loadWorldScope(
+  envelope: ReadyHubEnvelope,
+  scopeId: string,
+  cursor: string | null,
+  signal: AbortSignal,
+) {
+  return worldResources.loadScope({ envelope, scopeId, cursor }, signal);
 }
 
 async function readWorldInformationObject(
@@ -390,7 +395,7 @@ async function loadDeferredSection(
   return section === "context"
     ? tableResources.loadCampaignContext({ envelope }, signal)
     : section === "locations"
-      ? loadWorldScope(envelope, envelope.contextSelection?.selectedWorldId ?? envelope.world.id, signal)
+      ? loadWorldScope(envelope, envelope.contextSelection?.selectedWorldId ?? envelope.world.id, null, signal)
       : ["people", "lore", "history"].includes(section)
         ? worldResources.loadInformation({ envelope, section: section as WorldInformationRequest["section"] }, signal)
         : section === "current"

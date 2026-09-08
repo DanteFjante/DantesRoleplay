@@ -1,0 +1,111 @@
+{
+  "id": "dnd2024.query.world-location-scope-page",
+  "category": "dnd2024.presentation.world.location-scope",
+  "name": "D&D 2024 world location scope page",
+  "description": "Returns one audience-authorized World root or location plus one bounded page of its immediate non-archived location children without scanning an entity directory.",
+  "matches": [
+    "show one world location scope page",
+    "continue an immediate location directory"
+  ],
+  "roles": {
+    "scope": "The exact World root or previously authorized location scope."
+  },
+  "executor": "mechanic-projection",
+  "projection": {
+    "qualifiedId": "dnd2024.mechanic.world.location-scope.page",
+    "version": 1,
+    "contentHash": "48EEC09C774F715170A4788298D479A3B0473D29C9C0F6BBEDADA768509806F9",
+    "outputSchemaHash": "EE87C0D9BAE8AC8909600013B9054085EAAC637592BEFC175E567837FA86EFA3"
+  },
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["offset", "expectedSourceRevision"],
+    "properties": {
+      "offset": { "enum": [0, 100] },
+      "expectedSourceRevision": {
+        "anyOf": [
+          { "type": "null" },
+          { "type": "string", "pattern": "^[0-9A-F]{64}$" }
+        ]
+      }
+    }
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["version", "state", "scope", "locations", "totalCount", "complete", "nextCursor"],
+    "properties": {
+      "version": { "const": 1 },
+      "state": { "enum": ["ready", "forbidden"] },
+      "scope": { "anyOf": [{ "$ref": "#/$defs/scope" }, { "type": "null" }] },
+      "locations": { "type": "array", "maxItems": 100, "items": { "$ref": "#/$defs/location" } },
+      "totalCount": { "type": "integer", "minimum": 0, "maximum": 200 },
+      "complete": { "type": "boolean" },
+      "nextCursor": { "type": ["string", "null"], "maxLength": 16 }
+    },
+    "allOf": [
+      {
+        "if": { "properties": { "state": { "const": "ready" } } },
+        "then": { "properties": { "scope": { "$ref": "#/$defs/scope" } } }
+      },
+      {
+        "if": { "properties": { "state": { "const": "forbidden" } } },
+        "then": {
+          "properties": {
+            "scope": { "type": "null" },
+            "locations": { "maxItems": 0 },
+            "totalCount": { "const": 0 },
+            "complete": { "const": true },
+            "nextCursor": { "type": "null" }
+          }
+        }
+      }
+    ],
+    "$defs": {
+      "id": { "type": "string", "minLength": 1, "maxLength": 200 },
+      "name": { "type": "string", "minLength": 1, "maxLength": 400 },
+      "summary": { "type": "string", "minLength": 1, "maxLength": 1000 },
+      "anchor": {
+        "anyOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["x", "y"],
+            "properties": {
+              "x": { "type": "integer", "minimum": 0, "maximum": 1000 },
+              "y": { "type": "integer", "minimum": 0, "maximum": 1000 }
+            }
+          },
+          { "type": "null" }
+        ]
+      },
+      "common": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name", "parentId", "slot", "kind", "status", "summary", "visibility", "mapAnchor"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "name": { "$ref": "#/$defs/name" },
+          "parentId": { "anyOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }] },
+          "slot": { "type": "string", "maxLength": 200 },
+          "kind": { "enum": ["world", "region", "settlement", "site", "interior"] },
+          "status": { "enum": ["draft", "active"] },
+          "summary": { "$ref": "#/$defs/summary" },
+          "visibility": { "enum": ["public", "party", "gm"] },
+          "mapAnchor": { "$ref": "#/$defs/anchor" }
+        }
+      },
+      "scope": { "$ref": "#/$defs/common" },
+      "location": {
+        "allOf": [
+          { "$ref": "#/$defs/common" },
+          { "properties": { "kind": { "enum": ["region", "settlement", "site", "interior"] } } }
+        ]
+      }
+    }
+  },
+  "exposure": "binding-only",
+  "status": "active"
+}

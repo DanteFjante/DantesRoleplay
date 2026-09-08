@@ -7,7 +7,7 @@ export function WorldOverview({
   onBrowseLocations,
   world,
 }: {
-  currentLocation: WorldLocation;
+  currentLocation: WorldLocation | null;
   campaign: CampaignReadModel;
   onBrowseLocations: () => void;
   world: WorldReadModel;
@@ -61,11 +61,11 @@ export function WorldOverview({
           <div className="current-place-card__title">
             <span><Icon name="LocateFixed" /></span>
             <div>
-              <h2>{currentLocation.name}</h2>
-              <p>{currentLocation.region}</p>
+              <h2>{currentLocation?.name ?? "Current location details not loaded"}</h2>
+              <p>{currentLocation?.region ?? "The exact location is preserved while its details load."}</p>
             </div>
           </div>
-          <p>{currentLocation.summary}</p>
+          <p>{currentLocation?.summary ?? "Open Locations to browse the recorded world hierarchy."}</p>
           <button className="text-action" onClick={onBrowseLocations} type="button">
             Open location <Icon name="ArrowRight" size={16} />
           </button>

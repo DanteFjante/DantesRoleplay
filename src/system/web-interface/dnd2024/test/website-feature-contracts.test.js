@@ -93,7 +93,7 @@ test("W01 preserves all existing registered query and object owners at their cur
   }
 });
 
-test("W06 registers the bounded World/location scope owner", async () => {
+test("R03 registers a compatible source-bound paged World/location scope owner", async () => {
   const query = await findCatalogRecord(catalogQueryRoot, "dnd2024.query.world-location-scope");
   assert.equal(query?.status, "active");
   assert.equal(query?.executor, "mechanic-projection");
@@ -101,6 +101,14 @@ test("W06 registers the bounded World/location scope owner", async () => {
   assert.deepEqual(query?.roles, { scope: "The exact World root or previously authorized location scope." });
   assert.equal(query?.outputSchema?.properties?.limits?.properties?.contentsDepth?.const, 1);
   assert.equal(query?.outputSchema?.properties?.locations?.maxItems, 100);
+  const paged = await findCatalogRecord(catalogQueryRoot, "dnd2024.query.world-location-scope-page");
+  assert.equal(paged?.status, "active");
+  assert.equal(paged?.executor, "mechanic-projection");
+  assert.equal(paged?.exposure, "binding-only");
+  assert.deepEqual(paged?.roles, { scope: "The exact World root or previously authorized location scope." });
+  assert.equal(paged?.outputSchema?.properties?.locations?.maxItems, 100);
+  assert.equal(paged?.outputSchema?.properties?.totalCount?.maximum, 200);
+  assert.deepEqual(paged?.inputSchema?.properties?.offset?.enum, [0, 100]);
 });
 
 test("W07 registers the component-owned People and Holdings projection", async () => {

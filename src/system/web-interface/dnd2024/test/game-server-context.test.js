@@ -11,6 +11,7 @@ import { contract as characterDossierContract } from "../src/server/character-do
 import { contract as factionDirectoryContract } from "../src/server/faction-directory-contract.js";
 import { contract as inventoryContainerContract } from "../src/server/inventory-container-contract.js";
 import { contract as worldLocationScopeContract } from "../src/server/world-location-scope-contract.js";
+import { contract as worldLocationScopePageContract } from "../src/server/world-location-scope-page-contract.js";
 import { contract as campaignResumeContract } from "../src/server/campaign-resume-contract.js";
 import { contract as currentSceneContract } from "../src/server/current-scene-contract.js";
 
@@ -29,6 +30,8 @@ import {
   readRegisteredCurrentPlay,
   readRegisteredFactionDirectoryPage,
   readRegisteredWorldLocationScope,
+  readRegisteredWorldLocationScopePage,
+  readWorldLocationScopePatch,
   readDeferredHubSection,
   readKnownOpenRoutes,
   resolveRecordedPlaySituation,
@@ -59,6 +62,29 @@ function worldScopeEnvelope(data) {
     stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
     outputSchemaHash: worldLocationScopeContract.outputSchemaHash, resultFingerprint: "3".repeat(64),
     sourceRevisionFingerprint: "4".repeat(64), data,
+  };
+}
+
+function worldLocationScopePageData(scopeId = "realm-root-7", locations = worldLocationScopeData(scopeId).locations,
+  { totalCount = locations.length, complete = true, nextCursor = null } = {}) {
+  return {
+    version: 1,
+    state: "ready",
+    scope: worldLocationScopeData(scopeId).scope,
+    locations,
+    totalCount,
+    complete,
+    nextCursor,
+  };
+}
+
+function worldScopePageEnvelope(data, sourceRevisionFingerprint = "4".repeat(64)) {
+  return {
+    applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
+    qualifiedQueryId: worldLocationScopePageContract.id,
+    stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
+    outputSchemaHash: worldLocationScopePageContract.outputSchemaHash, resultFingerprint: "3".repeat(64),
+    sourceRevisionFingerprint, data,
   };
 }
 
@@ -130,6 +156,110 @@ test("world location scope reads a non-conventional exact identity and batches o
   assert.ok(calls.every(({ url }) => !/\/entities$/u.test(url.pathname)));
 });
 
+test("paged location scopes bind continuation to the first page source revision", async () => {
+  const firstLocations = Array.from({ length: 100 }, (_, index) => ({
+    id: `place-${String(index).padStart(3, "0")}`,
+    name: `Place ${String(index).padStart(3, "0")}`,
+    parentId: "realm-root-7", slot: "region", kind: "region", status: "active",
+    summary: "A reachable place.", visibility: "public", mapAnchor: null,
+  }));
+  const calls = [];
+  const first = await readRegisteredWorldLocationScopePage({
+    origin: "http://localhost:6217", applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
+    scopeId: "realm-root-7", perspective: "player", includeMedia: false,
+    fetchImpl: async (input) => {
+      calls.push(new URL(input));
+      return response(200, worldScopePageEnvelope(worldLocationScopePageData(
+        "realm-root-7", firstLocations, { totalCount: 101, complete: false, nextCursor: "100" }),
+      ));
+    },
+  });
+  assert.equal(first.status, "ready");
+  assert.equal(first.items.length, 100);
+  assert.equal(first.nextCursor, "100");
+  assert.deepEqual(JSON.parse(calls[0].searchParams.get("input")), {
+    offset: 0, expectedSourceRevision: null,
+  });
+
+  const expected = first.projection.sourceRevisionFingerprint;
+  const second = await readRegisteredWorldLocationScopePage({
+    origin: "http://localhost:6217", applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
+    scopeId: "realm-root-7", perspective: "player", includeMedia: false,
+    cursor: "100", expectedSourceRevision: expected,
+    fetchImpl: async (input) => {
+      const target = new URL(input);
+      assert.deepEqual(JSON.parse(target.searchParams.get("input")), {
+        offset: 100, expectedSourceRevision: expected,
+      });
+      return response(200, worldScopePageEnvelope(worldLocationScopePageData("realm-root-7", [{
+        id: "place-100", name: "Place 100", parentId: "realm-root-7", slot: "region",
+        kind: "region", status: "active", summary: "The last place.", visibility: "public",
+        mapAnchor: null,
+      }], { totalCount: 101 }), expected));
+    },
+  });
+  assert.equal(second.status, "ready");
+  assert.deepEqual(second.items.map((item) => item.id), ["place-100"]);
+
+  const changed = await readRegisteredWorldLocationScopePage({
+    origin: "http://localhost:6217", applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
+    scopeId: "realm-root-7", perspective: "player", includeMedia: false,
+    cursor: "100", expectedSourceRevision: expected,
+    fetchImpl: async () => response(200, worldScopePageEnvelope(
+      worldLocationScopePageData("realm-root-7", [{
+        id: "place-100", name: "Place 100", parentId: "realm-root-7", slot: "region",
+        kind: "region", status: "active", summary: "Changed source.", visibility: "public",
+        mapAnchor: null,
+      }], { totalCount: 101 }), "9".repeat(64))),
+  });
+  assert.equal(changed.status, "stale");
+});
+
+test("scope refresh replaces deleted membership and reconciles a moved location", async () => {
+  const rawLocation = (id, name, parentId) => ({
+    id, name, parentId, slot: "region", kind: "region", status: "active",
+    summary: `${name} summary.`, visibility: "public", mapAnchor: null,
+  });
+  const source = {
+    applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
+    audience: { seat: "dm", perspective: "player" },
+    contextSelection: { selectedWorldId: "realm-root-7" },
+    locationDirectoryAudience: "player",
+    locationDirectory: [
+      { id: "realm-root-7", name: "The Seventh Realm", kind: "world", isWorldRoot: true },
+      { id: "atlas", name: "Atlas", kind: "region", containerId: "realm-root-7" },
+      { id: "moved", name: "Moved Place", kind: "region", containerId: "atlas" },
+      { id: "deleted", name: "Deleted Place", kind: "region", containerId: "realm-root-7" },
+      { id: "deep", name: "Deleted Child", kind: "site", containerId: "deleted" },
+    ],
+    locationScopes: [
+      { id: "realm-root-7", name: "The Seventh Realm", parentId: null,
+        childIds: ["atlas", "deleted"], totalCount: 2, complete: true, nextCursor: null,
+        sourceRevisionFingerprint: "1".repeat(64) },
+      { id: "atlas", name: "Atlas", parentId: "realm-root-7",
+        childIds: ["moved"], totalCount: 1, complete: true, nextCursor: null,
+        sourceRevisionFingerprint: "2".repeat(64) },
+      { id: "deleted", name: "Deleted Place", parentId: "realm-root-7",
+        childIds: ["deep"], totalCount: 1, complete: true, nextCursor: null,
+        sourceRevisionFingerprint: "3".repeat(64) },
+    ],
+  };
+  const locations = [rawLocation("atlas", "Atlas", "realm-root-7"),
+    rawLocation("moved", "Moved Place", "realm-root-7")];
+  const patch = await readWorldLocationScopePatch({
+    origin: "http://localhost:6217", source, scopeId: "realm-root-7",
+    fetchImpl: async () => response(200, worldScopePageEnvelope(
+      worldLocationScopePageData("realm-root-7", locations, { totalCount: 2 }))),
+  });
+  assert.deepEqual(new Set(patch.locationDirectory.map((item) => item.id)),
+    new Set(["realm-root-7", "atlas", "moved"]));
+  assert.deepEqual(patch.locationScopes.find((scope) => scope.id === "realm-root-7").childIds,
+    ["atlas", "moved"]);
+  assert.deepEqual(patch.locationScopes.find((scope) => scope.id === "atlas").childIds, []);
+  assert.equal(patch.locationDirectory.find((item) => item.id === "moved").containerId, "realm-root-7");
+  assert.equal(patch.locationScopes.some((scope) => scope.id === "deleted"), false);
+});
+
 test("World and Locations deferred view uses one authorized root scope and no raw directory scan", async () => {
   const calls = [];
   const source = {
@@ -142,10 +272,15 @@ test("World and Locations deferred view uses one authorized root scope and no ra
     origin: "http://localhost:6217", source, section: "locations",
     fetchImpl: async (input) => {
       calls.push(new URL(input));
-      return response(200, worldScopeEnvelope(worldLocationScopeData()));
+      return response(200, worldScopePageEnvelope(worldLocationScopePageData()));
     },
   });
-  assert.deepEqual(patch.locationDirectory.map((item) => item.id), ["realm-root-7", "place-azure"]);
+  assert.deepEqual(new Set(patch.locationDirectory.map((item) => item.id)), new Set(["realm-root-7", "place-azure"]));
+  assert.deepEqual(patch.locationScopes, [{
+    id: "realm-root-7", name: "The Seventh Realm", parentId: null,
+    childIds: ["place-azure"], totalCount: 1, complete: true, nextCursor: null,
+    sourceRevisionFingerprint: "4".repeat(64),
+  }]);
   assert.equal(patch.locationDirectoryAudience, "player");
   assert.equal(calls.length, 1);
   assert.ok(calls.every((call) => !/\/entities$/u.test(call.pathname) && !call.pathname.endsWith("/media")));

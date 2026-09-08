@@ -73,10 +73,21 @@ test("item fragment bounds, tab fallback and return context never accept binding
 
 test("Campaign and Party routes are closed, addressable fragments", () => {
   assert.deepEqual(parseHubRoute(hubRouteHash("campaign", "log")), {
-    kind: "hub", tab: "campaign", campaignSection: "log",
+    kind: "hub", tab: "campaign", campaignSection: "log", worldSection: "overview",
+    locationScopeId: null, locationScopePath: [], locationId: null,
   });
   assert.deepEqual(parseHubRoute(hubRouteHash("party")), {
-    kind: "hub", tab: "party", campaignSection: "overview",
+    kind: "hub", tab: "party", campaignSection: "overview", worldSection: "overview",
+    locationScopeId: null, locationScopePath: [], locationId: null,
+  });
+  assert.deepEqual(parseHubRoute(hubRouteHash("world", "overview", {
+    worldSection: "locations",
+    locationScopePath: ["atlas.renamed", "region.sol-1"],
+    locationId: "region.sol-1",
+  })), {
+    kind: "hub", tab: "world", campaignSection: "overview", worldSection: "locations",
+    locationScopeId: "region.sol-1", locationScopePath: ["atlas.renamed", "region.sol-1"],
+    locationId: "region.sol-1",
   });
   for (const hash of ["#view?tab=campaign&section=unknown", "#view?tab=party&section=log",
     "#view?tab=campaign&principal=gm", "#view?tab=campaign&tab=party", "#view?tab=%zz"]) {

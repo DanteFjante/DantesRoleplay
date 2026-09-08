@@ -1104,11 +1104,10 @@ function isCurrentSituation(value, locations) {
   if (!value || typeof value !== "object" || !["ready", "unavailable"].includes(value.status)) return false;
   if (value.status === "unavailable") {
     return typeof value.message === "string" &&
-      (value.locationId === undefined || locations.some((location) => location.id === value.locationId));
+      (value.locationId === undefined || typeof value.locationId === "string");
   }
   if (value.kind === "recorded") {
-    if (value.locationId !== undefined && (typeof value.locationId !== "string" ||
-        !locations.some((location) => location.id === value.locationId))) return false;
+    if (value.locationId !== undefined && typeof value.locationId !== "string") return false;
     const recorded = value.recorded;
     const knownKinds = ["out-of-character", "conversation", "combat", "exploration", "investigation",
       "travel", "rest", "downtime", "other"];
@@ -1126,7 +1125,6 @@ function isCurrentSituation(value, locations) {
         (recorded.location.id === undefined || recorded.location.id === value.locationId)));
   }
   if (typeof value.locationId !== "string" ||
-      !locations.some((location) => location.id === value.locationId) ||
       !["exploration", "conversation", "combat"].includes(value.kind)) return false;
   if (value.affordances !== undefined) {
     if (!Array.isArray(value.affordances) || value.affordances.length > 24) return false;
@@ -1220,7 +1218,6 @@ export function isReadyHubEnvelope(value) {
     Array.isArray(world.lore) &&
     world.lore.every(isWorldLoreEntry) &&
     Array.isArray(world.locations) &&
-    world.locations.length > 0 &&
     world.locations.every(
       (location) =>
         Array.isArray(location.people) &&
@@ -1234,8 +1231,17 @@ export function isReadyHubEnvelope(value) {
         location.mapAnchor.y >= 0 &&
         location.mapAnchor.y <= 100,
     ) &&
-    (world.currentLocationId.length === 0 ||
-      world.locations.some((location) => location.id === world.currentLocationId)) &&
+    Array.isArray(world.locationScopes) &&
+    world.locationScopes.length <= 1_001 &&
+    world.locationScopes.every((scope) => scope && typeof scope.id === "string" &&
+      typeof scope.name === "string" && (scope.parentId === null || typeof scope.parentId === "string") &&
+      Array.isArray(scope.childIds) && scope.childIds.length <= 200 &&
+      new Set(scope.childIds).size === scope.childIds.length &&
+      scope.childIds.every((id) => world.locations.some((location) => location.id === id)) &&
+      Number.isInteger(scope.totalCount) && scope.totalCount >= scope.childIds.length && scope.totalCount <= 200 &&
+      typeof scope.complete === "boolean" && (scope.nextCursor === null || scope.nextCursor === "100") &&
+      scope.complete === (scope.nextCursor === null) &&
+      (scope.sourceRevisionFingerprint === null || /^[0-9A-F]{64}$/u.test(scope.sourceRevisionFingerprint))) &&
     typeof world.rootMapId === "string" &&
     isValidMapHierarchy(world.maps, world.rootMapId) &&
     isCampaignReadModel(campaign) &&

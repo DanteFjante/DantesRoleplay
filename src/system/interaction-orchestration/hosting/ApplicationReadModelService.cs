@@ -263,8 +263,7 @@ internal sealed class ApplicationReadModelService(
             ?? InteractionCanonicalJson.Fingerprint(
                 InteractionQueryFingerprintDomains.SourceRevisions, sourceRevisionJson);
         using var inputDocument = JsonDocument.Parse(input);
-        if (requirements.AuthorizedContext is not null &&
-            inputDocument.RootElement.TryGetProperty("expectedSourceRevision", out var expected)
+        if (inputDocument.RootElement.TryGetProperty("expectedSourceRevision", out var expected)
             && expected.ValueKind != JsonValueKind.Null && expected.GetString() != sourceFingerprint)
             throw Failure("READ_MODEL_SOURCE_STALE", "The view changed. Refresh to continue.");
 

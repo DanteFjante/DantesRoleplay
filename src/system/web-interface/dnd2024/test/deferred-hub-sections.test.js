@@ -3,6 +3,7 @@ import test from "node:test";
 import { readDeferredHubSection } from "../src/server/game-server-context.js";
 import { contract as worldCampaignDirectoryContract } from "../src/server/world-campaign-directory-contract.js";
 import { contract as worldLocationScopeContract } from "../src/server/world-location-scope-contract.js";
+import { contract as worldLocationScopePageContract } from "../src/server/world-location-scope-page-contract.js";
 import { contract as worldPeopleHoldingsContract } from "../src/server/world-people-holdings-contract.js";
 import { contract as currentSceneContract } from "../src/server/current-scene-contract.js";
 import { contract as campaignResumeContract } from "../src/server/campaign-resume-contract.js";
@@ -98,22 +99,27 @@ test("deferred locations read one exact root scope and suppress ambient media in
       const target = new URL(input); calls.push(target);
       return response({
         applicationId: "dnd2024", stateSpaceId: "state.fixture",
-        qualifiedQueryId: worldLocationScopeContract.id,
+        qualifiedQueryId: worldLocationScopePageContract.id,
         stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
-        outputSchemaHash: worldLocationScopeContract.outputSchemaHash,
+        outputSchemaHash: worldLocationScopePageContract.outputSchemaHash,
         resultFingerprint: "3".repeat(64), sourceRevisionFingerprint: "4".repeat(64),
         data: {
           version: 1, state: "ready",
           scope: { id: "world.caldris", name: "Caldris", parentId: null, slot: "", kind: "world",
             status: "active", summary: "A gentle world.", visibility: "public", mapAnchor: null },
-          locations, limits: { contentsDepth: 1, locationCount: 100, complete: true },
+          locations, totalCount: 100, complete: true, nextCursor: null,
         },
       });
     },
   });
   assert.equal(result.locationDirectory.length, 101);
+  assert.deepEqual(result.locationScopes, [{
+    id: "world.caldris", name: "Caldris", parentId: null,
+    childIds: locations.map((location) => location.id), totalCount: 100,
+    complete: true, nextCursor: null, sourceRevisionFingerprint: "4".repeat(64),
+  }]);
   assert.equal(calls.length, 1);
-  assert.match(calls[0].pathname, /entities\/world\.caldris\/read-models\/dnd2024\.query\.world-location-scope$/u);
+  assert.match(calls[0].pathname, /entities\/world\.caldris\/read-models\/dnd2024\.query\.world-location-scope-page$/u);
   assert.ok(calls.every((target) => !target.pathname.endsWith("/entities") && !target.pathname.endsWith("/media")));
 });
 

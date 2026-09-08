@@ -1784,6 +1784,35 @@ strong {
   font-size: 0.62rem;
 }
 
+.location-browser__back,
+.location-browser__more,
+.location-browser__error button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 0.65rem;
+}
+
+.location-browser__back {
+  margin: 0 14px 8px;
+  padding: 7px 10px;
+}
+
+.location-browser__back:hover,
+.location-browser__back:focus-visible,
+.location-browser__more:hover,
+.location-browser__more:focus-visible,
+.location-browser__error button:hover,
+.location-browser__error button:focus-visible {
+  border-color: var(--gold);
+}
+
 .location-search {
   display: flex;
   align-items: center;
@@ -1814,6 +1843,31 @@ strong {
 
 .location-search input::placeholder {
   color: var(--quiet);
+}
+
+.location-search__scope {
+  margin: -5px 16px 10px;
+  color: var(--quiet);
+  font-size: 0.58rem;
+  line-height: 1.4;
+}
+
+.location-browser__error {
+  margin: 0 14px 12px;
+  padding: 10px;
+  border: 1px solid rgba(190, 92, 75, 0.45);
+  border-radius: 8px;
+  background: rgba(80, 26, 20, 0.22);
+  color: var(--muted);
+  font-size: 0.63rem;
+}
+
+.location-browser__error p {
+  margin: 0 0 8px;
+}
+
+.location-browser__error button {
+  padding: 6px 9px;
 }
 
 .location-list {
@@ -4414,6 +4468,56 @@ strong {
 .installed-content-record small {
   display: block;
   margin-top: 0.75rem;
+  color: var(--muted);
+}
+
+.location-row__action {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  color: var(--gold);
+}
+
+.location-row__action small {
+  color: currentColor;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.location-browser__more {
+  width: calc(100% - 28px);
+  margin: 0 14px 14px;
+  padding: 9px 12px;
+}
+
+.location-browser__more:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.location-browser__busy {
+  margin: 0 16px 14px;
+  color: var(--quiet);
+  font-size: 0.62rem;
+}
+
+.location-workspace--empty {
+  padding: clamp(22px, 3vw, 32px);
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.location-workspace--empty h2 {
+  margin: 5px 0 8px;
+  font-family: var(--serif);
+}
+
+.location-workspace--empty p {
+  margin: 0;
   color: var(--muted);
 }
 

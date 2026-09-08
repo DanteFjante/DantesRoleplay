@@ -550,6 +550,37 @@ export function connectedCampaignToHubEnvelope(
     }));
   const locationEntries = sourceLocations.filter((entry) => !entry.isWorldRoot);
   const worldRootEntry = sourceLocations.find((entry) => entry.isWorldRoot) ?? null;
+  const locationScopeRecords = (() => {
+    if (Array.isArray(connection.locationScopes)) return connection.locationScopes.map((scope) => ({
+      ...scope,
+      childIds: [...scope.childIds],
+    }));
+    const childrenByParent = new Map<string, string[]>();
+    for (const entry of locationEntries) {
+      if (!entry.containerId) continue;
+      const childIds = childrenByParent.get(entry.containerId) ?? [];
+      childIds.push(entry.id);
+      childrenByParent.set(entry.containerId, childIds);
+    }
+    const byId = new Map(sourceLocations.map((entry) => [entry.id, entry]));
+    const rootId = connection.contextSelection.selectedWorldId;
+    const scopeIds = new Set([rootId, ...childrenByParent.keys()]);
+    return [...scopeIds].flatMap((id) => {
+      const childIds = childrenByParent.get(id) ?? [];
+      const owner = byId.get(id);
+      if (!owner && id !== rootId) return [];
+      return [{
+        id,
+        name: owner?.name ?? deriveWorldName(connection),
+        parentId: owner?.containerId ?? null,
+        childIds: childIds.sort((left, right) => left.localeCompare(right)),
+        totalCount: childIds.length,
+        complete: true,
+        nextCursor: null,
+        sourceRevisionFingerprint: null,
+      }];
+    });
+  })();
   const hasSourceLocations = locationEntries.length > 0;
   const regionHints = hasLocationDirectory
     ? locationEntries
@@ -645,22 +676,7 @@ export function connectedCampaignToHubEnvelope(
         ...(entry.media ? { media: entry.media } : {}),
       };
     })
-    : [{
-      id: "live-current-location-unavailable",
-      playerKnown: true,
-      name: "Current location not recorded",
-      region: "Live campaign context",
-      kind: "Unprojected location",
-      status: "Unavailable",
-      summary: "The connected database has not supplied a current-location projection.",
-      description: "A location will appear here once the game server records one for this campaign.",
-      atmosphere: "Unavailable",
-      landmarks: [],
-      observations: ["No current location has been recorded."],
-      routes: [],
-      mapAnchor: { x: 0, y: 0 },
-      people: [],
-    }];
+    : [];
   const liveWorldDirectory = perspective === "dm" ? connection.worldDirectory : undefined;
   const baseLocationById = new Map(baseWorldLocations.map((location) => [location.id, location]));
   const worldPeople = (liveWorldDirectory?.people ?? []).flatMap((person) => {
@@ -824,14 +840,11 @@ export function connectedCampaignToHubEnvelope(
     }
     return { locations, people, factions };
   };
-  const currentLocationId = connection.currentLocationId && baseLocationById.has(connection.currentLocationId)
+  const currentLocationId = typeof connection.currentLocationId === "string"
     ? connection.currentLocationId
     : "";
   const currentSituation = connection.currentSituation
-    ? (connection.currentSituation.locationId === undefined ||
-        baseLocationById.has(connection.currentSituation.locationId)
-      ? connection.currentSituation
-      : { status: "unavailable" as const, message: "The current scene location is unavailable." })
+    ? connection.currentSituation
     : (currentLocationId
       ? { status: "ready" as const, kind: "exploration" as const, locationId: currentLocationId }
       : { status: "unavailable" as const, message: "No authoritative current scene is available." });
@@ -1065,6 +1078,7 @@ export function connectedCampaignToHubEnvelope(
       ],
       history: chronologyHistory,
       locations: worldLocations,
+      locationScopes: locationScopeRecords,
       people: worldPeople,
       factions: worldFactions,
       lore: knowledgeLore,
@@ -1159,6 +1173,7 @@ export function connectedCampaignToDeferredHubUpdate(
           regions: projected.world.regions,
           facts: projected.world.facts,
           locations: projected.world.locations,
+          locationScopes: projected.world.locationScopes,
         },
         campaign: { mapOverlays: projected.campaign.mapOverlays },
       };

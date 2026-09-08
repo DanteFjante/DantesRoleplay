@@ -60,6 +60,7 @@ function scope(
     contextSelection: { selectedCampaignId: "campaign.fixture", selectedWorldId: "world.fixture" },
     world: {
       id: "world.fixture",
+      locationScopes: [],
       factionDirectory: sourceRevisionFingerprint === null ? undefined : {
         totalCount: 2, complete: false, nextCursor: "next", sourceRevisionFingerprint,
       },
@@ -471,6 +472,10 @@ test("World scope resources deduplicate exact locations and fence audience chang
           rootMapId: `map.live.${scopeId}`,
           maps: [{ id: `map.live.${scopeId}` }],
           regions: [], facts: [], locations: [],
+          locationScopes: [{
+            id: scopeId, name: scopeId, parentId: null, childIds: [], totalCount: 0,
+            complete: true, nextCursor: null, sourceRevisionFingerprint: "A".repeat(64),
+          }],
         },
         campaign: { mapOverlays: [] },
       } as unknown as import("../../src/data/object-resources").WorldScopeUpdate;

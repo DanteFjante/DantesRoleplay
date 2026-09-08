@@ -1483,15 +1483,15 @@ test("projects country-like location names into regions", () => {
   assert.equal(envelope.world.locations[2].region, "Crown Coast");
 });
 
-test("falls back to an unprojected placeholder when no known locations are available", () => {
+test("keeps an empty location directory honest instead of inventing a placeholder", () => {
   const envelope = connectedCampaignToHubEnvelope(connectedFixture({
     knowledgeStatus: "unavailable",
     locations: [],
   }));
 
-  assert.equal(envelope.world.locations.length, 1);
+  assert.equal(envelope.world.locations.length, 0);
   assert.equal(envelope.world.currentLocationId, "");
-  assert.equal(envelope.world.locations[0].name, "Current location not recorded");
+  assert.deepEqual(envelope.world.locationScopes[0].childIds, []);
   assert.equal(envelope.world.maps[0].features.length, 0);
   assert.equal(isReadyHubEnvelope(envelope), true);
 });
@@ -1513,7 +1513,7 @@ test("uses only an exact server-projected current location admitted by the locat
   assert.equal(isReadyHubEnvelope(envelope), true);
 });
 
-test("preserves an exact adaptive current situation and rejects a dangling scene location", () => {
+test("preserves exact adaptive and unloaded current location identities", () => {
   const base = {
     currentLocationId: "location.thalorien.brackenford",
     audience: { seat: "dm", perspective: "dm", allowedPerspectives: ["dm", "player"] },
@@ -1552,7 +1552,9 @@ test("preserves an exact adaptive current situation and rejects a dangling scene
     },
   }));
   assert.deepEqual(dangling.currentSituation, {
-    status: "unavailable",
-    message: "The current scene location is unavailable.",
+    status: "ready",
+    kind: "exploration",
+    locationId: "location.thalorien.hidden",
   });
+  assert.equal(isReadyHubEnvelope(dangling), true);
 });

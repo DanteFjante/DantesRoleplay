@@ -33,7 +33,7 @@ export type CampaignDetailsObjectRequest = { envelope: ReadyHubEnvelope };
 export type CampaignContextObjectRequest = { envelope: ReadyHubEnvelope };
 export type CampaignContextUpdate = Extract<DeferredHubUpdate, { section: "context" }>;
 export type CharacterResourceRequest = { envelope: ReadyHubEnvelope; actorId: string };
-export type WorldScopeRequest = { envelope: ReadyHubEnvelope; scopeId: string };
+export type WorldScopeRequest = { envelope: ReadyHubEnvelope; scopeId: string; cursor?: string | null };
 export type WorldScopeUpdate = Extract<DeferredHubUpdate, { section: "locations" }>;
 export type WorldInformationSection = "people" | "lore" | "history";
 export type WorldInformationRequest = { envelope: ReadyHubEnvelope; section: WorldInformationSection };
@@ -90,18 +90,20 @@ function characterTableScope(envelope: ReadyHubEnvelope) {
   return characterResourceScope({ envelope, actorId: "all-characters" });
 }
 
-function worldScopeResource({ envelope, scopeId }: WorldScopeRequest) {
+function worldScopeResource({ envelope, scopeId, cursor }: WorldScopeRequest) {
   const campaignId = envelope.contextSelection?.selectedCampaignId ?? envelope.revision;
   const worldId = envelope.contextSelection?.selectedWorldId ?? envelope.world.id;
   const evidence = envelope.objectQueries?.campaignSummary;
   return [envelope.applicationId, envelope.stateSpaceId, campaignId, worldId,
     envelope.audience.seat, envelope.audience.perspective,
     evidence?.resolutionFingerprint ?? "no-resolution",
-    evidence?.sourceRevisionFingerprint ?? "no-source-revision", scopeId].join(":");
+    evidence?.sourceRevisionFingerprint ?? "no-source-revision", scopeId,
+    envelope.world.locationScopes.find((scope) => scope.id === scopeId)?.sourceRevisionFingerprint ?? "unloaded",
+    cursor ?? "first"].join(":");
 }
 
 function worldTableScope(envelope: ReadyHubEnvelope) {
-  return worldScopeResource({ envelope, scopeId: "all-world-scopes" });
+  return worldScopeResource({ envelope, scopeId: "all-world-scopes", cursor: null });
 }
 
 function worldInformationResource({ envelope, section }: WorldInformationRequest) {
@@ -139,6 +141,7 @@ function isWorldScopeUpdate(value: unknown): value is WorldScopeUpdate {
   const world = update.world as Record<string, unknown>;
   return Array.isArray(world.maps) && world.maps.length > 0 && world.maps.length <= 1_001 &&
     Array.isArray(world.locations) && world.locations.length <= 1_000 &&
+    Array.isArray(world.locationScopes) && world.locationScopes.length <= 1_001 &&
     validText(world.rootMapId, 400);
 }
 

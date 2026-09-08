@@ -640,6 +640,10 @@ test("client envelope validation accepts only the closed ready shape", () => {
       factions: [],
       lore: [],
       locations: [{ id: "archive", mapAnchor: { x: 50, y: 50 }, people: [] }],
+      locationScopes: [{
+        id: "world.eldervale", name: "Eldervale", parentId: null, childIds: ["archive"],
+        totalCount: 1, complete: true, nextCursor: null, sourceRevisionFingerprint: "1".repeat(64),
+      }],
       rootMapId: "map.world",
       maps: [worldMapFixture],
     },
@@ -686,7 +690,7 @@ test("client envelope validation accepts only the closed ready shape", () => {
   assert.equal(isReadyHubEnvelope({
     ...ready,
     currentSituation: { status: "ready", kind: "exploration", locationId: "hidden" },
-  }), false);
+  }), true);
   assert.equal(isReadyHubEnvelope({
     ...ready,
     currentSituation: {

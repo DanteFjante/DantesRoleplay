@@ -53,7 +53,7 @@ public sealed class InteractionQueryTests
         var applications = new InMemoryApplicationRegistry();
         var revision = applications.Register(new(App, "Sample", "Read-model fixture.", []));
         var activationFingerprint = Hash("read-model-activation");
-        const string inputSchema = "{\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"selection\"],\"properties\":{\"selection\":{\"type\":\"string\"}}}";
+        const string inputSchema = "{\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"selection\"],\"properties\":{\"selection\":{\"type\":\"string\"},\"expectedSourceRevision\":{\"type\":\"string\",\"minLength\":64,\"maxLength\":64}}}";
         var mechanicContent = JsonSerializer.Serialize(new
         {
             id = "sample-app.mechanic.character.project",
@@ -176,6 +176,19 @@ public sealed class InteractionQueryTests
         Assert.Equal("{\"entityId\":\"orban\",\"score\":16}", result.DataJson);
         Assert.Matches("^[0-9A-F]{64}$", result.ResultFingerprint);
         Assert.Matches("^[0-9A-F]{64}$", result.SourceRevisionFingerprint);
+        if (withInput)
+        {
+            var stale = await Assert.ThrowsAsync<ApplicationReadModelException>(() => service.ReadAsync(new(
+                state.StateSpaceId, App, query.QualifiedId,
+                new Dictionary<string, string> { ["subject"] = "orban" },
+                InputJson: $"{{\"selection\":\"selected\",\"expectedSourceRevision\":\"{Hash("stale-source")}\"}}")));
+            Assert.Equal("READ_MODEL_SOURCE_STALE", stale.Code);
+
+            var continued = await service.ReadAsync(new(state.StateSpaceId, App, query.QualifiedId,
+                new Dictionary<string, string> { ["subject"] = "orban" },
+                InputJson: $"{{\"selection\":\"selected\",\"expectedSourceRevision\":\"{result.SourceRevisionFingerprint}\"}}"));
+            Assert.Equal(result.SourceRevisionFingerprint, continued.SourceRevisionFingerprint);
+        }
     }
 
     [Fact]

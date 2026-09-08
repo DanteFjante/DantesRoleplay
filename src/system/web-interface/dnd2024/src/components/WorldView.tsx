@@ -5,6 +5,7 @@ import type {
   LocationSectionId,
   Perspective,
   WorldLocation,
+  WorldLocationScope,
   WorldReadModel,
   WorldSectionId,
 } from "../data/hub-types";
@@ -31,6 +32,9 @@ export function WorldView({
   currentLocation,
   selectedLocation,
   filteredLocations,
+  locationScope,
+  locationScopeBusy,
+  locationScopeError,
   locationSection,
   perspective,
   selectedFactionId,
@@ -41,6 +45,9 @@ export function WorldView({
   onMapNavigateToFeature,
   onMapFeatureSelect,
   onLocationSelect,
+  onLocationScopeBack,
+  onLoadMoreLocations,
+  onRetryLocationScope,
   onLocationSectionChange,
   onFactionSelect,
   factionDirectoryBusy,
@@ -54,9 +61,12 @@ export function WorldView({
   selectedMapFeatureId: string;
   campaign: CampaignReadModel;
   world: WorldReadModel;
-  currentLocation: WorldLocation;
-  selectedLocation: WorldLocation;
+  currentLocation: WorldLocation | null;
+  selectedLocation: WorldLocation | null;
   filteredLocations: WorldLocation[];
+  locationScope: WorldLocationScope | null;
+  locationScopeBusy: boolean;
+  locationScopeError: string;
   locationSection: LocationSectionId;
   perspective: Perspective;
   selectedFactionId: string;
@@ -67,6 +77,9 @@ export function WorldView({
   onMapNavigateToFeature: (mapId: string, featureId: string) => void;
   onMapFeatureSelect: (featureId: string) => void;
   onLocationSelect: (locationId: string) => void;
+  onLocationScopeBack: () => void;
+  onLoadMoreLocations: () => void;
+  onRetryLocationScope: () => void;
   onLocationSectionChange: (section: LocationSectionId) => void;
   onFactionSelect: (factionId: string) => void;
   factionDirectoryBusy?: boolean;
@@ -92,7 +105,7 @@ export function WorldView({
             activeMapId={activeMapId}
             campaignTitle={campaign.title}
             overlays={campaign.mapOverlays}
-            currentLocationId={currentLocation.id}
+            currentLocationId={world.currentLocationId}
             onFeatureSelect={onMapFeatureSelect}
             onMapChange={onMapChange}
             onNavigateToFeature={onMapNavigateToFeature}
@@ -158,12 +171,18 @@ export function WorldView({
           </header>
           <div className="atlas-grid">
             <LocationBrowser
-              currentLocationId={currentLocation.id}
+              busy={locationScopeBusy}
+              currentLocationId={world.currentLocationId}
+              error={locationScopeError}
+              locationScope={locationScope}
               locations={filteredLocations}
+              onBack={onLocationScopeBack}
+              onLoadMore={onLoadMoreLocations}
               onQueryChange={onQueryChange}
+              onRetry={onRetryLocationScope}
               onSelect={onLocationSelect}
               query={query}
-              selectedLocationId={selectedLocation.id}
+              selectedLocationId={selectedLocation?.id ?? ""}
             />
             <LocationWorkspace
               location={selectedLocation}

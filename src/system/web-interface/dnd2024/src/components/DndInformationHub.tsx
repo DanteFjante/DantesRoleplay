@@ -41,7 +41,6 @@ import {
   normalizeMapId,
   resolveCurrentSceneLocation,
   resolveMapDocument,
-  resolveSelectedLocation,
   resolveSelectedMapFeature,
 } from "../state.js";
 import { MainNavigation } from "./MainNavigation";
@@ -169,7 +168,7 @@ export function DndInformationHub({
   loadFactionPage?: FactionPageLoader;
   loadCampaignDetails?: CampaignDetailsLoader;
   loadDeferredSection?: (envelope: ReadyHubEnvelope, section: DeferredHubSection, signal: AbortSignal) => Promise<DeferredHubUpdate>;
-  loadWorldScope?: (envelope: ReadyHubEnvelope, scopeId: string, signal: AbortSignal) => Promise<Extract<DeferredHubUpdate, { section: "locations" }>>;
+  loadWorldScope?: (envelope: ReadyHubEnvelope, scopeId: string, cursor: string | null, signal: AbortSignal) => Promise<Extract<DeferredHubUpdate, { section: "locations" }>>;
   writeCampaignPremise?: CampaignPremiseWriter;
   subscribeChanges?: (envelope: ReadyHubEnvelope) => () => void;
 }) {
@@ -217,6 +216,9 @@ export function DndInformationHub({
         if (hub.kind === "hub") {
           setActiveTab(hub.tab);
           setCampaignSection(hub.campaignSection);
+          setWorldSection(hub.worldSection);
+          setLocationScopePath(hub.locationScopePath);
+          if (hub.locationId) setSelectedLocationId(hub.locationId);
         } else if (window.history.state?.itemMainTab) {
           setActiveTab(normalizeMainTab(window.history.state.itemMainTab) as MainTabId);
         }
@@ -229,9 +231,20 @@ export function DndInformationHub({
         window.removeEventListener(event, changed);
     };
   }, []);
-  const [worldSection, setWorldSection] = useState<WorldSectionId>("overview");
+  const [worldSection, setWorldSection] = useState<WorldSectionId>(() => {
+    const route = parseHubRoute(window.location.hash);
+    return route.kind === "hub" ? route.worldSection : "overview";
+  });
   const [locationSection, setLocationSection] = useState<LocationSectionId>("details");
-  const [selectedLocationId, setSelectedLocationId] = useState(initialEnvelope.world.currentLocationId);
+  const [selectedLocationId, setSelectedLocationId] = useState(() => {
+    const route = parseHubRoute(window.location.hash);
+    return route.kind === "hub" ? route.locationId ?? initialEnvelope.world.currentLocationId
+      : initialEnvelope.world.currentLocationId;
+  });
+  const [locationScopePath, setLocationScopePath] = useState<string[]>(() => {
+    const route = parseHubRoute(window.location.hash);
+    return route.kind === "hub" ? route.locationScopePath : [];
+  });
   const [objectUi, dispatchObjectUi] = useReducer(
     hubObjectUiReducer,
     initialEnvelope.world.factions[0]?.id ?? "",
@@ -264,6 +277,9 @@ export function DndInformationHub({
   const campaignWriteAbort = useRef<AbortController | null>(null);
   const campaignWritePending = useRef(false);
   const loadedWorldScopes = useRef(new Set<string>());
+  const loadingWorldScopes = useRef(new Set<string>());
+  const [locationScopeBusy, setLocationScopeBusy] = useState(false);
+  const [locationScopeError, setLocationScopeError] = useState("");
   const [deferredStates, setDeferredStates] = useState<Partial<Record<DeferredHubSection, DeferredViewState>>>({});
   const [deferredErrors, setDeferredErrors] = useState<Partial<Record<DeferredHubSection, string>>>({});
   useEffect(() => {
@@ -303,12 +319,20 @@ export function DndInformationHub({
     }],
   };
   const allLocations = envelope.world.locations as WorldLocation[];
-  const visibleLocations = filterLocations(allLocations, locationQuery) as WorldLocation[];
-  const currentLocation = resolveSelectedLocation(
+  const worldRootId = contextSelection.selectedWorldId;
+  const activeLocationScopeId = locationScopePath.at(-1) ?? worldRootId;
+  const activeLocationScope = envelope.world.locationScopes.find((scope) => scope.id === activeLocationScopeId)
+    ?? null;
+  const locationById = new Map(allLocations.map((location) => [location.id, location]));
+  const scopedLocations = (activeLocationScope?.childIds ?? []).flatMap((id) => {
+    const location = locationById.get(id);
+    return location ? [location] : [];
+  });
+  const visibleLocations = filterLocations(scopedLocations, locationQuery) as WorldLocation[];
+  const currentLocation = resolveCurrentSceneLocation(
     allLocations,
     envelope.world.currentLocationId,
-    envelope.world.currentLocationId,
-  ) as WorldLocation;
+  ) as WorldLocation | null;
   const currentSceneLocation = resolveCurrentSceneLocation(
     allLocations,
     envelope.currentSituation?.status === "ready" && envelope.currentSituation.locationId
@@ -321,11 +345,7 @@ export function DndInformationHub({
   const currentSceneImage = currentSituation.status === "ready" && currentSituation.kind !== "recorded" && currentSituation.scene
     ? currentSituation.scene
     : currentSceneLocation?.media?.scene ?? currentSceneLocation?.media?.setting ?? null;
-  const selectedLocation = resolveSelectedLocation(
-    allLocations,
-    selectedLocationId,
-    envelope.world.currentLocationId,
-  ) as WorldLocation;
+  const selectedLocation = locationById.get(selectedLocationId) ?? null;
 
   async function requestHub(
     nextPerspective: Perspective,
@@ -387,8 +407,10 @@ export function DndInformationHub({
       setDeferredStates({});
       setDeferredErrors({});
       loadedWorldScopes.current.clear();
+      setLocationScopeError("");
       setBootstrapGeneration((generation) => generation + 1);
       if (campaignChanged || perspectiveChanged) {
+        setLocationScopePath([]);
         dispatchObjectUi({
           type: "scope-replaced",
           factionId: readyEnvelope.world.factions[0]?.id ?? "",
@@ -402,7 +424,7 @@ export function DndInformationHub({
           readyEnvelope.audience.perspective,
         ) as LocationSectionId,
       );
-      if (campaignChanged || !readyEnvelope.world.locations.some((location) => location.id === selectedLocationId)) {
+      if (campaignChanged || perspectiveChanged) {
         setSelectedLocationId(readyEnvelope.world.currentLocationId);
       }
       if (!campaignChanged && !perspectiveChanged &&
@@ -533,19 +555,28 @@ export function DndInformationHub({
     }
   }
 
-  async function requestWorldScope(scopeId: string) {
-    if (!loadWorldScope || loadedWorldScopes.current.has(scopeId)) return;
+  async function requestWorldScope(scopeId: string, cursor: string | null = null, force = false) {
+    if (!loadWorldScope || cursor === null && !force && loadedWorldScopes.current.has(scopeId)) return true;
+    if (loadingWorldScopes.current.has(scopeId)) return true;
     worldScopeAbort.current?.abort();
     const controller = new AbortController();
     worldScopeAbort.current = controller;
+    loadingWorldScopes.current.add(scopeId);
+    setLocationScopeBusy(true);
+    setLocationScopeError("");
     try {
-      const loaded = await loadWorldScope(envelope, scopeId, controller.signal);
-      if (controller.signal.aborted) return;
+      const loaded = await loadWorldScope(envelope, scopeId, cursor, controller.signal);
+      if (controller.signal.aborted) return false;
       loadedWorldScopes.current.add(scopeId);
       setEnvelope((current) => applyDeferredHubUpdate(current, loaded));
+      return true;
     } catch (error) {
-      if (controller.signal.aborted) return;
-      setHubError(error instanceof Error ? error.message : "The map scope is unavailable.");
+      if (controller.signal.aborted) return false;
+      setLocationScopeError(error instanceof Error ? error.message : "This location level is unavailable.");
+      return false;
+    } finally {
+      loadingWorldScopes.current.delete(scopeId);
+      if (worldScopeAbort.current === controller) setLocationScopeBusy(false);
     }
   }
 
@@ -568,6 +599,16 @@ export function DndInformationHub({
     // incremental envelope merge. Errors retry only through the explicit retry button.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deferredSection, perspective, contextSelection.selectedCampaignId, hubBusy, loadDeferredSection, deferredRestricted]);
+  useEffect(() => {
+    if (activeTab !== "world" || worldSection !== "locations" || deferredState !== "ready" ||
+        locationScopePath.length === 0) return;
+    const nextScopeId = locationScopePath.find((scopeId) => !loadedWorldScopes.current.has(scopeId));
+    if (nextScopeId) void requestWorldScope(nextScopeId);
+    // The route path is an ordered authorization walk. Each loaded parent admits only its
+    // projected child, so a deep link cannot turn an arbitrary entity id into authority.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, worldSection, deferredState, locationScopePath.join("/"), bootstrapGeneration,
+    envelope.world.locationScopes.map((scope) => `${scope.id}:${scope.sourceRevisionFingerprint ?? ""}`).join("|")]);
   useEffect(() => () => {
     sectionAbort.current?.abort(); campaignDetailsAbort.current?.abort(); deferredAbort.current?.abort(); contextAbort.current?.abort();
     worldScopeAbort.current?.abort(); campaignWriteAbort.current?.abort();
@@ -665,7 +706,10 @@ export function DndInformationHub({
   function selectTab(tab: MainTabId) {
     const nextTab = normalizeMainTab(tab) as MainTabId;
     if (nextTab === activeTab) return;
-    navigateHubRoute(nextTab, campaignSection);
+    navigateHubRoute(nextTab, campaignSection, false, nextTab === "world" ? {
+      worldSection,
+      ...(worldSection === "locations" ? { locationScopePath, locationId: selectedLocationId || null } : {}),
+    } : {});
     setActiveTab(nextTab);
     if (nextTab === "world" && worldSection === "factions" && !envelope.world.factionDirectory)
       void requestFactionPage(null);
@@ -675,10 +719,66 @@ export function DndInformationHub({
 
   function selectWorldSection(section: WorldSectionId) {
     const nextSection = normalizeWorldSection(section) as WorldSectionId;
+    const currentRoute = parseHubRoute(window.location.hash);
+    if (!(nextSection === "locations" && currentRoute.kind === "hub" &&
+        currentRoute.tab === "world" && currentRoute.worldSection === "locations")) {
+      navigateHubRoute("world", "overview", false, {
+        worldSection: nextSection,
+        ...(nextSection === "locations" ? { locationScopePath, locationId: selectedLocationId || null } : {}),
+      });
+    }
     setWorldSection(nextSection);
     if (nextSection === "factions" && !envelope.world.factionDirectory) void requestFactionPage(null);
     setAnnouncement(`World ${nextSection} opened`);
     focusViewHeading();
+  }
+
+  function pathToLocation(locationId: string) {
+    if (locationId === worldRootId) return [];
+    const path: string[] = [];
+    const visited = new Set<string>();
+    let current: string | null = locationId;
+    while (current && current !== worldRootId && path.length < 20 && !visited.has(current)) {
+      visited.add(current);
+      path.unshift(current);
+      current = sourceParent(current);
+    }
+    return current === worldRootId ? path : [];
+  }
+
+  function sourceParent(locationId: string) {
+    const scope = envelope.world.locationScopes.find((entry) => entry.id === locationId);
+    if (scope?.parentId) return scope.parentId;
+    const parentScope = envelope.world.locationScopes.find((entry) => entry.childIds.includes(locationId));
+    return parentScope?.id ?? null;
+  }
+
+  function openLocationScope(locationId: string) {
+    const derived = pathToLocation(locationId);
+    const nextPath = derived.length > 0 || locationId === worldRootId
+      ? derived
+      : [...locationScopePath, locationId].slice(-20);
+    setSelectedLocationId(locationId);
+    setLocationScopePath(nextPath);
+    setLocationQuery("");
+    navigateHubRoute("world", "overview", false, {
+      worldSection: "locations", locationScopePath: nextPath, locationId,
+    });
+    void requestWorldScope(locationId);
+    setAnnouncement(`${locationById.get(locationId)?.name ?? "Location"} opened`);
+  }
+
+  function openParentLocationScope() {
+    if (locationScopePath.length === 0) return;
+    const selectedId = locationScopePath.at(-1)!;
+    const nextPath = locationScopePath.slice(0, -1);
+    setSelectedLocationId(selectedId);
+    setLocationScopePath(nextPath);
+    setLocationQuery("");
+    navigateHubRoute("world", "overview", false, {
+      worldSection: "locations", locationScopePath: nextPath, locationId: selectedId,
+    });
+    setAnnouncement(`${nextPath.length ? locationById.get(nextPath.at(-1)!)?.name : envelope.world.name} opened`);
   }
 
   function selectCampaignSection(section: CampaignSectionId) {
@@ -901,21 +1001,24 @@ export function DndInformationHub({
             campaign={envelope.campaign}
             currentLocation={currentLocation}
             filteredLocations={visibleLocations}
+            locationScope={activeLocationScope}
+            locationScopeBusy={locationScopeBusy}
+            locationScopeError={locationScopeError}
             locationSection={locationSection}
             perspective={perspective}
             selectedFactionId={selectedFactionId}
             selectedPersonId={selectedPersonId}
-            onLocationSelect={(locationId) => {
-              setSelectedLocationId(locationId);
-              setAnnouncement(
-                `${allLocations.find((location) => location.id === locationId)?.name ?? "Location"} selected`,
-              );
-            }}
+            onLocationSelect={openLocationScope}
+            onLocationScopeBack={openParentLocationScope}
+            onLoadMoreLocations={() => activeLocationScope?.nextCursor
+              ? void requestWorldScope(activeLocationScope.id, activeLocationScope.nextCursor)
+              : undefined}
+            onRetryLocationScope={() => void requestWorldScope(activeLocationScopeId, null, true)}
             onQueryChange={(query) => setLocationQuery(query.slice(0, 80))}
             onLocationSectionChange={(section) => {
               const nextSection = normalizeLocationSection(section, perspective) as LocationSectionId;
               setLocationSection(nextSection);
-              setAnnouncement(`${selectedLocation.name} ${nextSection} opened`);
+              setAnnouncement(`${selectedLocation?.name ?? "Location"} ${nextSection} opened`);
             }}
             onFactionSelect={(factionId) => {
               dispatchObjectUi({ type: "faction-selected", factionId });

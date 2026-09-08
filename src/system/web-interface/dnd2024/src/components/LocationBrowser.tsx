@@ -1,41 +1,67 @@
-import type { WorldLocation } from "../data/hub-types";
+import type { WorldLocation, WorldLocationScope } from "../data/hub-types";
 import { Icon } from "./Icon";
 
 export function LocationBrowser({
   locations,
+  locationScope,
+  busy,
+  error,
   query,
   selectedLocationId,
   currentLocationId,
+  onBack,
+  onLoadMore,
   onQueryChange,
+  onRetry,
   onSelect,
 }: {
   locations: WorldLocation[];
+  locationScope: WorldLocationScope | null;
+  busy: boolean;
+  error: string;
   query: string;
   selectedLocationId: string;
   currentLocationId: string;
+  onBack: () => void;
+  onLoadMore: () => void;
   onQueryChange: (query: string) => void;
+  onRetry: () => void;
   onSelect: (locationId: string) => void;
 }) {
   return (
     <section className="location-browser" aria-labelledby="location-browser-heading">
       <div className="location-browser__heading">
         <div>
-          <span className="eyebrow">World atlas</span>
-          <h2 id="location-browser-heading">Locations</h2>
+          <span className="eyebrow">This location level</span>
+          <h2 id="location-browser-heading">{locationScope?.name ?? "Locations"}</h2>
         </div>
-        <span>{locations.length} shown</span>
+        <span>{locationScope
+          ? `${locationScope.childIds.length} of ${locationScope.totalCount}`
+          : "Not loaded"}</span>
       </div>
+      {locationScope?.parentId ? (
+        <button className="location-browser__back" onClick={onBack} type="button">
+          <Icon name="ArrowLeft" size={16} /> Parent location
+        </button>
+      ) : null}
       <label className="location-search">
-        <span className="sr-only">Search locations</span>
+        <span className="sr-only">Search this location level</span>
         <Icon name="Search" size={17} />
         <input
           maxLength={80}
           onChange={(event) => onQueryChange(event.target.value)}
-          placeholder="Search places or regions"
+          placeholder="Search this level"
           type="search"
           value={query}
         />
       </label>
+      <p className="location-search__scope">Search is limited to the locations shown in this level.</p>
+      {error ? (
+        <div className="location-browser__error" role="alert">
+          <p>{error}</p>
+          <button onClick={onRetry} type="button">Refresh this level</button>
+        </div>
+      ) : null}
       <div className="location-list" aria-label="Known world locations">
         {locations.length ? (
           locations.map((location) => {
@@ -44,6 +70,7 @@ export function LocationBrowser({
             return (
               <button
                 aria-pressed={selected}
+                aria-label={`Open ${location.name} and browse its locations`}
                 className="location-row"
                 data-record-id={location.id}
                 key={location.id}
@@ -55,18 +82,27 @@ export function LocationBrowser({
                   <strong>{location.name}</strong>
                   <small>{location.region} · {location.kind}</small>
                 </span>
-                {current ? <em>Current</em> : <Icon name="ChevronRight" size={16} />}
+                <span className="location-row__action">
+                  {current ? <em>Current</em> : null}
+                  <small>Open</small>
+                  <Icon name="ChevronRight" size={16} />
+                </span>
               </button>
             );
           })
         ) : (
           <div className="location-empty">
             <Icon name="Search" />
-            <strong>No matching places</strong>
-            <p>Try a location name, region, or type.</p>
+            <strong>{query ? "No matching places" : "No child locations"}</strong>
+            <p>{query ? "Try a location name, region, or type." : "This place has no recorded locations inside it."}</p>
           </div>
         )}
       </div>
+      {locationScope?.nextCursor ? (
+        <button className="location-browser__more" disabled={busy} onClick={onLoadMore} type="button">
+          {busy ? "Loading more…" : `Load more locations (${locationScope.childIds.length} of ${locationScope.totalCount})`}
+        </button>
+      ) : busy ? <p aria-live="polite" className="location-browser__busy">Loading this location level…</p> : null}
     </section>
   );
 }

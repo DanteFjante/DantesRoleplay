@@ -86,6 +86,17 @@ export type WorldLocation = {
   dmSecret?: string;
 };
 
+export type WorldLocationScope = {
+  id: string;
+  name: string;
+  parentId: string | null;
+  childIds: string[];
+  totalCount: number;
+  complete: boolean;
+  nextCursor: string | null;
+  sourceRevisionFingerprint: string | null;
+};
+
 export type WorldHistoryEvent = {
   id: string;
   sortOrder: number;
@@ -244,6 +255,7 @@ export type WorldReadModel = {
   facts: Array<{ label: string; value: string; detail: string }>;
   history: WorldHistoryEvent[];
   locations: WorldLocation[];
+  locationScopes: WorldLocationScope[];
   people: WorldPersonDirectoryEntry[];
   factions: WorldFaction[];
   factionDirectory?: {
@@ -901,7 +913,7 @@ export type DeferredHubUpdate =
   | {
       section: "locations";
       world: Pick<WorldReadModel,
-        "currentLocationId" | "map" | "rootMapId" | "maps" | "regions" | "facts" | "locations">;
+        "currentLocationId" | "map" | "rootMapId" | "maps" | "regions" | "facts" | "locations" | "locationScopes">;
       campaign: Pick<CampaignReadModel, "mapOverlays">;
     }
   | { section: "people"; world: Pick<WorldReadModel, "locations" | "people"> }
@@ -1090,6 +1102,16 @@ export type ConnectedCampaignEnvelope = {
     }>;
   };
   locationDirectoryAudience?: Perspective;
+  locationScopes?: Array<{
+    id: string;
+    name: string;
+    parentId: string | null;
+    childIds: string[];
+    totalCount: number;
+    complete: boolean;
+    nextCursor: string | null;
+    sourceRevisionFingerprint: string | null;
+  }>;
   locationDirectory?: Array<{
     id: string;
     name: string;
