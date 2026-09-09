@@ -1,9 +1,9 @@
 {
   "formatVersion": 1,
-  "capturedAtUtc": "2026-09-06T11:04:10.921721Z",
-  "sourceDatabase": "C:\\Users\\dante\\source\\repos\\DantesRoleplay\\DantesRoleplay.MCPServer\\data\\dantesroleplay.db",
-  "sourceSnapshotSha256": "f1bd336d528b3b6bae9b9d806c86faf8840323c9eee4628059d61478eddee6d9",
-  "sqliteVersion": "3.53.1",
+  "capturedAtUtc": "2026-09-09T17:56:01.291466+00:00",
+  "sourceDatabase": "DantesRoleplay.MCPServer/data/dantesroleplay.db",
+  "sourceSnapshotSha256": "66ab9178131cd8010bc1ba28acdcbc4ae4fd8bf867b4c305826a4779ca9647ad",
+  "sqliteVersion": "3.45.1",
   "tables": [
     {
       "name": "__EFMigrationsHistory",
@@ -14,11 +14,11 @@
         "ProductVersion"
       ],
       "query": "SELECT \"rowid\",\"MigrationId\",\"ProductVersion\" FROM \"__EFMigrationsHistory\" ORDER BY \"rowid\"",
-      "rows": 68,
+      "rows": 69,
       "parts": [
         "tables/__EFMigrationsHistory-0001.jsonl"
       ],
-      "rowSha256": "31e49aedf195d88c69d76451b73fc31ecd54f506e9f6e5feadc7b726ff7095ee"
+      "rowSha256": "54dec1e4928d4648cf2b2e6e9f58b21957259f07bcd047c79ca17d5eb2232c91"
     },
     {
       "name": "__EFMigrationsLock",
@@ -1909,9 +1909,10 @@
         "OutputSchemaJson",
         "OutputSchemaHash",
         "ContentHash",
-        "CreatedAtUtc"
+        "CreatedAtUtc",
+        "ObjectContractJson"
       ],
-      "query": "SELECT \"rowid\",\"QualifiedId\",\"Version\",\"ProfileId\",\"OutputSchemaJson\",\"OutputSchemaHash\",\"ContentHash\",\"CreatedAtUtc\" FROM \"system_projection_definition_version\" ORDER BY \"rowid\"",
+      "query": "SELECT \"rowid\",\"QualifiedId\",\"Version\",\"ProfileId\",\"OutputSchemaJson\",\"OutputSchemaHash\",\"ContentHash\",\"CreatedAtUtc\",\"ObjectContractJson\" FROM \"system_projection_definition_version\" ORDER BY \"rowid\"",
       "rows": 0,
       "parts": [],
       "rowSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
@@ -2942,7 +2943,7 @@
       "parts": [
         "tables/web_page_migration_report-0001.jsonl"
       ],
-      "rowSha256": "e4ec8f46f8d9c9d9aac482fb9cfd4f4eec0e00303736bdff80c9002169784593"
+      "rowSha256": "cab4500af3f2072864bcb73aa461aac18c0f73b55575ea1666707c89a0954732"
     },
     {
       "name": "web_page_revision",
@@ -3514,6 +3515,12 @@
   "userVersion": 0,
   "applicationId": 0,
   "foreignKeyCheck": [],
+  "sourceIntegrityCheck": [
+    "CHECK constraint failed in system_application"
+  ],
+  "sourceStructuralIntegrityCheck": [
+    "ok"
+  ],
   "files": [
     {
       "path": ".gitattributes",
@@ -11687,8 +11694,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 4049,
-      "sha256": "39d01a75b83a287bb9cc3d1e3272d907a3bca308fa5810740786d35fae13eadd"
+      "bytes": 4417,
+      "sha256": "1fff5740a369a31bcd14a78c5e903724e5ce0845e298e7508c0ba8f5cb512565"
     },
     {
       "path": "restore_snapshot.py",
@@ -11697,13 +11704,13 @@
     },
     {
       "path": "schema.json",
-      "bytes": 315036,
-      "sha256": "d4f2d741dedcde5bf4ba0c2a0d249587ad9bb1c0f12abf9d7fed1206dc47de2c"
+      "bytes": 315070,
+      "sha256": "1e35424fe9ee7e896320f1bb55d91887241b5426dfe19a76e9c9894defdca251"
     },
     {
       "path": "tables/__EFMigrationsHistory-0001.jsonl",
-      "bytes": 3772,
-      "sha256": "31e49aedf195d88c69d76451b73fc31ecd54f506e9f6e5feadc7b726ff7095ee"
+      "bytes": 3841,
+      "sha256": "54dec1e4928d4648cf2b2e6e9f58b21957259f07bcd047c79ca17d5eb2232c91"
     },
     {
       "path": "tables/__web_migrations_history-0001.jsonl",
@@ -12058,18 +12065,12 @@
     {
       "path": "tables/web_page_migration_report-0001.jsonl",
       "bytes": 1591,
-      "sha256": "e4ec8f46f8d9c9d9aac482fb9cfd4f4eec0e00303736bdff80c9002169784593"
+      "sha256": "cab4500af3f2072864bcb73aa461aac18c0f73b55575ea1666707c89a0954732"
     },
     {
       "path": "tables/web_page_revision-0001.jsonl",
       "bytes": 58778,
       "sha256": "4f6a0b8edfa8df1ab904b9c2d7b936c6916b8ca8f3e1d3a19758e523eb3247da"
     }
-  ],
-  "sourceIntegrityCheck": [
-    "CHECK constraint failed in system_application"
-  ],
-  "sourceStructuralIntegrityCheck": [
-    "ok"
   ]
 }
