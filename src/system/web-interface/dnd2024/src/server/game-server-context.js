@@ -2451,10 +2451,13 @@ export async function readRegisteredCampaignVisitPage({
   return result.status === "ready" ? registeredCampaignVisitPage(result.data, result.evidence) : null;
 }
 
-function registeredWorldCampaignPage(data, projection, worldId) {
-  if (!hasExactKeys(data, ["worldSummary", "selectedWorld", "campaigns", "totalCount", "complete", "nextCursor"]) ||
-      !text(data.worldSummary, 1_000) || !hasExactKeys(data.selectedWorld, ["id", "name"]) ||
-      token(data.selectedWorld.id) !== worldId || !text(data.selectedWorld.name, 400) ||
+function registeredWorldCampaignPage(data, projection, worldId, worldName = null) {
+  const includesSelectedWorld = Object.hasOwn(data ?? {}, "selectedWorld");
+  const selectedWorld = includesSelectedWorld ? data.selectedWorld : { id: worldId, name: worldName };
+  if (!hasExactKeys(data, ["worldSummary", ...(includesSelectedWorld ? ["selectedWorld"] : []),
+      "campaigns", "totalCount", "complete", "nextCursor"]) ||
+      !text(data.worldSummary, 1_000) || !hasExactKeys(selectedWorld, ["id", "name"]) ||
+      token(selectedWorld.id) !== worldId || !text(selectedWorld.name, 400) ||
       !Array.isArray(data.campaigns) || data.campaigns.length > 25 ||
       !Number.isInteger(data.totalCount) || data.totalCount < data.campaigns.length || data.totalCount > 256 ||
       typeof data.complete !== "boolean" || !(data.nextCursor === null || token(data.nextCursor)) ||
@@ -2473,7 +2476,7 @@ function registeredWorldCampaignPage(data, projection, worldId) {
   if (campaigns.some((item) => item === null) ||
       new Set(campaigns.map((item) => item.id)).size !== campaigns.length) return null;
   return {
-    world: { id: worldId, name: data.selectedWorld.name }, campaigns,
+    world: { id: worldId, name: selectedWorld.name }, campaigns,
     totalCount: data.totalCount, complete: data.complete, nextCursor: data.nextCursor,
     sourceRevisionFingerprint: projection?.sourceRevisionFingerprint ?? null, projection,
   };
@@ -2481,7 +2484,7 @@ function registeredWorldCampaignPage(data, projection, worldId) {
 
 export async function readRegisteredWorldCampaignPage({
   fetchImpl = fetch, origin, applicationId, stateSpaceId, campaignId, worldId, cursor = null,
-  expectedSourceRevision = null,
+  expectedSourceRevision = null, worldName = null,
 }) {
   const entityRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
     `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities`;
@@ -2499,10 +2502,10 @@ export async function readRegisteredWorldCampaignPage({
     maximumDataBytes: 262_144,
     statusPolicy: { ready: [200], forbidden: [403], stale: [409], unavailable: "remaining" },
     expectedSourceRevision,
-    validate: (value) => registeredWorldCampaignPage(value, null, worldId) !== null,
+    validate: (value) => registeredWorldCampaignPage(value, null, worldId, worldName) !== null,
   });
   return result.status === "ready"
-    ? registeredWorldCampaignPage(result.data, result.evidence, worldId)
+    ? registeredWorldCampaignPage(result.data, result.evidence, worldId, worldName)
     : null;
 }
 
@@ -2937,6 +2940,9 @@ export async function readDeferredHubSection({ fetchImpl = fetch, origin, source
     if (source.audience.seat !== "dm") {
       patch.contextSelection = source.contextSelection;
     } else {
+      const selectedWorldId = source.contextSelection.selectedWorldId;
+      const selectedWorld = source.contextSelection.worlds?.find((world) => world.id === selectedWorldId)
+        ?? (source.world?.id === selectedWorldId ? source.world : null);
       const directory = await readAllRegisteredPages(
         (cursor, expectedSourceRevision) => readRegisteredWorldCampaignPage({
           fetchImpl: read,
@@ -2944,7 +2950,8 @@ export async function readDeferredHubSection({ fetchImpl = fetch, origin, source
           applicationId,
           stateSpaceId,
           campaignId,
-          worldId: source.contextSelection.selectedWorldId,
+          worldId: selectedWorldId,
+          worldName: selectedWorld?.name ?? null,
           cursor,
           expectedSourceRevision,
         }),

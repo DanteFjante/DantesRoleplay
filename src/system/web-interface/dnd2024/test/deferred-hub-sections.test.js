@@ -180,7 +180,7 @@ test("Current cross-checks registered Resume and Current Scene without raw state
 test("context discovery follows every registered continuation without hydrating entities", async () => {
   const calls = [];
   const result = await readDeferredHubSection({
-    origin, section: "context", source,
+    origin, section: "context", source: { ...source, world: { id: "world.caldris", name: "Caldris" } },
     fetchImpl: async (input) => {
       const target = new URL(input); calls.push(target);
       assert.match(target.pathname, /dnd2024\.query\.world-campaign-directory/u);
@@ -200,7 +200,7 @@ test("context discovery follows every registered continuation without hydrating 
         outputSchemaHash: worldCampaignDirectoryContract.outputSchemaHash,
         resultFingerprint: "3".repeat(64), sourceRevisionFingerprint: "4".repeat(64),
         data: {
-          worldSummary: "A fixture world.", selectedWorld: { id: "world.caldris", name: "Caldris" },
+          worldSummary: "A fixture world.",
           campaigns: [campaign], totalCount: 2, complete: second, nextCursor: second ? null : "next",
         },
       });

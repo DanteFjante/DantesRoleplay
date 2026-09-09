@@ -146,6 +146,22 @@ async function sample(page, client, cacheState, index) {
       await page.waitForTimeout(25);
     }
   };
+  const waitForRenderQuiescence = async () => {
+    const deadline = Date.now() + 60_000;
+    let quietSince = null;
+    while (Date.now() < deadline) {
+      const visibleBusy = await page.evaluate(() => [...document.querySelectorAll('[aria-busy="true"]')]
+        .some(element => element.getClientRects().length > 0));
+      const finitePending = [...byRequest].some(([request, entry]) => entry.outcome === 'pending'
+        && !isPersistentReadPath(new URL(request.url()).pathname));
+      if (!visibleBusy && !finitePending) {
+        quietSince ??= Date.now();
+        if (Date.now() - quietSince >= 100) return;
+      } else quietSince = null;
+      await page.waitForTimeout(25);
+    }
+    throw new Error('Visible loading state did not settle within 60 seconds');
+  };
   const settle = async () => {
     // React may commit a cached view before its passive refresh effect starts. Give that effect an
     // event-loop turn before treating an empty request set as settled, then prove all finite reads
@@ -157,6 +173,7 @@ async function sample(page, client, cacheState, index) {
     await page.waitForTimeout(25);
     await waitForFiniteRequests();
     await paint();
+    await waitForRenderQuiescence();
   };
   const passed = name => { run.checks[name] = 'passed'; };
   const capture = async (name, selector, fallbackIds = []) => {
@@ -326,8 +343,9 @@ async function sample(page, client, cacheState, index) {
       contextIds.push(...await page.locator('.context-picker__campaign').evaluateAll(
         elements => elements.map(element => element.dataset.recordId)));
     }
-    const contextFailed = !await page.locator('.context-picker').count() ||
-      await page.locator('.context-picker [role="alert"]').count();
+    const contextAlerts = await page.locator('.context-picker [role="alert"]').allTextContents();
+    run.contextAlerts = contextAlerts;
+    const contextFailed = !await page.locator('.context-picker').count() || contextAlerts.length;
     run.traversal.context = { status: contextFailed ? 'error' : contextIds.length ? 'ready' : 'empty',
       complete: !contextFailed, ...recordSetEvidence(contextIds) };
     assert.ok(contextIds.length >= 2 && selectedCampaignId, 'At least one world/campaign context must be selectable');
