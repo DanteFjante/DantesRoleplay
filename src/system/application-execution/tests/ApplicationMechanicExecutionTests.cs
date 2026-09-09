@@ -15,6 +15,7 @@ using DantesRoleplay.ApplicationActivation;
 using DantesRoleplay.EcsEffects;
 using DantesRoleplay.Effects;
 using DantesRoleplay.Operations;
+using DantesRoleplay.Interactions;
 
 namespace DantesRoleplay.ApplicationExecution.Tests;
 
@@ -243,6 +244,32 @@ public sealed class ApplicationMechanicExecutionTests : IDisposable
         Assert.All(engine.Limits.Skip(2), limits => Assert.Equal(ExecutionLimits.ReadModel, limits));
         Assert.Equal(16 * 1024 * 1024, engine.Limits[2].MemoryBytes);
         Assert.Equal(engine.Limits[0] with { MemoryBytes = engine.Limits[2].MemoryBytes }, engine.Limits[2]);
+    }
+
+    [Fact]
+    public void Deep_read_model_source_revisions_use_a_stable_bounded_streaming_fingerprint()
+    {
+        var projection = new MechanicProjection();
+        for (var index = 0; index < 2_000; index++)
+        {
+            var entityId = $"entity.{index:D4}";
+            projection.ComponentRevisions[entityId] = new Dictionary<string, int?>
+            {
+                ["fixture.component.alpha"] = index + 1,
+                ["fixture.component.beta"] = index + 2
+            };
+            projection.ContainmentRevisions[entityId] =
+                [new ContainmentRevision($"child.{index:D4}", "contents", index + 1)];
+        }
+
+        var first = ApplicationReadModelService.FingerprintSourceRevisions(projection);
+        var again = ApplicationReadModelService.FingerprintSourceRevisions(projection);
+        projection.ComponentRevisions["entity.0000"]["fixture.component.alpha"] = 2;
+        var changed = ApplicationReadModelService.FingerprintSourceRevisions(projection);
+
+        Assert.Matches("^[0-9A-F]{64}$", first);
+        Assert.Equal(first, again);
+        Assert.NotEqual(first, changed);
     }
 
     [Fact]

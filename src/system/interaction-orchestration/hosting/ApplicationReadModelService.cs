@@ -1,3 +1,7 @@
+using System.Buffers.Binary;
+using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using DantesRoleplay.ApplicationActivation;
 using DantesRoleplay.ApplicationExecution;
@@ -240,28 +244,8 @@ internal sealed class ApplicationReadModelService(
                 contract.OutputSchemaHash,
                 output = JsonSerializer.Deserialize<JsonElement>(data)
             })));
-        var sourceRevisionJson = InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
-        {
-            components = evaluation.Projection.ComponentRevisions
-                .OrderBy(value => value.Key, StringComparer.Ordinal)
-                .Select(entity => new
-                {
-                    entityId = entity.Key,
-                    revisions = entity.Value.OrderBy(value => value.Key, StringComparer.Ordinal)
-                        .Select(value => new { componentId = value.Key, revision = value.Value })
-                }),
-            containments = evaluation.Projection.ContainmentRevisions
-                .OrderBy(value => value.Key, StringComparer.Ordinal)
-                .Select(container => new
-                {
-                    containerId = container.Key,
-                    entries = container.Value.OrderBy(value => value.EntityId, StringComparer.Ordinal)
-                        .Select(value => new { value.EntityId, value.Slot, value.Revision })
-                })
-        }));
         var sourceFingerprint = evaluation.Projection.AuthorizedSourceRevision
-            ?? InteractionCanonicalJson.Fingerprint(
-                InteractionQueryFingerprintDomains.SourceRevisions, sourceRevisionJson);
+            ?? FingerprintSourceRevisions(evaluation.Projection);
         using var inputDocument = JsonDocument.Parse(input);
         if (inputDocument.RootElement.TryGetProperty("expectedSourceRevision", out var expected)
             && expected.ValueKind != JsonValueKind.Null && expected.GetString() != sourceFingerprint)
@@ -274,6 +258,75 @@ internal sealed class ApplicationReadModelService(
 
     private static bool Token(string? value) => value is { Length: >= 1 and <= 200 }
         && value == value.Trim() && !value.Any(char.IsControl);
+
+    internal static string FingerprintSourceRevisions(MechanicProjection projection)
+    {
+        var sourceRevisionJson = JsonSerializer.Serialize(new
+        {
+            components = projection.ComponentRevisions
+                .OrderBy(value => value.Key, StringComparer.Ordinal)
+                .Select(entity => new
+                {
+                    entityId = entity.Key,
+                    revisions = entity.Value.OrderBy(value => value.Key, StringComparer.Ordinal)
+                        .Select(value => new { componentId = value.Key, revision = value.Value })
+                }),
+            containments = projection.ContainmentRevisions
+                .OrderBy(value => value.Key, StringComparer.Ordinal)
+                .Select(container => new
+                {
+                    containerId = container.Key,
+                    entries = container.Value.OrderBy(value => value.EntityId, StringComparer.Ordinal)
+                        .Select(value => new { value.EntityId, value.Slot, value.Revision })
+                })
+        });
+        try
+        {
+            return InteractionCanonicalJson.Fingerprint(
+                InteractionQueryFingerprintDomains.SourceRevisions,
+                InteractionCanonicalJson.CanonicalizeObject(sourceRevisionJson));
+        }
+        catch (InteractionContractException exception) when (exception.Code == "JSON_TOO_LARGE")
+        {
+            // Deep, component-filtered directories are already bounded by projection limits, but
+            // their revision ledger can legitimately exceed the unrelated interaction-input limit.
+            // Hash a length-prefixed canonical sequence without relaxing that global contract.
+        }
+
+        using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        Append("application-read-model-source-revisions-v2");
+        foreach (var entity in projection.ComponentRevisions.OrderBy(value => value.Key, StringComparer.Ordinal))
+        {
+            Append("component-entity");
+            Append(entity.Key);
+            foreach (var revision in entity.Value.OrderBy(value => value.Key, StringComparer.Ordinal))
+            {
+                Append(revision.Key);
+                Append(revision.Value?.ToString(CultureInfo.InvariantCulture) ?? "null");
+            }
+        }
+        foreach (var container in projection.ContainmentRevisions.OrderBy(value => value.Key, StringComparer.Ordinal))
+        {
+            Append("containment-container");
+            Append(container.Key);
+            foreach (var entry in container.Value.OrderBy(value => value.EntityId, StringComparer.Ordinal))
+            {
+                Append(entry.EntityId);
+                Append(entry.Slot);
+                Append(entry.Revision.ToString(CultureInfo.InvariantCulture));
+            }
+        }
+        return Convert.ToHexString(hash.GetHashAndReset());
+
+        void Append(string value)
+        {
+            var bytes = Encoding.UTF8.GetBytes(value);
+            Span<byte> length = stackalloc byte[sizeof(int)];
+            BinaryPrimitives.WriteInt32BigEndian(length, bytes.Length);
+            hash.AppendData(length);
+            hash.AppendData(bytes);
+        }
+    }
 
     private static ApplicationReadModelException Failure(
         string code, string message, Exception? inner = null) =>
