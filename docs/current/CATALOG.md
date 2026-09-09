@@ -169,7 +169,7 @@ history. It does **not** export the current `system_ecs_*` state, application
 activation/binding tables, stored websites or external blob bytes. Its drift
 report is therefore not proof that the complete running game matches the files.
 
-The user-requested [6 September 2026 complete capture](../../data/exports/2026-09-06/README.md)
+The user-requested [current complete capture](../../data/exports/current/README.md)
 preserves all database tables, schema and blobs in files suitable for Git, together
 with an offline restore script and a manifest of hashes. Its separate `catalog/`
 folder captures the database side of the comparison; it does not replace this
