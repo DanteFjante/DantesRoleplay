@@ -606,31 +606,37 @@ test("World information resources cache People, Lore, and History independently 
   await owner.loadInformation({ envelope: dm, section: "lore" });
   assert.deepEqual(reads, { people: 1, lore: 1, history: 1 });
 
+  owner.invalidateAll("object-change");
+  await owner.loadInformation({ envelope: dm, section: "people" });
+  assert.equal(reads.people, 2, "a relevant object change retires the complete cached directory");
+
   const actor = scope("player");
   await owner.loadInformation({ envelope: actor, section: "people" });
   await owner.loadInformation({ envelope: dm, section: "people" });
-  assert.equal(reads.people, 3, "observer replacement retires cached private information");
+  assert.equal(reads.people, 4, "observer replacement retires cached private information");
 });
 
-test("World People resources accept the declared combined 200-record projection bound", async () => {
-  const update = (people: number) => ({
+test("World People resources accept the declared 1,000 locations plus 2,000 people bound", async () => {
+  const update = (locations: number, people: number) => ({
     section: "people" as const,
     world: {
-      locations: Array.from({ length: 15 }, (_, index) => ({ id: `location-${index}` })),
+      locations: Array.from({ length: locations }, (_, index) => ({ id: `location-${index}` })),
       people: Array.from({ length: people }, (_, index) => ({ id: `person-${index}` })),
+      peopleDirectory: { totalCount: people, hierarchyComplete: true,
+        sourceRevisionFingerprint: "A".repeat(64) },
     },
   }) as unknown as import("../../src/data/object-resources").WorldInformationUpdate;
   const owner = new WorldResourceOwner({
     readScope: async () => ({}) as import("../../src/data/object-resources").WorldScopeUpdate,
-    readInformation: async () => update(185),
+    readInformation: async () => update(1_000, 2_000),
   });
 
   const result = await owner.loadInformation({ envelope: scope("dm"), section: "people" });
-  assert.equal(result.world.locations.length + result.world.people.length, 200);
+  assert.equal(result.world.locations.length + result.world.people.length, 3_000);
 
   const overflow = new WorldResourceOwner({
     readScope: async () => ({}) as import("../../src/data/object-resources").WorldScopeUpdate,
-    readInformation: async () => update(186),
+    readInformation: async () => update(1_001, 2_000),
   });
   await assert.rejects(
     overflow.loadInformation({ envelope: scope("dm"), section: "people" }),

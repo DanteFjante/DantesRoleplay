@@ -14,7 +14,7 @@ import { contract as inventoryContainerContract } from "../server/inventory-cont
 import { contract as inventoryWalletContract } from "../server/inventory-wallet-contract.js";
 import { contract as worldLocationScopeContract } from "../server/world-location-scope-contract.js";
 import { contract as worldLocationScopePageContract } from "../server/world-location-scope-page-contract.js";
-import { contract as worldPeopleHoldingsContract } from "../server/world-people-holdings-contract.js";
+import { contract as worldPeopleHoldingsPageContract } from "../server/world-people-holdings-page-contract.js";
 import { contract as campaignResumeContract } from "../server/campaign-resume-contract.js";
 import { contract as currentSceneContract } from "../server/current-scene-contract.js";
 
@@ -140,7 +140,7 @@ function worldTableScope(envelope: ReadyHubEnvelope) {
 }
 
 function worldInformationResource({ envelope, section }: WorldInformationRequest, generation: number) {
-  const token = section === "people" ? resourceContractToken(worldPeopleHoldingsContract)
+  const token = section === "people" ? resourceContractToken(worldPeopleHoldingsPageContract)
     : `dnd2024-${section}-adapter-v1`;
   return resourceCacheKey(token, generation, worldTableScope(envelope), section);
 }
@@ -188,7 +188,9 @@ function isWorldInformationUpdate(value: unknown): value is WorldInformationUpda
   const world = update.world as Record<string, unknown>;
   if (update.section === "people") {
     return Array.isArray(world.locations) && Array.isArray(world.people) &&
-      world.locations.length + world.people.length <= 200;
+      world.locations.length <= 1_000 && world.people.length <= 2_000 &&
+      world.locations.length + world.people.length <= 3_000 &&
+      (!world.peopleDirectory || typeof world.peopleDirectory === "object");
   }
   if (update.section === "history")
     return Array.isArray(world.history) && world.history.length <= 500;
@@ -414,7 +416,7 @@ export class WorldResourceOwner {
   constructor(options: WorldResourceOwnerOptions) {
     this.#store = new ResourceStore({
       maximumEntries: options.maximumEntries ?? 20,
-      maximumRetainedBytes: options.maximumRetainedBytes ?? 2 * 1024 * 1024,
+      maximumRetainedBytes: options.maximumRetainedBytes ?? 8 * 1024 * 1024,
       diagnosticName: "world-resources",
     });
     this.#scopes = this.#store.define({
@@ -431,7 +433,7 @@ export class WorldResourceOwner {
       read: options.readInformation,
       validate: isWorldInformationUpdate,
       maximumAgeMs: options.maximumAgeMs ?? RESOURCE_FRESHNESS_MS.worldInformation,
-      maximumEntryBytes: 1_100_000,
+      maximumEntryBytes: 4 * 1024 * 1024,
     });
   }
 

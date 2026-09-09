@@ -827,7 +827,7 @@ export function DndInformationHub({
     const scope = envelope.world.locationScopes.find((entry) => entry.id === locationId);
     if (scope?.parentId) return scope.parentId;
     const parentScope = envelope.world.locationScopes.find((entry) => entry.childIds.includes(locationId));
-    return parentScope?.id ?? null;
+    return parentScope?.id ?? locationById.get(locationId)?.parentId ?? null;
   }
 
   function openLocationScope(locationId: string) {
@@ -841,7 +841,6 @@ export function DndInformationHub({
     navigateHubRoute("world", "overview", false, {
       worldSection: "locations", locationScopePath: nextPath, locationId,
     });
-    void requestWorldScope(locationId);
     setAnnouncement(`${locationById.get(locationId)?.name ?? "Location"} opened`);
   }
 
@@ -1170,6 +1169,12 @@ export function DndInformationHub({
               dispatchObjectUi({ type: "faction-selected", factionId });
               setAnnouncement(
                 `${envelope.world.factions.find((faction) => faction.id === factionId)?.name ?? "Faction"} selected`,
+              );
+            }}
+            onPersonSelect={(personId) => {
+              setSelectedPersonId(personId);
+              setAnnouncement(
+                `${envelope.world.people.find((person) => person.id === personId)?.name ?? "Person"} selected`,
               );
             }}
             factionDirectoryBusy={hubBusy && worldSection === "factions"}

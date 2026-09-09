@@ -14,6 +14,7 @@ import { contract as factionDirectoryContract } from "./faction-directory-contra
 import { contract as worldLocationScopeContract } from "./world-location-scope-contract.js";
 import { contract as worldLocationScopePageContract } from "./world-location-scope-page-contract.js";
 import { contract as worldPeopleHoldingsContract } from "./world-people-holdings-contract.js";
+import { contract as worldPeopleHoldingsPageContract } from "./world-people-holdings-page-contract.js";
 import { contract as currentSceneContract } from "./current-scene-contract.js";
 import { contract as campaignResumeContract } from "./campaign-resume-contract.js";
 
@@ -1222,6 +1223,130 @@ export async function readRegisteredWorldPeopleHoldings({
         resultFingerprint: result.evidence.resultFingerprint,
         sourceRevisionFingerprint: result.evidence.sourceRevisionFingerprint,
       },
+    };
+  } catch (error) {
+    if (error?.name === "AbortError") throw error;
+    return { status: "error", locations: [], people: [], holdings: [] };
+  }
+}
+
+function validWorldPeopleHoldingsPage(value, worldId, offset) {
+  if (!hasExactKeys(value, ["version", "state", "world", "locations", "people", "holdings",
+    "totalCount", "complete", "nextCursor", "limits"]) ||
+      value.version !== 1 || !["ready", "forbidden"].includes(value.state) ||
+      !Array.isArray(value.locations) || value.locations.length > 800 ||
+      !Array.isArray(value.people) || !Array.isArray(value.holdings) ||
+      value.people.length + value.holdings.length > 50 ||
+      !Number.isInteger(value.totalCount) || value.totalCount < 0 || value.totalCount > 2_000 ||
+      typeof value.complete !== "boolean" ||
+      !(value.nextCursor === null || /^(?:[1-9][0-9]{1,3})$/u.test(value.nextCursor)) ||
+      !hasExactKeys(value.limits, ["contentsDepth", "recordCount", "pageSize", "hierarchyComplete"]) ||
+      value.limits.contentsDepth !== 16 || value.limits.recordCount !== 2_000 ||
+      value.limits.pageSize !== 50 || typeof value.limits.hierarchyComplete !== "boolean") return false;
+  if (value.state === "forbidden") return value.world === null && value.locations.length === 0 &&
+    value.people.length === 0 && value.holdings.length === 0 && value.totalCount === 0 &&
+    value.complete === true && value.nextCursor === null;
+  if (!hasExactKeys(value.world, ["id", "name"]) || value.world.id !== worldId ||
+      !text(value.world.name, 400)) return false;
+  const pageCount = value.people.length + value.holdings.length;
+  if (value.totalCount < offset + pageCount || value.complete !== (value.nextCursor === null) ||
+      (value.complete && offset + pageCount !== value.totalCount) ||
+      (!value.complete && (pageCount !== 50 || value.nextCursor !== String(offset + 50)))) return false;
+  const locationIds = new Set();
+  for (const location of value.locations) {
+    if (!hasExactKeys(location, ["id", "name", "parentId", "kind"]) ||
+        !token(location.id) || locationIds.has(location.id) || !text(location.name, 400) ||
+        !token(location.parentId) ||
+        !["region", "settlement", "site", "interior"].includes(location.kind)) return false;
+    locationIds.add(location.id);
+  }
+  if (value.locations.some((location) => location.parentId !== worldId && !locationIds.has(location.parentId)))
+    return false;
+  const recordIds = new Set(locationIds);
+  const validMotive = (motive) => motive === null ||
+    hasExactKeys(motive, ["status", "summary", "visibility"]) &&
+    ["draft", "active"].includes(motive.status) && text(motive.summary, 1_000) &&
+    ["public", "party", "gm"].includes(motive.visibility);
+  for (const person of value.people) {
+    if (!hasExactKeys(person, ["id", "name", "locationId", "kind", "motive"]) ||
+        !token(person.id) || recordIds.has(person.id) || !text(person.name, 400) ||
+        !locationIds.has(person.locationId) || !["NPC", "Creature"].includes(person.kind) ||
+        !validMotive(person.motive)) return false;
+    recordIds.add(person.id);
+  }
+  for (const holding of value.holdings) {
+    if (!hasExactKeys(holding, ["id", "name", "locationId", "kind"]) ||
+        !token(holding.id) || recordIds.has(holding.id) || !text(holding.name, 400) ||
+        !locationIds.has(holding.locationId) ||
+        !["Item", "Conveyance", "Aerial conveyance", "Teleport gate"].includes(holding.kind)) return false;
+    recordIds.add(holding.id);
+  }
+  return true;
+}
+
+/** Reads one source-bound DM page of classified people and holdings. */
+export async function readRegisteredWorldPeopleHoldingsPage({
+  fetchImpl = fetch, origin, applicationId, stateSpaceId, worldId,
+  cursor = null, expectedSourceRevision = null,
+}) {
+  const offset = cursor === null ? 0 : Number(cursor);
+  if (!Number.isInteger(offset) || offset < 0 || offset > 1_950 || offset % 50 !== 0 ||
+      !(expectedSourceRevision === null || /^[0-9A-F]{64}$/u.test(expectedSourceRevision))) {
+    return { status: "error", locations: [], people: [], holdings: [] };
+  }
+  const applicationRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
+    `/state-spaces/${encodeURIComponent(stateSpaceId)}`;
+  const parameters = new URLSearchParams({
+    perspective: "dm",
+    input: JSON.stringify({ offset, expectedSourceRevision }),
+  });
+  try {
+    const result = await readModelResponse({
+      fetchImpl,
+      resource: url(origin, `${applicationRoot}/entities/${encodeURIComponent(worldId)}` +
+        `/read-models/${encodeURIComponent(worldPeopleHoldingsPageContract.id)}?${parameters}`),
+      init: { headers: { Accept: "application/json" }, cache: "no-store" },
+      applicationId,
+      stateSpaceId,
+      query: worldPeopleHoldingsPageContract,
+      maximumBodyBytes: 1_200_000,
+      maximumDataBytes: 1_100_000,
+      statusPolicy: { ready: [200], forbidden: [403], stale: [409], unavailable: "remaining" },
+      expectedSourceRevision,
+      validate: (value) => validWorldPeopleHoldingsPage(value, worldId, offset),
+    });
+    if (result.status !== "ready" || result.data.state !== "ready") return {
+      status: result.status === "forbidden" || result.data?.state === "forbidden" ? "forbidden"
+        : result.status === "stale" ? "stale" : result.status === "unavailable" ? "unavailable" : "error",
+      locations: [], people: [], holdings: [],
+    };
+    const media = await readAuthorizedMediaBatch({
+      fetchImpl, origin, applicationId, stateSpaceId,
+      entityIds: result.data.people.map((person) => person.id), perspective: "dm",
+    });
+    return {
+      status: "ready",
+      world: result.data.world,
+      locations: result.data.locations.map((location) => ({
+        id: location.id, name: location.name, kind: location.kind,
+        summary: `${location.name} is part of ${result.data.world.name}.`,
+        containerId: location.parentId,
+      })),
+      people: result.data.people.map((person) => {
+        const { motive, ...identity } = person;
+        return {
+          ...identity,
+          ...(motive ? { motive } : {}),
+          ...(media.has(person.id) ? { media: media.get(person.id) } : {}),
+        };
+      }),
+      holdings: result.data.holdings,
+      totalCount: result.data.totalCount,
+      complete: result.data.complete,
+      nextCursor: result.data.nextCursor,
+      hierarchyComplete: result.data.limits.hierarchyComplete,
+      sourceRevisionFingerprint: result.evidence.sourceRevisionFingerprint,
+      projection: currentProjectionEvidence(result),
     };
   } catch (error) {
     if (error?.name === "AbortError") throw error;
@@ -2522,6 +2647,67 @@ export async function readAuthorizedWorldLore({ fetchImpl = fetch, origin, sourc
   };
 }
 
+/** Loads the complete bounded directory while rejecting repeated cursors, duplicates, and mixed revisions. */
+export async function readAllWorldPeopleHoldingsPages(readPage) {
+  const locations = new Map();
+  const people = [];
+  const holdings = [];
+  const recordIds = new Set();
+  const seenCursors = new Set();
+  let cursor = null;
+  let expectedSourceRevision = null;
+  let expectedTotalCount = null;
+  let world = null;
+  let hierarchyComplete = true;
+  for (let pageNumber = 0; pageNumber < 40; pageNumber += 1) {
+    const page = await readPage(cursor, expectedSourceRevision);
+    if (!page || page.status !== "ready") return {
+      status: page?.status ?? "error", locations: [], people: [], holdings: [],
+      legacyCompatible: pageNumber === 0 && page?.status === "unavailable",
+    };
+    if (!/^[0-9A-F]{64}$/u.test(page.sourceRevisionFingerprint ?? "") ||
+        (expectedSourceRevision !== null && page.sourceRevisionFingerprint !== expectedSourceRevision) ||
+        (expectedTotalCount !== null && page.totalCount !== expectedTotalCount) ||
+        (world && (world.id !== page.world?.id || world.name !== page.world?.name))) {
+      return { status: "stale", locations: [], people: [], holdings: [] };
+    }
+    expectedSourceRevision ??= page.sourceRevisionFingerprint;
+    expectedTotalCount ??= page.totalCount;
+    world ??= page.world;
+    hierarchyComplete = hierarchyComplete && page.hierarchyComplete;
+    for (const location of page.locations) {
+      const previous = locations.get(location.id);
+      if (previous && JSON.stringify(previous) !== JSON.stringify(location))
+        return { status: "stale", locations: [], people: [], holdings: [] };
+      locations.set(location.id, location);
+    }
+    for (const [key, target] of [["people", people], ["holdings", holdings]]) {
+      for (const item of page[key]) {
+        if (recordIds.has(item.id) || recordIds.size >= 2_000)
+          return { status: "error", locations: [], people: [], holdings: [] };
+        recordIds.add(item.id);
+        target.push(item);
+      }
+    }
+    if (page.nextCursor === null) {
+      if (recordIds.size !== expectedTotalCount) return {
+        status: "stale", locations: [], people: [], holdings: [],
+      };
+      return {
+        status: "ready", world, locations: [...locations.values()], people, holdings,
+        totalCount: expectedTotalCount, hierarchyComplete,
+        sourceRevisionFingerprint: expectedSourceRevision,
+        projection: page.projection,
+      };
+    }
+    if (seenCursors.has(page.nextCursor))
+      return { status: "stale", locations: [], people: [], holdings: [] };
+    seenCursors.add(page.nextCursor);
+    cursor = page.nextCursor;
+  }
+  return { status: "error", locations: [], people: [], holdings: [] };
+}
+
 export async function readWorldPeopleHoldings({ fetchImpl = fetch, origin, source }) {
   const perspective = source.audience.perspective ?? "player";
   const preview = source.audience.seat === "dm" && perspective === "player";
@@ -2531,9 +2717,23 @@ export async function readWorldPeopleHoldings({ fetchImpl = fetch, origin, sourc
     return readAuthorizedWorldLore({ fetchImpl, origin, source });
   const worldId = token(source.contextSelection?.selectedWorldId);
   if (!worldId) throw new Error("The selected World identity is unavailable.");
-  const result = await readRegisteredWorldPeopleHoldings({
+  const options = {
     fetchImpl, origin, applicationId: source.applicationId, stateSpaceId: source.stateSpaceId, worldId,
-  });
+  };
+  let result = await readAllWorldPeopleHoldingsPages((cursor, expectedSourceRevision) =>
+    readRegisteredWorldPeopleHoldingsPage({ ...options, cursor, expectedSourceRevision }));
+  // Keep the pre-R12 read model as a one-request compatibility bridge while older catalogs are
+  // upgraded. Never switch contracts after a continuation has begun.
+  if (result.status === "unavailable" && result.legacyCompatible === true) {
+    const legacy = await readRegisteredWorldPeopleHoldings(options);
+    if (legacy.status === "ready") result = {
+      ...legacy,
+      totalCount: legacy.people.length + legacy.holdings.length,
+      hierarchyComplete: true,
+      sourceRevisionFingerprint: legacy.projection?.sourceRevisionFingerprint ?? null,
+    };
+    else result = legacy;
+  }
   if (result.status === "forbidden") throw new Error("The people directory is unavailable to this audience.");
   if (result.status !== "ready") throw new Error("The people directory is incomplete.");
   const locations = new Map(result.locations.map((location) => [location.id, location]));
@@ -2546,6 +2746,9 @@ export async function readWorldPeopleHoldings({ fetchImpl = fetch, origin, sourc
       people: result.people,
       holdings: result.holdings,
       factions: source.worldDirectory?.factions ?? [],
+      peopleHierarchyComplete: result.hierarchyComplete,
+      directoryRecordCount: result.totalCount,
+      peopleSourceRevisionFingerprint: result.sourceRevisionFingerprint,
     },
   };
 }

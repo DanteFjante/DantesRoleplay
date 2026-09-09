@@ -8,23 +8,13 @@ import { Icon } from "./Icon";
 import { MediaImage } from "./MediaImage";
 import { WorldDirectoryControls } from "./WorldDirectoryControls";
 
-function WorldPersonCard({
-  person,
-  selected,
-  onOpenLocation,
-}: {
+function WorldPersonDetail({ person, onOpenLocation }: {
   person: WorldPersonDirectoryEntry;
-  selected: boolean;
   onOpenLocation: (locationId: string) => void;
 }) {
   return (
-    <article
-      aria-labelledby={`${person.id}-directory-heading`}
-      className="world-person-card"
-      data-selected={selected ? "true" : undefined}
-      id={`world-person-${person.id}`}
-      tabIndex={-1}
-    >
+    <article aria-labelledby={`${person.id}-directory-heading`}
+      className="world-person-card world-person-detail" id={`world-person-${person.id}`} tabIndex={-1}>
       <header>
         <span className="world-person-card__portrait">
           <MediaImage fallback={<span aria-hidden="true">{person.initials}</span>} media={person.portrait} />
@@ -56,13 +46,10 @@ function WorldPersonCard({
   );
 }
 
-export function WorldPeopleDirectory({
-  world,
-  selectedPersonId,
-  onOpenLocation,
-}: {
+export function WorldPeopleDirectory({ world, selectedPersonId, onPersonSelect, onOpenLocation }: {
   world: WorldReadModel;
   selectedPersonId: string;
+  onPersonSelect: (personId: string) => void;
   onOpenLocation: (locationId: string) => void;
 }) {
   const [query, setQuery] = useState("");
@@ -76,6 +63,7 @@ export function WorldPeopleDirectory({
     () => filterWorldPeople(world.people, { query, kind, region }),
     [world.people, query, kind, region],
   );
+  const selectedPerson = people.find((person) => person.id === selectedPersonId) ?? people[0] ?? null;
 
   return (
     <div className="world-directory-view">
@@ -89,43 +77,43 @@ export function WorldPeopleDirectory({
       <p className="world-directory-introduction">
         Known people and observed creatures, gathered from the locations available in this view.
       </p>
+      {world.peopleDirectory?.hierarchyComplete === false ? (
+        <p className="directory-completeness-notice" role="status">
+          This directory reached the world hierarchy safety limit. The records shown are complete
+          for the loaded hierarchy, but deeper places may contain more people or creatures.
+        </p>
+      ) : null}
       <WorldDirectoryControls
         filters={[
-          {
-            label: "Kind",
-            value: kind,
-            onChange: setKind,
-            options: [
-              { value: "all", label: "All kinds" },
-              { value: "NPC", label: "People" },
-              { value: "Creature", label: "Creatures" },
-            ],
-          },
-          {
-            label: "Region",
-            value: region,
-            onChange: setRegion,
-            options: [
-              { value: "all", label: "All regions" },
-              ...regions.map((value) => ({ value, label: value })),
-            ],
-          },
+          { label: "Kind", value: kind, onChange: setKind, options: [
+            { value: "all", label: "All kinds" }, { value: "NPC", label: "People" },
+            { value: "Creature", label: "Creatures" },
+          ] },
+          { label: "Region", value: region, onChange: setRegion, options: [
+            { value: "all", label: "All regions" },
+            ...regions.map((value) => ({ value, label: value })),
+          ] },
         ]}
         onQueryChange={(value) => setQuery(value.slice(0, 80))}
-        placeholder="Search names, roles, places, or backgrounds"
-        query={query}
+        placeholder="Search names, roles, places, or backgrounds" query={query}
         searchLabel="Search people and creatures"
       />
-      {people.length ? (
-        <div className="world-person-grid">
-          {people.map((person) => (
-            <WorldPersonCard
-              key={person.id}
-              onOpenLocation={onOpenLocation}
-              person={person}
-              selected={selectedPersonId === person.id}
-            />
-          ))}
+      {selectedPerson ? (
+        <div className="world-person-workspace">
+          <nav aria-label="People and creatures" className="world-person-list">
+            {people.map((person) => (
+              <button aria-pressed={selectedPerson.id === person.id} className="world-person-list__item"
+                data-selected={selectedPerson.id === person.id ? "true" : undefined} key={person.id}
+                onClick={() => onPersonSelect(person.id)} type="button">
+                <span className="world-person-card__portrait">
+                  <MediaImage fallback={<span aria-hidden="true">{person.initials}</span>} media={person.portrait} />
+                </span>
+                <span><strong>{person.name}</strong><small>{person.kind} · {person.location.name}</small></span>
+                <Icon name="ChevronRight" size={16} />
+              </button>
+            ))}
+          </nav>
+          <WorldPersonDetail onOpenLocation={onOpenLocation} person={selectedPerson} />
         </div>
       ) : (
         <div className="directory-empty">

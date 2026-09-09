@@ -53,6 +53,7 @@ export function WorldView({
   onRetryMapScope,
   onLocationSectionChange,
   onFactionSelect,
+  onPersonSelect,
   factionDirectoryBusy,
   onLoadMoreFactions,
   onQueryChange,
@@ -88,6 +89,7 @@ export function WorldView({
   onRetryMapScope: () => void;
   onLocationSectionChange: (section: LocationSectionId) => void;
   onFactionSelect: (factionId: string) => void;
+  onPersonSelect: (personId: string) => void;
   factionDirectoryBusy?: boolean;
   onLoadMoreFactions?: () => void;
   onQueryChange: (query: string) => void;
@@ -136,6 +138,7 @@ export function WorldView({
         />
       ) : section === "people" ? (
         <WorldPeopleDirectory
+          onPersonSelect={onPersonSelect}
           onOpenLocation={(locationId) => {
             onLocationSelect(locationId);
             onLocationSectionChange("people");

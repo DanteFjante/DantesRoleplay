@@ -116,6 +116,52 @@ public sealed class ApplicationMechanicExecutionTests : IDisposable
     }
 
     [Fact]
+    public async Task Component_filtered_application_directories_cross_the_legacy_limit_and_mark_depth()
+    {
+        await using var db = _fixture.CreateContext();
+        var applications = new SqliteApplicationRegistry(db);
+        var app = ApplicationIdentifier.Parse("fixture");
+        var revision = applications.Register(new(app, "Fixture", "Filtered directory fixture.", []));
+        var stateSpaces = new SqliteStateSpaceRegistry(db, applications);
+        stateSpaces.Create(new("space", revision, new string('A', 64)));
+        var schemas = new BoundedJsonSchemaValidator();
+        var types = new SqliteComponentTypeRegistry(db, schemas);
+        var marker = types.Define(new(app, "fixture.marker", "{}"));
+        var store = new SqliteEntityComponentStore(db, types, schemas);
+        var edges = new SqliteStateSpaceEdgeStore(db, stateSpaces);
+        await store.CreateEntityAsync("space", "root", "Root");
+        for (var index = 0; index <= ProjectionLimits.MaxContainedNodes; index++)
+        {
+            var id = $"entry.{index:D3}";
+            await store.CreateEntityAsync("space", id, $"Entry {index:D3}");
+            await store.AddComponentAsync(Write(id, marker, "{}"));
+            await edges.MoveContainmentAsync("space", id, "root", "entry", 0);
+        }
+        await store.CreateEntityAsync("space", "deeper", "Deeper");
+        await edges.MoveContainmentAsync("space", "deeper", "entry.000", "inside", 0);
+
+        var requirements = new MechanicRequirements
+        {
+            Roles = new Dictionary<string, RoleRequirement>
+            {
+                ["world"] = new([], IncludeContents: true, ContentsDepth: 1,
+                    ContentComponentIds: ["marker"], FilterContentsByComponents: true,
+                    ContentFilterComponentIds: ["marker"])
+            }
+        };
+        var mapping = new ApplicationMechanicProjectionMapping(
+            new Dictionary<string, EcsComponentReference> { ["marker"] = Reference(marker) },
+            new Dictionary<string, string>());
+        var result = await new ApplicationMechanicProjectionResolver(db, stateSpaces).ResolveAsync(
+            "space", app, requirements, mapping, new Dictionary<string, string> { ["world"] = "root" }, "{}", 1);
+
+        Assert.True(result.Ok, string.Join("; ", result.Problems));
+        Assert.Equal(ProjectionLimits.MaxContainedNodes + 1, result.Projection!.Roles["world"].Contains!.Count);
+        Assert.True(result.Projection.Roles["world"].Contains!.Single(value => value.Id == "entry.000")
+            .DeeperContentsOmitted);
+    }
+
+    [Fact]
     public async Task Exact_catalog_evaluator_invokes_all_ratified_mechanics_with_parity()
     {
         var app = ApplicationIdentifier.Parse("fixture");

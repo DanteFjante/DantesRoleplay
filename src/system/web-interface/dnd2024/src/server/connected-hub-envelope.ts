@@ -700,6 +700,7 @@ export function connectedCampaignToHubEnvelope(
       const label = hasLocationDirectory ? entry.id : `live-location-${index + 1}`;
       return {
         id: entry.id ?? label,
+        parentId: entry.containerId,
         playerKnown: true,
         name: entry.name,
         region,
@@ -1123,6 +1124,13 @@ export function connectedCampaignToHubEnvelope(
       locations: worldLocations,
       locationScopes: locationScopeRecords,
       people: worldPeople,
+      ...(liveWorldDirectory ? {
+        peopleDirectory: {
+          totalCount: worldPeople.length,
+          hierarchyComplete: liveWorldDirectory.peopleHierarchyComplete ?? true,
+          sourceRevisionFingerprint: liveWorldDirectory.peopleSourceRevisionFingerprint ?? null,
+        },
+      } : {}),
       factions: worldFactions,
       lore: knowledgeLore,
     },
@@ -1224,7 +1232,11 @@ export function connectedCampaignToDeferredHubUpdate(
     case "people":
       return {
         section,
-        world: { locations: projected.world.locations, people: projected.world.people },
+        world: {
+          locations: projected.world.locations,
+          people: projected.world.people,
+          peopleDirectory: projected.world.peopleDirectory,
+        },
       };
     case "current":
       return {

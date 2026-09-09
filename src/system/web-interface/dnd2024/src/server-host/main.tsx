@@ -281,7 +281,7 @@ async function readFactionObjectPage(
       !latest.worldDirectory?.factions.some((previous) => previous.id === item.id)),
   ];
   connectedSources.set(key, {
-    ...latest, worldDirectory: { people: latest.worldDirectory?.people ?? [], factions,
+    ...latest, worldDirectory: { ...latest.worldDirectory, people: latest.worldDirectory?.people ?? [], factions,
       holdings: latest.worldDirectory?.holdings ?? [] },
   });
   const projected = connectedCampaignToHubEnvelope({ ...source,
@@ -546,6 +546,7 @@ function subscribeChanges(envelope: ReadyHubEnvelope) {
       if (!consumers.known) { invalidate("unknown-object"); return; }
       tableResources.invalidateObject(notice.object.qualifiedId);
       if (consumers.character) characterResources.invalidateObject(notice.object.qualifiedId);
+      if (consumers.world) worldResources.invalidateAll("object-change");
       currentViewResources.invalidateObject(notice.object.qualifiedId);
       window.dispatchEvent(new CustomEvent("dnd2024-object-changed", { detail: notice }));
     },

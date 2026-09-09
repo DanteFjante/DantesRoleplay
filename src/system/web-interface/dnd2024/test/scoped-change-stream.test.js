@@ -17,10 +17,10 @@ const notice = (cursor, qualifiedId = "dnd2024.object.inventory-item-instance-re
 test("every Character and Item registered object reaches its browser consumers", () => {
   for (const id of ["instance-records", "definition-records", "recipe-record", "activity-record"]) {
     assert.deepEqual(objectConsumers(`dnd2024.object.inventory-item-${id}`),
-      { item: true, character: true, known: true });
+      { item: true, character: true, world: true, known: true });
   }
   assert.deepEqual(objectConsumers("dnd2024.object.character-dossier-records"),
-    { item: false, character: true, known: true });
+    { item: false, character: true, world: true, known: true });
   assert.equal(objectConsumers("future.object").known, false);
 });
 

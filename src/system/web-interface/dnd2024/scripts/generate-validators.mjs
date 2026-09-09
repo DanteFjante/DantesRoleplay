@@ -117,6 +117,13 @@ const targets = [
     label: "world location scope page",
     contractOnly: true,
   },
+  {
+    name: "world-people-holdings-page-contract",
+    source: "world/dnd2024.query.world-people-holdings-page.json",
+    output: "world-people-holdings-page-contract.js",
+    label: "world people and holdings page",
+    contractOnly: true,
+  },
 ];
 
 function usesVersionTwo(value) {

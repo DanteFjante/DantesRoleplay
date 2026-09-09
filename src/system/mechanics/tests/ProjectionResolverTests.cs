@@ -300,6 +300,26 @@ public sealed class ProjectionResolverTests : IDisposable
     }
 
     [Fact]
+    public async Task A_depth_boundary_is_explicit_in_the_projected_javascript_shape()
+    {
+        await using var db = _fixture.CreateContext();
+        var world = await WorldAsync(db);
+        await world.CreateEntityAsync("First", "first");
+        await world.CreateEntityAsync("Second", "second");
+        await world.MoveAsync("first", "orban", "inside");
+        await world.MoveAsync("second", "first", "inside");
+
+        var result = await new ProjectionResolver(db).ResolveAsync(
+            Requires("""{"roles":{"subject":{"components":[],"includeContents":true,"contentsDepth":1}}}"""),
+            new Dictionary<string, string> { ["subject"] = "orban" });
+
+        Assert.True(result.Ok, string.Join("; ", result.Problems));
+        var first = Assert.Single(result.Projection!.Roles["subject"].Contains!);
+        Assert.True(first.DeeperContentsOmitted);
+        Assert.Null(first.Contains);
+    }
+
+    [Fact]
     public async Task Contents_can_filter_large_unrelated_siblings_by_declared_components()
     {
         await using var db = _fixture.CreateContext();

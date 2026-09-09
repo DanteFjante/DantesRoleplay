@@ -427,7 +427,7 @@ public sealed class MechanicStoreTests : IDisposable
             {"roles":{
               "container":{"components":[],"contentsDepth":2},
               "empty":{"components":[],"contentComponentIds":[]},
-              "deep":{"components":[],"includeContents":true,"contentsDepth":5},
+              "deep":{"components":[],"includeContents":true,"contentsDepth":17},
               "nested":{"components":[],"includeContents":true,"contentComponentIds":["stats","stats"]},
               "filtered":{"components":[],"includeContents":true,"filterContentsByComponents":true},
               "emptyFilter":{"components":[],"includeContents":true,"contentComponentIds":["stats"],"filterContentsByComponents":true,"contentFilterComponentIds":[]},
@@ -439,7 +439,7 @@ public sealed class MechanicStoreTests : IDisposable
         var declaration = checks.Single(check => check.Name == "projection-declaration");
         Assert.False(declaration.Passed);
         Assert.Contains("includeContents", declaration.Detail);
-        Assert.Contains("between 1 and 4", declaration.Detail);
+        Assert.Contains("between 1 and 16", declaration.Detail);
         Assert.Contains("distinct", declaration.Detail);
         Assert.Contains("filterContentsByComponents", declaration.Detail);
         Assert.Contains("contentFilterComponentIds", declaration.Detail);

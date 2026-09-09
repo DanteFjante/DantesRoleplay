@@ -127,7 +127,7 @@
       { "feature": "inventory-and-items", "current": "inventory item details/uses/recipes version 1", "target": "reuse version 1; containment remains generic and mutations remain mechanics" },
       { "feature": "factions", "current": "dnd2024.object.faction-directory-page v1", "target": "reuse version 1" },
       { "feature": "board", "current": "encounter board and draft version 1", "target": "reuse version 1; do not redesign the protocol" },
-      { "feature": "world-context-and-directories", "current": "registered campaign-context, world-campaign-directory, location-scope, and people-holdings queries", "target": "retain the first registered versions until a closed response-shape change requires a new version" }
+      { "feature": "world-context-and-directories", "current": "registered campaign-context, world-campaign-directory, location-scope, legacy people-holdings, and source-bound people-holdings-page queries", "target": "use the R12 paged people/holdings contract; retain the fixed whole-World query only as an upgrade-window fallback" }
     ]
   },
   "fixtures": {
@@ -331,15 +331,15 @@
     {
       "id": "people-and-holdings",
       "screens": ["World People", "location People & Creatures", "location Holdings"],
-      "currentOwner": ["dnd2024.query.world-people-holdings", "declared containment and component identity", "authorized media batch", "campaign knowledge for Actors"],
-      "browserAssembly": "WorldResourceOwner loads the bounded DM projection and one authorized media batch; Actor People reuse the seat-authorized knowledge resource",
+      "currentOwner": ["dnd2024.query.world-people-holdings-page", "dnd2024.query.world-people-holdings compatibility fallback", "declared containment and component identity", "authorized media batch", "campaign knowledge for Actors"],
+      "browserAssembly": "WorldResourceOwner loads every source-bound DM directory page, merges its location paths, and caches the responsive list/detail view; Actor People reuse the seat-authorized knowledge resource",
       "authority": "SQLite containment, location/person/holding components, campaign knowledge, and media grants",
       "audience": { "game-master": "full", "gm-player-preview": "forbidden", "actor": "knowledge-projected", "unbound": "forbidden" },
       "editCapability": "read-only; changes require typed world/social mechanics",
-      "completeness": "the DM projection is a complete fixed 200-record hierarchy or fails closed; Actor People contain only explicitly authorized knowledge and cannot expose DM holdings",
-      "currentCost": "DM People and Holdings use one exact read-model response plus one bounded media batch; Actor People reuse one knowledge response plus one bounded media batch.",
-      "target": { "slice": "W07", "owner": "dnd2024.query.world-people-holdings for DM and authorized campaign knowledge for Actors", "pageSize": 200, "maximumPages": 1, "maximumRecords": 200 },
-      "gates": { "requests": 2, "sqlStatements": 16, "responseBytes": 524288, "retainedResponseBytes": 2097152 },
+      "completeness": "DM pages are bound to the first source revision, reject repeated cursors and duplicate records, preserve every returned location ancestry path, and report when containment extends beyond the 16-level host boundary; Actor People contain only explicitly authorized knowledge and cannot expose DM holdings",
+      "currentCost": "DM People and Holdings use pages of 50 records up to 2,000 combined records and one bounded media batch per page; validated results are retained in the independent World information cache. Actor People reuse one knowledge response plus one bounded media batch.",
+      "target": { "slice": "R12", "owner": "dnd2024.query.world-people-holdings-page for DM, compatibility fallback during upgrade, and authorized campaign knowledge for Actors", "pageSize": 50, "maximumPages": 40, "maximumRecords": 2000 },
+      "gates": { "requests": 2, "sqlStatements": 16, "responseBytes": 1200000, "retainedResponseBytes": 8388608 },
       "fixtureCases": ["small", "large", "unauthorized"]
     },
     {

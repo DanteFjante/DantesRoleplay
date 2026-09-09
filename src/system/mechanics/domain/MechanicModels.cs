@@ -619,8 +619,12 @@ public sealed record RelationshipComponentRequirement(
 /// <summary>Generic containment-projection limits; they carry no game meaning.</summary>
 public static class ProjectionLimits
 {
-    public const int MaxContentsDepth = 4;
+    // Directory projections may page a deep authored hierarchy, but the JavaScript sandbox must
+    // still receive one finite snapshot. Component-filtered directories may use the larger bound;
+    // unfiltered mechanics retain the established 200-node ceiling.
+    public const int MaxContentsDepth = 16;
     public const int MaxContainedNodes = 200;
+    public const int MaxFilteredContainedNodes = 4_096;
     public const int MaxContentsRelevantToRoles = 12;
     public const int MaxContentComponentIds = 12;
     public const int MaxRelationshipComponentDeclarations = 12;
@@ -856,7 +860,9 @@ public sealed record ContainedProjection(
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     IReadOnlyDictionary<string, string>? Components = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    IReadOnlyList<ContainedProjection>? Contains = null);
+    IReadOnlyList<ContainedProjection>? Contains = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    bool DeeperContentsOmitted = false);
 
 public sealed record ReferencedEntityProjection(
     string Id,

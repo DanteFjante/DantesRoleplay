@@ -4382,6 +4382,87 @@ strong {
   gap: 0.75rem;
 }
 
+.directory-completeness-notice {
+  margin: 0 0 14px;
+  padding: 11px 13px;
+  border: 1px solid rgba(201, 155, 82, 0.28);
+  border-radius: 9px;
+  background: rgba(201, 155, 82, 0.08);
+  color: var(--muted);
+  font-size: 0.68rem;
+  line-height: 1.5;
+}
+
+.world-person-workspace {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.7fr) minmax(0, 1.3fr);
+  align-items: start;
+  gap: 14px;
+}
+
+.world-person-list {
+  display: grid;
+  gap: 7px;
+  max-height: min(68vh, 720px);
+  overflow: auto;
+  padding: 2px;
+}
+
+.world-person-list__item {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.world-person-list__item:hover,
+.world-person-list__item:focus-visible,
+.world-person-list__item[data-selected="true"] {
+  border-color: rgba(201, 155, 82, 0.52);
+  background: rgba(201, 155, 82, 0.1);
+}
+
+.world-person-list__item:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 2px;
+}
+
+.world-person-list__item .world-person-card__portrait {
+  width: 38px;
+  height: 38px;
+}
+
+.world-person-list__item > span:nth-child(2) {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.world-person-list__item strong,
+.world-person-list__item small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.world-person-list__item small {
+  color: var(--quiet);
+  font-size: 0.58rem;
+}
+
+.world-person-detail {
+  position: sticky;
+  top: 12px;
+}
+
 .installed-extension-card,
 .installed-content-list,
 .installed-content-record {
@@ -5866,6 +5947,18 @@ button.campaign-link:hover {
   .lore-grid,
   .faction-card__columns {
     grid-template-columns: 1fr;
+  }
+
+  .world-person-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .world-person-list {
+    max-height: 260px;
+  }
+
+  .world-person-detail {
+    position: static;
   }
 
   .world-directory-search {

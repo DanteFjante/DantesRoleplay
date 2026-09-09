@@ -222,6 +222,8 @@ public sealed class ApplicationMechanicProjectionResolver(
                 requirement.IncludeContents ? BuildContents(entityId, requirement.ContentsDepth ?? 1,
                     requirement.ContentComponentIds ?? [], requirement.ContentsDepth is not null
                         || (requirement.ContentComponentIds?.Count ?? 0) > 0,
+                    requirement.FilterContentsByComponents
+                        ? ProjectionLimits.MaxFilteredContainedNodes : ProjectionLimits.MaxContainedNodes,
                     RelevantContentIds(requirement, needed),
                     requirement.FilterContentsByComponents,
                     requirement.ContentFilterComponentIds ?? requirement.ContentComponentIds ?? [],
@@ -397,6 +399,7 @@ public sealed class ApplicationMechanicProjectionResolver(
         int depth,
         IReadOnlyList<string> allowed,
         bool enforceNodeLimit,
+        int maximumContainedNodes,
         IReadOnlySet<string>? relevant,
         bool filterByComponents,
         IReadOnlyList<string> filterComponents,
@@ -418,6 +421,8 @@ public sealed class ApplicationMechanicProjectionResolver(
                 if (aborted) return [];
                 if (!visited.Add(child.Id)) { problems.Add($"CONTAINMENT_PROJECTION_CYCLE: Role '{role}' reaches '{child.Id}'."); aborted = true; return []; }
                 var nested = remaining > 1 ? Build(child.Id, remaining - 1) : null;
+                var deeperContentsOmitted = remaining == 1 &&
+                    contents.TryGetValue(child.Id, out var omittedChildren) && omittedChildren.Count > 0;
                 visited.Remove(child.Id);
                 if (aborted) return [];
 
@@ -425,7 +430,8 @@ public sealed class ApplicationMechanicProjectionResolver(
                 // still leads to something relevant. Dropping the rest preserves every surviving
                 // node's depth and slot, so a mechanic's containment test reads exactly as before --
                 // it just is not handed the parts of the world it never asked about.
-                if (relevant is not null && !relevant.Contains(child.Id) && (nested is null || nested.Count == 0))
+                if (relevant is not null && !relevant.Contains(child.Id) &&
+                    (nested is null || nested.Count == 0))
                     continue;
 
                 IReadOnlyDictionary<string, string>? selected = allowed.Count == 0 ? null
@@ -435,19 +441,19 @@ public sealed class ApplicationMechanicProjectionResolver(
                 if (filterByComponents &&
                     !(components.TryGetValue(child.Id, out var filterValues) &&
                       filterValues.Keys.Any(value => filterComponents.Contains(value, StringComparer.Ordinal))) &&
-                    (nested is null || nested.Count == 0))
+                    (nested is null || nested.Count == 0) && !deeperContentsOmitted)
                     continue;
 
                 count++;
-                if (enforceNodeLimit && count > ProjectionLimits.MaxContainedNodes)
+                if (enforceNodeLimit && count > maximumContainedNodes)
                 {
                     problems.Add($"CONTAINMENT_PROJECTION_LIMIT: Role '{role}' projects more than " +
-                        $"{ProjectionLimits.MaxContainedNodes} contained nodes. Declare " +
+                        $"{maximumContainedNodes} contained nodes. Declare " +
                         "'contentsRelevantToRoles' on this role to project only the paths it references.");
                     aborted = true;
                     return [];
                 }
-                result.Add(new(child.Id, child.Name, child.Slot, selected, nested));
+                result.Add(new(child.Id, child.Name, child.Slot, selected, nested, deeperContentsOmitted));
             }
             return result;
         }

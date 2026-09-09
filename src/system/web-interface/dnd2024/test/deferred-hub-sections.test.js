@@ -4,7 +4,7 @@ import { readDeferredHubSection } from "../src/server/game-server-context.js";
 import { contract as worldCampaignDirectoryContract } from "../src/server/world-campaign-directory-contract.js";
 import { contract as worldLocationScopeContract } from "../src/server/world-location-scope-contract.js";
 import { contract as worldLocationScopePageContract } from "../src/server/world-location-scope-page-contract.js";
-import { contract as worldPeopleHoldingsContract } from "../src/server/world-people-holdings-contract.js";
+import { contract as worldPeopleHoldingsPageContract } from "../src/server/world-people-holdings-page-contract.js";
 import { contract as currentSceneContract } from "../src/server/current-scene-contract.js";
 import { contract as campaignResumeContract } from "../src/server/campaign-resume-contract.js";
 
@@ -210,7 +210,7 @@ test("context discovery follows every registered continuation without hydrating 
     !target.pathname.includes("/components/")));
 });
 
-test("DM people and holdings use one bounded projection and one authorized media batch", async () => {
+test("DM people and holdings use one source-bound page and one authorized media batch", async () => {
   const calls = [];
   const result = await readDeferredHubSection({
     origin, section: "people", source: { ...source, locationDirectory: [{ id: "location.caldris.one", name: "Place" }] },
@@ -222,18 +222,19 @@ test("DM people and holdings use one bounded projection and one authorized media
       }
       return response({
         applicationId: "dnd2024", stateSpaceId: "state.fixture",
-        qualifiedQueryId: worldPeopleHoldingsContract.id,
+        qualifiedQueryId: worldPeopleHoldingsPageContract.id,
         stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
-        outputSchemaHash: worldPeopleHoldingsContract.outputSchemaHash,
+        outputSchemaHash: worldPeopleHoldingsPageContract.outputSchemaHash,
         resultFingerprint: "3".repeat(64), sourceRevisionFingerprint: "4".repeat(64),
         data: {
           version: 1, state: "ready", world: { id: "world.caldris", name: "Caldris" },
           locations: [{ id: "place-azure", name: "Azure Reach", parentId: "world.caldris",
-            kind: "region", status: "active", summary: "A coast." }],
+            kind: "region" }],
           people: [{ id: "subject-9", name: "Person", locationId: "place-azure", kind: "NPC",
             motive: null }],
           holdings: [{ id: "plain-identity", name: "Rope", locationId: "place-azure", kind: "Item" }],
-          limits: { contentsDepth: 4, recordCount: 200, complete: true },
+          totalCount: 2, complete: true, nextCursor: null,
+          limits: { contentsDepth: 16, recordCount: 2000, pageSize: 50, hierarchyComplete: true },
         },
       });
     },
@@ -242,7 +243,7 @@ test("DM people and holdings use one bounded projection and one authorized media
   assert.deepEqual(result.worldDirectory.holdings.map((holding) => holding.id), ["plain-identity"]);
   assert.equal(calls.length, 2);
   assert.match(calls[0].pathname,
-    /entities\/world\.caldris\/read-models\/dnd2024\.query\.world-people-holdings$/u);
+    /entities\/world\.caldris\/read-models\/dnd2024\.query\.world-people-holdings-page$/u);
   assert.ok(calls.every((target) => !/\/(entities|containments)$/u.test(target.pathname) &&
     !target.pathname.includes("/components/") && !target.pathname.includes("relationships") &&
     !target.pathname.endsWith("/media")));
@@ -275,9 +276,9 @@ test("Actor People reuse only known lore and attach permitted media in one batch
 test("empty DM People is distinct from a denied directory", async () => {
   const envelope = (data) => ({
     applicationId: "dnd2024", stateSpaceId: "state.fixture",
-    qualifiedQueryId: worldPeopleHoldingsContract.id,
+    qualifiedQueryId: worldPeopleHoldingsPageContract.id,
     stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
-    outputSchemaHash: worldPeopleHoldingsContract.outputSchemaHash,
+    outputSchemaHash: worldPeopleHoldingsPageContract.outputSchemaHash,
     resultFingerprint: "3".repeat(64), sourceRevisionFingerprint: "4".repeat(64), data,
   });
   const empty = await readDeferredHubSection({
@@ -285,7 +286,8 @@ test("empty DM People is distinct from a denied directory", async () => {
     fetchImpl: async () => response(envelope({
       version: 1, state: "ready", world: { id: "world.caldris", name: "Caldris" },
       locations: [], people: [], holdings: [],
-      limits: { contentsDepth: 4, recordCount: 200, complete: true },
+      totalCount: 0, complete: true, nextCursor: null,
+      limits: { contentsDepth: 16, recordCount: 2000, pageSize: 50, hierarchyComplete: true },
     })),
   });
   assert.deepEqual(empty.worldDirectory.people, []);
@@ -295,7 +297,8 @@ test("empty DM People is distinct from a denied directory", async () => {
     origin, section: "people", source,
     fetchImpl: async () => response(envelope({
       version: 1, state: "forbidden", world: null, locations: [], people: [], holdings: [],
-      limits: { contentsDepth: 4, recordCount: 200, complete: true },
+      totalCount: 0, complete: true, nextCursor: null,
+      limits: { contentsDepth: 16, recordCount: 2000, pageSize: 50, hierarchyComplete: true },
     })),
   }), /unavailable to this audience/u);
 });

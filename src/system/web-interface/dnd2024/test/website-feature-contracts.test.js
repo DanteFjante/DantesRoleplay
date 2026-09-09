@@ -122,6 +122,21 @@ test("W07 registers the component-owned People and Holdings projection", async (
   assert.equal(query?.outputSchema?.properties?.holdings?.maxItems, 200);
 });
 
+test("R12 registers source-bound complete People and Holdings paging", async () => {
+  const query = await findCatalogRecord(catalogQueryRoot, "dnd2024.query.world-people-holdings-page");
+  assert.equal(query?.status, "active");
+  assert.equal(query?.executor, "mechanic-projection");
+  assert.equal(query?.exposure, "binding-only");
+  assert.deepEqual(query?.roles, { world: "The exact selected World." });
+  assert.equal(query?.outputSchema?.properties?.limits?.properties?.contentsDepth?.const, 16);
+  assert.equal(query?.outputSchema?.properties?.limits?.properties?.recordCount?.const, 2000);
+  assert.equal(query?.outputSchema?.properties?.limits?.properties?.pageSize?.const, 50);
+  assert.equal(query?.outputSchema?.properties?.totalCount?.maximum, 2000);
+  assert.equal(query?.inputSchema?.properties?.offset?.multipleOf, 50);
+  assert.equal(query?.inputSchema?.properties?.expectedSourceRevision?.anyOf?.[1]?.pattern,
+    "^[0-9A-F]{64}$");
+});
+
 test("W08 composes Current View from the registered resume, scene, and board owners", async () => {
   const feature = contract.features.find(({ id }) => id === "current-and-play");
   assert.equal(feature?.target?.slice, "W08");

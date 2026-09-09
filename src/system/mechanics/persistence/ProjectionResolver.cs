@@ -136,6 +136,7 @@ public sealed class ProjectionResolver(DantesRoleplayDbContext db) : IProjection
 
         var contentsByContainer = new Dictionary<string, List<ContainmentNode>>(StringComparer.Ordinal);
         var descendantIds = new HashSet<string>(StringComparer.Ordinal);
+        var boundaryContainerIds = new HashSet<string>(StringComparer.Ordinal);
         var frontier = requestedContentsDepth;
 
         // Each level is a shared set query. The fixed, generic traversal bound keeps mechanics
@@ -170,9 +171,27 @@ public sealed class ProjectionResolver(DantesRoleplayDbContext db) : IProjection
                     if (!next.TryGetValue(row.Id, out var known) || remaining > known)
                         next[row.Id] = remaining;
                 }
+                else
+                {
+                    boundaryContainerIds.Add(row.Id);
+                }
             }
             frontier = next;
         }
+
+        var containersWithOmittedChildren = boundaryContainerIds.Count == 0
+            ? new HashSet<string>(StringComparer.Ordinal)
+            : (await _db.Containments
+                .AsNoTracking()
+                .Where(containment => boundaryContainerIds.Contains(containment.ContainerId))
+                .Join(
+                    _db.Entities.Where(entity => entity.DeletedAt == null),
+                    containment => containment.ContainedId,
+                    entity => entity.Id,
+                    (containment, _) => containment.ContainerId)
+                .Distinct()
+                .ToListAsync(cancellationToken))
+                .ToHashSet(StringComparer.Ordinal);
 
         var contentComponentIds = requirements.Roles.Values
             .SelectMany(requirement => requirement.ContentComponentIds ?? [])
@@ -367,10 +386,12 @@ public sealed class ProjectionResolver(DantesRoleplayDbContext db) : IProjection
                 requirement.IncludeContents
                     ? BuildContainedProjection(entityId, requirement.ContentsDepth ?? 1,
                         requirement.ContentComponentIds ?? [], requirement.ContentsDepth is not null || (requirement.ContentComponentIds?.Count ?? 0) > 0,
+                        requirement.FilterContentsByComponents
+                            ? ProjectionLimits.MaxFilteredContainedNodes : ProjectionLimits.MaxContainedNodes,
                         RelevantContentIds(requirement, needed),
                         requirement.FilterContentsByComponents,
                         requirement.ContentFilterComponentIds ?? requirement.ContentComponentIds ?? [],
-                        contentsByContainer, contentComponentsByEntity, role, problems)
+                        contentsByContainer, containersWithOmittedChildren, contentComponentsByEntity, role, problems)
                     : null,
                 requirement.IncludeRelationships
                     ? relationships
@@ -456,10 +477,12 @@ public sealed class ProjectionResolver(DantesRoleplayDbContext db) : IProjection
         int depth,
         IReadOnlyList<string> allowedComponentIds,
         bool enforceNodeLimit,
+        int maximumContainedNodes,
         IReadOnlySet<string>? relevant,
         bool filterByComponents,
         IReadOnlyList<string> filterComponentIds,
         IReadOnlyDictionary<string, List<ContainmentNode>> contentsByContainer,
+        IReadOnlySet<string> containersWithOmittedChildren,
         IReadOnlyDictionary<string, Dictionary<string, string>> componentsByEntity,
         string role,
         List<string> problems)
@@ -483,12 +506,15 @@ public sealed class ProjectionResolver(DantesRoleplayDbContext db) : IProjection
                 }
 
                 var nested = remainingDepth > 1 ? Build(child.Id, remainingDepth - 1) : null;
+                var deeperContentsOmitted = remainingDepth == 1 &&
+                    containersWithOmittedChildren.Contains(child.Id);
                 visited.Remove(child.Id);
                 if (problems.Count > 0) return [];
 
                 // A declared relevance filter keeps a node only when it is itself relevant or still
                 // leads to something relevant. Surviving nodes keep their exact depth and slot.
-                if (relevant is not null && !relevant.Contains(child.Id) && (nested is null || nested.Count == 0))
+                if (relevant is not null && !relevant.Contains(child.Id) &&
+                    (nested is null || nested.Count == 0))
                     continue;
 
                 IReadOnlyDictionary<string, string>? declaredComponents = null;
@@ -503,19 +529,20 @@ public sealed class ProjectionResolver(DantesRoleplayDbContext db) : IProjection
                 if (filterByComponents &&
                     !(componentsByEntity.TryGetValue(child.Id, out var filterValues) &&
                       filterValues.Keys.Any(value => filterComponentIds.Contains(value, StringComparer.Ordinal))) &&
-                    (nested is null || nested.Count == 0))
+                    (nested is null || nested.Count == 0) && !deeperContentsOmitted)
                     continue;
 
                 count++;
-                if (enforceNodeLimit && count > ProjectionLimits.MaxContainedNodes)
+                if (enforceNodeLimit && count > maximumContainedNodes)
                 {
                     problems.Add($"CONTAINMENT_PROJECTION_LIMIT: Role '{role}' projects more than " +
-                        $"{ProjectionLimits.MaxContainedNodes} contained entities. Declare " +
+                        $"{maximumContainedNodes} contained entities. Declare " +
                         "'contentsRelevantToRoles' on this role to project only the paths it references.");
                     return [];
                 }
 
-                projection.Add(new ContainedProjection(child.Id, child.Name, child.Slot, declaredComponents, nested));
+                projection.Add(new ContainedProjection(
+                    child.Id, child.Name, child.Slot, declaredComponents, nested, deeperContentsOmitted));
             }
             return projection;
         }

@@ -70,6 +70,7 @@ export type LocationHolding = {
 export type WorldLocation = {
   id: string;
   name: string;
+  parentId?: string | null;
   region: string;
   kind: string;
   status: string;
@@ -261,6 +262,11 @@ export type WorldReadModel = {
   locations: WorldLocation[];
   locationScopes: WorldLocationScope[];
   people: WorldPersonDirectoryEntry[];
+  peopleDirectory?: {
+    totalCount: number;
+    hierarchyComplete: boolean;
+    sourceRevisionFingerprint: string | null;
+  };
   factions: WorldFaction[];
   factionDirectory?: {
     totalCount: number;
@@ -956,7 +962,7 @@ export type DeferredHubUpdate =
         "currentLocationId" | "map" | "mapOwnerId" | "rootMapId" | "maps" | "regions" | "facts" | "locations" | "locationScopes">;
       campaign: Pick<CampaignReadModel, "mapOverlays">;
     }
-  | { section: "people"; world: Pick<WorldReadModel, "locations" | "people"> }
+  | { section: "people"; world: Pick<WorldReadModel, "locations" | "people" | "peopleDirectory"> }
   | {
       section: "current";
       currentSituation: CurrentSituationReadModel;
@@ -1175,6 +1181,9 @@ export type ConnectedCampaignEnvelope = {
     media?: EntityVisualMedia;
   }>;
   worldDirectory?: {
+    peopleHierarchyComplete?: boolean;
+    directoryRecordCount?: number;
+    peopleSourceRevisionFingerprint?: string | null;
     people: Array<{
       id: string;
       name: string;
