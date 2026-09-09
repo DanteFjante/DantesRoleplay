@@ -231,6 +231,12 @@ public sealed class ActivatedApplicationCatalogTests : IDisposable
         var failure = Assert.IsType<PublicApplicationCatalogFailure>(failed.LastFailure(app));
         Assert.Equal("CATALOG_MATERIALIZATION_FAILED", failure.Code);
         Assert.DoesNotContain(nameof(IOException), failure.Message, StringComparison.Ordinal);
+
+        var policyFailed = new ActivatedApplicationCatalogProvider(
+            new ThrowingCatalogPolicy(), Materializer(),
+            new CatalogCursorCodec(Encoding.UTF8.GetBytes("unexpected-policy-failure-signing-key")));
+        Assert.False(policyFailed.TryGet(app, out _));
+        Assert.Equal("CATALOG_MATERIALIZATION_FAILED", policyFailed.LastFailure(app)?.Code);
     }
 
     [Fact]
@@ -638,5 +644,11 @@ public sealed class ActivatedApplicationCatalogTests : IDisposable
 
         public ProjectionImpactGraph GetImpactGraph(ApplicationIdentifier owner) =>
             throw new NotSupportedException();
+    }
+
+    private sealed class ThrowingCatalogPolicy : IPublicApplicationCatalogPolicy
+    {
+        public bool IsPublished(ApplicationIdentifier applicationId) =>
+            throw new IOException("fixture policy dependency failure");
     }
 }

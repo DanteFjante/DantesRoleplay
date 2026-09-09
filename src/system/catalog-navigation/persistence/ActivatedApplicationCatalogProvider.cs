@@ -558,14 +558,14 @@ public sealed class ActivatedApplicationCatalogProvider(
     public bool TryGet(ApplicationIdentifier applicationId, out ICatalogNavigator navigator)
     {
         ArgumentNullException.ThrowIfNull(applicationId);
-        if (!policy.IsPublished(applicationId))
-        {
-            navigator = null!;
-            return false;
-        }
-        if (_cache.TryGetValue(applicationId, out navigator!)) return true;
         try
         {
+            if (!policy.IsPublished(applicationId))
+            {
+                navigator = null!;
+                return false;
+            }
+            if (_cache.TryGetValue(applicationId, out navigator!)) return true;
             var snapshot = materializer.BuildFeatureSnapshot(applicationId);
             navigator = new InMemoryCatalogNavigator(snapshot.Manifest, cursors, snapshot.Resolution);
             _cache.Add(applicationId, navigator);
