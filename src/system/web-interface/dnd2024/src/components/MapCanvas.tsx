@@ -65,6 +65,7 @@ export function MapCanvas({
   const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
   const [loadedImageUrl, setLoadedImageUrl] = useState<string | null>(null);
   const [imageAttempt, setImageAttempt] = useState(0);
+  const centeredSelection = useRef("");
   const imageFailed = !!map.base && failedImageUrl === map.base.imageUrl;
   const imageLoading = !!map.base && !imageFailed && loadedImageUrl !== map.base.imageUrl;
 
@@ -73,6 +74,20 @@ export function MapCanvas({
       markMapReady(map.id);
     }
   }, [imageFailed, loadedImageUrl, map.base?.imageUrl, map.baseState, map.id, readyToReport]);
+
+  useEffect(() => {
+    const key = `${map.id}:${selectedFeatureId}:${loadedImageUrl}`;
+    const feature = map.features.find((candidate) => candidate.id === selectedFeatureId);
+    const element = viewportRef.current;
+    const stage = stageRef.current;
+    if (!feature || !element || !stage || imageLoading || imageFailed || centeredSelection.current === key) return;
+    centeredSelection.current = key;
+    updateViewport({
+      ...viewport,
+      x: element.clientWidth / 2 - feature.geometry.x / map.coordinateSpace.width * stage.offsetWidth * viewport.zoom,
+      y: element.clientHeight / 2 - feature.geometry.y / map.coordinateSpace.height * stage.offsetHeight * viewport.zoom,
+    });
+  }, [map.id, selectedFeatureId, loadedImageUrl, imageLoading, imageFailed]);
 
   const constrain = (candidate: MapViewportState): MapViewportState => {
     const viewportElement = viewportRef.current;
@@ -191,6 +206,30 @@ export function MapCanvas({
     }
   };
 
+  if (!map.base || imageFailed) return (
+    <section className="world-map-panel world-map-panel--unavailable" aria-label={`${map.subject.name} map`}>
+      <div className="map-base-absent" role={imageFailed ? "alert" : "status"}>
+        <Icon name="Map" size={20} />
+        <div>
+          <p>{imageFailed ? "The map image could not be loaded."
+            : map.baseState === "unavailable" ? "Map image information could not be loaded."
+            : `There is no separate map for ${map.subject.name}.`}</p>
+          <p>Explore the available places and their details below.</p>
+          {imageFailed ? <button type="button" onClick={() => {
+            setFailedImageUrl(null); setLoadedImageUrl(null);
+            setImageAttempt((attempt) => attempt + 1);
+          }}>Try loading the map again</button> : null}
+        </div>
+      </div>
+      {map.features.length > 0 ? <ul className="map-unavailable-places">
+        {map.features.map((feature) => <li key={feature.id}>
+          <button type="button" aria-pressed={feature.id === selectedFeatureId}
+            onClick={() => onFeatureSelect(feature.id)}>{feature.name}</button>
+        </li>)}
+      </ul> : null}
+    </section>
+  );
+
   const zoomPercent = Math.round(viewport.zoom * 100);
   return (
     <section className="world-map-panel" aria-label={`${map.subject.name} map`}>
@@ -202,10 +241,10 @@ export function MapCanvas({
         <button aria-label="Zoom in" disabled={viewport.zoom >= MAX_ZOOM} onClick={() => zoomAt(viewport.zoom + ZOOM_STEP)} type="button">
           <Icon name="ZoomIn" size={17} />
         </button>
-        <button onClick={fitMap} type="button"><Icon name="Maximize2" size={16} /> Fit map</button>
-        <button onClick={resetView} type="button"><Icon name="RotateCcw" size={16} /> Reset view</button>
-        <button disabled={!selectedFeatureId} onClick={focusSelected} type="button">
-          <Icon name="Focus" size={16} /> Focus selected
+        <button aria-label="Fit map" title="Fit map" onClick={fitMap} type="button"><Icon name="Maximize2" size={16} /></button>
+        <button aria-label="Reset view" title="Reset view" onClick={resetView} type="button"><Icon name="RotateCcw" size={16} /></button>
+        <button aria-label="Focus selected" title="Focus selected place" disabled={!selectedFeatureId} onClick={focusSelected} type="button">
+          <Icon name="Focus" size={16} />
         </button>
       </div>
       <div
@@ -315,9 +354,7 @@ export function MapCanvas({
         </div>
       </div>
       <p className="world-map-panel__note" id="map-viewport-help">
-        Drag the map or use arrow keys to pan. Only the visible buttons zoom, fit, reset, or focus
-        the selected place. Page scrolling and browser gestures never change map zoom. Placement is
-        illustrative within this scope only and calculates no travel.
+        Drag or use arrow keys to pan. Use the buttons to zoom. Select a place for details.
       </p>
     </section>
   );

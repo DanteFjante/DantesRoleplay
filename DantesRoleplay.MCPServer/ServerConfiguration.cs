@@ -94,7 +94,6 @@ public static class ServerConfiguration
                     completion);
         });
         services.AddScoped<IInformationActionCoordinator, InformationActionCoordinator>();
-        var localKnowledgeSeat = new ConfigurationLocalKnowledgeSeatProvider(hostConfiguration);
         services.AddSingleton<ILocalKnowledgeSeatProvider>(provider =>
             new ConfigurationLocalKnowledgeSeatProvider(hostConfiguration,
                 provider.GetRequiredService<IHttpContextAccessor>()));
@@ -102,11 +101,13 @@ public static class ServerConfiguration
         services.AddSingleton<IWebReadableRulesAudienceProvider,
             LocalReadableRulesAudienceProvider>();
         services.AddSingleton<IEntityMediaAudienceResolver, LocalEntityMediaAudienceResolver>();
-        var configuredApplication = localKnowledgeSeat.Current().ApplicationId;
-        services.AddSingleton(new KnowledgeApplicationSelection(
-            ValidApplicationId(configuredApplication) ? configuredApplication : "disabled"));
-        services.AddSingleton(new WorldChronologyApplicationSelection(
-            ValidApplicationId(configuredApplication) ? configuredApplication : "disabled"));
+        services.AddScoped(provider =>
+        {
+            var application = provider.GetRequiredService<ILocalKnowledgeSeatProvider>().Current().ApplicationId;
+            return new KnowledgeApplicationSelection(ValidApplicationId(application) ? application : "disabled");
+        });
+        services.AddScoped(provider => new WorldChronologyApplicationSelection(
+            provider.GetRequiredService<KnowledgeApplicationSelection>().ApplicationId));
         services.AddSingleton<IAuthorizedKnowledgeAudiencePolicy, LocalKnowledgeAudiencePolicy>();
         services.AddScoped<IKnowledgeApplicationBindingResolver, ActivatedKnowledgeApplicationBindingResolver>();
         services.AddScoped<IWorldChronologyBindingResolver, ActivatedWorldChronologyBindingResolver>();

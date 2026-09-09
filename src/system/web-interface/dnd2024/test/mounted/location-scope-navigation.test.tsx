@@ -5,6 +5,7 @@ import { JSDOM } from "jsdom";
 import React, { act, type ReactNode } from "react";
 
 import { DndInformationHub } from "../../src/components/DndInformationHub";
+import { ScopedMapWorkspace } from "../../src/components/ScopedMapWorkspace";
 import { hubRouteHash } from "../../src/data/hub-route";
 import type {
   DeferredHubUpdate,
@@ -151,8 +152,8 @@ test("Map waits for its declared atlas scope, renders exact markers, and returns
     parentMapId: `map.live.${atlas.id}`,
     subject: { kind: "region", id: entry.id, name: entry.name },
     coordinateSpace: { id: `space.live.${entry.id}`, unit: "normalized", width: 1000, height: 1000 },
-    baseState: "absent",
-    base: null,
+    baseState: "ready",
+    base: { imageUrl: `/maps/${entry.id}.png`, alt: `${entry.name} map` },
     layers: [],
     features: [],
     scopeLinks: [],
@@ -254,6 +255,35 @@ function byLabel(container: Element, label: string) {
   assert.ok(match, `Missing ${label}`);
   return match;
 }
+
+test("opening a marker-only location redirects to its parent and selects its existing details", async () => {
+  const initial = initialEnvelope();
+  const template = initial.world.maps[0]!;
+  const parent: MapDocument = {
+    ...template, id: "map.parent", parentMapId: null,
+    subject: { kind: "region", id: "region.parent", name: "Parent Vale" },
+    baseState: "ready", base: { imageUrl: "/parent.png", alt: "Parent map" },
+    features: [{ id: "feature.village", kind: "point", layerId: "places",
+      coordinateSpaceId: template.coordinateSpace.id, geometry: { x: 440, y: 295 },
+      name: "Goat Village", detail: "A high pasture village.", locationId: "location.village" }],
+    layers: [{ id: "places", label: "Places", kind: "markers", order: 0 }],
+    scopeLinks: [{ id: "scope.village", childMapId: "map.village", childName: "Goat Village",
+      childScope: "location", viaFeatureId: "feature.village" }],
+  };
+  const village: MapDocument = { ...parent, id: "map.village", parentMapId: parent.id,
+    subject: { kind: "location", id: "location.village", name: "Goat Village" },
+    baseState: "absent", base: null, features: [], layers: [], scopeLinks: [] };
+  const navigations: string[][] = [];
+  const mounted = await mount("", <ScopedMapWorkspace world={{ ...initial.world, maps: [parent, village] }}
+    activeMapId={village.id} selectedFeatureId="" currentLocationId="" campaignTitle="Test"
+    overlays={[]} scopeState="ready" scopeError="" onMapChange={() => {}}
+    onNavigateToFeature={(mapId, featureId) => navigations.push([mapId, featureId])}
+    onFeatureSelect={() => {}} onOpenLocation={() => {}} onRetryScope={() => {}} />);
+  try {
+    assert.deepEqual(navigations, [[parent.id, "feature.village"]]);
+    assert.equal(mounted.container.querySelector('[aria-label="Map view controls"]'), null);
+  } finally { await mounted.cleanup(); }
+});
 
 async function click(control: HTMLButtonElement) {
   await act(async () => { control.click(); await tick(); });

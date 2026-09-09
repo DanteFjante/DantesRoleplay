@@ -50,8 +50,7 @@ public sealed class LocalKnowledgeSeatLifecycleTests
         var accessor = new HttpContextAccessor { HttpContext = context };
         var seat = new LocalKnowledgeSeatSnapshot(true, "principal.fixture", "dnd2024",
             "campaign.fixture", null, KnowledgeAudienceRole.GameMaster, ["dnd2024-core"]);
-        var allowed = new LocalKnowledgeAudiencePolicy(accessor, new Seats(seat),
-            new KnowledgeApplicationSelection("dnd2024"));
+        var allowed = new LocalKnowledgeAudiencePolicy(accessor, new Seats(seat));
 
         var resolution = await allowed.ResolveAsync("campaign.fixture");
         Assert.NotNull(resolution.Grant);

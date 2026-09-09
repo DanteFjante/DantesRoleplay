@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import type { CampaignMapOverlay, MapDocument, WorldReadModel } from "../data/hub-types";
+import type { CampaignMapOverlay, MapChildScope, MapDocument, WorldReadModel } from "../data/hub-types";
 import {
   buildMapBreadcrumbs,
   filterMapFeaturesByLayers,
   resolveFeatureOverlays,
   resolveMapChildScopes,
   resolveMapDocument,
+  resolveMapNavigation,
   resolveMapOverlays,
   resolveMapFactionInfluences,
   resolveSelectedMapFeature,
@@ -78,6 +79,11 @@ export function ScopedMapWorkspace({
   const map = resolveMapDocument(world.maps, activeMapId) as MapDocument | null;
 
   useEffect(() => {
+    const target = resolveMapNavigation(world.maps, activeMapId, selectedFeatureId);
+    if (target.mapId !== activeMapId) onNavigateToFeature(target.mapId, target.featureId);
+  }, [world.maps, activeMapId, selectedFeatureId, onNavigateToFeature]);
+
+  useEffect(() => {
     try { window.sessionStorage.setItem(MAP_VIEW_SESSION_KEY, JSON.stringify(mapViews)); }
     catch { /* View persistence is optional and never game-state authority. */ }
   }, [mapViews]);
@@ -108,7 +114,8 @@ export function ScopedMapWorkspace({
   ) ?? null;
   const influencedFeatureIds = new Set<string>(activeFactionInfluence?.featureIds ?? []);
   const trail = buildMapBreadcrumbs(world.maps, map.id);
-  const childScopes = resolveMapChildScopes(world.maps, map.id);
+  const childScopes = (resolveMapChildScopes(world.maps, map.id) as MapChildScope[])
+    .filter((child) => child.baseState !== "absent");
   const feature = resolveSelectedMapFeature(visibleMap, selectedFeatureId);
   const mapOverlays = resolveMapOverlays(overlays, map.id) as CampaignMapOverlay[];
   const annotatedFeatureIds = new Set<string>(
@@ -118,7 +125,8 @@ export function ScopedMapWorkspace({
   );
   const scopeLinkFeatureIds = new Map<string, string>(
     map.scopeLinks
-      .filter((link) => link.viaFeatureId !== null)
+      .filter((link) => link.viaFeatureId !== null &&
+        resolveMapDocument(world.maps, link.childMapId)?.baseState !== "absent")
       .map((link) => [link.viaFeatureId as string, link.childMapId]),
   );
 
@@ -179,6 +187,9 @@ export function ScopedMapWorkspace({
         world={world}
       />
 
+      <div className="map-display-options">
+        <details className="map-display-options__details">
+          <summary>Layers and legend</summary>
       <MapLayerControls
         features={map.features}
         layers={map.layers}
@@ -201,8 +212,9 @@ export function ScopedMapWorkspace({
         scopeLinkFeatureIds={scopeLinkFeatureIds}
         visibleLayerIds={visibleLayerIds}
       />
-
+        </details>
       <MapViewModeToggle mode={viewMode} onChange={setViewMode} />
+      </div>
 
       <div className="world-map-layout">
         {viewMode === "map" ? (

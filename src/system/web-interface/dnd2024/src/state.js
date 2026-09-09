@@ -369,6 +369,24 @@ export function normalizeMapId(maps, value, rootMapId) {
   return resolveMapDocument(maps, value) ? value : resolveRootMapId(maps, rootMapId);
 }
 
+/** A location with no image is a place on its nearest mapped ancestor. Never move coordinates
+ * between scopes, or mistake a failed media lookup for a confirmed absence. */
+export function resolveMapNavigation(maps, mapId, featureId = "") {
+  const requested = resolveMapDocument(maps, mapId);
+  if (!requested) return { mapId, featureId: "" };
+  let current = requested;
+  const seen = new Set();
+  let selected = featureId;
+  while (current.baseState === "absent" && current.parentMapId && !seen.has(current.id)) {
+    seen.add(current.id);
+    const parent = resolveMapDocument(maps, current.parentMapId);
+    if (!parent || seen.has(parent.id)) break;
+    selected = parent.features.find((feature) => feature.locationId === current.subject.id)?.id ?? "";
+    current = parent;
+  }
+  return { mapId: current.id, featureId: selected };
+}
+
 /**
  * Breadcrumbs are derived only from declared parent links, ordered root to current.
  * An unknown ancestor or a cycle yields no trail at all rather than a partial one.

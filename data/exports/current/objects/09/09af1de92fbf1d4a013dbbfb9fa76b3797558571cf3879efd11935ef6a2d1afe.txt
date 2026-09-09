@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <title>Dante's Roleplay — World &amp; Campaign Reference</title>
+    <script type="module" crossorigin src="/ui/dnd2024-play/assets/index-CkeiBtZN.js"></script>
+    <link rel="modulepreload" crossorigin href="/ui/dnd2024-play/assets/rolldown-runtime-CbXtAM7H.js">
+    <link rel="modulepreload" crossorigin href="/ui/dnd2024-play/assets/react-DL8Phg47.js">
+    <link rel="modulepreload" crossorigin href="/ui/dnd2024-play/assets/state-BcL6svVk.js">
+    <link rel="modulepreload" crossorigin href="/ui/dnd2024-play/assets/jsx-runtime-CznXPbDH.js">
+    <link rel="modulepreload" crossorigin href="/ui/dnd2024-play/assets/Icon-BBmQtgha.js">
+    <link rel="modulepreload" crossorigin href="/ui/dnd2024-play/assets/view-read-client-CrpLEYiU.js">
+    <link rel="modulepreload" crossorigin href="/ui/dnd2024-play/assets/browser-crypto-BJSHHWKy.js">
+    <link rel="modulepreload" crossorigin href="/ui/dnd2024-play/assets/resource-policy-hiwuCTDe.js">
+    <link rel="modulepreload" crossorigin href="/ui/dnd2024-play/assets/campaign-summary-contract-CxdUspzt.js">
+    <link rel="modulepreload" crossorigin href="/ui/dnd2024-play/assets/preload-helper-Ckafnf9z.js">
+    <link rel="modulepreload" crossorigin href="/ui/dnd2024-play/assets/object-resources-B7BNfXmE.js">
+    <link rel="modulepreload" crossorigin href="/ui/dnd2024-play/assets/performance-ZSgeqzdX.js">
+    <link rel="modulepreload" crossorigin href="/ui/dnd2024-play/assets/scoped-change-stream-D8K6iC8m.js">
+    <link rel="stylesheet" crossorigin href="/ui/dnd2024-play/assets/index-kBrD_9f1.css">
+  </head>
+  <body>
+    <div id="root">
+      <div aria-busy="true" class="information-hub bootstrap-shell">
+        <header class="bootstrap-shell__topbar">
+          <strong>D&amp;D 2024</strong>
+          <span>Opening the shared table…</span>
+        </header>
+        <main class="information-content">
+          <section class="bootstrap-shell__view" aria-live="polite">
+            <span class="eyebrow">World</span>
+            <h1>Opening the world overview</h1>
+            <p>Loading the selected world and campaign from the game server.</p>
+          </section>
+        </main>
+      </div>
+    </div>
+  </body>
+</html>

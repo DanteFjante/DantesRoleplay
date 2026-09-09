@@ -99,7 +99,7 @@ async function mount(element: ReactNode) {
 
 function button(container: Element, label: string) {
   const match = [...container.querySelectorAll("button")]
-    .find((candidate) => candidate.textContent?.trim() === label);
+    .find((candidate) => candidate.getAttribute("aria-label") === label || candidate.textContent?.trim() === label);
   assert.ok(match, `Expected a ${label} button`);
   return match as HTMLButtonElement;
 }
@@ -147,8 +147,8 @@ const mountedMap: MapDocument = {
   parentMapId: null,
   subject: { kind: "region", id: "region.mounted", name: "Mounted Vale" },
   coordinateSpace: { id: "space.mounted", unit: "illustrative", width: 100, height: 100 },
-  baseState: "absent",
-  base: null,
+  baseState: "ready",
+  base: { imageUrl: "/map.png", alt: "Mounted Vale map" },
   layers: [{ id: "layer.places", kind: "markers", order: 1, label: "Places" }],
   features: [{
     id: "feature.keep",
@@ -242,10 +242,27 @@ test("a failed map image has a retry action and does not leave a broken image", 
     await act(async () => mounted.container.querySelector(".world-map-stage > img")!
       .dispatchEvent(new window.Event("error")));
     assert.equal(mounted.container.querySelector(".world-map-stage > img"), null);
+    assert.equal(mounted.container.querySelector('[aria-label="Map view controls"]'), null);
     assert.match(mounted.container.querySelector('[role="alert"]')!.textContent!, /map image could not be loaded/u);
     await click(button(mounted.container, "Try loading the map again"));
     assert.equal(mounted.container.querySelector(".world-map-stage > img")!.getAttribute("src"), "/map.png");
     assert.equal(mounted.container.querySelector('[role="alert"]'), null);
+  } finally { await mounted.cleanup(); }
+});
+
+test("an unmapped scope has readable selectable places without an empty canvas or zoom controls", async () => {
+  let selected = "";
+  const mounted = await mount(<MapCanvas map={{ ...mountedMap, baseState: "absent", base: null }}
+    selectedFeatureId="" currentLocationId="" scopeLinkFeatureIds={new Map()}
+    annotatedFeatureIds={new Set()} influencedFeatureIds={new Set()}
+    viewport={DEFAULT_MAP_VIEWPORT} onViewportChange={() => { throw new Error("No image to move"); }}
+    onFeatureSelect={(id) => { selected = id; }} onOpenScope={() => {}} />);
+  try {
+    assert.equal(mounted.container.querySelector('[aria-label="Map view controls"]'), null);
+    assert.equal(mounted.container.querySelector(".world-map-canvas"), null);
+    assert.match(mounted.container.textContent!, /no separate map for Mounted Vale/);
+    await click(button(mounted.container, "Test Keep"));
+    assert.equal(selected, "feature.keep");
   } finally { await mounted.cleanup(); }
 });
 

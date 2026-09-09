@@ -109,8 +109,7 @@ internal sealed class ConfigurationLocalKnowledgeSeatProvider(
 /// </summary>
 internal sealed class LocalKnowledgeAudiencePolicy(
     IHttpContextAccessor http,
-    ILocalKnowledgeSeatProvider seats,
-    KnowledgeApplicationSelection application) : IAuthorizedKnowledgeAudiencePolicy
+    ILocalKnowledgeSeatProvider seats) : IAuthorizedKnowledgeAudiencePolicy
 {
     public Task<KnowledgeAudienceResolution> ResolveAsync(
         string campaignId,
@@ -118,7 +117,7 @@ internal sealed class LocalKnowledgeAudiencePolicy(
     {
         cancellationToken.ThrowIfCancellationRequested();
         var seat = seats.Current();
-        if (!Valid(seat) || !Token(campaignId) || seat.ApplicationId != application.ApplicationId ||
+        if (!Valid(seat) || !Token(campaignId) ||
             (seat.Role != KnowledgeAudienceRole.GameMaster && campaignId != seat.CampaignId) ||
             !(Loopback(http.HttpContext?.Connection.RemoteIpAddress) || SharedWebsiteContext.IsTrusted(http.HttpContext)))
             return Task.FromResult(KnowledgeAudienceResolution.Denied());

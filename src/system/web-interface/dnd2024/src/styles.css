@@ -1023,9 +1023,44 @@ strong {
 
 .world-map-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.65fr) minmax(270px, 0.55fr);
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 290px);
   align-items: start;
-  gap: 18px;
+  gap: 14px;
+}
+
+.world-map-heading.atlas-heading {
+  margin-bottom: 12px;
+}
+
+.world-map-heading h1 {
+  font-size: clamp(1.8rem, 3vw, 2.8rem);
+}
+
+.map-display-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.map-display-options__details {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+
+.map-display-options__details > summary {
+  width: fit-content;
+  padding: 8px 0;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.72rem;
+}
+
+.map-display-options__details[open] > summary {
+  color: var(--gold-bright);
+  margin-bottom: 8px;
 }
 
 .map-layer-controls {
@@ -1416,8 +1451,8 @@ strong {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 7px;
-  padding: 9px 11px;
+  gap: 3px;
+  padding: 4px 8px;
   border-bottom: 1px solid var(--line);
   background: rgba(7, 15, 13, 0.96);
 }
@@ -1429,10 +1464,10 @@ strong {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 6px 9px;
-  border: 1px solid var(--line-strong);
+  padding: 4px;
+  border: 1px solid transparent;
   border-radius: 7px;
-  background: rgba(21, 34, 29, 0.92);
+  background: transparent;
   color: var(--muted);
   cursor: pointer;
   font: inherit;
@@ -1464,7 +1499,7 @@ strong {
 
 .world-map-canvas {
   position: relative;
-  height: clamp(360px, 52vw, 680px);
+  height: clamp(360px, 64vh, 840px);
   overflow: hidden;
   background: #171811;
   cursor: grab;
@@ -1502,7 +1537,25 @@ strong {
   width: 100%;
   height: auto;
   object-fit: contain;
-  filter: saturate(0.83) brightness(0.78) contrast(1.06);
+  filter: saturate(0.95) brightness(0.96);
+}
+
+.world-map-panel--unavailable .map-base-absent {
+  max-width: none;
+  text-align: left;
+  align-items: flex-start;
+}
+
+.world-map-panel--unavailable .map-base-absent p {
+  margin: 0 0 8px;
+}
+
+.map-unavailable-places {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 16px 16px;
+  list-style: none;
 }
 
 .world-map-markers {

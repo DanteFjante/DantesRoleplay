@@ -363,6 +363,8 @@ MigrationBackup/
 FodyWeavers.xsd
 
 # ---- DantesRoleplay ----------------------------------------------------------
+# Optional machine-local table defaults; never portable host configuration.
+/DantesRoleplay.MCPServer/appsettings.Local.json
 # The development database. It is created on first run and dirties the working tree
 # on every session otherwise. A campaign snapshot is a copy of this file, kept
 # somewhere else on purpose.

@@ -11,14 +11,14 @@ The precise capture timestamp and source snapshot hash are in `manifest.json`.
 
 ## Contents
 
-- All 150 tables and 205,184 rows, including deleted records, retained versions,
+- All 150 tables and 205,242 rows, including deleted records, retained versions,
   SQLite statistics/sequences and full-text-search storage.
 - The exact schema, including 338 indexes and 513 triggers.
 - Current ECS data: 2,879 entity rows, 5,254 component rows and 5,300 relationship
   rows across all eight state spaces. These counts include retained/deleted rows.
 - Application registrations, sources, activation history and state-space bindings.
 - All 5,803 operations, 1,210 events, stored conversations and other runtime records.
-- Three stored websites, 70 page revisions, all 639 asset rows and 225 deduplicated asset contents.
+- Three stored websites, 71 page revisions, all 687 asset rows and 234 deduplicated asset contents.
 - All 91 external blob files, with their original paths and exact bytes.
 - The earlier 6 September catalog comparison under `catalog/`. It is historical
   comparison material; the current database is captured by `tables/` and `schema.json`.
@@ -29,7 +29,7 @@ All persisted tables are captured by schema discovery, including generic ECS
 objects, components, relationships and feature-specific storage. This capture
 includes the applied database migrations, D&D activation revision 52, the upgraded main state-space binding, the 12 newer component registrations,
 the two unchanged item quantities upgraded to schema version 2, and website
-revision 52. The export retains the database's actual migration history. New
+revision 53 with the corrected map navigation and compact controls. The export retains the database's actual migration history. New
 migrations and authored feature files in the repository are not silently applied to the source database during export.
 
 `tables/*.jsonl` stores ordered rows as arrays. Column names, SELECT order, row

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { connectedCampaignToHubEnvelope } from "../src/server/connected-hub-envelope.ts";
-import { isReadyHubEnvelope } from "../src/state.js";
+import { isReadyHubEnvelope, resolveMapNavigation } from "../src/state.js";
 
 const CAMPAIGN = {
   id: "campaign.thalorien.brackenford",
@@ -112,6 +112,29 @@ function mapFor(envelope, locationId) {
 function featureFor(map, locationId) {
   return map?.features.find((feature) => feature.locationId === locationId) ?? null;
 }
+
+test("a marker-only village opens its actual parent map and exact existing marker", () => {
+  const envelope = connectedCampaignToHubEnvelope(connected("dm"));
+  const parent = mapFor(envelope, "location.thalorien.valeros");
+  const village = mapFor(envelope, "location.thalorien.brackenford");
+  const before = JSON.stringify(envelope.world.maps);
+  assert.deepEqual(resolveMapNavigation(envelope.world.maps, village.id), {
+    mapId: parent.id,
+    featureId: featureFor(parent, village.subject.id).id,
+  });
+  assert.equal(JSON.stringify(envelope.world.maps), before);
+});
+
+test("failed media lookup retains its scope, and absent unanchored places never borrow coordinates", () => {
+  const envelope = connectedCampaignToHubEnvelope(connected("dm"));
+  const parent = mapFor(envelope, "location.thalorien.valeros");
+  const village = mapFor(envelope, "location.thalorien.brackenford");
+  village.baseState = "unavailable";
+  assert.deepEqual(resolveMapNavigation(envelope.world.maps, village.id), { mapId: village.id, featureId: "" });
+  village.baseState = "absent";
+  parent.features = [];
+  assert.deepEqual(resolveMapNavigation(envelope.world.maps, village.id), { mapId: parent.id, featureId: "" });
+});
 
 test("live anchors keep the same location stable between DM and Player projections", () => {
   const dm = connectedCampaignToHubEnvelope(connected("dm"));

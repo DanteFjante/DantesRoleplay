@@ -17,6 +17,9 @@ using System.Diagnostics;
 
 var startup = Stopwatch.StartNew();
 var builder = WebApplication.CreateBuilder(args);
+// Optional machine-local defaults stay outside version control. Deployment overrides retain priority.
+builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true)
+    .AddEnvironmentVariables().AddCommandLine(args);
 
 var developmentInformationScope = builder.Configuration["Information:DevelopmentScope"]
     ?? Environment.GetEnvironmentVariable("DANTESROLEPLAY_DEVELOPMENT_INFORMATION_SCOPE")
