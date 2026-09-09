@@ -1,0 +1,936 @@
+{
+  "schemaVersion": 1,
+  "generatedAtUtc": "2026-09-09T22:46:13.407914+00:00",
+  "generator": "Codex built-in image generation",
+  "registeredMapCount": 54,
+  "worldCounts": {
+    "caldris": 42,
+    "thalorien": 12
+  },
+  "totalImageBytes": 174756379,
+  "newlyGeneratedImages": 53,
+  "reusedApprovedExamples": 1,
+  "status": "artwork-review",
+  "runtimeApplied": false,
+  "geography": "Existing maps guide layout and names. Fine painted terrain and architecture are illustrative. Exact interactive-marker alignment requires review before live replacement.",
+  "assets": [
+    {
+      "entityId": "location.caldris.alderwick",
+      "name": "Alderwick",
+      "world": "caldris",
+      "kind": "region",
+      "file": "../caldris/maps/fantasy-atlas-v2/alderwick.png",
+      "sha256": "f118c3091f212e9f2a8c2c26bf981e4d2b99009af0415d02e1e396195bc008bd",
+      "bytes": 3214886,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/alderwick.png",
+      "originalSha256": "b4598d7ffb3366786a4476013dce3749b4d6677388a6a811a0b02ec4b3c87e8b",
+      "reusedApprovedExample": false,
+      "visualReview": "Visually inspected; illustrative artwork."
+    },
+    {
+      "entityId": "location.caldris.alderwick.highmead",
+      "name": "Highmead",
+      "world": "caldris",
+      "kind": "settlement",
+      "file": "../caldris/maps/fantasy-atlas-v2/highmead.png",
+      "sha256": "348fe63f8371afb4304ca3c205bcaa9a88680d8fb3dc450dcf1315537e7a731c",
+      "bytes": 3415881,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/highmead.png",
+      "originalSha256": "145d0dd09d7101f3f93c9d6087ad3b76450d3cccbc4ab543202bdcec5177ea2e",
+      "reusedApprovedExample": false,
+      "visualReview": "Visually inspected; illustrative artwork."
+    },
+    {
+      "entityId": "location.caldris.alderwick.highmead.house-of-the-ninth-angle",
+      "name": "House of the Ninth Angle",
+      "world": "caldris",
+      "kind": "settlement",
+      "file": "../caldris/maps/fantasy-atlas-v2/house-of-the-ninth-angle.png",
+      "sha256": "a6e0ad639a9116aef8e4b5e451423a624d89587f7c6a39377e5830c30fad9b34",
+      "bytes": 2986096,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/house-of-the-ninth-angle.png",
+      "originalSha256": "a3aab6347d664158c8af0b73044436b235673961733af77222253b6d04ab6a9a",
+      "reusedApprovedExample": false,
+      "visualReview": "Visually inspected; illustrative artwork."
+    },
+    {
+      "entityId": "location.caldris.alderwick.the-button-hills",
+      "name": "The Button Hills",
+      "world": "caldris",
+      "kind": "region",
+      "file": "../caldris/maps/fantasy-atlas-v2/the-button-hills.png",
+      "sha256": "3a4cdc0eefb0cdc1a6f95a0cdc2275b48cd601b993ce95d242d86c8a9515f50d",
+      "bytes": 2996433,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/the-button-hills.png",
+      "originalSha256": "d756e080ca3f4712a71d8439043e2c6cf7bce67c0419e38a6c235c29db3b5324",
+      "reusedApprovedExample": false,
+      "visualReview": "Visually inspected; illustrative artwork."
+    },
+    {
+      "entityId": "location.caldris.atlas",
+      "name": "Caldris",
+      "world": "caldris",
+      "kind": "region",
+      "file": "../caldris/maps/fantasy-atlas-v2/caldris-atlas.png",
+      "sha256": "3ef332cb5963a0081e3afcb9f045d4582e7f95507cdc6552e25e619dfc9102f1",
+      "bytes": 3013996,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/caldris-atlas.png",
+      "originalSha256": "2d24b83e0ddfae8e19ea1a34d30cf8c7a77ed7b042dc2ea76632b564b42cc22f",
+      "reusedApprovedExample": true,
+      "visualReview": "Visually inspected; illustrative artwork."
+    },
+    {
+      "entityId": "location.caldris.atlas.bramble-country",
+      "name": "Bramble Country",
+      "world": "caldris",
+      "kind": "region",
+      "file": "../caldris/maps/fantasy-atlas-v2/bramble-country.png",
+      "sha256": "fb9f3ccf2de4f999e871e11fb0ea46ae3bb7c298390167144224c5035815cb9c",
+      "bytes": 3277784,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/bramble-country.png",
+      "originalSha256": "0ba9e4a22e9e8a25f5f155919c698d105b697e02623a6535f1e58b8fcc882c33",
+      "reusedApprovedExample": false,
+      "visualReview": "Visually inspected; illustrative artwork."
+    },
+    {
+      "entityId": "location.caldris.atlas.chalklands",
+      "name": "Chalklands",
+      "world": "caldris",
+      "kind": "region",
+      "file": "../caldris/maps/fantasy-atlas-v2/chalklands.png",
+      "sha256": "a21458ffa9630bcf0c118c82876706081f4b42ed0f26f00b2d48ac5b01b8e3d4",
+      "bytes": 3188036,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/chalklands.png",
+      "originalSha256": "bd1594746cdff701bbde829616977412392eb50f7d3aaaf3c6061930fe656e9a",
+      "reusedApprovedExample": false,
+      "visualReview": "Visually inspected; illustrative artwork."
+    },
+    {
+      "entityId": "location.caldris.atlas.lantern-sea",
+      "name": "Lantern Sea",
+      "world": "caldris",
+      "kind": "region",
+      "file": "../caldris/maps/fantasy-atlas-v2/lantern-sea.png",
+      "sha256": "5ab34bc317c60e811c3af2d72a57efddc5b8bcd82dad90c8f4fd5ea57fffcb48",
+      "bytes": 2841609,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/lantern-sea.png",
+      "originalSha256": "4aa4875cf13987de3ccb5496bbb1e30c9771515b21b4851d5a3eaaea155a2310",
+      "reusedApprovedExample": false,
+      "visualReview": "Visually inspected; illustrative artwork."
+    },
+    {
+      "entityId": "location.caldris.atlas.morrow-strait",
+      "name": "Morrow Strait",
+      "world": "caldris",
+      "kind": "region",
+      "file": "../caldris/maps/fantasy-atlas-v2/morrow-strait.png",
+      "sha256": "f502d295f1ea25fd8c54a7697a6916228d40623a2ad39294f50c0a4bbc282dc3",
+      "bytes": 2950592,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/morrow-strait.png",
+      "originalSha256": "60e7f34823ff1773bce6a156c5ab242b8682d8b75e9b88721bd80878b8f4662e",
+      "reusedApprovedExample": false,
+      "visualReview": "Visually inspected; illustrative artwork."
+    },
+    {
+      "entityId": "location.caldris.atlas.orchard-march",
+      "name": "Orchard March",
+      "world": "caldris",
+      "kind": "region",
+      "file": "../caldris/maps/fantasy-atlas-v2/orchard-march.png",
+      "sha256": "61a7b9b14e575c3b568678d6866d7627a331744f04268487c23237bd35d10b56",
+      "bytes": 3272345,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/orchard-march.png",
+      "originalSha256": "373ea7ca810d449d0e48404941cc2dadf49278837549d109087a4f154d9a1bc2",
+      "reusedApprovedExample": false,
+      "visualReview": "Visually inspected; illustrative artwork."
+    },
+    {
+      "entityId": "location.caldris.atlas.roven-approaches",
+      "name": "Roven Approaches",
+      "world": "caldris",
+      "kind": "region",
+      "file": "../caldris/maps/fantasy-atlas-v2/roven-approaches.png",
+      "sha256": "83cc1a3aa222032875ef1ee68cac269b5750ac1d8d1352ae02557565168a1c14",
+      "bytes": 3268948,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/roven-approaches.png",
+      "originalSha256": "0ea3b588928452536294e65e6e809b49cfa43b38d2737e2215da8487ed9978ee",
+      "reusedApprovedExample": false,
+      "visualReview": "Visually inspected; illustrative artwork."
+    },
+    {
+      "entityId": "location.caldris.bellafont",
+      "name": "Bellafont",
+      "world": "caldris",
+      "kind": "region",
+      "file": "../caldris/maps/fantasy-atlas-v2/bellafont.png",
+      "sha256": "a9eb53703fe87fe6dc37f18c9ed411b31049cf168f071229652c162c2e3ce209",
+      "bytes": 3288781,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/bellafont.png",
+      "originalSha256": "997d7259b222ad28704514aa1cab6fde243382c25d99fb5023e58cd9baf3d590",
+      "reusedApprovedExample": false,
+      "visualReview": "Visually inspected; illustrative artwork."
+    },
+    {
+      "entityId": "location.caldris.bramblebridge",
+      "name": "Bramblebridge",
+      "world": "caldris",
+      "kind": "settlement",
+      "file": "../caldris/maps/fantasy-atlas-v2/bramblebridge.png",
+      "sha256": "dd77019c73bf9b5cd8360db5d3b1c9331126242f4e15f7367c5f278bb8580fda",
+      "bytes": 3233771,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/bramblebridge.png",
+      "originalSha256": "b06f38a25228954d7853faa2a5b231ce69a16830ebc9346dc6c4fb93cefa29ef",
+      "reusedApprovedExample": false,
+      "visualReview": "Viewed source, reference and result. Title and all landmark labels retained; narrow north-south river and route graph retained. Buildings stay small; muted terrain and teal river. Generative coordinate fidelity is approximate."
+    },
+    {
+      "entityId": "location.caldris.carrowmere",
+      "name": "Carrowmere",
+      "world": "caldris",
+      "kind": "region",
+      "file": "../caldris/maps/fantasy-atlas-v2/carrowmere.png",
+      "sha256": "687ba6d45bb38a5966a3efc304ba9dee095f9190a9f3a19a390c49d4801053b9",
+      "bytes": 3198649,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/carrowmere.png",
+      "originalSha256": "46091755a30809a5ae3c90a0d33cbc6d755748870784b0c465cab671d04e4238",
+      "reusedApprovedExample": false,
+      "visualReview": "Viewed source and result. All visible named landmarks and route graph retained, west-only coast preserved, restrained regional detail. Landmark vertical placement drifts upward; overlay coordinates need review before live replacement. New painterly terrain details are illustrative."
+    },
+    {
+      "entityId": "location.caldris.carrowmere.gullstrand",
+      "name": "Gullstrand",
+      "world": "caldris",
+      "kind": "settlement",
+      "file": "../caldris/maps/fantasy-atlas-v2/gullstrand.png",
+      "sha256": "b40656023c78e462808c9e8ebe4be147289a2a622a413b2cc964beb047de5567",
+      "bytes": 2934654,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/gullstrand.png",
+      "originalSha256": "cf5809275f17ae4feb3b44bbc9cd3ace5ce5b05daea7cbbac7674c0fdb129276",
+      "reusedApprovedExample": false,
+      "visualReview": "Viewed source and successive results. Selected urban city plan with coherent small roofs and western shipyards, exact title/subtitle/Closed Launch label. Removed invented eastern inland canal and pond through targeted edit; visually confirmed dry streets/gardens and preserved west harbour. Original sparse map expanded with illustrative streets; coast/anchor need alignment review before live use."
+    },
+    {
+      "entityId": "location.caldris.dunmarrow",
+      "name": "Dunmarrow",
+      "world": "caldris",
+      "kind": "region",
+      "file": "../caldris/maps/fantasy-atlas-v2/dunmarrow.png",
+      "sha256": "fb2839a2e9328f730e6f2c11fc656090586adfb0aea999c7445b03248f813a03",
+      "bytes": 3271614,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/dunmarrow.png",
+      "originalSha256": "56515e15140adeab859144ef3062cc6e81312fde58d234e5601d465d45f39f5d",
+      "reusedApprovedExample": false,
+      "visualReview": "Viewed source and result. All ten named places, river label, routes, north coast and southwest-northeast river retained. Low ridges, bogs and tree textures fit regional scale. Frame and river termination differ slightly, review atlas only."
+    },
+    {
+      "entityId": "location.caldris.eredane",
+      "name": "Eredane",
+      "world": "caldris",
+      "kind": "region",
+      "file": "../caldris/maps/fantasy-atlas-v2/eredane.png",
+      "sha256": "96f6a778bfe921a6637b5bd4cd3f084b343bdaac807854f583101710995307f4",
+      "bytes": 3142640,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/eredane.png",
+      "originalSha256": "9453d4f050d384a0862b0bbd69300d752d08a993ef5bf1f013b51e6bd0ac5594",
+      "reusedApprovedExample": false,
+      "visualReview": "Viewed source and result. Six region labels and complete route graph retained on single continent. No buildings; subdued forest and ridge detail. Coast follows overall source shape, with illustrative small bays/islets and rivers. Generative alignment remains approximate."
+    },
+    {
+      "entityId": "location.caldris.kethria",
+      "name": "Kethria",
+      "world": "caldris",
+      "kind": "region",
+      "file": "../caldris/maps/fantasy-atlas-v2/kethria.png",
+      "sha256": "d080cd4170ae2a17b0a092ebaa64d77539d001f525100641781714f2372d2eec",
+      "bytes": 3275117,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/kethria.png",
+      "originalSha256": "49f0aa2bf13c47fc3684994c3caae29db29950e7f82dae2c1fdea5c4c982d45f",
+      "reusedApprovedExample": false,
+      "visualReview": "Viewed source and result. All ten landmarks, Emberglass Whale badge, river path and closed red X preserved. Copper terraces and fine mountains suit upland region; no giant animal or eruption. Labels readable. Review-only generative alignment."
+    },
+    {
+      "entityId": "location.caldris.lore.aunholt",
+      "name": "Aunholt",
+      "world": "caldris",
+      "kind": "region",
+      "file": "../caldris/maps/fantasy-atlas-v2/aunholt.png",
+      "sha256": "713940c3848c16440298cd4035cb8250bca61f42bd77ec077ae6b822d7f677d7",
+      "bytes": 2784273,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/aunholt.png",
+      "originalSha256": "22d7f384ba5bf08a2e11212117a241630d8f2d22cccdde5280b344dedccf0bec",
+      "reusedApprovedExample": false,
+      "visualReview": "Viewed source and result. Three named place anchors and route graph retained with small rural hamlets/orchards. Main river course retained; added missing exact Terrace channels label in targeted correction and checked visually. Illustrative tributaries and terrain; review alignment before live use."
+    },
+    {
+      "entityId": "location.caldris.lore.boughmeet",
+      "name": "Boughmeet",
+      "world": "caldris",
+      "kind": "settlement",
+      "file": "../caldris/maps/fantasy-atlas-v2/boughmeet.png",
+      "sha256": "af63d061b8bc7929dad31eb142516cd4cbcc65f6728e888b08d3345dd0a6e140",
+      "bytes": 3279351,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/boughmeet.png",
+      "originalSha256": "e878322d7390a53c5169970c728d28370591340b2b6c35fa1bc86c2edb7ade91",
+      "reusedApprovedExample": false,
+      "visualReview": "Viewed source and result. Five place labels and full highlighted route graph retained. Orchard village scale clearly shown through small cottages and patterned nursery plots. No huge landmarks; illustrative lanes/water gardens added to sparse source. Review alignment before live use."
+    },
+    {
+      "entityId": "location.caldris.lore.brinefold",
+      "name": "Brinefold",
+      "world": "caldris",
+      "kind": "settlement",
+      "file": "../caldris/maps/fantasy-atlas-v2/brinefold.png",
+      "sha256": "c58c1fea190d0f45b7dbc1c4852e9ffa938ecc6cded93a92b02a8c40f9d4f12d",
+      "bytes": 3233412,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/brinefold.png",
+      "originalSha256": "fc180512a2b34ec4192e18250c8eb556041fda4f89c0029939eee8f242736c0a",
+      "reusedApprovedExample": false,
+      "visualReview": "Viewed source and result. Three exact place labels, triangle routes, small settlement buildings and east coast retained. Expanded harbour inlet and salt-marsh terrain illustrate context; they are not canon geometry. Approximate anchors need review before live replacement."
+    },
+    {
+      "entityId": "location.caldris.lore.istravel",
+      "name": "Istravel",
+      "world": "caldris",
+      "kind": "settlement",
+      "file": "../caldris/maps/fantasy-atlas-v2/istravel.png",
+      "sha256": "1c0873dc9e20c50a27b86bbf96ffa540d0c12d936a88ef5850e731e330161b07",
+      "bytes": 3348433,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/istravel.png",
+      "originalSha256": "a880d8d3a2131d1162f19a8550a1d46386c6082119c0be38fc30f591af18d46e",
+      "reusedApprovedExample": false,
+      "visualReview": "Viewed source and result. Two exact place labels and diagonal route retained; coherent town-scale houses, kilns and courtyard gardens, no regional wilderness bias. Slight illustrated roof relief but no horizon. Approximate anchor positions; details illustrative."
+    },
+    {
+      "entityId": "location.caldris.lore.leth-sarai",
+      "name": "Leth Sarai",
+      "world": "caldris",
+      "kind": "settlement",
+      "file": "../caldris/maps/fantasy-atlas-v2/leth-sarai.png",
+      "sha256": "643314e6c07d09a2e27d061c07d6b10566bd9a4c591316a8eaaa61721f074344",
+      "bytes": 3284958,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/leth-sarai.png",
+      "originalSha256": "2cf512771cc8df6eef57931f43d65db98504d3d498102141bdca59fd66d4feab",
+      "reusedApprovedExample": false,
+      "visualReview": "Viewed source and result. Five landmark names and route tree retained, west-only waterfront. Dense ordinary urban roofs/workshop courtyards fit town scale. No giant landmarks. Coast and marker alignment remain approximate; urban detail is illustrative."
+    },
+    {
+      "entityId": "location.caldris.lore.namar-vale",
+      "name": "Namar Vale",
+      "world": "caldris",
+      "kind": "settlement",
+      "file": "../caldris/maps/fantasy-atlas-v2/namar-vale.png",
+      "sha256": "7e8dbf0a0b6959324c015187f12f4841a2cd1488c3159a64a2ec1b4efaf9e84a",
+      "bytes": 3302834,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/namar-vale.png",
+      "originalSha256": "2a33f3a1b0872dbfdf2488d3d7fd10dd048ae437ae27c6f3a05277eeba28bcee",
+      "reusedApprovedExample": false,
+      "visualReview": "Viewed source and result. Two exact names and original diagonal route retained; small courtyard compounds, plots and irrigation suit agricultural settlement. No huge landmarks. Sparse settlement, not a dense city. Review-only approximate alignment and illustrative detail."
+    },
+    {
+      "entityId": "location.caldris.lore.penns-reach",
+      "name": "Penn's Reach",
+      "world": "caldris",
+      "kind": "settlement",
+      "file": "../caldris/maps/fantasy-atlas-v2/penn-s-reach.png",
+      "sha256": "52227d299f955dba1d7ca4175660b626ff8888e21eca07adb6877ea56a373b80",
+      "bytes": 2848991,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/penn-s-reach.png",
+      "originalSha256": "cd8ce7f76e241fbd79913a10e48e63190eeafa38b9e2c8848949b2e45a1fd07a",
+      "reusedApprovedExample": false,
+      "visualReview": "Viewed source and result. Two place labels and route retained; corrected generated river-label error to exact Vey sluice channel (verified original SVG). Small farms and sluices at district scale. Broader waterway/extra marsh details illustrative; review alignment before live use."
+    },
+    {
+      "entityId": "location.caldris.lore.rookwater",
+      "name": "Rookwater",
+      "world": "caldris",
+      "kind": "settlement",
+      "file": "../caldris/maps/fantasy-atlas-v2/rookwater.png",
+      "sha256": "79baccf4f77c1af2ed44be00dee7989b0ca779381c90b898d845b6d40694efe7",
+      "bytes": 3192004,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/rookwater.png",
+      "originalSha256": "3afe242552860f67d8749532ad83668d7ad5f01c8b4889c867f8e9f2427da5e2",
+      "reusedApprovedExample": false,
+      "visualReview": "Viewed source and result. Names House and Ferry channel exact labels retained; small modest village and farmland, river curve, no bridge/highlighted roads. Good restrained settlement scale. River width/detail illustrative and alignment approximate."
+    },
+    {
+      "entityId": "location.caldris.lore.rusk-hollow",
+      "name": "Rusk Hollow",
+      "world": "caldris",
+      "kind": "settlement",
+      "file": "../caldris/maps/fantasy-atlas-v2/rusk-hollow.png",
+      "sha256": "ce2d1f0b7bf81a16c005ca905efc33965fbe821e95f4572432eae6789b3cc286",
+      "bytes": 3061379,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/rusk-hollow.png",
+      "originalSha256": "17c282fb4f0356deb3a69610dc8bbd16cd29d3467e3f84a24752d3444d582811",
+      "reusedApprovedExample": false,
+      "visualReview": "Visually checked: exact title, subtitle and chamber label; sole marker retained near 62%,45%; meadow and gentle hills, no added paths. Regenerated to remove invented paths from first attempt. Decorative terrain interpreted from sparse original."
+    },
+    {
+      "entityId": "location.caldris.lore.sallowmere",
+      "name": "Sallowmere",
+      "world": "caldris",
+      "kind": "settlement",
+      "file": "../caldris/maps/fantasy-atlas-v2/sallowmere.png",
+      "sha256": "4a92972c9cecd42776e5113f88f3c01f887f024acf3910614ee7f4672ac5df15",
+      "bytes": 3190127,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/sallowmere.png",
+      "originalSha256": "d8f05daa749bf1eadcdf24f82497467d60097d3d569b0769dadbdf452c035d5f",
+      "reusedApprovedExample": false,
+      "visualReview": "Visually checked exact labels and narrow western lake footprint; Pear Walk marker at approximate source position. Restrained terrain, no invented connecting roads. Sparse original interpreted as rural lakeshore gardens."
+    },
+    {
+      "entityId": "location.caldris.lore.seln",
+      "name": "Seln",
+      "world": "caldris",
+      "kind": "settlement",
+      "file": "../caldris/maps/fantasy-atlas-v2/seln.png",
+      "sha256": "b9fa8e5be32dce76015fa08b84b8dc8d1309bc3a4712c98bcbc019f98aff9ba1",
+      "bytes": 3074784,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/seln.png",
+      "originalSha256": "0631aa9f0c849ccb4fe18a0691d29aa2b9cbd811e456d274b340d1183a87cc2a",
+      "reusedApprovedExample": false,
+      "visualReview": "Visually checked: both exact site names, direct diagonal main connection and approximate anchor positions retained. Small teaching-house buildings and garden plots at the two anchors, woodland between; no invented water."
+    },
+    {
+      "entityId": "location.caldris.lore.selvar",
+      "name": "Selvar",
+      "world": "caldris",
+      "kind": "region",
+      "file": "../caldris/maps/fantasy-atlas-v2/selvar.png",
+      "sha256": "ff8e4b14de7f10f7ed094384124c931ece2977baae872a8cd9fe87618ea9a2f4",
+      "bytes": 3111488,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/selvar.png",
+      "originalSha256": "b829a09a642c85127ee90a157ead2ca78523fc527a1bcad1456a9230ce81a115",
+      "reusedApprovedExample": false,
+      "visualReview": "Visually checked title/subtitle and Namar Vale spelling, central circle marker near 49%,53%. Inland regional terrain retained; tiny settlement details and fine low ridges, no sea."
+    },
+    {
+      "entityId": "location.caldris.lore.serevan",
+      "name": "Serevan",
+      "world": "caldris",
+      "kind": "region",
+      "file": "../caldris/maps/fantasy-atlas-v2/serevan.png",
+      "sha256": "c200e57f828e6583a61a61d90589c8ef6f093784a4563e742b26bf80a0cca990",
+      "bytes": 2792489,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/serevan.png",
+      "originalSha256": "a3e96ccb792fa908be55b7d752f2294564c602f28dfb8b8e9e5788db3c0b9090",
+      "reusedApprovedExample": false,
+      "visualReview": "Visually checked all four exact names and three route connections. Corrected first generation to remove invented rivers/lakes/islands and restore coast continuing south out of frame. Main coordinates retained approximately. Regional town clusters stay tiny."
+    },
+    {
+      "entityId": "location.caldris.lore.vey-lowlands",
+      "name": "Vey Lowlands",
+      "world": "caldris",
+      "kind": "region",
+      "file": "../caldris/maps/fantasy-atlas-v2/vey-lowlands.png",
+      "sha256": "6a0511780f819293446fa6069e76bd141e0213cee13c30d765c82c1dd97aea58",
+      "bytes": 3173474,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/vey-lowlands.png",
+      "originalSha256": "d7887b54663f2cec1350318213f46be3b936d7e4b5b65f409a9831fa829f0368",
+      "reusedApprovedExample": false,
+      "visualReview": "Visually checked all 18 exact names and main road/boat connections, north-to-south Lower Vey and southern coast. Flat farmland/fen scale, no mountains. Waterlogged terrain and coastline are painterly interpretations; precise shoreline/overlay alignment needs review before any live replacement."
+    },
+    {
+      "entityId": "location.caldris.lore.willowrace",
+      "name": "Willowrace",
+      "world": "caldris",
+      "kind": "settlement",
+      "file": "../caldris/maps/fantasy-atlas-v2/willowrace.png",
+      "sha256": "e0fd74a03e08d64cd513b5006174d80b1f9c5dee8648f51adc929e083d0b7836",
+      "bytes": 3121010,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/willowrace.png",
+      "originalSha256": "ceed4a297d263d8518bb8a7b491af1a61bfb9dc7e172e41eb692312a685525a2",
+      "reusedApprovedExample": false,
+      "visualReview": "Visually checked all three site names and Mill channel label, V-shaped two-road graph and approximate marker coordinates. Modest roof clusters and farm plots follow original village-scale building groups; small bridge crosses preserved channel. No new sea or high mountains."
+    },
+    {
+      "entityId": "location.caldris.lornesse",
+      "name": "Lornesse",
+      "world": "caldris",
+      "kind": "region",
+      "file": "../caldris/maps/fantasy-atlas-v2/lornesse.png",
+      "sha256": "693a2e4e7f584171993c355e34b4c882dc59fe8dbaf83ff55268a46ab6743e99",
+      "bytes": 3277518,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/lornesse.png",
+      "originalSha256": "ece2d0b755cf8ef610c37c99686281de66bf9519c8bde6ecf73131276c949a82",
+      "reusedApprovedExample": false,
+      "visualReview": "Visually inspected; illustrative artwork."
+    },
+    {
+      "entityId": "location.caldris.namarra",
+      "name": "Namarra",
+      "world": "caldris",
+      "kind": "region",
+      "file": "../caldris/maps/fantasy-atlas-v2/namarra.png",
+      "sha256": "462b27493ef6fa48d2343ea13626577ba0ac54d400f6d196d5229f4635e231c6",
+      "bytes": 3017497,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/namarra.png",
+      "originalSha256": "5e0e1531cbf2a74b5a54f0e4204b6b962c61400f8382661ef9565474ec6b54c0",
+      "reusedApprovedExample": false,
+      "visualReview": "Visually checked exact settlement/site/river names and all road/boat connections. Corrected first output to remove new tributaries and keep only original main channel, southwest fork and lower southeast split. Flat field/reed terrain, no mountains; approximate original anchors."
+    },
+    {
+      "entityId": "location.caldris.ordelain",
+      "name": "Ordelain",
+      "world": "caldris",
+      "kind": "region",
+      "file": "../caldris/maps/fantasy-atlas-v2/ordelain.png",
+      "sha256": "3880428e1ff4329a75cb3ef094676137ebbadfd8dfe6b58d6001461d4fa2d0e5",
+      "bytes": 3264892,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/ordelain.png",
+      "originalSha256": "75676adc635b68c372cb4b854cf0437ccbb4bbf5114c91fc350eedda57d85eca",
+      "reusedApprovedExample": false,
+      "visualReview": "Visually checked all 11 place/river labels and main road graph/two boat links. Retained single Aur river and tiny Old Aur Island outline, no extra tributaries or sea. Farmland/woods scale appropriate for region. Added ornamental compass expands north arrow but does not change orientation."
+    },
+    {
+      "entityId": "location.caldris.selucia",
+      "name": "Selucia",
+      "world": "caldris",
+      "kind": "region",
+      "file": "../caldris/maps/fantasy-atlas-v2/selucia.png",
+      "sha256": "acadce8b578aea4a56241aabb3bfab8814f8228baa32fe8fbc420404b4424743",
+      "bytes": 2831464,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/selucia.png",
+      "originalSha256": "33ae33376fd517baae87c9c574b768b9b7fbfec3dcce7b329b1470f2f5760d8d",
+      "reusedApprovedExample": false,
+      "visualReview": "Visually checked six principal islands, all ten exact labels, road/path distinction and sea route graph. Towns small; Orchardback remains small exceptional icon. Painted coastlines and anchor positions are approximate; review against overlays before activation."
+    },
+    {
+      "entityId": "location.caldris.seven-lamps-league",
+      "name": "Seven Lamps League",
+      "world": "caldris",
+      "kind": "region",
+      "file": "../caldris/maps/fantasy-atlas-v2/seven-lamps-league.png",
+      "sha256": "65694c7fed182f3c5042fa41eb1f90208e3172d32e04ba3007fb4b93f1b21cc7",
+      "bytes": 3159474,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/seven-lamps-league.png",
+      "originalSha256": "bd384af89211f0c90772e66a0e3c218102ebc3dd0e11d2250f8dec562f729744",
+      "reusedApprovedExample": false,
+      "visualReview": "Visually checked ten exact names, western coast, small coastal town clusters and road network. Red restricted route/X and Sealed Hall underline retained; dashed sea connection to Serevan retained. No new inland water. Approximate anchors require final overlay review."
+    },
+    {
+      "entityId": "location.caldris.seven-lamps-league.aster-quay",
+      "name": "Aster Quay",
+      "world": "caldris",
+      "kind": "settlement",
+      "file": "../caldris/maps/fantasy-atlas-v2/aster-quay.png",
+      "sha256": "8f3844babf2ce1ee5f519072da30f398ae4efff69b82c530c718ed01d75c3764",
+      "bytes": 3336866,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/aster-quay.png",
+      "originalSha256": "c964acd2717450ab3b75d31846375e80d7696b08c0e303d61c45815eb87f62b2",
+      "reusedApprovedExample": false,
+      "visualReview": "Visually checked title/subtitle and The Long Table Rooms marker near 57.5%,49%. Clearly urban harbor district, many modest roofs, civic courtyards, wharves, gardens. Original supplied only a sparse building cluster, so unlabeled urban detail is illustrative interpretation, not an asserted street plan. Western coast remains continuous."
+    },
+    {
+      "entityId": "location.caldris.solasca",
+      "name": "Solasca",
+      "world": "caldris",
+      "kind": "region",
+      "file": "../caldris/maps/fantasy-atlas-v2/solasca.png",
+      "sha256": "a45c9fc572c931984745366ded6a022d094836ea3650525b74f4983aaab14a61",
+      "bytes": 3081868,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/solasca.png",
+      "originalSha256": "0cc7f4ac604c355d104ab9b5837ea883bc363a7615a59fba6acf1d6a292874f2",
+      "reusedApprovedExample": false,
+      "visualReview": "Visually checked all six exact region names/diamonds, source broad continent silhouette and three principal southwest islands, regional road graph and dashed southwest crossing. Tiny ridges/forest texture, no city-scale buildings or invented inland rivers. Coast details include decorative rocks; exact coast registration remains review-only."
+    },
+    {
+      "entityId": "location.caldris.tessarane",
+      "name": "Tessarane",
+      "world": "caldris",
+      "kind": "region",
+      "file": "../caldris/maps/fantasy-atlas-v2/tessarane.png",
+      "sha256": "8df1250adc70e1f36e7022f99b0ada186b961d9301ef2914697f26a8bb72293d",
+      "bytes": 3236459,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/tessarane.png",
+      "originalSha256": "e1fa112ccfb11aaea05974b4a799a18370e1c26011e919a2dc48944c4800f48b",
+      "reusedApprovedExample": false,
+      "visualReview": "Visually checked all ten exact names, road graph and two dashed paths. Dry inland plateau/mesa texture, no sea/lakes or dominant forests. Rain Crown is a small original-style icon, all markers approximately preserved; no oversized building symbols."
+    },
+    {
+      "entityId": "location.caldris.veyr-marches",
+      "name": "Veyr Marches",
+      "world": "caldris",
+      "kind": "region",
+      "file": "../caldris/maps/fantasy-atlas-v2/veyr-marches.png",
+      "sha256": "2ec120a96963518a963f0ae5e4d5574bf91cceb9c37b2360610a1469822b46a7",
+      "bytes": 3169244,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../caldris/maps/lore-atlas/veyr-marches.png",
+      "originalSha256": "431640c4ce3ae6cd135ca74bf49b5c81317a4d7b1c32860a7fb9615a1c50be15",
+      "reusedApprovedExample": false,
+      "visualReview": "Visually checked all 12 location/river labels, north-south trunk, triangular roads and dashed Shepherd's Refusal route. Single Reth water, no sea or extra tributaries. Fine wooded hills and small settlements; small painterly continuation at river end remains illustrative and not exact overlay proof."
+    },
+    {
+      "entityId": "location.thalorien.aldros",
+      "name": "Aldros",
+      "world": "thalorien",
+      "kind": "region",
+      "file": "../thalorien/maps/fantasy-atlas-v2/region-aldros.png",
+      "sha256": "f6c81842a5e1f62ebe76a27f7db72faeb2a24866952b98244e158ba98fdae495",
+      "bytes": 3656098,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../thalorien/maps/generated/thalorien-atlas-v1/region-aldros.png",
+      "originalSha256": "5ef8fe6de81cfe85bd42f0d9cbc0cd21ab0d4b0e84dd66fb5270856e75a3d10f",
+      "reusedApprovedExample": false,
+      "visualReview": "Viewed original and generated output. Main river network, two walled settlements, central sacred tree and map framing retained; no labels introduced. Cooler teal water and clearer forest texture. Existing exceptional tree and major city footprints remain intentionally visible, as in original."
+    },
+    {
+      "entityId": "location.thalorien.crownmere",
+      "name": "Crownmere",
+      "world": "thalorien",
+      "kind": "settlement",
+      "file": "../thalorien/maps/fantasy-atlas-v2/crownmere.png",
+      "sha256": "9f8ff9708e4d242a749aa97b6306b5ee26b61bbcd08291929355674e2d9f51eb",
+      "bytes": 3726278,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "originalFile": "../../../data/exports/current/objects/98/98162ab3115ed36bf000d81f24fc933a9ddc958b92634a7e239a8e2cf1c62bdd.bin",
+      "originalSha256": "98162ab3115ed36bf000d81f24fc933a9ddc958b92634a7e239a8e2cf1c62bdd",
+      "reusedApprovedExample": false,
+      "visualReview": "Viewed both. Circular city footprint, gates, radial streets and central palace/temple preserved. Label-free square retained. Improved natural greens and stone contrast; dense buildings stay proportionate at city scale."
+    },
+    {
+      "entityId": "location.thalorien.evandos",
+      "name": "Evandos",
+      "world": "thalorien",
+      "kind": "region",
+      "file": "../thalorien/maps/fantasy-atlas-v2/region-evandos.png",
+      "sha256": "56bf38306a6649054a991f19648d844a3dc2cd2749985dc7e862c61657236827",
+      "bytes": 3555420,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../thalorien/maps/generated/thalorien-atlas-v1/region-evandos.png",
+      "originalSha256": "27239b417c90e62719e8be65ad9a0ef8e16b306da7c73e772d30ea5106d60d2e",
+      "reusedApprovedExample": false,
+      "visualReview": "Viewed both. Snowy north, northern coastal outline, ruin, river/lake locations and southeast woods retained; label-free 4:3 framing retained. Stronger teal/evergreen/ivory separation. Fine geographic lines artistically reinterpreted, not pixel-identical."
+    },
+    {
+      "entityId": "location.thalorien.merceros",
+      "name": "Merceros",
+      "world": "thalorien",
+      "kind": "region",
+      "file": "../thalorien/maps/fantasy-atlas-v2/region-merceros.png",
+      "sha256": "fb0f8d490f145dcecd5294f341cc2f83d9d453151346defe034672aa60a4c4fc",
+      "bytes": 3520377,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../thalorien/maps/generated/thalorien-atlas-v1/region-merceros.png",
+      "originalSha256": "4ae9370cc2de3a59e80ea80d51e1f3a5c6d456dcf9b684924082ed7ad35232bf",
+      "reusedApprovedExample": false,
+      "visualReview": "Viewed both. Southern hook/bay, port, western/eastern coasts, central river and farm/woodland pattern closely preserved; no labels added. Clear teal waters and more legible moss/slate terrain."
+    },
+    {
+      "entityId": "location.thalorien.merrowgate",
+      "name": "Merrowgate",
+      "world": "thalorien",
+      "kind": "settlement",
+      "file": "../thalorien/maps/fantasy-atlas-v2/merrowgate.png",
+      "sha256": "1c2104efe374e91347c9b4d4b62aa0d4e13e4d7e7144a50a25b5ebe1f118acbd",
+      "bytes": 3746623,
+      "dimensions": [
+        1254,
+        1254
+      ],
+      "originalFile": "../../../data/exports/current/objects/3e/3e49e998b976d9e85748c774b700b1a8de2965b76e10147cb3619f845cdef07c.bin",
+      "originalSha256": "3e49e998b976d9e85748c774b700b1a8de2965b76e10147cb3619f845cdef07c",
+      "reusedApprovedExample": false,
+      "visualReview": "Viewed both. Original square, perimeter, gates, central radial crossroads, market squares and northern keep retained. No labels/geography introduced; city building scale consistent. Palette refined to moss, terracotta and limestone."
+    },
+    {
+      "entityId": "location.thalorien.minevros",
+      "name": "Minevros",
+      "world": "thalorien",
+      "kind": "region",
+      "file": "../thalorien/maps/fantasy-atlas-v2/region-minevros.png",
+      "sha256": "e0a80ff6c0c4c9a27519cb8d2f7b60e985710c8787fc4c0599641820c50591fa",
+      "bytes": 3502088,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../thalorien/maps/generated/thalorien-atlas-v1/region-minevros.png",
+      "originalSha256": "d2b54fec27699cfb09e280119f5024ed6ac0fab0fc2c4bb93a9b3eccec1259ea",
+      "reusedApprovedExample": false,
+      "visualReview": "Viewed both. West/north coast, long coastal mountain chain, central white tower and eastern river/lake system preserved; no labels. Existing tower retained within original footprint and no new large landmarks introduced. Teal/evergreen palette clearer."
+    },
+    {
+      "entityId": "location.thalorien.rhiannos",
+      "name": "Rhiannos",
+      "world": "thalorien",
+      "kind": "region",
+      "file": "../thalorien/maps/fantasy-atlas-v2/region-rhiannos.png",
+      "sha256": "c7368a2b8397e72ab2d1111917bee6ba6eddb71775ecaf4a6d59c09761dc197e",
+      "bytes": 3498552,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../thalorien/maps/generated/thalorien-atlas-v1/region-rhiannos.png",
+      "originalSha256": "acaeb2f584a2deb37a1b883a4890a0be5ac7d465c3eacfa3fc312721c649c544",
+      "reusedApprovedExample": false,
+      "visualReview": "Viewed both. North/east coast, northwest snow/ruin, evergreen belt and eastern white tower retained in original positions. Label-free framing preserved; teal water and greener forests improve separation. Small river/terrain details artistically reinterpreted."
+    },
+    {
+      "entityId": "location.thalorien.southwestern-volcanic-region",
+      "name": "Southwestern Volcanic Region",
+      "world": "thalorien",
+      "kind": "region",
+      "file": "../thalorien/maps/fantasy-atlas-v2/region-southwestern-volcanic.png",
+      "sha256": "1d2ce5c8d3e0d133c63b76da925ab448c81d3a195723cd3bd418d17cbce8b01f",
+      "bytes": 3554228,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../thalorien/maps/generated/thalorien-atlas-v1/region-southwestern-volcanic.png",
+      "originalSha256": "1a426764714afd43a40f0e27aac2785ef015195268f1220c5dd00c0cc69c83b0",
+      "reusedApprovedExample": false,
+      "visualReview": "Viewed both. Main northwest volcanic peak, western/southern coastal profile, two principal offshore volcanic islands and eastern green hills preserved. No words added; restrained ember, charcoal, moss and teal treatment. Small rocks reinterpreted artistically."
+    },
+    {
+      "entityId": "location.thalorien.thalos",
+      "name": "Thalos",
+      "world": "thalorien",
+      "kind": "region",
+      "file": "../thalorien/maps/fantasy-atlas-v2/thalos-world.png",
+      "sha256": "f4b48809cfbf987e236293130de2158f443311c2ddbab1da274ab1aae55ad5ff",
+      "bytes": 3209553,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../thalorien/maps/generated/thalorien-atlas-v1/thalos-world.png",
+      "originalSha256": "585db4f25363657751cc97dda7e778baa5f90fb68c36e54b8304cc7f5960e254",
+      "reusedApprovedExample": false,
+      "visualReview": "Viewed refinement beside prior output. Ordinary mountain belts now contain visibly lower, finer ridge chains; forests use denser small canopy texture instead of large individual cones. Coastline/island shapes, large biome footprints and special tree/tower/volcano positions retained. Exceptional World Tree remains intentionally symbolic at its original clearing. No labels/frame. Exact marker alignment still not certified."
+    },
+    {
+      "entityId": "location.thalorien.valeros",
+      "name": "Valeros",
+      "world": "thalorien",
+      "kind": "region",
+      "file": "../thalorien/maps/fantasy-atlas-v2/region-valeros.png",
+      "sha256": "b9af358691703a0a72f151eca2538bc58caa7b35da66611fc076997793dd6040",
+      "bytes": 3571102,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../thalorien/maps/generated/thalorien-atlas-v1/region-valeros.png",
+      "originalSha256": "7de4a28b0553a3237ddfae78b877ba04149f4fc4c96499012b50cb8adbbb5181",
+      "reusedApprovedExample": false,
+      "visualReview": "Viewed both. Large western forest, eastern diagonal ridge/tower, top-center farms and southeast forested coastal gorges retained. No labels introduced; clearer teal, moss and limestone relief. Geometric fine detail differs as expected for painted restyle."
+    },
+    {
+      "entityId": "location.thalorien.waylos",
+      "name": "Waylos",
+      "world": "thalorien",
+      "kind": "region",
+      "file": "../thalorien/maps/fantasy-atlas-v2/region-waylos.png",
+      "sha256": "00b38231827aee49dbb6d0362013065f5bc98962bb9d0158295e39ed24ef9b7f",
+      "bytes": 3661982,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../thalorien/maps/generated/thalorien-atlas-v1/region-waylos.png",
+      "originalSha256": "a309639b1da2662daca6a048a6762b0a0ad741408d3901a75e154f0ebdbf39bd",
+      "reusedApprovedExample": false,
+      "visualReview": "Viewed both. Main volcano, gold-capped tower, west/south sea, three principal offshore volcanic islets and east/north mountain belts retained. No labels. Clearer teal and green/charcoal palette; tiny coastal rock details vary."
+    },
+    {
+      "entityId": "location.thalorien.world-tree-grounds",
+      "name": "World Tree Grounds",
+      "world": "thalorien",
+      "kind": "region",
+      "file": "../thalorien/maps/fantasy-atlas-v2/region-world-tree-grounds.png",
+      "sha256": "9a3d7b542566dfa9a527f98096acbd3f7cf196607c8930516650cbfbed1503d9",
+      "bytes": 3607957,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": "../thalorien/maps/generated/thalorien-atlas-v1/region-world-tree-grounds.png",
+      "originalSha256": "0b38b4408636a2630606af3fb52daf6bb8926e3bf5e42be9bfee757d9429ecdd",
+      "reusedApprovedExample": false,
+      "visualReview": "Viewed both. Sacred tree, root/canopy footprint, pale concentric precinct, southern cascade/bridge and flanking rivers retained. No labels/frame introduced. This is the tree's immediate precinct, so its large local footprint is intentional and inherited from original. Moss/teal/limestone treatment clearer."
+    }
+  ]
+}
