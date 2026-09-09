@@ -4,7 +4,7 @@ import { MediaImage } from "./MediaImage";
 
 function PersonCard({ person }: { person: LocationPerson }) {
   return (
-    <article className="location-person-card" aria-labelledby={`${person.id}-heading`}>
+    <article className="location-person-card" aria-labelledby={`${person.id}-heading`} data-record-id={person.id}>
       <header>
         <span className="location-person-card__portrait">
           <MediaImage fallback={<span aria-hidden="true">{person.initials}</span>} media={person.portrait} />

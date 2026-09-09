@@ -215,6 +215,7 @@ export function RulesView({
                   <button
                     aria-pressed={selectedRule.id === rule.id}
                     className="rule-index-card"
+                    data-record-id={rule.id}
                     key={rule.id}
                     onClick={() => selectRule(rule)}
                     type="button"

@@ -103,7 +103,7 @@ export function WorldPeopleDirectory({ world, selectedPersonId, onPersonSelect, 
           <nav aria-label="People and creatures" className="world-person-list">
             {people.map((person) => (
               <button aria-pressed={selectedPerson.id === person.id} className="world-person-list__item"
-                data-selected={selectedPerson.id === person.id ? "true" : undefined} key={person.id}
+                data-record-id={person.id} data-selected={selectedPerson.id === person.id ? "true" : undefined} key={person.id}
                 onClick={() => onPersonSelect(person.id)} type="button">
                 <span className="world-person-card__portrait">
                   <MediaImage fallback={<span aria-hidden="true">{person.initials}</span>} media={person.portrait} />

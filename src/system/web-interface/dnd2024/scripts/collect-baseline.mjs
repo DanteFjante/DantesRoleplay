@@ -11,7 +11,8 @@ import { completeWorkloadEvidence } from './complete-workload.mjs';
 const scriptPath = fileURLToPath(import.meta.url);
 export const webRoot = resolve(dirname(scriptPath), '..');
 const repositoryRoot = resolve(webRoot, '../../../..');
-export const requiredMarks = ['shell', 'bootstrap', 'activeView', 'character', 'map'];
+export const requiredMarks = ['shell', 'bootstrap', 'activeView', 'firstReady', 'character', 'map',
+  'warmReturn', 'completeWorkload'];
 export const sha256 = value => createHash('sha256').update(value).digest('hex');
 export const machineProfile = () => ({
   platform: platform(), release: release(), cpu: cpus()[0]?.model ?? 'unknown',
@@ -20,7 +21,6 @@ export const machineProfile = () => ({
 
 export function normalizeListener(value) {
   const url = new URL(value);
-  assert.ok(['localhost', '127.0.0.1', '[::1]'].includes(url.hostname), 'Baseline is local-only');
   assert.ok(['http:', 'https:'].includes(url.protocol));
   assert.ok(!url.username && !url.password && !url.search && !url.hash && url.pathname === '/');
   return url.origin;
@@ -28,15 +28,10 @@ export function normalizeListener(value) {
 
 export function audienceViewFor(audience, perspective) {
   assert.ok(['player', 'dm'].includes(perspective), 'Perspective must be player or dm');
-  if (audience?.role === 'game-master') {
-    assert.equal(audience.actorId ?? null, null, 'A GameMaster baseline must not bind an actor');
-    return perspective === 'dm' ? 'game-master' : 'gm-player-preview';
-  }
-  assert.equal(audience?.role, 'actor', 'Baseline requires an Actor or GameMaster audience');
-  assert.ok(typeof audience.actorId === 'string' && audience.actorId.length > 0,
-    'An Actor baseline requires an actual bound actor');
-  assert.equal(perspective, 'player', 'An Actor baseline cannot request DM perspective');
-  return 'actor';
+  assert.equal(audience?.role, 'game-master', 'The website baseline requires the shared full-authority site audience');
+  assert.equal(audience.actorId ?? null, null, 'The shared website audience must not bind an Actor seat');
+  assert.equal(perspective, 'dm', 'Player filtering needs an explicit observer and a separate observer-preview harness');
+  return 'shared-table';
 }
 
 export function worktreeEvidence(excludedPaths = []) {
@@ -224,7 +219,8 @@ export function browserEvidence(source, live) {
         'payloadBytes', 'cacheResult', 'outcome'].includes(key)) ||
       typeof request.path !== 'string' || !request.path.startsWith('/') ||
       request.path.includes('?') || request.path.includes('#') ||
-      !['GET', 'HEAD'].includes(request.method) ||
+      !(['GET', 'HEAD'].includes(request.method) || request.method === 'POST' &&
+        /^\/api\/applications\/[^/]+\/state-spaces\/[^/]+\/media-batch$/u.test(request.path)) ||
       !(Number.isFinite(request.durationMs) && request.durationMs >= 0 || request.durationMs === null && request.outcome === 'incomplete') ||
       request.payloadBytes !== null && (!Number.isSafeInteger(request.payloadBytes) || request.payloadBytes < 0)))
       problems.push('Invalid or unsafe request metadata.');

@@ -2,8 +2,9 @@ import assert from 'node:assert/strict';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { audienceViewFor, livePageEvidence, machineProfile, normalizeListener, sameLivePage, sha256, webRoot } from './collect-baseline.mjs';
-import { completeWorkloadEvidence, recordSetEvidence, workloadHarnessFingerprint } from './complete-workload.mjs';
+import { audienceViewFor, livePageEvidence, machineProfile, normalizeListener, requiredMarks,
+  sameLivePage, sha256, webRoot } from './collect-baseline.mjs';
+import { completeWorkloadEvidence, isReadOnlyWorkloadRequest, recordSetEvidence, workloadHarnessFingerprint } from './complete-workload.mjs';
 import { readGameServerContext } from '../src/server/game-server-context.js';
 
 // Private bodies, query values, cookies, console messages and DOM text never enter the report.
@@ -31,14 +32,19 @@ export function initializeBrowserProbe({ perspective }) {
   window.__DND_BASELINE_SCRIPT_ERRORS__ = 0;
   window.addEventListener('error', () => { window.__DND_BASELINE_SCRIPT_ERRORS__++; });
   window.addEventListener('unhandledrejection', () => { window.__DND_BASELINE_SCRIPT_ERRORS__++; });
-  const allowed = method => ['GET', 'HEAD'].includes(String(method ?? 'GET').toUpperCase());
+  const allowed = (method, target) => {
+    method = String(method ?? 'GET').toUpperCase();
+    if (['GET', 'HEAD'].includes(method)) return true;
+    const path = new URL(typeof target === 'string' || target instanceof URL ? String(target) : target?.url, location.href).pathname;
+    return method === 'POST' && /^\/api\/applications\/[^/]+\/state-spaces\/[^/]+\/media-batch$/u.test(path);
+  };
   const rejectWrite = () => {
     window.__DND_BASELINE_BLOCKED_WRITES__++;
     throw new Error('Baseline blocks writes');
   };
   const originalFetch = window.fetch.bind(window);
   window.fetch = (input, init) => {
-    if (!allowed(init?.method ?? input?.method)) {
+    if (!allowed(init?.method ?? input?.method, input)) {
       window.__DND_BASELINE_BLOCKED_WRITES__++;
       window.__DND_BASELINE_BLOCKED_OPERATIONS__.push({
         method: String(init?.method ?? input?.method),
@@ -50,7 +56,7 @@ export function initializeBrowserProbe({ perspective }) {
   };
   const open = XMLHttpRequest.prototype.open;
   XMLHttpRequest.prototype.open = function (method, ...args) {
-    if (!allowed(method)) return rejectWrite();
+    if (!allowed(method, args[0])) return rejectWrite();
     return open.call(this, method, ...args);
   };
   navigator.sendBeacon = url => {
@@ -117,7 +123,8 @@ async function sample(page, client, cacheState, index) {
   page.on('pageerror', onError);
   client.on('Network.requestServedFromCache', onCacheHit);
   client.on('Network.requestWillBeSent', onNetworkRequest);
-  const run = { id: cacheState + '-' + index, cacheState, status: 'failed', marks: {}, outcomes: {}, traversal: {}, requests };
+  const run = { id: cacheState + '-' + index, cacheState, status: 'failed', marks: {}, outcomes: {},
+    checks: {}, traversal: {}, requests };
   const time = () => page.evaluate(() => performance.now());
   const paint = () => page.evaluate(() => new Promise(resolve =>
     requestAnimationFrame(() => requestAnimationFrame(resolve))));
@@ -127,6 +134,49 @@ async function sample(page, client, cacheState, index) {
       && !isPersistentReadPath(new URL(request.url()).pathname))) {
       if (Date.now() >= deadline) throw new Error('Finite browser requests did not settle within 60 seconds');
       await page.waitForTimeout(25);
+    }
+  };
+  const settle = async () => { await waitForFiniteRequests(); await paint(); await waitForFiniteRequests(); await paint(); };
+  const passed = name => { run.checks[name] = 'passed'; };
+  const capture = async (name, selector, fallbackIds = []) => {
+    const snapshot = await page.evaluate(({ selector, fallbackIds }) => {
+      const root = document.querySelector('#information-content');
+      if (!root?.querySelector('#main-view-heading') && !root?.querySelector('.item-page, .recipe-page'))
+        return { status: 'unloaded', ids: [] };
+      if (root.querySelector('.view-loading, [aria-busy="true"]')) return { status: 'unloaded', ids: [] };
+      if (root.querySelector('.view-render-error, [role="alert"]')) return { status: 'error', ids: [] };
+      const ids = [...root.querySelectorAll(selector)].map(element =>
+        element.getAttribute('data-record-id') ?? element.getAttribute('data-item-open') ??
+        element.getAttribute('data-registry-entry') ?? element.getAttribute('data-recipe-entry') ??
+        (element.id || null) ??
+        element.getAttribute('aria-labelledby')?.replace(/-heading$/u, '') ??
+        element.querySelector('h2, h3')?.textContent?.trim()).filter(Boolean);
+      return { status: ids.length || fallbackIds.length ? 'ready' : 'empty', ids: ids.length ? ids : fallbackIds };
+    }, { selector, fallbackIds });
+    run.traversal[name] = { status: snapshot.status,
+      complete: ['ready', 'empty'].includes(snapshot.status), ...recordSetEvidence(snapshot.ids) };
+    return snapshot;
+  };
+  const clickMain = async label => {
+    phase = ({ Campaign: 'campaign-overview', Party: 'party-overview', World: 'world-overview',
+      'Current View': 'current', Rules: 'rules', 'Installed Content': 'installed-content' })[label];
+    await page.getByRole('navigation', { name: 'Main table views', exact: true })
+      .getByRole('button', { name: label, exact: true }).click();
+    await settle();
+  };
+  const clickSection = async (navigationLabel, label, interaction) => {
+    phase = interaction;
+    await page.getByRole('navigation', { name: navigationLabel, exact: true })
+      .getByRole('button', { name: label, exact: true }).click();
+    await settle();
+  };
+  const loadAll = async (labelPattern, interactionPrefix) => {
+    let pageNumber = 1;
+    while (await page.getByRole('button', { name: labelPattern }).count()) {
+      assert.ok(++pageNumber <= 100, `${interactionPrefix} continuation did not terminate`);
+      phase = `${interactionPrefix}-page-${pageNumber}`;
+      await page.getByRole('button', { name: labelPattern }).click();
+      await settle();
     }
   };
   try {
@@ -141,7 +191,7 @@ async function sample(page, client, cacheState, index) {
     Object.assign(run.marks, observed);
     await waitForFiniteRequests();
     if (!await page.locator('.information-hub:not(.bootstrap-shell):not(.rules-only-hub) #main-view-heading').count()) {
-      for (const name of ['shell', 'bootstrap', 'activeView', 'character', 'map']) {
+      for (const name of requiredMarks) {
         if (run.marks[name] === undefined) run.outcomes[name] = {
           status: 'error', reason: 'The live application failed before the requested view could render.',
         };
@@ -151,106 +201,101 @@ async function sample(page, client, cacheState, index) {
       run.status = 'collected';
       return run;
     }
-    phase = 'character';
-    const characterStart = await time();
-    const navigation = page.getByRole('navigation', { name: 'Main table views', exact: true });
-    await navigation.getByRole('button', { name: 'Party', exact: true }).click();
-    await page.locator('.character-page, .view-render-error, #information-content [data-reason-code="audience-restricted"]').waitFor({ state: 'visible' });
-    run.step = 'open-character-sheet';
-    const characterButton = page.getByRole('button', { name: /^Character( sheet)?$/ });
-    if (await characterButton.count()) {
-      await characterButton.click();
-      await page.locator([
-        '.character-sheet-v2',
-        '.character-state--stale',
-        '.character-state--error',
-        '.character-state--forbidden',
-        '.character-state--empty',
-      ].join(', ')).first().waitFor({ state: 'visible' });
-    }
-    run.step = 'wait-canonical-sheet';
-    await paint();
-    const characterStatus = await page.evaluate(() => {
-      if (document.querySelector('#information-content [data-reason-code="audience-restricted"]')) return 'unavailable';
-      if (document.querySelector('.view-render-error')) return 'error';
-      for (const state of ['stale', 'error', 'forbidden', 'empty']) {
-        if (document.querySelector('.character-state--' + state)) return state;
-      }
-      return document.querySelector('.character-sheet-v2') ? 'ready' : 'unavailable';
+    passed('startup');
+    await page.locator('.character-page, .view-render-error').first().waitFor({ state: 'visible' });
+    await settle();
+    passed('inventory-direct-entry');
+    const firstInventoryButton = page.locator('[data-item-open]').first();
+    assert.ok(await firstInventoryButton.count(), 'Production traversal requires at least one carried item');
+    const firstInventoryItemId = await firstInventoryButton.getAttribute('data-item-open');
+    const inventoryStyle = await firstInventoryButton.evaluate(element => {
+      const style = getComputedStyle(element);
+      return { display: style.display, cursor: style.cursor,
+        cue: Boolean(element.querySelector('.character-inventory__view-cue')) };
     });
-    run.outcomes.character = { status: characterStatus, reason: characterStatus === 'ready'
-      ? null : 'The unchanged live view did not render a ready canonical character sheet.' };
-    if (characterStatus === 'ready') run.marks.character = await time() - characterStart;
-    run.traversal.character = { status: characterStatus, complete: true,
-      ...(await page.locator('#information-content [data-reason-code="audience-restricted"]').count()
-        ? { reasonCode: 'audience-restricted' } : {}), ...recordSetEvidence(
-      characterStatus === 'ready' ? await page.locator('.character-page[data-record-id]').evaluateAll(
-        elements => elements.map(element => element.dataset.recordId)) : []) };
-    await waitForFiniteRequests();
-    phase = 'map';
-    const mapStart = await time();
-    await navigation.getByRole('button', { name: 'World', exact: true }).click();
-    await page.getByRole('navigation', { name: 'World sections', exact: true })
-      .getByRole('button', { name: 'Map', exact: true }).click();
-    await paint(); await waitForFiniteRequests(); await paint();
-    if (await page.locator('.world-map-canvas[data-base="present"]').count()) {
-      await page.locator('.world-map-canvas').waitFor({ state: 'visible' });
-      await page.waitForFunction(() => [...document.querySelectorAll('.world-map-canvas img')]
-        .every(image => image.complete && image.naturalWidth > 0));
-      await paint();
-      run.marks.map = await time() - mapStart;
-      run.traversal.map = { status: 'ready', complete: true, ...recordSetEvidence(
-        await page.locator('.world-map-canvas[data-base="present"]').evaluateAll(elements =>
-          elements.map(element => element.dataset.recordId))) };
-    } else {
-      const notReady = await page.locator('#information-content .view-loading, #information-content [role="alert"], #information-content .view-render-error').count();
-      const status = notReady ? 'unloaded' : 'unavailable';
-      run.outcomes.map = { status, reason: 'No authorized map canvas rendered.' };
-      run.traversal.map = { status, complete: !notReady,
-        ...(!notReady ? { reasonCode: 'no-authorized-content' } : {}), ...recordSetEvidence([]) };
+    run.inventoryStyle = inventoryStyle;
+    assert.ok(inventoryStyle.display !== 'inline' && inventoryStyle.display !== 'inline-block' &&
+      inventoryStyle.cursor === 'pointer' && inventoryStyle.cue, 'Inventory first-entry interaction styling is missing');
+    passed('inventory-first-entry-style');
+    const firstReadyAssetPaths = await page.evaluate(() => [...new Set(performance.getEntriesByType('resource')
+      .map(entry => new URL(entry.name).pathname).filter(path => /\/assets\/.*\.(?:css|js)$/u.test(path)))]);
+    assert.ok(!firstReadyAssetPaths.some(path =>
+      /(?:ItemRecipes|ItemRegistryWorkspaceFeature|ScopedMapWorkspace|RulesView|InstalledContentView|PreviewViewsFeature)/u.test(path)),
+    'An unrelated lazy feature asset loaded before direct-entry Inventory became ready');
+    run.firstReadyAssets = { ...recordSetEvidence(firstReadyAssetPaths),
+      cssCount: firstReadyAssetPaths.filter(path => path.endsWith('.css')).length,
+      jsCount: firstReadyAssetPaths.filter(path => path.endsWith('.js')).length };
+    passed('inventory-css-isolation');
+    run.marks.firstReady = await time();
+    await capture('inventory', '[data-item-open]');
+
+    phase = 'inventory-item-details';
+    await firstInventoryButton.click(); await page.locator('.item-page').waitFor({ state: 'visible' }); await settle();
+    await capture('inventory-item-details', '.item-page', [firstInventoryItemId]);
+    phase = 'inventory-item-recipes';
+    await page.getByRole('tab', { name: 'Known recipes', exact: true }).click(); await settle();
+    await capture('inventory-item-recipes', '.item-page', [firstInventoryItemId]);
+    phase = 'inventory-item-uses';
+    await page.getByRole('tab', { name: 'Known uses', exact: true }).click(); await settle();
+    await capture('inventory-item-uses', '.item-page', [firstInventoryItemId]);
+    await page.locator('.item-page__breadcrumbs').getByRole('button', { name: 'Inventory', exact: true }).click();
+    await page.locator('[data-item-open]').first().waitFor({ state: 'visible' }); await settle();
+    assert.equal(await page.evaluate(id => document.activeElement?.getAttribute('data-item-open') === id, firstInventoryItemId), true);
+    passed('inventory-item-return');
+    await page.goForward(); await page.locator('.item-page').waitFor({ state: 'visible' });
+    await page.goBack(); await page.locator('[data-item-open]').first().waitFor({ state: 'visible' }); await settle();
+    passed('back-forward');
+
+    await clickSection('Character dossier sections', 'Overview', 'party-overview');
+    await page.locator('.character-overview, .character-overview-skeleton').first().waitFor({ state: 'visible' }); await settle();
+    await capture('party-overview', '[data-character-member]');
+    const characterStart = await time();
+    await clickSection('Character dossier sections', 'Character', 'character-sheet');
+    await page.locator('.character-sheet-v2, .character-state').first().waitFor({ state: 'visible' });
+    await capture('character-sheet', '.character-page[data-record-id]');
+    run.marks.character = await time() - characterStart;
+    for (const [label, name] of [['Knowledge', 'character-knowledge'], ['Biography', 'character-biography'],
+      ['Origin', 'character-origin']]) {
+      await clickSection('Character dossier sections', label, name);
+      await capture(name, '.character-page[data-record-id]');
     }
-    await waitForFiniteRequests();
-    for (const view of ['history', 'lore', 'locations', 'people', 'factions']) {
-      phase = view;
-      await page.getByRole('navigation', { name: 'World sections', exact: true })
-        .getByRole('button', { name: view[0].toUpperCase() + view.slice(1), exact: true }).click();
-      await waitForFiniteRequests();
-      await paint();
-      await waitForFiniteRequests();
-      // Factions is the currently paged World view. A cursor which never advances fails
-      // the bounded traversal; never count the first page as the complete directory.
-      let pages = 0;
-      while (view === 'factions' && await page.getByRole('button', { name: 'Load more factions', exact: true }).count()) {
-        assert.ok(++pages <= 10, 'Faction continuation did not terminate');
-        phase = 'factions-page-' + (pages + 1);
-        await page.getByRole('button', { name: 'Load more factions', exact: true }).click();
-        await waitForFiniteRequests(); await paint();
-      }
-      const snapshot = await page.evaluate(view => {
-        const root = document.querySelector('#information-content');
-        if (!root?.querySelector('#main-view-heading')) return { status: 'unloaded', ids: [] };
-        if (document.querySelector('.information-hub > [role="alert"]') ||
-            root?.querySelector('[role="alert"], .view-render-error')) return { status: 'error', ids: [] };
-        if (root.querySelector('[data-view-status="unavailable"][data-reason-code="audience-restricted"]'))
-          return { status: 'unavailable', reasonCode: 'audience-restricted', ids: [] };
-        if (root?.querySelector('.view-loading, [aria-busy="true"]')) return { status: 'unloaded', ids: [] };
-        const selectors = { history: '.history-event', lore: '.lore-card',
-          locations: '.location-row', people: '.world-person-card', factions: '.faction-card' };
-        const elements = [...(root?.querySelectorAll(selectors[view]) ?? [])];
-        const ids = elements.map(element => element.dataset.recordId ??
-          (view === 'people' ? element.id.replace(/^world-person-/, '') :
-            view === 'factions' ? element.id.replace(/^world-faction-/, '') :
-              element.getAttribute('aria-labelledby')?.replace(/-heading$/, '')));
-        return { status: ids.length ? 'ready' : 'empty', ids };
-      }, view);
-      run.traversal[view] = { status: snapshot.status,
-        complete: ['ready', 'empty'].includes(snapshot.status) || snapshot.reasonCode === 'audience-restricted',
-        ...(snapshot.reasonCode ? { reasonCode: snapshot.reasonCode } : {}), ...recordSetEvidence(snapshot.ids) };
-    }
-    phase = 'context';
-    await page.locator('.world-context__trigger').click();
-    await paint(); await waitForFiniteRequests(); await paint();
+
+    await clickSection('Character dossier sections', 'Registry', 'registry-items');
+    await page.locator('.party-registry').waitFor({ state: 'visible' }); await settle();
+    await loadAll(/^Load more \(/u, 'registry-items');
+    const firstRegistryItem = page.locator('[data-registry-entry]').first();
+    assert.ok(await firstRegistryItem.count(), 'Production traversal requires at least one registry item');
+    const registryItemId = await firstRegistryItem.getAttribute('data-registry-entry');
+    await capture('registry-items', '[data-registry-entry]');
+    phase = 'registry-item-details'; await firstRegistryItem.click();
+    await page.locator('.item-page').waitFor({ state: 'visible' }); await settle();
+    await capture('registry-item-details', '.item-page', [registryItemId]);
+    phase = 'registry-item-recipes';
+    await page.getByRole('tab', { name: 'Recipes', exact: true }).click(); await settle();
+    await capture('registry-item-recipes', '.item-page', [registryItemId]);
+    await page.locator('.item-page__breadcrumbs').getByRole('button', { name: 'Items', exact: true }).click();
+    await page.locator('[data-registry-entry]').first().waitFor({ state: 'visible' }); await settle();
+    assert.equal(await page.evaluate(id => document.activeElement?.getAttribute('data-registry-entry') === id, registryItemId), true);
+    passed('registry-item-return');
+    await clickSection('Registry sections', 'Recipes', 'registry-recipes');
+    await page.locator('.recipe-registry').waitFor({ state: 'visible' }); await settle();
+    await loadAll(/^Load more \(/u, 'registry-recipes');
+    const firstRecipe = page.locator('[data-recipe-entry]').first();
+    assert.ok(await firstRecipe.count(), 'Production traversal requires at least one registry recipe');
+    const recipeId = await firstRecipe.getAttribute('data-recipe-entry');
+    await capture('registry-recipes', '[data-recipe-entry]');
+    phase = 'registry-recipe-details'; await firstRecipe.click();
+    await page.locator('.recipe-page').waitFor({ state: 'visible' }); await settle();
+    await capture('registry-recipe-details', '.recipe-page', [recipeId]);
+    await page.locator('.item-page__breadcrumbs').getByRole('button', { name: 'Recipes', exact: true }).click();
+    await page.locator('[data-recipe-entry]').first().waitFor({ state: 'visible' }); await settle();
+    assert.equal(await page.evaluate(id => document.activeElement?.getAttribute('data-recipe-entry') === id, recipeId), true);
+    passed('registry-recipe-return');
+
+    phase = 'context'; await page.locator('.world-context__trigger').click(); await settle();
     const contextIds = [];
+    const selectedCampaignId = await page.locator('.context-picker__campaign[aria-current="true"]')
+      .getAttribute('data-record-id');
     for (const world of await page.locator('.context-picker__world').all()) {
       contextIds.push(await world.getAttribute('data-record-id'));
       await world.click(); await paint();
@@ -258,35 +303,143 @@ async function sample(page, client, cacheState, index) {
         elements => elements.map(element => element.dataset.recordId)));
     }
     const contextFailed = !await page.locator('.context-picker').count() ||
-      await page.locator('.context-picker [role="alert"], .context-picker [role="status"]').count();
+      await page.locator('.context-picker [role="alert"]').count();
     run.traversal.context = { status: contextFailed ? 'error' : contextIds.length ? 'ready' : 'empty',
       complete: !contextFailed, ...recordSetEvidence(contextIds) };
+    assert.ok(contextIds.length >= 2 && selectedCampaignId, 'At least one world/campaign context must be selectable');
+    passed('context-switch');
     await page.getByRole('button', { name: 'Close world and campaign selection', exact: true }).click();
-    phase = 'current';
-    const currentStart = await time();
-    await navigation.getByRole('button', { name: 'Current View', exact: true }).click();
-    await page.locator('.current-scene-view, .view-render-error').waitFor({ state: 'visible' });
-    if (await page.locator('.view-render-error').count()) {
-      run.outcomes.current = { status: 'error', reason: 'The Current view error boundary rendered.' };
-      run.combatBoard = { status: 'unavailable', reason: 'Current view could not render.' };
-    } else if (await page.locator('.tactical-board-viewport').count()) {
-      await paint();
-      run.marks.combatBoard = await time() - currentStart;
-    } else {
-      run.combatBoard = { status: 'not-applicable', reason: 'No authorized tactical board in the current live situation.' };
+
+    await clickMain('Campaign');
+    await page.locator('.campaign-view').waitFor({ state: 'visible' }); await settle();
+    const campaignViews = [
+      ['Overview', 'campaign-overview', '.campaign-overview', [selectedCampaignId]],
+      ['Adventure Log', 'campaign-log', '.campaign-log-entry[data-record-id]', []],
+      ['Places Visited', 'campaign-places', '.campaign-place-card[data-record-id]', []],
+      ['Outcomes', 'campaign-outcomes', '.campaign-outcome-card[data-record-id]', []],
+      ['Quests', 'campaign-quests', '.campaign-quest-card[data-record-id]', []],
+      ['Open Threads', 'campaign-threads', '.campaign-thread-card[data-record-id]', []],
+      ['Clues', 'campaign-clues', '.campaign-clue-card[data-record-id]', []],
+    ];
+    for (const [label, name, selector, fallback] of campaignViews) {
+      await clickSection('Campaign sections', label, name); await capture(name, selector, fallback);
     }
-    await paint(); await waitForFiniteRequests(); await paint();
+
+    await clickMain('World');
+    await clickSection('World sections', 'Overview', 'world-overview');
+    await capture('world-overview', '.world-overview[data-record-id]');
+    const mapStart = await time();
+    await clickSection('World sections', 'Map', 'map');
+    await page.locator('.world-map-canvas[data-base="present"]').waitFor({ state: 'visible' });
+    await page.waitForFunction(() => [...document.querySelectorAll('.world-map-canvas img')]
+      .every(image => image.complete && image.naturalWidth > 0));
+    const mapPixels = await page.locator('.world-map-canvas[data-base="present"]').evaluate(element => ({
+      width: element.querySelector('img')?.naturalWidth ?? 0,
+      height: element.querySelector('img')?.naturalHeight ?? 0,
+      markers: element.querySelectorAll('.world-map-marker').length,
+    }));
+    assert.ok(mapPixels.width > 0 && mapPixels.height > 0 && mapPixels.markers > 0);
+    run.mapEvidence = mapPixels;
+    passed('map-pixels-markers');
+    await capture('map', '.world-map-canvas[data-base="present"]');
+    run.marks.map = await time() - mapStart;
+
+    await clickSection('World sections', 'Locations', 'locations');
+    const locationIds = new Set();
+    for (let depth = 0; depth < 20; depth++) {
+      await loadAll(/^Load more locations/u, 'locations');
+      for (const id of await page.locator('.location-row[data-record-id]').evaluateAll(elements => elements.map(element => element.dataset.recordId))) locationIds.add(id);
+      const row = page.locator('.location-row[data-record-id]').first();
+      if (!await row.count()) break;
+      const previousHeading = await page.locator('#location-browser-heading').textContent();
+      await row.click(); await settle();
+      if (await page.locator('#location-browser-heading').textContent() === previousHeading) break;
+    }
+    while (await page.getByRole('button', { name: 'Parent location', exact: true }).count()) {
+      await page.getByRole('button', { name: 'Parent location', exact: true }).click(); await settle();
+    }
+    run.traversal.locations = { status: locationIds.size ? 'ready' : 'empty', complete: true,
+      ...recordSetEvidence([...locationIds]) };
+    const selectedLocationId = await page.locator('.location-row[aria-pressed="true"]').getAttribute('data-record-id');
+    assert.ok(selectedLocationId, 'Production traversal requires a selected location workspace');
+    for (const [label, name, selector, fallback] of [
+      ['Details', 'location-details', '.location-detail[data-record-id]', [selectedLocationId]],
+      ['People & Creatures', 'location-people', '.location-person-card[data-record-id]', []],
+      [/^Holdings/u, 'location-holdings', '.holding-card[data-record-id]', []],
+    ]) {
+      phase = name;
+      await page.locator('.location-section-tabs').getByRole('button', { name: label, exact: typeof label === 'string' }).click();
+      await settle(); await capture(name, selector, fallback);
+    }
+    for (const [label, name, selector] of [
+      ['People', 'people', '.world-person-list__item[data-record-id]'],
+      ['Factions', 'factions', '.faction-card[data-record-id]'],
+      ['Lore', 'lore', '.lore-card[data-record-id]'], ['History', 'history', '.history-event[data-record-id]'],
+    ]) {
+      await clickSection('World sections', label, name);
+      if (name === 'factions') await loadAll('Load more factions', 'factions');
+      await capture(name, selector);
+    }
+
+    const currentStart = await time(); await clickMain('Current View');
+    await page.locator('.current-scene-view, .view-render-error').first().waitFor({ state: 'visible' }); await settle();
     const current = await page.locator('.current-play-workspace').evaluateAll(elements => ({
       status: elements[0]?.dataset.viewStatus ?? 'unloaded',
       ids: elements[0]?.dataset.recordId ? [elements[0].dataset.recordId] : [],
     }));
     run.traversal.current = { status: current.status, complete: ['ready', 'unavailable'].includes(current.status),
-      ...(current.status === 'unavailable' ? { reasonCode: 'no-authorized-content' } : {}),
-      ...recordSetEvidence(current.ids) };
-    run.marks.completeWorkload = await time();
+      ...(current.status === 'unavailable' ? { reasonCode: 'no-authorized-content' } : {}), ...recordSetEvidence(current.ids) };
+    assert.equal(await page.locator('dnd-play-conversation, .play-conversation-panel').count(), 0);
+    passed('current-no-chatbox');
+    if (await page.locator('.tactical-board-viewport').count()) run.marks.combatBoard = await time() - currentStart;
+    else run.combatBoard = { status: 'not-applicable', reason: 'No tactical board in the current recorded situation.' };
+
+    await clickMain('Rules');
+    await page.locator('.rules-view, .rules-empty-state').first().waitFor({ state: 'visible' }); await settle();
+    await loadAll(/^Show more \(/u, 'rules');
+    await capture('rules', '.rule-index-card[data-record-id]');
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.locator('#information-content #main-view-heading').waitFor({ state: 'visible' }); await settle();
+    passed('reload');
+    await clickMain('Installed Content');
+    await page.locator('.installed-content-view').waitFor({ state: 'visible' }); await settle();
+    await loadAll(/^Load more \(/u, 'installed-content');
+    await capture('installed-content', '.installed-content-record[data-record-id]');
+
+    const warmReturnStart = await time();
+    await clickMain('Party');
+    await clickSection('Character dossier sections', 'Inventory', 'inventory');
+    await page.locator('[data-item-open]').first().waitFor({ state: 'visible' }); await settle();
+    run.marks.warmReturn = await time() - warmReturnStart;
+
+    const recoveryPage = await page.context().newPage();
+    try {
+      let failed = false;
+      await recoveryPage.route('**/api/audience-context', async route => {
+        if (!failed) { failed = true; await route.abort('failed'); } else await route.continue();
+      });
+      await recoveryPage.goto(page.baselineUrl, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+      await recoveryPage.getByRole('button', { name: 'Retry application', exact: true }).waitFor({ state: 'visible' });
+      await recoveryPage.unroute('**/api/audience-context');
+      await recoveryPage.getByRole('button', { name: 'Retry application', exact: true }).click();
+      await recoveryPage.locator('.information-hub:not(.bootstrap-shell) #main-view-heading').waitFor({ state: 'visible' });
+      passed('error-retry');
+    } finally { await recoveryPage.close(); }
+
+    await page.evaluate(async () => {
+      try { await fetch('/api/acceptance-mutation-probe', { method: 'POST', body: 'not-sent' }); } catch { /* guard proof */ }
+    });
     run.blockedWrites = await page.evaluate(() => window.__DND_BASELINE_BLOCKED_WRITES__);
     run.blockedOperations = await page.evaluate(() => window.__DND_BASELINE_BLOCKED_OPERATIONS__);
-    assert.ok(requests.every(request => ['GET', 'HEAD'].includes(request.method)));
+    assert.ok(run.blockedWrites > 0 && run.blockedOperations.some(operation => operation.path === '/api/acceptance-mutation-probe'));
+    passed('mutation-blocking');
+    await settle(); passed('deferred-settled');
+    const assetPaths = [...new Set(requests.map(request => request.path).filter(path => /\/assets\/.*\.(?:css|js)$/u.test(path)))];
+    run.assets = { ...recordSetEvidence(assetPaths), cssCount: assetPaths.filter(path => path.endsWith('.css')).length,
+      jsCount: assetPaths.filter(path => path.endsWith('.js')).length };
+    if (run.assets.cssCount > 0 && run.assets.jsCount > 0) passed('lazy-assets');
+    run.marks.completeWorkload = await time();
+    assert.ok(requests.every(isReadOnlyWorkloadRequest));
     run.status = 'collected';
   } catch (error) {
     run.failure = { phase, category: error.name }; // Error messages can contain private locator text.
@@ -306,7 +459,7 @@ async function sample(page, client, cacheState, index) {
     })).catch(() => null);
     if (error.name === 'TimeoutError') {
       // A timed-out live view is an observation, not a readiness measurement.
-      for (const name of ['shell', 'bootstrap', 'activeView', 'character', 'map']) {
+      for (const name of requiredMarks) {
         if (run.marks[name] === undefined && !run.outcomes[name]) run.outcomes[name] = {
           status: 'unavailable', reason: 'The live view did not become observable within the bounded browser timeout.',
         };
@@ -342,7 +495,7 @@ async function sample(page, client, cacheState, index) {
 
 async function main() {
   const options = { listener: 'http://localhost:6217', output: resolve(webRoot, '.tmp/complete-workload/browser.json'), pairs: 20,
-    perspective: 'player', pairSpacingMs: 61_000 };
+    perspective: 'dm', pairSpacingMs: 61_000 };
   for (let i = 2; i < process.argv.length; i++) {
     const name = process.argv[i]; const value = process.argv[++i];
     assert.ok(value);
@@ -359,7 +512,7 @@ async function main() {
   }
   assert.ok(Number.isInteger(options.pairs) && options.pairs >= 1 && options.pairs <= 100);
   assert.ok(Number.isInteger(options.pairSpacingMs) && options.pairSpacingMs >= 0 && options.pairSpacingMs <= 300_000);
-  assert.ok(['player', 'dm'].includes(options.perspective), 'Perspective must be player or dm');
+  assert.equal(options.perspective, 'dm', 'The shared-site harness uses DM display; Player filtering requires an explicit observer harness');
   let browser;
   const report = {
     schema: 'dnd2024.browser-baseline.v3', listener: options.listener,
@@ -371,19 +524,22 @@ async function main() {
       viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 1, throttling: 'none',
       navigationTimeoutMs: 60000, readinessTimeoutMs: 60000, viewTimeoutMs: 60000, idleTimeoutMs: 60000,
       cold: 'Fresh isolated browser context with HTTP cache explicitly cleared; server remains warm.',
-      warm: 'Second navigation in the same context after Character, all World directories and continuations, context discovery, Map and Current.',
+      warm: 'Second complete direct-entry navigation in the same context after Campaign, Party, Inventory/Item, Registry, World, Current, Rules and Installed Content.',
       pairSpacingMs: options.pairSpacingMs,
       timingOrigins: { shell: 'navigation', bootstrap: 'navigation', activeView: 'navigation',
         character: 'Party navigation start through canonical sheet paint', map: 'World navigation start through map image load and paint',
         combatBoard: 'Current view navigation start through board paint, only when present',
-        completeWorkload: 'Navigation through the complete authorized traversal, separate from first ready view' },
+        firstReady: 'Navigation through the first styled direct-entry Inventory paint',
+        warmReturn: 'Return to the cached Inventory after the full feature traversal',
+        completeWorkload: 'Navigation through the complete shared-site traversal, separate from first ready view' },
     },
     limitations: [
       'Cold means browser cache, not a server or OS restart. Warm private API reads still obey no-store.',
       'The unchanged live bundle is measured, not the newly built source bundle.',
       'DOM-observed shell and active-view marks measure commit; component marks do not promise image decode.',
       'No combat timing is invented when the live campaign has no tactical board.',
-      'Automatic conversation creation and all other writes are blocked, not performed as a side effect of navigation.',
+      'The read-only media-batch POST is permitted; automatic conversation creation and every mutation are blocked.',
+      'Startup retry is exercised on an isolated browser page with one deliberately failed audience read; it is included in complete-workload timing but excluded from the primary request ledger.',
       'Only paths and transport metadata are retained; cache status is unknown unless reported by the browser or server.',
     ],
     runs: [],
@@ -419,7 +575,7 @@ async function main() {
       try {
         await context.addInitScript(initializeBrowserProbe, { perspective: report.perspective });
         const page = await context.newPage();
-        page.baselineUrl = options.listener + '/ui/dnd2024-play';
+        page.baselineUrl = options.listener + '/ui/dnd2024-play#view?tab=party&section=inventory';
         page.setDefaultTimeout(60_000);
         const client = await context.newCDPSession(page);
         await client.send('Network.enable');

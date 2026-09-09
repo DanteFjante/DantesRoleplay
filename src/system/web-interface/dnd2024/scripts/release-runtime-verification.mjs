@@ -1,9 +1,21 @@
 import assert from 'node:assert/strict';
+import { completeReleaseEvidence } from './complete-workload.mjs';
 import { sha256 } from './create-release-manifest.mjs';
 import { canonicalJson } from './release-signature.mjs';
 
 const requiredOwners = ['database', 'application-registration', 'active-catalog-snapshot',
   'catalog-materialization', 'extension-resolution', 'query-callability', 'web-page-release', 'audience-binding'];
+const requiredBrowserChecks = [
+  'no-wheel-zoom', 'ganji-dossier', 'player-dm-boundary',
+  'complete-feature-traversal', 'campaign-records', 'map-pixels-markers',
+  'inventory-first-entry-style', 'registry-items', 'registry-recipes',
+  'direct-entry', 'reload-back-forward-retry', 'read-only-data-ledger',
+  'cache-reuse', 'current-no-chatbox',
+];
+const requiredDispositions = [
+  ...Array.from({ length: 12 }, (_, index) => `W${String(index).padStart(2, '0')}`),
+  ...Array.from({ length: 14 }, (_, index) => `R${String(index).padStart(2, '0')}`),
+];
 
 export function verifyRuntimeTarget(expected, readiness, audience) {
   assert.ok(expected?.applicationId && expected.stateSpaceId && expected.campaignId, 'A reviewed runtime target is required');
@@ -37,12 +49,61 @@ export function verifyRuntimeTarget(expected, readiness, audience) {
 
 export function verifyBrowserEvidence(manifest, baseUrl, evidence) {
   assert.ok(evidence, 'Live browser evidence is required, not inferred from a source build');
+  assert.equal(manifest.expectedRuntime.role, 'game-master', 'The shared website release must use the full-authority site audience');
+  assert.equal(manifest.expectedRuntime.actorId ?? null, null, 'The shared website release must not bind an Actor seat');
   assert.equal(evidence.manifestFingerprint, sha256(Buffer.from(canonicalJson(manifest))));
   assert.equal(evidence.url, `${baseUrl}/ui/${manifest.pageId}`);
   assert.equal(evidence.role, manifest.expectedRuntime.role);
-  for (const name of ['no-wheel-zoom', 'ganji-dossier', 'player-dm-boundary'])
+  for (const name of requiredBrowserChecks)
     assert.equal(evidence.checks?.[name], 'passed', `Missing live browser check: ${name}`);
   assert.ok(Array.isArray(evidence.observations) && evidence.observations.length > 0, 'Browser observations must be retained');
+  const workload = completeReleaseEvidence(evidence.workloadProfiles);
+  assert.equal(workload.status, 'passed', 'The complete shared-site browser workload profiles must pass');
+  assert.ok(evidence.workloadProfiles.every(profile => profile.listener === baseUrl),
+    'Complete browser workloads must use the exact verified origin');
+  const sampledRelease = evidence.workloadProfiles[0]?.liveBefore;
+  const origins = evidence.origins;
+  assert.ok(Array.isArray(origins) && origins.length > 0, 'Exact-origin browser observations are required');
+  const expectedOrigin = new URL(baseUrl).origin;
+  assert.equal(origins.filter(row => row?.origin === expectedOrigin).length, 1,
+    'The verified public origin needs exactly one browser observation');
+  const releaseKeys = ['pageContentHash', 'bundleSha256', 'runtimeFingerprint'];
+  for (const row of origins) {
+    assert.equal(row.status, 'passed');
+    assert.equal(row.pageId, manifest.pageId);
+    for (const key of releaseKeys) assert.match(row[key], /^[a-f0-9]{64}$/iu, `${key} is required for every origin`);
+    assert.equal(row.pageContentHash.toUpperCase(), manifest.expectedRuntime.checks['web-page-release'].fingerprint,
+      'Origin page hash differs from the signed page release');
+    for (const key of releaseKeys) assert.equal(row[key].toLowerCase(), sampledRelease?.[key]?.toLowerCase(),
+      `${key} differs from the complete browser workload`);
+  }
+  for (const key of releaseKeys) assert.equal(new Set(origins.map(row => row[key].toLowerCase())).size, 1,
+    `${key} differs across served aliases`);
+  if (!['localhost', '127.0.0.1', '[::1]'].includes(new URL(baseUrl).hostname)) {
+    assert.ok(origins.some(row => ['localhost', '127.0.0.1', '[::1]'].includes(new URL(row.origin).hostname)),
+      'A local alias observation must supplement the exact public origin');
+  }
+  assert.ok(evidence.artifacts && typeof evidence.artifacts === 'object', 'Evidence artifact manifest is required');
+  for (const [id, artifact] of Object.entries(evidence.artifacts)) {
+    assert.match(id, /^[a-z0-9][a-z0-9:._-]{0,119}$/u);
+    assert.ok(['browser', 'test', 'build', 'runtime', 'recovery'].includes(artifact?.kind));
+    assert.match(artifact?.sha256, /^[a-f0-9]{64}$/iu);
+  }
+  for (const id of requiredDispositions) {
+    const disposition = evidence.dispositions?.[id];
+    assert.equal(disposition?.status, 'passed', `Missing passed slice disposition: ${id}`);
+    assert.ok(Array.isArray(disposition.evidence) && disposition.evidence.length > 0,
+      `${id} needs underlying evidence references`);
+    assert.ok(disposition.evidence.every(artifactId => evidence.artifacts[artifactId]),
+      `${id} cites unknown evidence`);
+  }
+  assert.ok(evidence.restart?.before && evidence.restart?.after &&
+    releaseKeys.every(key => evidence.restart.before[key] === evidence.restart.after[key]),
+  'Ordinary restart must preserve the matched release');
+  for (const key of releaseKeys) assert.equal(evidence.restart.before[key]?.toLowerCase(), sampledRelease?.[key]?.toLowerCase(),
+    `Restart ${key} differs from the complete browser workload`);
+  assert.equal(evidence.recovery?.previousReleaseUsable, true);
+  assert.equal(evidence.recovery?.dataAndBlobsRecoverable, true);
   const itemView = manifest.expectedRuntime.itemView;
   if (itemView) {
     assert.ok(itemView.observerId && itemView.itemIds?.length && itemView.perspectives?.length);

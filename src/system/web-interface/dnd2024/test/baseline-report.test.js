@@ -25,7 +25,7 @@ const live = { status: 'available', listener: 'http://localhost:6217', activeRev
 function samples() {
   return { listener: live.listener, browser: { name: 'Chrome', version: '152' }, machine: machineProfile(),
     samplerSha256: sha256(readFileSync(new URL('../scripts/sample-browser-baseline.mjs', import.meta.url))),
-    readOnly: true, perspective: 'player', audienceView: 'gm-player-preview',
+    readOnly: true, perspective: 'dm', audienceView: 'shared-table',
     liveBefore: { ...live }, liveAfter: { ...live },
     runs: ['cold', 'warm'].flatMap(cacheState => Array.from({ length: 20 }, (_, index) => ({
       id: cacheState + index, cacheState, status: 'passed',
@@ -34,12 +34,11 @@ function samples() {
     }))) };
 }
 
-test('baseline distinguishes an actor, a GM Player preview, and a GM view', () => {
-  assert.equal(audienceViewFor({ role: 'game-master', actorId: null }, 'player'), 'gm-player-preview');
-  assert.equal(audienceViewFor({ role: 'game-master', actorId: null }, 'dm'), 'game-master');
-  assert.equal(audienceViewFor({ role: 'actor', actorId: 'actor.fixture' }, 'player'), 'actor');
-  assert.throws(() => audienceViewFor({ role: 'actor', actorId: 'actor.fixture' }, 'dm'));
-  assert.throws(() => audienceViewFor({ role: 'actor', actorId: null }, 'player'));
+test('baseline uses the shared table and rejects an unbound Player projection', () => {
+  assert.equal(audienceViewFor({ role: 'game-master', actorId: null }, 'dm'), 'shared-table');
+  assert.throws(() => audienceViewFor({ role: 'game-master', actorId: null }, 'player'));
+  assert.throws(() => audienceViewFor({ role: 'actor', actorId: 'actor.fixture' }, 'player'));
+  assert.throws(() => audienceViewFor({ role: 'game-master', actorId: 'actor.fixture' }, 'dm'));
 });
 
 test('baseline requires 20 complete samples per metric, not merely 20 rows', () => {
@@ -95,7 +94,7 @@ test('baseline rejects another listener, page, runtime, audience, browser or mac
     value => { value.machine.cpu = 'another-machine'; },
     value => { value.readOnly = false; },
     value => { value.samplerSha256 = 'changed'; },
-    value => { value.audienceView = 'actor'; },
+    value => { value.audienceView = 'actor-seat'; },
   ]) {
     const source = samples(); mutate(source);
     assert.equal(browserEvidence(source, live).status, 'invalid');
@@ -127,9 +126,10 @@ test('separate gates retain TAP summaries and failing TypeScript diagnostics', (
   assert.match(failing.rawOutput, /TS2322/);
 });
 
-test('baseline stays on credential-free loopback listeners with ordinary TLS verification', () => {
+test('baseline accepts exact credential-free public and local origins', () => {
   assert.equal(normalizeListener('https://localhost:5144/'), 'https://localhost:5144');
-  for (const url of ['https://external.example', 'http://user:secret@localhost:6217', 'http://localhost:6217/?secret=1',
+  assert.equal(normalizeListener('http://98.128.172.181'), 'http://98.128.172.181');
+  for (const url of ['http://user:secret@localhost:6217', 'http://localhost:6217/?secret=1',
     'http://localhost:6217/ui/dnd2024-play', 'file:///private']) assert.throws(() => normalizeListener(url));
 });
 
@@ -181,11 +181,13 @@ test('browser guard rejects mutating URL and Request fetches without recording t
   dom.window.eval('(' + initializeBrowserProbe.toString() + ')({perspective:"player"})');
   try {
     await dom.window.fetch('/api/audience-context');
+    await dom.window.fetch('/api/applications/dnd2024/state-spaces/live/media-batch',
+      { method: 'POST', body: '{"entityIds":[]}' });
     await assert.rejects(dom.window.fetch(new dom.window.URL('/api/conversations?secret=hidden', live.listener),
       { method: 'POST', body: 'private-body' }), /blocks writes/);
     await assert.rejects(dom.window.fetch(new Request(live.listener + '/api/actions',
       { method: 'POST', body: 'private-body' })), /blocks writes/);
-    assert.equal(calls, 1);
+    assert.equal(calls, 2);
     assert.equal(dom.window.__DND_BASELINE_BLOCKED_WRITES__, 2);
     assert.equal(dom.window.__DND_BASELINE_BLOCKED_OPERATIONS__[0].path, '/api/conversations');
     assert.doesNotMatch(JSON.stringify(dom.window.__DND_BASELINE_BLOCKED_OPERATIONS__), /private-body|hidden/);

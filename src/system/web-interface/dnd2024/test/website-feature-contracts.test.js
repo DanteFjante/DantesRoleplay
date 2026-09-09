@@ -38,6 +38,7 @@ async function findCatalogRecord(directory, id) {
 test("W01 freezes one explicit contract for every visible website surface", () => {
   assert.equal(contract.schema, "dnd2024.website-feature-contracts.v1");
   assert.equal(contract.slice, "W01");
+  assert.equal(contract.acceptanceRevision, "R14");
   assert.deepEqual(contract.features.map(({ id }) => id), expectedFeatures);
   assert.equal(new Set(contract.features.map(({ id }) => id)).size, expectedFeatures.length);
   assert.deepEqual(contract.decisions.newPermanentIdsRegisteredByW01, []);
@@ -252,12 +253,15 @@ test("W01 fixture profiles and whole-workload gates are bounded and fail closed"
   assert.ok(contract.fixtures.large.locations > contract.fixtures.small.locations);
   assert.ok(contract.fixtures.large.installedRecords > contract.fixtures.small.installedRecords);
   assert.deepEqual(contract.fixtures.unauthorized.profiles,
-    ["unbound", "wrong-campaign-actor", "gm-player-preview"]);
+    ["unbound", "wrong-campaign-actor", "observer-preview-without-selection"]);
   assert.ok(contract.fixtures.unauthorized.canaries.length >= 4);
 
   const gates = contract.completeWorkloadGates;
-  assert.deepEqual(gates.authorizedProfiles, ["game-master", "gm-player-preview", "actor"]);
-  assert.deepEqual([...gates.featureInteractions, ...gates.independentRouteInteractions], expectedFeatures);
+  assert.deepEqual(gates.authorizedProfiles, ["shared-table"]);
+  assert.deepEqual(gates.optionalProfiles, ["observer-preview"]);
+  assert.deepEqual(gates.genericRegressionProfiles, ["actor", "unbound", "wrong-campaign-actor"]);
+  assert.deepEqual([...gates.featureInteractions, ...gates.independentRouteInteractions].sort(),
+    [...expectedFeatures].sort());
   for (const field of ["maximumDataRequests", "maximumSqlStatements", "maximumResponseBytes",
     "maximumRetainedResponseBytes", "minimumColdSamples", "minimumWarmSamples"])
     assert.ok(positiveInteger(gates[field]), field);

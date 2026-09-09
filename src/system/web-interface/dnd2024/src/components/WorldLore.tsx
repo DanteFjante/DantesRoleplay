@@ -61,7 +61,7 @@ function LoreCard({
   onOpenHistory: () => void;
 }) {
   return (
-    <article className="lore-card" aria-labelledby={`${entry.id}-heading`}>
+    <article className="lore-card" aria-labelledby={`${entry.id}-heading`} data-record-id={entry.id}>
       <header>
         <span aria-hidden="true"><Icon name="BookOpen" size={20} /></span>
         <div>

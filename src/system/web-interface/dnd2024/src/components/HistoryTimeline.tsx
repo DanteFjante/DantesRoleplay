@@ -9,7 +9,7 @@ function HistoryEventCard({
   onOpenLocation: (locationId: string) => void;
 }) {
   return (
-    <article className="history-event" aria-labelledby={`${event.id}-heading`}>
+    <article className="history-event" aria-labelledby={`${event.id}-heading`} data-record-id={event.id}>
       <div className="history-event__marker" aria-hidden="true">
         <Icon name="Clock3" size={16} />
       </div>

@@ -44,7 +44,7 @@ export function CampaignAdventureLog({
       {entries.length ? (
         <ol className="campaign-log-list">
           {entries.map((entry) => (
-            <li className="campaign-log-entry" key={entry.id}>
+            <li className="campaign-log-entry" data-record-id={entry.id} key={entry.id}>
               <div className="campaign-log-entry__index">{entry.session.replace("Session ", "")}</div>
               <article>
                 <header><div><span>{entry.session} · {entry.date}</span><h2>{entry.title}</h2></div></header>

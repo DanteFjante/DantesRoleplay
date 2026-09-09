@@ -11,7 +11,7 @@ export function LocationDetail({
   const gallery = (location.media?.gallery ?? []).filter((attachment) =>
     attachment.role === "setting" || attachment.role === "scene" || attachment.role === "illustration");
   return (
-    <article className="location-detail" aria-labelledby="selected-location-heading">
+    <article className="location-detail" aria-labelledby="selected-location-heading" data-record-id={location.id}>
       <header className="location-detail__header">
         <div>
           <span className="eyebrow">{location.region}</span>

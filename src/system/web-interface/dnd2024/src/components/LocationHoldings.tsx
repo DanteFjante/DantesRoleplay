@@ -3,7 +3,7 @@ import { Icon } from "./Icon";
 
 function HoldingCard({ holding }: { holding: LocationHolding }) {
   return (
-    <article className="holding-card" aria-labelledby={`${holding.id}-heading`}>
+    <article className="holding-card" aria-labelledby={`${holding.id}-heading`} data-record-id={holding.id}>
       <header>
         <span aria-hidden="true"><Icon name="Shield" size={20} /></span>
         <div>

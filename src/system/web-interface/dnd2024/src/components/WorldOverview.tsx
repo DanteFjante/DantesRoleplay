@@ -13,7 +13,7 @@ export function WorldOverview({
   world: WorldReadModel;
 }) {
   return (
-    <div className="world-overview">
+    <div className="world-overview" data-record-id={world.id}>
       <section className="world-hero" aria-labelledby="main-view-heading">
         <div className="world-hero__crest" aria-hidden="true">
           <Icon name="Globe2" size={32} />

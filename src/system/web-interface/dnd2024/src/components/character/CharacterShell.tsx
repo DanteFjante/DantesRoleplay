@@ -55,6 +55,7 @@ export function CharacterShell({
                 aria-current={member.id === selectedMember.id ? "true" : undefined}
                 className="character-roster__member"
                 data-character-member={member.id}
+                data-record-id={member.id}
                 key={member.id}
                 onClick={() => onSelectMember(member.id)}
                 type="button"

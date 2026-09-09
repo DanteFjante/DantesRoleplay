@@ -215,7 +215,7 @@ export function InstalledContentView({
         {records.length > 0 ? (
           <div className="installed-content-records">
             {records.map((record) => (
-              <article className="installed-content-record" key={record.id}>
+              <article className="installed-content-record" data-record-id={record.id} key={record.id}>
                 <div className="installed-content-record__meta">
                   <span className={`content-badge content-badge--${record.classification}`}>
                     {BADGE_LABELS[record.classification]}

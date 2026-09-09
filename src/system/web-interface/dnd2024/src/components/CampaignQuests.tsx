@@ -35,7 +35,7 @@ export function CampaignQuests({
         <label><span>Kind</span><select onChange={(event) => setKind(event.target.value)} value={kind}><option value="all">All kinds</option>{kinds.map((value) => <option key={value} value={value}>{value}</option>)}</select></label>
       </div> : null}
       {quests.length ? <section aria-label="Campaign quests" className="campaign-quest-grid">
-        {quests.map((quest) => <article className="campaign-quest-card" key={quest.id}>
+        {quests.map((quest) => <article className="campaign-quest-card" data-record-id={quest.id} key={quest.id}>
           <header><div><small>{quest.kind}</small><h2>{quest.title}</h2></div><span>{quest.status}</span></header>
           <p>{quest.summary}</p>
           <div className="campaign-next-step"><small>Next step</small><p>{quest.nextStep}</p></div>

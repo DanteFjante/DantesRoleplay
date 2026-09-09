@@ -30,7 +30,7 @@ export function CampaignPlacesVisited({
       {places.length ? (
         <section aria-label="Visited places" className="campaign-place-grid">
           {places.map((place) => (
-            <article className="campaign-place-card" key={place.id}>
+            <article className="campaign-place-card" data-record-id={place.id} key={place.id}>
               <header><span className="campaign-place-card__icon"><Icon name="MapPin" /></span><div><small>{place.location.region}</small><h2>{place.location.name}</h2></div><em>{place.status}</em></header>
               <p>{place.summary}</p>
               <dl><div><dt>First visit</dt><dd>{place.firstVisited}</dd></div><div><dt>Last visit</dt><dd>{place.lastVisited}</dd></div><div><dt>Visits</dt><dd>{place.visitCount}</dd></div></dl>

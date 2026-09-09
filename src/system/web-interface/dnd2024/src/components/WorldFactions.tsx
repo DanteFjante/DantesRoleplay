@@ -21,6 +21,7 @@ function FactionCard({
   return (
     <article
       className="faction-card"
+      data-record-id={faction.id}
       data-selected={selected ? "true" : undefined}
       aria-labelledby={`${faction.id}-heading`}
       id={`world-faction-${faction.id}`}

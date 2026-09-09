@@ -35,7 +35,7 @@ export function CampaignOutcomes({
       {outcomes.length ? (
         <section aria-label="Campaign outcomes" className="campaign-outcome-grid">
           {outcomes.map((outcome) => (
-            <article className="campaign-outcome-card" key={outcome.id}>
+            <article className="campaign-outcome-card" data-record-id={outcome.id} key={outcome.id}>
               <header><span>{outcome.status}</span><h2>{outcome.title}</h2></header>
               <div><small>Situation</small><p>{outcome.situation}</p></div>
               <div><small>Result</small><p>{outcome.result}</p></div>

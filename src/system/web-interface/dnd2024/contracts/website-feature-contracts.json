@@ -1,6 +1,7 @@
 {
   "schema": "dnd2024.website-feature-contracts.v1",
   "slice": "W01",
+  "acceptanceRevision": "R14",
   "purpose": "Acceptance inventory for the website object migration. This file is not runtime game state and does not register catalog IDs.",
   "authority": {
     "liveGameState": "SQLite through audience-authorized host queries, generic relationships, containment, and mechanics",
@@ -158,7 +159,7 @@
       "expectation": "Every collection follows stable continuation tokens to the declared maximum without omissions, duplicates, source-revision drift, or unrelated-population scaling."
     },
     "unauthorized": {
-      "profiles": ["unbound", "wrong-campaign-actor", "gm-player-preview"],
+      "profiles": ["unbound", "wrong-campaign-actor", "observer-preview-without-selection"],
       "canaries": ["gm-only-component", "gm-only-media", "other-campaign-record", "unowned-inventory-item"],
       "expectation": "Forbidden or intentionally unavailable results remain distinct from empty results, and no canary identity or value reaches response data, browser cache, diagnostics, or rendered text."
     }
@@ -215,12 +216,14 @@
     "featureRequests": "Maximum data requests for one user-triggered feature load. Each explicit continuation repeats the same per-page gate up to target.maximumPages.",
     "featureSql": "Maximum production-path SQL statements for one feature load; catalog/source-only work may report zero but must still provide measured evidence.",
     "featureBytes": "responseBytes is the aggregate transport body allowance for one feature load; retainedResponseBytes is the maximum validated response data retained for that audience scope.",
-    "completeWorkload": "The core table journey loads the first complete page of each listed feature interaction. Rules, installed content, and the optional board mutation flow retain independent route gates and fixtures."
+    "completeWorkload": "The served read-only journey traverses every delivered feature, all continuations, direct entry, reload, Back/Forward, retry, lazy assets, Rules and Installed Content. Tactical-board writes remain a separate disposable acceptance flow."
   },
   "completeWorkloadGates": {
-    "authorizedProfiles": ["game-master", "gm-player-preview", "actor"],
-    "featureInteractions": ["context-and-shell", "campaign", "party-roster", "character", "inventory-and-items", "world-overview", "maps-locations-and-routes", "people-and-holdings", "factions", "lore-and-history", "current-and-play"],
-    "independentRouteInteractions": ["tactical-board", "rules", "installed-content"],
+    "authorizedProfiles": ["shared-table"],
+    "optionalProfiles": ["observer-preview"],
+    "genericRegressionProfiles": ["actor", "unbound", "wrong-campaign-actor"],
+    "featureInteractions": ["context-and-shell", "campaign", "party-roster", "character", "inventory-and-items", "world-overview", "maps-locations-and-routes", "people-and-holdings", "factions", "lore-and-history", "current-and-play", "rules", "installed-content"],
+    "independentRouteInteractions": ["tactical-board"],
     "maximumDataRequests": 200,
     "maximumSqlStatements": 80,
     "maximumResponseBytes": 12582912,
