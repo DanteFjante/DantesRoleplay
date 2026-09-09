@@ -61,6 +61,7 @@ function sectionEntries(member: PartyMemberReadModel, section: PartySectionId) {
     case "knowledge": return member.knowledge;
     case "backstory": return member.backstory;
     case "origin": return member.origin;
+    case "registry": return [];
     case "inventory": return member.inventory;
     default: return [];
   }
@@ -77,6 +78,7 @@ function emptyCopy(section: PartySectionId, member: PartyMemberReadModel) {
       : "Character knowledge is private to an authorized player seat.";
     case "backstory": return "No biography or backstory has been recorded.";
     case "origin": return "No origin information has been recorded.";
+    case "registry": return "The Party registry is unavailable.";
     default: return "No information has been recorded.";
   }
 }
@@ -307,7 +309,7 @@ export function CharacterWorkspace({
   }
 
   const selectSection = (next: PartySectionId) => {
-    const normalized = summaryOnly ? "overview" : next;
+    const normalized = summaryOnly && next !== "registry" ? "overview" : next;
     if (onNavigationChange) onNavigationChange(selectedMemberId, normalized);
     else setLocalSection(normalized);
     setQuery("");
@@ -326,7 +328,7 @@ export function CharacterWorkspace({
       }}
       onSelectSection={selectSection}
       party={displayedParty}
-      sections={summaryOnly ? CHARACTER_SECTIONS.filter((candidate) => candidate.id === "overview") : undefined}
+      sections={summaryOnly ? CHARACTER_SECTIONS.filter((candidate) => candidate.id === "overview" || candidate.id === "registry") : undefined}
       section={section}
       selectedMember={selectedMember}
     >

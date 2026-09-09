@@ -12,6 +12,7 @@ export const CHARACTER_SECTIONS: ReadonlyArray<{ id: PartySectionId; label: stri
   { id: "knowledge", label: "Knowledge", icon: "BookOpen" },
   { id: "backstory", label: "Biography", icon: "ScrollText" },
   { id: "origin", label: "Origin", icon: "Sparkles" },
+  { id: "registry", label: "Registry", icon: "LibraryBig" },
 ];
 
 export function CharacterShell({

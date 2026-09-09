@@ -1,6 +1,6 @@
 export type Perspective = "player" | "dm";
 export type MainTabId = "world" | "campaign" | "party" | "current" | "rules" | "content";
-export type PartySectionId = "overview" | "sheet" | "knowledge" | "backstory" | "origin" | "inventory";
+export type PartySectionId = "overview" | "sheet" | "knowledge" | "backstory" | "origin" | "inventory" | "registry";
 export type CampaignSectionId =
   | "overview"
   | "log"

@@ -26,6 +26,7 @@ export const PARTY_SECTIONS = [
   { id: "knowledge", label: "Knowledge" },
   { id: "backstory", label: "Biography" },
   { id: "origin", label: "Origin" },
+  { id: "registry", label: "Registry" },
 ];
 
 export const WORLD_SECTIONS = [

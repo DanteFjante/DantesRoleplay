@@ -283,7 +283,21 @@ public sealed class ActivatedApplicationCatalogMaterializer(
             .Concat(segments.Skip(entityIndex + 2).Take(Math.Max(0, segments.Length - entityIndex - 3)));
         return new(collection, "entity", qualifiedId, file.Name, file.Name, [file.Id], [],
             string.Join('/', pathSegments), "active", 1, content,
-            Hash(Encoding.UTF8.GetBytes(content)), winner.SourceId, winner.RelativePath);
+            Hash(Encoding.UTF8.GetBytes(content)), winner.SourceId, winner.RelativePath,
+            file.Components.Select(value => value.DefinitionId).Distinct(StringComparer.Ordinal).ToArray(),
+            EntityArchetype(content));
+    }
+
+    private static string? EntityArchetype(string content)
+    {
+        using var document = JsonDocument.Parse(content);
+        if (!document.RootElement.TryGetProperty("archetype", out var value)) return null;
+        var archetype = value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+        if (archetype is not { Length: > 2 and <= 200 } || archetype.Split('.').Any(segment =>
+                segment.Length is < 1 or > 63 || !char.IsAsciiLetterLower(segment[0]) ||
+                segment.Any(character => !char.IsAsciiLetterLower(character) && !char.IsAsciiDigit(character) && character != '-')))
+            throw Failure("CATALOG_ENTITY_ARCHETYPE_INVALID", "An active entity has an invalid archetype ID.");
+        return archetype;
     }
 
     private static CatalogRecordDefinition Record(

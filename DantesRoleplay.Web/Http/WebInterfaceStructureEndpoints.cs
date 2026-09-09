@@ -324,7 +324,10 @@ public static partial class WebInterfaceEndpoints
                 context.Request.Query["owner"].FirstOrDefault(),
                 QueryValues(context, "kind"),
                 context.Request.Query["query"].FirstOrDefault(),
-                extensionsOnly);
+                extensionsOnly,
+                QueryValues(context, "component"),
+                QueryValues(context, "componentAny"),
+                QueryValues(context, "archetype"));
         });
 
     private static IResult GetReadableRules(

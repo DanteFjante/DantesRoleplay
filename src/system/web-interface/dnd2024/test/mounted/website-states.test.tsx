@@ -1478,7 +1478,10 @@ test("Player preview shows the safe Party roster while Actor-only views make no 
     assert.equal(mounted.container.querySelector('#information-content [data-view-status="unavailable"]'), null);
     assert.match(mounted.container.textContent ?? "", /Observer preview shows the campaign roster/);
     assert.doesNotMatch(mounted.container.textContent ?? "", /Actor binding required|authorized Actor seat/);
-    assert.equal(mounted.container.querySelectorAll(".character-tabs button").length, 1);
+    assert.deepEqual([...mounted.container.querySelectorAll<HTMLButtonElement>(".character-tabs button")]
+      .map((candidate) => candidate.textContent?.trim()), ["Overview", "Registry"]);
+    await click(button(mounted.container, "Registry"));
+    assert.match(mounted.container.textContent ?? "", /Registry unavailable/);
     assert.equal(reads, 0);
   } finally { await mounted.cleanup(); }
 });

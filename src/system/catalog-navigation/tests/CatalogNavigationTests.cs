@@ -193,6 +193,48 @@ public sealed class CatalogNavigationTests
     }
 
     [Fact]
+    public void Effective_content_component_filter_is_indexed_before_paging_and_cursor_bound()
+    {
+        var records = new[]
+        {
+            Record("entity", "fixture.item.lantern", "Lantern", "An item.", "tools", "active", [], [])
+                with { ComponentIds = ["fixture.item-definition", "fixture.physical"] },
+            Record("entity", "fixture.item.rope", "Rope", "Another item.", "tools", "active", [], [])
+                with { ComponentIds = ["fixture.physical"], ArchetypeId = "fixture.archetype.item" },
+            Record("entity", "fixture.actor.guide", "Guide", "A character.", "tools", "active", [], [])
+                with { ComponentIds = ["fixture.actor"] },
+        };
+        var manifest = CatalogNavigationManifest.Create(Application, new string('C', 64), "catalog-lexical-v1",
+            [new("fixtures", "Fixture catalog", "Component filter fixtures.")],
+            [new("fixtures", "", "Fixture catalog", "Component filter fixtures.", CatalogDescriptionStatus.Authored),
+             new("fixtures", "tools", "Tools", "Public records.", CatalogDescriptionStatus.Authored)], records);
+        var navigator = new InMemoryCatalogNavigator(manifest, new CatalogCursorCodec(CursorKey));
+        var request = new EffectiveApplicationContentRequest(Application, PageSize: 1,
+            Kinds: ["entity"], AnyComponentIds: ["fixture.item-definition"],
+            ArchetypeIds: ["fixture.archetype.item"]);
+
+        var first = navigator.EffectiveContent(request);
+        var second = navigator.EffectiveContent(request with { Cursor = first.NextCursor });
+
+        Assert.Equal(2, first.TotalCount);
+        Assert.Single(first.ResolvedWinners);
+        Assert.Single(second.ResolvedWinners);
+        Assert.Null(second.NextCursor);
+        Assert.All(first.ResolvedWinners.Concat(second.ResolvedWinners), value =>
+        {
+            var record = manifest.Records.Single(record => record.QualifiedId == value.Record.QualifiedId);
+            Assert.True(record.ComponentIds!.Contains("fixture.item-definition") ||
+                record.ArchetypeId == "fixture.archetype.item");
+        });
+        Assert.Throws<InvalidOperationException>(() => navigator.EffectiveContent(request with
+        {
+            Cursor = first.NextCursor,
+            AnyComponentIds = ["fixture.actor"],
+            ArchetypeIds = []
+        }));
+    }
+
+    [Fact]
     public void Readable_rules_use_component_sections_extension_winners_and_audience_visibility()
     {
         var records = new[]

@@ -154,6 +154,20 @@ public sealed class Dnd2024ExtensionPackagingTests : IDisposable
         Assert.Equal("Legacy Equipment", additive.SourceLabel);
         Assert.True(additive.IsAdditive);
 
+        var itemRegistry = navigator.EffectiveContent(new(application, 40,
+            Kinds: ["entity"],
+            AnyComponentIds: ["dnd2024.item-definition"],
+            ArchetypeIds:
+            [
+                "dnd2024.archetype.item-definition",
+                "dnd2024.archetype.weapon-definition",
+                "dnd2024.archetype.tool-definition",
+                "dnd2024.archetype.consumable-definition"
+            ]));
+        Assert.True(itemRegistry.TotalCount >= 200);
+        Assert.Equal(40, itemRegistry.ResolvedWinners.Count);
+        Assert.NotNull(itemRegistry.NextCursor);
+
         var extensionAsBase = await Assert.ThrowsAsync<ApplicationPreviewException>(() =>
             previews.PreviewAsync(application, [CoreSourceId, ExtensionSourceId], ["legacy-equipment"]));
         Assert.Equal("BASE_SOURCE_SELECTION_INCLUDES_EXTENSION", extensionAsBase.Code);

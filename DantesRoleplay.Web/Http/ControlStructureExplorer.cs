@@ -362,7 +362,10 @@ public sealed class ControlStructureExplorer(
         string? ownerId = null,
         IReadOnlyList<string>? kinds = null,
         string? query = null,
-        bool extensionsOnly = false)
+        bool extensionsOnly = false,
+        IReadOnlyList<string>? componentIds = null,
+        IReadOnlyList<string>? anyComponentIds = null,
+        IReadOnlyList<string>? archetypeIds = null)
     {
         var id = Application(applicationId);
         return Catalog(id).EffectiveContent(new(
@@ -372,7 +375,10 @@ public sealed class ControlStructureExplorer(
             ownerId,
             kinds,
             query ?? string.Empty,
-            extensionsOnly));
+            extensionsOnly,
+            componentIds,
+            anyComponentIds,
+            archetypeIds));
     }
 
     public ReadableRulesResult GetReadableRules(

@@ -191,6 +191,7 @@ public sealed class ActivatedApplicationCatalogTests : IDisposable
             {
               "id": "item.fixture.lantern.v1",
               "name": "Fixture Lantern",
+              "archetype": "fixture.archetype.item",
               "components": {
                 "fixture.item-definition": {
                   "kind": "adventuring-gear"
@@ -222,6 +223,8 @@ public sealed class ActivatedApplicationCatalogTests : IDisposable
         Assert.Equal("fixture.item.fixture.lantern.v1", record.QualifiedId);
         Assert.Equal("entities/adventuring-gear", record.Path);
         Assert.Equal(["item.fixture.lantern.v1"], record.Aliases);
+        Assert.Equal(["fixture.item-definition"], record.ComponentIds);
+        Assert.Equal("fixture.archetype.item", record.ArchetypeId);
         Assert.Equal(json, record.ContentJson);
         Assert.Equal(relativePath, record.SourceLogicalPath);
         var navigator = new InMemoryCatalogNavigator(manifest,

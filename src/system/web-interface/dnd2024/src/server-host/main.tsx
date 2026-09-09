@@ -30,6 +30,7 @@ import { isReadyHubEnvelope } from "../state.js";
 import { markBootstrapResponse } from "../observability/performance.js";
 import type { CampaignPremiseWriteRequest, CampaignPremiseWriteResult } from "../server/campaign-premise-write";
 import type { InstalledContentClient, InstalledContentRequest } from "../server/effective-content";
+import type { ItemDefinitionRequest, ItemRegistryClient, ItemRegistryRequest } from "../server/item-registry";
 import {
   installDevelopmentRequestLedger,
   recordDevelopmentDiagnostic,
@@ -72,6 +73,7 @@ const ApplicationStartupError = lazy(() => import("../components/ApplicationStar
 if (process.env.NODE_ENV !== "production") installDevelopmentRequestLedger();
 
 let installedContentClient: Promise<InstalledContentClient> | null = null;
+let itemRegistryClient: Promise<ItemRegistryClient> | null = null;
 
 function envelopeMessage(envelope: HubEnvelope): string {
   return "message" in envelope
@@ -457,6 +459,28 @@ async function loadInstalledContent(
     client.load(request, signal, preferCached));
 }
 
+async function registryClient() {
+  if (!itemRegistryClient) {
+    itemRegistryClient = import("../server/item-registry").then(({ ItemRegistryClient }) =>
+      new ItemRegistryClient({ serverOrigin: window.location.origin, applicationId: "dnd2024" }));
+  }
+  return itemRegistryClient;
+}
+
+async function loadItemRegistryPage(request: ItemRegistryRequest, signal: AbortSignal,
+  preferCached = true) {
+  const client = await registryClient();
+  return withinDevelopmentInteraction("item-registry-load", () =>
+    client.loadPage(request, signal, preferCached));
+}
+
+async function loadItemDefinition(request: ItemDefinitionRequest, signal: AbortSignal,
+  preferCached = true) {
+  const client = await registryClient();
+  return withinDevelopmentInteraction("item-definition-load", () =>
+    client.loadDefinition(request, signal, preferCached));
+}
+
 async function loadReadyEnvelope(
   perspective: Perspective,
   campaignId: string,
@@ -534,6 +558,8 @@ try {
             loadCharacterDetails={loadCharacterDetails}
             loadCharacterInventory={loadCharacterInventory}
             loadInventoryContainer={loadInventoryContainer}
+            loadItemRegistryPage={loadItemRegistryPage}
+            loadItemDefinition={loadItemDefinition}
             loadFactionPage={loadFactionPage}
             loadCampaignDetails={loadCampaignDetails}
             loadDeferredSection={loadDeferredSection}
