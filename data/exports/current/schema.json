@@ -487,6 +487,12 @@
   },
   {
     "type": "index",
+    "name": "IX_scheduled_ai_task_work_State_NextAttemptAtUtc_LeaseExpiresAtUtc_EnqueuedAtUtc",
+    "table": "scheduled_ai_task_work",
+    "sql": "CREATE INDEX \"IX_scheduled_ai_task_work_State_NextAttemptAtUtc_LeaseExpiresAtUtc_EnqueuedAtUtc\" ON \"scheduled_ai_task_work\" (\"State\", \"NextAttemptAtUtc\", \"LeaseExpiresAtUtc\", \"EnqueuedAtUtc\")"
+  },
+  {
+    "type": "index",
     "name": "IX_story_plan_run_RequestToken",
     "table": "story_plan_run",
     "sql": "CREATE UNIQUE INDEX \"IX_story_plan_run_RequestToken\" ON \"story_plan_run\" (\"RequestToken\")"
@@ -547,9 +553,33 @@
   },
   {
     "type": "index",
-    "name": "IX_system_application_activation_document_ApplicationId_ActivationRevision_LogicalIdentity",
+    "name": "IX_system_application_activation_document_ApplicationId_ActivationRevision_IdentityId",
     "table": "system_application_activation_document",
-    "sql": "CREATE UNIQUE INDEX \"IX_system_application_activation_document_ApplicationId_ActivationRevision_LogicalIdentity\" ON \"system_application_activation_document\" (\"ApplicationId\", \"ActivationRevision\", \"LogicalIdentity\")"
+    "sql": "CREATE UNIQUE INDEX \"IX_system_application_activation_document_ApplicationId_ActivationRevision_IdentityId\"\r\n    ON \"system_application_activation_document\" (\"ApplicationId\", \"ActivationRevision\", \"IdentityId\")"
+  },
+  {
+    "type": "index",
+    "name": "IX_system_application_activation_document_ApplicationId_IdentityId",
+    "table": "system_application_activation_document",
+    "sql": "CREATE INDEX \"IX_system_application_activation_document_ApplicationId_IdentityId\"\r\n    ON \"system_application_activation_document\" (\"ApplicationId\", \"IdentityId\")"
+  },
+  {
+    "type": "index",
+    "name": "IX_system_application_activation_document_IdentityId_EvidenceVersion",
+    "table": "system_application_activation_document",
+    "sql": "CREATE INDEX \"IX_system_application_activation_document_IdentityId_EvidenceVersion\"\r\n    ON \"system_application_activation_document\" (\"IdentityId\", \"EvidenceVersion\")"
+  },
+  {
+    "type": "index",
+    "name": "IX_system_application_activation_document_evidence_IdentityId_SourceId_Trust_Precedence_RelativePath_MediaType_ContentFingerprint_Length_IsText",
+    "table": "system_application_activation_document_evidence",
+    "sql": "CREATE UNIQUE INDEX \"IX_system_application_activation_document_evidence_IdentityId_SourceId_Trust_Precedence_RelativePath_MediaType_ContentFingerprint_Length_IsText\"\r\n    ON \"system_application_activation_document_evidence\"\r\n       (\"IdentityId\", \"SourceId\", \"Trust\", \"Precedence\", \"RelativePath\", \"MediaType\",\r\n        \"ContentFingerprint\", \"Length\", \"IsText\")"
+  },
+  {
+    "type": "index",
+    "name": "IX_system_application_activation_document_identity_ApplicationId_LogicalIdentity",
+    "table": "system_application_activation_document_identity",
+    "sql": "CREATE UNIQUE INDEX \"IX_system_application_activation_document_identity_ApplicationId_LogicalIdentity\"\r\n    ON \"system_application_activation_document_identity\" (\"ApplicationId\", \"LogicalIdentity\")"
   },
   {
     "type": "index",
@@ -586,6 +616,24 @@
     "name": "IX_system_application_activation_source_ApplicationId_ActivationRevision_SourceId",
     "table": "system_application_activation_source",
     "sql": "CREATE UNIQUE INDEX \"IX_system_application_activation_source_ApplicationId_ActivationRevision_SourceId\" ON \"system_application_activation_source\" (\"ApplicationId\", \"ActivationRevision\", \"SourceId\")"
+  },
+  {
+    "type": "index",
+    "name": "IX_system_application_object_change_ApplicationId_StateSpaceId_Cursor",
+    "table": "system_application_object_change",
+    "sql": "CREATE INDEX \"IX_system_application_object_change_ApplicationId_StateSpaceId_Cursor\" ON \"system_application_object_change\" (\"ApplicationId\", \"StateSpaceId\", \"Cursor\")"
+  },
+  {
+    "type": "index",
+    "name": "IX_system_application_object_change_OperationId_Scope_ObjectQualifiedId_ObjectVersion",
+    "table": "system_application_object_change",
+    "sql": "CREATE UNIQUE INDEX \"IX_system_application_object_change_OperationId_Scope_ObjectQualifiedId_ObjectVersion\" ON \"system_application_object_change\" (\"OperationId\", \"Scope\", \"ObjectQualifiedId\", \"ObjectVersion\")"
+  },
+  {
+    "type": "index",
+    "name": "IX_system_application_object_change_StateSpaceId",
+    "table": "system_application_object_change",
+    "sql": "CREATE INDEX \"IX_system_application_object_change_StateSpaceId\" ON \"system_application_object_change\" (\"StateSpaceId\")"
   },
   {
     "type": "index",
@@ -1219,9 +1267,15 @@
   },
   {
     "type": "index",
+    "name": "IX_web_page_asset_ContentHash",
+    "table": "web_page_asset",
+    "sql": "CREATE INDEX \"IX_web_page_asset_ContentHash\"\r\n    ON \"web_page_asset\" (\"ContentHash\")"
+  },
+  {
+    "type": "index",
     "name": "IX_web_page_asset_PageRevisionId_Path",
     "table": "web_page_asset",
-    "sql": "CREATE UNIQUE INDEX \"IX_web_page_asset_PageRevisionId_Path\" ON \"web_page_asset\" (\"PageRevisionId\", \"Path\")"
+    "sql": "CREATE UNIQUE INDEX \"IX_web_page_asset_PageRevisionId_Path\"\r\n    ON \"web_page_asset\" (\"PageRevisionId\", \"Path\")"
   },
   {
     "type": "index",
@@ -1447,6 +1501,12 @@
   },
   {
     "type": "index",
+    "name": "sqlite_autoindex_scheduled_ai_task_work_1",
+    "table": "scheduled_ai_task_work",
+    "sql": null
+  },
+  {
+    "type": "index",
     "name": "sqlite_autoindex_snapshot_package_1",
     "table": "snapshot_package",
     "sql": null
@@ -1485,6 +1545,18 @@
     "type": "index",
     "name": "sqlite_autoindex_system_application_activation_document_1",
     "table": "system_application_activation_document",
+    "sql": null
+  },
+  {
+    "type": "index",
+    "name": "sqlite_autoindex_system_application_activation_document_evidence_1",
+    "table": "system_application_activation_document_evidence",
+    "sql": null
+  },
+  {
+    "type": "index",
+    "name": "sqlite_autoindex_system_application_activation_document_identity_1",
+    "table": "system_application_activation_document_identity",
     "sql": null
   },
   {
@@ -1653,6 +1725,12 @@
     "type": "index",
     "name": "sqlite_autoindex_system_projection_mapping_1",
     "table": "system_projection_mapping",
+    "sql": null
+  },
+  {
+    "type": "index",
+    "name": "sqlite_autoindex_system_projection_registry_generation_1",
+    "table": "system_projection_registry_generation",
     "sql": null
   },
   {
@@ -1935,6 +2013,12 @@
     "type": "index",
     "name": "sqlite_autoindex_web_page_1",
     "table": "web_page",
+    "sql": null
+  },
+  {
+    "type": "index",
+    "name": "sqlite_autoindex_web_page_asset_content_1",
+    "table": "web_page_asset_content",
     "sql": null
   },
   {
@@ -2257,6 +2341,12 @@
   },
   {
     "type": "table",
+    "name": "scheduled_ai_task_work",
+    "table": "scheduled_ai_task_work",
+    "sql": "CREATE TABLE \"scheduled_ai_task_work\" (\r\n    \"NotificationId\" TEXT NOT NULL CONSTRAINT \"PK_scheduled_ai_task_work\" PRIMARY KEY,\r\n    \"State\" TEXT NOT NULL,\r\n    \"AttemptCount\" INTEGER NOT NULL,\r\n    \"NextAttemptAtUtc\" TEXT NULL,\r\n    \"LeaseOwner\" TEXT NULL,\r\n    \"LeaseToken\" TEXT NULL,\r\n    \"LeaseExpiresAtUtc\" TEXT NULL,\r\n    \"FailureKind\" TEXT NULL,\r\n    \"FailureMessage\" TEXT NULL,\r\n    \"QueueAgeMilliseconds\" INTEGER NULL,\r\n    \"ProviderDurationMilliseconds\" INTEGER NULL,\r\n    \"Revision\" INTEGER NOT NULL,\r\n    \"EnqueuedAtUtc\" TEXT NOT NULL,\r\n    \"UpdatedAtUtc\" TEXT NOT NULL,\r\n    \"CompletedAtUtc\" TEXT NULL,\r\n    CONSTRAINT \"CK_scheduled_ai_task_work_lease\" CHECK (\"LeaseOwner\" IS NULL OR (length(\"LeaseOwner\") BETWEEN 1 AND 128 AND \"LeaseOwner\" NOT GLOB '*[^A-Za-z0-9._:-]*')),\r\n    CONSTRAINT \"CK_scheduled_ai_task_work_state\" CHECK (\"State\" IN ('ready', 'leased', 'retry', 'completed', 'failed') AND ((\"State\" = 'ready' AND \"AttemptCount\" = 0 AND \"NextAttemptAtUtc\" IS NULL AND \"LeaseOwner\" IS NULL AND \"LeaseToken\" IS NULL AND \"LeaseExpiresAtUtc\" IS NULL AND \"FailureKind\" IS NULL AND \"FailureMessage\" IS NULL AND \"QueueAgeMilliseconds\" IS NULL AND \"ProviderDurationMilliseconds\" IS NULL AND \"CompletedAtUtc\" IS NULL) OR (\"State\" = 'leased' AND \"AttemptCount\" BETWEEN 1 AND 3 AND \"NextAttemptAtUtc\" IS NULL AND \"LeaseOwner\" IS NOT NULL AND \"LeaseToken\" IS NOT NULL AND \"LeaseExpiresAtUtc\" IS NOT NULL AND \"FailureKind\" IS NULL AND \"FailureMessage\" IS NULL AND \"QueueAgeMilliseconds\" IS NOT NULL AND \"ProviderDurationMilliseconds\" IS NULL AND \"CompletedAtUtc\" IS NULL) OR (\"State\" = 'retry' AND \"AttemptCount\" BETWEEN 1 AND 2 AND \"NextAttemptAtUtc\" IS NOT NULL AND \"LeaseOwner\" IS NULL AND \"LeaseToken\" IS NULL AND \"LeaseExpiresAtUtc\" IS NULL AND \"FailureKind\" IS NOT NULL AND \"FailureMessage\" IS NOT NULL AND \"QueueAgeMilliseconds\" IS NOT NULL AND \"ProviderDurationMilliseconds\" IS NOT NULL AND \"CompletedAtUtc\" IS NULL) OR (\"State\" = 'completed' AND \"AttemptCount\" BETWEEN 1 AND 3 AND \"NextAttemptAtUtc\" IS NULL AND \"LeaseOwner\" IS NULL AND \"LeaseToken\" IS NULL AND \"LeaseExpiresAtUtc\" IS NULL AND \"FailureKind\" IS NULL AND \"FailureMessage\" IS NULL AND \"QueueAgeMilliseconds\" IS NOT NULL AND \"ProviderDurationMilliseconds\" IS NOT NULL AND \"CompletedAtUtc\" IS NOT NULL) OR (\"State\" = 'failed' AND \"AttemptCount\" BETWEEN 1 AND 3 AND \"NextAttemptAtUtc\" IS NULL AND \"LeaseOwner\" IS NULL AND \"LeaseToken\" IS NULL AND \"LeaseExpiresAtUtc\" IS NULL AND \"FailureKind\" IS NOT NULL AND \"FailureMessage\" IS NOT NULL AND \"QueueAgeMilliseconds\" IS NOT NULL AND \"ProviderDurationMilliseconds\" IS NOT NULL AND \"CompletedAtUtc\" IS NOT NULL))),\r\n    CONSTRAINT \"CK_scheduled_ai_task_work_token\" CHECK (\"LeaseToken\" IS NULL OR (length(\"LeaseToken\") = 32 AND \"LeaseToken\" NOT GLOB '*[^0-9a-f]*')),\r\n    CONSTRAINT \"CK_scheduled_ai_task_work_values\" CHECK (\"AttemptCount\" BETWEEN 0 AND 3 AND \"Revision\" >= 0 AND (\"QueueAgeMilliseconds\" IS NULL OR \"QueueAgeMilliseconds\" >= 0) AND (\"ProviderDurationMilliseconds\" IS NULL OR \"ProviderDurationMilliseconds\" >= 0)),\r\n    CONSTRAINT \"FK_scheduled_ai_task_work_notification_NotificationId\" FOREIGN KEY (\"NotificationId\") REFERENCES \"notification\" (\"Id\") ON DELETE RESTRICT\r\n)"
+  },
+  {
+    "type": "table",
     "name": "snapshot_package",
     "table": "snapshot_package",
     "sql": "CREATE TABLE \"snapshot_package\" (\r\n    \"Id\" TEXT NOT NULL CONSTRAINT \"PK_snapshot_package\" PRIMARY KEY,\r\n    \"ScopeContractId\" TEXT NOT NULL,\r\n    \"ScopeContractVersion\" INTEGER NOT NULL,\r\n    \"ProducerId\" TEXT NOT NULL,\r\n    \"ProducerVersion\" INTEGER NOT NULL,\r\n    \"ContentEncoding\" TEXT NOT NULL,\r\n    \"BoundaryFingerprint\" TEXT NOT NULL,\r\n    \"DigestAlgorithm\" TEXT NOT NULL,\r\n    \"ContentDigest\" TEXT NOT NULL,\r\n    \"ByteCount\" INTEGER NOT NULL,\r\n    \"CapturedAt\" TEXT NOT NULL,\r\n    \"RootOperationId\" TEXT NOT NULL,\r\n    \"Availability\" TEXT NOT NULL,\r\n    \"Content\" BLOB NOT NULL,\r\n    CONSTRAINT \"CK_snapshot_package_availability\" CHECK (\"Availability\" = 'available'),\r\n    CONSTRAINT \"CK_snapshot_package_boundary_fingerprint\" CHECK (length(\"BoundaryFingerprint\") = 64 AND \"BoundaryFingerprint\" NOT GLOB '*[^0-9a-f]*'),\r\n    CONSTRAINT \"CK_snapshot_package_byte_count\" CHECK (\"ByteCount\" BETWEEN 1 AND 1048576 AND \"ByteCount\" = length(\"Content\")),\r\n    CONSTRAINT \"CK_snapshot_package_content_digest\" CHECK (length(\"ContentDigest\") = 64 AND \"ContentDigest\" NOT GLOB '*[^0-9a-f]*'),\r\n    CONSTRAINT \"CK_snapshot_package_digest_algorithm\" CHECK (\"DigestAlgorithm\" = 'sha256'),\r\n    CONSTRAINT \"CK_snapshot_package_encoding\" CHECK (\"ContentEncoding\" = 'dantes-canonical-json-v1'),\r\n    CONSTRAINT \"CK_snapshot_package_id\" CHECK (length(\"Id\") = 41 AND substr(\"Id\", 1, 9) = 'snapshot.' AND substr(\"Id\", 10) NOT GLOB '*[^0-9a-f]*'),\r\n    CONSTRAINT \"CK_snapshot_package_producer_version\" CHECK (\"ProducerVersion\" > 0),\r\n    CONSTRAINT \"CK_snapshot_package_root_operation\" CHECK (length(\"RootOperationId\") = 32 AND \"RootOperationId\" NOT GLOB '*[^0-9a-f]*'),\r\n    CONSTRAINT \"CK_snapshot_package_scope_version\" CHECK (\"ScopeContractVersion\" > 0)\r\n)"
@@ -2313,7 +2403,19 @@
     "type": "table",
     "name": "system_application_activation_document",
     "table": "system_application_activation_document",
-    "sql": "CREATE TABLE \"system_application_activation_document\" (\r\n    \"ApplicationId\" TEXT NOT NULL,\r\n    \"ActivationRevision\" INTEGER NOT NULL,\r\n    \"Ordinal\" INTEGER NOT NULL,\r\n    \"LogicalIdentity\" TEXT NOT NULL,\r\n    \"SourceId\" TEXT NOT NULL,\r\n    \"Trust\" INTEGER NOT NULL,\r\n    \"Precedence\" INTEGER NOT NULL,\r\n    \"RelativePath\" TEXT NOT NULL,\r\n    \"MediaType\" TEXT NOT NULL,\r\n    \"ContentFingerprint\" TEXT NOT NULL,\r\n    \"Length\" INTEGER NOT NULL,\r\n    \"IsText\" INTEGER NOT NULL,\r\n    CONSTRAINT \"PK_system_application_activation_document\" PRIMARY KEY (\"ApplicationId\", \"ActivationRevision\", \"Ordinal\"),\r\n    CONSTRAINT \"CK_system_application_activation_document_hash\" CHECK (length(\"ContentFingerprint\") = 64 AND \"ContentFingerprint\" NOT GLOB '*[^0-9A-F]*'),\r\n    CONSTRAINT \"CK_system_application_activation_document_values\" CHECK (\"Ordinal\" >= 0 AND \"Trust\" IN (0, 1) AND \"Length\" >= 0),\r\n    CONSTRAINT \"FK_system_application_activation_document_system_application_activation_revision_ApplicationId_ActivationRevision\" FOREIGN KEY (\"ApplicationId\", \"ActivationRevision\") REFERENCES \"system_application_activation_revision\" (\"ApplicationId\", \"ActivationRevision\") ON DELETE CASCADE\r\n)"
+    "sql": "CREATE TABLE \"system_application_activation_document\" (\r\n    \"ApplicationId\" TEXT NOT NULL,\r\n    \"ActivationRevision\" INTEGER NOT NULL,\r\n    \"Ordinal\" INTEGER NOT NULL,\r\n    \"IdentityId\" INTEGER NOT NULL,\r\n    \"EvidenceVersion\" INTEGER NOT NULL,\r\n    CONSTRAINT \"PK_system_application_activation_document\"\r\n        PRIMARY KEY (\"ApplicationId\", \"ActivationRevision\", \"Ordinal\"),\r\n    CONSTRAINT \"CK_system_application_activation_document_values\"\r\n        CHECK (\"Ordinal\" >= 0 AND \"EvidenceVersion\" > 0),\r\n    CONSTRAINT \"FK_system_application_activation_document_system_application_activation_revision_ApplicationId_ActivationRevision\"\r\n        FOREIGN KEY (\"ApplicationId\", \"ActivationRevision\")\r\n        REFERENCES \"system_application_activation_revision\" (\"ApplicationId\", \"ActivationRevision\") ON DELETE CASCADE,\r\n    CONSTRAINT \"FK_system_application_activation_document_system_application_activation_document_identity_ApplicationId_IdentityId\"\r\n        FOREIGN KEY (\"ApplicationId\", \"IdentityId\")\r\n        REFERENCES \"system_application_activation_document_identity\" (\"ApplicationId\", \"Id\") ON DELETE RESTRICT,\r\n    CONSTRAINT \"FK_system_application_activation_document_system_application_activation_document_evidence_IdentityId_EvidenceVersion\"\r\n        FOREIGN KEY (\"IdentityId\", \"EvidenceVersion\")\r\n        REFERENCES \"system_application_activation_document_evidence\" (\"IdentityId\", \"EvidenceVersion\") ON DELETE RESTRICT\r\n)"
+  },
+  {
+    "type": "table",
+    "name": "system_application_activation_document_evidence",
+    "table": "system_application_activation_document_evidence",
+    "sql": "CREATE TABLE \"system_application_activation_document_evidence\" (\r\n    \"IdentityId\" INTEGER NOT NULL,\r\n    \"EvidenceVersion\" INTEGER NOT NULL,\r\n    \"SourceId\" TEXT NOT NULL,\r\n    \"Trust\" INTEGER NOT NULL,\r\n    \"Precedence\" INTEGER NOT NULL,\r\n    \"RelativePath\" TEXT NOT NULL,\r\n    \"MediaType\" TEXT NOT NULL,\r\n    \"ContentFingerprint\" TEXT NOT NULL,\r\n    \"Length\" INTEGER NOT NULL,\r\n    \"IsText\" INTEGER NOT NULL,\r\n    CONSTRAINT \"PK_system_application_activation_document_evidence\"\r\n        PRIMARY KEY (\"IdentityId\", \"EvidenceVersion\"),\r\n    CONSTRAINT \"CK_system_application_activation_document_evidence_hash\"\r\n        CHECK (length(\"ContentFingerprint\") = 64 AND \"ContentFingerprint\" NOT GLOB '*[^0-9A-F]*'),\r\n    CONSTRAINT \"CK_system_application_activation_document_evidence_values\"\r\n        CHECK (\"EvidenceVersion\" > 0 AND \"Trust\" IN (0, 1) AND \"Length\" >= 0),\r\n    CONSTRAINT \"FK_system_application_activation_document_evidence_system_application_activation_document_identity_IdentityId\"\r\n        FOREIGN KEY (\"IdentityId\") REFERENCES \"system_application_activation_document_identity\" (\"Id\") ON DELETE RESTRICT\r\n)"
+  },
+  {
+    "type": "table",
+    "name": "system_application_activation_document_identity",
+    "table": "system_application_activation_document_identity",
+    "sql": "CREATE TABLE \"system_application_activation_document_identity\" (\r\n    \"Id\" INTEGER NOT NULL CONSTRAINT \"PK_system_application_activation_document_identity\" PRIMARY KEY AUTOINCREMENT,\r\n    \"ApplicationId\" TEXT NOT NULL,\r\n    \"LogicalIdentity\" TEXT NOT NULL,\r\n    CONSTRAINT \"AK_system_application_activation_document_identity_ApplicationId_Id\"\r\n        UNIQUE (\"ApplicationId\", \"Id\"),\r\n    CONSTRAINT \"FK_system_application_activation_document_identity_system_application_ApplicationId\"\r\n        FOREIGN KEY (\"ApplicationId\") REFERENCES \"system_application\" (\"Id\") ON DELETE RESTRICT\r\n)"
   },
   {
     "type": "table",
@@ -2344,6 +2446,12 @@
     "name": "system_application_extension",
     "table": "system_application_extension",
     "sql": "CREATE TABLE \"system_application_extension\" (\r\n    \"ApplicationId\" TEXT NOT NULL,\r\n    \"ExtensionId\" TEXT NOT NULL,\r\n    \"Description\" TEXT NOT NULL,\r\n    \"SourceIdsJson\" TEXT NOT NULL,\r\n    \"NamespaceIdsJson\" TEXT NOT NULL,\r\n    \"DependenciesJson\" TEXT NOT NULL,\r\n    \"ConflictsWithJson\" TEXT NOT NULL,\r\n    \"HigherPriorityThanJson\" TEXT NOT NULL,\r\n    \"OverridesBase\" INTEGER NOT NULL,\r\n    \"RegistrationFingerprint\" TEXT NOT NULL,\r\n    \"CreatedAtUtc\" TEXT NOT NULL, \"Classification\" TEXT NOT NULL DEFAULT 'third-party', \"DisplayName\" TEXT NOT NULL DEFAULT 'extension', \"RegistrationSchemaVersion\" INTEGER NOT NULL DEFAULT 1,\r\n    CONSTRAINT \"PK_system_application_extension\" PRIMARY KEY (\"ApplicationId\", \"ExtensionId\"),\r\n    CONSTRAINT \"CK_system_application_extension_fingerprint\" CHECK (length(\"RegistrationFingerprint\") = 64 AND \"RegistrationFingerprint\" NOT GLOB '*[^0-9A-F]*'),\r\n    CONSTRAINT \"CK_system_application_extension_id\" CHECK (length(\"ExtensionId\") BETWEEN 1 AND 63 AND \"ExtensionId\" <> 'base'),\r\n    CONSTRAINT \"CK_system_application_extension_json\" CHECK (json_valid(\"SourceIdsJson\") AND json_valid(\"NamespaceIdsJson\") AND json_valid(\"DependenciesJson\") AND json_valid(\"ConflictsWithJson\") AND json_valid(\"HigherPriorityThanJson\")),\r\n    CONSTRAINT \"FK_system_application_extension_system_application_ApplicationId\" FOREIGN KEY (\"ApplicationId\") REFERENCES \"system_application\" (\"Id\") ON DELETE RESTRICT\r\n)"
+  },
+  {
+    "type": "table",
+    "name": "system_application_object_change",
+    "table": "system_application_object_change",
+    "sql": "CREATE TABLE \"system_application_object_change\" (\r\n    \"Cursor\" INTEGER NOT NULL CONSTRAINT \"PK_system_application_object_change\" PRIMARY KEY AUTOINCREMENT,\r\n    \"ContractVersion\" INTEGER NOT NULL,\r\n    \"OperationId\" TEXT NOT NULL,\r\n    \"ApplicationId\" TEXT NOT NULL,\r\n    \"StateSpaceId\" TEXT NOT NULL,\r\n    \"Scope\" TEXT NOT NULL,\r\n    \"ObjectQualifiedId\" TEXT NULL,\r\n    \"ObjectVersion\" INTEGER NULL,\r\n    \"ReadPerspectivesJson\" TEXT NOT NULL,\r\n    \"Reason\" TEXT NOT NULL,\r\n    \"CreatedAtUtc\" TEXT NOT NULL,\r\n    CONSTRAINT \"CK_system_application_object_change_contract\" CHECK (\"ContractVersion\" = 1),\r\n    CONSTRAINT \"CK_system_application_object_change_perspectives\" CHECK (json_valid(\"ReadPerspectivesJson\") AND json_type(\"ReadPerspectivesJson\") = 'array'),\r\n    CONSTRAINT \"CK_system_application_object_change_scope\" CHECK (\"Scope\" IN ('object', 'application', 'none')),\r\n    CONSTRAINT \"CK_system_application_object_change_target\" CHECK ((\"Scope\" = 'object' AND \"ObjectQualifiedId\" IS NOT NULL AND \"ObjectVersion\" > 0) OR (\"Scope\" IN ('application', 'none') AND \"ObjectQualifiedId\" IS NULL AND \"ObjectVersion\" IS NULL)),\r\n    CONSTRAINT \"FK_system_application_object_change_system_application_ApplicationId\" FOREIGN KEY (\"ApplicationId\") REFERENCES \"system_application\" (\"Id\") ON DELETE RESTRICT,\r\n    CONSTRAINT \"FK_system_application_object_change_system_state_space_StateSpaceId\" FOREIGN KEY (\"StateSpaceId\") REFERENCES \"system_state_space\" (\"Id\") ON DELETE RESTRICT\r\n)"
   },
   {
     "type": "table",
@@ -2392,6 +2500,12 @@
     "name": "system_catalog_namespace_resolution_key",
     "table": "system_catalog_namespace_resolution_key",
     "sql": "CREATE TABLE \"system_catalog_namespace_resolution_key\" (\r\n    \"ApplicationId\" TEXT NOT NULL,\r\n    \"ProfileId\" TEXT NOT NULL,\r\n    \"ResolutionKey\" TEXT NOT NULL,\r\n    \"RecordKind\" TEXT NOT NULL,\r\n    \"Description\" TEXT NOT NULL,\r\n    \"CreatedAtUtc\" TEXT NOT NULL,\r\n    CONSTRAINT \"PK_system_catalog_namespace_resolution_key\" PRIMARY KEY (\"ApplicationId\", \"ProfileId\", \"ResolutionKey\"),\r\n    CONSTRAINT \"FK_system_catalog_namespace_resolution_key_system_catalog_namespace_overlay_profile_ApplicationId_ProfileId\" FOREIGN KEY (\"ApplicationId\", \"ProfileId\") REFERENCES \"system_catalog_namespace_overlay_profile\" (\"ApplicationId\", \"ProfileId\") ON DELETE RESTRICT\r\n)"
+  },
+  {
+    "type": "table",
+    "name": "system_change_recovery",
+    "table": "system_change_recovery",
+    "sql": "CREATE TABLE system_change_recovery (\r\n    Id INTEGER NOT NULL PRIMARY KEY CHECK (Id = 1),\r\n    StateVersion INTEGER NOT NULL CHECK (typeof(StateVersion) = 'integer' AND StateVersion >= 0),\r\n    OtherVersion INTEGER NOT NULL CHECK (typeof(OtherVersion) = 'integer' AND OtherVersion >= 0),\r\n    SchemaVersion INTEGER NOT NULL)"
   },
   {
     "type": "table",
@@ -2500,6 +2614,12 @@
     "name": "system_projection_mapping",
     "table": "system_projection_mapping",
     "sql": "CREATE TABLE \"system_projection_mapping\" (\r\n    \"QualifiedId\" TEXT NOT NULL,\r\n    \"Version\" INTEGER NOT NULL,\r\n    \"TargetPointer\" TEXT NOT NULL,\r\n    \"InputId\" TEXT NOT NULL,\r\n    \"SourcePointer\" TEXT NOT NULL,\r\n    \"Ordinal\" INTEGER NOT NULL,\r\n    CONSTRAINT \"PK_system_projection_mapping\" PRIMARY KEY (\"QualifiedId\", \"Version\", \"TargetPointer\"),\r\n    CONSTRAINT \"FK_system_projection_mapping_system_projection_definition_version_QualifiedId_Version\" FOREIGN KEY (\"QualifiedId\", \"Version\") REFERENCES \"system_projection_definition_version\" (\"QualifiedId\", \"Version\") ON DELETE RESTRICT\r\n)"
+  },
+  {
+    "type": "table",
+    "name": "system_projection_registry_generation",
+    "table": "system_projection_registry_generation",
+    "sql": "CREATE TABLE \"system_projection_registry_generation\" (\r\n    \"ApplicationId\" TEXT NOT NULL CONSTRAINT \"PK_system_projection_registry_generation\" PRIMARY KEY,\r\n    \"Generation\" INTEGER NOT NULL,\r\n    CONSTRAINT \"CK_system_projection_registry_generation_value\" CHECK (\"Generation\" >= 0),\r\n    CONSTRAINT \"FK_system_projection_registry_generation_system_application_ApplicationId\" FOREIGN KEY (\"ApplicationId\") REFERENCES \"system_application\" (\"Id\") ON DELETE RESTRICT\r\n)"
   },
   {
     "type": "table",
@@ -2787,7 +2907,13 @@
     "type": "table",
     "name": "web_page_asset",
     "table": "web_page_asset",
-    "sql": "CREATE TABLE \"web_page_asset\" (\r\n    \"Id\" INTEGER NOT NULL CONSTRAINT \"PK_web_page_asset\" PRIMARY KEY AUTOINCREMENT,\r\n    \"PageRevisionId\" INTEGER NOT NULL,\r\n    \"Path\" TEXT NOT NULL,\r\n    \"ContentType\" TEXT NOT NULL,\r\n    \"ContentHash\" TEXT NOT NULL,\r\n    \"Content\" BLOB NOT NULL,\r\n    CONSTRAINT \"FK_web_page_asset_web_page_revision_PageRevisionId\" FOREIGN KEY (\"PageRevisionId\") REFERENCES \"web_page_revision\" (\"Id\") ON DELETE CASCADE\r\n)"
+    "sql": "CREATE TABLE \"web_page_asset\" (\r\n    \"Id\" INTEGER NOT NULL CONSTRAINT \"PK_web_page_asset\" PRIMARY KEY AUTOINCREMENT,\r\n    \"PageRevisionId\" INTEGER NOT NULL,\r\n    \"Path\" TEXT NOT NULL,\r\n    \"ContentType\" TEXT NOT NULL,\r\n    \"ContentHash\" TEXT NOT NULL,\r\n    CONSTRAINT \"FK_web_page_asset_web_page_revision_PageRevisionId\"\r\n        FOREIGN KEY (\"PageRevisionId\") REFERENCES \"web_page_revision\" (\"Id\") ON DELETE CASCADE,\r\n    CONSTRAINT \"FK_web_page_asset_web_page_asset_content_ContentHash\"\r\n        FOREIGN KEY (\"ContentHash\") REFERENCES \"web_page_asset_content\" (\"ContentHash\") ON DELETE RESTRICT\r\n)"
+  },
+  {
+    "type": "table",
+    "name": "web_page_asset_content",
+    "table": "web_page_asset_content",
+    "sql": "CREATE TABLE \"web_page_asset_content\" (\r\n    \"ContentHash\" TEXT NOT NULL CONSTRAINT \"PK_web_page_asset_content\" PRIMARY KEY,\r\n    \"Content\" BLOB NOT NULL,\r\n    CONSTRAINT \"CK_web_page_asset_content_hash\"\r\n        CHECK (length(\"ContentHash\") = 64 AND \"ContentHash\" NOT GLOB '*[^0-9A-F]*')\r\n)"
   },
   {
     "type": "table",
@@ -2839,6 +2965,24 @@
   },
   {
     "type": "trigger",
+    "name": "scheduled_ai_task_work_delete_guard",
+    "table": "scheduled_ai_task_work",
+    "sql": "CREATE TRIGGER scheduled_ai_task_work_delete_guard\r\nBEFORE DELETE ON scheduled_ai_task_work\r\nBEGIN SELECT RAISE(ABORT, 'SCHEDULED_AI_TASK_WORK_DELETE'); END"
+  },
+  {
+    "type": "trigger",
+    "name": "scheduled_ai_task_work_insert_guard",
+    "table": "scheduled_ai_task_work",
+    "sql": "CREATE TRIGGER scheduled_ai_task_work_insert_guard\r\nBEFORE INSERT ON scheduled_ai_task_work\r\nWHEN NEW.State <> 'ready' OR NEW.AttemptCount <> 0 OR NEW.Revision <> 0\r\n  OR NOT EXISTS (\r\n      SELECT 1 FROM notification\r\n      WHERE Id = NEW.NotificationId AND Topic = 'system.local-ai.task' AND State = 'Unread')\r\nBEGIN SELECT RAISE(ABORT, 'SCHEDULED_AI_TASK_WORK_PROVENANCE'); END"
+  },
+  {
+    "type": "trigger",
+    "name": "scheduled_ai_task_work_update_guard",
+    "table": "scheduled_ai_task_work",
+    "sql": "CREATE TRIGGER scheduled_ai_task_work_update_guard\r\nBEFORE UPDATE ON scheduled_ai_task_work\r\nWHEN NEW.NotificationId <> OLD.NotificationId OR NEW.EnqueuedAtUtc <> OLD.EnqueuedAtUtc\r\n  OR NEW.Revision <> OLD.Revision + 1 OR NEW.UpdatedAtUtc < OLD.UpdatedAtUtc OR NOT (\r\n    (OLD.State = 'ready' AND NEW.State = 'leased' AND NEW.AttemptCount = 1) OR\r\n    (OLD.State = 'retry' AND NEW.State = 'leased'\r\n        AND NEW.AttemptCount = OLD.AttemptCount + 1) OR\r\n    (OLD.State = 'leased' AND NEW.State = 'leased'\r\n        AND NEW.AttemptCount = OLD.AttemptCount + 1\r\n        AND OLD.LeaseExpiresAtUtc <= NEW.UpdatedAtUtc) OR\r\n    (OLD.State = 'leased' AND NEW.State = 'leased'\r\n        AND NEW.AttemptCount = OLD.AttemptCount\r\n        AND NEW.LeaseOwner = OLD.LeaseOwner\r\n        AND NEW.LeaseToken = OLD.LeaseToken\r\n        AND OLD.LeaseExpiresAtUtc > NEW.UpdatedAtUtc\r\n        AND NEW.LeaseExpiresAtUtc > OLD.LeaseExpiresAtUtc) OR\r\n    (OLD.State = 'leased' AND NEW.State IN ('retry', 'completed', 'failed')\r\n        AND NEW.AttemptCount = OLD.AttemptCount\r\n        AND OLD.LeaseExpiresAtUtc > NEW.UpdatedAtUtc) OR\r\n    (OLD.State = 'leased' AND NEW.State = 'failed'\r\n        AND NEW.AttemptCount = OLD.AttemptCount\r\n        AND OLD.AttemptCount >= 3\r\n        AND OLD.LeaseExpiresAtUtc <= NEW.UpdatedAtUtc))\r\nBEGIN SELECT RAISE(ABORT, 'SCHEDULED_AI_TASK_WORK_TRANSITION'); END"
+  },
+  {
+    "type": "trigger",
     "name": "snapshot_package_no_delete",
     "table": "snapshot_package",
     "sql": "CREATE TRIGGER snapshot_package_no_delete\nBEFORE DELETE ON snapshot_package\nBEGIN\n    SELECT RAISE(ABORT, 'SNAPSHOT_PACKAGE_IMMUTABLE');\nEND"
@@ -2848,6 +2992,2454 @@
     "name": "snapshot_package_no_update",
     "table": "snapshot_package",
     "sql": "CREATE TRIGGER snapshot_package_no_update\nBEFORE UPDATE ON snapshot_package\nBEGIN\n    SELECT RAISE(ABORT, 'SNAPSHOT_PACKAGE_IMMUTABLE');\nEND"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_application_play_conversation_DELETE",
+    "table": "application_play_conversation",
+    "sql": "CREATE TRIGGER \"system_change_recovery_application_play_conversation_DELETE\" AFTER DELETE ON \"application_play_conversation\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_application_play_conversation_INSERT",
+    "table": "application_play_conversation",
+    "sql": "CREATE TRIGGER \"system_change_recovery_application_play_conversation_INSERT\" AFTER INSERT ON \"application_play_conversation\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_application_play_conversation_UPDATE",
+    "table": "application_play_conversation",
+    "sql": "CREATE TRIGGER \"system_change_recovery_application_play_conversation_UPDATE\" AFTER UPDATE ON \"application_play_conversation\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_application_play_message_DELETE",
+    "table": "application_play_message",
+    "sql": "CREATE TRIGGER \"system_change_recovery_application_play_message_DELETE\" AFTER DELETE ON \"application_play_message\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_application_play_message_INSERT",
+    "table": "application_play_message",
+    "sql": "CREATE TRIGGER \"system_change_recovery_application_play_message_INSERT\" AFTER INSERT ON \"application_play_message\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_application_play_message_UPDATE",
+    "table": "application_play_message",
+    "sql": "CREATE TRIGGER \"system_change_recovery_application_play_message_UPDATE\" AFTER UPDATE ON \"application_play_message\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_application_play_situation_DELETE",
+    "table": "application_play_situation",
+    "sql": "CREATE TRIGGER \"system_change_recovery_application_play_situation_DELETE\" AFTER DELETE ON \"application_play_situation\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_application_play_situation_INSERT",
+    "table": "application_play_situation",
+    "sql": "CREATE TRIGGER \"system_change_recovery_application_play_situation_INSERT\" AFTER INSERT ON \"application_play_situation\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_application_play_situation_UPDATE",
+    "table": "application_play_situation",
+    "sql": "CREATE TRIGGER \"system_change_recovery_application_play_situation_UPDATE\" AFTER UPDATE ON \"application_play_situation\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_application_play_truth_DELETE",
+    "table": "application_play_truth",
+    "sql": "CREATE TRIGGER \"system_change_recovery_application_play_truth_DELETE\" AFTER DELETE ON \"application_play_truth\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_application_play_truth_INSERT",
+    "table": "application_play_truth",
+    "sql": "CREATE TRIGGER \"system_change_recovery_application_play_truth_INSERT\" AFTER INSERT ON \"application_play_truth\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_application_play_truth_UPDATE",
+    "table": "application_play_truth",
+    "sql": "CREATE TRIGGER \"system_change_recovery_application_play_truth_UPDATE\" AFTER UPDATE ON \"application_play_truth\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_assistant_conversation_DELETE",
+    "table": "assistant_conversation",
+    "sql": "CREATE TRIGGER \"system_change_recovery_assistant_conversation_DELETE\" AFTER DELETE ON \"assistant_conversation\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_assistant_conversation_INSERT",
+    "table": "assistant_conversation",
+    "sql": "CREATE TRIGGER \"system_change_recovery_assistant_conversation_INSERT\" AFTER INSERT ON \"assistant_conversation\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_assistant_conversation_UPDATE",
+    "table": "assistant_conversation",
+    "sql": "CREATE TRIGGER \"system_change_recovery_assistant_conversation_UPDATE\" AFTER UPDATE ON \"assistant_conversation\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_assistant_message_DELETE",
+    "table": "assistant_message",
+    "sql": "CREATE TRIGGER \"system_change_recovery_assistant_message_DELETE\" AFTER DELETE ON \"assistant_message\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_assistant_message_INSERT",
+    "table": "assistant_message",
+    "sql": "CREATE TRIGGER \"system_change_recovery_assistant_message_INSERT\" AFTER INSERT ON \"assistant_message\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_assistant_message_UPDATE",
+    "table": "assistant_message",
+    "sql": "CREATE TRIGGER \"system_change_recovery_assistant_message_UPDATE\" AFTER UPDATE ON \"assistant_message\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_assistant_turn_DELETE",
+    "table": "assistant_turn",
+    "sql": "CREATE TRIGGER \"system_change_recovery_assistant_turn_DELETE\" AFTER DELETE ON \"assistant_turn\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_assistant_turn_INSERT",
+    "table": "assistant_turn",
+    "sql": "CREATE TRIGGER \"system_change_recovery_assistant_turn_INSERT\" AFTER INSERT ON \"assistant_turn\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_assistant_turn_UPDATE",
+    "table": "assistant_turn",
+    "sql": "CREATE TRIGGER \"system_change_recovery_assistant_turn_UPDATE\" AFTER UPDATE ON \"assistant_turn\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_assistant_turn_activity_DELETE",
+    "table": "assistant_turn_activity",
+    "sql": "CREATE TRIGGER \"system_change_recovery_assistant_turn_activity_DELETE\" AFTER DELETE ON \"assistant_turn_activity\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_assistant_turn_activity_INSERT",
+    "table": "assistant_turn_activity",
+    "sql": "CREATE TRIGGER \"system_change_recovery_assistant_turn_activity_INSERT\" AFTER INSERT ON \"assistant_turn_activity\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_assistant_turn_activity_UPDATE",
+    "table": "assistant_turn_activity",
+    "sql": "CREATE TRIGGER \"system_change_recovery_assistant_turn_activity_UPDATE\" AFTER UPDATE ON \"assistant_turn_activity\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_assistant_turn_approval_DELETE",
+    "table": "assistant_turn_approval",
+    "sql": "CREATE TRIGGER \"system_change_recovery_assistant_turn_approval_DELETE\" AFTER DELETE ON \"assistant_turn_approval\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_assistant_turn_approval_INSERT",
+    "table": "assistant_turn_approval",
+    "sql": "CREATE TRIGGER \"system_change_recovery_assistant_turn_approval_INSERT\" AFTER INSERT ON \"assistant_turn_approval\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_assistant_turn_approval_UPDATE",
+    "table": "assistant_turn_approval",
+    "sql": "CREATE TRIGGER \"system_change_recovery_assistant_turn_approval_UPDATE\" AFTER UPDATE ON \"assistant_turn_approval\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_blob_asset_DELETE",
+    "table": "blob_asset",
+    "sql": "CREATE TRIGGER \"system_change_recovery_blob_asset_DELETE\" AFTER DELETE ON \"blob_asset\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_blob_asset_INSERT",
+    "table": "blob_asset",
+    "sql": "CREATE TRIGGER \"system_change_recovery_blob_asset_INSERT\" AFTER INSERT ON \"blob_asset\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_blob_asset_UPDATE",
+    "table": "blob_asset",
+    "sql": "CREATE TRIGGER \"system_change_recovery_blob_asset_UPDATE\" AFTER UPDATE ON \"blob_asset\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_blob_upload_session_DELETE",
+    "table": "blob_upload_session",
+    "sql": "CREATE TRIGGER \"system_change_recovery_blob_upload_session_DELETE\" AFTER DELETE ON \"blob_upload_session\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_blob_upload_session_INSERT",
+    "table": "blob_upload_session",
+    "sql": "CREATE TRIGGER \"system_change_recovery_blob_upload_session_INSERT\" AFTER INSERT ON \"blob_upload_session\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_blob_upload_session_UPDATE",
+    "table": "blob_upload_session",
+    "sql": "CREATE TRIGGER \"system_change_recovery_blob_upload_session_UPDATE\" AFTER UPDATE ON \"blob_upload_session\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_component_DELETE",
+    "table": "component",
+    "sql": "CREATE TRIGGER \"system_change_recovery_component_DELETE\" AFTER DELETE ON \"component\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_component_INSERT",
+    "table": "component",
+    "sql": "CREATE TRIGGER \"system_change_recovery_component_INSERT\" AFTER INSERT ON \"component\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_component_UPDATE",
+    "table": "component",
+    "sql": "CREATE TRIGGER \"system_change_recovery_component_UPDATE\" AFTER UPDATE ON \"component\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_component_definition_DELETE",
+    "table": "component_definition",
+    "sql": "CREATE TRIGGER \"system_change_recovery_component_definition_DELETE\" AFTER DELETE ON \"component_definition\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_component_definition_INSERT",
+    "table": "component_definition",
+    "sql": "CREATE TRIGGER \"system_change_recovery_component_definition_INSERT\" AFTER INSERT ON \"component_definition\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_component_definition_UPDATE",
+    "table": "component_definition",
+    "sql": "CREATE TRIGGER \"system_change_recovery_component_definition_UPDATE\" AFTER UPDATE ON \"component_definition\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_containment_DELETE",
+    "table": "containment",
+    "sql": "CREATE TRIGGER \"system_change_recovery_containment_DELETE\" AFTER DELETE ON \"containment\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_containment_INSERT",
+    "table": "containment",
+    "sql": "CREATE TRIGGER \"system_change_recovery_containment_INSERT\" AFTER INSERT ON \"containment\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_containment_UPDATE",
+    "table": "containment",
+    "sql": "CREATE TRIGGER \"system_change_recovery_containment_UPDATE\" AFTER UPDATE ON \"containment\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_entity_DELETE",
+    "table": "entity",
+    "sql": "CREATE TRIGGER \"system_change_recovery_entity_DELETE\" AFTER DELETE ON \"entity\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_entity_INSERT",
+    "table": "entity",
+    "sql": "CREATE TRIGGER \"system_change_recovery_entity_INSERT\" AFTER INSERT ON \"entity\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_entity_UPDATE",
+    "table": "entity",
+    "sql": "CREATE TRIGGER \"system_change_recovery_entity_UPDATE\" AFTER UPDATE ON \"entity\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_event_DELETE",
+    "table": "event",
+    "sql": "CREATE TRIGGER \"system_change_recovery_event_DELETE\" AFTER DELETE ON \"event\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_event_INSERT",
+    "table": "event",
+    "sql": "CREATE TRIGGER \"system_change_recovery_event_INSERT\" AFTER INSERT ON \"event\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_event_UPDATE",
+    "table": "event",
+    "sql": "CREATE TRIGGER \"system_change_recovery_event_UPDATE\" AFTER UPDATE ON \"event\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_event_entity_DELETE",
+    "table": "event_entity",
+    "sql": "CREATE TRIGGER \"system_change_recovery_event_entity_DELETE\" AFTER DELETE ON \"event_entity\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_event_entity_INSERT",
+    "table": "event_entity",
+    "sql": "CREATE TRIGGER \"system_change_recovery_event_entity_INSERT\" AFTER INSERT ON \"event_entity\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_event_entity_UPDATE",
+    "table": "event_entity",
+    "sql": "CREATE TRIGGER \"system_change_recovery_event_entity_UPDATE\" AFTER UPDATE ON \"event_entity\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_event_execution_DELETE",
+    "table": "event_execution",
+    "sql": "CREATE TRIGGER \"system_change_recovery_event_execution_DELETE\" AFTER DELETE ON \"event_execution\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_event_execution_INSERT",
+    "table": "event_execution",
+    "sql": "CREATE TRIGGER \"system_change_recovery_event_execution_INSERT\" AFTER INSERT ON \"event_execution\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_event_execution_UPDATE",
+    "table": "event_execution",
+    "sql": "CREATE TRIGGER \"system_change_recovery_event_execution_UPDATE\" AFTER UPDATE ON \"event_execution\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_event_type_DELETE",
+    "table": "event_type",
+    "sql": "CREATE TRIGGER \"system_change_recovery_event_type_DELETE\" AFTER DELETE ON \"event_type\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_event_type_INSERT",
+    "table": "event_type",
+    "sql": "CREATE TRIGGER \"system_change_recovery_event_type_INSERT\" AFTER INSERT ON \"event_type\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_event_type_UPDATE",
+    "table": "event_type",
+    "sql": "CREATE TRIGGER \"system_change_recovery_event_type_UPDATE\" AFTER UPDATE ON \"event_type\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_event_type_version_DELETE",
+    "table": "event_type_version",
+    "sql": "CREATE TRIGGER \"system_change_recovery_event_type_version_DELETE\" AFTER DELETE ON \"event_type_version\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_event_type_version_INSERT",
+    "table": "event_type_version",
+    "sql": "CREATE TRIGGER \"system_change_recovery_event_type_version_INSERT\" AFTER INSERT ON \"event_type_version\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_event_type_version_UPDATE",
+    "table": "event_type_version",
+    "sql": "CREATE TRIGGER \"system_change_recovery_event_type_version_UPDATE\" AFTER UPDATE ON \"event_type_version\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_host_setting_override_DELETE",
+    "table": "host_setting_override",
+    "sql": "CREATE TRIGGER \"system_change_recovery_host_setting_override_DELETE\" AFTER DELETE ON \"host_setting_override\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_host_setting_override_INSERT",
+    "table": "host_setting_override",
+    "sql": "CREATE TRIGGER \"system_change_recovery_host_setting_override_INSERT\" AFTER INSERT ON \"host_setting_override\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_host_setting_override_UPDATE",
+    "table": "host_setting_override",
+    "sql": "CREATE TRIGGER \"system_change_recovery_host_setting_override_UPDATE\" AFTER UPDATE ON \"host_setting_override\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_host_setting_override_version_DELETE",
+    "table": "host_setting_override_version",
+    "sql": "CREATE TRIGGER \"system_change_recovery_host_setting_override_version_DELETE\" AFTER DELETE ON \"host_setting_override_version\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_host_setting_override_version_INSERT",
+    "table": "host_setting_override_version",
+    "sql": "CREATE TRIGGER \"system_change_recovery_host_setting_override_version_INSERT\" AFTER INSERT ON \"host_setting_override_version\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_host_setting_override_version_UPDATE",
+    "table": "host_setting_override_version",
+    "sql": "CREATE TRIGGER \"system_change_recovery_host_setting_override_version_UPDATE\" AFTER UPDATE ON \"host_setting_override_version\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_information_action_contract_DELETE",
+    "table": "information_action_contract",
+    "sql": "CREATE TRIGGER \"system_change_recovery_information_action_contract_DELETE\" AFTER DELETE ON \"information_action_contract\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_information_action_contract_INSERT",
+    "table": "information_action_contract",
+    "sql": "CREATE TRIGGER \"system_change_recovery_information_action_contract_INSERT\" AFTER INSERT ON \"information_action_contract\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_information_action_contract_UPDATE",
+    "table": "information_action_contract",
+    "sql": "CREATE TRIGGER \"system_change_recovery_information_action_contract_UPDATE\" AFTER UPDATE ON \"information_action_contract\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_information_record_DELETE",
+    "table": "information_record",
+    "sql": "CREATE TRIGGER \"system_change_recovery_information_record_DELETE\" AFTER DELETE ON \"information_record\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_information_record_INSERT",
+    "table": "information_record",
+    "sql": "CREATE TRIGGER \"system_change_recovery_information_record_INSERT\" AFTER INSERT ON \"information_record\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_information_record_UPDATE",
+    "table": "information_record",
+    "sql": "CREATE TRIGGER \"system_change_recovery_information_record_UPDATE\" AFTER UPDATE ON \"information_record\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_information_source_DELETE",
+    "table": "information_source",
+    "sql": "CREATE TRIGGER \"system_change_recovery_information_source_DELETE\" AFTER DELETE ON \"information_source\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_information_source_INSERT",
+    "table": "information_source",
+    "sql": "CREATE TRIGGER \"system_change_recovery_information_source_INSERT\" AFTER INSERT ON \"information_source\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_information_source_UPDATE",
+    "table": "information_source",
+    "sql": "CREATE TRIGGER \"system_change_recovery_information_source_UPDATE\" AFTER UPDATE ON \"information_source\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_interaction_execution_query_result_DELETE",
+    "table": "interaction_execution_query_result",
+    "sql": "CREATE TRIGGER \"system_change_recovery_interaction_execution_query_result_DELETE\" AFTER DELETE ON \"interaction_execution_query_result\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_interaction_execution_query_result_INSERT",
+    "table": "interaction_execution_query_result",
+    "sql": "CREATE TRIGGER \"system_change_recovery_interaction_execution_query_result_INSERT\" AFTER INSERT ON \"interaction_execution_query_result\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_interaction_execution_query_result_UPDATE",
+    "table": "interaction_execution_query_result",
+    "sql": "CREATE TRIGGER \"system_change_recovery_interaction_execution_query_result_UPDATE\" AFTER UPDATE ON \"interaction_execution_query_result\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_interaction_execution_receipt_DELETE",
+    "table": "interaction_execution_receipt",
+    "sql": "CREATE TRIGGER \"system_change_recovery_interaction_execution_receipt_DELETE\" AFTER DELETE ON \"interaction_execution_receipt\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_interaction_execution_receipt_INSERT",
+    "table": "interaction_execution_receipt",
+    "sql": "CREATE TRIGGER \"system_change_recovery_interaction_execution_receipt_INSERT\" AFTER INSERT ON \"interaction_execution_receipt\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_interaction_execution_receipt_UPDATE",
+    "table": "interaction_execution_receipt",
+    "sql": "CREATE TRIGGER \"system_change_recovery_interaction_execution_receipt_UPDATE\" AFTER UPDATE ON \"interaction_execution_receipt\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_interaction_execution_receipt_step_DELETE",
+    "table": "interaction_execution_receipt_step",
+    "sql": "CREATE TRIGGER \"system_change_recovery_interaction_execution_receipt_step_DELETE\" AFTER DELETE ON \"interaction_execution_receipt_step\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_interaction_execution_receipt_step_INSERT",
+    "table": "interaction_execution_receipt_step",
+    "sql": "CREATE TRIGGER \"system_change_recovery_interaction_execution_receipt_step_INSERT\" AFTER INSERT ON \"interaction_execution_receipt_step\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_interaction_execution_receipt_step_UPDATE",
+    "table": "interaction_execution_receipt_step",
+    "sql": "CREATE TRIGGER \"system_change_recovery_interaction_execution_receipt_step_UPDATE\" AFTER UPDATE ON \"interaction_execution_receipt_step\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_interaction_mechanic_opportunity_DELETE",
+    "table": "interaction_mechanic_opportunity",
+    "sql": "CREATE TRIGGER \"system_change_recovery_interaction_mechanic_opportunity_DELETE\" AFTER DELETE ON \"interaction_mechanic_opportunity\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_interaction_mechanic_opportunity_INSERT",
+    "table": "interaction_mechanic_opportunity",
+    "sql": "CREATE TRIGGER \"system_change_recovery_interaction_mechanic_opportunity_INSERT\" AFTER INSERT ON \"interaction_mechanic_opportunity\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_interaction_mechanic_opportunity_UPDATE",
+    "table": "interaction_mechanic_opportunity",
+    "sql": "CREATE TRIGGER \"system_change_recovery_interaction_mechanic_opportunity_UPDATE\" AFTER UPDATE ON \"interaction_mechanic_opportunity\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_interaction_mechanic_sandbox_draft_DELETE",
+    "table": "interaction_mechanic_sandbox_draft",
+    "sql": "CREATE TRIGGER \"system_change_recovery_interaction_mechanic_sandbox_draft_DELETE\" AFTER DELETE ON \"interaction_mechanic_sandbox_draft\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_interaction_mechanic_sandbox_draft_INSERT",
+    "table": "interaction_mechanic_sandbox_draft",
+    "sql": "CREATE TRIGGER \"system_change_recovery_interaction_mechanic_sandbox_draft_INSERT\" AFTER INSERT ON \"interaction_mechanic_sandbox_draft\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_interaction_mechanic_sandbox_draft_UPDATE",
+    "table": "interaction_mechanic_sandbox_draft",
+    "sql": "CREATE TRIGGER \"system_change_recovery_interaction_mechanic_sandbox_draft_UPDATE\" AFTER UPDATE ON \"interaction_mechanic_sandbox_draft\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_interaction_mechanic_sandbox_draft_revision_DELETE",
+    "table": "interaction_mechanic_sandbox_draft_revision",
+    "sql": "CREATE TRIGGER \"system_change_recovery_interaction_mechanic_sandbox_draft_revision_DELETE\" AFTER DELETE ON \"interaction_mechanic_sandbox_draft_revision\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_interaction_mechanic_sandbox_draft_revision_INSERT",
+    "table": "interaction_mechanic_sandbox_draft_revision",
+    "sql": "CREATE TRIGGER \"system_change_recovery_interaction_mechanic_sandbox_draft_revision_INSERT\" AFTER INSERT ON \"interaction_mechanic_sandbox_draft_revision\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_interaction_mechanic_sandbox_draft_revision_UPDATE",
+    "table": "interaction_mechanic_sandbox_draft_revision",
+    "sql": "CREATE TRIGGER \"system_change_recovery_interaction_mechanic_sandbox_draft_revision_UPDATE\" AFTER UPDATE ON \"interaction_mechanic_sandbox_draft_revision\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_interaction_recipe_DELETE",
+    "table": "interaction_recipe",
+    "sql": "CREATE TRIGGER \"system_change_recovery_interaction_recipe_DELETE\" AFTER DELETE ON \"interaction_recipe\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_interaction_recipe_INSERT",
+    "table": "interaction_recipe",
+    "sql": "CREATE TRIGGER \"system_change_recovery_interaction_recipe_INSERT\" AFTER INSERT ON \"interaction_recipe\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_interaction_recipe_UPDATE",
+    "table": "interaction_recipe",
+    "sql": "CREATE TRIGGER \"system_change_recovery_interaction_recipe_UPDATE\" AFTER UPDATE ON \"interaction_recipe\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_interaction_recipe_evidence_DELETE",
+    "table": "interaction_recipe_evidence",
+    "sql": "CREATE TRIGGER \"system_change_recovery_interaction_recipe_evidence_DELETE\" AFTER DELETE ON \"interaction_recipe_evidence\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_interaction_recipe_evidence_INSERT",
+    "table": "interaction_recipe_evidence",
+    "sql": "CREATE TRIGGER \"system_change_recovery_interaction_recipe_evidence_INSERT\" AFTER INSERT ON \"interaction_recipe_evidence\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_interaction_recipe_evidence_UPDATE",
+    "table": "interaction_recipe_evidence",
+    "sql": "CREATE TRIGGER \"system_change_recovery_interaction_recipe_evidence_UPDATE\" AFTER UPDATE ON \"interaction_recipe_evidence\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_interaction_recipe_revision_DELETE",
+    "table": "interaction_recipe_revision",
+    "sql": "CREATE TRIGGER \"system_change_recovery_interaction_recipe_revision_DELETE\" AFTER DELETE ON \"interaction_recipe_revision\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_interaction_recipe_revision_INSERT",
+    "table": "interaction_recipe_revision",
+    "sql": "CREATE TRIGGER \"system_change_recovery_interaction_recipe_revision_INSERT\" AFTER INSERT ON \"interaction_recipe_revision\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_interaction_recipe_revision_UPDATE",
+    "table": "interaction_recipe_revision",
+    "sql": "CREATE TRIGGER \"system_change_recovery_interaction_recipe_revision_UPDATE\" AFTER UPDATE ON \"interaction_recipe_revision\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_interaction_resolution_receipt_DELETE",
+    "table": "interaction_resolution_receipt",
+    "sql": "CREATE TRIGGER \"system_change_recovery_interaction_resolution_receipt_DELETE\" AFTER DELETE ON \"interaction_resolution_receipt\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_interaction_resolution_receipt_INSERT",
+    "table": "interaction_resolution_receipt",
+    "sql": "CREATE TRIGGER \"system_change_recovery_interaction_resolution_receipt_INSERT\" AFTER INSERT ON \"interaction_resolution_receipt\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_interaction_resolution_receipt_UPDATE",
+    "table": "interaction_resolution_receipt",
+    "sql": "CREATE TRIGGER \"system_change_recovery_interaction_resolution_receipt_UPDATE\" AFTER UPDATE ON \"interaction_resolution_receipt\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_mechanic_DELETE",
+    "table": "mechanic",
+    "sql": "CREATE TRIGGER \"system_change_recovery_mechanic_DELETE\" AFTER DELETE ON \"mechanic\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_mechanic_INSERT",
+    "table": "mechanic",
+    "sql": "CREATE TRIGGER \"system_change_recovery_mechanic_INSERT\" AFTER INSERT ON \"mechanic\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_mechanic_UPDATE",
+    "table": "mechanic",
+    "sql": "CREATE TRIGGER \"system_change_recovery_mechanic_UPDATE\" AFTER UPDATE ON \"mechanic\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_mechanic_version_DELETE",
+    "table": "mechanic_version",
+    "sql": "CREATE TRIGGER \"system_change_recovery_mechanic_version_DELETE\" AFTER DELETE ON \"mechanic_version\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_mechanic_version_INSERT",
+    "table": "mechanic_version",
+    "sql": "CREATE TRIGGER \"system_change_recovery_mechanic_version_INSERT\" AFTER INSERT ON \"mechanic_version\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_mechanic_version_UPDATE",
+    "table": "mechanic_version",
+    "sql": "CREATE TRIGGER \"system_change_recovery_mechanic_version_UPDATE\" AFTER UPDATE ON \"mechanic_version\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_notification_DELETE",
+    "table": "notification",
+    "sql": "CREATE TRIGGER \"system_change_recovery_notification_DELETE\" AFTER DELETE ON \"notification\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_notification_INSERT",
+    "table": "notification",
+    "sql": "CREATE TRIGGER \"system_change_recovery_notification_INSERT\" AFTER INSERT ON \"notification\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_notification_UPDATE",
+    "table": "notification",
+    "sql": "CREATE TRIGGER \"system_change_recovery_notification_UPDATE\" AFTER UPDATE ON \"notification\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_notification_entity_DELETE",
+    "table": "notification_entity",
+    "sql": "CREATE TRIGGER \"system_change_recovery_notification_entity_DELETE\" AFTER DELETE ON \"notification_entity\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_notification_entity_INSERT",
+    "table": "notification_entity",
+    "sql": "CREATE TRIGGER \"system_change_recovery_notification_entity_INSERT\" AFTER INSERT ON \"notification_entity\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_notification_entity_UPDATE",
+    "table": "notification_entity",
+    "sql": "CREATE TRIGGER \"system_change_recovery_notification_entity_UPDATE\" AFTER UPDATE ON \"notification_entity\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_procedure_contract_DELETE",
+    "table": "procedure_contract",
+    "sql": "CREATE TRIGGER \"system_change_recovery_procedure_contract_DELETE\" AFTER DELETE ON \"procedure_contract\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_procedure_contract_INSERT",
+    "table": "procedure_contract",
+    "sql": "CREATE TRIGGER \"system_change_recovery_procedure_contract_INSERT\" AFTER INSERT ON \"procedure_contract\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_procedure_contract_UPDATE",
+    "table": "procedure_contract",
+    "sql": "CREATE TRIGGER \"system_change_recovery_procedure_contract_UPDATE\" AFTER UPDATE ON \"procedure_contract\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_procedure_contract_version_DELETE",
+    "table": "procedure_contract_version",
+    "sql": "CREATE TRIGGER \"system_change_recovery_procedure_contract_version_DELETE\" AFTER DELETE ON \"procedure_contract_version\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_procedure_contract_version_INSERT",
+    "table": "procedure_contract_version",
+    "sql": "CREATE TRIGGER \"system_change_recovery_procedure_contract_version_INSERT\" AFTER INSERT ON \"procedure_contract_version\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_procedure_contract_version_UPDATE",
+    "table": "procedure_contract_version",
+    "sql": "CREATE TRIGGER \"system_change_recovery_procedure_contract_version_UPDATE\" AFTER UPDATE ON \"procedure_contract_version\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_relationship_DELETE",
+    "table": "relationship",
+    "sql": "CREATE TRIGGER \"system_change_recovery_relationship_DELETE\" AFTER DELETE ON \"relationship\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_relationship_INSERT",
+    "table": "relationship",
+    "sql": "CREATE TRIGGER \"system_change_recovery_relationship_INSERT\" AFTER INSERT ON \"relationship\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_relationship_UPDATE",
+    "table": "relationship",
+    "sql": "CREATE TRIGGER \"system_change_recovery_relationship_UPDATE\" AFTER UPDATE ON \"relationship\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_scheduled_ai_task_work_DELETE",
+    "table": "scheduled_ai_task_work",
+    "sql": "CREATE TRIGGER \"system_change_recovery_scheduled_ai_task_work_DELETE\" AFTER DELETE ON \"scheduled_ai_task_work\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_scheduled_ai_task_work_INSERT",
+    "table": "scheduled_ai_task_work",
+    "sql": "CREATE TRIGGER \"system_change_recovery_scheduled_ai_task_work_INSERT\" AFTER INSERT ON \"scheduled_ai_task_work\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_scheduled_ai_task_work_UPDATE",
+    "table": "scheduled_ai_task_work",
+    "sql": "CREATE TRIGGER \"system_change_recovery_scheduled_ai_task_work_UPDATE\" AFTER UPDATE ON \"scheduled_ai_task_work\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_snapshot_package_DELETE",
+    "table": "snapshot_package",
+    "sql": "CREATE TRIGGER \"system_change_recovery_snapshot_package_DELETE\" AFTER DELETE ON \"snapshot_package\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_snapshot_package_INSERT",
+    "table": "snapshot_package",
+    "sql": "CREATE TRIGGER \"system_change_recovery_snapshot_package_INSERT\" AFTER INSERT ON \"snapshot_package\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_snapshot_package_UPDATE",
+    "table": "snapshot_package",
+    "sql": "CREATE TRIGGER \"system_change_recovery_snapshot_package_UPDATE\" AFTER UPDATE ON \"snapshot_package\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_story_plan_run_DELETE",
+    "table": "story_plan_run",
+    "sql": "CREATE TRIGGER \"system_change_recovery_story_plan_run_DELETE\" AFTER DELETE ON \"story_plan_run\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_story_plan_run_INSERT",
+    "table": "story_plan_run",
+    "sql": "CREATE TRIGGER \"system_change_recovery_story_plan_run_INSERT\" AFTER INSERT ON \"story_plan_run\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_story_plan_run_UPDATE",
+    "table": "story_plan_run",
+    "sql": "CREATE TRIGGER \"system_change_recovery_story_plan_run_UPDATE\" AFTER UPDATE ON \"story_plan_run\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_story_plan_step_run_DELETE",
+    "table": "story_plan_step_run",
+    "sql": "CREATE TRIGGER \"system_change_recovery_story_plan_step_run_DELETE\" AFTER DELETE ON \"story_plan_step_run\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_story_plan_step_run_INSERT",
+    "table": "story_plan_step_run",
+    "sql": "CREATE TRIGGER \"system_change_recovery_story_plan_step_run_INSERT\" AFTER INSERT ON \"story_plan_step_run\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_story_plan_step_run_UPDATE",
+    "table": "story_plan_step_run",
+    "sql": "CREATE TRIGGER \"system_change_recovery_story_plan_step_run_UPDATE\" AFTER UPDATE ON \"story_plan_step_run\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_subscription_DELETE",
+    "table": "subscription",
+    "sql": "CREATE TRIGGER \"system_change_recovery_subscription_DELETE\" AFTER DELETE ON \"subscription\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_subscription_INSERT",
+    "table": "subscription",
+    "sql": "CREATE TRIGGER \"system_change_recovery_subscription_INSERT\" AFTER INSERT ON \"subscription\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_subscription_UPDATE",
+    "table": "subscription",
+    "sql": "CREATE TRIGGER \"system_change_recovery_subscription_UPDATE\" AFTER UPDATE ON \"subscription\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_subscription_version_DELETE",
+    "table": "subscription_version",
+    "sql": "CREATE TRIGGER \"system_change_recovery_subscription_version_DELETE\" AFTER DELETE ON \"subscription_version\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_subscription_version_INSERT",
+    "table": "subscription_version",
+    "sql": "CREATE TRIGGER \"system_change_recovery_subscription_version_INSERT\" AFTER INSERT ON \"subscription_version\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_subscription_version_UPDATE",
+    "table": "subscription_version",
+    "sql": "CREATE TRIGGER \"system_change_recovery_subscription_version_UPDATE\" AFTER UPDATE ON \"subscription_version\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_DELETE",
+    "table": "system_application",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_DELETE\" AFTER DELETE ON \"system_application\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_INSERT",
+    "table": "system_application",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_INSERT\" AFTER INSERT ON \"system_application\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_UPDATE",
+    "table": "system_application",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_UPDATE\" AFTER UPDATE ON \"system_application\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_activation_current_DELETE",
+    "table": "system_application_activation_current",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_activation_current_DELETE\" AFTER DELETE ON \"system_application_activation_current\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_activation_current_INSERT",
+    "table": "system_application_activation_current",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_activation_current_INSERT\" AFTER INSERT ON \"system_application_activation_current\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_activation_current_UPDATE",
+    "table": "system_application_activation_current",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_activation_current_UPDATE\" AFTER UPDATE ON \"system_application_activation_current\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_activation_document_DELETE",
+    "table": "system_application_activation_document",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_activation_document_DELETE\" AFTER DELETE ON \"system_application_activation_document\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_activation_document_INSERT",
+    "table": "system_application_activation_document",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_activation_document_INSERT\" AFTER INSERT ON \"system_application_activation_document\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_activation_document_UPDATE",
+    "table": "system_application_activation_document",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_activation_document_UPDATE\" AFTER UPDATE ON \"system_application_activation_document\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_activation_document_evidence_DELETE",
+    "table": "system_application_activation_document_evidence",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_activation_document_evidence_DELETE\" AFTER DELETE ON \"system_application_activation_document_evidence\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_activation_document_evidence_INSERT",
+    "table": "system_application_activation_document_evidence",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_activation_document_evidence_INSERT\" AFTER INSERT ON \"system_application_activation_document_evidence\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_activation_document_evidence_UPDATE",
+    "table": "system_application_activation_document_evidence",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_activation_document_evidence_UPDATE\" AFTER UPDATE ON \"system_application_activation_document_evidence\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_activation_document_identity_DELETE",
+    "table": "system_application_activation_document_identity",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_activation_document_identity_DELETE\" AFTER DELETE ON \"system_application_activation_document_identity\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_activation_document_identity_INSERT",
+    "table": "system_application_activation_document_identity",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_activation_document_identity_INSERT\" AFTER INSERT ON \"system_application_activation_document_identity\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_activation_document_identity_UPDATE",
+    "table": "system_application_activation_document_identity",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_activation_document_identity_UPDATE\" AFTER UPDATE ON \"system_application_activation_document_identity\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_activation_extension_DELETE",
+    "table": "system_application_activation_extension",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_activation_extension_DELETE\" AFTER DELETE ON \"system_application_activation_extension\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_activation_extension_INSERT",
+    "table": "system_application_activation_extension",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_activation_extension_INSERT\" AFTER INSERT ON \"system_application_activation_extension\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_activation_extension_UPDATE",
+    "table": "system_application_activation_extension",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_activation_extension_UPDATE\" AFTER UPDATE ON \"system_application_activation_extension\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_activation_receipt_DELETE",
+    "table": "system_application_activation_receipt",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_activation_receipt_DELETE\" AFTER DELETE ON \"system_application_activation_receipt\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_activation_receipt_INSERT",
+    "table": "system_application_activation_receipt",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_activation_receipt_INSERT\" AFTER INSERT ON \"system_application_activation_receipt\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_activation_receipt_UPDATE",
+    "table": "system_application_activation_receipt",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_activation_receipt_UPDATE\" AFTER UPDATE ON \"system_application_activation_receipt\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_activation_revision_DELETE",
+    "table": "system_application_activation_revision",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_activation_revision_DELETE\" AFTER DELETE ON \"system_application_activation_revision\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_activation_revision_INSERT",
+    "table": "system_application_activation_revision",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_activation_revision_INSERT\" AFTER INSERT ON \"system_application_activation_revision\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_activation_revision_UPDATE",
+    "table": "system_application_activation_revision",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_activation_revision_UPDATE\" AFTER UPDATE ON \"system_application_activation_revision\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_activation_source_DELETE",
+    "table": "system_application_activation_source",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_activation_source_DELETE\" AFTER DELETE ON \"system_application_activation_source\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_activation_source_INSERT",
+    "table": "system_application_activation_source",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_activation_source_INSERT\" AFTER INSERT ON \"system_application_activation_source\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_activation_source_UPDATE",
+    "table": "system_application_activation_source",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_activation_source_UPDATE\" AFTER UPDATE ON \"system_application_activation_source\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_extension_DELETE",
+    "table": "system_application_extension",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_extension_DELETE\" AFTER DELETE ON \"system_application_extension\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_extension_INSERT",
+    "table": "system_application_extension",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_extension_INSERT\" AFTER INSERT ON \"system_application_extension\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_extension_UPDATE",
+    "table": "system_application_extension",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_extension_UPDATE\" AFTER UPDATE ON \"system_application_extension\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_revision_DELETE",
+    "table": "system_application_revision",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_revision_DELETE\" AFTER DELETE ON \"system_application_revision\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_revision_INSERT",
+    "table": "system_application_revision",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_revision_INSERT\" AFTER INSERT ON \"system_application_revision\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_revision_UPDATE",
+    "table": "system_application_revision",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_revision_UPDATE\" AFTER UPDATE ON \"system_application_revision\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_revision_base_DELETE",
+    "table": "system_application_revision_base",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_revision_base_DELETE\" AFTER DELETE ON \"system_application_revision_base\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_revision_base_INSERT",
+    "table": "system_application_revision_base",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_revision_base_INSERT\" AFTER INSERT ON \"system_application_revision_base\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_revision_base_UPDATE",
+    "table": "system_application_revision_base",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_revision_base_UPDATE\" AFTER UPDATE ON \"system_application_revision_base\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_source_DELETE",
+    "table": "system_application_source",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_source_DELETE\" AFTER DELETE ON \"system_application_source\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_source_INSERT",
+    "table": "system_application_source",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_source_INSERT\" AFTER INSERT ON \"system_application_source\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_source_UPDATE",
+    "table": "system_application_source",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_source_UPDATE\" AFTER UPDATE ON \"system_application_source\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_source_scan_DELETE",
+    "table": "system_application_source_scan",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_source_scan_DELETE\" AFTER DELETE ON \"system_application_source_scan\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_source_scan_INSERT",
+    "table": "system_application_source_scan",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_source_scan_INSERT\" AFTER INSERT ON \"system_application_source_scan\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_application_source_scan_UPDATE",
+    "table": "system_application_source_scan",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_application_source_scan_UPDATE\" AFTER UPDATE ON \"system_application_source_scan\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_catalog_namespace_DELETE",
+    "table": "system_catalog_namespace",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_catalog_namespace_DELETE\" AFTER DELETE ON \"system_catalog_namespace\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_catalog_namespace_INSERT",
+    "table": "system_catalog_namespace",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_catalog_namespace_INSERT\" AFTER INSERT ON \"system_catalog_namespace\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_catalog_namespace_UPDATE",
+    "table": "system_catalog_namespace",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_catalog_namespace_UPDATE\" AFTER UPDATE ON \"system_catalog_namespace\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_catalog_namespace_overlay_DELETE",
+    "table": "system_catalog_namespace_overlay",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_catalog_namespace_overlay_DELETE\" AFTER DELETE ON \"system_catalog_namespace_overlay\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_catalog_namespace_overlay_INSERT",
+    "table": "system_catalog_namespace_overlay",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_catalog_namespace_overlay_INSERT\" AFTER INSERT ON \"system_catalog_namespace_overlay\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_catalog_namespace_overlay_UPDATE",
+    "table": "system_catalog_namespace_overlay",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_catalog_namespace_overlay_UPDATE\" AFTER UPDATE ON \"system_catalog_namespace_overlay\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_catalog_namespace_overlay_profile_DELETE",
+    "table": "system_catalog_namespace_overlay_profile",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_catalog_namespace_overlay_profile_DELETE\" AFTER DELETE ON \"system_catalog_namespace_overlay_profile\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_catalog_namespace_overlay_profile_INSERT",
+    "table": "system_catalog_namespace_overlay_profile",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_catalog_namespace_overlay_profile_INSERT\" AFTER INSERT ON \"system_catalog_namespace_overlay_profile\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_catalog_namespace_overlay_profile_UPDATE",
+    "table": "system_catalog_namespace_overlay_profile",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_catalog_namespace_overlay_profile_UPDATE\" AFTER UPDATE ON \"system_catalog_namespace_overlay_profile\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_catalog_namespace_resolution_key_DELETE",
+    "table": "system_catalog_namespace_resolution_key",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_catalog_namespace_resolution_key_DELETE\" AFTER DELETE ON \"system_catalog_namespace_resolution_key\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_catalog_namespace_resolution_key_INSERT",
+    "table": "system_catalog_namespace_resolution_key",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_catalog_namespace_resolution_key_INSERT\" AFTER INSERT ON \"system_catalog_namespace_resolution_key\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_catalog_namespace_resolution_key_UPDATE",
+    "table": "system_catalog_namespace_resolution_key",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_catalog_namespace_resolution_key_UPDATE\" AFTER UPDATE ON \"system_catalog_namespace_resolution_key\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_component_type_DELETE",
+    "table": "system_component_type",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_component_type_DELETE\" AFTER DELETE ON \"system_component_type\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_component_type_INSERT",
+    "table": "system_component_type",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_component_type_INSERT\" AFTER INSERT ON \"system_component_type\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_component_type_UPDATE",
+    "table": "system_component_type",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_component_type_UPDATE\" AFTER UPDATE ON \"system_component_type\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_component_type_version_DELETE",
+    "table": "system_component_type_version",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_component_type_version_DELETE\" AFTER DELETE ON \"system_component_type_version\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_component_type_version_INSERT",
+    "table": "system_component_type_version",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_component_type_version_INSERT\" AFTER INSERT ON \"system_component_type_version\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_component_type_version_UPDATE",
+    "table": "system_component_type_version",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_component_type_version_UPDATE\" AFTER UPDATE ON \"system_component_type_version\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_ecs_component_DELETE",
+    "table": "system_ecs_component",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_ecs_component_DELETE\" AFTER DELETE ON \"system_ecs_component\" BEGIN UPDATE system_change_recovery SET StateVersion=StateVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_ecs_component_INSERT",
+    "table": "system_ecs_component",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_ecs_component_INSERT\" AFTER INSERT ON \"system_ecs_component\" BEGIN UPDATE system_change_recovery SET StateVersion=StateVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_ecs_component_UPDATE",
+    "table": "system_ecs_component",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_ecs_component_UPDATE\" AFTER UPDATE ON \"system_ecs_component\" BEGIN UPDATE system_change_recovery SET StateVersion=StateVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_ecs_containment_DELETE",
+    "table": "system_ecs_containment",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_ecs_containment_DELETE\" AFTER DELETE ON \"system_ecs_containment\" BEGIN UPDATE system_change_recovery SET StateVersion=StateVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_ecs_containment_INSERT",
+    "table": "system_ecs_containment",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_ecs_containment_INSERT\" AFTER INSERT ON \"system_ecs_containment\" BEGIN UPDATE system_change_recovery SET StateVersion=StateVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_ecs_containment_UPDATE",
+    "table": "system_ecs_containment",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_ecs_containment_UPDATE\" AFTER UPDATE ON \"system_ecs_containment\" BEGIN UPDATE system_change_recovery SET StateVersion=StateVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_ecs_entity_DELETE",
+    "table": "system_ecs_entity",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_ecs_entity_DELETE\" AFTER DELETE ON \"system_ecs_entity\" BEGIN UPDATE system_change_recovery SET StateVersion=StateVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_ecs_entity_INSERT",
+    "table": "system_ecs_entity",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_ecs_entity_INSERT\" AFTER INSERT ON \"system_ecs_entity\" BEGIN UPDATE system_change_recovery SET StateVersion=StateVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_ecs_entity_UPDATE",
+    "table": "system_ecs_entity",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_ecs_entity_UPDATE\" AFTER UPDATE ON \"system_ecs_entity\" BEGIN UPDATE system_change_recovery SET StateVersion=StateVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_ecs_relationship_DELETE",
+    "table": "system_ecs_relationship",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_ecs_relationship_DELETE\" AFTER DELETE ON \"system_ecs_relationship\" BEGIN UPDATE system_change_recovery SET StateVersion=StateVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_ecs_relationship_INSERT",
+    "table": "system_ecs_relationship",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_ecs_relationship_INSERT\" AFTER INSERT ON \"system_ecs_relationship\" BEGIN UPDATE system_change_recovery SET StateVersion=StateVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_ecs_relationship_UPDATE",
+    "table": "system_ecs_relationship",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_ecs_relationship_UPDATE\" AFTER UPDATE ON \"system_ecs_relationship\" BEGIN UPDATE system_change_recovery SET StateVersion=StateVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_feedback_disposition_DELETE",
+    "table": "system_feedback_disposition",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_feedback_disposition_DELETE\" AFTER DELETE ON \"system_feedback_disposition\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_feedback_disposition_INSERT",
+    "table": "system_feedback_disposition",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_feedback_disposition_INSERT\" AFTER INSERT ON \"system_feedback_disposition\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_feedback_disposition_UPDATE",
+    "table": "system_feedback_disposition",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_feedback_disposition_UPDATE\" AFTER UPDATE ON \"system_feedback_disposition\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_feedback_operation_DELETE",
+    "table": "system_feedback_operation",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_feedback_operation_DELETE\" AFTER DELETE ON \"system_feedback_operation\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_feedback_operation_INSERT",
+    "table": "system_feedback_operation",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_feedback_operation_INSERT\" AFTER INSERT ON \"system_feedback_operation\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_feedback_operation_UPDATE",
+    "table": "system_feedback_operation",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_feedback_operation_UPDATE\" AFTER UPDATE ON \"system_feedback_operation\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_feedback_procedure_DELETE",
+    "table": "system_feedback_procedure",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_feedback_procedure_DELETE\" AFTER DELETE ON \"system_feedback_procedure\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_feedback_procedure_INSERT",
+    "table": "system_feedback_procedure",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_feedback_procedure_INSERT\" AFTER INSERT ON \"system_feedback_procedure\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_feedback_procedure_UPDATE",
+    "table": "system_feedback_procedure",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_feedback_procedure_UPDATE\" AFTER UPDATE ON \"system_feedback_procedure\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_feedback_report_DELETE",
+    "table": "system_feedback_report",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_feedback_report_DELETE\" AFTER DELETE ON \"system_feedback_report\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_feedback_report_INSERT",
+    "table": "system_feedback_report",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_feedback_report_INSERT\" AFTER INSERT ON \"system_feedback_report\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_feedback_report_UPDATE",
+    "table": "system_feedback_report",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_feedback_report_UPDATE\" AFTER UPDATE ON \"system_feedback_report\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_feedback_retention_action_DELETE",
+    "table": "system_feedback_retention_action",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_feedback_retention_action_DELETE\" AFTER DELETE ON \"system_feedback_retention_action\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_feedback_retention_action_INSERT",
+    "table": "system_feedback_retention_action",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_feedback_retention_action_INSERT\" AFTER INSERT ON \"system_feedback_retention_action\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_feedback_retention_action_UPDATE",
+    "table": "system_feedback_retention_action",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_feedback_retention_action_UPDATE\" AFTER UPDATE ON \"system_feedback_retention_action\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_feedback_step_DELETE",
+    "table": "system_feedback_step",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_feedback_step_DELETE\" AFTER DELETE ON \"system_feedback_step\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_feedback_step_INSERT",
+    "table": "system_feedback_step",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_feedback_step_INSERT\" AFTER INSERT ON \"system_feedback_step\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_feedback_step_UPDATE",
+    "table": "system_feedback_step",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_feedback_step_UPDATE\" AFTER UPDATE ON \"system_feedback_step\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_legacy_state_adoption_DELETE",
+    "table": "system_legacy_state_adoption",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_legacy_state_adoption_DELETE\" AFTER DELETE ON \"system_legacy_state_adoption\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_legacy_state_adoption_INSERT",
+    "table": "system_legacy_state_adoption",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_legacy_state_adoption_INSERT\" AFTER INSERT ON \"system_legacy_state_adoption\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_legacy_state_adoption_UPDATE",
+    "table": "system_legacy_state_adoption",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_legacy_state_adoption_UPDATE\" AFTER UPDATE ON \"system_legacy_state_adoption\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_projection_component_input_DELETE",
+    "table": "system_projection_component_input",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_projection_component_input_DELETE\" AFTER DELETE ON \"system_projection_component_input\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_projection_component_input_INSERT",
+    "table": "system_projection_component_input",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_projection_component_input_INSERT\" AFTER INSERT ON \"system_projection_component_input\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_projection_component_input_UPDATE",
+    "table": "system_projection_component_input",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_projection_component_input_UPDATE\" AFTER UPDATE ON \"system_projection_component_input\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_projection_definition_DELETE",
+    "table": "system_projection_definition",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_projection_definition_DELETE\" AFTER DELETE ON \"system_projection_definition\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_projection_definition_INSERT",
+    "table": "system_projection_definition",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_projection_definition_INSERT\" AFTER INSERT ON \"system_projection_definition\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_projection_definition_UPDATE",
+    "table": "system_projection_definition",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_projection_definition_UPDATE\" AFTER UPDATE ON \"system_projection_definition\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_projection_definition_version_DELETE",
+    "table": "system_projection_definition_version",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_projection_definition_version_DELETE\" AFTER DELETE ON \"system_projection_definition_version\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_projection_definition_version_INSERT",
+    "table": "system_projection_definition_version",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_projection_definition_version_INSERT\" AFTER INSERT ON \"system_projection_definition_version\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_projection_definition_version_UPDATE",
+    "table": "system_projection_definition_version",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_projection_definition_version_UPDATE\" AFTER UPDATE ON \"system_projection_definition_version\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_projection_dependency_input_DELETE",
+    "table": "system_projection_dependency_input",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_projection_dependency_input_DELETE\" AFTER DELETE ON \"system_projection_dependency_input\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_projection_dependency_input_INSERT",
+    "table": "system_projection_dependency_input",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_projection_dependency_input_INSERT\" AFTER INSERT ON \"system_projection_dependency_input\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_projection_dependency_input_UPDATE",
+    "table": "system_projection_dependency_input",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_projection_dependency_input_UPDATE\" AFTER UPDATE ON \"system_projection_dependency_input\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_projection_mapping_DELETE",
+    "table": "system_projection_mapping",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_projection_mapping_DELETE\" AFTER DELETE ON \"system_projection_mapping\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_projection_mapping_INSERT",
+    "table": "system_projection_mapping",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_projection_mapping_INSERT\" AFTER INSERT ON \"system_projection_mapping\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_projection_mapping_UPDATE",
+    "table": "system_projection_mapping",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_projection_mapping_UPDATE\" AFTER UPDATE ON \"system_projection_mapping\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_projection_registry_generation_DELETE",
+    "table": "system_projection_registry_generation",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_projection_registry_generation_DELETE\" AFTER DELETE ON \"system_projection_registry_generation\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_projection_registry_generation_INSERT",
+    "table": "system_projection_registry_generation",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_projection_registry_generation_INSERT\" AFTER INSERT ON \"system_projection_registry_generation\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_projection_registry_generation_UPDATE",
+    "table": "system_projection_registry_generation",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_projection_registry_generation_UPDATE\" AFTER UPDATE ON \"system_projection_registry_generation\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_state_space_DELETE",
+    "table": "system_state_space",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_state_space_DELETE\" AFTER DELETE ON \"system_state_space\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_state_space_INSERT",
+    "table": "system_state_space",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_state_space_INSERT\" AFTER INSERT ON \"system_state_space\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_state_space_UPDATE",
+    "table": "system_state_space",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_state_space_UPDATE\" AFTER UPDATE ON \"system_state_space\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_state_space_binding_revision_DELETE",
+    "table": "system_state_space_binding_revision",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_state_space_binding_revision_DELETE\" AFTER DELETE ON \"system_state_space_binding_revision\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_state_space_binding_revision_INSERT",
+    "table": "system_state_space_binding_revision",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_state_space_binding_revision_INSERT\" AFTER INSERT ON \"system_state_space_binding_revision\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_state_space_binding_revision_UPDATE",
+    "table": "system_state_space_binding_revision",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_state_space_binding_revision_UPDATE\" AFTER UPDATE ON \"system_state_space_binding_revision\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_task_DELETE",
+    "table": "system_task",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_task_DELETE\" AFTER DELETE ON \"system_task\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_task_INSERT",
+    "table": "system_task",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_task_INSERT\" AFTER INSERT ON \"system_task\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_task_UPDATE",
+    "table": "system_task",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_task_UPDATE\" AFTER UPDATE ON \"system_task\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_task_confirmation_DELETE",
+    "table": "system_task_confirmation",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_task_confirmation_DELETE\" AFTER DELETE ON \"system_task_confirmation\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_task_confirmation_INSERT",
+    "table": "system_task_confirmation",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_task_confirmation_INSERT\" AFTER INSERT ON \"system_task_confirmation\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_task_confirmation_UPDATE",
+    "table": "system_task_confirmation",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_task_confirmation_UPDATE\" AFTER UPDATE ON \"system_task_confirmation\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_task_execution_DELETE",
+    "table": "system_task_execution",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_task_execution_DELETE\" AFTER DELETE ON \"system_task_execution\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_task_execution_INSERT",
+    "table": "system_task_execution",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_task_execution_INSERT\" AFTER INSERT ON \"system_task_execution\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_task_execution_UPDATE",
+    "table": "system_task_execution",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_task_execution_UPDATE\" AFTER UPDATE ON \"system_task_execution\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_task_execution_step_DELETE",
+    "table": "system_task_execution_step",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_task_execution_step_DELETE\" AFTER DELETE ON \"system_task_execution_step\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_task_execution_step_INSERT",
+    "table": "system_task_execution_step",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_task_execution_step_INSERT\" AFTER INSERT ON \"system_task_execution_step\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_task_execution_step_UPDATE",
+    "table": "system_task_execution_step",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_task_execution_step_UPDATE\" AFTER UPDATE ON \"system_task_execution_step\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_task_round_DELETE",
+    "table": "system_task_round",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_task_round_DELETE\" AFTER DELETE ON \"system_task_round\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_task_round_INSERT",
+    "table": "system_task_round",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_task_round_INSERT\" AFTER INSERT ON \"system_task_round\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_task_round_UPDATE",
+    "table": "system_task_round",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_task_round_UPDATE\" AFTER UPDATE ON \"system_task_round\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_task_step_DELETE",
+    "table": "system_task_step",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_task_step_DELETE\" AFTER DELETE ON \"system_task_step\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_task_step_INSERT",
+    "table": "system_task_step",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_task_step_INSERT\" AFTER INSERT ON \"system_task_step\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_system_task_step_UPDATE",
+    "table": "system_task_step",
+    "sql": "CREATE TRIGGER \"system_change_recovery_system_task_step_UPDATE\" AFTER UPDATE ON \"system_task_step\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_conditional_current_DELETE",
+    "table": "trigger_conditional_current",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_conditional_current_DELETE\" AFTER DELETE ON \"trigger_conditional_current\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_conditional_current_INSERT",
+    "table": "trigger_conditional_current",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_conditional_current_INSERT\" AFTER INSERT ON \"trigger_conditional_current\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_conditional_current_UPDATE",
+    "table": "trigger_conditional_current",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_conditional_current_UPDATE\" AFTER UPDATE ON \"trigger_conditional_current\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_conditional_definition_DELETE",
+    "table": "trigger_conditional_definition",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_conditional_definition_DELETE\" AFTER DELETE ON \"trigger_conditional_definition\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_conditional_definition_INSERT",
+    "table": "trigger_conditional_definition",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_conditional_definition_INSERT\" AFTER INSERT ON \"trigger_conditional_definition\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_conditional_definition_UPDATE",
+    "table": "trigger_conditional_definition",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_conditional_definition_UPDATE\" AFTER UPDATE ON \"trigger_conditional_definition\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_conditional_dependency_DELETE",
+    "table": "trigger_conditional_dependency",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_conditional_dependency_DELETE\" AFTER DELETE ON \"trigger_conditional_dependency\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_conditional_dependency_INSERT",
+    "table": "trigger_conditional_dependency",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_conditional_dependency_INSERT\" AFTER INSERT ON \"trigger_conditional_dependency\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_conditional_dependency_UPDATE",
+    "table": "trigger_conditional_dependency",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_conditional_dependency_UPDATE\" AFTER UPDATE ON \"trigger_conditional_dependency\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_conditional_fire_receipt_DELETE",
+    "table": "trigger_conditional_fire_receipt",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_conditional_fire_receipt_DELETE\" AFTER DELETE ON \"trigger_conditional_fire_receipt\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_conditional_fire_receipt_INSERT",
+    "table": "trigger_conditional_fire_receipt",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_conditional_fire_receipt_INSERT\" AFTER INSERT ON \"trigger_conditional_fire_receipt\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_conditional_fire_receipt_UPDATE",
+    "table": "trigger_conditional_fire_receipt",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_conditional_fire_receipt_UPDATE\" AFTER UPDATE ON \"trigger_conditional_fire_receipt\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_conditional_fire_work_DELETE",
+    "table": "trigger_conditional_fire_work",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_conditional_fire_work_DELETE\" AFTER DELETE ON \"trigger_conditional_fire_work\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_conditional_fire_work_INSERT",
+    "table": "trigger_conditional_fire_work",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_conditional_fire_work_INSERT\" AFTER INSERT ON \"trigger_conditional_fire_work\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_conditional_fire_work_UPDATE",
+    "table": "trigger_conditional_fire_work",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_conditional_fire_work_UPDATE\" AFTER UPDATE ON \"trigger_conditional_fire_work\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_conditional_notification_entity_DELETE",
+    "table": "trigger_conditional_notification_entity",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_conditional_notification_entity_DELETE\" AFTER DELETE ON \"trigger_conditional_notification_entity\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_conditional_notification_entity_INSERT",
+    "table": "trigger_conditional_notification_entity",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_conditional_notification_entity_INSERT\" AFTER INSERT ON \"trigger_conditional_notification_entity\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_conditional_notification_entity_UPDATE",
+    "table": "trigger_conditional_notification_entity",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_conditional_notification_entity_UPDATE\" AFTER UPDATE ON \"trigger_conditional_notification_entity\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_conditional_notification_link_DELETE",
+    "table": "trigger_conditional_notification_link",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_conditional_notification_link_DELETE\" AFTER DELETE ON \"trigger_conditional_notification_link\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_conditional_notification_link_INSERT",
+    "table": "trigger_conditional_notification_link",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_conditional_notification_link_INSERT\" AFTER INSERT ON \"trigger_conditional_notification_link\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_conditional_notification_link_UPDATE",
+    "table": "trigger_conditional_notification_link",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_conditional_notification_link_UPDATE\" AFTER UPDATE ON \"trigger_conditional_notification_link\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_conditional_state_DELETE",
+    "table": "trigger_conditional_state",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_conditional_state_DELETE\" AFTER DELETE ON \"trigger_conditional_state\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_conditional_state_INSERT",
+    "table": "trigger_conditional_state",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_conditional_state_INSERT\" AFTER INSERT ON \"trigger_conditional_state\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_conditional_state_UPDATE",
+    "table": "trigger_conditional_state",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_conditional_state_UPDATE\" AFTER UPDATE ON \"trigger_conditional_state\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_fire_receipt_DELETE",
+    "table": "trigger_fire_receipt",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_fire_receipt_DELETE\" AFTER DELETE ON \"trigger_fire_receipt\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_fire_receipt_INSERT",
+    "table": "trigger_fire_receipt",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_fire_receipt_INSERT\" AFTER INSERT ON \"trigger_fire_receipt\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_fire_receipt_UPDATE",
+    "table": "trigger_fire_receipt",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_fire_receipt_UPDATE\" AFTER UPDATE ON \"trigger_fire_receipt\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_fire_work_DELETE",
+    "table": "trigger_fire_work",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_fire_work_DELETE\" AFTER DELETE ON \"trigger_fire_work\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_fire_work_INSERT",
+    "table": "trigger_fire_work",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_fire_work_INSERT\" AFTER INSERT ON \"trigger_fire_work\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_fire_work_UPDATE",
+    "table": "trigger_fire_work",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_fire_work_UPDATE\" AFTER UPDATE ON \"trigger_fire_work\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_notification_link_DELETE",
+    "table": "trigger_notification_link",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_notification_link_DELETE\" AFTER DELETE ON \"trigger_notification_link\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_notification_link_INSERT",
+    "table": "trigger_notification_link",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_notification_link_INSERT\" AFTER INSERT ON \"trigger_notification_link\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_notification_link_UPDATE",
+    "table": "trigger_notification_link",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_notification_link_UPDATE\" AFTER UPDATE ON \"trigger_notification_link\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_DELETE",
+    "table": "trigger_observation",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_DELETE\" AFTER DELETE ON \"trigger_observation\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_INSERT",
+    "table": "trigger_observation",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_INSERT\" AFTER INSERT ON \"trigger_observation\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_UPDATE",
+    "table": "trigger_observation",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_UPDATE\" AFTER UPDATE ON \"trigger_observation\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_match_current_DELETE",
+    "table": "trigger_observation_match_current",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_match_current_DELETE\" AFTER DELETE ON \"trigger_observation_match_current\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_match_current_INSERT",
+    "table": "trigger_observation_match_current",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_match_current_INSERT\" AFTER INSERT ON \"trigger_observation_match_current\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_match_current_UPDATE",
+    "table": "trigger_observation_match_current",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_match_current_UPDATE\" AFTER UPDATE ON \"trigger_observation_match_current\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_match_definition_DELETE",
+    "table": "trigger_observation_match_definition",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_match_definition_DELETE\" AFTER DELETE ON \"trigger_observation_match_definition\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_match_definition_INSERT",
+    "table": "trigger_observation_match_definition",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_match_definition_INSERT\" AFTER INSERT ON \"trigger_observation_match_definition\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_match_definition_UPDATE",
+    "table": "trigger_observation_match_definition",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_match_definition_UPDATE\" AFTER UPDATE ON \"trigger_observation_match_definition\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_match_notification_entity_DELETE",
+    "table": "trigger_observation_match_notification_entity",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_match_notification_entity_DELETE\" AFTER DELETE ON \"trigger_observation_match_notification_entity\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_match_notification_entity_INSERT",
+    "table": "trigger_observation_match_notification_entity",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_match_notification_entity_INSERT\" AFTER INSERT ON \"trigger_observation_match_notification_entity\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_match_notification_entity_UPDATE",
+    "table": "trigger_observation_match_notification_entity",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_match_notification_entity_UPDATE\" AFTER UPDATE ON \"trigger_observation_match_notification_entity\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_match_notification_link_DELETE",
+    "table": "trigger_observation_match_notification_link",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_match_notification_link_DELETE\" AFTER DELETE ON \"trigger_observation_match_notification_link\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_match_notification_link_INSERT",
+    "table": "trigger_observation_match_notification_link",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_match_notification_link_INSERT\" AFTER INSERT ON \"trigger_observation_match_notification_link\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_match_notification_link_UPDATE",
+    "table": "trigger_observation_match_notification_link",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_match_notification_link_UPDATE\" AFTER UPDATE ON \"trigger_observation_match_notification_link\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_match_receipt_DELETE",
+    "table": "trigger_observation_match_receipt",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_match_receipt_DELETE\" AFTER DELETE ON \"trigger_observation_match_receipt\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_match_receipt_INSERT",
+    "table": "trigger_observation_match_receipt",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_match_receipt_INSERT\" AFTER INSERT ON \"trigger_observation_match_receipt\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_match_receipt_UPDATE",
+    "table": "trigger_observation_match_receipt",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_match_receipt_UPDATE\" AFTER UPDATE ON \"trigger_observation_match_receipt\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_match_work_DELETE",
+    "table": "trigger_observation_match_work",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_match_work_DELETE\" AFTER DELETE ON \"trigger_observation_match_work\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_match_work_INSERT",
+    "table": "trigger_observation_match_work",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_match_work_INSERT\" AFTER INSERT ON \"trigger_observation_match_work\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_match_work_UPDATE",
+    "table": "trigger_observation_match_work",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_match_work_UPDATE\" AFTER UPDATE ON \"trigger_observation_match_work\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_source_DELETE",
+    "table": "trigger_observation_source",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_source_DELETE\" AFTER DELETE ON \"trigger_observation_source\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_source_INSERT",
+    "table": "trigger_observation_source",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_source_INSERT\" AFTER INSERT ON \"trigger_observation_source\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_source_UPDATE",
+    "table": "trigger_observation_source",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_source_UPDATE\" AFTER UPDATE ON \"trigger_observation_source\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_source_current_DELETE",
+    "table": "trigger_observation_source_current",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_source_current_DELETE\" AFTER DELETE ON \"trigger_observation_source_current\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_source_current_INSERT",
+    "table": "trigger_observation_source_current",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_source_current_INSERT\" AFTER INSERT ON \"trigger_observation_source_current\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_source_current_UPDATE",
+    "table": "trigger_observation_source_current",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_source_current_UPDATE\" AFTER UPDATE ON \"trigger_observation_source_current\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_source_principal_DELETE",
+    "table": "trigger_observation_source_principal",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_source_principal_DELETE\" AFTER DELETE ON \"trigger_observation_source_principal\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_source_principal_INSERT",
+    "table": "trigger_observation_source_principal",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_source_principal_INSERT\" AFTER INSERT ON \"trigger_observation_source_principal\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_source_principal_UPDATE",
+    "table": "trigger_observation_source_principal",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_source_principal_UPDATE\" AFTER UPDATE ON \"trigger_observation_source_principal\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_source_structure_DELETE",
+    "table": "trigger_observation_source_structure",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_source_structure_DELETE\" AFTER DELETE ON \"trigger_observation_source_structure\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_source_structure_INSERT",
+    "table": "trigger_observation_source_structure",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_source_structure_INSERT\" AFTER INSERT ON \"trigger_observation_source_structure\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_source_structure_UPDATE",
+    "table": "trigger_observation_source_structure",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_source_structure_UPDATE\" AFTER UPDATE ON \"trigger_observation_source_structure\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_structure_DELETE",
+    "table": "trigger_observation_structure",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_structure_DELETE\" AFTER DELETE ON \"trigger_observation_structure\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_structure_INSERT",
+    "table": "trigger_observation_structure",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_structure_INSERT\" AFTER INSERT ON \"trigger_observation_structure\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_structure_UPDATE",
+    "table": "trigger_observation_structure",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_structure_UPDATE\" AFTER UPDATE ON \"trigger_observation_structure\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_structure_current_DELETE",
+    "table": "trigger_observation_structure_current",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_structure_current_DELETE\" AFTER DELETE ON \"trigger_observation_structure_current\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_structure_current_INSERT",
+    "table": "trigger_observation_structure_current",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_structure_current_INSERT\" AFTER INSERT ON \"trigger_observation_structure_current\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_observation_structure_current_UPDATE",
+    "table": "trigger_observation_structure_current",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_observation_structure_current_UPDATE\" AFTER UPDATE ON \"trigger_observation_structure_current\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_one_time_current_DELETE",
+    "table": "trigger_one_time_current",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_one_time_current_DELETE\" AFTER DELETE ON \"trigger_one_time_current\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_one_time_current_INSERT",
+    "table": "trigger_one_time_current",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_one_time_current_INSERT\" AFTER INSERT ON \"trigger_one_time_current\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_one_time_current_UPDATE",
+    "table": "trigger_one_time_current",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_one_time_current_UPDATE\" AFTER UPDATE ON \"trigger_one_time_current\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_one_time_definition_DELETE",
+    "table": "trigger_one_time_definition",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_one_time_definition_DELETE\" AFTER DELETE ON \"trigger_one_time_definition\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_one_time_definition_INSERT",
+    "table": "trigger_one_time_definition",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_one_time_definition_INSERT\" AFTER INSERT ON \"trigger_one_time_definition\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_one_time_definition_UPDATE",
+    "table": "trigger_one_time_definition",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_one_time_definition_UPDATE\" AFTER UPDATE ON \"trigger_one_time_definition\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_one_time_notification_entity_DELETE",
+    "table": "trigger_one_time_notification_entity",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_one_time_notification_entity_DELETE\" AFTER DELETE ON \"trigger_one_time_notification_entity\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_one_time_notification_entity_INSERT",
+    "table": "trigger_one_time_notification_entity",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_one_time_notification_entity_INSERT\" AFTER INSERT ON \"trigger_one_time_notification_entity\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_one_time_notification_entity_UPDATE",
+    "table": "trigger_one_time_notification_entity",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_one_time_notification_entity_UPDATE\" AFTER UPDATE ON \"trigger_one_time_notification_entity\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_phone_device_DELETE",
+    "table": "trigger_phone_device",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_phone_device_DELETE\" AFTER DELETE ON \"trigger_phone_device\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_phone_device_INSERT",
+    "table": "trigger_phone_device",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_phone_device_INSERT\" AFTER INSERT ON \"trigger_phone_device\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_phone_device_UPDATE",
+    "table": "trigger_phone_device",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_phone_device_UPDATE\" AFTER UPDATE ON \"trigger_phone_device\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_phone_device_current_DELETE",
+    "table": "trigger_phone_device_current",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_phone_device_current_DELETE\" AFTER DELETE ON \"trigger_phone_device_current\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_phone_device_current_INSERT",
+    "table": "trigger_phone_device_current",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_phone_device_current_INSERT\" AFTER INSERT ON \"trigger_phone_device_current\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_phone_device_current_UPDATE",
+    "table": "trigger_phone_device_current",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_phone_device_current_UPDATE\" AFTER UPDATE ON \"trigger_phone_device_current\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_phone_device_status_DELETE",
+    "table": "trigger_phone_device_status",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_phone_device_status_DELETE\" AFTER DELETE ON \"trigger_phone_device_status\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_phone_device_status_INSERT",
+    "table": "trigger_phone_device_status",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_phone_device_status_INSERT\" AFTER INSERT ON \"trigger_phone_device_status\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_phone_device_status_UPDATE",
+    "table": "trigger_phone_device_status",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_phone_device_status_UPDATE\" AFTER UPDATE ON \"trigger_phone_device_status\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_phone_device_structure_DELETE",
+    "table": "trigger_phone_device_structure",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_phone_device_structure_DELETE\" AFTER DELETE ON \"trigger_phone_device_structure\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_phone_device_structure_INSERT",
+    "table": "trigger_phone_device_structure",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_phone_device_structure_INSERT\" AFTER INSERT ON \"trigger_phone_device_structure\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_phone_device_structure_UPDATE",
+    "table": "trigger_phone_device_structure",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_phone_device_structure_UPDATE\" AFTER UPDATE ON \"trigger_phone_device_structure\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_recurring_current_DELETE",
+    "table": "trigger_recurring_current",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_recurring_current_DELETE\" AFTER DELETE ON \"trigger_recurring_current\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_recurring_current_INSERT",
+    "table": "trigger_recurring_current",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_recurring_current_INSERT\" AFTER INSERT ON \"trigger_recurring_current\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_recurring_current_UPDATE",
+    "table": "trigger_recurring_current",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_recurring_current_UPDATE\" AFTER UPDATE ON \"trigger_recurring_current\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_recurring_definition_DELETE",
+    "table": "trigger_recurring_definition",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_recurring_definition_DELETE\" AFTER DELETE ON \"trigger_recurring_definition\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_recurring_definition_INSERT",
+    "table": "trigger_recurring_definition",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_recurring_definition_INSERT\" AFTER INSERT ON \"trigger_recurring_definition\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_recurring_definition_UPDATE",
+    "table": "trigger_recurring_definition",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_recurring_definition_UPDATE\" AFTER UPDATE ON \"trigger_recurring_definition\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_recurring_fire_receipt_DELETE",
+    "table": "trigger_recurring_fire_receipt",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_recurring_fire_receipt_DELETE\" AFTER DELETE ON \"trigger_recurring_fire_receipt\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_recurring_fire_receipt_INSERT",
+    "table": "trigger_recurring_fire_receipt",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_recurring_fire_receipt_INSERT\" AFTER INSERT ON \"trigger_recurring_fire_receipt\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_recurring_fire_receipt_UPDATE",
+    "table": "trigger_recurring_fire_receipt",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_recurring_fire_receipt_UPDATE\" AFTER UPDATE ON \"trigger_recurring_fire_receipt\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_recurring_fire_work_DELETE",
+    "table": "trigger_recurring_fire_work",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_recurring_fire_work_DELETE\" AFTER DELETE ON \"trigger_recurring_fire_work\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_recurring_fire_work_INSERT",
+    "table": "trigger_recurring_fire_work",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_recurring_fire_work_INSERT\" AFTER INSERT ON \"trigger_recurring_fire_work\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_recurring_fire_work_UPDATE",
+    "table": "trigger_recurring_fire_work",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_recurring_fire_work_UPDATE\" AFTER UPDATE ON \"trigger_recurring_fire_work\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_recurring_notification_entity_DELETE",
+    "table": "trigger_recurring_notification_entity",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_recurring_notification_entity_DELETE\" AFTER DELETE ON \"trigger_recurring_notification_entity\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_recurring_notification_entity_INSERT",
+    "table": "trigger_recurring_notification_entity",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_recurring_notification_entity_INSERT\" AFTER INSERT ON \"trigger_recurring_notification_entity\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_recurring_notification_entity_UPDATE",
+    "table": "trigger_recurring_notification_entity",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_recurring_notification_entity_UPDATE\" AFTER UPDATE ON \"trigger_recurring_notification_entity\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_recurring_notification_link_DELETE",
+    "table": "trigger_recurring_notification_link",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_recurring_notification_link_DELETE\" AFTER DELETE ON \"trigger_recurring_notification_link\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_recurring_notification_link_INSERT",
+    "table": "trigger_recurring_notification_link",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_recurring_notification_link_INSERT\" AFTER INSERT ON \"trigger_recurring_notification_link\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_recurring_notification_link_UPDATE",
+    "table": "trigger_recurring_notification_link",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_recurring_notification_link_UPDATE\" AFTER UPDATE ON \"trigger_recurring_notification_link\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_recurring_state_DELETE",
+    "table": "trigger_recurring_state",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_recurring_state_DELETE\" AFTER DELETE ON \"trigger_recurring_state\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_recurring_state_INSERT",
+    "table": "trigger_recurring_state",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_recurring_state_INSERT\" AFTER INSERT ON \"trigger_recurring_state\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_trigger_recurring_state_UPDATE",
+    "table": "trigger_recurring_state",
+    "sql": "CREATE TRIGGER \"system_change_recovery_trigger_recurring_state_UPDATE\" AFTER UPDATE ON \"trigger_recurring_state\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_web_page_DELETE",
+    "table": "web_page",
+    "sql": "CREATE TRIGGER \"system_change_recovery_web_page_DELETE\" AFTER DELETE ON \"web_page\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_web_page_INSERT",
+    "table": "web_page",
+    "sql": "CREATE TRIGGER \"system_change_recovery_web_page_INSERT\" AFTER INSERT ON \"web_page\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_web_page_UPDATE",
+    "table": "web_page",
+    "sql": "CREATE TRIGGER \"system_change_recovery_web_page_UPDATE\" AFTER UPDATE ON \"web_page\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_web_page_asset_DELETE",
+    "table": "web_page_asset",
+    "sql": "CREATE TRIGGER \"system_change_recovery_web_page_asset_DELETE\" AFTER DELETE ON \"web_page_asset\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_web_page_asset_INSERT",
+    "table": "web_page_asset",
+    "sql": "CREATE TRIGGER \"system_change_recovery_web_page_asset_INSERT\" AFTER INSERT ON \"web_page_asset\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_web_page_asset_UPDATE",
+    "table": "web_page_asset",
+    "sql": "CREATE TRIGGER \"system_change_recovery_web_page_asset_UPDATE\" AFTER UPDATE ON \"web_page_asset\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_web_page_asset_content_DELETE",
+    "table": "web_page_asset_content",
+    "sql": "CREATE TRIGGER \"system_change_recovery_web_page_asset_content_DELETE\" AFTER DELETE ON \"web_page_asset_content\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_web_page_asset_content_INSERT",
+    "table": "web_page_asset_content",
+    "sql": "CREATE TRIGGER \"system_change_recovery_web_page_asset_content_INSERT\" AFTER INSERT ON \"web_page_asset_content\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_web_page_asset_content_UPDATE",
+    "table": "web_page_asset_content",
+    "sql": "CREATE TRIGGER \"system_change_recovery_web_page_asset_content_UPDATE\" AFTER UPDATE ON \"web_page_asset_content\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_web_page_migration_report_DELETE",
+    "table": "web_page_migration_report",
+    "sql": "CREATE TRIGGER \"system_change_recovery_web_page_migration_report_DELETE\" AFTER DELETE ON \"web_page_migration_report\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_web_page_migration_report_INSERT",
+    "table": "web_page_migration_report",
+    "sql": "CREATE TRIGGER \"system_change_recovery_web_page_migration_report_INSERT\" AFTER INSERT ON \"web_page_migration_report\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_web_page_migration_report_UPDATE",
+    "table": "web_page_migration_report",
+    "sql": "CREATE TRIGGER \"system_change_recovery_web_page_migration_report_UPDATE\" AFTER UPDATE ON \"web_page_migration_report\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_web_page_revision_DELETE",
+    "table": "web_page_revision",
+    "sql": "CREATE TRIGGER \"system_change_recovery_web_page_revision_DELETE\" AFTER DELETE ON \"web_page_revision\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_web_page_revision_INSERT",
+    "table": "web_page_revision",
+    "sql": "CREATE TRIGGER \"system_change_recovery_web_page_revision_INSERT\" AFTER INSERT ON \"web_page_revision\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
+  },
+  {
+    "type": "trigger",
+    "name": "system_change_recovery_web_page_revision_UPDATE",
+    "table": "web_page_revision",
+    "sql": "CREATE TRIGGER \"system_change_recovery_web_page_revision_UPDATE\" AFTER UPDATE ON \"web_page_revision\" BEGIN UPDATE system_change_recovery SET OtherVersion=OtherVersion+1 WHERE Id=1; END"
   },
   {
     "type": "trigger",

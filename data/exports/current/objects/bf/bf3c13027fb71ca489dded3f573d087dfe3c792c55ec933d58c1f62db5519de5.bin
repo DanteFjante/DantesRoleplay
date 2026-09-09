@@ -1,0 +1,1 @@
+var e=class extends Error{category;constructor(e,t,n){super(t,n),this.name=`ViewReadError`,this.category=e}};export{e as t};

@@ -67,3 +67,8 @@
 [67,"20260903091824_InteractionRecipeReplayPerformance","10.0.11"]
 [68,"20260904103515_InteractionRecipeParameterizedReplay","10.0.11"]
 [69,"20260906134931_RegisteredApplicationObjectContracts","10.0.11"]
+[70,"20260906222548_ApplicationObjectChangeDelivery","10.0.11"]
+[71,"20260907023854_DurableActivationEvidence","10.0.11"]
+[72,"20260907032619_ScheduledAiTaskWorkQueue","10.0.11"]
+[73,"20260907180000_UntrackedChangeRecovery","10.0.11"]
+[74,"20260907210000_ProjectionRegistryGeneration","10.0.11"]
