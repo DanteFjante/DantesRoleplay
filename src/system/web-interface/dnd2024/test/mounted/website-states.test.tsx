@@ -476,6 +476,33 @@ function partyMember(sheetState: SectionState<PartyMemberReadModel["sheet"]>): P
   return member;
 }
 
+function loadedOverview(member: PartyMemberReadModel, recordStatus = "Canonical overview") {
+  return {
+    ...member,
+    recordStatus,
+    sheetStatus: "canonical" as const,
+    sheetState: { status: "ready" as const, source: "canonical" as const, data: member.sheet },
+    characterSheet: {
+      version: 2 as const,
+      subject: { id: member.id, label: member.name },
+      identity: { biography: "A ranger keeping watch over Caldris." },
+      origin: {
+        species: { id: "species.human", label: "Human" },
+        background: { id: "background.guide", label: "Guide" },
+      },
+      classes: [{
+        id: "membership.ranger",
+        name: "Ranger membership",
+        class: { id: "dnd2024.class.ranger", label: "Ranger" },
+        level: 5,
+        subclass: null,
+      }],
+      inventory: { items: [], contentsDepth: 4 as const, mayOmitDeeperContents: true as const },
+      wallet: { coinCount: 0, copperValue: 0, gpCount: 0, denominations: [] },
+    },
+  };
+}
+
 test("party fetches only the selected dossier and ignores an obsolete completion", async () => {
   const { PartyView } = await import("../../src/components/PartyView");
   const first = { ...partyMember({ status: "idle", data: null }), id: "actor.first", name: "First" };
@@ -489,7 +516,8 @@ test("party fetches only the selected dossier and ignores an obsolete completion
   const mounted = await mount(<PartyView party={[first, second]}
     loadCharacterSheet={loadCharacter} loadCharacterDetails={loadCharacter} />);
   try {
-    assert.deepEqual(calls, []);
+    assert.deepEqual(calls, [first.id]);
+    assert.ok(mounted.container.querySelector(".character-overview-skeleton[aria-busy='true']"));
     await click(button(mounted.container, "Character"));
     assert.deepEqual(calls, [first.id]);
     const chooseSecond = [...mounted.container.querySelectorAll<HTMLButtonElement>(".character-roster__member")]
@@ -505,7 +533,7 @@ test("party fetches only the selected dossier and ignores an obsolete completion
   } finally { await mounted.cleanup(); }
 });
 
-test("Character overview stays query-free while sheet and detail resources load on demand", async () => {
+test("Character overview loads the selected summary once while broader details stay on demand", async () => {
   const { PartyView } = await import("../../src/components/PartyView");
   const member = partyMember({ status: "idle", data: null });
   let sheetReads = 0;
@@ -514,8 +542,9 @@ test("Character overview stays query-free while sheet and detail resources load 
     loadCharacterSheet={async () => { sheetReads += 1; return { ...member, recordStatus: "Sheet loaded" }; }}
     loadCharacterDetails={async () => { detailReads += 1; return { ...member, recordStatus: "Details loaded" }; }} />);
   try {
-    assert.equal(sheetReads, 0);
+    assert.equal(sheetReads, 1);
     assert.equal(detailReads, 0);
+    assert.match(mounted.container.textContent ?? "", /Sheet loaded/);
     await click(button(mounted.container, "Character"));
     assert.equal(sheetReads, 1);
     assert.equal(detailReads, 0);
@@ -525,6 +554,52 @@ test("Character overview stays query-free while sheet and detail resources load 
     assert.equal(detailReads, 1);
     await click(button(mounted.container, "Character"));
     assert.equal(sheetReads, 1, "the complete details satisfy a later sheet visit");
+  } finally { await mounted.cleanup(); }
+});
+
+test("Party overview reads only one selected character for empty, small, and large rosters", async (t) => {
+  const { PartyView } = await import("../../src/components/PartyView");
+  for (const count of [0, 1, 3, 20]) {
+    await t.test(`${count} members`, async () => {
+      const members = Array.from({ length: count }, (_, index) => ({
+        ...partyMember({ status: "idle", data: null }),
+        id: `actor.fixture.${index}`,
+        name: `Character ${index + 1}`,
+      }));
+      const reads: string[] = [];
+      const mounted = await mount(<PartyView party={members} loadCharacterSheet={async (id) => {
+        reads.push(id);
+        return loadedOverview(members.find((member) => member.id === id)!);
+      }} />);
+      try {
+        assert.deepEqual(reads, count === 0 ? [] : [members[0]!.id]);
+        assert.equal(mounted.container.querySelectorAll(".character-roster__member").length, count);
+        if (count > 0) {
+          assert.match(mounted.container.textContent ?? "", /Ranger 5/);
+          assert.match(mounted.container.textContent ?? "", /Human · Guide/);
+        }
+      } finally { await mounted.cleanup(); }
+    });
+  }
+});
+
+test("failed Character overview reads remain explicit and retry into the loaded summary", async () => {
+  const { PartyView } = await import("../../src/components/PartyView");
+  const member = partyMember({ status: "idle", data: null });
+  let attempts = 0;
+  const mounted = await mount(<PartyView party={[member]} loadCharacterSheet={async () => {
+    attempts += 1;
+    if (attempts === 1) throw new Error("temporary character failure");
+    return loadedOverview(member, "Recovered canonical overview");
+  }} />);
+  try {
+    assert.equal(attempts, 1);
+    assert.match(mounted.container.querySelector("[role='alert']")?.textContent ?? "", /overview unavailable/i);
+    assert.doesNotMatch(mounted.container.textContent ?? "", /Character details have not been loaded/);
+    await click(button(mounted.container, "Retry character"));
+    assert.equal(attempts, 2);
+    assert.match(mounted.container.textContent ?? "", /Recovered canonical overview/);
+    assert.equal(mounted.container.querySelector("[role='alert']"), null);
   } finally { await mounted.cleanup(); }
 });
 
@@ -1397,7 +1472,8 @@ test("Player preview shows the safe Party roster while Actor-only views make no 
     }
     await click(button(mounted.container, "Party"));
     assert.equal(mounted.container.querySelector('#information-content [data-view-status="unavailable"]'), null);
-    assert.match(mounted.container.textContent ?? "", /Player-visible campaign roster/);
+    assert.match(mounted.container.textContent ?? "", /Observer preview shows the campaign roster/);
+    assert.doesNotMatch(mounted.container.textContent ?? "", /Actor binding required|authorized Actor seat/);
     assert.equal(mounted.container.querySelectorAll(".character-tabs button").length, 1);
     assert.equal(reads, 0);
   } finally { await mounted.cleanup(); }
@@ -1457,7 +1533,7 @@ test("mounted Character reloads for its object and legacy notices without a focu
     loadCharacterDetails={async () => ({ ...fixture.party[0], name: `Revision ${++calls}` })} />);
   try {
     await click(button(mounted.container, "Party"));
-    assert.equal(calls, 0);
+    assert.equal(calls, 1);
     await click(button(mounted.container, "Character"));
     assert.equal(calls, 1);
     await act(async () => window.dispatchEvent(new window.CustomEvent("dnd2024-object-changed", { detail: {

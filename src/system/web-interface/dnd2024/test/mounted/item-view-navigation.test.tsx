@@ -73,11 +73,19 @@ test("item fragment bounds, tab fallback and return context never accept binding
 
 test("Campaign and Party routes are closed, addressable fragments", () => {
   assert.deepEqual(parseHubRoute(hubRouteHash("campaign", "log")), {
-    kind: "hub", tab: "campaign", campaignSection: "log", worldSection: "overview",
+    kind: "hub", tab: "campaign", campaignSection: "log", partySection: "overview", characterId: null, worldSection: "overview",
     locationScopeId: null, locationScopePath: [], locationId: null,
   });
   assert.deepEqual(parseHubRoute(hubRouteHash("party")), {
-    kind: "hub", tab: "party", campaignSection: "overview", worldSection: "overview",
+    kind: "hub", tab: "party", campaignSection: "overview", partySection: "overview", characterId: null, worldSection: "overview",
+    locationScopeId: null, locationScopePath: [], locationId: null,
+  });
+  assert.deepEqual(parseHubRoute(hubRouteHash("party", "overview", {
+    partySection: "inventory",
+    characterId: "actor.caldris.ganji",
+  })), {
+    kind: "hub", tab: "party", campaignSection: "overview", partySection: "inventory",
+    characterId: "actor.caldris.ganji", worldSection: "overview",
     locationScopeId: null, locationScopePath: [], locationId: null,
   });
   assert.deepEqual(parseHubRoute(hubRouteHash("world", "overview", {
@@ -85,11 +93,12 @@ test("Campaign and Party routes are closed, addressable fragments", () => {
     locationScopePath: ["atlas.renamed", "region.sol-1"],
     locationId: "region.sol-1",
   })), {
-    kind: "hub", tab: "world", campaignSection: "overview", worldSection: "locations",
+    kind: "hub", tab: "world", campaignSection: "overview", partySection: "overview", characterId: null, worldSection: "locations",
     locationScopeId: "region.sol-1", locationScopePath: ["atlas.renamed", "region.sol-1"],
     locationId: "region.sol-1",
   });
   for (const hash of ["#view?tab=campaign&section=unknown", "#view?tab=party&section=log",
+    "#view?tab=campaign&character=actor.ganji", "#view?tab=party&character=actor%20ganji",
     "#view?tab=campaign&principal=gm", "#view?tab=campaign&tab=party", "#view?tab=%zz"]) {
     assert.equal(parseHubRoute(hash).kind, "invalid");
   }
@@ -206,6 +215,29 @@ test("shared table upgrades obsolete Player inventory links without offering a r
   } finally { await mounted.cleanup(); }
 });
 
+test("observer-preview item links fall back to the safe Party roster without Actor-binding notices or reads", async () => {
+  const projected = projectHubEnvelope(hubSource, "fixture", resolveAudience({
+    authenticatedUserId: "dm.fixture", authenticatedUserEmail: "", requestedPerspective: "player",
+    dmPrincipalIds: ["dm.fixture"],
+  })) as ReadyHubEnvelope;
+  const initial: ReadyHubEnvelope = { ...projected, applicationId: "dnd2024-main", stateSpaceId: "state.fixture", party,
+    contextSelection: { selectedWorldId: projected.world.id, selectedCampaignId: "campaign.test",
+      worlds: [{ id: projected.world.id, name: projected.world.name,
+        campaigns: [{ id: "campaign.test", name: "Fixture" }] }] } };
+  let reads = 0;
+  const deepLink = itemRouteHash({ ...inventory, kind: "item", itemId: "item.secret", tab: "details" });
+  const mounted = await mount(deepLink, <DndInformationHub initialEnvelope={initial}
+    loadContent={async () => ({}) as never}
+    loadCharacterSheet={async () => { reads += 1; throw new Error("not available"); }}
+    loadDeferredSection={async () => { reads += 1; throw new Error("not available"); }} />);
+  try {
+    assert.match(mounted.container.textContent ?? "", /Observer preview shows the campaign roster/);
+    assert.doesNotMatch(mounted.container.textContent ?? "", /Actor binding required|authorized Actor seat/);
+    assert.equal(mounted.container.querySelector(".character-page") !== null, true);
+    assert.equal(reads, 0);
+  } finally { await mounted.cleanup(); }
+});
+
 test("Campaign section and Party navigation survive Back and Forward", async () => {
   const projected = projectHubEnvelope(hubSource, "fixture", resolveAudience({
     authenticatedUserId: "dm.fixture", authenticatedUserEmail: "", requestedPerspective: "dm",
@@ -221,12 +253,32 @@ test("Campaign section and Party navigation survive Back and Forward", async () 
     assert.equal(mounted.container.querySelector('.main-nav [aria-current="page"]')?.textContent?.trim(), "Campaign");
     assert.equal(mounted.container.querySelector('.section-tabs [aria-current="page"]')?.textContent?.trim(), "Adventure Log");
     await perform(() => button(mounted.container, "Party").click());
-    assert.equal(parseHubRoute(window.location.hash).kind, "hub");
+    let partyRoute = parseHubRoute(window.location.hash);
+    assert.equal(partyRoute.kind, "hub");
     assert.equal(mounted.container.querySelector('.main-nav [aria-current="page"]')?.textContent?.trim(), "Party");
+    await perform(() => mounted.container.querySelector<HTMLButtonElement>('[data-character-member="actor.second"]')!.click());
+    await perform(() => button(mounted.container, "Biography").click());
+    partyRoute = parseHubRoute(window.location.hash);
+    assert.equal(partyRoute.kind === "hub" && partyRoute.characterId, "actor.second");
+    assert.equal(partyRoute.kind === "hub" && partyRoute.partySection, "backstory");
+    assert.equal((document.activeElement as HTMLElement).dataset.characterSection, "backstory");
+    await perform(() => window.history.back());
+    partyRoute = parseHubRoute(window.location.hash);
+    assert.equal(partyRoute.kind === "hub" && partyRoute.characterId, "actor.second");
+    assert.equal(partyRoute.kind === "hub" && partyRoute.partySection, "overview");
+    assert.equal((document.activeElement as HTMLElement).dataset.characterSection, "overview");
+    await perform(() => window.history.back());
+    assert.equal((parseHubRoute(window.location.hash) as { characterId?: string | null }).characterId, "actor.first");
     await perform(() => window.history.back());
     assert.equal(mounted.container.querySelector('.main-nav [aria-current="page"]')?.textContent?.trim(), "Campaign");
     assert.equal(mounted.container.querySelector('.section-tabs [aria-current="page"]')?.textContent?.trim(), "Adventure Log");
     await perform(() => window.history.forward());
     assert.equal(mounted.container.querySelector('.main-nav [aria-current="page"]')?.textContent?.trim(), "Party");
+    await perform(() => window.history.forward());
+    assert.equal((parseHubRoute(window.location.hash) as { characterId?: string | null }).characterId, "actor.second");
+    await perform(() => window.history.forward());
+    partyRoute = parseHubRoute(window.location.hash);
+    assert.equal(partyRoute.kind === "hub" && partyRoute.partySection, "backstory");
+    assert.equal((document.activeElement as HTMLElement).dataset.characterSection, "backstory");
   } finally { await mounted.cleanup(); }
 });

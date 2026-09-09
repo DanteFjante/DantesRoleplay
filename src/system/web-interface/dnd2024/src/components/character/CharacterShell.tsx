@@ -53,6 +53,7 @@ export function CharacterShell({
               <button
                 aria-current={member.id === selectedMember.id ? "true" : undefined}
                 className="character-roster__member"
+                data-character-member={member.id}
                 key={member.id}
                 onClick={() => onSelectMember(member.id)}
                 type="button"
@@ -76,6 +77,7 @@ export function CharacterShell({
             {sections.map((candidate) => (
               <button
                 aria-current={section === candidate.id ? "page" : undefined}
+                data-character-section={candidate.id}
                 key={candidate.id}
                 onClick={() => onSelectSection(candidate.id)}
                 type="button"

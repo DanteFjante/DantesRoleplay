@@ -107,6 +107,8 @@ export function CharacterWorkspace({
   loadCharacterDetails,
   loadCharacterInventory,
   navigationCharacterId,
+  navigationSection,
+  onNavigationChange,
   inventoryReturn,
   onOpenItem,
   summaryOnly = false,
@@ -118,23 +120,34 @@ export function CharacterWorkspace({
   loadCharacterDetails?: (id: string, signal: AbortSignal) => Promise<PartyMemberReadModel>;
   loadCharacterInventory?: (id: string, signal: AbortSignal) => Promise<InventoryContainerResult>;
   navigationCharacterId?: string;
+  navigationSection?: PartySectionId;
+  onNavigationChange?: (id: string, section: PartySectionId, replace?: boolean) => void;
   inventoryReturn?: InventoryReturnContext | null;
   onOpenItem?: (characterId: string, itemId: string, context: InventoryReturnContext) => void;
   summaryOnly?: boolean;
 }) {
-  const [selectedMemberId, setSelectedMemberId] = useState(navigationCharacterId ?? party[0]?.id ?? "");
-  const [section, setSection] = useState<PartySectionId>(navigationCharacterId && !summaryOnly ? "inventory" : "overview");
+  const requestedMemberId = navigationCharacterId && party.some((member) => member.id === navigationCharacterId)
+    ? navigationCharacterId
+    : party[0]?.id ?? "";
+  const [localSelectedMemberId, setLocalSelectedMemberId] = useState(requestedMemberId);
+  const [localSection, setLocalSection] = useState<PartySectionId>(navigationSection ?? "overview");
+  const selectedMemberId = onNavigationChange ? requestedMemberId : localSelectedMemberId;
+  const section = summaryOnly ? "overview" : onNavigationChange ? navigationSection ?? "overview" : localSection;
   const [expandedIds, setExpandedIds] = useState<string[]>(inventoryReturn?.expandedIds ?? []);
   const restored = useRef(false);
   const [query, setQuery] = useState("");
   const [detail, setDetail] = useState<PartyMemberReadModel | null>(null);
   const [detailKind, setDetailKind] = useState<"sheet" | "details" | null>(null);
   const [detailBusy, setDetailBusy] = useState(false);
-  const [detailError, setDetailError] = useState(false);
+  const [detailErrorKind, setDetailErrorKind] = useState<"sheet" | "details" | null>(null);
   const [inventoryResult, setInventoryResult] = useState<InventoryContainerResult | null>(null);
   const [inventoryBusy, setInventoryBusy] = useState(false);
   const [inventoryError, setInventoryError] = useState(false);
   const [retry, setRetry] = useState(0);
+  const previousRoute = useRef(`${selectedMemberId}:${section}`);
+  const requiredDetailKind: "sheet" | "details" | null = !summaryOnly &&
+    (section === "overview" || section === "sheet") ? "sheet"
+    : !summaryOnly && section !== "inventory" ? "details" : null;
   useEffect(() => {
     const invalidate = () => {
       setDetail(null);
@@ -153,30 +166,30 @@ export function CharacterWorkspace({
     };
   }, []);
   useEffect(() => {
-    const requiredKind = section === "sheet" ? "sheet"
-      : section === "overview" || section === "inventory" ? null : "details";
-    const loader = requiredKind === "sheet" ? loadCharacterSheet
-      : requiredKind === "details" ? loadCharacterDetails : null;
-    if (!requiredKind || !loader || !selectedMemberId ||
+    const loader = requiredDetailKind === "sheet" ? loadCharacterSheet
+      : requiredDetailKind === "details" ? loadCharacterDetails : null;
+    if (!requiredDetailKind || !loader || !selectedMemberId ||
         !party.some((member) => member.id === selectedMemberId) ||
-        detail?.id === selectedMemberId && (detailKind === "details" || detailKind === requiredKind)) return;
+        detail?.id === selectedMemberId && (detailKind === "details" || detailKind === requiredDetailKind)) return;
     const controller = new AbortController();
     setDetail(null);
     setDetailKind(null);
-    setDetailError(false);
+    setDetailErrorKind(null);
     setDetailBusy(true);
     void loader(selectedMemberId, controller.signal).then((value) => {
       if (!controller.signal.aborted && value.id === selectedMemberId) {
         setDetail(value);
-        setDetailKind(requiredKind);
+        setDetailKind(requiredDetailKind);
+      } else if (!controller.signal.aborted) {
+        setDetailErrorKind(requiredDetailKind);
       }
     }).catch(() => {
-      if (!controller.signal.aborted) setDetailError(true);
+      if (!controller.signal.aborted) setDetailErrorKind(requiredDetailKind);
     }).finally(() => {
       if (!controller.signal.aborted) setDetailBusy(false);
     });
     return () => controller.abort();
-  }, [loadCharacterDetails, loadCharacterSheet, selectedMemberId, section, retry, detail, detailKind, party]);
+  }, [loadCharacterDetails, loadCharacterSheet, selectedMemberId, requiredDetailKind, retry, detail, detailKind, party]);
 
   useEffect(() => {
     if (section !== "inventory" || !loadCharacterInventory || !selectedMemberId ||
@@ -199,19 +212,46 @@ export function CharacterWorkspace({
   }, [inventoryResult, loadCharacterInventory, party, retry, section, selectedMemberId]);
 
   useEffect(() => {
-    if (!navigationCharacterId && !party.some((member) => member.id === selectedMemberId)) {
-      setSelectedMemberId(party[0]?.id ?? "");
+    if (!onNavigationChange && !party.some((member) => member.id === selectedMemberId)) {
+      setLocalSelectedMemberId(party[0]?.id ?? "");
       setInventoryResult(null);
-      setSection("overview");
+      setLocalSection("overview");
       setQuery("");
     }
-  }, [party, selectedMemberId, navigationCharacterId]);
+  }, [party, selectedMemberId, onNavigationChange]);
+
+  useEffect(() => {
+    if (onNavigationChange && selectedMemberId && navigationCharacterId !== selectedMemberId) {
+      onNavigationChange(selectedMemberId, "overview", true);
+    }
+  }, [navigationCharacterId, onNavigationChange, selectedMemberId]);
+
+  useEffect(() => {
+    setExpandedIds(inventoryReturn?.characterId === selectedMemberId ? inventoryReturn.expandedIds : []);
+    setInventoryResult(null);
+    setInventoryError(false);
+    setQuery("");
+    restored.current = false;
+  }, [inventoryReturn, selectedMemberId]);
+
+  useLayoutEffect(() => {
+    if (!onNavigationChange) return;
+    const route = `${selectedMemberId}:${section}`;
+    if (route === previousRoute.current) return;
+    previousRoute.current = route;
+    document.querySelector<HTMLElement>(`.character-tabs [data-character-section="${section}"]`)
+      ?.focus({ preventScroll: true });
+  }, [onNavigationChange, section, selectedMemberId]);
 
   const selectedMember = detail?.id === selectedMemberId ? detail
     : party.find((member) => member.id === selectedMemberId);
+  const displayedParty = useMemo(() => party.map((member) => member.id === selectedMemberId && selectedMember
+    ? selectedMember
+    : member), [party, selectedMember, selectedMemberId]);
   const retryCharacter = () => {
     setDetail(null);
     setDetailKind(null);
+    setDetailErrorKind(null);
     setRetry((value) => value + 1);
   };
   const retryInventory = () => {
@@ -261,6 +301,9 @@ export function CharacterWorkspace({
     return ("text" in entry ? [entry.kind, entry.stance, entry.text] : [entry.kind, entry.title, entry.detail])
       .some((value) => value.toLocaleLowerCase().includes(normalizedQuery));
   }), [entries, normalizedQuery]);
+  const detailFailed = requiredDetailKind !== null && detailErrorKind === requiredDetailKind;
+  const overviewPending = section === "overview" && !summaryOnly && Boolean(loadCharacterSheet) && !detailFailed &&
+    !(detail?.id === selectedMemberId && (detailKind === "sheet" || detailKind === "details"));
 
   if (!selectedMember) {
     return (
@@ -272,25 +315,45 @@ export function CharacterWorkspace({
   }
 
   const selectSection = (next: PartySectionId) => {
-    setSection(summaryOnly ? "overview" : next);
+    const normalized = summaryOnly ? "overview" : next;
+    if (onNavigationChange) onNavigationChange(selectedMemberId, normalized);
+    else setLocalSection(normalized);
     setQuery("");
   };
   return (
     <CharacterShell
-      onSelectMember={(id) => { setSelectedMemberId(id); setExpandedIds([]); setInventoryResult(null); selectSection("overview"); }}
+      onSelectMember={(id) => {
+        if (onNavigationChange) onNavigationChange(id, "overview");
+        else {
+          setLocalSelectedMemberId(id);
+          setLocalSection("overview");
+        }
+        setExpandedIds([]);
+        setInventoryResult(null);
+        setQuery("");
+      }}
       onSelectSection={selectSection}
-      party={party}
+      party={displayedParty}
       sections={summaryOnly ? CHARACTER_SECTIONS.filter((candidate) => candidate.id === "overview") : undefined}
       section={section}
       selectedMember={selectedMember}
     >
-      {detailBusy ? <p role="status">Loading this character’s authorized dossier…</p> : null}
-      {detailError ? <div role="alert"><p>This character could not be loaded. No empty inventory or wallet is inferred.</p>
-        <button type="button" onClick={retryCharacter}>Retry character</button></div> : null}
       {section === "overview" ? (
-        <CharacterOverview member={selectedMember} onOpenSection={selectSection} summaryOnly={summaryOnly} />
+        overviewPending ? <CharacterOverviewSkeleton name={selectedMember.name} />
+          : detailFailed ? <div className="character-state" role="alert">
+            <div><strong>Character overview unavailable</strong>
+              <p>This character could not be loaded. No missing details are inferred.</p></div>
+            <button type="button" onClick={retryCharacter}>Retry character</button>
+          </div>
+            : <CharacterOverview member={selectedMember} onOpenSection={selectSection} summaryOnly={summaryOnly} />
       ) : (
         <>
+          {detailBusy ? <p role="status">Loading this character’s dossier…</p> : null}
+          {detailFailed ? <div className="character-state" role="alert">
+            <div><strong>Character section unavailable</strong>
+              <p>This character could not be loaded. No missing details are inferred.</p></div>
+            <button type="button" onClick={retryCharacter}>Retry character</button>
+          </div> : null}
           <SectionHeader count={sectionCount} member={selectedMember} section={section} sectionState={state} />
           {state ? <CharacterSectionState
             label={section === "sheet" ? "character sheet" : "inventory"}
@@ -337,6 +400,23 @@ export function CharacterWorkspace({
         </>
       )}
     </CharacterShell>
+  );
+}
+
+function CharacterOverviewSkeleton({ name }: { name: string }) {
+  return (
+    <section aria-busy="true" className="character-overview-skeleton" role="status">
+      <span className="sr-only">Loading {name}&apos;s character overview</span>
+      <div className="character-overview-skeleton__lead">
+        <span />
+        <strong />
+        <p />
+        <p />
+      </div>
+      <div className="character-overview-skeleton__facts">
+        {[0, 1, 2, 3].map((value) => <span key={value} />)}
+      </div>
+    </section>
   );
 }
 

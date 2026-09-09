@@ -19,6 +19,15 @@ export const CAMPAIGN_SECTIONS = [
   { id: "clues", label: "Clues" },
 ];
 
+export const PARTY_SECTIONS = [
+  { id: "overview", label: "Overview" },
+  { id: "sheet", label: "Character" },
+  { id: "inventory", label: "Inventory" },
+  { id: "knowledge", label: "Knowledge" },
+  { id: "backstory", label: "Biography" },
+  { id: "origin", label: "Origin" },
+];
+
 export const WORLD_SECTIONS = [
   { id: "overview", label: "Overview" },
   { id: "map", label: "Map" },
@@ -49,6 +58,10 @@ export function normalizeMainTab(value) {
 
 export function normalizeCampaignSection(value) {
   return CAMPAIGN_SECTIONS.some((section) => section.id === value) ? value : "overview";
+}
+
+export function normalizePartySection(value) {
+  return PARTY_SECTIONS.some((section) => section.id === value) ? value : "overview";
 }
 
 export function normalizeWorldSection(value) {

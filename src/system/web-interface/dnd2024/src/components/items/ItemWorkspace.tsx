@@ -50,7 +50,8 @@ export function ItemWorkspace({ route, campaignId, perspective, context, itemCli
       campaignId, perspective, observerId: route.characterId, itemId: route.itemId };
     return <ConnectedItemView key={client.key(request)} {...navigation} client={client} request={request} />;
   }
-  return <PartyView {...partyProps} key={selected?.characterId ?? "party"} navigationCharacterId={selected?.characterId} inventoryReturn={returnContext}
+  return <PartyView {...partyProps} key={selected?.characterId ?? "party"} navigationCharacterId={selected?.characterId}
+    navigationSection={selected?.kind === "inventory" ? "inventory" : partyProps.navigationSection} inventoryReturn={returnContext}
     onOpenItem={(characterId, itemId, context) => {
       const inventory = { kind: "inventory" as const, characterId, campaignId, perspective };
       navigateItemRoute(inventory, true, context);

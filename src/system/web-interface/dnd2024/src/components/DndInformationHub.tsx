@@ -24,6 +24,7 @@ import type {
   HubContextSelection,
   LocationSectionId,
   MainTabId,
+  PartySectionId,
   Perspective,
   ReadyHubEnvelope,
   RuleReadModel,
@@ -36,6 +37,7 @@ import {
   normalizeCampaignSection,
   normalizeMainTab,
   normalizeLocationSection,
+  normalizePartySection,
   normalizePerspective,
   normalizeWorldSection,
   normalizeMapId,
@@ -79,11 +81,11 @@ function ViewLoading({ label }: { label: string }) {
   );
 }
 
-function ActorBindingRequired() {
+function ObserverPreviewUnavailable() {
   return <section className="view-unavailable" role="status"
     data-view-status="unavailable" data-reason-code="audience-restricted">
-    <h1 id="main-view-heading" tabIndex={-1}>Actor binding required</h1>
-    <p>This view is unavailable in Player preview. Open it from an authorized Actor seat.</p>
+    <h1 id="main-view-heading" tabIndex={-1}>Unavailable in observer preview</h1>
+    <p>This optional preview omits private table information. Return to the shared table to open the complete view.</p>
   </section>;
 }
 
@@ -206,6 +208,14 @@ export function DndInformationHub({
     const route = parseHubRoute(window.location.hash);
     return route.kind === "hub" ? route.campaignSection : "overview";
   });
+  const [partySection, setPartySection] = useState<PartySectionId>(() => {
+    const route = parseHubRoute(window.location.hash);
+    return route.kind === "hub" ? route.partySection : "overview";
+  });
+  const [partyCharacterId, setPartyCharacterId] = useState<string | null>(() => {
+    const route = parseHubRoute(window.location.hash);
+    return route.kind === "hub" ? route.characterId : null;
+  });
   useEffect(() => {
     const changed = () => {
       const next = parseItemRoute(window.location.hash);
@@ -216,6 +226,8 @@ export function DndInformationHub({
         if (hub.kind === "hub") {
           setActiveTab(hub.tab);
           setCampaignSection(hub.campaignSection);
+          setPartySection(hub.partySection);
+          setPartyCharacterId(hub.characterId);
           setWorldSection(hub.worldSection);
           setLocationScopePath(hub.locationScopePath);
           if (hub.locationId) setSelectedLocationId(hub.locationId);
@@ -305,6 +317,9 @@ export function DndInformationHub({
 
   const perspective = envelope.audience.perspective;
   const playerPreview = envelope.audience.seat === "dm" && perspective === "player";
+  const selectedPartyCharacterId = envelope.party.some((member) => member.id === partyCharacterId)
+    ? partyCharacterId
+    : envelope.party[0]?.id ?? null;
   useEffect(() => subscribeChanges?.(envelope), [
     subscribeChanges, envelope.applicationId, envelope.stateSpaceId, perspective,
     envelope.contextSelection?.selectedCampaignId,
@@ -647,7 +662,7 @@ export function DndInformationHub({
     worldScopeAbort.current?.abort(); campaignWriteAbort.current?.abort();
   }, []);
 
-  const deferredNotice = deferredRestricted ? <ActorBindingRequired /> : deferredState !== "ready" ? (
+  const deferredNotice = deferredRestricted ? <ObserverPreviewUnavailable /> : deferredState !== "ready" ? (
     <section aria-busy={deferredState === "loading" || deferredState === "unloaded"}
       className="view-loading" role={deferredState === "error" ? "alert" : "status"}>
       <h1 id="main-view-heading" tabIndex={-1}>
@@ -739,10 +754,14 @@ export function DndInformationHub({
   function selectTab(tab: MainTabId) {
     const nextTab = normalizeMainTab(tab) as MainTabId;
     if (nextTab === activeTab) return;
-    navigateHubRoute(nextTab, campaignSection, false, nextTab === "world" ? {
-      worldSection,
-      ...(worldSection === "locations" ? { locationScopePath, locationId: selectedLocationId || null } : {}),
-    } : {});
+    navigateHubRoute(nextTab, campaignSection, false,
+      nextTab === "world" ? {
+        worldSection,
+        ...(worldSection === "locations" ? { locationScopePath, locationId: selectedLocationId || null } : {}),
+      } : nextTab === "party" ? {
+        partySection,
+        characterId: selectedPartyCharacterId,
+      } : {});
     setActiveTab(nextTab);
     if (nextTab === "world" && worldSection === "factions" && !envelope.world.factionDirectory)
       void requestFactionPage(null);
@@ -833,6 +852,22 @@ export function DndInformationHub({
     setActiveTab("world");
     setAnnouncement(`${location.name} opened from Campaign`);
     focusViewHeading();
+  }
+
+  function selectPartySection(characterId: string, requestedSection: PartySectionId, replace = false) {
+    const nextSection = normalizePartySection(requestedSection) as PartySectionId;
+    const nextCharacterId = envelope.party.some((member) => member.id === characterId)
+      ? characterId
+      : envelope.party[0]?.id ?? null;
+    setPartyCharacterId(nextCharacterId);
+    setPartySection(nextSection);
+    navigateHubRoute("party", "overview", replace, {
+      partySection: nextSection,
+      characterId: nextCharacterId,
+    });
+    setAnnouncement(nextCharacterId
+      ? `${envelope.party.find((member) => member.id === nextCharacterId)?.name ?? "Character"} ${nextSection} opened`
+      : "Party roster opened");
   }
 
   function refreshChangedView() {
@@ -954,20 +989,31 @@ export function DndInformationHub({
           />
         );
       case "party":
-        if (loadDeferredSection && playerPreview && itemRoute.kind !== "none") return <ActorBindingRequired />;
-        if (itemRoute.kind === "none" || itemRoute.kind === "inventory" &&
+        if (Boolean(loadDeferredSection && playerPreview) || itemRoute.kind === "none" || itemRoute.kind === "inventory" &&
             itemRoute.campaignId === contextSelection.selectedCampaignId &&
             itemRoute.perspective === perspective &&
             envelope.party.some((member) => member.id === itemRoute.characterId)) {
-          const selectedId = itemRoute.kind === "inventory" ? itemRoute.characterId : undefined;
-          const inventoryReturn = selectedId ? readInventoryReturn(window.history.state, selectedId) : null;
+          const summaryOnly = Boolean(loadDeferredSection && playerPreview);
+          const itemCharacterId = itemRoute.kind === "inventory" || itemRoute.kind === "item"
+            ? itemRoute.characterId
+            : null;
+          const selectedId = summaryOnly && envelope.party.some((member) => member.id === itemCharacterId)
+            ? itemCharacterId!
+            : itemRoute.kind === "inventory" ? itemRoute.characterId : selectedPartyCharacterId ?? undefined;
+          const selectedSection = summaryOnly ? "overview"
+            : itemRoute.kind === "inventory" ? "inventory" : partySection;
+          const inventoryReturn = !summaryOnly && itemRoute.kind === "inventory" && selectedId
+            ? readInventoryReturn(window.history.state, selectedId)
+            : null;
           return <CharacterWorkspace
-            key={`${envelope.applicationId}:${envelope.stateSpaceId}:${contextSelection.selectedCampaignId}:${envelope.audience.seat}:${perspective}:${selectedId ?? "party"}`}
+            key={`${envelope.applicationId}:${envelope.stateSpaceId}:${contextSelection.selectedCampaignId}:${envelope.audience.seat}:${perspective}`}
             navigationCharacterId={selectedId}
+            navigationSection={selectedSection}
+            onNavigationChange={selectPartySection}
             inventoryReturn={inventoryReturn}
-            loadCharacterSheet={loadCharacterSheet ? readCharacterSheet : undefined}
-            loadCharacterDetails={loadCharacterDetails ? readCharacterDetails : undefined}
-            loadCharacterInventory={loadCharacterInventory ? readCharacterInventory : undefined}
+            loadCharacterSheet={!summaryOnly && loadCharacterSheet ? readCharacterSheet : undefined}
+            loadCharacterDetails={!summaryOnly && loadCharacterDetails ? readCharacterDetails : undefined}
+            loadCharacterInventory={!summaryOnly && loadCharacterInventory ? readCharacterInventory : undefined}
             loading={hubBusy}
             onRetry={() => void requestHub(perspective, contextSelection.selectedCampaignId, false, true)}
             onOpenItem={(characterId, itemId, context) => {
@@ -977,7 +1023,7 @@ export function DndInformationHub({
               navigateItemRoute({ ...inventory, kind: "item", itemId, tab: "details" }, false, context);
             }}
             party={envelope.party}
-            summaryOnly={Boolean(loadDeferredSection && playerPreview)}
+            summaryOnly={summaryOnly}
           />;
         }
         return <ItemWorkspace

@@ -27,10 +27,8 @@ export function CharacterOverview({
           <span className="eyebrow">Character dossier</span>
           <h3>{sheet?.classes?.[0]?.class.label ?? member.name}</h3>
           <p>{summaryOnly
-            ? "This is the Player-visible campaign roster. Open an authorized Actor seat for character details."
-            : biography ?? (member.sheetState.status === "idle" || member.sheetState.status === "loading"
-            ? "Character details have not been loaded yet."
-            : "This character is an active participant, but no biography has been recorded.")}</p>
+            ? "Observer preview shows the campaign roster without opening private character resources."
+            : biography ?? "This character is an active participant, but no biography has been recorded."}</p>
         </div>
         {!summaryOnly ? <div className="character-overview__actions">
           <button onClick={() => onOpenSection("sheet")} type="button"><Icon name="Shield" size={17} /> Character sheet</button>
