@@ -221,6 +221,16 @@ public sealed class ActivatedApplicationCatalogTests : IDisposable
         Assert.Same(snapshots[0], snapshots[1]);
         Assert.Equal(1, cache.Misses);
         Assert.Equal(1, cache.Hits);
+
+        var failed = new ActivatedApplicationCatalogProvider(
+            new ConfiguredPublicApplicationCatalogPolicy([app.Value]),
+            new ActivatedApplicationCatalogMaterializer(applications, new StaticActivation(activation), sources,
+                new StaticRoot("fixture-root", _root), projections: new ThrowingProjectionRegistry()),
+            new CatalogCursorCodec(Encoding.UTF8.GetBytes("unexpected-catalog-failure-signing-key")));
+        Assert.False(failed.TryGet(app, out _));
+        var failure = Assert.IsType<PublicApplicationCatalogFailure>(failed.LastFailure(app));
+        Assert.Equal("CATALOG_MATERIALIZATION_FAILED", failure.Code);
+        Assert.DoesNotContain(nameof(IOException), failure.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -617,5 +627,16 @@ public sealed class ActivatedApplicationCatalogTests : IDisposable
         public ProjectionImpactGraph GetImpactGraph(ApplicationIdentifier owner) => new(
             new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal),
             new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal));
+    }
+
+    private sealed class ThrowingProjectionRegistry : IProjectionDefinitionRegistry
+    {
+        public RegisteredProjectionDefinition Define(ProjectionDefinitionRequest definition) =>
+            throw new IOException("fixture storage failure");
+
+        public RegisteredProjectionDefinition? Get(string qualifiedId, int version) => null;
+
+        public ProjectionImpactGraph GetImpactGraph(ApplicationIdentifier owner) =>
+            throw new NotSupportedException();
     }
 }

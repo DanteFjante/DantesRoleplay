@@ -579,6 +579,13 @@ public sealed class ActivatedApplicationCatalogProvider(
             navigator = null!;
             return false;
         }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            _failures[applicationId] = new("CATALOG_MATERIALIZATION_FAILED",
+                "The active catalog could not be materialized because a runtime or storage dependency failed.");
+            navigator = null!;
+            return false;
+        }
     }
 
     public bool TryGetSnapshot(ApplicationIdentifier applicationId, out ActiveCatalogFeatureSnapshot snapshot)
