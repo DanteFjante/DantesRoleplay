@@ -137,10 +137,13 @@ test("R12 registers source-bound complete People and Holdings paging", async () 
     "^[0-9A-F]{64}$");
 });
 
-test("W08 composes Current View from the registered resume, scene, and board owners", async () => {
+test("R13 keeps registered Current owners while removing the live conversation composer", async () => {
   const feature = contract.features.find(({ id }) => id === "current-and-play");
-  assert.equal(feature?.target?.slice, "W08");
+  assert.equal(feature?.target?.slice, "R13");
   assert.match(feature?.browserAssembly ?? "", /CurrentViewResourceOwner/u);
+  assert.match(feature?.browserAssembly ?? "", /no live conversation custom element/u);
+  assert.match(feature?.editCapability ?? "", /no conversation composer or implicit play write/u);
+  assert.match(feature?.editCapability ?? "", /operation-history/u);
   assert.match(feature?.completeness ?? "", /source revision/u);
   for (const id of [
     "dnd2024.query.campaign-resume",

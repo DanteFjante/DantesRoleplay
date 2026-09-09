@@ -68,8 +68,6 @@ const CharacterWorkspace = lazy(() => import("./character/CharacterWorkspaceFeat
   .then((module) => ({ default: module.CharacterWorkspace })));
 const ItemRegistryWorkspace = lazy(() => import("./registry/ItemRegistryWorkspaceFeature")
   .then((module) => ({ default: module.ItemRegistryWorkspace })));
-const PlayConversationPanel = lazy(() => import("./PlayConversationPanel")
-  .then((module) => ({ default: module.PlayConversationPanel })));
 const CurrentViewPreview = lazy(() => import("./PreviewViewsFeature")
   .then((module) => ({ default: module.CurrentViewPreview })));
 const RulesView = lazy(() => import("./RulesView")
@@ -368,16 +366,15 @@ export function DndInformationHub({
     allLocations,
     envelope.world.currentLocationId,
   ) as WorldLocation | null;
+  const currentSituation = envelope.currentSituation ?? {
+    status: "unavailable" as const,
+    message: "No authoritative current scene is available.",
+  };
   const currentSceneLocation = resolveCurrentSceneLocation(
     allLocations,
-    envelope.currentSituation?.status === "ready" && envelope.currentSituation.locationId
-      ? envelope.currentSituation.locationId
-      : envelope.world.currentLocationId,
+    currentSituation.locationId ?? envelope.world.currentLocationId,
   ) as WorldLocation | null;
-  const currentSituation = envelope.currentSituation ?? (currentSceneLocation
-    ? { status: "ready" as const, kind: "exploration" as const, locationId: currentSceneLocation.id }
-    : { status: "unavailable" as const, message: "No authoritative current scene is available." });
-  const currentSceneImage = currentSituation.status === "ready" && currentSituation.kind !== "recorded" && currentSituation.scene
+  const currentSceneImage = currentSituation.status === "ready" && "scene" in currentSituation && currentSituation.scene
     ? currentSituation.scene
     : currentSceneLocation?.media?.scene ?? currentSceneLocation?.media?.setting ?? null;
   const selectedLocation = locationById.get(selectedLocationId) ?? null;
@@ -1101,11 +1098,27 @@ export function DndInformationHub({
           party={envelope.party}
         />;
       case "current":
-        if (deferredNotice) return deferredNotice;
+        if (deferredNotice && currentSituation.status !== "ready") return deferredNotice;
         return (
           <div className="current-play-workspace" data-view-status={currentSituation.status}
+            data-refresh-state={deferredState}
+            aria-busy={deferredState === "loading" || deferredState === "unloaded"}
             data-record-id={currentSituation.status === "ready"
               ? `${currentSituation.kind}:${currentSituation.locationId ?? "unplaced"}` : undefined}>
+            {deferredState !== "ready" && currentSituation.status === "ready" ? (
+              <section className={`current-refresh-notice${deferredState === "error" ? " is-error" : ""}`}
+                role={deferredState === "error" ? "alert" : "status"}>
+                <div>
+                  <strong>{deferredState === "error" ? "Current scene could not be refreshed" : "Refreshing current scene"}</strong>
+                  <p>{deferredState === "error"
+                    ? `${deferredErrors.current || "The current scene is temporarily unavailable."} Showing the last confirmed scene.`
+                    : "Showing the last confirmed scene while the latest state loads."}</p>
+                </div>
+                {deferredState === "error"
+                  ? <button type="button" onClick={() => void requestDeferred("current", true)}>Retry current scene</button>
+                  : null}
+              </section>
+            ) : null}
             <CurrentViewPreview
               image={currentSceneImage}
               location={currentSceneLocation}
@@ -1115,14 +1128,6 @@ export function DndInformationHub({
                 applicationId: envelope.applicationId, stateSpaceId: envelope.stateSpaceId, campaignId: contextSelection.selectedCampaignId,
               } : undefined}
               onBoardAccepted={() => void requestHub(perspective, contextSelection.selectedCampaignId, false, true)}
-            />
-            <PlayConversationPanel
-              applicationId={envelope.applicationId}
-              stateSpaceId={envelope.stateSpaceId}
-              sessionContextId={contextSelection.selectedCampaignId}
-              onConversationChange={() => {
-                void requestHub(perspective, contextSelection.selectedCampaignId, false, true);
-              }}
             />
           </div>
         );

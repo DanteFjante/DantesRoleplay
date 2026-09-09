@@ -49,16 +49,15 @@ function DmLocationContext({ location }: { location: WorldLocation }) {
 }
 
 function SceneAffordancesPanel({ items }: { items: CurrentSceneAffordance[] }) {
+  if (items.length === 0) return null;
   return (
     <section className="current-scene-panel current-affordances-panel" aria-labelledby="current-affordances-title">
       <header><Icon name="Compass" size={18} /><h2 id="current-affordances-title">Available now</h2></header>
-      {items.length ? (
-        <ul className="current-affordances-list">
-          {items.map((item) => (
-            <li key={item.key}><strong>{item.label}</strong><span>{item.summary}</span></li>
-          ))}
-        </ul>
-      ) : <p className="current-scene-empty">No scene actions have been declared for this situation.</p>}
+      <ul className="current-affordances-list">
+        {items.map((item) => (
+          <li key={item.key}><strong>{item.label}</strong><span>{item.summary}</span></li>
+        ))}
+      </ul>
     </section>
   );
 }
@@ -92,12 +91,14 @@ export function CurrentViewPreview({
         <ViewIntro
           copy="The latest durable play situation shared across AI clients and browser refreshes."
           eyebrow={label}
-          title="Current view"
+          title={situation.recorded.location?.name
+            ? `${label} at ${situation.recorded.location.name}`
+            : label}
         />
-        <section className="current-scene-card current-situation-focus">
-          <div className={`current-scene-card__visual${image ? " has-image" : ""}`}>
+        <section className={`current-scene-card current-situation-focus${image ? "" : " current-scene-card--text-only"}`}>
+          {image ? <div className="current-scene-card__visual has-image">
             <MediaImage fallback={<Icon name={situation.recorded.kind === "combat" ? "Swords" : "UsersRound"} size={30} />} loading="eager" media={image} />
-          </div>
+          </div> : null}
           <div className="current-scene-card__copy">
             <span className="eyebrow">{situation.recorded.location?.name ?? location?.name ?? "Current play session"}</span>
             <h2>{label}</h2>
@@ -143,7 +144,7 @@ export function CurrentViewPreview({
         <ViewIntro
           copy="The table's immediate context, without guessing from campaign prose or map selection."
           eyebrow="Current situation"
-          title="Current view"
+          title="No current scene"
         />
         <section className="current-scene-unavailable" aria-labelledby="current-scene-unavailable-title">
           <span><Icon name="Compass" size={28} /></span>
@@ -154,6 +155,9 @@ export function CurrentViewPreview({
               : "The game server has not projected an exact current location for this seat."}</p>
           </div>
         </section>
+        {situation.status === "unavailable" && location
+          ? <LocationContextPanel headingId="current-unavailable-location" location={location} />
+          : null}
       </div>
     );
   }
@@ -162,14 +166,14 @@ export function CurrentViewPreview({
     return (
       <div className="supporting-view current-scene-view current-scene-view--conversation">
         <ViewIntro
-          copy="The exact active conversation selected by campaign state."
-          eyebrow="Conversation"
-          title="Current view"
+          copy={situation.conversation.summary ?? "A conversation is currently in progress."}
+          eyebrow={location.name}
+          title={situation.conversation.name}
         />
-        <section className="current-scene-card current-situation-focus">
-          <div className={`current-scene-card__visual${image ? " has-image" : ""}`}>
+        <section className={`current-scene-card current-situation-focus${image ? "" : " current-scene-card--text-only"}`}>
+          {image ? <div className="current-scene-card__visual has-image">
             <MediaImage fallback={<Icon name="UsersRound" size={30} />} loading="eager" media={image} />
-          </div>
+          </div> : null}
           <div className="current-scene-card__copy">
             <span className="eyebrow">{location.name}</span>
             <h2>{situation.conversation.name}</h2>
@@ -203,14 +207,14 @@ export function CurrentViewPreview({
     return (
       <div className="supporting-view current-scene-view current-scene-view--combat">
         <ViewIntro
-          copy="The exact current encounter, Initiative order, and active turn projected from game state."
-          eyebrow="Combat"
-          title="Current view"
+          copy={combat.turn ? `${combat.turn.actorName} has the active turn.` : "Initiative and encounter state are ready."}
+          eyebrow={location.name}
+          title={combat.name}
         />
-        <section className="current-scene-card current-situation-focus">
-          <div className={`current-scene-card__visual${image ? " has-image" : ""}`}>
+        <section className={`current-scene-card current-situation-focus${image ? "" : " current-scene-card--text-only"}`}>
+          {image ? <div className="current-scene-card__visual has-image">
             <MediaImage fallback={<Icon name="Swords" size={30} />} loading="eager" media={image} />
-          </div>
+          </div> : null}
           <div className="current-scene-card__copy">
             <span className="eyebrow">{location.name}</span>
             <h2>{combat.name}</h2>
@@ -263,14 +267,14 @@ export function CurrentViewPreview({
   return (
     <div className="supporting-view current-scene-view">
       <ViewIntro
-        copy="The table's immediate context, without asking for a recap."
-        eyebrow="Exploration"
-        title="Current view"
+        copy={location.description}
+        eyebrow={`${location.region} · Exploration`}
+        title={location.name}
       />
-      <section className="current-scene-card">
-        <div className={`current-scene-card__visual${image ? " has-image" : ""}`}>
+      <section className={`current-scene-card${image ? "" : " current-scene-card--text-only"}`}>
+        {image ? <div className="current-scene-card__visual has-image">
           <MediaImage fallback={<Icon name="Compass" size={30} />} loading="eager" media={image} />
-        </div>
+        </div> : null}
         <div className="current-scene-card__copy">
           <span className="eyebrow">{location.region}</span>
           <h2>{location.name}</h2>

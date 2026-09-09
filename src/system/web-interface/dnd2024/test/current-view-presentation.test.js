@@ -4,7 +4,7 @@ import test from "node:test";
 
 const component = readFileSync(new URL("../src/components/PreviewViews.tsx", import.meta.url), "utf8");
 const hub = readFileSync(new URL("../src/components/DndInformationHub.tsx", import.meta.url), "utf8");
-const play = readFileSync(new URL("../src/components/PlayConversationPanel.tsx", import.meta.url), "utf8");
+const styles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
 
 test("Conversation and Combat retain the exact projected location context", () => {
   assert.match(component, /function LocationContextPanel/u);
@@ -18,7 +18,7 @@ test("Conversation and Combat retain the exact projected location context", () =
 test("Current View presents authored scene affordances without an execution contract", () => {
   assert.match(component, /function SceneAffordancesPanel/u);
   assert.match(component, />Available now</u);
-  assert.match(component, /No scene actions have been declared for this situation/u);
+  assert.match(component, /if \(items\.length === 0\) return null/u);
   assert.doesNotMatch(component, /application-action|mechanic-id|prepare-action|execute-action/iu);
   assert.match(component, /function DmLocationContext/u);
 });
@@ -32,13 +32,28 @@ test("Current View presents durable recorded play continuity as a distinct non-a
   assert.match(component, /message\.text/u);
 });
 
-test("Current tab binds the durable play conversation to the selected campaign and refreshes after turns", () => {
-  assert.match(hub, /<PlayConversationPanel/u);
-  assert.match(hub, /sessionContextId=\{contextSelection\.selectedCampaignId\}/u);
-  assert.match(hub, /requestHub\(perspective, contextSelection\.selectedCampaignId, false, true\)/u);
-  assert.match(play, /application-conversation/u);
-  assert.match(play, /conversation-change/u);
-  assert.doesNotMatch(play, /dnd2024|thalorien|caldris/iu);
+test("Current tab has no live conversation composer or Current-only conversation styles", () => {
+  assert.doesNotMatch(hub, /PlayConversationPanel|application-conversation|conversation-change/u);
+  assert.doesNotMatch(styles, /play-conversation-panel|application-conversation/u);
+  assert.match(hub, /<CurrentViewPreview/u);
+  assert.match(hub, /onBoardAccepted=\{\(\) => void requestHub/u);
+});
+
+test("Current keeps the last confirmed scene visible through a local refresh failure", () => {
+  assert.match(hub, /deferredNotice && currentSituation\.status !== "ready"/u);
+  assert.match(hub, /Showing the last confirmed scene/u);
+  assert.match(hub, /Retry current scene/u);
+  assert.doesNotMatch(hub, /kind: "exploration" as const/u,
+    "a missing Current projection must not be guessed from the selected or current place");
+});
+
+test("Current uses meaningful scene headings and omits empty image and action regions", () => {
+  assert.match(component, /title=\{situation\.conversation\.name\}/u);
+  assert.match(component, /title=\{combat\.name\}/u);
+  assert.match(component, /title=\{location\.name\}/u);
+  assert.match(component, /title="No current scene"/u);
+  assert.match(component, /current-scene-card--text-only/u);
+  assert.match(styles, /\.current-scene-card--text-only/u);
 });
 
 test("Combat Current View renders the canonical tactical board when projected", () => {

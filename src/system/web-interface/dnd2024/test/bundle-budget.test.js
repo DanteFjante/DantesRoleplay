@@ -52,7 +52,7 @@ test('feature styles are awaited inside their existing lazy view boundaries', ()
 
   const itemBoundary = hubSource.slice(
     hubSource.indexOf('const ItemWorkspace'),
-    hubSource.indexOf('const PlayConversationPanel'),
+    hubSource.indexOf('const CurrentViewPreview'),
   );
   assert.match(itemBoundary, /import\("\.\/items\/ItemWorkspaceFeature"\)/u);
   assert.match(itemFeatureSource, /import "\.\.\/\.\.\/item-page\.css";/u);
