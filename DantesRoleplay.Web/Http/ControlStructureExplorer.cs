@@ -365,7 +365,9 @@ public sealed class ControlStructureExplorer(
         bool extensionsOnly = false,
         IReadOnlyList<string>? componentIds = null,
         IReadOnlyList<string>? anyComponentIds = null,
-        IReadOnlyList<string>? archetypeIds = null)
+        IReadOnlyList<string>? archetypeIds = null,
+        IReadOnlyList<string>? qualifiedIds = null,
+        IReadOnlyList<string>? anyReferencedEntityIds = null)
     {
         var id = Application(applicationId);
         return Catalog(id).EffectiveContent(new(
@@ -378,7 +380,9 @@ public sealed class ControlStructureExplorer(
             extensionsOnly,
             componentIds,
             anyComponentIds,
-            archetypeIds));
+            archetypeIds,
+            qualifiedIds,
+            anyReferencedEntityIds));
     }
 
     public ReadableRulesResult GetReadableRules(

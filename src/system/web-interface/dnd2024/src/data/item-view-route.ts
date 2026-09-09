@@ -1,11 +1,15 @@
 import type { MainTabId, Perspective } from "./hub-types";
 
 export type ItemTab = "details" | "recipes" | "uses";
+export type RegistryItemTab = "details" | "recipes";
 export type InventoryRoute = { kind: "inventory"; characterId: string; campaignId: string; perspective: Perspective };
 export type ItemRoute = Omit<InventoryRoute, "kind"> & { kind: "item"; itemId: string; tab: ItemTab };
 export type RegistryItemRoute = { kind: "registry-item"; campaignId: string; perspective: Perspective;
-  itemId: string; collection: string; contentFingerprint: string };
-export type ItemNavigationRoute = ItemRoute | InventoryRoute | RegistryItemRoute | { kind: "invalid" } | { kind: "none" };
+  itemId: string; collection: string; contentFingerprint: string; tab: RegistryItemTab };
+export type RegistryRecipeRoute = { kind: "registry-recipe"; campaignId: string; perspective: Perspective;
+  recipeId: string; collection: string; contentFingerprint: string };
+export type ItemNavigationRoute = ItemRoute | InventoryRoute | RegistryItemRoute | RegistryRecipeRoute
+  | { kind: "invalid" } | { kind: "none" };
 export type InventoryReturnContext = {
   kind: "inventory"; characterId: string; expandedIds: string[]; query: string; focusItemId: string; scrollY: number;
 };
@@ -21,21 +25,30 @@ const validId = (value: unknown): value is string => typeof value === "string" &
 // The published application owns its pathname. A fragment adds a selection without
 // changing the release URL or passing trusted bindings to the server.
 export function parseItemRoute(hash: string): ItemNavigationRoute {
-  if (!/^#(?:item|inventory|registry-item)(?:\?|$)/.test(hash)) return { kind: "none" };
+  if (!/^#(?:item|inventory|registry-item|registry-recipe)(?:\?|$)/.test(hash)) return { kind: "none" };
   if (hash.length > 1600 || /%(?![a-fA-F0-9]{2})/.test(hash)) return { kind: "invalid" };
   if ((hash.match(/\?/g) ?? []).length !== 1) return { kind: "invalid" };
   const [kind, query = ""] = hash.slice(1).split("?");
   const parameters = new URLSearchParams(query);
   const allowed = kind === "item" ? ["character", "campaign", "perspective", "item", "tab"]
-    : kind === "registry-item" ? ["campaign", "perspective", "item", "collection", "fingerprint"]
+    : kind === "registry-item" ? ["campaign", "perspective", "item", "collection", "fingerprint", "tab"]
+      : kind === "registry-recipe" ? ["campaign", "perspective", "recipe", "collection", "fingerprint"]
       : ["character", "campaign", "perspective"];
   if ([...parameters.keys()].some((key) => !allowed.includes(key) || parameters.getAll(key).length !== 1)) return { kind: "invalid" };
   const campaignId = parameters.get("campaign"), perspective = parameters.get("perspective");
   if (!validId(campaignId) || (perspective !== "player" && perspective !== "dm")) return { kind: "invalid" };
   if (kind === "registry-item") {
     const itemId = parameters.get("item"), collection = parameters.get("collection"), contentFingerprint = parameters.get("fingerprint");
+    const tab = parameters.get("tab");
     return validId(itemId) && validId(collection) && typeof contentFingerprint === "string" && /^[A-F0-9]{64}$/iu.test(contentFingerprint)
-      ? { kind, campaignId, perspective, itemId, collection, contentFingerprint: contentFingerprint.toUpperCase() }
+      ? { kind, campaignId, perspective, itemId, collection, contentFingerprint: contentFingerprint.toUpperCase(),
+        tab: tab === "recipes" ? "recipes" : "details" }
+      : { kind: "invalid" };
+  }
+  if (kind === "registry-recipe") {
+    const recipeId = parameters.get("recipe"), collection = parameters.get("collection"), contentFingerprint = parameters.get("fingerprint");
+    return validId(recipeId) && validId(collection) && typeof contentFingerprint === "string" && /^[A-F0-9]{64}$/iu.test(contentFingerprint)
+      ? { kind, campaignId, perspective, recipeId, collection, contentFingerprint: contentFingerprint.toUpperCase() }
       : { kind: "invalid" };
   }
   const characterId = parameters.get("character");
@@ -47,10 +60,16 @@ export function parseItemRoute(hash: string): ItemNavigationRoute {
   return { kind: "item", characterId, campaignId, perspective, itemId, tab: tab === "recipes" || tab === "uses" ? tab : "details" };
 }
 
-export function itemRouteHash(route: ItemRoute | InventoryRoute | RegistryItemRoute): string {
+export function itemRouteHash(route: ItemRoute | InventoryRoute | RegistryItemRoute | RegistryRecipeRoute): string {
   const parameters = new URLSearchParams({ campaign: route.campaignId, perspective: route.perspective });
   if (route.kind === "registry-item") {
     parameters.set("item", route.itemId); parameters.set("collection", route.collection);
+    parameters.set("fingerprint", route.contentFingerprint);
+    parameters.set("tab", route.tab);
+    return `#${route.kind}?${parameters}`;
+  }
+  if (route.kind === "registry-recipe") {
+    parameters.set("recipe", route.recipeId); parameters.set("collection", route.collection);
     parameters.set("fingerprint", route.contentFingerprint);
     return `#${route.kind}?${parameters}`;
   }
@@ -84,7 +103,8 @@ export function readItemReturn(value: unknown): ItemReturnContext | null {
   return context;
 }
 
-export function navigateItemRoute(route: ItemRoute | InventoryRoute | RegistryItemRoute | null, replace = false, returnContext?: ItemReturnContext | null, mainTab: MainTabId = "party") {
+export function navigateItemRoute(route: ItemRoute | InventoryRoute | RegistryItemRoute | RegistryRecipeRoute | null,
+  replace = false, returnContext?: ItemReturnContext | null, mainTab: MainTabId = "party") {
   const url = `${window.location.pathname}${window.location.search}${route ? itemRouteHash(route) : ""}`;
   const origin = route?.kind === "item" ? replace ? window.history.state?.itemInventoryOrigin
     : window.location.hash === itemRouteHash({ ...route, kind: "inventory" }) ? window.location.hash : null : null;

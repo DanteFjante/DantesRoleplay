@@ -35,7 +35,8 @@ public sealed record CatalogRecordDefinition(
     string SourceId,
     string SourceLogicalPath,
     IReadOnlyList<string>? ComponentIds = null,
-    string? ArchetypeId = null);
+    string? ArchetypeId = null,
+    IReadOnlyList<string>? ReferencedEntityIds = null);
 
 public sealed record CatalogCollectionSummary(string Id, string Title, string Description, int RecordCount);
 
@@ -96,7 +97,9 @@ public sealed record EffectiveApplicationContentRequest(
     bool ExtensionsOnly = false,
     IReadOnlyList<string>? ComponentIds = null,
     IReadOnlyList<string>? AnyComponentIds = null,
-    IReadOnlyList<string>? ArchetypeIds = null);
+    IReadOnlyList<string>? ArchetypeIds = null,
+    IReadOnlyList<string>? QualifiedIds = null,
+    IReadOnlyList<string>? AnyReferencedEntityIds = null);
 
 public sealed record EffectiveApplicationExtensionView(
     string ExtensionId,
@@ -165,6 +168,8 @@ public static class CatalogNavigationLimits
     public const int MaximumQueryLength = 256;
     public const int MaximumAliasesPerRecord = 32;
     public const int MaximumComponentsPerEntity = 256;
+    public const int MaximumReferencesPerEntity = 512;
+    public const int MaximumIdentityFilters = 64;
     public const int MaximumTextLength = 5_000;
     public const int MaximumContentLength = 1_000_000;
 }
@@ -266,7 +271,9 @@ public sealed class CatalogNavigationManifest
             || !MatchesFingerprint(value.ContentJson, value.ContentFingerprint)
             || !ValidTerms(value.Aliases) || !ValidTerms(value.MatchPhrases)
             || !ValidComponentIds(value.ComponentIds)
-            || value.Kind != "entity" && (value.ComponentIds is { Count: > 0 } || value.ArchetypeId is not null)
+            || !ValidEntityReferenceIds(value.ReferencedEntityIds)
+            || value.Kind != "entity" && (value.ComponentIds is { Count: > 0 } || value.ArchetypeId is not null
+                || value.ReferencedEntityIds is { Count: > 0 })
             || value.ArchetypeId is not null && !IsQualifiedComponentId(value.ArchetypeId))
             throw new ArgumentException("An effective catalog record has invalid identity, content, or redacted provenance.");
         try { JsonDocument.Parse(value.ContentJson).Dispose(); }
@@ -277,6 +284,7 @@ public sealed class CatalogNavigationManifest
             Aliases = ReadOnly(value.Aliases.Select(x => x.Trim())),
             MatchPhrases = ReadOnly(value.MatchPhrases.Select(x => x.Trim())),
             ComponentIds = ReadOnly((value.ComponentIds ?? []).Order(StringComparer.Ordinal)),
+            ReferencedEntityIds = ReadOnly((value.ReferencedEntityIds ?? []).Order(StringComparer.Ordinal)),
             ContentFingerprint = value.ContentFingerprint.ToUpperInvariant()
         };
     }
@@ -307,8 +315,14 @@ public sealed class CatalogNavigationManifest
         values.Count <= CatalogNavigationLimits.MaximumComponentsPerEntity &&
         values.Distinct(StringComparer.Ordinal).Count() == values.Count &&
         values.All(IsQualifiedComponentId);
+    private static bool ValidEntityReferenceIds(IReadOnlyList<string>? values) => values is null ||
+        values.Count <= CatalogNavigationLimits.MaximumReferencesPerEntity &&
+        values.Distinct(StringComparer.Ordinal).Count() == values.Count &&
+        values.All(IsEntityReferenceId);
     internal static bool IsQualifiedComponentId(string? value) => value is { Length: > 2 and <= 200 }
         && value.Split('.').All(IsIdentifier);
+    internal static bool IsEntityReferenceId(string? value) => value is { Length: >= 1 and <= 200 }
+        && value == value.Trim() && !value.Any(char.IsControl);
     private static bool MatchesFingerprint(string content, string fingerprint) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(content))) == fingerprint.ToUpperInvariant();
     private static IEnumerable<string> Ancestors(string path)
     {
@@ -414,6 +428,8 @@ public sealed class InMemoryCatalogNavigator(
         var componentIds = ComponentSet(request.ComponentIds);
         var anyComponentIds = ComponentSet(request.AnyComponentIds);
         var archetypeIds = QualifiedSet(request.ArchetypeIds, "archetype");
+        var qualifiedIds = QualifiedRecordSet(request.QualifiedIds);
+        var referencedEntityIds = EntityReferenceSet(request.AnyReferencedEntityIds);
         if (request.Query is null || request.Query.Length > CatalogNavigationLimits.MaximumQueryLength
             || request.Query.Any(char.IsControl))
             throw new ArgumentException("The installed-content search query is invalid.", nameof(request));
@@ -448,10 +464,13 @@ public sealed class InMemoryCatalogNavigator(
             .Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray();
         var filtered = candidates
             .Where(value => kinds.Count == 0 || kinds.Contains(value.Record.Kind))
+            .Where(value => qualifiedIds.Count == 0 || qualifiedIds.Contains(value.Record.QualifiedId))
             .Where(value => componentIds.Count == 0 || componentIds.All(value.Record.ComponentIds!.Contains))
             .Where(value => anyComponentIds.Count == 0 && archetypeIds.Count == 0 ||
                 anyComponentIds.Any(value.Record.ComponentIds!.Contains) ||
                 value.Record.ArchetypeId is not null && archetypeIds.Contains(value.Record.ArchetypeId))
+            .Where(value => referencedEntityIds.Count == 0 ||
+                referencedEntityIds.Any(value.Record.ReferencedEntityIds!.Contains))
             .Where(value => normalizedQuery.Length == 0 || MatchesEffectiveContentQuery(value, normalizedQuery))
             .OrderBy(value => value.Record.Kind, StringComparer.Ordinal)
             .ThenBy(value => value.Record.Name, StringComparer.Ordinal)
@@ -459,8 +478,9 @@ public sealed class InMemoryCatalogNavigator(
         var fingerprint = resolution?.Fingerprint ?? "none";
         var scope = Scope("*", "", Fingerprint("effective-content", fingerprint,
                 request.ExtensionsOnly.ToString(), ownerId ?? "*", Join(kinds), Join(componentIds),
-                Join(anyComponentIds), Join(archetypeIds), normalizedQuery),
-            "effective-content-v3", request.PageSize);
+                Join(anyComponentIds), Join(archetypeIds), Join(qualifiedIds), Join(referencedEntityIds),
+                normalizedQuery),
+            "effective-content-v4", request.PageSize);
         var lastKey = DecodeLastKey(request.Cursor, scope);
         var page = Page(filtered, lastKey, request.PageSize, scope,
             value => $"{value.Record.Kind}/{value.Record.Name}/{value.Record.QualifiedId}");
@@ -566,6 +586,22 @@ public sealed class InMemoryCatalogNavigator(
             throw new ArgumentException($"Catalog {label} filters must contain bounded qualified IDs.");
         return values.ToHashSet(StringComparer.Ordinal);
     }
+    private HashSet<string> QualifiedRecordSet(IReadOnlyList<string>? values)
+    {
+        if (values is null) return new(StringComparer.Ordinal);
+        if (values.Count > CatalogNavigationLimits.MaximumIdentityFilters ||
+            values.Any(value => !IsQualifiedRequestId(value)))
+            throw new ArgumentException("Catalog record filters must contain bounded qualified IDs.");
+        return values.ToHashSet(StringComparer.Ordinal);
+    }
+    private static HashSet<string> EntityReferenceSet(IReadOnlyList<string>? values)
+    {
+        if (values is null) return new(StringComparer.Ordinal);
+        if (values.Count > CatalogNavigationLimits.MaximumIdentityFilters ||
+            values.Any(value => !CatalogNavigationManifest.IsEntityReferenceId(value)))
+            throw new ArgumentException("Catalog reference filters must contain bounded entity IDs.");
+        return values.ToHashSet(StringComparer.Ordinal);
+    }
     private static string Join(IEnumerable<string> values) => string.Join(',', values.Order(StringComparer.Ordinal));
     private static string Fingerprint(params string[] values) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(values))));
     private static string Normalize(string value) => value.Normalize(NormalizationForm.FormKC).ToUpperInvariant();
@@ -577,6 +613,7 @@ public sealed class InMemoryCatalogNavigator(
         || Normalize(value.Record.Kind).Contains(query, StringComparison.Ordinal)
         || value.Record.ComponentIds!.Any(component => Normalize(component).Contains(query, StringComparison.Ordinal))
         || value.Record.ArchetypeId is not null && Normalize(value.Record.ArchetypeId).Contains(query, StringComparison.Ordinal)
+        || value.Record.ReferencedEntityIds!.Any(reference => Normalize(reference).Contains(query, StringComparison.Ordinal))
         || Normalize(value.SourceLabel).Contains(query, StringComparison.Ordinal);
     private static IEnumerable<string> Tokens(string value) => new string(Normalize(value).Select(character => char.IsLetterOrDigit(character) ? character : ' ').ToArray())
         .Split(' ', StringSplitOptions.RemoveEmptyEntries);

@@ -10,6 +10,8 @@ import type { ItemDefinition, ItemDefinitionRequest, ItemRegistryPage,
 import { Icon } from "../Icon";
 import { ItemDetails } from "../items/ItemDetails";
 import { ItemView } from "../items/ItemView";
+import { RecipeRegistryDetails, RecipeRegistryDirectory, type RecipeDefinitionLoader,
+  type RecipeRegistryPageLoader } from "./RecipeRegistryWorkspace";
 
 export type ItemRegistryPageLoader = (request: ItemRegistryRequest, signal: AbortSignal,
   preferCached?: boolean) => Promise<ItemRegistryPage>;
@@ -28,8 +30,9 @@ function listError(error: unknown) {
   return "The item registry could not be loaded. Check the connection and try again.";
 }
 
-function ItemRegistryList({ campaignId, perspective, loadPage }: {
+function ItemRegistryList({ campaignId, perspective, loadPage, loadRecipePage }: {
   campaignId: string; perspective: Perspective; loadPage: ItemRegistryPageLoader;
+  loadRecipePage?: RecipeRegistryPageLoader;
 }) {
   const restored = readItemReturn(window.history.state);
   const returnContext = restored?.kind === "registry" && restored.campaignId === campaignId
@@ -113,7 +116,7 @@ function ItemRegistryList({ campaignId, perspective, loadPage }: {
       pageCount: Math.max(1, pages.length), focusEntryId: record.id, scrollY: window.scrollY };
     window.history.replaceState({ ...window.history.state, itemReturnContext: context }, "", window.location.href);
     navigateItemRoute({ kind: "registry-item", campaignId, perspective, itemId: record.id,
-      collection: record.collection, contentFingerprint: record.contentFingerprint }, false, context);
+      collection: record.collection, contentFingerprint: record.contentFingerprint, tab: "details" }, false, context);
   };
 
   return <section className="party-registry" aria-labelledby="main-view-heading">
@@ -135,10 +138,10 @@ function ItemRegistryList({ campaignId, perspective, loadPage }: {
         <Icon name="CookingPot" size={18} /> Recipes
       </button>
     </nav>
-    {section === "recipes" ? <section className="party-registry__empty">
-      <Icon name="CookingPot" size={28} /><div><h2>Recipe registry unavailable</h2>
-        <p>No bounded recipe directory is connected to this view. Item definitions remain available under Items.</p></div>
-    </section> : <>
+    {section === "recipes" ? loadRecipePage
+      ? <RecipeRegistryDirectory campaignId={campaignId} perspective={perspective} loadPage={loadRecipePage} />
+      : <section className="party-registry__empty"><Icon name="CookingPot" size={28} />
+        <div><h2>Recipe registry unavailable</h2><p>No bounded recipe directory is connected to this view.</p></div></section> : <>
       <div className="party-registry__filter-status" role="status">
         <span>Active view</span><strong>All recorded item definitions</strong>
         <small>Possession does not imply discovery or knowledge.</small>
@@ -181,8 +184,8 @@ function ItemRegistryList({ campaignId, perspective, loadPage }: {
   </section>;
 }
 
-function RegistryItemDetails({ route, loadDefinition }: {
-  route: RegistryItemRoute; loadDefinition: ItemDefinitionLoader;
+function RegistryItemDetails({ route, loadDefinition, loadRecipePage }: {
+  route: RegistryItemRoute; loadDefinition: ItemDefinitionLoader; loadRecipePage?: RecipeRegistryPageLoader;
 }) {
   const [state, setState] = useState<"loading" | "ready" | "error" | "stale">("loading");
   const [definition, setDefinition] = useState<ItemDefinition | null>(null);
@@ -207,8 +210,10 @@ function RegistryItemDetails({ route, loadDefinition }: {
     else navigateHubRoute("party", "overview", true, { partySection: "registry" });
   };
   const retryRead = () => { preferCached.current = false; setDefinition(null); setRetry((value) => value + 1); };
-  return <ItemView context="registry" tab="details" onTab={() => {}} onBack={back}
-    onParty={() => navigateHubRoute("party")} onRegistry={back} name={definition ? cleanName(definition.details.name) : undefined}
+  return <ItemView context="registry" tab={route.tab} onTab={(tab) => navigateItemRoute({ ...route,
+    tab: tab === "recipes" ? "recipes" : "details" }, true, readItemReturn(window.history.state))} onBack={back}
+    onParty={() => navigateHubRoute("party")} onRegistry={() => navigateHubRoute("party", "overview", false,
+      { partySection: "registry" })} name={definition ? cleanName(definition.details.name) : undefined}
     details={definition ? <ItemDetails data={definition.details} scopeKey={`registry:${definition.record.contentFingerprint}`} />
       : <div className="party-registry__notice" role={state === "loading" ? "status" : "alert"} aria-busy={state === "loading"}>
         <h2>{state === "loading" ? "Loading item definition" : state === "stale" ? "Item definition changed" : "Item definition unavailable"}</h2>
@@ -217,14 +222,25 @@ function RegistryItemDetails({ route, loadDefinition }: {
             : "This registry record could not be read."}</p>
         {state !== "loading" ? <button type="button" onClick={state === "stale" ? back : retryRead}>
           {state === "stale" ? "Back to current registry" : "Try again"}</button> : null}
-      </div>} />;
+      </div>}
+    recipes={loadRecipePage ? <RecipeRegistryDirectory embedded campaignId={route.campaignId}
+      perspective={route.perspective} relatedItemId={route.itemId} loadPage={loadRecipePage} />
+      : <div className="party-registry__notice" role="status"><h2>Linked recipes unavailable</h2>
+        <p>No bounded recipe directory is connected to this build.</p></div>} />;
 }
 
-export function ItemRegistryWorkspace({ route, campaignId, perspective, loadPage, loadDefinition }: {
+export function ItemRegistryWorkspace({ route, campaignId, perspective, loadPage, loadDefinition,
+  loadRecipePage, loadRecipeDefinition }: {
   route: ItemNavigationRoute; campaignId: string; perspective: Perspective;
   loadPage: ItemRegistryPageLoader; loadDefinition: ItemDefinitionLoader;
+  loadRecipePage?: RecipeRegistryPageLoader; loadRecipeDefinition?: RecipeDefinitionLoader;
 }) {
+  if (route.kind === "registry-recipe") return loadRecipeDefinition
+    ? <RecipeRegistryDetails route={route} loadDefinition={loadRecipeDefinition} />
+    : <section className="view-unavailable" role="alert"><h1>Recipe unavailable</h1>
+      <p>The recipe registry is not connected to this build.</p></section>;
   return route.kind === "registry-item"
-    ? <RegistryItemDetails route={route} loadDefinition={loadDefinition} />
-    : <ItemRegistryList campaignId={campaignId} perspective={perspective} loadPage={loadPage} />;
+    ? <RegistryItemDetails route={route} loadDefinition={loadDefinition} loadRecipePage={loadRecipePage} />
+    : <ItemRegistryList campaignId={campaignId} perspective={perspective} loadPage={loadPage}
+      loadRecipePage={loadRecipePage} />;
 }

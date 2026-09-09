@@ -31,6 +31,7 @@ import { markBootstrapResponse } from "../observability/performance.js";
 import type { CampaignPremiseWriteRequest, CampaignPremiseWriteResult } from "../server/campaign-premise-write";
 import type { InstalledContentClient, InstalledContentRequest } from "../server/effective-content";
 import type { ItemDefinitionRequest, ItemRegistryClient, ItemRegistryRequest } from "../server/item-registry";
+import type { RecipeDefinitionRequest, RecipeRegistryClient, RecipeRegistryRequest } from "../server/recipe-registry";
 import {
   installDevelopmentRequestLedger,
   recordDevelopmentDiagnostic,
@@ -74,6 +75,7 @@ if (process.env.NODE_ENV !== "production") installDevelopmentRequestLedger();
 
 let installedContentClient: Promise<InstalledContentClient> | null = null;
 let itemRegistryClient: Promise<ItemRegistryClient> | null = null;
+let recipeRegistryClient: Promise<RecipeRegistryClient> | null = null;
 
 function envelopeMessage(envelope: HubEnvelope): string {
   return "message" in envelope
@@ -481,6 +483,28 @@ async function loadItemDefinition(request: ItemDefinitionRequest, signal: AbortS
     client.loadDefinition(request, signal, preferCached));
 }
 
+async function recipesClient() {
+  if (!recipeRegistryClient) {
+    recipeRegistryClient = import("../server/recipe-registry").then(({ RecipeRegistryClient }) =>
+      new RecipeRegistryClient({ serverOrigin: window.location.origin, applicationId: "dnd2024" }));
+  }
+  return recipeRegistryClient;
+}
+
+async function loadRecipeRegistryPage(request: RecipeRegistryRequest, signal: AbortSignal,
+  preferCached = true) {
+  const client = await recipesClient();
+  return withinDevelopmentInteraction("recipe-registry-load", () =>
+    client.loadPage(request, signal, preferCached));
+}
+
+async function loadRecipeDefinition(request: RecipeDefinitionRequest, signal: AbortSignal,
+  preferCached = true) {
+  const client = await recipesClient();
+  return withinDevelopmentInteraction("recipe-definition-load", () =>
+    client.loadDefinition(request, signal, preferCached));
+}
+
 async function loadReadyEnvelope(
   perspective: Perspective,
   campaignId: string,
@@ -560,6 +584,8 @@ try {
             loadInventoryContainer={loadInventoryContainer}
             loadItemRegistryPage={loadItemRegistryPage}
             loadItemDefinition={loadItemDefinition}
+            loadRecipeRegistryPage={loadRecipeRegistryPage}
+            loadRecipeDefinition={loadRecipeDefinition}
             loadFactionPage={loadFactionPage}
             loadCampaignDetails={loadCampaignDetails}
             loadDeferredSection={loadDeferredSection}

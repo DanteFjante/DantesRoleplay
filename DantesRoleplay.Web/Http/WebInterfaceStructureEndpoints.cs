@@ -327,7 +327,9 @@ public static partial class WebInterfaceEndpoints
                 extensionsOnly,
                 QueryValues(context, "component"),
                 QueryValues(context, "componentAny"),
-                QueryValues(context, "archetype"));
+                QueryValues(context, "archetype"),
+                QueryValues(context, "id"),
+                QueryValues(context, "referenceAny"));
         });
 
     private static IResult GetReadableRules(

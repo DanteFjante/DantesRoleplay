@@ -85,8 +85,12 @@ test("item fragment bounds, tab fallback and return context never accept binding
   assert.deepEqual(readItemReturn({ itemReturnContext: registryReturn }), registryReturn);
   assert.equal(readItemReturn({ itemReturnContext: { ...registryReturn, perspective: "observer" } }), null);
   const registryItem = { kind: "registry-item" as const, campaignId: "campaign.test", perspective: "dm" as const,
-    itemId: "dnd2024.item.knife", collection: "dnd2024", contentFingerprint: "A".repeat(64) };
+    itemId: "dnd2024.item.knife", collection: "dnd2024", contentFingerprint: "A".repeat(64),
+    tab: "recipes" as const };
   assert.deepEqual(parseItemRoute(itemRouteHash(registryItem)), registryItem);
+  const registryRecipe = { kind: "registry-recipe" as const, campaignId: "campaign.test", perspective: "dm" as const,
+    recipeId: "dnd2024.recipe.knife", collection: "dnd2024", contentFingerprint: "B".repeat(64) };
+  assert.deepEqual(parseItemRoute(itemRouteHash(registryRecipe)), registryRecipe);
 });
 
 test("scoped inventory pages reach exactly 512 items and reject repeats or cycles", () => {

@@ -281,24 +281,56 @@ public sealed class ActivatedApplicationCatalogMaterializer(
             throw Failure("CATALOG_ENTITY_PATH_INVALID", "An active entity is outside the authored content/entities boundary.");
         var pathSegments = new[] { "entities" }
             .Concat(segments.Skip(entityIndex + 2).Take(Math.Max(0, segments.Length - entityIndex - 3)));
+        var index = EntityIndex(content);
         return new(collection, "entity", qualifiedId, file.Name, file.Name, [file.Id], [],
             string.Join('/', pathSegments), "active", 1, content,
             Hash(Encoding.UTF8.GetBytes(content)), winner.SourceId, winner.RelativePath,
             file.Components.Select(value => value.DefinitionId).Distinct(StringComparer.Ordinal).ToArray(),
-            EntityArchetype(content));
+            index.ArchetypeId, index.ReferencedEntityIds);
     }
 
-    private static string? EntityArchetype(string content)
+    private sealed record EntityCatalogIndex(string? ArchetypeId, IReadOnlyList<string> ReferencedEntityIds);
+
+    private static EntityCatalogIndex EntityIndex(string content)
     {
         using var document = JsonDocument.Parse(content);
-        if (!document.RootElement.TryGetProperty("archetype", out var value)) return null;
-        var archetype = value.ValueKind == JsonValueKind.String ? value.GetString() : null;
-        if (archetype is not { Length: > 2 and <= 200 } || archetype.Split('.').Any(segment =>
-                segment.Length is < 1 or > 63 || !char.IsAsciiLetterLower(segment[0]) ||
-                segment.Any(character => !char.IsAsciiLetterLower(character) && !char.IsAsciiDigit(character) && character != '-')))
-            throw Failure("CATALOG_ENTITY_ARCHETYPE_INVALID", "An active entity has an invalid archetype ID.");
-        return archetype;
+        string? archetype = null;
+        if (document.RootElement.TryGetProperty("archetype", out var value))
+        {
+            archetype = value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+            if (archetype is not { Length: > 2 and <= 200 } || archetype.Split('.').Any(segment =>
+                    segment.Length is < 1 or > 63 || !char.IsAsciiLetterLower(segment[0]) ||
+                    segment.Any(character => !char.IsAsciiLetterLower(character) && !char.IsAsciiDigit(character) && character != '-')))
+                throw Failure("CATALOG_ENTITY_ARCHETYPE_INVALID", "An active entity has an invalid archetype ID.");
+        }
+        var references = new HashSet<string>(StringComparer.Ordinal);
+        IndexEntityReferences(document.RootElement, references);
+        if (references.Count > CatalogNavigationLimits.MaximumReferencesPerEntity)
+            throw Failure("CATALOG_ENTITY_REFERENCES_INVALID", "An active entity contains too many indexed entity references.");
+        return new(archetype, references.Order(StringComparer.Ordinal).ToArray());
     }
+
+    private static void IndexEntityReferences(JsonElement value, HashSet<string> references)
+    {
+        if (value.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var element in value.EnumerateArray()) IndexEntityReferences(element, references);
+            return;
+        }
+        if (value.ValueKind != JsonValueKind.Object) return;
+        foreach (var property in value.EnumerateObject())
+        {
+            if (property.NameEquals("entityId") && property.Value.ValueKind == JsonValueKind.String)
+            {
+                var reference = property.Value.GetString();
+                if (IsEntityReferenceId(reference)) references.Add(reference!);
+            }
+            IndexEntityReferences(property.Value, references);
+        }
+    }
+
+    private static bool IsEntityReferenceId(string? value) => value is { Length: >= 1 and <= 200 }
+        && value == value.Trim() && !value.Any(char.IsControl);
 
     private static CatalogRecordDefinition Record(
         ApplicationIdentifier applicationId,

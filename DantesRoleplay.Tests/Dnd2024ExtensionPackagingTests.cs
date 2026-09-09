@@ -168,6 +168,14 @@ public sealed class Dnd2024ExtensionPackagingTests : IDisposable
         Assert.Equal(40, itemRegistry.ResolvedWinners.Count);
         Assert.NotNull(itemRegistry.NextCursor);
 
+        var recipeRegistry = navigator.EffectiveContent(new(application, 12,
+            Kinds: ["entity"],
+            AnyComponentIds: ["dnd2024.crafting.recipe"],
+            ArchetypeIds: ["dnd2024.archetype.crafting-recipe"]));
+        Assert.Equal(18, recipeRegistry.TotalCount);
+        Assert.Equal(12, recipeRegistry.ResolvedWinners.Count);
+        Assert.NotNull(recipeRegistry.NextCursor);
+
         var extensionAsBase = await Assert.ThrowsAsync<ApplicationPreviewException>(() =>
             previews.PreviewAsync(application, [CoreSourceId, ExtensionSourceId], ["legacy-equipment"]));
         Assert.Equal("BASE_SOURCE_SELECTION_INCLUDES_EXTENSION", extensionAsBase.Code);

@@ -200,7 +200,8 @@ public sealed class CatalogNavigationTests
             Record("entity", "fixture.item.lantern", "Lantern", "An item.", "tools", "active", [], [])
                 with { ComponentIds = ["fixture.item-definition", "fixture.physical"] },
             Record("entity", "fixture.item.rope", "Rope", "Another item.", "tools", "active", [], [])
-                with { ComponentIds = ["fixture.physical"], ArchetypeId = "fixture.archetype.item" },
+                with { ComponentIds = ["fixture.physical"], ArchetypeId = "fixture.archetype.item",
+                    ReferencedEntityIds = ["fixture.item.hemp"] },
             Record("entity", "fixture.actor.guide", "Guide", "A character.", "tools", "active", [], [])
                 with { ComponentIds = ["fixture.actor"] },
         };
@@ -232,6 +233,21 @@ public sealed class CatalogNavigationTests
             AnyComponentIds = ["fixture.actor"],
             ArchetypeIds = []
         }));
+
+        var referenced = navigator.EffectiveContent(request with
+        {
+            Cursor = null,
+            PageSize = 10,
+            QualifiedIds = ["fixture.item.rope"],
+            AnyReferencedEntityIds = ["fixture.item.hemp"]
+        });
+        Assert.Equal("fixture.item.rope", Assert.Single(referenced.ResolvedWinners).Record.QualifiedId);
+        Assert.Empty(navigator.EffectiveContent(request with
+        {
+            Cursor = null,
+            PageSize = 10,
+            AnyReferencedEntityIds = ["fixture.item.missing"]
+        }).ResolvedWinners);
     }
 
     [Fact]

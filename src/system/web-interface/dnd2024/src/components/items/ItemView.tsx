@@ -16,7 +16,7 @@ export function ItemView({ tab, onTab, onBack, onParty, onRegistry, context = "i
   onRegistry?: () => void; context?: "inventory" | "registry";
   characterName?: string; name?: string; details?: ReactNode; recipes?: ReactNode; uses?: ReactNode;
 }) {
-  const visibleTabs = context === "registry" ? tabs.slice(0, 1) : tabs;
+  const visibleTabs = context === "registry" ? [tabs[0], { ...tabs[1], label: "Recipes" }] : tabs;
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => { heading.current?.focus(); }, []);
   return <section className="item-page" onKeyDown={(event) => {

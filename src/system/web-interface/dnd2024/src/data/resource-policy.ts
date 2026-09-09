@@ -28,6 +28,8 @@ export const RESOURCE_FRESHNESS_MS = Object.freeze({
   installedContent: 60_000,
   itemRegistry: 60_000,
   itemDefinition: 60_000,
+  recipeRegistry: 60_000,
+  recipeDefinition: 60_000,
   itemDetails: 30_000,
   itemRecipes: 30_000,
   itemUses: 30_000,

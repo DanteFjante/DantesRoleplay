@@ -49,6 +49,7 @@ import { MainNavigation } from "./MainNavigation";
 import type { InstalledContentLoader } from "./InstalledContentView";
 import type { ItemViewClient } from "../server/item-view-client";
 import type { ItemDefinitionLoader, ItemRegistryPageLoader } from "./registry/ItemRegistryWorkspace";
+import type { RecipeDefinitionLoader, RecipeRegistryPageLoader } from "./registry/RecipeRegistryWorkspace";
 import type { CampaignPremiseWriter } from "../server/campaign-premise-write";
 import { TopBar } from "./TopBar";
 import { WorldView } from "./WorldView";
@@ -158,6 +159,8 @@ export function DndInformationHub({
   loadInventoryContainer,
   loadItemRegistryPage,
   loadItemDefinition,
+  loadRecipeRegistryPage,
+  loadRecipeDefinition,
   loadFactionPage,
   loadCampaignDetails,
   loadDeferredSection,
@@ -175,6 +178,8 @@ export function DndInformationHub({
   loadInventoryContainer?: (envelope: ReadyHubEnvelope, actorId: string, containerId: string, signal: AbortSignal) => Promise<import("../data/hub-types").InventoryContainerPageResult>;
   loadItemRegistryPage?: ItemRegistryPageLoader;
   loadItemDefinition?: ItemDefinitionLoader;
+  loadRecipeRegistryPage?: RecipeRegistryPageLoader;
+  loadRecipeDefinition?: RecipeDefinitionLoader;
   loadFactionPage?: FactionPageLoader;
   loadCampaignDetails?: CampaignDetailsLoader;
   loadDeferredSection?: (envelope: ReadyHubEnvelope, section: DeferredHubSection, signal: AbortSignal) => Promise<DeferredHubUpdate>;
@@ -520,7 +525,8 @@ export function DndInformationHub({
   }
 
   async function requestPerspective(nextPerspective: Perspective, announce = true) {
-    if ((itemRoute.kind === "item" || itemRoute.kind === "inventory" || itemRoute.kind === "registry-item")
+    if ((itemRoute.kind === "item" || itemRoute.kind === "inventory" || itemRoute.kind === "registry-item"
+        || itemRoute.kind === "registry-recipe")
         && envelope.audience.allowedPerspectives.includes(nextPerspective)) {
       navigateItemRoute({ ...itemRoute, perspective: nextPerspective }, false, null);
       return;
@@ -556,18 +562,21 @@ export function DndInformationHub({
   }, []);
 
   const requestedItemScope = itemRoute.kind === "item" || itemRoute.kind === "inventory" || itemRoute.kind === "registry-item"
+    || itemRoute.kind === "registry-recipe"
     ? `${itemRoute.campaignId}:${itemRoute.perspective}` : itemRoute.kind;
   useEffect(() => {
     if (itemRoute.kind === "none") return;
     ++hubRequestSequence.current;
     setHubBusy(false);
-    if ((itemRoute.kind === "item" || itemRoute.kind === "inventory" || itemRoute.kind === "registry-item") &&
+    if ((itemRoute.kind === "item" || itemRoute.kind === "inventory" || itemRoute.kind === "registry-item"
+        || itemRoute.kind === "registry-recipe") &&
         envelope.audience.seat === "dm" && envelope.audience.allowedPerspectives.length === 1 &&
         perspective === "dm" && itemRoute.perspective === "player") {
       navigateItemRoute({ ...itemRoute, perspective: "dm" }, true);
       return;
     }
-    if ((itemRoute.kind !== "item" && itemRoute.kind !== "inventory" && itemRoute.kind !== "registry-item") ||
+    if ((itemRoute.kind !== "item" && itemRoute.kind !== "inventory" && itemRoute.kind !== "registry-item"
+        && itemRoute.kind !== "registry-recipe") ||
         !envelope.audience.allowedPerspectives.includes(itemRoute.perspective) ||
         !contextSelection.worlds.some((world) => world.campaigns.some((campaign) => campaign.id === itemRoute.campaignId))) return;
     void requestHub(itemRoute.perspective, itemRoute.campaignId, false);
@@ -1003,8 +1012,9 @@ export function DndInformationHub({
           />
         );
       case "party":
-        if (itemRoute.kind === "registry-item" || itemRoute.kind === "none" && partySection === "registry") {
-          const compatibleRegistryRoute = itemRoute.kind !== "registry-item" ||
+        if (itemRoute.kind === "registry-item" || itemRoute.kind === "registry-recipe"
+            || itemRoute.kind === "none" && partySection === "registry") {
+          const compatibleRegistryRoute = itemRoute.kind !== "registry-item" && itemRoute.kind !== "registry-recipe" ||
             itemRoute.campaignId === contextSelection.selectedCampaignId && itemRoute.perspective === perspective;
           return compatibleRegistryRoute && loadItemRegistryPage && loadItemDefinition ? <ItemRegistryWorkspace
             key={`${envelope.applicationId}:${contextSelection.selectedCampaignId}:${perspective}:registry`}
@@ -1013,6 +1023,8 @@ export function DndInformationHub({
             perspective={perspective}
             loadPage={loadItemRegistryPage}
             loadDefinition={loadItemDefinition}
+            loadRecipePage={loadRecipeRegistryPage}
+            loadRecipeDefinition={loadRecipeDefinition}
           /> : <section className="view-unavailable" role="alert"><h1 id="main-view-heading">Registry unavailable</h1>
             <p>{!compatibleRegistryRoute ? "This link belongs to a different campaign or perspective."
               : "The item registry is not connected to this build."}</p></section>;
