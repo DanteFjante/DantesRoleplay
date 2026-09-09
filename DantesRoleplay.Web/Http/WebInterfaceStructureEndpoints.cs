@@ -311,10 +311,21 @@ public static partial class WebInterfaceEndpoints
 
     private static IResult GetEffectiveApplicationContent(
         string applicationId, HttpContext context, ControlStructureExplorer explorer) =>
-        Structure(context, () => explorer.GetEffectiveApplicationContent(
-            applicationId,
-            context.Request.Query["cursor"].FirstOrDefault(),
-            context.Request.Query["limit"].FirstOrDefault()));
+        Structure(context, () =>
+        {
+            var extensionsOnly = false;
+            var extensionsOnlyValue = context.Request.Query["extensionsOnly"].FirstOrDefault();
+            if (extensionsOnlyValue is not null && !bool.TryParse(extensionsOnlyValue, out extensionsOnly))
+                throw new ArgumentException("extensionsOnly must be true or false.");
+            return explorer.GetEffectiveApplicationContent(
+                applicationId,
+                context.Request.Query["cursor"].FirstOrDefault(),
+                context.Request.Query["limit"].FirstOrDefault(),
+                context.Request.Query["owner"].FirstOrDefault(),
+                QueryValues(context, "kind"),
+                context.Request.Query["query"].FirstOrDefault(),
+                extensionsOnly);
+        });
 
     private static IResult GetReadableRules(
         string applicationId,

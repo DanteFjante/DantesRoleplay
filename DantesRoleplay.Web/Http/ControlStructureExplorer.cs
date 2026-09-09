@@ -356,10 +356,23 @@ public sealed class ControlStructureExplorer(
     }
 
     public EffectiveApplicationContentResult GetEffectiveApplicationContent(
-        string applicationId, string? cursor, string? pageSize)
+        string applicationId,
+        string? cursor,
+        string? pageSize,
+        string? ownerId = null,
+        IReadOnlyList<string>? kinds = null,
+        string? query = null,
+        bool extensionsOnly = false)
     {
         var id = Application(applicationId);
-        return Catalog(id).EffectiveContent(new(id, CatalogPageSize(pageSize), CatalogCursor(cursor)));
+        return Catalog(id).EffectiveContent(new(
+            id,
+            CatalogPageSize(pageSize),
+            CatalogCursor(cursor),
+            ownerId,
+            kinds,
+            query ?? string.Empty,
+            extensionsOnly));
     }
 
     public ReadableRulesResult GetReadableRules(

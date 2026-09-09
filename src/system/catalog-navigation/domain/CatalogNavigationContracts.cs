@@ -87,7 +87,11 @@ public sealed record CatalogRecordRequest(ApplicationIdentifier ApplicationId, s
 public sealed record EffectiveApplicationContentRequest(
     ApplicationIdentifier ApplicationId,
     int PageSize = CatalogNavigationLimits.DefaultPageSize,
-    string? Cursor = null);
+    string? Cursor = null,
+    string? OwnerId = null,
+    IReadOnlyList<string>? Kinds = null,
+    string Query = "",
+    bool ExtensionsOnly = false);
 
 public sealed record EffectiveApplicationExtensionView(
     string ExtensionId,
@@ -111,7 +115,9 @@ public sealed record EffectiveApplicationContentResult(
     IReadOnlyList<EffectiveApplicationExtensionView> ActiveExtensions,
     IReadOnlyList<EffectiveApplicationContentRecord> ResolvedWinners,
     IReadOnlyList<EffectiveApplicationContentRecord> AdditiveExtensionContent,
-    string? NextCursor);
+    string? NextCursor,
+    IReadOnlyList<string>? AvailableKinds = null,
+    int TotalCount = 0);
 
 public sealed record CatalogBrowseResult(
     CatalogNodeView Node,
@@ -385,10 +391,20 @@ public sealed class InMemoryCatalogNavigator(
     {
         ArgumentNullException.ThrowIfNull(request); RequireApplication(request.ApplicationId);
         ValidatePageSize(request.PageSize);
+        var ownerId = string.IsNullOrWhiteSpace(request.OwnerId) ? null : request.OwnerId.Trim();
+        if (ownerId is not null && !CatalogNavigationManifest.IsIdentifier(ownerId))
+            throw new ArgumentException("The extension owner filter is invalid.", nameof(request));
+        var kinds = Set(request.Kinds);
+        if (request.Query is null || request.Query.Length > CatalogNavigationLimits.MaximumQueryLength
+            || request.Query.Any(char.IsControl))
+            throw new ArgumentException("The installed-content search query is invalid.", nameof(request));
+        var normalizedQuery = Normalize(request.Query.Trim());
         var resolved = CatalogExtensionSearch.Apply(resolution, manifest.Records,
             record => record.QualifiedId, record => record.Kind);
         var extensionById = (resolution?.Extensions ?? []).ToDictionary(
             value => value.ExtensionId, StringComparer.Ordinal);
+        if (ownerId is not null && !extensionById.ContainsKey(ownerId))
+            throw new ArgumentException("The extension owner filter is unknown.", nameof(request));
         var baseKeys = manifest.Records.Select(record =>
         {
             var identity = resolution is null
@@ -397,31 +413,47 @@ public sealed class InMemoryCatalogNavigator(
             return (record.Kind, identity.Owner, identity.Key);
         }).Where(value => value.Owner == "base")
             .Select(value => (value.Kind, value.Key)).ToHashSet();
-        var projected = resolved.Records.Select(record =>
+        var candidates = resolved.Records.Select(record =>
         {
             var identity = resolution is null
                 ? (Owner: "base", Key: record.QualifiedId)
                 : CatalogExtensionSearch.OwnerAndKey(resolution, record.QualifiedId);
             var extension = identity.Owner == "base" ? null : extensionById[identity.Owner];
-            var roles = new[] { record.Kind }.Concat(record.Path.Split('/', StringSplitOptions.RemoveEmptyEntries))
-                .Distinct(StringComparer.Ordinal).Take(8).ToArray();
-            return new EffectiveApplicationContentRecord(ToSummary(record), identity.Owner,
+            return new EffectiveContentCandidate(record, identity.Owner,
                 extension?.DisplayName ?? "Core", extension?.Classification ?? "core",
-                Array.AsReadOnly(roles), identity.Owner != "base" && !baseKeys.Contains((record.Kind, identity.Key)));
-        }).OrderBy(value => value.Record.Kind, StringComparer.Ordinal)
+                identity.Owner != "base" && !baseKeys.Contains((record.Kind, identity.Key)));
+        }).Where(value => !request.ExtensionsOnly || value.OwnerId != "base")
+            .Where(value => ownerId is null || value.OwnerId == ownerId)
+            .ToArray();
+        var availableKinds = candidates.Select(value => value.Record.Kind)
+            .Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray();
+        var filtered = candidates
+            .Where(value => kinds.Count == 0 || kinds.Contains(value.Record.Kind))
+            .Where(value => normalizedQuery.Length == 0 || MatchesEffectiveContentQuery(value, normalizedQuery))
+            .OrderBy(value => value.Record.Kind, StringComparer.Ordinal)
             .ThenBy(value => value.Record.Name, StringComparer.Ordinal)
             .ThenBy(value => value.Record.QualifiedId, StringComparer.Ordinal).ToArray();
         var fingerprint = resolution?.Fingerprint ?? "none";
-        var scope = Scope("*", "", Fingerprint("effective-content", fingerprint),
-            "effective-content-v1", request.PageSize);
+        var scope = Scope("*", "", Fingerprint("effective-content", fingerprint,
+                request.ExtensionsOnly.ToString(), ownerId ?? "*", Join(kinds), normalizedQuery),
+            "effective-content-v2", request.PageSize);
         var lastKey = DecodeLastKey(request.Cursor, scope);
-        var page = Page(projected, lastKey, request.PageSize, scope,
+        var page = Page(filtered, lastKey, request.PageSize, scope,
             value => $"{value.Record.Kind}/{value.Record.Name}/{value.Record.QualifiedId}");
+        var projected = page.Values.Select(value =>
+        {
+            var roles = new[] { value.Record.Kind }
+                .Concat(value.Record.Path.Split('/', StringSplitOptions.RemoveEmptyEntries))
+                .Distinct(StringComparer.Ordinal).Take(8).ToArray();
+            return new EffectiveApplicationContentRecord(ToSummary(value.Record), value.OwnerId,
+                value.SourceLabel, value.Classification, Array.AsReadOnly(roles), value.IsAdditive);
+        }).ToArray();
         var activeExtensions = (resolution?.Extensions ?? []).Select(value =>
             new EffectiveApplicationExtensionView(value.ExtensionId, value.DisplayName,
                 value.Description, value.Classification, value.SourceIds, value.NamespaceIds)).ToArray();
         return new(manifest.ApplicationId.Value, fingerprint, Array.AsReadOnly(activeExtensions),
-            page.Values, Array.AsReadOnly(page.Values.Where(value => value.IsAdditive).ToArray()), page.NextCursor);
+            Array.AsReadOnly(projected), Array.AsReadOnly(projected.Where(value => value.IsAdditive).ToArray()),
+            page.NextCursor, Array.AsReadOnly(availableKinds), filtered.Length);
     }
 
     public ReadableRulesResult ReadableRules(ReadableRulesRequest request) =>
@@ -497,6 +529,13 @@ public sealed class InMemoryCatalogNavigator(
     private static string Join(IEnumerable<string> values) => string.Join(',', values.Order(StringComparer.Ordinal));
     private static string Fingerprint(params string[] values) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(values))));
     private static string Normalize(string value) => value.Normalize(NormalizationForm.FormKC).ToUpperInvariant();
+    private static bool MatchesEffectiveContentQuery(EffectiveContentCandidate value, string query) =>
+        Normalize(value.Record.Name).Contains(query, StringComparison.Ordinal)
+        || Normalize(value.Record.Description).Contains(query, StringComparison.Ordinal)
+        || Normalize(value.Record.QualifiedId).Contains(query, StringComparison.Ordinal)
+        || Normalize(value.Record.Path).Contains(query, StringComparison.Ordinal)
+        || Normalize(value.Record.Kind).Contains(query, StringComparison.Ordinal)
+        || Normalize(value.SourceLabel).Contains(query, StringComparison.Ordinal);
     private static IEnumerable<string> Tokens(string value) => new string(Normalize(value).Select(character => char.IsLetterOrDigit(character) ? character : ' ').ToArray())
         .Split(' ', StringSplitOptions.RemoveEmptyEntries);
     private static int? Rank(CatalogRecordDefinition record, string query)
@@ -510,4 +549,11 @@ public sealed class InMemoryCatalogNavigator(
         var actual = fields.SelectMany(Tokens).ToHashSet(StringComparer.Ordinal);
         return required.Count > 0 && required.All(actual.Contains) ? 4 : null;
     }
+
+    private sealed record EffectiveContentCandidate(
+        CatalogRecordDefinition Record,
+        string OwnerId,
+        string SourceLabel,
+        string Classification,
+        bool IsAdditive);
 }

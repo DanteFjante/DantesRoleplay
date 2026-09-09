@@ -44,7 +44,7 @@ import {
   resolveSelectedMapFeature,
 } from "../state.js";
 import { MainNavigation } from "./MainNavigation";
-import type { InstalledContentModel } from "../server/effective-content";
+import type { InstalledContentLoader } from "./InstalledContentView";
 import type { ItemViewClient } from "../server/item-view-client";
 import type { CampaignPremiseWriter } from "../server/campaign-premise-write";
 import { TopBar } from "./TopBar";
@@ -130,7 +130,6 @@ type HubEnvelopeLoader = (
 ) => Promise<ReadyHubEnvelope>;
 
 type RulesLoader = () => Promise<RuleReadModel[]>;
-type ContentLoader = () => Promise<InstalledContentModel>;
 type FactionPageLoader = (
   envelope: ReadyHubEnvelope,
   cursor: string | null,
@@ -161,7 +160,7 @@ export function DndInformationHub({
   initialEnvelope: ReadyHubEnvelope;
   loadEnvelope?: HubEnvelopeLoader;
   loadRules?: RulesLoader;
-  loadContent: ContentLoader;
+  loadContent: InstalledContentLoader;
   loadCharacterSheet?: (envelope: ReadyHubEnvelope, actorId: string, signal: AbortSignal) => Promise<import("../data/hub-types").PartyMemberReadModel>;
   loadCharacterDetails?: (envelope: ReadyHubEnvelope, actorId: string, signal: AbortSignal) => Promise<import("../data/hub-types").PartyMemberReadModel>;
   loadCharacterInventory?: (envelope: ReadyHubEnvelope, actorId: string, signal: AbortSignal) => Promise<import("../data/hub-types").InventoryContainerResult>;
@@ -1025,7 +1024,8 @@ export function DndInformationHub({
       case "rules":
         return <RulesView loadRules={loadRules} rules={envelope.rules} />;
       case "content":
-        return <InstalledContentView loadContent={loadContent} />;
+        return <InstalledContentView loadContent={loadContent}
+          resolutionFingerprint={envelope.objectQueries?.campaignSummary?.resolutionFingerprint ?? null} />;
       case "world":
       default:
         return (

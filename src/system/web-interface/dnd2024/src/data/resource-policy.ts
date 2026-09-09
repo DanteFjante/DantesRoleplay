@@ -25,6 +25,7 @@ export const RESOURCE_FRESHNESS_MS = Object.freeze({
   worldLocationScope: 30_000,
   worldInformation: 30_000,
   currentView: 15_000,
+  installedContent: 60_000,
   itemDetails: 30_000,
   itemRecipes: 30_000,
   itemUses: 30_000,

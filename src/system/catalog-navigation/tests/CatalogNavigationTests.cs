@@ -136,9 +136,60 @@ public sealed class CatalogNavigationTests
         Assert.Equal(new string('D', 64), content.ResolutionFingerprint);
         Assert.Equal("Fixture Homebrew", Assert.Single(content.ActiveExtensions).DisplayName);
         Assert.Equal(2, content.ResolvedWinners.Count);
+        Assert.Equal(2, content.TotalCount);
+        Assert.Equal(["entity"], content.AvailableKinds);
         Assert.Equal("fixture.extension.homebrew.rules.spark",
             Assert.Single(content.AdditiveExtensionContent).Record.QualifiedId);
         Assert.False(content.ResolvedWinners.Single(value => !value.IsAdditive).IsAdditive);
+    }
+
+    [Fact]
+    public void Effective_content_filters_before_paging_and_binds_continuations_to_resolution_and_filters()
+    {
+        var records = Enumerable.Range(0, CatalogNavigationLimits.MaximumRecords)
+            .Select(index => Record(
+                index % 2 == 0 ? "entity" : "procedure",
+                $"fixture.extension.homebrew.records.entry-{index:D5}",
+                index is 101 or 103 or 105 or 107 ? $"Needle {index:D5}" : $"Entry {index:D5}",
+                "A bounded contribution.", "tools", "active", [], []))
+            .ToArray();
+        var manifest = CatalogNavigationManifest.Create(Application, new string('C', 64), "catalog-lexical-v1",
+            [new("fixtures", "Fixture catalog", "Large extension fixture.")],
+            [new("fixtures", "", "Fixture catalog", "Large extension fixture.", CatalogDescriptionStatus.Authored),
+             new("fixtures", "tools", "Tools", "Extension records.", CatalogDescriptionStatus.Authored)], records);
+        var resolution = CatalogExtensionResolutionContext.Create(Application, new string('D', 64),
+            [new("homebrew", "Fixture Homebrew", "Reviewed additions.", "homebrew", ["homebrew-source"],
+                ["fixture.extension.homebrew"], [], true)]);
+        var navigator = new InMemoryCatalogNavigator(manifest, new CatalogCursorCodec(CursorKey), resolution);
+        var request = new EffectiveApplicationContentRequest(Application, 2, null, "homebrew",
+            ["procedure"], "needle", ExtensionsOnly: true);
+
+        var first = navigator.EffectiveContent(request);
+        Assert.Equal(CatalogNavigationLimits.MaximumRecords, records.Length);
+        Assert.Equal(4, first.TotalCount);
+        Assert.Equal(2, first.ResolvedWinners.Count);
+        Assert.Equal(["entity", "procedure"], first.AvailableKinds);
+        Assert.NotNull(first.NextCursor);
+        Assert.All(first.ResolvedWinners, value =>
+        {
+            Assert.Equal("homebrew", value.OwnerId);
+            Assert.Equal("procedure", value.Record.Kind);
+            Assert.Contains("Needle", value.Record.Name, StringComparison.Ordinal);
+        });
+
+        var second = navigator.EffectiveContent(request with { Cursor = first.NextCursor });
+        Assert.Equal(2, second.ResolvedWinners.Count);
+        Assert.Null(second.NextCursor);
+        Assert.Empty(first.ResolvedWinners.Select(value => value.Record.QualifiedId)
+            .Intersect(second.ResolvedWinners.Select(value => value.Record.QualifiedId), StringComparer.Ordinal));
+        Assert.Throws<InvalidOperationException>(() => navigator.EffectiveContent(
+            request with { Cursor = first.NextCursor, Query = "entry" }));
+
+        var changedResolution = CatalogExtensionResolutionContext.Create(Application, new string('E', 64),
+            resolution.Extensions);
+        var changedNavigator = new InMemoryCatalogNavigator(manifest, new CatalogCursorCodec(CursorKey), changedResolution);
+        Assert.Throws<InvalidOperationException>(() => changedNavigator.EffectiveContent(
+            request with { Cursor = first.NextCursor }));
     }
 
     [Fact]

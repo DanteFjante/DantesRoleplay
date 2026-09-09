@@ -4378,8 +4378,8 @@ strong {
 
 .installed-extension-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 0.75rem;
 }
 
 .installed-extension-card,
@@ -4391,12 +4391,13 @@ strong {
 }
 
 .installed-extension-card {
-  padding: 1.1rem;
+  padding: 0.9rem 1rem;
 }
 
-.installed-extension-card h2,
+.installed-extension-card h3,
 .installed-content-record h3 {
-  margin: 0.65rem 0 0.35rem;
+  margin: 0.55rem 0 0.25rem;
+  font-family: var(--serif);
 }
 
 .installed-extension-card p,
@@ -4447,6 +4448,24 @@ strong {
   overflow: hidden;
 }
 
+.installed-section-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.installed-section-heading h2 {
+  margin: 0.2rem 0 0;
+}
+
+.installed-section-heading > span,
+.installed-content-list__heading > span {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
 .installed-content-list__heading {
   display: flex;
   align-items: end;
@@ -4460,15 +4479,154 @@ strong {
   margin: 0.2rem 0 0;
 }
 
+.installed-content-filters {
+  display: grid;
+  grid-template-columns: minmax(9rem, 0.7fr) minmax(8rem, 0.55fr) minmax(14rem, 1.5fr) auto auto;
+  align-items: end;
+  gap: 0.7rem;
+  padding: 0.85rem 1.1rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-soft);
+}
+
+.installed-content-filters label {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.installed-content-filters label > span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.installed-content-filters input,
+.installed-content-filters select {
+  min-width: 0;
+  min-height: 2.45rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 0.55rem;
+  padding: 0.55rem 0.7rem;
+  background: var(--surface-raised);
+  color: var(--ink);
+  font: inherit;
+}
+
+.installed-content-filters input:focus-visible,
+.installed-content-filters select:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.installed-content-filters button,
+.installed-content-error button,
+.installed-content-more {
+  min-height: 2.45rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 0.55rem;
+  padding: 0.55rem 0.8rem;
+  background: var(--surface-raised);
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.installed-content-filters button:hover,
+.installed-content-error button:hover,
+.installed-content-more:hover {
+  border-color: var(--gold);
+  color: var(--gold-bright);
+}
+
+.installed-content-filters .text-button {
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+}
+
+.installed-content-records {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.75rem;
+}
+
 .installed-content-record {
-  margin: 0.85rem;
-  padding: 1rem;
+  display: grid;
+  grid-template-columns: minmax(12rem, auto) minmax(16rem, 1fr) minmax(10rem, auto);
+  align-items: center;
+  gap: 1rem;
+  margin: 0;
+  padding: 0.75rem 0.9rem;
+}
+
+.installed-content-record__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.installed-content-record__meta .content-kind {
+  margin-left: 0;
+}
+
+.installed-content-record__body h3 {
+  margin-top: 0;
 }
 
 .installed-content-record small {
   display: block;
-  margin-top: 0.75rem;
   color: var(--muted);
+  text-align: right;
+}
+
+.installed-content-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0.75rem;
+  border: 1px solid rgba(201, 155, 82, 0.48);
+  border-radius: 0.65rem;
+  padding: 0.75rem 0.9rem;
+  background: var(--surface-soft);
+}
+
+.installed-content-error p {
+  margin: 0;
+}
+
+.installed-content-more {
+  width: calc(100% - 1.5rem);
+  margin: 0 0.75rem 0.75rem;
+}
+
+.installed-content-more:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+@media (max-width: 900px) {
+  .installed-content-filters {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .installed-content-filters__search {
+    grid-column: 1 / -1;
+  }
+
+  .installed-content-record {
+    grid-template-columns: 1fr;
+    gap: 0.55rem;
+  }
+
+  .installed-content-record small {
+    text-align: left;
+  }
 }
 
 .location-row__action {

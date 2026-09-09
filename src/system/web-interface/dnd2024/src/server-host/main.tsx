@@ -28,6 +28,7 @@ import { objectConsumers, subscribeScopedChanges } from "../data/scoped-change-s
 import { isReadyHubEnvelope } from "../state.js";
 import { markBootstrapResponse } from "../observability/performance.js";
 import type { CampaignPremiseWriteRequest, CampaignPremiseWriteResult } from "../server/campaign-premise-write";
+import type { InstalledContentClient, InstalledContentRequest } from "../server/effective-content";
 import {
   installDevelopmentRequestLedger,
   recordDevelopmentDiagnostic,
@@ -68,6 +69,8 @@ const ApplicationStartupError = lazy(() => import("../components/ApplicationStar
   .then((module) => ({ default: module.ApplicationStartupError })));
 
 if (process.env.NODE_ENV !== "production") installDevelopmentRequestLedger();
+
+let installedContentClient: Promise<InstalledContentClient> | null = null;
 
 function envelopeMessage(envelope: HubEnvelope): string {
   return "message" in envelope
@@ -421,10 +424,21 @@ async function loadRulesReference(): Promise<RuleReadModel[]> {
   }));
 }
 
-async function loadInstalledContent() {
-  const { readInstalledContent } = await import("../server/effective-content");
+async function loadInstalledContent(
+  request: InstalledContentRequest,
+  signal: AbortSignal,
+  preferCached = true,
+) {
+  if (!installedContentClient) {
+    installedContentClient = import("../server/effective-content").then(({ InstalledContentClient }) =>
+      new InstalledContentClient({
+        serverOrigin: window.location.origin,
+        applicationId: "dnd2024",
+      }));
+  }
+  const client = await installedContentClient;
   return withinDevelopmentInteraction("content-load", () =>
-    readInstalledContent({ serverOrigin: window.location.origin, applicationId: "dnd2024" }));
+    client.load(request, signal, preferCached));
 }
 
 async function loadReadyEnvelope(
