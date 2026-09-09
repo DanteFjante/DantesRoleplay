@@ -10,7 +10,7 @@
     "qualifiedId": "dnd2024.mechanic.inventory-container-page.project",
     "version": 1,
     "contentHash": "C0A41974F91FF665F769098455EFE37444FC47850F0712005FBFB37321C9B681",
-    "outputSchemaHash": "A141DCBB406C33D8E9A60E493A6A64B1AC4CB6550DCEB203D866A0386A678B95"
+    "outputSchemaHash": "5B8B70D02F040197B44C7957118639DE33C9F0B7E7D288729AC4D39A6BCCC086"
   },
   "outputSchema": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",

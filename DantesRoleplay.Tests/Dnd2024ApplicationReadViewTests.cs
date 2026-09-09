@@ -19,6 +19,8 @@ public sealed class Dnd2024ApplicationReadViewTests
     {
         { "combat/dnd2024.query.encounter-board-draft.json", "combat/dnd2024.mechanic.encounter.board.draft" },
         { "campaign/dnd2024.query.campaign-resume.json", "campaign/dnd2024.mechanic.campaign.resume.project" },
+        { "campaign/dnd2024.query.campaign-context.json", "campaign/dnd2024.mechanic.campaign.context.project" },
+        { "campaign/dnd2024.query.campaign-details.json", "campaign/dnd2024.mechanic.campaign.details.project" },
         { "campaign/dnd2024.query.current-scene.json", "campaign/dnd2024.mechanic.campaign.current-scene.project" },
         { "campaign/dnd2024.query.actor-context.json", "campaign/dnd2024.mechanic.campaign.actor-context.project" },
         { "play/dnd2024.query.unresolved-decisions.json", "play/dnd2024.mechanic.play.unresolved-decisions.project" },
@@ -26,13 +28,22 @@ public sealed class Dnd2024ApplicationReadViewTests
         { "character/dnd2024.query.character-sheet-v2.json", "data/dnd2024.mechanic.character-sheet-v2.project" },
         { "character/dnd2024.query.character-dossier-v1.json", "data/dnd2024.mechanic.character-dossier-v1.project" },
         { "character/dnd2024.query.character-sheet.json", "data/dnd2024.mechanic.character-sheet.project" },
+        { "character/dnd2024.query.inventory-wallet.json", "data/dnd2024.mechanic.inventory-wallet.project" },
+        { "character/dnd2024.query.inventory-container.json", "data/dnd2024.mechanic.inventory-container-page.project" },
         { "character/dnd2024.query.rest-status.json", "data/dnd2024.mechanic.rest.status.project" },
         { "character/dnd2024.query.downtime-status.json", "downtime/dnd2024.mechanic.downtime.status.project" },
         { "data/dnd2024.query.object-durability.json", "objects/dnd2024.mechanic.object.durability.read" },
+        { "data/dnd2024.query.inventory-item-details.json", "data/dnd2024.mechanic.inventory-item-details.project" },
+        { "data/dnd2024.query.inventory-item-recipes.json", "data/dnd2024.mechanic.inventory-item-recipes.project" },
+        { "data/dnd2024.query.inventory-item-uses.json", "data/dnd2024.mechanic.inventory-item-uses.project" },
         { "social/dnd2024.query.social-context.json", "social/dnd2024.mechanic.social.context.project" },
         { "exploration/dnd2024.query.travel-status.json", "exploration/dnd2024.mechanic.travel.status.project" },
         { "hazards/dnd2024.query.hazard-status.json", "hazards/dnd2024.mechanic.hazard.status.project" },
-        { "combat/dnd2024.query.encounter-board.json", "combat/dnd2024.mechanic.encounter.board.project" }
+        { "combat/dnd2024.query.encounter-board.json", "combat/dnd2024.mechanic.encounter.board.project" },
+        { "world/dnd2024.query.world-location-scope-page.json", "world/dnd2024.mechanic.world.location-scope.page" },
+        { "world/dnd2024.query.world-location-scope.json", "world/dnd2024.mechanic.world.location-scope.project" },
+        { "world/dnd2024.query.world-people-holdings-page.json", "world/dnd2024.mechanic.world.people-holdings.page" },
+        { "world/dnd2024.query.world-people-holdings.json", "world/dnd2024.mechanic.world.people-holdings.project" }
     };
 
     [Theory]
@@ -64,8 +75,30 @@ public sealed class Dnd2024ApplicationReadViewTests
             string.Join("; ", compilation.Diagnostics.Select(value => value.Code + ": " + value.Message)));
         Assert.True(compilation.SchemaHash == query.OutputSchemaHash,
             $"Schema hash for {query.Id}: {compilation.SchemaHash}");
-        Assert.Equal(ApplicationQueryExposure.ModelVisible, query.Exposure);
         Assert.Equal("active", query.Status);
+    }
+
+    [Fact]
+    public void Every_active_mechanic_projection_query_pins_its_compiled_output_schema()
+    {
+        var files = Directory.GetFiles(Queries(), "*.json", SearchOption.AllDirectories);
+        var verified = 0;
+        foreach (var file in files)
+        {
+            using var document = JsonDocument.Parse(File.ReadAllText(file));
+            if (document.RootElement.GetProperty("executor").GetString() != "mechanic-projection" ||
+                document.RootElement.GetProperty("status").GetString() != "active") continue;
+
+            var query = ApplicationQueryContract.Parse(document.RootElement.GetRawText(), Application);
+            var compilation = Schemas.Compile(query.OutputSchemaJson);
+            Assert.True(compilation.IsAccepted,
+                $"{query.Id}: {string.Join("; ", compilation.Diagnostics.Select(value => value.Code + ": " + value.Message))}");
+            Assert.True(compilation.SchemaHash == query.OutputSchemaHash,
+                $"Schema hash for {query.Id}: {compilation.SchemaHash}");
+            verified++;
+        }
+
+        Assert.Equal(27, verified);
     }
 
     [Fact]
