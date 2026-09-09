@@ -161,7 +161,7 @@ public sealed class ApplicationMechanicEvaluator(
                 var child = await EvaluateCoreAsync(new(parent.StateSpaceId, parent.ApplicationId,
                     childRecord.Summary.QualifiedId, childRecord.Summary.ContentFingerprint, parent.Mapping,
                     invocation.RoleEntityIds, invocation.Input, DeriveSeed(parent.Seed, invocation.Ordinal),
-                    childExecution, parent.Audience),
+                    childExecution, parent.Audience, ReadModelQueryId: parent.ReadModelQueryId),
                     depth + 1, lineage, budget, cancellationToken);
                 if (!child.Ok || child.Projection is null || child.Run is null)
                     return (null, $"CHILD_FAILED ({pair.Key}): " + (child.Problems.FirstOrDefault() ?? child.Run?.Error ?? "Child did not produce a result."), CompositionProposal.Empty);

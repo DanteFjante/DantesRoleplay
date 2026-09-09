@@ -202,15 +202,23 @@ public sealed class ApplicationMechanicExecutionTests : IDisposable
     public async Task Read_model_evaluations_receive_only_the_bounded_projection_memory_allowance()
     {
         var app = ApplicationIdentifier.Parse("fixture");
-        var content = JsonSerializer.Serialize(new { requirements = "{}", source = "return {data:{}};" });
-        var record = new CatalogRecordDefinition(app.Value, "mechanic", "fixture.mechanic.read",
-            "Read projection", "Read projection.", [], [], "mechanics", "active", 1, content,
-            Hash(content), "catalog", "mechanics/read.md");
+        var childContent = JsonSerializer.Serialize(new { requirements = "{}", source = "return {data:{}};" });
+        var child = new CatalogRecordDefinition(app.Value, "mechanic", "fixture.mechanic.child",
+            "Read projection child", "Read projection child.", [], [], "mechanics", "active", 1, childContent,
+            Hash(childContent), "catalog", "mechanics/child.md");
+        var parentContent = JsonSerializer.Serialize(new
+        {
+            requirements = "{\"children\":{\"child\":{\"mechanicId\":\"mechanic.child\",\"roleBindings\":{},\"inheritInput\":false,\"input\":\"{}\"}}}",
+            source = "return {data:{}};"
+        });
+        var parent = new CatalogRecordDefinition(app.Value, "mechanic", "fixture.mechanic.read",
+            "Read projection", "Read projection.", [], [], "mechanics", "active", 1, parentContent,
+            Hash(parentContent), "catalog", "mechanics/read.md");
         var manifest = CatalogNavigationManifest.Create(app, Hash("read-model-limits"), "catalog-lexical-v1",
             [new(app.Value, "Fixture", "Fixture mechanics.")],
             [new(app.Value, "", "Fixture", "Fixture mechanics.", CatalogDescriptionStatus.Authored),
              new(app.Value, "mechanics", "Mechanics", "Mechanics.", CatalogDescriptionStatus.Authored)],
-            [record]);
+            [child, parent]);
         var provider = new InMemoryPublicApplicationCatalogProvider(new Dictionary<ApplicationIdentifier, ICatalogNavigator>
         {
             [app] = new InMemoryCatalogNavigator(manifest,
@@ -222,18 +230,19 @@ public sealed class ApplicationMechanicExecutionTests : IDisposable
         var mapping = new ApplicationMechanicProjectionMapping(
             new Dictionary<string, EcsComponentReference>(), new Dictionary<string, string>());
 
-        var action = await evaluator.EvaluateAsync(new("space", app, record.QualifiedId,
-            record.ContentFingerprint, mapping, new Dictionary<string, string>(), "{}", 1));
-        var readModel = await evaluator.EvaluateAsync(new("space", app, record.QualifiedId,
-            record.ContentFingerprint, mapping, new Dictionary<string, string>(), "{}", 2,
+        var action = await evaluator.EvaluateAsync(new("space", app, parent.QualifiedId,
+            parent.ContentFingerprint, mapping, new Dictionary<string, string>(), "{}", 1));
+        var readModel = await evaluator.EvaluateAsync(new("space", app, parent.QualifiedId,
+            parent.ContentFingerprint, mapping, new Dictionary<string, string>(), "{}", 2,
             ReadModelQueryId: "fixture.query.read"));
 
         Assert.True(action.Ok);
         Assert.True(readModel.Ok);
-        Assert.Equal(ExecutionLimits.Default.MemoryBytes, engine.Limits[0].MemoryBytes);
-        Assert.Equal(ExecutionLimits.ReadModel.MemoryBytes, engine.Limits[1].MemoryBytes);
-        Assert.Equal(16 * 1024 * 1024, engine.Limits[1].MemoryBytes);
-        Assert.Equal(engine.Limits[0] with { MemoryBytes = engine.Limits[1].MemoryBytes }, engine.Limits[1]);
+        Assert.Equal(4, engine.Limits.Count);
+        Assert.All(engine.Limits.Take(2), limits => Assert.Equal(ExecutionLimits.Default, limits));
+        Assert.All(engine.Limits.Skip(2), limits => Assert.Equal(ExecutionLimits.ReadModel, limits));
+        Assert.Equal(16 * 1024 * 1024, engine.Limits[2].MemoryBytes);
+        Assert.Equal(engine.Limits[0] with { MemoryBytes = engine.Limits[2].MemoryBytes }, engine.Limits[2]);
     }
 
     [Fact]
