@@ -402,13 +402,19 @@ function buildLiveMapTree(
   const visit = (owner: LiveDirectoryEntry, parentMapId: string | null, isRoot: boolean) => {
     if (visiting.has(owner.id) || visited.has(owner.id)) return;
     const base = resolvedMapBase(owner);
+    const children = entries
+      .filter((entry) => entry.containerId === owner.id)
+      .sort((left, right) => left.name.localeCompare(right.name) || left.id.localeCompare(right.id));
+    // A leaf without its own illustration is a location detail, not an empty map. It remains a
+    // selectable marker on its parent's map and in the complete location directory.
+    if (!isRoot && mapBaseState(owner) === "absent" && children.length === 0) {
+      visited.add(owner.id);
+      return;
+    }
     visiting.add(owner.id);
     const scope = scopeForMap(owner, isRoot);
     const mapId = mapIdForLocation(owner.id);
     const coordinateSpaceId = `space.live.${owner.id}`;
-    const children = entries
-      .filter((entry) => entry.containerId === owner.id)
-      .sort((left, right) => left.name.localeCompare(right.name) || left.id.localeCompare(right.id));
     const features: MapFeature[] = children.filter((child) => validAnchor(child.mapAnchor)).map((child) => {
       const preview = child.media?.setting ?? child.media?.scene ?? child.media?.portrait;
       return {
@@ -589,10 +595,6 @@ export function connectedCampaignToHubEnvelope(
   const locationEntries = sourceLocations.filter((entry) => !entry.isWorldRoot);
   const worldRootEntry = sourceLocations.find((entry) => entry.isWorldRoot) ?? null;
   const locationScopeRecords = (() => {
-    if (Array.isArray(connection.locationScopes)) return connection.locationScopes.map((scope) => ({
-      ...scope,
-      childIds: [...scope.childIds],
-    }));
     const childrenByParent = new Map<string, string[]>();
     for (const entry of locationEntries) {
       if (!entry.containerId) continue;
@@ -602,8 +604,12 @@ export function connectedCampaignToHubEnvelope(
     }
     const byId = new Map(sourceLocations.map((entry) => [entry.id, entry]));
     const rootId = connection.contextSelection.selectedWorldId;
-    const scopeIds = new Set([rootId, ...childrenByParent.keys()]);
-    return [...scopeIds].flatMap((id) => {
+    const scopeIds = new Set([
+      rootId,
+      ...childrenByParent.keys(),
+      ...(connection.locationDirectoryComplete === true ? locationEntries.map((entry) => entry.id) : []),
+    ]);
+    const derived = [...scopeIds].flatMap((id) => {
       const childIds = childrenByParent.get(id) ?? [];
       const owner = byId.get(id);
       if (!owner && id !== rootId) return [];
@@ -618,6 +624,27 @@ export function connectedCampaignToHubEnvelope(
         sourceRevisionFingerprint: null,
       }];
     });
+    if (!Array.isArray(connection.locationScopes)) return derived;
+    const explicit = connection.locationScopes.map((scope) => ({
+      ...scope,
+      childIds: [...scope.childIds],
+    }));
+    if (connection.locationDirectoryComplete !== true) return explicit;
+
+    const explicitById = new Map(explicit.map((scope) => [scope.id, scope]));
+    const complete = derived.map((scope) => {
+      const loaded = explicitById.get(scope.id);
+      if (!loaded) return scope;
+      const sameChildren = loaded.complete && loaded.childIds.length === scope.childIds.length &&
+        loaded.childIds.every((id) => scope.childIds.includes(id));
+      return {
+        ...scope,
+        name: loaded.name,
+        sourceRevisionFingerprint: sameChildren ? loaded.sourceRevisionFingerprint : null,
+      };
+    });
+    const derivedIds = new Set(complete.map((scope) => scope.id));
+    return [...complete, ...explicit.filter((scope) => !derivedIds.has(scope.id))];
   })();
   const hasSourceLocations = locationEntries.length > 0;
   const regionHints = hasLocationDirectory

@@ -1,5 +1,4 @@
 import type { CampaignReadModel, CampaignSectionId } from "../data/hub-types";
-import type { ResourceEdit } from "../data/resource-state";
 import { CampaignAdventureLog } from "./CampaignAdventureLog";
 import { CampaignClues } from "./CampaignClues";
 import { CampaignOutcomes } from "./CampaignOutcomes";
@@ -14,34 +13,24 @@ export function CampaignView({
   detailsError,
   detailsStatus,
   hasValidatedDetails,
-  premiseEdit,
   section,
   worldName,
   onOpenFaction,
   onOpenLocation,
   onOpenPerson,
-  onBeginPremiseEdit,
-  onCancelPremiseEdit,
-  onPremiseDraftChange,
   onRetryDetails,
-  onSavePremise,
   onSectionChange,
 }: {
   campaign: CampaignReadModel;
   detailsError: string;
   detailsStatus: "unloaded" | "loading" | "ready" | "error";
   hasValidatedDetails: boolean;
-  premiseEdit?: ResourceEdit;
   section: CampaignSectionId;
   worldName: string;
   onOpenFaction: (factionId: string) => void;
   onOpenLocation: (locationId: string) => void;
   onOpenPerson: (personId: string) => void;
-  onBeginPremiseEdit?: () => void;
-  onCancelPremiseEdit?: () => void;
-  onPremiseDraftChange?: (premise: string) => void;
   onRetryDetails?: () => void;
-  onSavePremise?: (premise: string) => void;
   onSectionChange: (section: CampaignSectionId) => void;
 }) {
   const detailNotice = detailsStatus === "ready" ? null : (
@@ -89,12 +78,7 @@ export function CampaignView({
         <CampaignOverview
           campaign={campaign}
           detailsAvailable={hasValidatedDetails}
-          premiseEdit={premiseEdit}
           worldName={worldName}
-          onBeginPremiseEdit={onBeginPremiseEdit}
-          onCancelPremiseEdit={onCancelPremiseEdit}
-          onPremiseDraftChange={onPremiseDraftChange}
-          onSavePremise={onSavePremise}
           onSectionChange={onSectionChange}
         />
       )}

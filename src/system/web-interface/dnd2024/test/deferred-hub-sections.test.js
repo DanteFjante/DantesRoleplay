@@ -86,9 +86,9 @@ test("Actor lore uses the authorized notebook and preserves all entries", async 
   assert.deepEqual(result.knowledge.entries, entries);
 });
 
-test("deferred locations read one exact root scope and suppress ambient media in preview", async () => {
+test("deferred locations read the complete authorized hierarchy and suppress ambient media in preview", async () => {
   const calls = [];
-  const locations = Array.from({ length: 100 }, (_, index) => ({
+  const locations = Array.from({ length: 2 }, (_, index) => ({
     id: `place-${index}`, name: `Place ${index}`, parentId: "world.caldris", slot: "region",
     kind: "region", status: index % 2 ? "draft" : "active", summary: "A place.",
     visibility: "public", mapAnchor: null,
@@ -97,6 +97,8 @@ test("deferred locations read one exact root scope and suppress ambient media in
     origin, section: "locations", source: { ...source, audience: { seat: "dm", perspective: "player" } },
     fetchImpl: async (input) => {
       const target = new URL(input); calls.push(target);
+      const scopeId = decodeURIComponent(target.pathname.split("/entities/")[1].split("/read-models/")[0]);
+      const root = scopeId === "world.caldris";
       return response({
         applicationId: "dnd2024", stateSpaceId: "state.fixture",
         qualifiedQueryId: worldLocationScopePageContract.id,
@@ -105,20 +107,25 @@ test("deferred locations read one exact root scope and suppress ambient media in
         resultFingerprint: "3".repeat(64), sourceRevisionFingerprint: "4".repeat(64),
         data: {
           version: 1, state: "ready",
-          scope: { id: "world.caldris", name: "Caldris", parentId: null, slot: "", kind: "world",
-            status: "active", summary: "A gentle world.", visibility: "public", mapAnchor: null },
-          locations, totalCount: 100, complete: true, nextCursor: null,
+          scope: root
+            ? { id: "world.caldris", name: "Caldris", parentId: null, slot: "", kind: "world",
+              status: "active", summary: "A gentle world.", visibility: "public", mapAnchor: null }
+            : locations.find((location) => location.id === scopeId),
+          locations: root ? locations : [], totalCount: root ? locations.length : 0,
+          complete: true, nextCursor: null,
         },
       });
     },
   });
-  assert.equal(result.locationDirectory.length, 101);
-  assert.deepEqual(result.locationScopes, [{
+  assert.equal(result.locationDirectory.length, 3);
+  assert.deepEqual(result.locationScopes.find(({ id }) => id === "world.caldris"), {
     id: "world.caldris", name: "Caldris", parentId: null,
-    childIds: locations.map((location) => location.id), totalCount: 100,
+    childIds: locations.map((location) => location.id), totalCount: 2,
     complete: true, nextCursor: null, sourceRevisionFingerprint: "4".repeat(64),
-  }]);
-  assert.equal(calls.length, 1);
+  });
+  assert.ok(locations.every((location) =>
+    result.locationScopes.find(({ id }) => id === location.id)?.childIds.length === 0));
+  assert.equal(calls.length, 3);
   assert.match(calls[0].pathname, /entities\/world\.caldris\/read-models\/dnd2024\.query\.world-location-scope-page$/u);
   assert.ok(calls.every((target) => !target.pathname.endsWith("/entities") && !target.pathname.endsWith("/media")));
 });

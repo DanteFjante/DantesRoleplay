@@ -50,7 +50,6 @@ import type { InstalledContentLoader } from "./InstalledContentView";
 import type { ItemViewClient } from "../server/item-view-client";
 import type { ItemDefinitionLoader, ItemRegistryPageLoader } from "./registry/ItemRegistryWorkspace";
 import type { RecipeDefinitionLoader, RecipeRegistryPageLoader } from "./registry/RecipeRegistryWorkspace";
-import type { CampaignPremiseWriter } from "../server/campaign-premise-write";
 import { TopBar } from "./TopBar";
 import { WorldView } from "./WorldView";
 import { markActiveViewReady } from "../observability/performance.js";
@@ -163,7 +162,6 @@ export function DndInformationHub({
   loadCampaignDetails,
   loadDeferredSection,
   loadWorldScope,
-  writeCampaignPremise,
   subscribeChanges,
 }: {
   initialEnvelope: ReadyHubEnvelope;
@@ -182,7 +180,6 @@ export function DndInformationHub({
   loadCampaignDetails?: CampaignDetailsLoader;
   loadDeferredSection?: (envelope: ReadyHubEnvelope, section: DeferredHubSection, signal: AbortSignal) => Promise<DeferredHubUpdate>;
   loadWorldScope?: (envelope: ReadyHubEnvelope, scopeId: string, cursor: string | null, signal: AbortSignal) => Promise<Extract<DeferredHubUpdate, { section: "locations" }>>;
-  writeCampaignPremise?: CampaignPremiseWriter;
   subscribeChanges?: (envelope: ReadyHubEnvelope) => () => void;
 }) {
   const [envelope, setEnvelope] = useState(initialEnvelope);
@@ -303,8 +300,6 @@ export function DndInformationHub({
   const deferredAbort = useRef<AbortController | null>(null);
   const contextAbort = useRef<AbortController | null>(null);
   const worldScopeAbort = useRef<AbortController | null>(null);
-  const campaignWriteAbort = useRef<AbortController | null>(null);
-  const campaignWritePending = useRef(false);
   const loadedWorldScopes = useRef(new Set<string>());
   const loadingWorldScopes = useRef(new Set<string>());
   const failedWorldScopes = useRef(new Set<string>());
@@ -357,11 +352,13 @@ export function DndInformationHub({
   const activeLocationScope = envelope.world.locationScopes.find((scope) => scope.id === activeLocationScopeId)
     ?? null;
   const locationById = new Map(allLocations.map((location) => [location.id, location]));
+  const directoryLocations = allLocations.filter((location) => location.id !== worldRootId);
   const scopedLocations = (activeLocationScope?.childIds ?? []).flatMap((id) => {
     const location = locationById.get(id);
     return location ? [location] : [];
   });
   const visibleLocations = filterLocations(scopedLocations, locationQuery) as WorldLocation[];
+  const allVisibleLocations = filterLocations(directoryLocations, locationQuery) as WorldLocation[];
   const currentLocation = resolveCurrentSceneLocation(
     allLocations,
     envelope.world.currentLocationId,
@@ -384,10 +381,11 @@ export function DndInformationHub({
     envelope.world.rootMapId,
   ) as string;
   const activeMapDocument = resolveMapDocument(envelope.world.maps, effectiveActiveMapId);
-  const activeMapScopeId = activeMapDocument?.subject.id ?? null;
+  const activeMapScopeId = envelope.world.mapOwnerId === null
+    ? contextSelection.selectedWorldId
+    : activeMapDocument?.subject.id ?? contextSelection.selectedWorldId;
   const activeMapScopeReady = !loadWorldScope || activeMapScopeId === null ||
-    envelope.world.mapOwnerId === null ||
-    envelope.world.locationScopes.some((scope) => scope.id === activeMapScopeId);
+    loadedWorldScopes.current.has(activeMapScopeId);
   const activeMapScopeFailed = activeMapScopeId !== null && failedWorldScopes.current.has(activeMapScopeId);
   const mapScopeState: "loading" | "ready" | "error" = activeMapScopeReady
     ? "ready"
@@ -416,7 +414,6 @@ export function DndInformationHub({
     campaignDetailsAbort.current?.abort();
     deferredAbort.current?.abort();
     contextAbort.current?.abort();
-    campaignWriteAbort.current?.abort();
     setHubBusy(true);
     setHubError("");
     try {
@@ -642,8 +639,8 @@ export function DndInformationHub({
 
   const deferredSection: DeferredHubSection | null = activeTab === "current" ? "current"
     : activeTab === "world" && worldSection === "factions" && perspective !== "dm" ? "lore"
-    : activeTab === "world" && ["map", "locations", "history", "lore", "people"].includes(worldSection)
-      ? worldSection === "map" ? "locations" : worldSection as DeferredHubSection : null;
+    : activeTab === "world" && ["locations", "history", "lore", "people"].includes(worldSection)
+      ? worldSection as DeferredHubSection : null;
   const deferredRestricted = Boolean(loadDeferredSection && playerPreview &&
     (deferredSection === "lore" || deferredSection === "people"));
   const deferredState = deferredSection && loadDeferredSection
@@ -681,7 +678,7 @@ export function DndInformationHub({
     envelope.world.locationScopes.map((scope) => `${scope.id}:${scope.sourceRevisionFingerprint ?? ""}`).join("|")]);
   useEffect(() => () => {
     sectionAbort.current?.abort(); campaignDetailsAbort.current?.abort(); deferredAbort.current?.abort(); contextAbort.current?.abort();
-    worldScopeAbort.current?.abort(); campaignWriteAbort.current?.abort();
+    worldScopeAbort.current?.abort();
   }, []);
 
   const deferredNotice = deferredRestricted ? <ObserverPreviewUnavailable /> : deferredState !== "ready" ? (
@@ -841,6 +838,19 @@ export function DndInformationHub({
     setAnnouncement(`${locationById.get(locationId)?.name ?? "Location"} opened`);
   }
 
+  function selectLocationDetails(locationId: string) {
+    const location = locationById.get(locationId);
+    if (!location) return;
+    setSelectedLocationId(locationId);
+    setLocationSection("details");
+    navigateHubRoute("world", "overview", false, {
+      worldSection: "locations", locationScopePath, locationId,
+    });
+    setAnnouncement(`${location.name} details opened`);
+    if (loadWorldScope && !loadedWorldScopes.current.has(locationId) &&
+        !loadingWorldScopes.current.has(locationId)) void requestWorldScope(locationId);
+  }
+
   function openParentLocationScope() {
     if (locationScopePath.length === 0) return;
     const selectedId = locationScopePath.at(-1)!;
@@ -868,8 +878,9 @@ export function DndInformationHub({
     if (!location) return;
     setSelectedLocationId(locationId);
     setLocationSection("details");
+    setLocationScopePath([]);
     setWorldSection("locations");
-    navigateHubRoute("world");
+    navigateHubRoute("world", "overview", false, { worldSection: "locations", locationId });
     setActiveTab("world");
     setAnnouncement(`${location.name} opened from Campaign`);
     focusViewHeading();
@@ -899,52 +910,6 @@ export function DndInformationHub({
     void requestHub(perspective, contextSelection.selectedCampaignId, false, true);
   }
 
-  async function saveCampaignPremise(premise: string) {
-    if (!writeCampaignPremise || campaignWritePending.current ||
-        envelope.audience.seat !== "dm" || perspective !== "dm") return;
-    campaignWritePending.current = true;
-    campaignWriteAbort.current?.abort();
-    const controller = new AbortController();
-    campaignWriteAbort.current = controller;
-    dispatchObjectUi({ type: "write-submitted", objectId: CAMPAIGN_SUMMARY_OBJECT_ID });
-    try {
-      const result = await writeCampaignPremise({ envelope, premise }, controller.signal);
-      if (controller.signal.aborted) return;
-      campaignWriteAbort.current = null;
-      campaignDetailsAbort.current?.abort();
-      setEnvelope((current) => ({
-        ...current,
-        campaign: { ...current.campaign, premise: result.premise },
-        objectQueries: {},
-      }));
-      setCampaignDetails((current) => current.data
-        ? { ...current, data: { ...current.data, premise: result.premise } }
-        : current);
-      dispatchObjectUi({ type: "write-confirmed", objectId: CAMPAIGN_SUMMARY_OBJECT_ID });
-      setAnnouncement(result.replayed
-        ? "Campaign premise confirmed after retry"
-        : result.noOp ? "Campaign premise already matched the saved campaign" : "Campaign premise saved");
-      const refreshed = await requestHub(perspective, contextSelection.selectedCampaignId, false, true);
-      if (refreshed) {
-        // The authoritative refresh covers a Campaign notice delivered while this write was
-        // completing. A later independent notice remains queued by the event listener.
-        setPendingChange((current) => current === CAMPAIGN_SUMMARY_OBJECT_ID ? null : current);
-      }
-    } catch (error) {
-      if (controller.signal.aborted) return;
-      const message = error instanceof Error ? error.message : "The campaign premise was not changed.";
-      dispatchObjectUi({ type: "write-failed", objectId: CAMPAIGN_SUMMARY_OBJECT_ID, error: message });
-      setAnnouncement("Campaign premise was not changed");
-      const category = error && typeof error === "object" && "category" in error
-        ? String(error.category) : "";
-      if (category === "stale")
-        await requestHub(perspective, contextSelection.selectedCampaignId, false, true);
-    } finally {
-      if (campaignWriteAbort.current === controller) campaignWriteAbort.current = null;
-      campaignWritePending.current = false;
-    }
-  }
-
   function focusWorldEntityCard(kind: "person" | "faction", entityId: string) {
     window.requestAnimationFrame(() => document.getElementById(`world-${kind}-${entityId}`)?.focus());
   }
@@ -954,6 +919,7 @@ export function DndInformationHub({
     if (!person) return;
     setSelectedPersonId(personId);
     setWorldSection("people");
+    navigateHubRoute("world", "overview", false, { worldSection: "people" });
     setActiveTab("world");
     setAnnouncement(`${person.name} opened from Campaign`);
     focusWorldEntityCard("person", personId);
@@ -964,6 +930,7 @@ export function DndInformationHub({
     if (!faction) return;
     dispatchObjectUi({ type: "faction-selected", factionId });
     setWorldSection("factions");
+    navigateHubRoute("world", "overview", false, { worldSection: "factions" });
     setActiveTab("world");
     setAnnouncement(`${faction.name} opened from Campaign`);
     focusWorldEntityCard("faction", factionId);
@@ -1003,22 +970,9 @@ export function DndInformationHub({
             detailsError={campaignDetails.error}
             detailsStatus={campaignDetails.status}
             hasValidatedDetails={campaignDetails.data !== null}
-            premiseEdit={objectUi.edits[CAMPAIGN_SUMMARY_OBJECT_ID]}
             onOpenFaction={openCampaignFaction}
             onOpenLocation={openCampaignLocation}
             onOpenPerson={openCampaignPerson}
-            onBeginPremiseEdit={writeCampaignPremise && envelope.audience.seat === "dm" && perspective === "dm" &&
-              envelope.objectQueries?.campaignSummary ? () => dispatchObjectUi({
-                type: "edit-staged", objectId: CAMPAIGN_SUMMARY_OBJECT_ID,
-                draft: { premise: envelope.campaign.premise },
-              }) : undefined}
-            onCancelPremiseEdit={writeCampaignPremise ? () => dispatchObjectUi({
-              type: "edit-cancelled", objectId: CAMPAIGN_SUMMARY_OBJECT_ID,
-            }) : undefined}
-            onPremiseDraftChange={writeCampaignPremise ? (premise) => dispatchObjectUi({
-              type: "edit-staged", objectId: CAMPAIGN_SUMMARY_OBJECT_ID, draft: { premise },
-            }) : undefined}
-            onSavePremise={writeCampaignPremise ? (premise) => void saveCampaignPremise(premise) : undefined}
             onRetryDetails={loadCampaignDetails ? () => void requestCampaignDetails() : undefined}
             onSectionChange={selectCampaignSection}
             section={campaignSection}
@@ -1124,10 +1078,6 @@ export function DndInformationHub({
               location={currentSceneLocation}
               situation={currentSituation}
               perspective={perspective}
-              draftScope={envelope.audience.seat === "dm" && perspective === "dm" ? {
-                applicationId: envelope.applicationId, stateSpaceId: envelope.stateSpaceId, campaignId: contextSelection.selectedCampaignId,
-              } : undefined}
-              onBoardAccepted={() => void requestHub(perspective, contextSelection.selectedCampaignId, false, true)}
             />
           </div>
         );
@@ -1146,6 +1096,7 @@ export function DndInformationHub({
             campaign={envelope.campaign}
             currentLocation={currentLocation}
             filteredLocations={visibleLocations}
+            allFilteredLocations={allVisibleLocations}
             locationScope={activeLocationScope}
             locationScopeBusy={locationScopeBusy}
             locationScopeError={locationScopeError}
@@ -1155,7 +1106,8 @@ export function DndInformationHub({
             perspective={perspective}
             selectedFactionId={selectedFactionId}
             selectedPersonId={selectedPersonId}
-            onLocationSelect={openLocationScope}
+            onLocationSelect={selectLocationDetails}
+            onLocationBrowse={openLocationScope}
             onLocationScopeBack={openParentLocationScope}
             onLoadMoreLocations={() => activeLocationScope?.nextCursor
               ? void requestWorldScope(activeLocationScope.id, activeLocationScope.nextCursor)

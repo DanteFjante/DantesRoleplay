@@ -550,11 +550,14 @@ test("World scope resources deduplicate exact locations and fence audience chang
   ]);
   await owner.loadScope({ envelope: dm, scopeId: "world.fixture" });
   assert.equal(reads, 1);
+  await owner.loadScope({ envelope: dm, scopeId: "world.fixture", completeDirectory: true });
+  await owner.loadScope({ envelope: dm, scopeId: "world.fixture", completeDirectory: true });
+  assert.equal(reads, 2, "the complete directory is cached separately from the immediate map scope");
   await owner.loadScope({ envelope: dm, scopeId: "location.region" });
-  assert.equal(reads, 2, "a nested map scope is a separate bounded resource");
+  assert.equal(reads, 3, "a nested map scope is a separate bounded resource");
   await owner.loadScope({ envelope: scope("player"), scopeId: "world.fixture" });
   await owner.loadScope({ envelope: dm, scopeId: "world.fixture" });
-  assert.equal(reads, 4, "audience replacement retires every prior-scope map resource");
+  assert.equal(reads, 5, "audience replacement retires every prior-scope map resource");
 });
 
 test("World first-page cache identity ignores a newly materialized result revision", async () => {

@@ -1781,7 +1781,39 @@ strong {
 
 .location-browser__heading > span {
   color: var(--quiet);
-  font-size: 0.62rem;
+  font-size: 0.75rem;
+}
+
+.location-browser__modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin: 0 14px 10px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: rgba(4, 10, 9, 0.44);
+}
+
+.location-browser__modes button {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--quiet);
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.location-browser__modes button[aria-pressed="true"] {
+  border-color: rgba(201, 155, 82, 0.32);
+  background: var(--gold-soft);
+  color: var(--gold-bright);
 }
 
 .location-browser__back,
@@ -1848,7 +1880,7 @@ strong {
 .location-search__scope {
   margin: -5px 16px 10px;
   color: var(--quiet);
-  font-size: 0.58rem;
+  font-size: 0.75rem;
   line-height: 1.4;
 }
 
@@ -1872,9 +1904,22 @@ strong {
 
 .location-list {
   display: grid;
+  gap: 5px;
   max-height: 560px;
   overflow-y: auto;
   padding: 0 8px 10px;
+}
+
+.location-row-group {
+  overflow: hidden;
+  border: 1px solid transparent;
+  border-radius: 9px;
+}
+
+.location-row-group:hover,
+.location-row-group:focus-within {
+  border-color: var(--line);
+  background: var(--surface-soft);
 }
 
 .location-row {
@@ -1892,13 +1937,8 @@ strong {
   text-align: left;
 }
 
-.location-row + .location-row {
-  margin-top: 3px;
-}
-
 .location-row:hover {
-  border-color: var(--line);
-  background: var(--surface-soft);
+  background: rgba(255, 255, 255, 0.018);
 }
 
 .location-row[aria-pressed="true"] {
@@ -1926,7 +1966,7 @@ strong {
 .location-row__copy strong {
   overflow: hidden;
   font-family: var(--serif);
-  font-size: 0.78rem;
+  font-size: 0.95rem;
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1935,7 +1975,7 @@ strong {
 .location-row__copy small,
 .location-row em {
   color: var(--quiet);
-  font-size: 0.59rem;
+  font-size: 0.75rem;
   font-style: normal;
 }
 
@@ -1944,6 +1984,36 @@ strong {
   border: 1px solid rgba(111, 146, 126, 0.35);
   border-radius: 4px;
   color: #9eb9aa;
+}
+
+.location-row__browse {
+  display: flex;
+  width: 100%;
+  min-height: 36px;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 6px 12px;
+  border: 0;
+  border-top: 1px solid var(--line);
+  background: rgba(201, 155, 82, 0.04);
+  color: var(--gold-bright);
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.location-row__browse:hover,
+.location-row__browse:focus-visible {
+  background: var(--gold-soft);
+}
+
+.location-row__browse span {
+  min-width: 22px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(201, 155, 82, 0.16);
+  text-align: center;
 }
 
 .location-empty {
@@ -4729,7 +4799,7 @@ strong {
 
 .location-row__action small {
   color: currentColor;
-  font-size: 0.58rem;
+  font-size: 0.875rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;

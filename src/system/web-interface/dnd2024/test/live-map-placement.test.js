@@ -324,13 +324,7 @@ test("an unanchored child is omitted from maps rather than assigned an invented 
   const envelope = connectedCampaignToHubEnvelope(connected("dm", entries));
   const parent = mapFor(envelope, "location.thalorien.valeros");
   assert.equal(featureFor(parent, "location.thalorien.unplaced"), null);
-  assert.deepEqual(parent?.scopeLinks.find((link) => link.childName === "Nowhere Yet"), {
-    id: "scopelink.live.location.thalorien.valeros.location.thalorien.unplaced",
-    childMapId: "map.live.location.thalorien.unplaced",
-    childScope: "location",
-    childName: "Nowhere Yet",
-    viaFeatureId: null,
-  });
-  assert.equal(mapFor(envelope, "location.thalorien.unplaced")?.baseState, "absent");
+  assert.equal(parent?.scopeLinks.some((link) => link.childName === "Nowhere Yet"), false);
+  assert.equal(mapFor(envelope, "location.thalorien.unplaced"), null);
   assert.equal(envelope.world.locations.some((location) => location.id === "location.thalorien.unplaced"), true);
 });

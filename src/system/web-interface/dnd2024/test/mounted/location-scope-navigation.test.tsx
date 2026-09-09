@@ -197,6 +197,7 @@ test("Map waits for its declared atlas scope, renders exact markers, and returns
   };
   let finishAtlas!: (update: Extract<DeferredHubUpdate, { section: "locations" }>) => void;
   const calls: string[] = [];
+  let deferredReads = 0;
   const loader = async (source: ReadyHubEnvelope, scopeId: string) => {
     calls.push(scopeId);
     if (scopeId === atlas.id) return new Promise<Extract<DeferredHubUpdate, { section: "locations" }>>(
@@ -208,9 +209,11 @@ test("Map waits for its declared atlas scope, renders exact markers, and returns
     ]);
   };
   const mounted = await mount(hubRouteHash("world", "overview", { worldSection: "map" }),
-    <DndInformationHub initialEnvelope={initial} loadWorldScope={loader} />);
+    <DndInformationHub initialEnvelope={initial} loadWorldScope={loader}
+      loadDeferredSection={async () => { deferredReads += 1; throw new Error("unexpected directory read"); }} />);
   try {
     assert.deepEqual(calls, [atlas.id]);
+    assert.equal(deferredReads, 0, "the map reads its immediate scope instead of the complete directory");
     assert.match(mounted.container.textContent!, /Loading the places on this map/);
     await act(async () => {
       finishAtlas({
@@ -246,6 +249,26 @@ test("Map waits for its declared atlas scope, renders exact markers, and returns
     await click(parent);
     assert.match(mounted.container.textContent!, new RegExp(`${atlas.name} map`));
     assert.deepEqual(calls, [atlas.id, eredane.id]);
+  } finally { await mounted.cleanup(); }
+});
+
+test("Map loads the root scope when bootstrap has only a placeholder map", async () => {
+  const initial = initialEnvelope();
+  initial.world = {
+    ...initial.world,
+    locations: [],
+    locationScopes: [],
+    mapOwnerId: null,
+  };
+  const calls: string[] = [];
+  const mounted = await mount(hubRouteHash("world", "overview", { worldSection: "map" }),
+    <DndInformationHub initialEnvelope={initial} loadWorldScope={async (source, scopeId) => {
+      calls.push(scopeId);
+      return locationUpdate(source, [], [scope(scopeId, source.world.name, null, [])]);
+    }} />);
+  try {
+    await act(tick);
+    assert.deepEqual(calls, ["world.caldris"]);
   } finally { await mounted.cleanup(); }
 });
 
@@ -335,6 +358,6 @@ test("deep links authorize each scope in order and page 101 siblings without a f
     assert.deepEqual(calls.at(-1), [solasca.id, "100"]);
     assert.match(mounted.container.textContent!, /Solasca Place 100/);
     assert.match(mounted.container.textContent!, /101 of 101/);
-    assert.match(mounted.container.textContent!, /Search is limited to the locations shown in this level/);
+    assert.match(mounted.container.textContent!, /Only the direct locations inside this area are shown/);
   } finally { await mounted.cleanup(); }
 });

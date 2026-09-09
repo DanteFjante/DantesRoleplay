@@ -67,15 +67,11 @@ export function CurrentViewPreview({
   location,
   situation,
   perspective = "player",
-  draftScope,
-  onBoardAccepted,
 }: {
   image: VisualMedia | null;
   location: WorldLocation | null;
   situation: CurrentSituationReadModel;
   perspective?: Perspective;
-  draftScope?: Omit<import("../server/board-draft").BoardDraftScope, "encounterId">;
-  onBoardAccepted?: () => void;
 }) {
   useEffect(() => {
     if (situation.status === "ready" && situation.kind === "combat" && situation.combat.board) {
@@ -225,8 +221,7 @@ export function CurrentViewPreview({
             </div>
           </div>
         </section>
-        <CombatBoard key={combat.id} board={combat.board} perspective={perspective} background={combat.background}
-          draftScope={draftScope ? { ...draftScope, encounterId: combat.id } : undefined} onAccepted={onBoardAccepted} />
+        <CombatBoard key={combat.id} board={combat.board} perspective={perspective} background={combat.background} />
         <div className="current-scene-grid current-combat-grid">
           <section className="current-scene-panel" aria-labelledby="current-initiative-title">
             <header><Icon name="Swords" size={18} /><h2 id="current-initiative-title">Initiative</h2></header>

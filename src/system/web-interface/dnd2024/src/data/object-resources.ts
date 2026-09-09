@@ -48,7 +48,12 @@ export type CampaignContextObjectRequest = { envelope: ReadyHubEnvelope };
 export type CampaignContextUpdate = Extract<DeferredHubUpdate, { section: "context" }>;
 export type CharacterResourceRequest = { envelope: ReadyHubEnvelope; actorId: string };
 export type InventoryContainerResourceRequest = CharacterResourceRequest & { containerId: string };
-export type WorldScopeRequest = { envelope: ReadyHubEnvelope; scopeId: string; cursor?: string | null };
+export type WorldScopeRequest = {
+  envelope: ReadyHubEnvelope;
+  scopeId: string;
+  cursor?: string | null;
+  completeDirectory?: boolean;
+};
 export type WorldScopeUpdate = Extract<DeferredHubUpdate, { section: "locations" }>;
 export type WorldInformationSection = "people" | "lore" | "history";
 export type WorldInformationRequest = { envelope: ReadyHubEnvelope; section: WorldInformationSection };
@@ -118,7 +123,7 @@ function characterTableScope(envelope: ReadyHubEnvelope) {
     envelope.objectQueries?.campaignSummary?.resolutionFingerprint ?? "no-resolution");
 }
 
-function worldScopeResource({ envelope, scopeId, cursor }: WorldScopeRequest, generation: number) {
+function worldScopeResource({ envelope, scopeId, cursor, completeDirectory = false }: WorldScopeRequest, generation: number) {
   const campaignId = envelope.contextSelection?.selectedCampaignId ?? envelope.revision;
   const worldId = envelope.contextSelection?.selectedWorldId ?? envelope.world.id;
   const evidence = envelope.objectQueries?.campaignSummary;
@@ -128,7 +133,8 @@ function worldScopeResource({ envelope, scopeId, cursor }: WorldScopeRequest, ge
     : resourceContractToken(worldLocationScopePageContract), generation,
     envelope.applicationId, envelope.stateSpaceId, campaignId, worldId,
     envelope.audience.seat, envelope.audience.perspective,
-    evidence?.resolutionFingerprint ?? "no-resolution", scopeId, cursor ?? null, continuationRevision);
+    evidence?.resolutionFingerprint ?? "no-resolution", scopeId, cursor ?? null, continuationRevision,
+    completeDirectory);
 }
 
 function worldTableScope(envelope: ReadyHubEnvelope) {

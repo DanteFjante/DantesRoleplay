@@ -28,7 +28,6 @@ import { loadInitialHub } from "../data/hub-preferences";
 import { objectConsumers, subscribeScopedChanges } from "../data/scoped-change-stream";
 import { isReadyHubEnvelope } from "../state.js";
 import { markBootstrapResponse } from "../observability/performance.js";
-import type { CampaignPremiseWriteRequest, CampaignPremiseWriteResult } from "../server/campaign-premise-write";
 import type { InstalledContentClient, InstalledContentRequest } from "../server/effective-content";
 import type { ItemDefinitionRequest, ItemRegistryClient, ItemRegistryRequest } from "../server/item-registry";
 import type { RecipeDefinitionRequest, RecipeRegistryClient, RecipeRegistryRequest } from "../server/recipe-registry";
@@ -363,19 +362,26 @@ async function readDeferredSectionObject(
 }
 
 async function readWorldScopeObject(
-  { envelope, scopeId, cursor }: WorldScopeRequest,
+  { envelope, scopeId, cursor, completeDirectory = false }: WorldScopeRequest,
   signal: AbortSignal,
 ): Promise<WorldScopeUpdate> {
   const key = projectedSourceScope(envelope);
   const source = connectedSources.get(key);
   if (!source || signal.aborted) throw new Error("Refresh the authorized World view before continuing.");
-  const [{ readWorldLocationScopePatch }, { connectedCampaignToDeferredHubUpdate }] = await Promise.all([
+  const [{ readWorldLocationDirectory, readWorldLocationScopePatch }, { connectedCampaignToDeferredHubUpdate }] = await Promise.all([
     import("../server/game-server-context.js"), import("../server/connected-hub-envelope"),
   ]);
-  const patch = await readWorldLocationScopePatch({
+  let patch = await readWorldLocationScopePatch({
     fetchImpl: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, { ...init, signal }),
     origin: window.location.origin, source, scopeId, cursor,
   });
+  const rootId = source.contextSelection.selectedWorldId;
+  if (completeDirectory && cursor === null && scopeId === rootId) {
+    patch = { ...patch, ...await readWorldLocationDirectory({
+      fetchImpl: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, { ...init, signal }),
+      origin: window.location.origin, source: { ...source, ...patch },
+    }) };
+  }
   const latest = connectedSources.get(key);
   if (signal.aborted || !latest) throw new DOMException("World scope replaced", "AbortError");
   const updated = { ...latest, ...patch };
@@ -430,7 +436,12 @@ async function loadDeferredSection(
   return section === "context"
     ? tableResources.loadCampaignContext({ envelope }, signal)
     : section === "locations"
-      ? loadWorldScope(envelope, envelope.contextSelection?.selectedWorldId ?? envelope.world.id, null, signal)
+      ? worldResources.loadScope({
+        envelope,
+        scopeId: envelope.contextSelection?.selectedWorldId ?? envelope.world.id,
+        cursor: null,
+        completeDirectory: true,
+      }, signal)
       : ["people", "lore", "history"].includes(section)
         ? worldResources.loadInformation({ envelope, section: section as WorldInformationRequest["section"] }, signal)
         : section === "current"
@@ -553,13 +564,6 @@ function subscribeChanges(envelope: ReadyHubEnvelope) {
   });
 }
 
-async function saveCampaignPremise(
-  request: CampaignPremiseWriteRequest,
-  signal?: AbortSignal,
-): Promise<CampaignPremiseWriteResult> {
-  const { writeCampaignPremise } = await import("../server/campaign-premise-write");
-  return writeCampaignPremise(request, signal);
-}
 if (!rootElement) throw new Error("The React mount is unavailable.");
 const root = createRoot(rootElement);
 root.render(
@@ -594,7 +598,6 @@ try {
             loadCampaignDetails={loadCampaignDetails}
             loadDeferredSection={loadDeferredSection}
             loadWorldScope={loadWorldScope}
-            writeCampaignPremise={saveCampaignPremise}
             loadRules={loadRulesReference}
             loadContent={loadInstalledContent}
           />

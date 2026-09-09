@@ -163,12 +163,12 @@ test("R13 keeps registered Current owners while removing the live conversation c
   }
 });
 
-test("W09 limits the first website write to the existing mapped DM premise field", async () => {
+test("the play website keeps Campaign read-only without removing the mapped server capability", async () => {
   const feature = contract.features.find(({ id }) => id === "campaign");
   assert.match(feature?.target?.slice ?? "", /W09/u);
-  assert.match(feature?.browserAssembly ?? "", /CampaignPremiseEditor/u);
-  assert.match(feature?.editCapability ?? "", /only the existing DM premise set mapping/u);
-  assert.match(feature?.editCapability ?? "", /Player writes remain intentionally unavailable/u);
+  assert.match(feature?.browserAssembly ?? "", /read-only information/u);
+  assert.match(feature?.editCapability ?? "", /play website is intentionally read-only for every seat/u);
+  assert.match(feature?.editCapability ?? "", /not assembled into the browser/u);
   const object = await findCatalogRecord(catalogObjectRoot, "dnd2024.object.campaign-summary");
   assert.equal(object?.version, 3);
   assert.deepEqual(object?.access?.write, ["dm"]);

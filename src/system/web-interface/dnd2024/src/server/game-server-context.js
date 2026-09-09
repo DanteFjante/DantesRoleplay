@@ -1358,6 +1358,93 @@ export async function readRegisteredWorldPeopleHoldingsPage({
   }
 }
 
+/** Walks only already-authorized child scopes to build the complete visible location hierarchy. */
+export async function readWorldLocationDirectory({ fetchImpl = fetch, origin, source }) {
+  const perspective = source.audience.perspective ?? "player";
+  const worldId = token(source.contextSelection?.selectedWorldId);
+  if (!worldId || !["dm", "player"].includes(perspective))
+    throw new Error("The selected World identity is unavailable.");
+  const locations = new Map((source.locationDirectory ?? []).map((location) => [location.id, location]));
+  const scopes = new Map((source.locationScopes ?? []).map((scope) => [scope.id, {
+    ...scope, childIds: [...scope.childIds],
+  }]));
+  const queued = new Set([worldId]);
+  const queue = [{ id: worldId, depth: 0 }];
+  const visited = new Set();
+  const cleanDirectoryEntry = (entry) => {
+    const { mapVisualState: _mapVisualState, mapVisual: _mapVisual, media: _media, ...clean } = entry;
+    return clean;
+  };
+  const mergeLocation = (entry) => {
+    const clean = cleanDirectoryEntry(entry);
+    const current = locations.get(clean.id);
+    if (current?.containerId && clean.containerId && current.containerId !== clean.containerId)
+      throw new Error("The world location hierarchy returned conflicting containment.");
+    locations.set(clean.id, current ? { ...clean, ...current } : clean);
+  };
+
+  const loadScope = async (next) => {
+    let scope = scopes.get(next.id) ?? null;
+    if (!scope?.complete) {
+      let cursor = scope?.nextCursor ?? null;
+      let expectedSourceRevision = scope?.sourceRevisionFingerprint ?? null;
+      const children = cursor === null ? [] : [...scope.childIds];
+      let owner = locations.get(next.id) ?? null;
+      do {
+        const page = await readRegisteredWorldLocationScopePage({
+          fetchImpl, origin, applicationId: source.applicationId, stateSpaceId: source.stateSpaceId,
+          scopeId: next.id, perspective, includeMedia: false, cursor, expectedSourceRevision,
+        });
+        if (page.status !== "ready")
+          throw new Error("The complete world location directory is unavailable.");
+        owner = owner ?? page.scope;
+        mergeLocation(page.scope);
+        for (const location of page.items) {
+          mergeLocation(location);
+          children.push(location.id);
+        }
+        if (new Set(children).size !== children.length || children.length > page.totalCount)
+          throw new Error("The world location hierarchy returned ambiguous membership.");
+        expectedSourceRevision = page.projection?.sourceRevisionFingerprint ?? expectedSourceRevision;
+        cursor = page.nextCursor;
+        scope = {
+          id: page.scope.id, name: page.scope.name, parentId: page.scope.containerId ?? null,
+          childIds: [...children], totalCount: page.totalCount, complete: page.complete,
+          nextCursor: page.nextCursor, sourceRevisionFingerprint: expectedSourceRevision,
+        };
+      } while (cursor !== null);
+      if (!owner || !scope || !scope.complete || scope.childIds.length !== scope.totalCount)
+        throw new Error("The complete world location directory is unavailable.");
+      scopes.set(next.id, scope);
+    }
+    return { next, scope };
+  };
+
+  while (queue.length > 0) {
+    const batch = queue.splice(0, 8).filter((next) => !visited.has(next.id));
+    if (batch.some((next) => next.depth > 16) || visited.size + batch.length > 2_000)
+      throw new Error("The world location hierarchy exceeds its supported bounds.");
+    const loaded = await Promise.all(batch.map(loadScope));
+    for (const { next, scope } of loaded) {
+      visited.add(next.id);
+      for (const childId of scope.childIds) {
+        if (visited.has(childId) || queued.has(childId)) continue;
+        queued.add(childId);
+        queue.push({ id: childId, depth: next.depth + 1 });
+      }
+    }
+  }
+  for (const id of [...locations.keys()]) if (!visited.has(id)) locations.delete(id);
+  for (const id of [...scopes.keys()]) if (!visited.has(id)) scopes.delete(id);
+  return {
+    locationDirectory: [...locations.values()].sort((left, right) =>
+      left.name.localeCompare(right.name) || left.id.localeCompare(right.id)),
+    locationScopes: [...scopes.values()],
+    locationDirectoryAudience: perspective,
+    locationDirectoryComplete: true,
+  };
+}
+
 /** Reads only the calculated v2 sheet. Full dossier metadata remains a separate resource. */
 export async function readCanonicalCharacterSheet({
   fetchImpl, origin, applicationId, stateSpaceId, actorId, perspective,
@@ -2972,8 +3059,11 @@ export async function readDeferredHubSection({ fetchImpl = fetch, origin, source
   } else if (section === "locations") {
     const worldId = token(source.contextSelection?.selectedWorldId);
     if (!worldId) throw new Error("The selected World identity is unavailable.");
-    Object.assign(patch, await readWorldLocationScopePatch({
+    const root = await readWorldLocationScopePatch({
       fetchImpl: read, origin, source, scopeId: worldId, cursor: null,
+    });
+    Object.assign(patch, root, await readWorldLocationDirectory({
+      fetchImpl: read, origin, source: { ...source, ...root },
     }));
   } else if (section === "people") {
     Object.assign(patch, await readWorldPeopleHoldings({ fetchImpl: read, origin, source }));
