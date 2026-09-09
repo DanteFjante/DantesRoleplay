@@ -420,6 +420,8 @@ invalidations. Missing marker coverage or schema drift also falls back to scope 
 An older database is not migrated by opening a change feed. Apply migrations through the normal
 initialization boundary and retain a pre-migration database backup: downgrading this marker requires
 restoring that backup, because removing its table alone would leave triggers referencing it.
+Initialization compares exact trigger definitions and repairs missing or altered coverage. An
+unchanged schema preserves its existing recovery stamp and triggers without database writes.
 
 ## Scheduled provider work
 

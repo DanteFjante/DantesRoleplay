@@ -2987,15 +2987,8 @@ public sealed class WebInterfaceTests
         var controlCenter = File.ReadAllText(Path.Combine(examples, "control-center", "index.html"));
         var applicationPage = File.ReadAllText(Path.Combine(examples, "application-page.html"));
 
-        Assert.Contains("Inner AI", home, StringComparison.Ordinal);
-        Assert.Contains("<inner-ai aria-label=\"Inner AI system workspace\"></inner-ai>", home,
-            StringComparison.Ordinal);
-        Assert.Contains("document.createElement(\"outer-ai\")", home,
-            StringComparison.Ordinal);
-        Assert.Contains("conversation.setAttribute(\"application-id\", application.value)", home,
-            StringComparison.Ordinal);
-        Assert.Contains("conversation.setAttribute(\"state-space-id\", stateSpace.value)", home,
-            StringComparison.Ordinal);
+        Assert.DoesNotContain("<inner-ai", home, StringComparison.Ordinal);
+        Assert.DoesNotContain("outer-ai", home, StringComparison.Ordinal);
 
         var assistantStart = controlCenter.IndexOf("class AssistantPanel", StringComparison.Ordinal);
         var assistantEnd = controlCenter.IndexOf("class EcsExplorerPanel", assistantStart,
@@ -3053,15 +3046,14 @@ public sealed class WebInterfaceTests
     }
 
     [Fact]
-    public void Home_dashboard_uses_provider_neutral_ai_and_browser_local_notes()
+    public void Home_dashboard_keeps_browser_local_notes_without_ai_chat()
     {
         var home = File.ReadAllText(Path.Combine(
             RepositoryRoot(), "src", "system", "web-interface", "examples", "home.html"));
 
-        Assert.Contains("Outer AI", home, StringComparison.Ordinal);
-        Assert.Contains("document.createElement(\"outer-ai\")", home, StringComparison.Ordinal);
-        Assert.Contains("/api/control/structure/applications", home, StringComparison.Ordinal);
-        Assert.Contains("/state-spaces", home, StringComparison.Ordinal);
+        Assert.DoesNotContain("outer-ai", home, StringComparison.Ordinal);
+        Assert.DoesNotContain("inner-ai", home, StringComparison.Ordinal);
+        Assert.DoesNotContain("/api/control/structure/applications", home, StringComparison.Ordinal);
         Assert.Contains("dantes.personal-dashboard.notes.v1", home, StringComparison.Ordinal);
         Assert.Contains("localStorage.setItem(storageKeys.notes", home, StringComparison.Ordinal);
         Assert.Contains("id=\"local-date-time\"", home, StringComparison.Ordinal);

@@ -30,6 +30,14 @@ internal static class SqliteChangeRecovery
             if (await ScalarAsync(connection, transaction,
                     "SELECT count(*) FROM sqlite_schema WHERE name='system_change_recovery' AND type='table'", ct) == 0)
                 return; // Never silently migrate an older database.
+            var triggers = new Dictionary<string, string>(StringComparer.Ordinal);
+            await using (var command = connection.CreateCommand())
+            {
+                command.Transaction = transaction;
+                command.CommandText = "SELECT name, sql FROM sqlite_schema WHERE type='trigger'";
+                await using var reader = await command.ExecuteReaderAsync(ct);
+                while (await reader.ReadAsync(ct)) triggers.Add(reader.GetString(0), reader.GetString(1));
+            }
             var tables = new List<string>();
             await using (var command = connection.CreateCommand())
             {
@@ -48,10 +56,16 @@ internal static class SqliteChangeRecovery
                     or "system_ecs_containment" or "system_ecs_relationship" ? "StateVersion" : "OtherVersion";
                 foreach (var action in new[] { "INSERT", "UPDATE", "DELETE" })
                 {
-                    var trigger = Quote($"system_change_recovery_{table}_{action}");
+                    var name = $"system_change_recovery_{table}_{action}";
+                    var trigger = Quote(name);
+                    var definition = $"CREATE TRIGGER {trigger} AFTER {action} ON {Quote(table)} "
+                        + $"BEGIN UPDATE system_change_recovery SET {counter}={counter}+1 WHERE Id=1; END";
+                    // SQLite retains CREATE text without its final semicolon. Verify exact
+                    // definitions so missing/modified triggers are repaired, while an unchanged
+                    // restart neither rewrites the schema nor invalidates connected readers.
+                    if (triggers.TryGetValue(name, out var existing) && existing == definition) continue;
                     await ExecuteAsync(connection, transaction,
-                        $"DROP TRIGGER IF EXISTS {trigger}; CREATE TRIGGER {trigger} AFTER {action} ON {Quote(table)} "
-                        + $"BEGIN UPDATE system_change_recovery SET {counter}={counter}+1 WHERE Id=1; END;", ct);
+                        $"DROP TRIGGER IF EXISTS {trigger}; {definition};", ct);
                 }
             }
             var schema = await ScalarAsync(connection, transaction, "PRAGMA schema_version", ct);
@@ -61,7 +75,7 @@ internal static class SqliteChangeRecovery
                 """, ct);
             if (unsupportedVirtualTables > 0) schema = -1; // Unknown storage modules fail closed.
             await ExecuteAsync(connection, transaction,
-                $"UPDATE system_change_recovery SET SchemaVersion={schema}, OtherVersion=OtherVersion+1 WHERE Id=1", ct);
+                $"UPDATE system_change_recovery SET SchemaVersion={schema}, OtherVersion=OtherVersion+1 WHERE Id=1 AND SchemaVersion!={schema}", ct);
             await transaction.CommitAsync(ct);
         }
         finally { if (close) await connection.CloseAsync(); }

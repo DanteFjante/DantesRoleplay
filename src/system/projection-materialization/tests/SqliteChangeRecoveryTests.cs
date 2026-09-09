@@ -10,6 +10,57 @@ namespace DantesRoleplay.Projections.Tests;
 public sealed class SqliteChangeRecoveryTests
 {
     [Fact]
+    public async Task Repeated_installation_preserves_schema_recovery_stamp_and_data_without_writes()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = SqliteChangeRecovery.CreateSql + "CREATE TABLE fixture (value TEXT); INSERT INTO fixture VALUES ('retained');";
+        await command.ExecuteNonQueryAsync();
+        await SqliteChangeRecovery.InstallAsync(connection);
+        var before = await SqliteChangeRecovery.ReadAsync(connection, null);
+        Assert.NotNull(before);
+        command.CommandText = "SELECT total_changes()";
+        var writes = await command.ExecuteScalarAsync();
+        await SqliteChangeRecovery.InstallAsync(connection);
+        await SqliteChangeRecovery.InstallAsync(connection);
+        Assert.Equal(writes, await command.ExecuteScalarAsync());
+        Assert.Equal(before, await SqliteChangeRecovery.ReadAsync(connection, null));
+        command.CommandText = "SELECT value FROM fixture";
+        Assert.Equal("retained", await command.ExecuteScalarAsync());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Installation_repairs_missing_or_modified_triggers(bool replace)
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = SqliteChangeRecovery.CreateSql + "CREATE TABLE fixture (value TEXT);";
+        await command.ExecuteNonQueryAsync();
+        await SqliteChangeRecovery.InstallAsync(connection);
+        var before = (await SqliteChangeRecovery.ReadAsync(connection, null))!.Value;
+        command.CommandText = "DROP TRIGGER system_change_recovery_fixture_INSERT;" + (replace
+            ? "CREATE TRIGGER system_change_recovery_fixture_INSERT AFTER INSERT ON fixture BEGIN SELECT 1; END;"
+            : "");
+        await command.ExecuteNonQueryAsync();
+        Assert.Null(await SqliteChangeRecovery.ReadAsync(connection, null));
+        await SqliteChangeRecovery.InstallAsync(connection);
+        var repaired = (await SqliteChangeRecovery.ReadAsync(connection, null))!.Value;
+        Assert.True(repaired.OtherVersion > before.OtherVersion);
+        foreach (var sql in new[] { "INSERT INTO fixture VALUES ('first')", "UPDATE fixture SET value='second'", "DELETE FROM fixture" })
+        {
+            var previous = (await SqliteChangeRecovery.ReadAsync(connection, null))!.Value;
+            command.CommandText = sql;
+            await command.ExecuteNonQueryAsync();
+            Assert.Equal(previous.OtherVersion + 1,
+                (await SqliteChangeRecovery.ReadAsync(connection, null))!.Value.OtherVersion);
+        }
+    }
+
+    [Fact]
     public async Task Derived_fts5_index_is_not_instrumented_as_canonical_object_state()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
