@@ -1118,6 +1118,42 @@ test("known ways onward fail closed without destination knowledge", async () => 
   assert.deepEqual(routes, []);
 });
 
+test("known ways onward do not probe already classified World and location identities", async () => {
+  let requests = 0;
+  const originId = "location.thalorien.brackenford";
+  const destinationId = "location.thalorien.crownmere";
+  const routes = await readKnownOpenRoutes({
+    fetchImpl: async () => {
+      requests += 1;
+      return response(404, {});
+    },
+    origin: "http://localhost:6217",
+    entityRoot: "/api/applications/dnd2024/state-spaces/dnd2024-main/entities",
+    worldId: "world.thalorien",
+    currentLocationId: originId,
+    perspective: "dm",
+    projectedKnowledge: {
+      status: "ready",
+      entries: [
+        { text: "The World is known.", stance: "known", presentationKind: "statement",
+          subject: { id: "world.thalorien", name: "Thalorien" } },
+        { text: "Brackenford is known.", stance: "known", presentationKind: "statement",
+          subject: { id: originId, name: "Brackenford" } },
+        { text: "Crownmere is known.", stance: "known", presentationKind: "statement",
+          subject: { id: destinationId, name: "Crownmere" } },
+      ],
+      locations: [],
+    },
+    locationDirectory: [
+      { id: originId, name: "Brackenford" },
+      { id: destinationId, name: "Crownmere" },
+    ],
+  });
+
+  assert.deepEqual(routes, []);
+  assert.equal(requests, 0);
+});
+
 test("conversation current scene excludes unapproved participants and summary from Player", async () => {
   const entityRoot = "/api/applications/dnd2024/state-spaces/dnd2024-main/entities";
   const calls = [];

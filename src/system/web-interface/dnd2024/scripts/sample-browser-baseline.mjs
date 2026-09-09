@@ -399,7 +399,8 @@ async function sample(page, client, cacheState, index) {
     await loadAll(/^Show more \(/u, 'rules');
     await capture('rules', '.rule-index-card[data-record-id]');
     await page.reload({ waitUntil: 'domcontentloaded' });
-    await page.locator('#information-content #main-view-heading').waitFor({ state: 'visible' }); await settle();
+    await page.locator('.information-hub:not(.bootstrap-shell) #information-content #main-view-heading')
+      .waitFor({ state: 'visible' }); await settle();
     passed('reload');
     await clickMain('Installed Content');
     await page.locator('.installed-content-view').waitFor({ state: 'visible' }); await settle();

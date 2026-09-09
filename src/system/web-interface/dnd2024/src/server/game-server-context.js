@@ -1934,17 +1934,22 @@ export async function readKnownOpenRoutes({
   locationDirectory,
 }) {
   if (!worldId || !currentLocationId || projectedKnowledge?.status !== "ready") return [];
+  const locationById = new Map(locationDirectory.map((location) => [location.id, location]));
+  const admittedSubjectIds = new Set();
   const subjectEntries = new Map();
   for (const entry of projectedKnowledge.entries) {
     const subjectId = token(entry?.subject?.id);
-    if (!subjectId || entry.stance === "familiar") continue;
+    if (subjectId && entry.stance !== "familiar") admittedSubjectIds.add(subjectId);
+    // Locations and the World itself are already classified by their authorized resources.
+    // They cannot be route entities, so probing each one for a route component only creates a
+    // large fan-out of expected 404s on lore-heavy worlds.
+    if (!subjectId || entry.stance === "familiar" || subjectId === worldId || locationById.has(subjectId)) continue;
     const values = subjectEntries.get(subjectId) ?? [];
     values.push(entry);
     subjectEntries.set(subjectId, values);
   }
   if (subjectEntries.size === 0) return [];
 
-  const locationById = new Map(locationDirectory.map((location) => [location.id, location]));
   const candidates = await Promise.all([...subjectEntries.keys()].map(async (routeId) => {
     const route = await readExactComponent(
       fetchImpl, origin, entityRoot, routeId, WORLD_ROUTE_COMPONENT_TYPE_ID,
@@ -1970,7 +1975,7 @@ export async function readKnownOpenRoutes({
     if (!validOpenRouteAvailability(availability) || routeWorldId !== worldId ||
         originId !== currentLocationId || !destinationId || destinationId === originId) return null;
     const destination = locationById.get(destinationId);
-    if (!destination || (perspective === "player" && !subjectEntries.has(destinationId))) return null;
+    if (!destination || (perspective === "player" && !admittedSubjectIds.has(destinationId))) return null;
     const destinationState = await readExactComponent(
       fetchImpl, origin, entityRoot, destinationId, LOCATION_COMPONENT_TYPE_ID,
     );

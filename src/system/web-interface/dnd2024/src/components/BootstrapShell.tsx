@@ -14,6 +14,7 @@ export function BootstrapShell() {
       <div className="information-hub__body">
         <MainNavigation
           activeTab="world"
+          availableTabs={[]}
           chapter="Campaign"
           onSelect={() => {}}
         />

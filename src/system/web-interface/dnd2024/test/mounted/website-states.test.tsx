@@ -31,9 +31,22 @@ import {
 } from "../../src/components/MapCanvas";
 import { TacticalBoard } from "../../src/components/TacticalBoard";
 import { CombatBoard } from "../../src/components/CombatBoard";
+import { BootstrapShell } from "../../src/components/BootstrapShell";
 import { PERFORMANCE_MARKS, resetPerformanceMarksForTests } from "../../src/observability/performance.js";
 
 const dmPrincipal = "principal.dm.fixture";
+
+test("startup shell exposes navigation as visibly unavailable until the table is connected", async () => {
+  const view = await mount(<BootstrapShell />);
+  try {
+    const navigation = view.container.querySelector('nav[aria-label="Main table views"]');
+    assert.ok(navigation);
+    assert.ok([...navigation.querySelectorAll("button")].length > 0);
+    assert.ok([...navigation.querySelectorAll("button")].every((item) => item.disabled));
+  } finally {
+    await view.cleanup();
+  }
+});
 
 async function mount(element: ReactNode) {
   const dom = new JSDOM("<!doctype html><html><body><div id=\"root\"></div></body></html>", {
