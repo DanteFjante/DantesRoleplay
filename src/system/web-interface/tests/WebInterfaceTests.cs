@@ -3295,6 +3295,8 @@ public sealed class WebInterfaceTests
             "fixture-space", "item-lantern", "game.core.legacy-stats");
         var resolvedLegacyRelationship = await explorer.ListApplicationRelationshipsAsync(
             "fixture-app", "fixture-space", "hero", "game.core.owns", null, null);
+        var resolvedIncomingLegacyRelationship = await explorer.ListApplicationIncomingRelationshipsAsync(
+            "fixture-app", "fixture-space", "item-lantern", "game.core.owns", null, null);
         var containments = await explorer.ListApplicationContainmentsAsync(
             "fixture-app", "fixture-space", "hero", null, "1");
         var directContainment = await explorer.GetApplicationContainmentAsync(
@@ -3322,6 +3324,10 @@ public sealed class WebInterfaceTests
         Assert.Equal("{\"light\":true}", resolvedLegacyComponent.ValueJson);
         Assert.Null(exactCanonicalComponent);
         Assert.Equal("game.core.owns", Assert.Single(resolvedLegacyRelationship.Items).QualifiedKind);
+        var incomingRelationship = Assert.Single(resolvedIncomingLegacyRelationship.Items);
+        Assert.Equal("hero", incomingRelationship.FromEntityId);
+        Assert.Equal("item-lantern", incomingRelationship.ToEntityId);
+        Assert.Equal("game.core.owns", incomingRelationship.QualifiedKind);
         var containment = Assert.Single(containments.Items);
         Assert.Equal("item-lantern", containment.ContainedEntityId);
         Assert.Equal("hero", containment.ContainerEntityId);

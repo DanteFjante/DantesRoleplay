@@ -191,15 +191,32 @@ public static partial class WebInterfaceEndpoints
 
     private static Task<IResult> GetApplicationRelationshipsAsync(
         string applicationId, string stateSpaceId, HttpContext context,
-        ControlStructureExplorer explorer, CancellationToken cancellationToken) =>
-        StructureAsync(context, () => explorer.ListApplicationRelationshipsAsync(
-            applicationId,
-            stateSpaceId,
-            context.Request.Query["fromEntityId"].FirstOrDefault() ?? string.Empty,
-            context.Request.Query["qualifiedKind"].FirstOrDefault() ?? string.Empty,
-            context.Request.Query["cursor"].FirstOrDefault(),
-            context.Request.Query["limit"].FirstOrDefault(),
-            cancellationToken));
+        ControlStructureExplorer explorer, CancellationToken cancellationToken)
+    {
+        var fromEntityId = context.Request.Query["fromEntityId"].FirstOrDefault();
+        var toEntityId = context.Request.Query["toEntityId"].FirstOrDefault();
+        if (!string.IsNullOrWhiteSpace(fromEntityId) && !string.IsNullOrWhiteSpace(toEntityId))
+            return StructureAsync<StructurePage<RelationshipSummary>>(context, () =>
+                Task.FromException<StructurePage<RelationshipSummary>>(
+                    new ArgumentException("Supply either fromEntityId or toEntityId, not both.")));
+        return !string.IsNullOrWhiteSpace(toEntityId)
+            ? StructureAsync(context, () => explorer.ListApplicationIncomingRelationshipsAsync(
+                applicationId,
+                stateSpaceId,
+                toEntityId,
+                context.Request.Query["qualifiedKind"].FirstOrDefault() ?? string.Empty,
+                context.Request.Query["cursor"].FirstOrDefault(),
+                context.Request.Query["limit"].FirstOrDefault(),
+                cancellationToken))
+            : StructureAsync(context, () => explorer.ListApplicationRelationshipsAsync(
+                applicationId,
+                stateSpaceId,
+                fromEntityId ?? string.Empty,
+                context.Request.Query["qualifiedKind"].FirstOrDefault() ?? string.Empty,
+                context.Request.Query["cursor"].FirstOrDefault(),
+                context.Request.Query["limit"].FirstOrDefault(),
+                cancellationToken));
+    }
 
     private static Task<IResult> GetApplicationEntityAsync(
         string applicationId, string stateSpaceId, string entityId, HttpContext context,

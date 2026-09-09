@@ -1880,6 +1880,27 @@ async function readExactRelationshipTargets(
   return targets === null ? null : [...new Set(targets)];
 }
 
+async function readExactIncomingRelationshipSources(
+  fetchImpl,
+  origin,
+  entityRoot,
+  toEntityId,
+  qualifiedKind,
+) {
+  const relationshipRoot = entityRoot.replace(/\/entities$/u, "/relationships");
+  const path = `${relationshipRoot}?toEntityId=${encodeURIComponent(toEntityId)}` +
+    `&qualifiedKind=${encodeURIComponent(qualifiedKind)}`;
+  const pages = await readJsonPages({
+    fetchImpl, origin, path, maximumPages: 10, maximumItems: 1_000,
+  });
+  if (pages.status !== "complete") return null;
+  const sources = pages.items.map((item) =>
+    token(item?.toEntityId) === toEntityId && token(item?.qualifiedKind) === qualifiedKind
+      ? token(item?.fromEntityId)
+      : null);
+  return sources.every(Boolean) && new Set(sources).size === sources.length ? sources : null;
+}
+
 
 async function readSingleExactRelationshipTarget(
   fetchImpl,
@@ -1919,9 +1940,9 @@ function validActiveLocation(value) {
 }
 
 /**
- * Resolves only exact, active, open, directed on-foot routes admitted by the authorized notebook.
- * Knowledge supplies candidate identity; canonical route/location state independently proves the
- * target and never lets descriptive visibility stand in for Player authorization.
+ * Resolves only exact, active, open, directed on-foot routes from the current location. The generic
+ * relationship index supplies candidate identities; canonical route/location state independently
+ * proves each result and knowledge remains the Player authorization boundary.
  */
 export async function readKnownOpenRoutes({
   fetchImpl,
@@ -1933,24 +1954,28 @@ export async function readKnownOpenRoutes({
   projectedKnowledge,
   locationDirectory,
 }) {
-  if (!worldId || !currentLocationId || projectedKnowledge?.status !== "ready") return [];
+  if (!worldId || !currentLocationId ||
+      (perspective === "player" && projectedKnowledge?.status !== "ready")) return [];
   const locationById = new Map(locationDirectory.map((location) => [location.id, location]));
   const admittedSubjectIds = new Set();
   const subjectEntries = new Map();
-  for (const entry of projectedKnowledge.entries) {
+  for (const entry of projectedKnowledge?.entries ?? []) {
     const subjectId = token(entry?.subject?.id);
     if (subjectId && entry.stance !== "familiar") admittedSubjectIds.add(subjectId);
-    // Locations and the World itself are already classified by their authorized resources.
-    // They cannot be route entities, so probing each one for a route component only creates a
-    // large fan-out of expected 404s on lore-heavy worlds.
-    if (!subjectId || entry.stance === "familiar" || subjectId === worldId || locationById.has(subjectId)) continue;
+    if (!subjectId || entry.stance === "familiar") continue;
     const values = subjectEntries.get(subjectId) ?? [];
     values.push(entry);
     subjectEntries.set(subjectId, values);
   }
-  if (subjectEntries.size === 0) return [];
+  const leavingRouteIds = await readExactIncomingRelationshipSources(
+    fetchImpl, origin, entityRoot, currentLocationId, WORLD_ROUTE_RELATIONSHIP_KINDS.origin,
+  );
+  if (leavingRouteIds === null) return [];
+  const authorizedRouteIds = perspective === "player"
+    ? leavingRouteIds.filter((routeId) => subjectEntries.has(routeId))
+    : leavingRouteIds;
 
-  const candidates = await Promise.all([...subjectEntries.keys()].map(async (routeId) => {
+  const candidates = await Promise.all(authorizedRouteIds.map(async (routeId) => {
     const route = await readExactComponent(
       fetchImpl, origin, entityRoot, routeId, WORLD_ROUTE_COMPONENT_TYPE_ID,
     );
@@ -1958,7 +1983,7 @@ export async function readKnownOpenRoutes({
   }));
 
   const resolved = await Promise.all(candidates.filter(Boolean).map(async ({ routeId, route }) => {
-    const [availability, routeWorldId, originId, destinationId] = await Promise.all([
+    const [availability, routeWorldId, destinationId] = await Promise.all([
       readExactComponent(
         fetchImpl, origin, entityRoot, routeId, WORLD_ROUTE_AVAILABILITY_COMPONENT_TYPE_ID,
       ),
@@ -1966,15 +1991,13 @@ export async function readKnownOpenRoutes({
         fetchImpl, origin, entityRoot, routeId, WORLD_ROUTE_RELATIONSHIP_KINDS.world,
       ),
       readSingleExactRelationshipTarget(
-        fetchImpl, origin, entityRoot, routeId, WORLD_ROUTE_RELATIONSHIP_KINDS.origin,
-      ),
-      readSingleExactRelationshipTarget(
         fetchImpl, origin, entityRoot, routeId, WORLD_ROUTE_RELATIONSHIP_KINDS.destination,
       ),
     ]);
     if (!validOpenRouteAvailability(availability) || routeWorldId !== worldId ||
-        originId !== currentLocationId || !destinationId || destinationId === originId) return null;
-    const destination = locationById.get(destinationId);
+        !destinationId || destinationId === currentLocationId) return null;
+    const destination = locationById.get(destinationId) ??
+      await readNamedEntity(fetchImpl, origin, entityRoot, destinationId);
     if (!destination || (perspective === "player" && !admittedSubjectIds.has(destinationId))) return null;
     const destinationState = await readExactComponent(
       fetchImpl, origin, entityRoot, destinationId, LOCATION_COMPONENT_TYPE_ID,
@@ -1986,7 +2009,7 @@ export async function readKnownOpenRoutes({
     if (!detail) return null;
     return {
       id: routeId,
-      originId,
+      originId: currentLocationId,
       destinationId,
       destinationName: destination.name,
       detail,

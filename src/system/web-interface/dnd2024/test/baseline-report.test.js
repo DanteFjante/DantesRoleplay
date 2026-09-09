@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { audienceViewFor, browserEvidence, gateEvidence, machineProfile, normalizeListener, requiredMarks,
   sameLivePage, sha256, summarizeRequests, summarizeSamples } from "../scripts/collect-baseline.mjs";
 import { browserStorageState, initializeBrowserProbe, isPersistentReadPath, remainingPairDelay,
-  reportedPayloadBytes, requestMetadata } from "../scripts/sample-browser-baseline.mjs";
+  navigateToBaseline, reportedPayloadBytes, requestMetadata } from "../scripts/sample-browser-baseline.mjs";
 import { JSDOM } from 'jsdom';
 
 test("baseline percentiles always retain sample count, p50, and p95", () => {
@@ -131,6 +131,28 @@ test('baseline accepts exact credential-free public and local origins', () => {
   assert.equal(normalizeListener('http://98.128.172.181'), 'http://98.128.172.181');
   for (const url of ['http://user:secret@localhost:6217', 'http://localhost:6217/?secret=1',
     'http://localhost:6217/ui/dnd2024-play', 'file:///private']) assert.throws(() => normalizeListener(url));
+});
+
+test('warm baseline navigation reloads an already-open direct entry instead of becoming a no-op', async () => {
+  const calls = [];
+  const page = {
+    baselineUrl: 'http://localhost:6217/ui/dnd2024-play#view?tab=party&section=inventory',
+    url: () => 'http://localhost:6217/ui/dnd2024-play#view?tab=party&section=inventory',
+    reload: async options => { calls.push(['reload', options]); },
+    goto: async (...args) => { calls.push(['goto', ...args]); },
+  };
+  const options = { waitUntil: 'domcontentloaded', timeout: 60_000 };
+
+  await navigateToBaseline(page, options);
+  assert.deepEqual(calls, [['reload', options]]);
+
+  page.url = () => 'http://localhost:6217/ui/dnd2024-play#view?tab=party&section=inventory&character=fixture';
+  await navigateToBaseline(page, options);
+  assert.deepEqual(calls.slice(1), [['goto', page.baselineUrl, options], ['reload', options]]);
+
+  page.url = () => 'about:blank';
+  await navigateToBaseline(page, options);
+  assert.deepEqual(calls[3], ['goto', page.baselineUrl, options]);
 });
 
 test('browser ledger records transport metadata, not query values or private bodies', () => {

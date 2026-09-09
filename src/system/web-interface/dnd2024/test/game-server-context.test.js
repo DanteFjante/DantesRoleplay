@@ -1025,9 +1025,13 @@ test("known ways onward require admitted exact route and destination subjects", 
       if (path.endsWith("/relationships")) {
         const kind = requested.searchParams.get("qualifiedKind");
         requestedKinds.push(kind);
+        if (requested.searchParams.get("toEntityId") === originId) {
+          return response(200, {
+            items: [{ fromEntityId: routeId, toEntityId: originId, qualifiedKind: kind }],
+          });
+        }
         const targets = {
           "game.core.world.route.in-world": "world.thalorien",
-          "game.core.world.route.from": originId,
           "game.core.world.route.to": destinationId,
         };
         return response(200, { items: [{ fromEntityId: routeId, toEntityId: targets[kind], qualifiedKind: kind }] });
@@ -1091,9 +1095,13 @@ test("known ways onward fail closed without destination knowledge", async () => 
       }
       if (path.endsWith("/relationships")) {
         const kind = requested.searchParams.get("qualifiedKind");
+        if (requested.searchParams.get("toEntityId") === originId) {
+          return response(200, {
+            items: [{ fromEntityId: routeId, toEntityId: originId, qualifiedKind: kind }],
+          });
+        }
         const targets = {
           "game.core.world.route.in-world": "world.thalorien",
-          "game.core.world.route.from": originId,
           "game.core.world.route.to": destinationId,
         };
         return response(200, { items: [{ fromEntityId: routeId, toEntityId: targets[kind], qualifiedKind: kind }] });
@@ -1118,14 +1126,18 @@ test("known ways onward fail closed without destination knowledge", async () => 
   assert.deepEqual(routes, []);
 });
 
-test("known ways onward do not probe already classified World and location identities", async () => {
+test("known ways onward discover route candidates without probing knowledge subjects", async () => {
   let requests = 0;
   const originId = "location.thalorien.brackenford";
   const destinationId = "location.thalorien.crownmere";
   const routes = await readKnownOpenRoutes({
-    fetchImpl: async () => {
+    fetchImpl: async (input) => {
       requests += 1;
-      return response(404, {});
+      const requested = new URL(input);
+      assert.equal(requested.pathname.endsWith("/relationships"), true);
+      assert.equal(requested.searchParams.get("toEntityId"), originId);
+      assert.equal(requested.searchParams.get("qualifiedKind"), "game.core.world.route.from");
+      return response(200, { items: [] });
     },
     origin: "http://localhost:6217",
     entityRoot: "/api/applications/dnd2024/state-spaces/dnd2024-main/entities",
@@ -1151,7 +1163,7 @@ test("known ways onward do not probe already classified World and location ident
   });
 
   assert.deepEqual(routes, []);
-  assert.equal(requests, 0);
+  assert.equal(requests, 1);
 });
 
 test("conversation current scene excludes unapproved participants and summary from Player", async () => {

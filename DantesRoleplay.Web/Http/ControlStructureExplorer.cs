@@ -273,7 +273,7 @@ public sealed class ControlStructureExplorer(
         var matches = relationships
             .Where(value => value.FromEntityId == fromEntityId && value.QualifiedKind == qualifiedKind)
             .OrderBy(value => value.ToEntityId, StringComparer.Ordinal)
-            .TakeWhile(value => afterToEntityId is null ||
+            .Where(value => afterToEntityId is null ||
                 string.CompareOrdinal(value.ToEntityId, afterToEntityId) > 0)
             .Take(pageSize + 1)
             .ToArray();
@@ -284,7 +284,7 @@ public sealed class ControlStructureExplorer(
                 matches = relationships
                     .Where(value => value.FromEntityId == fromEntityId && value.QualifiedKind == legacyKind)
                     .OrderBy(value => value.ToEntityId, StringComparer.Ordinal)
-                    .TakeWhile(value => afterToEntityId is null ||
+                    .Where(value => afterToEntityId is null ||
                         string.CompareOrdinal(value.ToEntityId, afterToEntityId) > 0)
                     .Take(pageSize + 1)
                     .ToArray();
@@ -292,6 +292,48 @@ public sealed class ControlStructureExplorer(
         var items = matches.Take(pageSize).Select(value =>
             Summary(value) with { QualifiedKind = qualifiedKind }).ToArray();
         var next = matches.Length > pageSize ? matches[pageSize - 1].ToEntityId : null;
+        return Page(items, next, "relationships", scope, pageSize);
+    }
+
+    public async Task<StructurePage<RelationshipSummary>> ListApplicationIncomingRelationshipsAsync(
+        string applicationId,
+        string stateSpaceId,
+        string toEntityId,
+        string qualifiedKind,
+        string? cursor,
+        string? limit,
+        CancellationToken cancellationToken = default)
+    {
+        RequireApplicationStateSpace(applicationId, stateSpaceId);
+        toEntityId = BoundedId(toEntityId, 200, "toEntityId");
+        qualifiedKind = BoundedId(qualifiedKind, 200, "qualifiedKind");
+        await RequireEntityAsync(stateSpaceId, toEntityId, cancellationToken);
+        var pageSize = PageSize(limit);
+        var scope = stateSpaceId + "\n" + toEntityId + "\n" + qualifiedKind + "\nincoming";
+        var afterFromEntityId = Decode(cursor, "relationships", scope, pageSize);
+        var relationships = await RequireEdges().ListRelationshipsAsync(stateSpaceId, cancellationToken);
+        var matches = relationships
+            .Where(value => value.ToEntityId == toEntityId && value.QualifiedKind == qualifiedKind)
+            .OrderBy(value => value.FromEntityId, StringComparer.Ordinal)
+            .Where(value => afterFromEntityId is null ||
+                string.CompareOrdinal(value.FromEntityId, afterFromEntityId) > 0)
+            .Take(pageSize + 1)
+            .ToArray();
+        if (matches.Length == 0)
+        {
+            var legacyKind = LegacyApplicationIdentity(applicationId, qualifiedKind);
+            if (legacyKind != qualifiedKind)
+                matches = relationships
+                    .Where(value => value.ToEntityId == toEntityId && value.QualifiedKind == legacyKind)
+                    .OrderBy(value => value.FromEntityId, StringComparer.Ordinal)
+                    .Where(value => afterFromEntityId is null ||
+                        string.CompareOrdinal(value.FromEntityId, afterFromEntityId) > 0)
+                    .Take(pageSize + 1)
+                    .ToArray();
+        }
+        var items = matches.Take(pageSize).Select(value =>
+            Summary(value) with { QualifiedKind = qualifiedKind }).ToArray();
+        var next = matches.Length > pageSize ? matches[pageSize - 1].FromEntityId : null;
         return Page(items, next, "relationships", scope, pageSize);
     }
 

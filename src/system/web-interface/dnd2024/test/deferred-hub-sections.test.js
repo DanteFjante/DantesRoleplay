@@ -168,8 +168,12 @@ test("Current cross-checks registered Resume and Current Scene without raw state
   assert.deepEqual(result.currentSituation.affordances, [
     { key: "look-around", label: "Look around", summary: "Survey the area." },
   ]);
-  assert.equal(calls.length, 2);
-  assert.ok(calls.every((target) => target.pathname.includes("/read-models/") &&
+  assert.equal(calls.length, 3);
+  assert.equal(calls.filter((target) => target.pathname.includes("/read-models/")).length, 2);
+  const routeLookup = calls.find((target) => target.pathname.endsWith("/relationships"));
+  assert.equal(routeLookup.searchParams.get("toEntityId"), "location.caldris.one");
+  assert.equal(routeLookup.searchParams.get("qualifiedKind"), "game.core.world.route.from");
+  assert.ok(calls.every((target) =>
     !target.pathname.includes("/components/") && !target.pathname.endsWith("/containment")));
 });
 

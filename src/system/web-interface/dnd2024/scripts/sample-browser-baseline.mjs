@@ -25,6 +25,16 @@ export const browserStorageState = (listener, perspective) => ({
 export const remainingPairDelay = (previousStart, now, spacingMs) => previousStart === null
   ? 0 : Math.max(0, previousStart + spacingMs - now);
 
+export async function navigateToBaseline(page, options) {
+  const currentUrl = page.url();
+  if (currentUrl === page.baselineUrl) return page.reload(options);
+  const sameDocument = currentUrl.split('#', 1)[0] === page.baselineUrl.split('#', 1)[0];
+  await page.goto(page.baselineUrl, options);
+  // Playwright correctly treats a hash-only goto as same-document navigation. For a new
+  // acceptance sample we still need a fresh document while retaining the warmed HTTP cache.
+  if (sameDocument) return page.reload(options);
+}
+
 export function initializeBrowserProbe({ perspective }) {
   localStorage.setItem('dnd2024-table-mode', perspective);
   window.__DND_BASELINE_BLOCKED_WRITES__ = 0;
@@ -180,7 +190,7 @@ async function sample(page, client, cacheState, index) {
     }
   };
   try {
-    await page.goto(page.baselineUrl, { waitUntil: 'domcontentloaded', timeout: 60_000 });
+    await navigateToBaseline(page, { waitUntil: 'domcontentloaded', timeout: 60_000 });
     await page.waitForFunction(() => window.__DND_BASELINE_SCRIPT_ERRORS__ > 0 ||
       window.__DND_BASELINE_DOM_MARKS__?.activeView &&
       performance.getEntriesByName('dnd2024.bootstrap.response').length, null, { timeout: 60_000 });
@@ -219,12 +229,12 @@ async function sample(page, client, cacheState, index) {
     passed('inventory-first-entry-style');
     const firstReadyAssetPaths = await page.evaluate(() => [...new Set(performance.getEntriesByType('resource')
       .map(entry => new URL(entry.name).pathname).filter(path => /\/assets\/.*\.(?:css|js)$/u.test(path)))]);
-    assert.ok(!firstReadyAssetPaths.some(path =>
-      /(?:ItemRecipes|ItemRegistryWorkspaceFeature|ScopedMapWorkspace|RulesView|InstalledContentView|PreviewViewsFeature)/u.test(path)),
-    'An unrelated lazy feature asset loaded before direct-entry Inventory became ready');
     run.firstReadyAssets = { ...recordSetEvidence(firstReadyAssetPaths),
       cssCount: firstReadyAssetPaths.filter(path => path.endsWith('.css')).length,
       jsCount: firstReadyAssetPaths.filter(path => path.endsWith('.js')).length };
+    assert.ok(!firstReadyAssetPaths.some(path =>
+      /(?:ItemRecipes|ItemRegistryWorkspaceFeature|ScopedMapWorkspace|RulesView|InstalledContentView|PreviewViewsFeature)/u.test(path)),
+    'An unrelated lazy feature asset loaded before direct-entry Inventory became ready');
     passed('inventory-css-isolation');
     run.marks.firstReady = await time();
     await capture('inventory', '[data-item-open]');
