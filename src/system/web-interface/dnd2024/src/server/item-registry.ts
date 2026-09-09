@@ -76,6 +76,11 @@ function text(value: unknown, maximum: number, allowEmpty = false): string | nul
     && (allowEmpty || value.length > 0) && !/[\u0000-\u001F\u007F]/u.test(value) ? value : null;
 }
 
+function jsonText(value: unknown, maximum: number): string | null {
+  return typeof value === "string" && value.trim().length > 0 && value.length <= maximum
+    && !/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/u.test(value) ? value : null;
+}
+
 function optionalText(value: unknown, maximum: number): string | null {
   return value === null ? null : text(value, maximum);
 }
@@ -295,7 +300,7 @@ export async function readItemDefinition({
     response.status === 404 ? "This item definition is no longer in the registry." : "The item definition is unavailable.");
   const decoded = await readBoundedJson(response, MAXIMUM_DETAIL_BYTES);
   const body = decoded.status === "ready" ? object(decoded.value) : null;
-  const contentJson = text(body?.contentJson, MAXIMUM_CONTENT_CHARACTERS, true);
+  const contentJson = jsonText(body?.contentJson, MAXIMUM_CONTENT_CHARACTERS);
   const record = summary(body?.summary, request.sourceLabel ?? "Catalog", "core");
   if (!contentJson || !record || record.id !== request.id || record.collection !== request.collection)
     throw new ViewReadError("incompatible-data", "The item-definition response is invalid.");

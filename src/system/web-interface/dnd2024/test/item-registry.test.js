@@ -88,7 +88,7 @@ test("definition detail is definition-only, handles renamed and retired records,
         sourceRef: { sourceId: "fixture", locator: "Fixture > Renamed lantern" },
       },
     },
-  });
+  }, null, 2).replaceAll("\n", "\r\n") + "\r\n";
   const result = await readItemDefinition({
     serverOrigin: "https://table.test", applicationId: "dnd2024",
     request: { id: registryRecord.qualifiedId, collection: "dnd2024",

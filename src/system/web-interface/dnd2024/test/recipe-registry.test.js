@@ -43,7 +43,7 @@ const completeRecipe = JSON.stringify({
       crafterRequirement: { operator: "predicate", predicateId: "predicate.level.minimum", arguments: [5] },
     },
   },
-});
+}, null, "\t") + "\n";
 
 test("recipe registry uses recipe and reference indexes with source-bound paging", async () => {
   const calls = [];

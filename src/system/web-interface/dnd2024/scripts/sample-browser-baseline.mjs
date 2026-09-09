@@ -146,16 +146,30 @@ async function sample(page, client, cacheState, index) {
       await page.waitForTimeout(25);
     }
   };
-  const settle = async () => { await waitForFiniteRequests(); await paint(); await waitForFiniteRequests(); await paint(); };
+  const settle = async () => {
+    // React may commit a cached view before its passive refresh effect starts. Give that effect an
+    // event-loop turn before treating an empty request set as settled, then prove all finite reads
+    // have completed on both sides of the final paint.
+    await paint();
+    await page.waitForTimeout(25);
+    await waitForFiniteRequests();
+    await paint();
+    await page.waitForTimeout(25);
+    await waitForFiniteRequests();
+    await paint();
+  };
   const passed = name => { run.checks[name] = 'passed'; };
   const capture = async (name, selector, fallbackIds = []) => {
     const snapshot = await page.evaluate(({ selector, fallbackIds }) => {
       const root = document.querySelector('#information-content');
       if (!root?.querySelector('#main-view-heading') && !root?.querySelector('.item-page, .recipe-page'))
         return { status: 'unloaded', ids: [] };
-      if (root.querySelector('.view-loading, [aria-busy="true"]')) return { status: 'unloaded', ids: [] };
-      if (root.querySelector('.view-render-error, [role="alert"]')) return { status: 'error', ids: [] };
-      const ids = [...root.querySelectorAll(selector)].map(element =>
+      const visible = element => element.getClientRects().length > 0;
+      if ([...root.querySelectorAll('.view-loading, [aria-busy="true"]')].some(visible))
+        return { status: 'unloaded', ids: [] };
+      if ([...root.querySelectorAll('.view-render-error, [role="alert"]')].some(visible))
+        return { status: 'error', ids: [] };
+      const ids = [...root.querySelectorAll(selector)].filter(visible).map(element =>
         element.getAttribute('data-record-id') ?? element.getAttribute('data-item-open') ??
         element.getAttribute('data-registry-entry') ?? element.getAttribute('data-recipe-entry') ??
         (element.id || null) ??
