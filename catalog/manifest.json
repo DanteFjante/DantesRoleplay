@@ -385,127 +385,127 @@
     {
       "kind": "procedure",
       "id": "dnd2024.procedure.mechanic.abilities",
-      "version": 1,
-      "contentHash": "4A0E00674863FD111399B50BBE4AFCA5C5DE4FBDA8338892B6531903C42BCF11",
+      "version": 2,
+      "contentHash": "C35C1F49ADEA8DCCD6ED1801B0DB8A1DA17E96858FC26920F6D8616447A461B4",
       "path": "procedures/dnd2024/procedure/mechanic/abilities.md"
     },
     {
       "kind": "procedure",
       "id": "dnd2024.procedure.mechanic.armor-class",
-      "version": 1,
-      "contentHash": "903F975EE08752F36C45B632B419AC4D119413E3DA9BDA2A8D06D429610C6C5C",
+      "version": 2,
+      "contentHash": "46CA8972706FEC42340FD6BC5CC24206360C7C520E09EAD9831A9E67D8BDBE27",
       "path": "procedures/dnd2024/procedure/mechanic/armor-class.md"
     },
     {
       "kind": "procedure",
       "id": "dnd2024.procedure.mechanic.character-level",
-      "version": 1,
-      "contentHash": "CBEE340ED74644D7F229F3009289401A648F3880C54172AF72EA8790E48CD2AA",
+      "version": 2,
+      "contentHash": "73DF25BBAD39CDBB2E4690D3A5407FF49375F94F4594372E2C0D78A33D3C7F56",
       "path": "procedures/dnd2024/procedure/mechanic/character-level.md"
     },
     {
       "kind": "procedure",
       "id": "dnd2024.procedure.mechanic.check.ability",
-      "version": 1,
-      "contentHash": "94603E0F020E3BD3642CD12FECD11A87A00153FD6DE3AD41D4F79E7B6C99D4A8",
+      "version": 2,
+      "contentHash": "4FC97FBA833ECD48C185343FD91F8854E34D25DCCB8CCE60D399C8DC1E8D8F8B",
       "path": "procedures/dnd2024/procedure/mechanic/check/ability.md"
     },
     {
       "kind": "procedure",
       "id": "dnd2024.procedure.mechanic.dice",
-      "version": 1,
-      "contentHash": "38AF1ACF5107E3A07BE4AB7E4885A62ADC7D3F31CE6B44B4A31304C38ACDF45E",
+      "version": 2,
+      "contentHash": "0E14A3CCA64C687894C19060809970BB55BE18CE2816410B21D2BA35BED79388",
       "path": "procedures/dnd2024/procedure/mechanic/dice.md"
     },
     {
       "kind": "procedure",
       "id": "dnd2024.procedure.mechanic.encounter-initiative-order",
-      "version": 1,
-      "contentHash": "65C10875F496C46DA14343676300DDC149B64C4145C71C7DBA472D727F18F5DC",
+      "version": 2,
+      "contentHash": "14AF08A680590E2820BBB383323A56D7F5FD764FBD27674869B1022AC942EBAD",
       "path": "procedures/dnd2024/procedure/mechanic/encounter-initiative-order.md"
     },
     {
       "kind": "procedure",
       "id": "dnd2024.procedure.mechanic.hit-points",
-      "version": 1,
-      "contentHash": "2FE9B5BF87B77010EBD458BF144A3B35B53BAD04EBAAC82BAB7ECF67769E25FE",
+      "version": 2,
+      "contentHash": "ECEFD05CEA275FE2AAB342C7A41605D36028810381421E64335C38D269E45B0F",
       "path": "procedures/dnd2024/procedure/mechanic/hit-points.md"
     },
     {
       "kind": "procedure",
       "id": "dnd2024.procedure.mechanic.initiative",
-      "version": 1,
-      "contentHash": "27F1DF434ADDE776B7EBEB9686D4EDE40713B5E412826F154961A2D3A1C9553F",
+      "version": 2,
+      "contentHash": "EA492124B7DF499DC866D7D0C95C34B8C31BEF153AA7942FB3459E4CE77A22ED",
       "path": "procedures/dnd2024/procedure/mechanic/initiative.md"
     },
     {
       "kind": "procedure",
       "id": "dnd2024.procedure.mechanic.play",
-      "version": 1,
-      "contentHash": "3BF08899F490D64C0F16D6F3F5E0A6DA49D4B6EE50439F9B39D7B9A7C736710C",
+      "version": 2,
+      "contentHash": "516BAAE49F88C7DC733255CF89297901B4578CDD58251E78A4FCF88B62C84711",
       "path": "procedures/dnd2024/procedure/mechanic/play.md"
     },
     {
       "kind": "procedure",
       "id": "dnd2024.procedure.mechanic.ruleset",
-      "version": 1,
-      "contentHash": "C5F8BA2335439703C40F881F88FE92285838C0C0DEA65EC15A6BDAAF80860D1D",
+      "version": 2,
+      "contentHash": "DF04819409E3942C859024B74EB580552D0A74F021B40928B9DAD814FF8D5609",
       "path": "procedures/dnd2024/procedure/mechanic/ruleset.md"
     },
     {
       "kind": "procedure",
       "id": "dnd2024.procedure.mechanic.saving-throw",
-      "version": 1,
-      "contentHash": "E6DEDC92B55DD134C01DFB7A7FFA71A214276EDEAD0EB4C4A29A2624819CDD3C",
+      "version": 2,
+      "contentHash": "08CE3DD0459FAA1D39AAB7A5E3D579D9E2E06A9300D05C7E8BED751D8A6C05A3",
       "path": "procedures/dnd2024/procedure/mechanic/saving-throw.md"
     },
     {
       "kind": "procedure",
       "id": "dnd2024.procedure.mechanic.skill-proficiencies",
-      "version": 1,
-      "contentHash": "178663C18CE1031133BB8030895C51F9CA6D9C2CE2EA8DCCA2B158BFD3A90E59",
+      "version": 2,
+      "contentHash": "0E8B487C05BCF599DE256931EEEA090A8BF55AFCDE73A93FF3E8B9248A0A9599",
       "path": "procedures/dnd2024/procedure/mechanic/skill-proficiencies.md"
     },
     {
       "kind": "procedure",
       "id": "dnd2024.procedure.mechanic.source-registry",
-      "version": 1,
-      "contentHash": "C2E48B579276AD127E6E4BF0F5549D6DA55B3A6B039EE4B9B72163244D7889FA",
+      "version": 2,
+      "contentHash": "36A510866E8720C1A9ACCA346B64BDBFD187A659A8C08401C9A0C5026A3F747D",
       "path": "procedures/dnd2024/procedure/mechanic/source-registry.md"
     },
     {
       "kind": "procedure",
       "id": "dnd2024.procedure.mechanic.weapon-attack",
-      "version": 1,
-      "contentHash": "DD91283706DD8C4EC16684C63221108B571F13F7CC49B69D9E65BD775222183E",
+      "version": 2,
+      "contentHash": "441AD872304613CF6966608B8994AE6393F1CFD5CF28E7383487C98018C35768",
       "path": "procedures/dnd2024/procedure/mechanic/weapon-attack.md"
     },
     {
       "kind": "procedure",
       "id": "dnd2024.procedure.mechanic.weapon-damage.apply",
-      "version": 1,
-      "contentHash": "0324769876D2EE591F52BE3E82D25A799ED00F5E29473D169D577AF3A37298D7",
+      "version": 2,
+      "contentHash": "491A569491632ED178C4E7A53E83F3B22C1421F6666A06488FCC18F1C09E6275",
       "path": "procedures/dnd2024/procedure/mechanic/weapon-damage/apply.md"
     },
     {
       "kind": "procedure",
       "id": "dnd2024.procedure.mechanic.weapon-damage.roll",
-      "version": 1,
-      "contentHash": "9C4C13BDCAD3EB0EC0B1627630AAC07E2EA0973AE33A44F4BAAD630D900B1629",
+      "version": 2,
+      "contentHash": "9592543DCA4F95CB9633A7D19EB435B5E586A1AB36B46353D5BCB9373C20E4B0",
       "path": "procedures/dnd2024/procedure/mechanic/weapon-damage/roll.md"
     },
     {
       "kind": "procedure",
       "id": "dnd2024.procedure.mechanic.weapon-proficiencies",
-      "version": 1,
-      "contentHash": "7975C5318554EA69C8DCF619C1EFD9B4C78BF3C11C418793C15DE722BC8190F5",
+      "version": 2,
+      "contentHash": "B5D85033DB50569B433B622E0C59826FAEA49EF2260181D3A19250839A26B4D4",
       "path": "procedures/dnd2024/procedure/mechanic/weapon-proficiencies.md"
     },
     {
       "kind": "procedure",
       "id": "dnd2024.procedure.mechanic.weapon-profile",
-      "version": 1,
-      "contentHash": "3E8097E9D499F46C148B9D077203BA9BE02D2D54607C0507A49D533839D1A02C",
+      "version": 2,
+      "contentHash": "4D0A057CE485C7C7CB423F7A4A6D15132FD4EE6915152F0FFA41FD366197523C",
       "path": "procedures/dnd2024/procedure/mechanic/weapon-profile.md"
     },
     {
@@ -693,8 +693,8 @@
     {
       "kind": "procedure",
       "id": "procedure.game.core.world.media",
-      "version": 2,
-      "contentHash": "C35176FABD119D16F5EE641699D8E1BB6161C9BB6F243DC3712D37793D720D7B",
+      "version": 3,
+      "contentHash": "3CFBA4183370ED95D6B527207FF281327B0B6D9912B3D6BE2872F2E135C8F4BE",
       "path": "procedures/procedure/game/core/world/media.md"
     },
     {
@@ -770,127 +770,127 @@
     {
       "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.abilities",
-      "version": 1,
-      "contentHash": "4A0E00674863FD111399B50BBE4AFCA5C5DE4FBDA8338892B6531903C42BCF11",
+      "version": 2,
+      "contentHash": "C35C1F49ADEA8DCCD6ED1801B0DB8A1DA17E96858FC26920F6D8616447A461B4",
       "path": "procedures/procedure/mechanic/dnd2024/abilities.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.armor-class",
-      "version": 1,
-      "contentHash": "BE7BCA7DC193EA8B6A75215FE04F68DA4040B46B673C5B84F9CD11090A743E3E",
+      "version": 2,
+      "contentHash": "46CA8972706FEC42340FD6BC5CC24206360C7C520E09EAD9831A9E67D8BDBE27",
       "path": "procedures/procedure/mechanic/dnd2024/armor-class.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.character-level",
-      "version": 1,
-      "contentHash": "4497E249CB1048F9104E75150CB6292D764AF602FE7E19EB28BCEA95B5527F8E",
+      "version": 2,
+      "contentHash": "73DF25BBAD39CDBB2E4690D3A5407FF49375F94F4594372E2C0D78A33D3C7F56",
       "path": "procedures/procedure/mechanic/dnd2024/character-level.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.check.ability",
-      "version": 3,
-      "contentHash": "82DAB042471D38AC80D3B96B3C0F09AAFE84238D55E5B1DE702651E16EAB5CD8",
+      "version": 4,
+      "contentHash": "4FC97FBA833ECD48C185343FD91F8854E34D25DCCB8CCE60D399C8DC1E8D8F8B",
       "path": "procedures/procedure/mechanic/dnd2024/check/ability.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.dice",
-      "version": 1,
-      "contentHash": "38AF1ACF5107E3A07BE4AB7E4885A62ADC7D3F31CE6B44B4A31304C38ACDF45E",
+      "version": 2,
+      "contentHash": "0E14A3CCA64C687894C19060809970BB55BE18CE2816410B21D2BA35BED79388",
       "path": "procedures/procedure/mechanic/dnd2024/dice.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.encounter-initiative-order",
-      "version": 1,
-      "contentHash": "0F0DA85686872CBD3CA0FD35CBB0F6DAC16588CAD09B37EAEF9D0C1130E21B42",
+      "version": 2,
+      "contentHash": "14AF08A680590E2820BBB383323A56D7F5FD764FBD27674869B1022AC942EBAD",
       "path": "procedures/procedure/mechanic/dnd2024/encounter-initiative-order.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.hit-points",
-      "version": 1,
-      "contentHash": "FBD5C4475137A8DAA356914C96E12CEBFC50E7554F017B8E1A10B024D1DF26D6",
+      "version": 2,
+      "contentHash": "ECEFD05CEA275FE2AAB342C7A41605D36028810381421E64335C38D269E45B0F",
       "path": "procedures/procedure/mechanic/dnd2024/hit-points.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.initiative",
-      "version": 1,
-      "contentHash": "F701C077F2919F7621CBCC78C1B218DE5B60BB843BFC064EFD52E1BDAE1BB4B6",
+      "version": 2,
+      "contentHash": "EA492124B7DF499DC866D7D0C95C34B8C31BEF153AA7942FB3459E4CE77A22ED",
       "path": "procedures/procedure/mechanic/dnd2024/initiative.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.play",
-      "version": 3,
-      "contentHash": "3BF08899F490D64C0F16D6F3F5E0A6DA49D4B6EE50439F9B39D7B9A7C736710C",
+      "version": 4,
+      "contentHash": "516BAAE49F88C7DC733255CF89297901B4578CDD58251E78A4FCF88B62C84711",
       "path": "procedures/procedure/mechanic/dnd2024/play.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.ruleset",
-      "version": 4,
-      "contentHash": "C5F8BA2335439703C40F881F88FE92285838C0C0DEA65EC15A6BDAAF80860D1D",
+      "version": 5,
+      "contentHash": "DF04819409E3942C859024B74EB580552D0A74F021B40928B9DAD814FF8D5609",
       "path": "procedures/procedure/mechanic/dnd2024/ruleset.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.saving-throw",
-      "version": 1,
-      "contentHash": "7B64DD66A270C5C93874C91B49DFB53BC5EFB2511B44BD4BEBE983F745F8E273",
+      "version": 2,
+      "contentHash": "08CE3DD0459FAA1D39AAB7A5E3D579D9E2E06A9300D05C7E8BED751D8A6C05A3",
       "path": "procedures/procedure/mechanic/dnd2024/saving-throw.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.skill-proficiencies",
-      "version": 2,
-      "contentHash": "8D4E2B4C92C5D5B1943CE773B0A5661439EE5644B712F702363B4872F02A1302",
+      "version": 3,
+      "contentHash": "0E8B487C05BCF599DE256931EEEA090A8BF55AFCDE73A93FF3E8B9248A0A9599",
       "path": "procedures/procedure/mechanic/dnd2024/skill-proficiencies.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.source-registry",
-      "version": 1,
-      "contentHash": "3853E501A127C3219C5C808B2ADFE7B9A867ACA04F8853AF8615ABE0A3D5C664",
+      "version": 2,
+      "contentHash": "36A510866E8720C1A9ACCA346B64BDBFD187A659A8C08401C9A0C5026A3F747D",
       "path": "procedures/procedure/mechanic/dnd2024/source-registry.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.weapon-attack",
-      "version": 1,
-      "contentHash": "1CAE8D3A636A612C51B6875BAC231E74FD6466BFA7B8E690A82AA535F52CBAF9",
+      "version": 2,
+      "contentHash": "441AD872304613CF6966608B8994AE6393F1CFD5CF28E7383487C98018C35768",
       "path": "procedures/procedure/mechanic/dnd2024/weapon-attack.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.weapon-damage.apply",
-      "version": 1,
-      "contentHash": "B9E1F20DDA32372E988143AEE84DBF29A44753567BAAF61209D17EC50F58244A",
+      "version": 2,
+      "contentHash": "491A569491632ED178C4E7A53E83F3B22C1421F6666A06488FCC18F1C09E6275",
       "path": "procedures/procedure/mechanic/dnd2024/weapon-damage/apply.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.weapon-damage.roll",
-      "version": 1,
-      "contentHash": "C5D6B7B506A468AF5BBD9E1B65E179645F0FCA0AFAD144F191E84C8051DC4C98",
+      "version": 2,
+      "contentHash": "9592543DCA4F95CB9633A7D19EB435B5E586A1AB36B46353D5BCB9373C20E4B0",
       "path": "procedures/procedure/mechanic/dnd2024/weapon-damage/roll.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.weapon-proficiencies",
-      "version": 1,
-      "contentHash": "0BB2FF126D9274803DEBD54D5B7B0A2EDBC3903A6A3282D15E44F18E759B251C",
+      "version": 2,
+      "contentHash": "B5D85033DB50569B433B622E0C59826FAEA49EF2260181D3A19250839A26B4D4",
       "path": "procedures/procedure/mechanic/dnd2024/weapon-proficiencies.md"
     },
     {
       "kind": "procedure",
       "id": "procedure.mechanic.dnd2024.weapon-profile",
-      "version": 1,
-      "contentHash": "F441B26017542E6FB7829D2DE2B362D918EC3DA8AD2CCD94F7E62D5EF37032E3",
+      "version": 2,
+      "contentHash": "4D0A057CE485C7C7CB423F7A4A6D15132FD4EE6915152F0FFA41FD366197523C",
       "path": "procedures/procedure/mechanic/dnd2024/weapon-profile.md"
     },
     {
@@ -1254,7 +1254,7 @@
       "kind": "componentDefinition",
       "id": "game.core.rules.readable",
       "version": 0,
-      "contentHash": "259D65A12F9A0D0904BEAD3D475C7966C42B138737B9CD80BE0779BFE1DDE259",
+      "contentHash": "0C97C3AB9258D93ACF4ED9773ABB166E2F95451577E0D7ACED3B0BB9AEBC6935",
       "path": "components/game/core/rules/readable.json"
     },
     {
@@ -1476,10 +1476,164 @@
     },
     {
       "kind": "eventType",
+      "id": "dnd2024.downtime.cancelled",
+      "version": 1,
+      "contentHash": "4554569AD018B775E94236A6EE803D92A86C4F616041DB9F2397DBEB32A265DA",
+      "path": "event-types/dnd2024/downtime/cancelled.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "dnd2024.downtime.completed",
+      "version": 1,
+      "contentHash": "4D862971CBCB523658BF3E37B60F6571EC569251946353EEB28E6BBF4997D076",
+      "path": "event-types/dnd2024/downtime/completed.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "dnd2024.downtime.progressed",
+      "version": 1,
+      "contentHash": "132A3F3AB53FB7A3286EF6F7C48E2A395B9D49B264FC71DDCC528BDA32E74F90",
+      "path": "event-types/dnd2024/downtime/progressed.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "dnd2024.downtime.started",
+      "version": 1,
+      "contentHash": "3CAD5F99D1E4259FF3E9E6F0454E970F541248511A7962DDA8005B262953C594",
+      "path": "event-types/dnd2024/downtime/started.json"
+    },
+    {
+      "kind": "eventType",
       "id": "dnd2024.exhaustion.reached-lethal",
       "version": 1,
       "contentHash": "629170B1F947273AF821EB0D2C8A61B5B57270220DEAB73FFC69FCC21B9E2EC6",
       "path": "event-types/dnd2024/exhaustion/reached-lethal.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "dnd2024.hazard.contagion-exposed",
+      "version": 1,
+      "contentHash": "45979FCDAF58BFAB27B0BF8F7A126EE0CFDA3151B6334B89DA56EE51D9A3D128",
+      "path": "event-types/dnd2024/hazard/contagion-exposed.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "dnd2024.hazard.contagion-progressed",
+      "version": 1,
+      "contentHash": "DC7F74EC225EF1EA512F8C6D0D880A657066E4B1B3CBC0BC75D25A0560B6249E",
+      "path": "event-types/dnd2024/hazard/contagion-progressed.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "dnd2024.hazard.contagion-recovered",
+      "version": 1,
+      "contentHash": "CBAAE1021F7C54C0AD3DF6053D9F498AF15A3B620FBBADE5875D613E3921C4C3",
+      "path": "event-types/dnd2024/hazard/contagion-recovered.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "dnd2024.hazard.contagion-transmitted",
+      "version": 1,
+      "contentHash": "4C18E2910AFEFE15198103C3D99B72BED4ACB0DB9A4EB7AFD074BC0C9CE98541",
+      "path": "event-types/dnd2024/hazard/contagion-transmitted.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "dnd2024.hazard.curse-bound",
+      "version": 1,
+      "contentHash": "2760F08D6E803C53035D2A8738FE41D057384BF2AE15AB34204F0D938DD6757B",
+      "path": "event-types/dnd2024/hazard/curse-bound.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "dnd2024.hazard.curse-discovered",
+      "version": 1,
+      "contentHash": "0B4AB063B4A143DBD0A8E9AA4B6DC06C6E463ABE6A47FB10942AFFE02BF78703",
+      "path": "event-types/dnd2024/hazard/curse-discovered.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "dnd2024.hazard.curse-removed",
+      "version": 1,
+      "contentHash": "DC75699D19C2E3480840F69BBBAEB552ADAB08AD94ACC63D9C2F50E7394DCD06",
+      "path": "event-types/dnd2024/hazard/curse-removed.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "dnd2024.hazard.exposure-recovered",
+      "version": 1,
+      "contentHash": "A029208CB997BFDE32D201F9A94DC707F13203DE18B94CAD692DF09FF7562116",
+      "path": "event-types/dnd2024/hazard/exposure-recovered.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "dnd2024.hazard.exposure-resolved",
+      "version": 1,
+      "contentHash": "E9D0FD6C7CCE78E1E867BABE345788B2020F371031A0E7F99AF72CD00D5DD117",
+      "path": "event-types/dnd2024/hazard/exposure-resolved.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "dnd2024.hazard.exposure-started",
+      "version": 1,
+      "contentHash": "B906A018C5F38D55C272313BA34CEC7A03C50D7B51A83AE04E9AA6F386C9A7B5",
+      "path": "event-types/dnd2024/hazard/exposure-started.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "dnd2024.hazard.poison-applied",
+      "version": 1,
+      "contentHash": "DCC3B90626E6B92FEAD55ADF8A173F4D5A2F8954AB16D47D90826F599ED15298",
+      "path": "event-types/dnd2024/hazard/poison-applied.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "dnd2024.hazard.poison-progressed",
+      "version": 1,
+      "contentHash": "5AE8D1638E5808050051A90070A16B1C4DCD7587C8D05FFC214DBB8ADE039E0F",
+      "path": "event-types/dnd2024/hazard/poison-progressed.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "dnd2024.hazard.poison-recovered",
+      "version": 1,
+      "contentHash": "6EF6323860BD7BCF1CAD86493CDBE290569DFC5DFC99F3E24BCB97810EDB25D9",
+      "path": "event-types/dnd2024/hazard/poison-recovered.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "dnd2024.hazard.trap-cleared",
+      "version": 1,
+      "contentHash": "DC5C3C21B34DEED53830C06C19D70B1C1B7C7FD2CFFDA65F659310BC6A178470",
+      "path": "event-types/dnd2024/hazard/trap-cleared.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "dnd2024.hazard.trap-detected",
+      "version": 1,
+      "contentHash": "F751142AA3D1BBCA6528356BE19D860433EE23570C5671C4A7369BAD3425ECDE",
+      "path": "event-types/dnd2024/hazard/trap-detected.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "dnd2024.hazard.trap-disarmed",
+      "version": 1,
+      "contentHash": "322F6BBEC157BACED088D03F9F23787DA888548692170C468AE5AF8CDFDD3C76",
+      "path": "event-types/dnd2024/hazard/trap-disarmed.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "dnd2024.hazard.trap-reset",
+      "version": 1,
+      "contentHash": "EE59AA150911D486A1D70DB77532C091E5F7F7E6019F3824A95BE57089CC276F",
+      "path": "event-types/dnd2024/hazard/trap-reset.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "dnd2024.hazard.trap-triggered",
+      "version": 1,
+      "contentHash": "886EBE34429ED96BFE9FCBC6EBA8D9BF1750FAD3723AF2D4B903406DDF2DF463",
+      "path": "event-types/dnd2024/hazard/trap-triggered.json"
     },
     {
       "kind": "eventType",
@@ -1497,9 +1651,79 @@
     },
     {
       "kind": "eventType",
-      "id": "game.core.world.clock.advanced",
+      "id": "dnd2024.object.damaged",
       "version": 1,
-      "contentHash": "65BF64064BD87329077945F2AF8532C3743DF296F5A71584F944D57F883AB2A8",
+      "contentHash": "B2B5BA75B4BC59A1764824900C93E7AC7E02AB8FCC98C5ADFD19255AFDB53D69",
+      "path": "event-types/dnd2024/object/damaged.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "dnd2024.object.destroyed",
+      "version": 1,
+      "contentHash": "F0855D49C0E797DAB085DC8EED02C4287CF80D15F5432D4F0866A5F8801DB771",
+      "path": "event-types/dnd2024/object/destroyed.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "dnd2024.object.repaired",
+      "version": 1,
+      "contentHash": "AFDE8E54A43CC9C70B21E02B5612CE14DA04F50D34381E5234A89388384CC490",
+      "path": "event-types/dnd2024/object/repaired.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "dnd2024.rest.completed",
+      "version": 1,
+      "contentHash": "4FA050256AE654F41226A4DA1C1B088AEBBACDA7A56D39383E06B723DB0A94C6",
+      "path": "event-types/dnd2024/rest/completed.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "dnd2024.rest.interrupted",
+      "version": 1,
+      "contentHash": "87A00A1A4571A0324FCCCC785BCC429F9D85E76D94EC04FD58D73568FA6B2A2A",
+      "path": "event-types/dnd2024/rest/interrupted.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "dnd2024.rest.progressed",
+      "version": 1,
+      "contentHash": "A6DD5743F58058234AD8C3D6EAFC9F545387C214E6667239624AD427A7125290",
+      "path": "event-types/dnd2024/rest/progressed.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "dnd2024.rest.started",
+      "version": 1,
+      "contentHash": "AF2B54CB69C26F0EF79C5D6AC9EDE7A9A7AC878A26D4ECD0690BDF93888BB01F",
+      "path": "event-types/dnd2024/rest/started.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "dnd2024.social.attitude-changed",
+      "version": 1,
+      "contentHash": "46C8FE382B72215D3443A154AC78B198C9D7A146B049E4C50CACA93C73638688",
+      "path": "event-types/dnd2024/social/attitude-changed.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "dnd2024.travel.arrived",
+      "version": 1,
+      "contentHash": "60602C46B904B888BD7E13C59EE9BC40EE0362202B12E0380606DDED69DD6588",
+      "path": "event-types/dnd2024/travel/arrived.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "dnd2024.travel.journey-recorded",
+      "version": 1,
+      "contentHash": "DF7E94638AFA870FA9E7933F521DCA74BD5D0522E4FD819B5BE227573B967C87",
+      "path": "event-types/dnd2024/travel/journey-recorded.json"
+    },
+    {
+      "kind": "eventType",
+      "id": "game.core.world.clock.advanced",
+      "version": 2,
+      "contentHash": "FE6D9A7BDB2DE8A6EE13E7231CD0A42877BF72D4379717E35612028011A70813",
       "path": "event-types/game/core/world/clock/advanced.json"
     },
     {
@@ -1711,6 +1935,13 @@
       "version": 0,
       "contentHash": "D2ED505D8CDACC306B4BDF3BD663D7245170DB222B7FC1D2E2CE66876390D639",
       "path": "world/entities/aerial-route/feature-13/gate-to-observatory.json"
+    },
+    {
+      "kind": "entity",
+      "id": "campaign.caldris.measure-of-mercy",
+      "version": 0,
+      "contentHash": "25F6AA54F05665C726FB0C97721DB0AC9010576209BF076E514DA39B846E859A",
+      "path": "world/entities/campaign/caldris/measure-of-mercy.json"
     },
     {
       "kind": "entity",
@@ -3128,10 +3359,248 @@
     },
     {
       "kind": "entity",
+      "id": "faction.caldris.alderwick-crown-council",
+      "version": 0,
+      "contentHash": "2C3380887B84FCAE98A346B71300D27747069C500439203EEB21BDBB96AD376F",
+      "path": "world/entities/faction/caldris/alderwick-crown-council.json"
+    },
+    {
+      "kind": "entity",
+      "id": "faction.caldris.aur-river-judges",
+      "version": 0,
+      "contentHash": "6A72469217F2A954971D13F7B0DDF8D9FEDC2BF72B312D8E1913D5A0608510DB",
+      "path": "world/entities/faction/caldris/aur-river-judges.json"
+    },
+    {
+      "kind": "entity",
+      "id": "faction.caldris.bellafont-water-courts",
+      "version": 0,
+      "contentHash": "5FB84C9320C29AB4E9AC498BF1DEA3C66413C78E077068F9214B30E3FBF2A9B0",
+      "path": "world/entities/faction/caldris/bellafont-water-courts.json"
+    },
+    {
+      "kind": "entity",
+      "id": "faction.caldris.bramblebridge-watch",
+      "version": 0,
+      "contentHash": "E0F8F0AB9D0BB1A4C801D49BAD01653CCC45C2BE93EEAC470873BC74FCE11E54",
+      "path": "world/entities/faction/caldris/bramblebridge-watch.json"
+    },
+    {
+      "kind": "entity",
+      "id": "faction.caldris.brotherhood-of-saint-orro",
+      "version": 0,
+      "contentHash": "98CD4BF0331F4CEB3D1733F1692487F9542C5535DCED83836CAAC652921EBEFD",
+      "path": "world/entities/faction/caldris/brotherhood-of-saint-orro.json"
+    },
+    {
+      "kind": "entity",
+      "id": "faction.caldris.carrowmere-shipwright-fraternities",
+      "version": 0,
+      "contentHash": "E67B14D134BDC0D437BFB74FC78BF006BF3F81274B174FFB7D083C86CE3AF949",
+      "path": "world/entities/faction/caldris/carrowmere-shipwright-fraternities.json"
+    },
+    {
+      "kind": "entity",
+      "id": "faction.caldris.company-of-weirs",
+      "version": 0,
+      "contentHash": "61637AEF4CF77C1C78009B6F565260361D12385946FF4104F0FED79A0E9EF058",
+      "path": "world/entities/faction/caldris/company-of-weirs.json"
+    },
+    {
+      "kind": "entity",
+      "id": "faction.caldris.free-axle-companies",
+      "version": 0,
+      "contentHash": "620096691163803ADE00BE6748E6ED54BBD66F04DB6E4BA0416136CA15CB1D08",
+      "path": "world/entities/faction/caldris/free-axle-companies.json"
+    },
+    {
+      "kind": "entity",
+      "id": "faction.caldris.glassharbor-furnace-guilds",
+      "version": 0,
+      "contentHash": "AE203A56B7E55FD8710990FD94CAC8132092D19D08C6F7634BA7F9A0C281C0DB",
+      "path": "world/entities/faction/caldris/glassharbor-furnace-guilds.json"
+    },
+    {
+      "kind": "entity",
+      "id": "faction.caldris.grey-mantle-houses",
+      "version": 0,
+      "contentHash": "1CCD5EB0A129954B349E77B638E7C314AC5A30092F5FBD2695AF52BF97FA9588",
+      "path": "world/entities/faction/caldris/grey-mantle-houses.json"
+    },
+    {
+      "kind": "entity",
+      "id": "faction.caldris.honest-weights-guild",
+      "version": 0,
+      "contentHash": "68C39FDE9758B4AE6B016A648C2C723F7DC050EC8DF4C0B073CE377FA42E3E25",
+      "path": "world/entities/faction/caldris/honest-weights-guild.json"
+    },
+    {
+      "kind": "entity",
+      "id": "faction.caldris.houses-of-rescue",
+      "version": 0,
+      "contentHash": "40420CE192DEBD8A8E838BDF86CB5CF39CE0221C1E4C1DDF79CA41E118B3E056",
+      "path": "world/entities/faction/caldris/houses-of-rescue.json"
+    },
+    {
+      "kind": "entity",
+      "id": "faction.caldris.keepers-of-the-mountain-tithe",
+      "version": 0,
+      "contentHash": "2E6E8A1A7A4CEF219FB6206C2A53378E9EB99E49573C20E3F7F994C0A1AF8418",
+      "path": "world/entities/faction/caldris/keepers-of-the-mountain-tithe.json"
+    },
+    {
+      "kind": "entity",
+      "id": "faction.caldris.kethrian-canal-councils",
+      "version": 0,
+      "contentHash": "0342FD26703BD6998288C33A7FF6CCF09551EFAE05667EC53C084E8A84D38D32",
+      "path": "world/entities/faction/caldris/kethrian-canal-councils.json"
+    },
+    {
+      "kind": "entity",
+      "id": "faction.caldris.lantern-sea-couriers",
+      "version": 0,
+      "contentHash": "3BADF1E849F107B48CB66C219123A56413BA08133C8CC158DC9F9D2C539DB76E",
+      "path": "world/entities/faction/caldris/lantern-sea-couriers.json"
+    },
+    {
+      "kind": "entity",
+      "id": "faction.caldris.league-chairs-secretariat",
+      "version": 0,
+      "contentHash": "4FDF68A0FF5D2C64146D4C0692CEF98C87309A3B36ED97641972D37976627AFD",
+      "path": "world/entities/faction/caldris/league-chairs-secretariat.json"
+    },
+    {
+      "kind": "entity",
+      "id": "faction.caldris.long-bench-union",
+      "version": 0,
+      "contentHash": "E4448C67CD54993BD1750BA47219262C93DB61BCFCAB8C277FF61DBD5035E1C2",
+      "path": "world/entities/faction/caldris/long-bench-union.json"
+    },
+    {
+      "kind": "entity",
+      "id": "faction.caldris.lorn-bell-houses",
+      "version": 0,
+      "contentHash": "623A5254A4A0B547CF4B0B67A79B71D14353CDCE318813EB6B8A06CB62F8875F",
+      "path": "world/entities/faction/caldris/lorn-bell-houses.json"
+    },
+    {
+      "kind": "entity",
+      "id": "faction.caldris.low-lantern-dry-sock-fund",
+      "version": 0,
+      "contentHash": "798A4237F7BF4B25DCE1CA4725E118B0A6F2E9AA6D1A986468401530D590B706",
+      "path": "world/entities/faction/caldris/low-lantern-dry-sock-fund.json"
+    },
+    {
+      "kind": "entity",
+      "id": "faction.caldris.namar-water-captains",
+      "version": 0,
+      "contentHash": "88829E651B24025EB612AE388B99C99F371A3BFAA18362067D6C83A470C83ED5",
+      "path": "world/entities/faction/caldris/namar-water-captains.json"
+    },
+    {
+      "kind": "entity",
+      "id": "faction.caldris.nine-lamps-hospitallers",
+      "version": 0,
+      "contentHash": "F77FCB2D2925443B1F5048E4F733EF8F7629F802C5D40A6FA5CE37488FEF7580",
+      "path": "world/entities/faction/caldris/nine-lamps-hospitallers.json"
+    },
+    {
+      "kind": "entity",
+      "id": "faction.caldris.nine-march-moot",
+      "version": 0,
+      "contentHash": "80EBDA71AAD3315ECE87EC650F22EA1A9BCCC2F3DD6845149E658EC6CAB2EBBA",
+      "path": "world/entities/faction/caldris/nine-march-moot.json"
+    },
+    {
+      "kind": "entity",
+      "id": "faction.caldris.oath-rope-lodges",
+      "version": 0,
+      "contentHash": "1667A645F89F8719BD32527F391AF9D41D94F6F8ACD2BCEF2FC403B6FDD11747",
+      "path": "world/entities/faction/caldris/oath-rope-lodges.json"
+    },
+    {
+      "kind": "entity",
+      "id": "faction.caldris.open-roof-society",
+      "version": 0,
+      "contentHash": "E3657783A02B5D3FA8C66B3E20B85C84AAC4719A19CA844DA2FCF6CC8C5CEB97",
+      "path": "world/entities/faction/caldris/open-roof-society.json"
+    },
+    {
+      "kind": "entity",
+      "id": "faction.caldris.quiet-bell-chapter",
+      "version": 0,
+      "contentHash": "E100BC6947805D2785F853E36BB9111F2B2B1955415E02AF9F4DD23563F164D5",
+      "path": "world/entities/faction/caldris/quiet-bell-chapter.json"
+    },
+    {
+      "kind": "entity",
+      "id": "faction.caldris.roadmenders-brotherhood",
+      "version": 0,
+      "contentHash": "DDF0BFF0F23DAE677BEB385A978EEBA81520E3924304923096E618DA14A50254",
+      "path": "world/entities/faction/caldris/roadmenders-brotherhood.json"
+    },
+    {
+      "kind": "entity",
+      "id": "faction.caldris.seed-mothers-compact",
+      "version": 0,
+      "contentHash": "79965C4EB5CF43345219B6D26E8849BFC93926F90894AFC829E9A2EAD83C5867",
+      "path": "world/entities/faction/caldris/seed-mothers-compact.json"
+    },
+    {
+      "kind": "entity",
+      "id": "faction.caldris.selucian-dock-assemblies",
+      "version": 0,
+      "contentHash": "559E745452EC049FB47A445414A1AE0D0D692C517E87C76C8CE825793B13FBFB",
+      "path": "world/entities/faction/caldris/selucian-dock-assemblies.json"
+    },
+    {
+      "kind": "entity",
+      "id": "faction.caldris.society-of-the-silver-pear",
+      "version": 0,
+      "contentHash": "F9A75B3AE6C174A3AFAE3ED8A3D46A239707194C404B051A947613246FF6F52B",
+      "path": "world/entities/faction/caldris/society-of-the-silver-pear.json"
+    },
+    {
+      "kind": "entity",
+      "id": "faction.caldris.swallow-almanac-society",
+      "version": 0,
+      "contentHash": "20098CF70B82DDA0DD66BC2B3864A13BEB3D50FD8FAE1C93E7663C07BCBAD733",
+      "path": "world/entities/faction/caldris/swallow-almanac-society.json"
+    },
+    {
+      "kind": "entity",
       "id": "faction.caldris.tensor-sect",
       "version": 0,
-      "contentHash": "561F032319E05E9D4A7074D644AFC405F215A4909886864886E4B0D64003069D",
+      "contentHash": "9E390FA11BC4B411A2B09EE03F4969A6E24486DF326CFE1EA3F4088486E4AE6B",
       "path": "world/entities/faction/caldris/tensor-sect.json"
+    },
+    {
+      "kind": "entity",
+      "id": "faction.caldris.tessa-sky-college",
+      "version": 0,
+      "contentHash": "55EB80CEC60943B7F66E11FCB5D2385911590FAEB0C1D7F143A817C678485C16",
+      "path": "world/entities/faction/caldris/tessa-sky-college.json"
+    },
+    {
+      "kind": "entity",
+      "id": "faction.caldris.the-seventh-ledger",
+      "version": 0,
+      "contentHash": "D852CA98C61674A37FB032EF247E48B3BDCF9DECB044087AE1073E7785314BD2",
+      "path": "world/entities/faction/caldris/the-seventh-ledger.json"
+    },
+    {
+      "kind": "entity",
+      "id": "faction.caldris.vessa-open-archive-league",
+      "version": 0,
+      "contentHash": "CA40BC9B4DDD37EF70724EEF90640F51ACFF94EE0C54BD53FA14E2D8FF580994",
+      "path": "world/entities/faction/caldris/vessa-open-archive-league.json"
+    },
+    {
+      "kind": "entity",
+      "id": "faction.caldris.wayward-company",
+      "version": 0,
+      "contentHash": "5039B07E27C381D990EED12ECF8FABC422D4F3CCA664BFD10FBBEADBC1E05656",
+      "path": "world/entities/faction/caldris/wayward-company.json"
     },
     {
       "kind": "entity",
