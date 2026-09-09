@@ -562,6 +562,8 @@ public sealed class ActivatedApplicationCatalogProvider(
         {
             if (!policy.IsPublished(applicationId))
             {
+                _failures[applicationId] = new("APPLICATION_CATALOG_UNPUBLISHED",
+                    "The application catalog is not included in the host publication policy.");
                 navigator = null!;
                 return false;
             }

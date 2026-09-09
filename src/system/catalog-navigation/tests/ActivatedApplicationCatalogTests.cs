@@ -83,8 +83,10 @@ public sealed class ActivatedApplicationCatalogTests : IDisposable
         Assert.Equal(record.ContentFingerprint, Assert.Single(snapshot.Documents).Record.ContentFingerprint);
 
         var cursor = new CatalogCursorCodec(Encoding.UTF8.GetBytes("activated-catalog-test-cursor-signing-key"));
-        Assert.False(new ActivatedApplicationCatalogProvider(
-            new ConfiguredPublicApplicationCatalogPolicy([]), materializer, cursor).TryGet(app, out _));
+        var unpublished = new ActivatedApplicationCatalogProvider(
+            new ConfiguredPublicApplicationCatalogPolicy([]), materializer, cursor);
+        Assert.False(unpublished.TryGet(app, out _));
+        Assert.Equal("APPLICATION_CATALOG_UNPUBLISHED", unpublished.LastFailure(app)?.Code);
         Assert.True(new ActivatedApplicationCatalogProvider(
             new ConfiguredPublicApplicationCatalogPolicy(["fixture"]), materializer, cursor).TryGet(app, out var navigator));
         Assert.Equal(1, Assert.Single(navigator.ListCollections(app)).RecordCount);
