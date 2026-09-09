@@ -81,11 +81,14 @@ public sealed class ActivatedApplicationCatalogMaterializer(
 
         var winners = activation.Winners.ToDictionary(value => value.RelativePath, StringComparer.Ordinal);
         var documents = ReadCatalogBytes(activation.Winners, winners, registrations);
-        RegisterObjects(applicationId, activation.Winners, documents);
         var preparationFingerprint = PreparationFingerprint(application, activation, registrations,
             extensionRegistrations, documents.Keys);
-        ActiveCatalogFeatureSnapshot Factory() => BuildPreparedSnapshot(applicationId, application,
-            activation, winners, extensionRegistrations, documents);
+        ActiveCatalogFeatureSnapshot Factory()
+        {
+            RegisterObjects(applicationId, activation.Winners, documents);
+            return BuildPreparedSnapshot(applicationId, application,
+                activation, winners, extensionRegistrations, documents);
+        }
         return _preparations is null || _preparationAuthority is null
             ? Factory()
             : _preparations.GetOrCreate(_preparationAuthority, applicationId, preparationFingerprint, Factory);

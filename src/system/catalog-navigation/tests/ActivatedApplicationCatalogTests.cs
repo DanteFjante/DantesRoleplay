@@ -4,6 +4,7 @@ using System.Text.Json;
 using DantesRoleplay.ApplicationActivation;
 using DantesRoleplay.Applications;
 using DantesRoleplay.DataAccess.Composition;
+using DantesRoleplay.Projections;
 using DantesRoleplay.Sources;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -123,6 +124,103 @@ public sealed class ActivatedApplicationCatalogTests : IDisposable
             value.ServiceType == typeof(ActivatedApplicationCatalogMaterializer)).Lifetime);
         Assert.Equal(ServiceLifetime.Scoped, Assert.Single(services, value =>
             value.ServiceType == typeof(ActivatedApplicationCatalogProvider)).Lifetime);
+    }
+
+    [Fact]
+    public async Task Concurrent_cold_materialization_registers_application_objects_once()
+    {
+        var app = ApplicationIdentifier.Parse("fixture");
+        const string procedurePath = "content/procedures/tools/procedure.fixture.inspect.md";
+        const string objectPath = "objects/tools/fixture.object.summary.json";
+        var procedure = """
+            ---
+            id: procedure.fixture.inspect
+            category: tools.inspect
+            name: Inspect fixture
+            governs: query(kind: "fixture.inspect")
+            status: active
+            ---
+
+            ## Description
+            Inspect one generic fixture.
+
+            ## Instructions
+            1. Supply the fixture identity.
+
+            ## Constraints
+            - Never change fixture state.
+            """;
+        var objectJson = $$"""
+            {
+              "id": "fixture.object.summary",
+              "version": 1,
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["name"],
+                "properties": { "name": { "type": "string" } }
+              },
+              "roles": { "subject": { "required": true } },
+              "sources": [{
+                "id": "subject",
+                "role": "subject",
+                "component": {
+                  "qualifiedId": "fixture.component.name",
+                  "version": 1,
+                  "schemaHash": "{{Sha('A')}}"
+                },
+                "required": true
+              }],
+              "relationships": [],
+              "references": [],
+              "mappings": [{ "inputId": "subject", "sourcePointer": "/name", "targetPointer": "/name" }],
+              "collections": [],
+              "limits": { "traversalDepth": 1, "itemCount": 8, "outputBytes": 4096, "sqlQueries": 2 },
+              "access": { "read": ["dm"], "write": [] }
+            }
+            """;
+        foreach (var (path, content) in new[] { (procedurePath, procedure), (objectPath, objectJson) })
+        {
+            var fullPath = Path.Combine(_root, path.Replace('/', Path.DirectorySeparatorChar));
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+            File.WriteAllText(fullPath, content, new UTF8Encoding(false));
+        }
+
+        var applications = new InMemoryApplicationRegistry();
+        var revision = applications.Register(new(app, "Fixture application", "Generic public fixture contracts.", []));
+        var sources = new InMemorySourceRegistry();
+        var source = sources.Register(new(app, "catalog", "fixture-root", "**/*",
+            SourceTrust.Trusted, 0, "fixture-catalog"));
+        var winners = new[] { procedurePath, objectPath }.Select(path =>
+        {
+            var bytes = File.ReadAllBytes(Path.Combine(_root, path.Replace('/', Path.DirectorySeparatorChar)));
+            return new ActivatedApplicationDocument("file:" + path, "catalog", SourceTrust.Trusted, 0,
+                path, path.EndsWith(".md", StringComparison.Ordinal) ? "text/markdown" : "application/json",
+                Hash(bytes), bytes.LongLength, true);
+        }).ToArray();
+        var activation = new ActiveApplicationManifest(app, 1, revision.Revision, revision.Fingerprint,
+            Sha('B'), Sha('C'), Sha('D'), Sha('E'), Sha('F'), "fixture-coverage-v1", false,
+            [new("catalog", SourceRegistrationFingerprint.Compute(source), winners.Length, 0)], winners,
+            "fixture-operation", DateTime.UtcNow);
+        var cache = new ActivatedApplicationCatalogSnapshotCache();
+        var authority = new ActivatedApplicationCatalogCacheAuthority();
+        var projections = new BlockingProjectionRegistry();
+        ActivatedApplicationCatalogMaterializer Materializer() => new(
+            applications, new StaticActivation(activation), sources,
+            new StaticRoot("fixture-root", _root), projections: projections);
+
+        var first = Task.Run(() => Materializer().UsePreparationCache(cache, authority).BuildFeatureSnapshot(app));
+        Assert.True(projections.FirstEntered.Wait(TimeSpan.FromSeconds(5)));
+        var second = Task.Run(() => Materializer().UsePreparationCache(cache, authority).BuildFeatureSnapshot(app));
+        await Task.Delay(150);
+        projections.Release.Set();
+        var snapshots = await Task.WhenAll(first, second);
+
+        Assert.Equal(1, projections.DefineCalls);
+        Assert.Equal(1, projections.MaximumConcurrentDefinitions);
+        Assert.Same(snapshots[0], snapshots[1]);
+        Assert.Equal(1, cache.Misses);
+        Assert.Equal(1, cache.Hits);
     }
 
     [Fact]
@@ -483,5 +581,41 @@ public sealed class ActivatedApplicationCatalogTests : IDisposable
             canonicalPath = allowedRootId == id ? root : "";
             return canonicalPath.Length > 0;
         }
+    }
+
+    private sealed class BlockingProjectionRegistry : IProjectionDefinitionRegistry
+    {
+        private int _activeDefinitions;
+        private int _defineCalls;
+        private int _maximumConcurrentDefinitions;
+
+        public ManualResetEventSlim FirstEntered { get; } = new(false);
+        public ManualResetEventSlim Release { get; } = new(false);
+        public int DefineCalls => Volatile.Read(ref _defineCalls);
+        public int MaximumConcurrentDefinitions => Volatile.Read(ref _maximumConcurrentDefinitions);
+
+        public RegisteredProjectionDefinition Define(ProjectionDefinitionRequest definition)
+        {
+            Interlocked.Increment(ref _defineCalls);
+            var active = Interlocked.Increment(ref _activeDefinitions);
+            while (true)
+            {
+                var maximum = Volatile.Read(ref _maximumConcurrentDefinitions);
+                if (active <= maximum || Interlocked.CompareExchange(
+                        ref _maximumConcurrentDefinitions, active, maximum) == maximum) break;
+            }
+            FirstEntered.Set();
+            Assert.True(Release.Wait(TimeSpan.FromSeconds(5)));
+            Interlocked.Decrement(ref _activeDefinitions);
+            return new(definition.Owner, definition.QualifiedId, definition.DeclaredVersion ?? 1,
+                "fixture-profile", definition.OutputSchemaJson, Sha('1'), Sha('2'),
+                definition.ComponentInputs, definition.DependencyInputs, definition.Mappings, DateTime.UtcNow);
+        }
+
+        public RegisteredProjectionDefinition? Get(string qualifiedId, int version) => null;
+
+        public ProjectionImpactGraph GetImpactGraph(ApplicationIdentifier owner) => new(
+            new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal),
+            new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal));
     }
 }
