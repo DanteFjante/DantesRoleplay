@@ -80,4 +80,11 @@ public sealed record ExecutionLimits
     /// that teaches the author to work around the sandbox.
     /// </summary>
     public static ExecutionLimits Default { get; } = new();
+
+    /// <summary>
+    /// Read models may materialize a larger, component-filtered snapshot than a state-changing
+    /// mechanic. They remain statement-, time-, recursion-, and output-bounded and cannot apply
+    /// effects, but receive enough memory to project a legitimate application directory.
+    /// </summary>
+    public static ExecutionLimits ReadModel { get; } = Default with { MemoryBytes = 16 * 1024 * 1024 };
 }
