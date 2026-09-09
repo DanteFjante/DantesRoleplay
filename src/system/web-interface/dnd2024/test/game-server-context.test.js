@@ -141,7 +141,7 @@ test("world location scope reads a non-conventional exact identity and batches o
             alt: "Map of the Seventh Realm", caption: "", order: 0,
             contentUrl: "/api/applications/dnd2024/state-spaces/dnd2024-main/media/map.realm-7/content",
           }],
-        }],
+        }, { entityId: "place-azure", attachments: [] }],
       });
       return response(200, worldScopeEnvelope(worldLocationScopeData()));
     },

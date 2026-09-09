@@ -255,6 +255,22 @@ export function projectMediaVisual(value) {
   return Object.keys(projected).length > 0 ? projected : null;
 }
 
+function projectLocationMediaBatch(value, applicationId, stateSpaceId, recordIds) {
+  const allowed = new Set(recordIds);
+  if (value?.applicationId !== applicationId || value.stateSpaceId !== stateSpaceId ||
+      !Array.isArray(value.items) || value.items.length > allowed.size ||
+      new Set(value.items.map((item) => item?.entityId)).size !== value.items.length ||
+      !value.items.every((item) => allowed.has(item?.entityId))) return null;
+  const projected = new Map();
+  for (const item of value.items) {
+    if (!hasExactKeys(item, ["entityId", "attachments"]) || !Array.isArray(item.attachments)) return null;
+    const visual = projectMediaVisual(item);
+    if (!visual && item.attachments.length !== 0) return null;
+    if (visual) projected.set(item.entityId, visual);
+  }
+  return projected;
+}
+
 export function inheritMediaVisual(instanceMedia, definitionMedia) {
   if (!instanceMedia && !definitionMedia) return null;
   const roles = ["portrait", "setting", "map", "illustration", "icon", "scene", "handout"];
@@ -771,18 +787,12 @@ export async function readRegisteredWorldLocationScope({
           body: JSON.stringify({ entityIds: records.map((record) => record.id), perspective }),
         });
         const media = response?.ok ? await json(response) : null;
-        const allowed = new Set(records.map((record) => record.id));
-        if (media?.applicationId === applicationId && media.stateSpaceId === stateSpaceId &&
-            Array.isArray(media.items) && media.items.length <= records.length &&
-            new Set(media.items.map((item) => item.entityId)).size === media.items.length &&
-            media.items.every((item) => allowed.has(item.entityId))) {
-          const projectedItems = media.items.map((item) => ({
-            entityId: item.entityId, media: projectMediaVisual(item),
-          }));
-          if (projectedItems.every((item) => item.media !== null)) {
-            for (const item of projectedItems) mediaById.set(item.entityId, item.media);
-            mediaResolved = true;
-          }
+        const projected = projectLocationMediaBatch(
+          media, applicationId, stateSpaceId, records.map((record) => record.id),
+        );
+        if (projected) {
+          for (const [entityId, visual] of projected) mediaById.set(entityId, visual);
+          mediaResolved = true;
         }
       } catch (error) { if (error?.name === "AbortError") throw error; }
     }
@@ -874,18 +884,12 @@ export async function readRegisteredWorldLocationScopePage({
           body: JSON.stringify({ entityIds: records.map((record) => record.id), perspective }),
         });
         const media = response?.ok ? await json(response) : null;
-        const allowed = new Set(records.map((record) => record.id));
-        if (media?.applicationId === applicationId && media.stateSpaceId === stateSpaceId &&
-            Array.isArray(media.items) && media.items.length <= records.length &&
-            new Set(media.items.map((item) => item.entityId)).size === media.items.length &&
-            media.items.every((item) => allowed.has(item.entityId))) {
-          const projectedItems = media.items.map((item) => ({
-            entityId: item.entityId, media: projectMediaVisual(item),
-          }));
-          if (projectedItems.every((item) => item.media !== null)) {
-            for (const item of projectedItems) mediaById.set(item.entityId, item.media);
-            mediaResolved = true;
-          }
+        const projected = projectLocationMediaBatch(
+          media, applicationId, stateSpaceId, records.map((record) => record.id),
+        );
+        if (projected) {
+          for (const [entityId, visual] of projected) mediaById.set(entityId, visual);
+          mediaResolved = true;
         }
       } catch (error) { if (error?.name === "AbortError") throw error; }
     }
