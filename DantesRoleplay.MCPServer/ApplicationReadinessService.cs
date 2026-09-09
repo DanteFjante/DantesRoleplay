@@ -12,6 +12,7 @@ using DantesRoleplay.Projections;
 using DantesRoleplay.Web.Pages;
 using DantesRoleplay.Web.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace DantesRoleplay.MCPServer;
 
@@ -58,7 +59,8 @@ public sealed class ApplicationReadinessService(
     IKnowledgeApplicationBindingResolver bindings,
     IKnowledgeActorParticipationVerifier participation,
     IProjectionDefinitionRegistry? projections = null,
-    IStateSpaceRegistry? stateSpaces = null)
+    IStateSpaceRegistry? stateSpaces = null,
+    ILogger<ApplicationReadinessService>? log = null)
 {
     public async Task<ApplicationReadinessReport> ReadAsync(
         string applicationId,
@@ -133,6 +135,9 @@ public sealed class ApplicationReadinessService(
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
+            log?.LogError(exception,
+                "Application catalog '{Application}' failed during readiness materialization.",
+                application.Value);
             checks.Add(Failed("catalog-materialization", "APPLICATION_CATALOG_UNAVAILABLE",
                 "The active catalog snapshot could not be materialized.",
                 "repair-catalog", "Validate and restore the active catalog snapshot, then request readiness again."));
