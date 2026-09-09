@@ -27,7 +27,7 @@ import type {
   PartySectionId,
   Perspective,
   ReadyHubEnvelope,
-  RuleReadModel,
+  RulesReferencePublication,
   WorldLocation,
   WorldSectionId,
 } from "../data/hub-types";
@@ -135,7 +135,7 @@ type HubEnvelopeLoader = (
   preferCached: boolean,
 ) => Promise<ReadyHubEnvelope>;
 
-type RulesLoader = () => Promise<RuleReadModel[]>;
+type RulesLoader = (preferCached?: boolean, signal?: AbortSignal) => Promise<RulesReferencePublication>;
 type FactionPageLoader = (
   envelope: ReadyHubEnvelope,
   cursor: string | null,
@@ -218,7 +218,8 @@ export function DndInformationHub({
   const [itemRoute, setItemRoute] = useState(() => parseItemRoute(window.location.hash));
   const [activeTab, setActiveTab] = useState<MainTabId>(() => {
     const item = parseItemRoute(window.location.hash);
-    if (item.kind !== "none") return "party";
+    if (item.kind !== "none")
+      return normalizeMainTab(window.history.state?.itemMainTab ?? "party") as MainTabId;
     const route = parseHubRoute(window.location.hash);
     return route.kind === "hub" ? route.tab : "world";
   });
@@ -238,7 +239,8 @@ export function DndInformationHub({
     const changed = () => {
       const next = parseItemRoute(window.location.hash);
       setItemRoute(next);
-      if (next.kind !== "none") setActiveTab("party");
+      if (next.kind !== "none")
+        setActiveTab(normalizeMainTab(window.history.state?.itemMainTab ?? "party") as MainTabId);
       else {
         const hub = parseHubRoute(window.location.hash);
         if (hub.kind === "hub") {
@@ -528,7 +530,7 @@ export function DndInformationHub({
     if ((itemRoute.kind === "item" || itemRoute.kind === "inventory" || itemRoute.kind === "registry-item"
         || itemRoute.kind === "registry-recipe")
         && envelope.audience.allowedPerspectives.includes(nextPerspective)) {
-      navigateItemRoute({ ...itemRoute, perspective: nextPerspective }, false, null);
+      navigateItemRoute({ ...itemRoute, perspective: nextPerspective }, false, null, activeTab);
       return;
     }
     await requestHub(nextPerspective, contextSelection.selectedCampaignId, announce);
@@ -981,6 +983,22 @@ export function DndInformationHub({
   } : envelope.campaign;
 
   function renderActiveView() {
+    if (activeTab === "rules" && (itemRoute.kind === "registry-item" || itemRoute.kind === "registry-recipe")) {
+      const compatible = itemRoute.campaignId === contextSelection.selectedCampaignId
+        && itemRoute.perspective === perspective;
+      return compatible && loadItemRegistryPage && loadItemDefinition ? <ItemRegistryWorkspace
+        key={`${envelope.applicationId}:${contextSelection.selectedCampaignId}:${perspective}:rules-content`}
+        route={itemRoute}
+        campaignId={contextSelection.selectedCampaignId}
+        perspective={perspective}
+        loadPage={loadItemRegistryPage}
+        loadDefinition={loadItemDefinition}
+        loadRecipePage={loadRecipeRegistryPage}
+        loadRecipeDefinition={loadRecipeDefinition}
+      /> : <section className="view-unavailable" role="alert"><h1 id="main-view-heading">Related content unavailable</h1>
+        <p>{!compatible ? "This link belongs to a different campaign or perspective."
+          : "The content registry is not connected to this build."}</p></section>;
+    }
     switch (activeTab) {
       case "campaign":
         return (
@@ -1110,7 +1128,8 @@ export function DndInformationHub({
           </div>
         );
       case "rules":
-        return <RulesView loadRules={loadRules} rules={envelope.rules} />;
+        return <RulesView campaignId={contextSelection.selectedCampaignId} perspective={perspective}
+          loadRules={loadRules} rules={envelope.rules} />;
       case "content":
         return <InstalledContentView loadContent={loadContent}
           resolutionFingerprint={envelope.objectQueries?.campaignSummary?.resolutionFingerprint ?? null} />;

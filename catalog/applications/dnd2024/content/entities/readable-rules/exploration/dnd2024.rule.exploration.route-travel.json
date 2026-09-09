@@ -1,0 +1,45 @@
+{
+  "id": "dnd2024.rule.exploration.route-travel",
+  "name": "Route Travel",
+  "components": {
+    "game.core.rules.readable": {
+      "section": { "id": "exploration", "label": "Exploration", "order": 70 },
+      "order": 10,
+      "title": "Route Travel",
+      "summary": "Travel follows a known route with a declared pace, calculates its duration, schedules exposure, and records arrival through the active travel mechanics.",
+      "blocks": [
+        {
+          "kind": "steps",
+          "heading": "Travel a known route",
+          "body": null,
+          "items": [
+            "Choose a known route and a supported travel pace.",
+            "Calculate duration and any scheduled exposure from the route's recorded distance and conditions.",
+            "Execute the trip and record arrival only after its required progress is complete."
+          ]
+        }
+      ],
+      "examples": [
+        {
+          "title": "Changing pace",
+          "body": "Selecting a different supported pace changes the calculated duration through the travel mechanic; the browser does not recalculate it independently."
+        }
+      ],
+      "relatedRuleRefs": [
+        { "entityId": "dnd2024.rule.movement.speed-and-movement" },
+        { "entityId": "dnd2024.rule.resting.long-rests" }
+      ],
+      "relatedContentRefs": [],
+      "citations": [
+        {
+          "sourceId": "dnd2024.source.srd-5.2.1",
+          "locator": "Gameplay Toolbox > Travel Pace, PDF p. 192"
+        }
+      ],
+      "mechanicIds": ["dnd2024.mechanic.travel.pace-duration.calculate", "dnd2024.mechanic.travel.exposure.schedule", "dnd2024.mechanic.travel.execute", "dnd2024.mechanic.travel.arrival.record", "dnd2024.mechanic.travel.status.project"],
+      "procedureIds": ["dnd2024.procedure.mechanic.travel"],
+      "visibility": "public",
+      "presentationStatus": "published"
+    }
+  }
+}

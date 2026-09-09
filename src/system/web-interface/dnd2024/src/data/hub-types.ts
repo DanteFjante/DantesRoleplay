@@ -786,6 +786,14 @@ export type RuleReadModel = {
     body: string;
   }>;
   relatedRuleIds: string[];
+  relatedContent: Array<{
+    kind: string;
+    entityId: string;
+    title: string;
+    collection: string | null;
+    contentFingerprint: string | null;
+    available: boolean;
+  }>;
   citations: Array<{
     sourceId: string;
     locator: string;
@@ -972,6 +980,15 @@ export type ReadyHubEnvelope = {
   objectQueries?: {
     campaignSummary?: ObjectReadEvidence;
   };
+};
+
+export type RulesReferencePublication = {
+  applicationId: "dnd2024";
+  resolutionFingerprint: string;
+  rulesFingerprint: string;
+  audience: "public" | "dm";
+  articleCount: number;
+  rules: RuleReadModel[];
 };
 
 export type CanonicalCharacterData = CharacterSheetData & {

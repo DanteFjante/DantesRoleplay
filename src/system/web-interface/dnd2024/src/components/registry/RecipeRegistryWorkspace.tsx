@@ -137,6 +137,7 @@ export function RecipeRegistryDirectory({ campaignId, perspective, loadPage, rel
 export function RecipeRegistryDetails({ route, loadDefinition }: {
   route: RegistryRecipeRoute; loadDefinition: RecipeDefinitionLoader;
 }) {
+  const fromRules = window.history.state?.itemMainTab === "rules";
   const [state, setState] = useState<"loading" | "ready" | "error" | "stale">("loading");
   const [definition, setDefinition] = useState<RecipeDefinition | null>(null);
   const [retry, setRetry] = useState(0);
@@ -155,7 +156,7 @@ export function RecipeRegistryDetails({ route, loadDefinition }: {
     preferCached.current = true;
     return () => controller.abort();
   }, [loadDefinition, retry, route.collection, route.contentFingerprint, route.recipeId]);
-  const back = () => readItemReturn(window.history.state)?.kind === "registry" ? window.history.back()
+  const back = () => readItemReturn(window.history.state)?.kind === "registry" || fromRules ? window.history.back()
     : navigateHubRoute("party", "overview", true, { partySection: "registry" });
   const retryRead = () => { preferCached.current = false; setDefinition(null); setRetry((value) => value + 1); };
   const linked = new Map(definition?.linkedItems.map((item) => [item.id, item]) ?? []);
@@ -164,14 +165,16 @@ export function RecipeRegistryDetails({ route, loadDefinition }: {
     if (!item) return;
     navigateItemRoute({ kind: "registry-item", campaignId: route.campaignId, perspective: route.perspective,
       itemId: item.id, collection: item.collection, contentFingerprint: item.contentFingerprint, tab: "details" },
-    false, readItemReturn(window.history.state));
+    false, readItemReturn(window.history.state), fromRules ? "rules" : "party");
   };
   return <section className="recipe-page" aria-labelledby="recipe-view-heading">
     <nav aria-label="Breadcrumb" className="item-page__breadcrumbs"><ol>
-      <li><button type="button" onClick={() => navigateHubRoute("party")}>Party</button></li>
-      <li><button type="button" onClick={() => navigateHubRoute("party", "overview", false,
-        { partySection: "registry" })}>Registry</button></li>
-      <li><button type="button" onClick={back}>Recipes</button></li>
+      {fromRules ? <li><button type="button" onClick={back}>Rules</button></li> : <>
+        <li><button type="button" onClick={() => navigateHubRoute("party")}>Party</button></li>
+        <li><button type="button" onClick={() => navigateHubRoute("party", "overview", false,
+          { partySection: "registry" })}>Registry</button></li>
+        <li><button type="button" onClick={back}>Recipes</button></li>
+      </>}
       <li aria-current="page">{definition ? cleanName(definition.entry.name) : "Recipe details"}</li>
     </ol></nav>
     <header><span className="eyebrow">Crafting recipe registry</span>

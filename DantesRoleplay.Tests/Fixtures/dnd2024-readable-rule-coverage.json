@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "applicationId": "dnd2024",
+  "topics": [
+    {
+      "topic": "ability-checks-and-skills",
+      "status": "published",
+      "articleIds": ["dnd2024.rule.checks.ability-checks-and-skills"],
+      "mechanicIds": ["dnd2024.mechanic.check.ability", "dnd2024.mechanic.skill-proficiencies.record"],
+      "procedureIds": ["dnd2024.procedure.mechanic.check.ability", "dnd2024.procedure.mechanic.skill-proficiencies"]
+    },
+    {
+      "topic": "saving-throws",
+      "status": "published",
+      "articleIds": ["dnd2024.rule.checks.saving-throws"],
+      "mechanicIds": ["dnd2024.mechanic.saving-throw", "dnd2024.mechanic.saving-throw-proficiencies.record"],
+      "procedureIds": ["dnd2024.procedure.mechanic.saving-throw", "dnd2024.procedure.mechanic.saving-throw-proficiencies"]
+    },
+    {
+      "topic": "actions-and-turns",
+      "status": "published",
+      "articleIds": ["dnd2024.rule.combat.turns-and-action-budgets"],
+      "mechanicIds": ["dnd2024.mechanic.encounter-turn.start", "dnd2024.mechanic.turn-budget.spend"],
+      "procedureIds": ["dnd2024.procedure.mechanic.encounter-turn-lifecycle", "dnd2024.procedure.mechanic.turn-budget"]
+    },
+    {
+      "topic": "movement",
+      "status": "published",
+      "articleIds": ["dnd2024.rule.movement.speed-and-movement"],
+      "mechanicIds": ["dnd2024.mechanic.speed.read", "dnd2024.mechanic.speed.write"],
+      "procedureIds": ["dnd2024.procedure.mechanic.speed"]
+    },
+    {
+      "topic": "damage-and-healing",
+      "status": "published",
+      "articleIds": ["dnd2024.rule.combat.damage-hit-points-and-healing"],
+      "mechanicIds": ["dnd2024.mechanic.damage.resolve", "dnd2024.mechanic.healing.apply"],
+      "procedureIds": ["dnd2024.procedure.mechanic.damage.resolve", "dnd2024.procedure.mechanic.healing"]
+    },
+    {
+      "topic": "conditions",
+      "status": "published",
+      "articleIds": ["dnd2024.rule.conditions.creature-conditions"],
+      "mechanicIds": ["dnd2024.mechanic.conditions.write", "dnd2024.mechanic.d20-test.state-effects"],
+      "procedureIds": ["dnd2024.procedure.mechanic.conditions", "dnd2024.procedure.mechanic.d20-test.state-effects"]
+    },
+    {
+      "topic": "equipment-containers-and-carrying",
+      "status": "published",
+      "articleIds": ["dnd2024.rule.equipment.inventory-equipment-and-carrying"],
+      "mechanicIds": ["dnd2024.mechanic.inventory.read", "dnd2024.mechanic.carrying-capacity.read"],
+      "procedureIds": ["dnd2024.procedure.mechanic.inventory-read", "dnd2024.procedure.mechanic.carrying-capacity"]
+    },
+    {
+      "topic": "rests-and-resources",
+      "status": "published",
+      "articleIds": ["dnd2024.rule.resting.long-rests"],
+      "mechanicIds": ["dnd2024.mechanic.rest.progress", "dnd2024.mechanic.rest.complete", "dnd2024.mechanic.rest.resource-pool.restore"],
+      "procedureIds": ["dnd2024.procedure.mechanic.rest-episode"]
+    },
+    {
+      "topic": "character-creation-and-progression",
+      "status": "published",
+      "articleIds": ["dnd2024.rule.characters.creation-and-progression"],
+      "mechanicIds": ["dnd2024.mechanic.character.level-one-rules.project", "dnd2024.mechanic.class-progression.read"],
+      "procedureIds": ["dnd2024.procedure.character.level-one-rules", "dnd2024.procedure.mechanic.class-progression"]
+    },
+    {
+      "topic": "spellcasting-execution",
+      "status": "gap",
+      "articleIds": [],
+      "mechanicIds": [],
+      "procedureIds": [],
+      "gap": "Spell definitions, character spell access, and progression state exist, but the installed core catalog does not provide a general spell-casting execution mechanic. Publish guidance only after that authority exists."
+    },
+    {
+      "topic": "travel",
+      "status": "published",
+      "articleIds": ["dnd2024.rule.exploration.route-travel"],
+      "mechanicIds": ["dnd2024.mechanic.travel.pace-duration.calculate", "dnd2024.mechanic.travel.execute", "dnd2024.mechanic.travel.arrival.record"],
+      "procedureIds": ["dnd2024.procedure.mechanic.travel"]
+    },
+    {
+      "topic": "crafting",
+      "status": "published",
+      "articleIds": ["dnd2024.rule.crafting.recipes-and-downtime"],
+      "mechanicIds": ["dnd2024.mechanic.downtime.begin", "dnd2024.mechanic.downtime.progress", "dnd2024.mechanic.downtime.complete"],
+      "procedureIds": ["dnd2024.procedure.mechanic.downtime"]
+    }
+  ]
+}

@@ -4,7 +4,7 @@
   "additionalProperties": false,
   "required": [
     "section", "order", "title", "summary", "blocks", "examples",
-    "relatedRuleRefs", "citations", "mechanicIds", "procedureIds",
+    "relatedRuleRefs", "relatedContentRefs", "citations", "mechanicIds", "procedureIds",
     "visibility", "presentationStatus"
   ],
   "properties": {
@@ -54,6 +54,17 @@
         "type": "object", "additionalProperties": false,
         "required": ["entityId"],
         "properties": { "entityId": { "$ref": "#/$defs/qualifiedId" } }
+      }
+    },
+    "relatedContentRefs": {
+      "type": "array", "maxItems": 32, "uniqueItems": true,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["kind", "entityId"],
+        "properties": {
+          "kind": { "$ref": "#/$defs/slug" },
+          "entityId": { "$ref": "#/$defs/qualifiedId" }
+        }
       }
     },
     "citations": {

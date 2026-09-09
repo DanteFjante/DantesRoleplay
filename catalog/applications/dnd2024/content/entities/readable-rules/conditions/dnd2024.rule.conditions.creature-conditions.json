@@ -1,0 +1,47 @@
+{
+  "id": "dnd2024.rule.conditions.creature-conditions",
+  "name": "Creature Conditions",
+  "components": {
+    "game.core.rules.readable": {
+      "section": { "id": "conditions", "label": "Conditions", "order": 50 },
+      "order": 10,
+      "title": "Creature Conditions",
+      "summary": "Conditions are recorded creature states whose active definitions can alter d20 tests and other supported outcomes until the condition changes or ends.",
+      "blocks": [
+        {
+          "kind": "paragraph",
+          "heading": "Condition state",
+          "body": "Applying, replacing, or removing a condition writes typed state. Later checks and saves consume only the effects declared by the active condition definition and mechanic.",
+          "items": []
+        },
+        {
+          "kind": "callout",
+          "heading": "Exhaustion has levels",
+          "body": "Exhaustion is recorded with its current level; the interface does not infer a level from descriptive text.",
+          "items": []
+        }
+      ],
+      "examples": [
+        {
+          "title": "A condition affects a test",
+          "body": "When a condition declares a relevant d20-test effect, the state-effects mechanic includes it while resolving the test."
+        }
+      ],
+      "relatedRuleRefs": [
+        { "entityId": "dnd2024.rule.checks.ability-checks-and-skills" },
+        { "entityId": "dnd2024.rule.checks.saving-throws" }
+      ],
+      "relatedContentRefs": [],
+      "citations": [
+        {
+          "sourceId": "dnd2024.source.srd-5.2.1",
+          "locator": "Rules Glossary > Conditions and Exhaustion, PDF pp. 179-183"
+        }
+      ],
+      "mechanicIds": ["dnd2024.mechanic.conditions.write", "dnd2024.mechanic.d20-test.state-effects"],
+      "procedureIds": ["dnd2024.procedure.mechanic.conditions", "dnd2024.procedure.mechanic.d20-test.state-effects"],
+      "visibility": "public",
+      "presentationStatus": "published"
+    }
+  }
+}

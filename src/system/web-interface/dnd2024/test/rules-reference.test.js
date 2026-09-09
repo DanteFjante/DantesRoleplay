@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { filterRuleReferences, ruleSectionOptions } from "../src/data/rules-reference.js";
-import { projectResolvedRules, readRulesReference } from "../src/server/rules-reference.ts";
+import { projectResolvedRules, projectRulesPublication, readRulesReference,
+  RulesReferenceClient } from "../src/server/rules-reference.ts";
+import { ViewReadError } from "../src/data/view-read-client.ts";
 
 function rule({
   id = "dnd2024.rule.combat.attack",
@@ -24,6 +26,7 @@ function rule({
     ],
     examples: [{ title: "A nearby target", body: "The recorded attack activity supplies the input." }],
     relatedRuleIds: ["dnd2024.rule.characters.sheet"],
+    relatedContent: [],
     citations: [{ sourceId: "source.fixture", locator: "Fixture rules, page 1" }],
     authority: {
       mechanicIds: ["dnd2024.mechanic.weapon-attack"],
@@ -34,13 +37,15 @@ function rule({
   };
 }
 
-function payload(sections = [{ id: "combat", label: "Combat", order: 20, rules: [rule()] }]) {
+function payload(sections = [{ id: "combat", label: "Combat", order: 20, rules: [rule()] }], overrides = {}) {
   return {
     applicationId: "dnd2024",
     resolutionFingerprint: "A".repeat(64),
     rulesFingerprint: "B".repeat(64),
     audience: "public",
     sections,
+    articleCount: sections.flatMap((section) => section.rules).length,
+    ...overrides,
   };
 }
 
@@ -96,19 +101,16 @@ test("loads only the resolved rules endpoint and has no static fallback", async 
     },
   });
 
-  assert.equal(projected.length, 1);
+  assert.equal(projected.rules.length, 1);
+  assert.equal(projected.articleCount, 1);
   assert.deepEqual(requested, ["https://localhost:5144/api/applications/dnd2024/rules"]);
 
   const unavailableRequests = [];
-  const unavailable = await readRulesReference({
-    serverOrigin: "https://localhost:5144",
-    applicationId: "dnd2024",
-    fetchImpl: async (url) => {
-      unavailableRequests.push(String(url));
-      return new Response("unavailable", { status: 503 });
-    },
-  });
-  assert.deepEqual(unavailable, []);
+  await assert.rejects(readRulesReference({
+    serverOrigin: "https://localhost:5144", applicationId: "dnd2024",
+    fetchImpl: async (url) => { unavailableRequests.push(String(url));
+      return new Response("unavailable", { status: 503 }); },
+  }), (error) => error instanceof ViewReadError && error.category === "transport");
   assert.equal(unavailableRequests.length, 1);
 });
 
@@ -118,29 +120,28 @@ test("does not request rules for a credential-bearing origin or another applicat
     requests += 1;
     return new Response(JSON.stringify(payload()), { status: 200 });
   };
-  assert.deepEqual(await readRulesReference({
+  await assert.rejects(readRulesReference({
     serverOrigin: "https://user@example.com",
     applicationId: "dnd2024",
     fetchImpl,
-  }), []);
-  assert.deepEqual(await readRulesReference({
+  }), (error) => error instanceof ViewReadError && error.category === "incompatible-data");
+  await assert.rejects(readRulesReference({
     serverOrigin: "https://localhost:5144",
     applicationId: "other",
     fetchImpl,
-  }), []);
+  }), (error) => error instanceof ViewReadError && error.category === "incompatible-data");
   assert.equal(requests, 0);
 });
 
 test("rules reject an oversized response before retaining or parsing it", async () => {
-  const result = await readRulesReference({
+  await assert.rejects(readRulesReference({
     serverOrigin: "https://localhost:5144",
     applicationId: "dnd2024",
     fetchImpl: async () => new Response("x", {
       status: 200,
       headers: { "Content-Length": "2097153" },
     }),
-  });
-  assert.deepEqual(result, []);
+  }), (error) => error instanceof ViewReadError && error.category === "incompatible-data");
 });
 
 test("section navigation and search use readable content rather than directory names", () => {
@@ -153,4 +154,38 @@ test("section navigation and search use readable content rather than directory n
   assert.deepEqual(filterRuleReferences(projected, "nearby target", "").map(({ title }) => title), ["Attack", "Long Rest"]);
   assert.deepEqual(filterRuleReferences(projected, "weapon-attack", "combat").map(({ title }) => title), ["Attack"]);
   assert.deepEqual(filterRuleReferences(projected, "", "resting").map(({ title }) => title), ["Long Rest"]);
+});
+
+test("publication contract owns article totals and validates related content links", () => {
+  const linked = rule();
+  linked.relatedContent = [{ kind: "item", entityId: "dnd2024.item.backpack.v1", title: "Backpack",
+    collection: "items", contentFingerprint: "C".repeat(64), available: true }];
+  const projected = projectRulesPublication(payload([
+    { id: "combat", label: "Combat", order: 20, rules: [linked] },
+  ]));
+  assert.equal(projected.articleCount, 1);
+  assert.equal(projected.rules[0].relatedContent[0].title, "Backpack");
+  assert.equal(projectRulesPublication(payload(undefined, { articleCount: 2 })), null);
+  assert.equal(projectRulesPublication(payload([{ id: "combat", label: "Combat", order: 20, rules: [
+    { ...linked, relatedContent: [{ ...linked.relatedContent[0], available: false }] },
+  ] }])), null);
+});
+
+test("rules client reuses a fresh publication and observes changed source fingerprints on forced refresh", async () => {
+  let calls = 0;
+  const client = new RulesReferenceClient({ serverOrigin: "https://localhost:5144",
+    fetchImpl: async () => {
+      calls += 1;
+      return new Response(JSON.stringify(payload(undefined, {
+        resolutionFingerprint: String(calls).repeat(64),
+        rulesFingerprint: String(calls + 1).repeat(64),
+      })), { status: 200, headers: { "Content-Type": "application/json" } });
+    } });
+  const first = await client.load();
+  const cached = await client.load();
+  const changed = await client.load(undefined, false);
+  assert.equal(calls, 2);
+  assert.equal(first.rulesFingerprint, cached.rulesFingerprint);
+  assert.notEqual(first.rulesFingerprint, changed.rulesFingerprint);
+  assert.equal(client.metrics().hits, 1);
 });

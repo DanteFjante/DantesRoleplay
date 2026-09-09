@@ -35,6 +35,7 @@
         { "entityId": "dnd2024.rule.characters.character-sheet" },
         { "entityId": "dnd2024.rule.resting.long-rests" }
       ],
+      "relatedContentRefs": [],
       "citations": [
         {
           "sourceId": "dnd2024.source.srd-5.2.1",

@@ -21,6 +21,14 @@ public sealed record ReadableRuleExampleView(string Title, string Body);
 
 public sealed record ReadableRuleCitationView(string SourceId, string Locator);
 
+public sealed record ReadableRuleContentLinkView(
+    string Kind,
+    string EntityId,
+    string Title,
+    string? Collection,
+    string? ContentFingerprint,
+    bool Available);
+
 public sealed record ReadableRuleAuthorityView(
     IReadOnlyList<string> MechanicIds,
     IReadOnlyList<string> ProcedureIds);
@@ -39,6 +47,7 @@ public sealed record ReadableRuleView(
     IReadOnlyList<ReadableRuleBlockView> Blocks,
     IReadOnlyList<ReadableRuleExampleView> Examples,
     IReadOnlyList<string> RelatedRuleIds,
+    IReadOnlyList<ReadableRuleContentLinkView> RelatedContent,
     IReadOnlyList<ReadableRuleCitationView> Citations,
     ReadableRuleAuthorityView Authority,
     string Visibility,
@@ -55,7 +64,8 @@ public sealed record ReadableRulesResult(
     string ResolutionFingerprint,
     string RulesFingerprint,
     string Audience,
-    IReadOnlyList<ReadableRuleSectionView> Sections);
+    IReadOnlyList<ReadableRuleSectionView> Sections,
+    int ArticleCount);
 
 internal static class ReadableRuleCatalogProjection
 {
@@ -94,9 +104,12 @@ internal static class ReadableRuleCatalogProjection
                 ? (Owner: "base", Key: record.QualifiedId[(manifest.ApplicationId.Value.Length + 1)..])
                 : CatalogExtensionSearch.OwnerAndKey(resolution, record.QualifiedId);
             var extension = identity.Owner == "base" ? null : extensions[identity.Owner];
+            var relatedContent = parsed.RelatedContentRefs.Select(reference =>
+                ResolveContentLink(manifest.ApplicationId, resolution, selected, reference)).ToArray();
             rules.Add(new(parsed.SectionId, parsed.SectionLabel, parsed.SectionOrder,
                 new(record.QualifiedId, identity.Key, parsed.Title, parsed.Summary, parsed.RuleOrder,
-                    parsed.Blocks, parsed.Examples, parsed.RelatedRuleIds, parsed.Citations,
+                    parsed.Blocks, parsed.Examples, parsed.RelatedRuleIds,
+                    Array.AsReadOnly(relatedContent), parsed.Citations,
                     new(parsed.MechanicIds, parsed.ProcedureIds), parsed.Visibility,
                     new(identity.Owner, extension?.DisplayName ?? "Core",
                         extension?.Classification ?? "core"))));
@@ -127,7 +140,7 @@ internal static class ReadableRuleCatalogProjection
         });
         return new(manifest.ApplicationId.Value, resolution?.Fingerprint ?? "none",
             Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(fingerprintJson))),
-            request.Audience.ToString().ToLowerInvariant(), Array.AsReadOnly(sections));
+            request.Audience.ToString().ToLowerInvariant(), Array.AsReadOnly(sections), rules.Count);
     }
 
     private static ParsedRule? Parse(CatalogRecordDefinition record)
@@ -139,7 +152,7 @@ internal static class ReadableRuleCatalogProjection
             || components.ValueKind != JsonValueKind.Object
             || !components.TryGetProperty(ComponentId, out var component)) return null;
         RequireObject(component, ["section", "order", "title", "summary", "blocks", "examples",
-            "relatedRuleRefs", "citations", "mechanicIds", "procedureIds", "visibility",
+            "relatedRuleRefs", "relatedContentRefs", "citations", "mechanicIds", "procedureIds", "visibility",
             "presentationStatus"]);
         var section = component.GetProperty("section");
         RequireObject(section, ["id", "label", "order"]);
@@ -177,6 +190,12 @@ internal static class ReadableRuleCatalogProjection
             RequireObject(value, ["entityId"]);
             return Text(value, "entityId", 400, qualified: true);
         }).ToArray();
+        var relatedContent = Elements(component, "relatedContentRefs", 0, 32).Select(value =>
+        {
+            RequireObject(value, ["kind", "entityId"]);
+            return new ParsedContentLink(Text(value, "kind", 100, identifier: true),
+                Text(value, "entityId", 400, qualified: true));
+        }).ToArray();
         var citations = Elements(component, "citations", 1, 32).Select(value =>
         {
             RequireObject(value, ["sourceId", "locator"]);
@@ -187,11 +206,32 @@ internal static class ReadableRuleCatalogProjection
         if (mechanicIds.Count + procedureIds.Count == 0)
             throw Invalid(record, "authoritative mechanic or procedure link");
         EnsureDistinct(record, related, "related rules");
+        EnsureDistinct(record, relatedContent.Select(value => $"{value.Kind}\n{value.EntityId}").ToArray(),
+            "related content");
         EnsureDistinct(record, mechanicIds, "mechanics");
         EnsureDistinct(record, procedureIds, "procedures");
         return new(sectionId, sectionLabel, sectionOrder, ruleOrder, title, summary,
             Array.AsReadOnly(blocks), Array.AsReadOnly(examples), related,
+            Array.AsReadOnly(relatedContent),
             Array.AsReadOnly(citations), mechanicIds, procedureIds, visibility, presentationStatus);
+    }
+
+    private static ReadableRuleContentLinkView ResolveContentLink(
+        ApplicationIdentifier applicationId,
+        CatalogExtensionResolutionContext? resolution,
+        IReadOnlyList<CatalogRecordDefinition> records,
+        ParsedContentLink reference)
+    {
+        var resolutionKey = reference.EntityId.StartsWith(applicationId.Value + ".", StringComparison.Ordinal)
+            ? reference.EntityId[(applicationId.Value.Length + 1)..]
+            : reference.EntityId;
+        var target = records.FirstOrDefault(value => value.QualifiedId == reference.EntityId)
+            ?? records.FirstOrDefault(value => resolution is not null
+                && CatalogExtensionSearch.OwnerAndKey(resolution, value.QualifiedId).Key == resolutionKey);
+        return target is null
+            ? new(reference.Kind, reference.EntityId, reference.EntityId, null, null, false)
+            : new(reference.Kind, target.QualifiedId, target.Name, target.Collection,
+                target.ContentFingerprint, true);
     }
 
     private static IReadOnlyList<JsonElement> Elements(JsonElement owner, string name, int minimum, int maximum)
@@ -266,8 +306,11 @@ internal static class ReadableRuleCatalogProjection
         string SectionId, string SectionLabel, int SectionOrder, int RuleOrder,
         string Title, string Summary, IReadOnlyList<ReadableRuleBlockView> Blocks,
         IReadOnlyList<ReadableRuleExampleView> Examples, IReadOnlyList<string> RelatedRuleIds,
+        IReadOnlyList<ParsedContentLink> RelatedContentRefs,
         IReadOnlyList<ReadableRuleCitationView> Citations, IReadOnlyList<string> MechanicIds,
         IReadOnlyList<string> ProcedureIds, string Visibility, string PresentationStatus);
+
+    private sealed record ParsedContentLink(string Kind, string EntityId);
 
     private sealed record ProjectedRule(
         string SectionId, string SectionLabel, int SectionOrder, ReadableRuleView Rule);

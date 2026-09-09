@@ -64,6 +64,7 @@
       "relatedRuleRefs": [
         { "entityId": "dnd2024.rule.characters.character-sheet" }
       ],
+      "relatedContentRefs": [],
       "citations": [
         {
           "sourceId": "dnd2024-extension.caldris-homebrew",

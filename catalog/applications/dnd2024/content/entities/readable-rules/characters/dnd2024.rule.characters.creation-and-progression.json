@@ -1,0 +1,49 @@
+{
+  "id": "dnd2024.rule.characters.creation-and-progression",
+  "name": "Character Creation and Progression",
+  "components": {
+    "game.core.rules.readable": {
+      "section": { "id": "characters", "label": "Characters", "order": 10 },
+      "order": 20,
+      "title": "Character Creation and Progression",
+      "summary": "Character creation records selected origin, ability scores, class, and level-one choices; progression reads the active class definition before granting later features.",
+      "blocks": [
+        {
+          "kind": "steps",
+          "heading": "Recorded progression",
+          "body": null,
+          "items": [
+            "Create the level-one state from the character's confirmed selections and active definitions.",
+            "Read the active class progression for the character's new class level.",
+            "Record only the features, resources, and choices declared by that progression."
+          ]
+        },
+        {
+          "kind": "callout",
+          "heading": "Pending choices remain pending",
+          "body": "If a required value has not been selected, the system reports the missing choice instead of fabricating a feature or default.",
+          "items": []
+        }
+      ],
+      "examples": [],
+      "relatedRuleRefs": [
+        { "entityId": "dnd2024.rule.characters.character-sheet" }
+      ],
+      "relatedContentRefs": [],
+      "citations": [
+        {
+          "sourceId": "dnd2024.source.srd-5.2.1",
+          "locator": "Character Creation > Step 3: Ability Scores > Generate Your Scores > Standard Array, PDF p. 21"
+        },
+        {
+          "sourceId": "dnd2024.source.srd-5.2.1",
+          "locator": "Character Classes > Class Features and Level Progression, PDF pp. 30-76"
+        }
+      ],
+      "mechanicIds": ["dnd2024.mechanic.character.level-one-rules.project", "dnd2024.mechanic.class-progression.read"],
+      "procedureIds": ["dnd2024.procedure.character.level-one-rules", "dnd2024.procedure.mechanic.class-progression"],
+      "visibility": "public",
+      "presentationStatus": "published"
+    }
+  }
+}

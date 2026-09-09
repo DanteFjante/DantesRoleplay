@@ -34,6 +34,7 @@ export function filterRuleReferences(rules, query, sectionId) {
       ...rule.blocks.flatMap((block) => [block.heading ?? "", block.body ?? "", ...block.items]),
       ...rule.examples.flatMap((example) => [example.title, example.body]),
       ...rule.citations.flatMap((citation) => [citation.sourceId, citation.locator]),
+      ...rule.relatedContent.flatMap((content) => [content.kind, content.entityId, content.title]),
       ...rule.authority.mechanicIds,
       ...rule.authority.procedureIds,
     ].some((value) => value.toLocaleLowerCase().includes(normalizedQuery));

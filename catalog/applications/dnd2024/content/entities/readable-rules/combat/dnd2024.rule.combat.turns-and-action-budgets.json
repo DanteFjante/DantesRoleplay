@@ -1,0 +1,46 @@
+{
+  "id": "dnd2024.rule.combat.turns-and-action-budgets",
+  "name": "Turns and Action Budgets",
+  "components": {
+    "game.core.rules.readable": {
+      "section": { "id": "combat", "label": "Combat", "order": 20 },
+      "order": 5,
+      "title": "Turns and Action Budgets",
+      "summary": "An encounter turn records its active participant and the Action, Bonus Action, and Reaction budget available to that participant.",
+      "blocks": [
+        {
+          "kind": "steps",
+          "heading": "Turn lifecycle",
+          "body": null,
+          "items": [
+            "Start the next eligible participant's turn and initialize its recorded budget.",
+            "Spend a budget entry only when the chosen activity requires it.",
+            "End and advance the turn after resolving the participant's declared activity and state changes."
+          ]
+        },
+        {
+          "kind": "callout",
+          "heading": "Timing is recorded",
+          "body": "The interface reports the current budget; encounter-turn and turn-budget mechanics own spending and advancement.",
+          "items": []
+        }
+      ],
+      "examples": [],
+      "relatedRuleRefs": [
+        { "entityId": "dnd2024.rule.combat.weapon-attacks" },
+        { "entityId": "dnd2024.rule.movement.speed-and-movement" }
+      ],
+      "relatedContentRefs": [],
+      "citations": [
+        {
+          "sourceId": "dnd2024.source.srd-5.2.1",
+          "locator": "Playing the Game > Actions, Bonus Actions, Reactions, and Interacting with Objects; Combat > Your Turn, PDF pp. 9 and 25"
+        }
+      ],
+      "mechanicIds": ["dnd2024.mechanic.encounter-turn.start", "dnd2024.mechanic.encounter-turn.end", "dnd2024.mechanic.encounter-turn.advance", "dnd2024.mechanic.turn-budget.read", "dnd2024.mechanic.turn-budget.write", "dnd2024.mechanic.turn-budget.spend"],
+      "procedureIds": ["dnd2024.procedure.mechanic.encounter-turn-lifecycle", "dnd2024.procedure.mechanic.turn-budget"],
+      "visibility": "public",
+      "presentationStatus": "published"
+    }
+  }
+}

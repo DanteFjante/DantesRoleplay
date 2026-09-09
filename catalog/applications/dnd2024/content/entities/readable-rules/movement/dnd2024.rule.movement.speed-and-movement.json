@@ -1,0 +1,42 @@
+{
+  "id": "dnd2024.rule.movement.speed-and-movement",
+  "name": "Speed and Movement",
+  "components": {
+    "game.core.rules.readable": {
+      "section": { "id": "movement", "label": "Movement", "order": 40 },
+      "order": 10,
+      "title": "Speed and Movement",
+      "summary": "A creature's recorded speeds define how far it can move with each movement mode; the current situation determines which mode applies.",
+      "blocks": [
+        {
+          "kind": "paragraph",
+          "heading": "Recorded movement modes",
+          "body": "Walking, climbing, flying, swimming, or another declared movement mode is read from current creature state. A speed change is written through the speed mechanic before later views use it.",
+          "items": []
+        },
+        {
+          "kind": "callout",
+          "heading": "Movement during a turn",
+          "body": "Movement and action spending are separate recorded concerns; the current encounter and terrain can constrain how the available speed is used.",
+          "items": []
+        }
+      ],
+      "examples": [],
+      "relatedRuleRefs": [
+        { "entityId": "dnd2024.rule.combat.turns-and-action-budgets" },
+        { "entityId": "dnd2024.rule.exploration.route-travel" }
+      ],
+      "relatedContentRefs": [],
+      "citations": [
+        {
+          "sourceId": "dnd2024.source.srd-5.2.1",
+          "locator": "Rules Glossary > Speed, PDF p. 188"
+        }
+      ],
+      "mechanicIds": ["dnd2024.mechanic.speed.read", "dnd2024.mechanic.speed.write"],
+      "procedureIds": ["dnd2024.procedure.mechanic.speed"],
+      "visibility": "public",
+      "presentationStatus": "published"
+    }
+  }
+}

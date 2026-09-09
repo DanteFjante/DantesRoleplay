@@ -10,7 +10,8 @@ import { hubRouteHash, parseHubRoute } from "../../src/data/hub-route";
 import { hubSource } from "../support/hub-source.js";
 import { projectHubEnvelope } from "../support/hub-envelope.js";
 import { resolveAudience } from "../support/audience-policy.js";
-import type { InventoryContainerItem, InventoryContainerPageItem, PartyMemberReadModel, ReadyHubEnvelope } from "../../src/data/hub-types";
+import type { InventoryContainerItem, InventoryContainerPageItem, PartyMemberReadModel, ReadyHubEnvelope,
+  RuleReadModel } from "../../src/data/hub-types";
 
 const inventory: InventoryRoute = { kind: "inventory", characterId: "actor.second", campaignId: "campaign.test", perspective: "player" };
 function member(id: string): PartyMemberReadModel {
@@ -174,6 +175,52 @@ test("Campaign and Party routes are closed, addressable fragments", () => {
     "#view?tab=campaign&principal=gm", "#view?tab=campaign&tab=party", "#view?tab=%zz"]) {
     assert.equal(parseHubRoute(hash).kind, "invalid");
   }
+});
+
+test("Rules content links retain Rules as the parent through registry details", async () => {
+  const projected = projectHubEnvelope(hubSource, "fixture", resolveAudience({
+    authenticatedUserId: "dm.fixture", authenticatedUserEmail: "", requestedPerspective: "player",
+    dmPrincipalIds: ["dm.fixture"],
+  })) as ReadyHubEnvelope;
+  const linkedRule: RuleReadModel = {
+    id: "dnd2024.rule.equipment.inventory-equipment-and-carrying",
+    resolutionKey: "rule.equipment.inventory-equipment-and-carrying",
+    title: "Inventory, Equipment, and Carrying", summary: "Recorded inventory guidance.", order: 10,
+    section: { id: "equipment", label: "Equipment", order: 60 },
+    blocks: [{ kind: "paragraph", heading: null, body: "Containers preserve item identity.", items: [] }],
+    examples: [], relatedRuleIds: [],
+    relatedContent: [{ kind: "item", entityId: "dnd2024.item.backpack.v1", title: "Backpack",
+      collection: "dnd2024", contentFingerprint: "A".repeat(64), available: true }],
+    citations: [{ sourceId: "dnd2024.source.srd-5.2.1", locator: "Equipment > Backpack, PDF p. 95" }],
+    authority: { mechanicIds: ["dnd2024.mechanic.inventory.read"], procedureIds: [] },
+    visibility: "public", source: { ownerId: "base", label: "Core", classification: "core" },
+  };
+  const initial: ReadyHubEnvelope = { ...projected, party, rules: [linkedRule],
+    contextSelection: { selectedWorldId: projected.world.id, selectedCampaignId: "campaign.test",
+      worlds: [{ id: projected.world.id, name: projected.world.name,
+        campaigns: [{ id: "campaign.test", name: "Fixture" }] }] } };
+  const itemRecord = { id: "dnd2024.item.backpack.v1", collection: "dnd2024", name: "Backpack",
+    status: "active", version: 1, contentFingerprint: "A".repeat(64), sourceId: "dnd2024-core",
+    sourceLabel: "Core", classification: "core" as const };
+  const mounted = await mount(hubRouteHash("rules"), <DndInformationHub initialEnvelope={initial}
+    loadItemRegistryPage={async () => ({ resolutionFingerprint: "B".repeat(64), records: [],
+      totalCount: 0, nextCursor: null })}
+    loadItemDefinition={async () => ({ record: itemRecord, details: {
+      version: 1, observerId: "shared-table", itemId: itemRecord.id, perspective: "player", state: "ready",
+      name: itemRecord.name, description: "A carried container.", definitionId: itemRecord.id,
+      quantity: null, container: null, equipmentSlots: [], properties: [], sources: [], media: [], reasons: [],
+      observerKnowledge: null,
+    } })} />);
+  try {
+    await perform(() => button(mounted.container, "Backpack").click());
+    assert.equal(mounted.container.querySelector('.main-nav [aria-current="page"]')?.textContent?.trim(), "Rules");
+    assert.match(mounted.container.querySelector(".item-page__breadcrumbs")?.textContent ?? "", /RulesBackpack/);
+    assert.match(mounted.container.textContent ?? "", /A carried container/);
+    await perform(() => mounted.container.querySelector<HTMLButtonElement>(".item-page__breadcrumbs button")!.click());
+    assert.equal(parseItemRoute(window.location.hash).kind, "none");
+    assert.equal(mounted.container.querySelector('.main-nav [aria-current="page"]')?.textContent?.trim(), "Rules");
+    assert.match(mounted.container.textContent ?? "", /Inventory, Equipment, and Carrying/);
+  } finally { await mounted.cleanup(); }
 });
 
 test("opening image/name is independent of disclosure; Back and Forward restore character, focus, scroll and nested contents", async () => {

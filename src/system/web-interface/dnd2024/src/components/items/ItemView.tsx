@@ -11,9 +11,10 @@ export function focusItemPanel() { document.getElementById("item-panel")?.focus(
 
 // Only ConnectedItemView supplies identity from a validated, current response.
 export function ItemView({ tab, onTab, onBack, onParty, onRegistry, context = "inventory",
-  characterName, name, details, recipes, uses }: {
+  parent, characterName, name, details, recipes, uses }: {
   tab: ItemTab; onTab: (tab: ItemTab) => void; onBack: () => void; onParty?: () => void;
   onRegistry?: () => void; context?: "inventory" | "registry";
+  parent?: { label: string; onNavigate: () => void };
   characterName?: string; name?: string; details?: ReactNode; recipes?: ReactNode; uses?: ReactNode;
 }) {
   const visibleTabs = context === "registry" ? [tabs[0], { ...tabs[1], label: "Recipes" }] : tabs;
@@ -25,10 +26,12 @@ export function ItemView({ tab, onTab, onBack, onParty, onRegistry, context = "i
     }
   }}>
     <nav aria-label="Breadcrumb" className="item-page__breadcrumbs"><ol>
-      <li><button type="button" onClick={onParty ?? onBack}>Party</button></li>
-      {context === "registry" ? <li><button type="button" onClick={onRegistry ?? onBack}>Registry</button></li> : null}
-      {characterName ? <li><button type="button" onClick={onParty ?? onBack}>{characterName}</button></li> : null}
-      <li><button type="button" onClick={onBack}>{context === "registry" ? "Items" : "Inventory"}</button></li>
+      {parent ? <li><button type="button" onClick={parent.onNavigate}>{parent.label}</button></li> : <>
+        <li><button type="button" onClick={onParty ?? onBack}>Party</button></li>
+        {context === "registry" ? <li><button type="button" onClick={onRegistry ?? onBack}>Registry</button></li> : null}
+        {characterName ? <li><button type="button" onClick={onParty ?? onBack}>{characterName}</button></li> : null}
+        <li><button type="button" onClick={onBack}>{context === "registry" ? "Items" : "Inventory"}</button></li>
+      </>}
       <li aria-current="page">{name ?? "Item details"}</li>
     </ol></nav>
     <header><span className="eyebrow">{context === "registry" ? "Known item registry" : "Inventory item"}</span><h2 id="item-view-heading" ref={heading} tabIndex={-1}>{name ?? "Item"}</h2></header>

@@ -1,0 +1,46 @@
+{
+  "id": "dnd2024.rule.combat.damage-hit-points-and-healing",
+  "name": "Damage, Hit Points, and Healing",
+  "components": {
+    "game.core.rules.readable": {
+      "section": { "id": "combat", "label": "Combat", "order": 20 },
+      "order": 20,
+      "title": "Damage, Hit Points, and Healing",
+      "summary": "Damage resolves its typed amount through recorded immunities, resistances, vulnerabilities, and Hit Point state; healing restores only eligible Hit Points.",
+      "blocks": [
+        {
+          "kind": "steps",
+          "heading": "Apply damage",
+          "body": null,
+          "items": [
+            "Resolve the declared damage amount and damage type.",
+            "Apply the target's recorded immunity, resistance, or vulnerability in the required order without stacking the same response.",
+            "Apply the remaining amount to temporary Hit Points and Hit Points through the active mechanic."
+          ]
+        },
+        {
+          "kind": "paragraph",
+          "heading": "Healing",
+          "body": "Healing applies a declared amount to the target's recorded Hit Points without exceeding its eligible maximum.",
+          "items": []
+        }
+      ],
+      "examples": [],
+      "relatedRuleRefs": [
+        { "entityId": "dnd2024.rule.combat.weapon-attacks" },
+        { "entityId": "dnd2024.rule.resting.long-rests" }
+      ],
+      "relatedContentRefs": [],
+      "citations": [
+        {
+          "sourceId": "dnd2024.source.srd-5.2.1",
+          "locator": "Playing the Game > Damage and Healing > Resistance and Vulnerability > No Stacking and Order of Application; Immunity, PDF p. 17"
+        }
+      ],
+      "mechanicIds": ["dnd2024.mechanic.damage.resolve", "dnd2024.mechanic.healing.apply"],
+      "procedureIds": ["dnd2024.procedure.mechanic.damage.resolve", "dnd2024.procedure.mechanic.damage-mitigation", "dnd2024.procedure.mechanic.healing"],
+      "visibility": "public",
+      "presentationStatus": "published"
+    }
+  }
+}

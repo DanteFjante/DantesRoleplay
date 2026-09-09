@@ -1,0 +1,52 @@
+{
+  "id": "dnd2024.rule.crafting.recipes-and-downtime",
+  "name": "Recipes and Downtime",
+  "components": {
+    "game.core.rules.readable": {
+      "section": { "id": "crafting", "label": "Crafting", "order": 80 },
+      "order": 10,
+      "title": "Recipes and Downtime",
+      "summary": "A crafting recipe declares its inputs and output, while a recorded downtime episode owns progress, completion, and cancellation.",
+      "blocks": [
+        {
+          "kind": "steps",
+          "heading": "Use a declared recipe",
+          "body": null,
+          "items": [
+            "Choose a known recipe and confirm its declared output, materials, tools, and time requirements.",
+            "Begin a downtime episode for the selected activity and record progress against that episode.",
+            "Complete the episode only when its declared requirements are satisfied, or cancel it without inventing an output."
+          ]
+        },
+        {
+          "kind": "callout",
+          "heading": "Recipe records are references",
+          "body": "The registry explains installed recipes. It does not execute crafting or substitute a generic browser formula for catalog mechanics.",
+          "items": []
+        }
+      ],
+      "examples": [],
+      "relatedRuleRefs": [
+        { "entityId": "dnd2024.rule.equipment.inventory-equipment-and-carrying" }
+      ],
+      "relatedContentRefs": [
+        { "kind": "recipe", "entityId": "dnd2024.equipment.recipe.potion-of-healing" },
+        { "kind": "recipe", "entityId": "dnd2024.equipment.recipe.nonmagical-item" }
+      ],
+      "citations": [
+        {
+          "sourceId": "dnd2024.source.srd-5.2.1",
+          "locator": "Equipment > Brewing Potions of Healing and Crafting Nonmagical Items, PDF p. 103"
+        },
+        {
+          "sourceId": "dnd2024.source.srd-5.2.1",
+          "locator": "Magic Items > Crafting Magic Items, PDF pp. 206-207"
+        }
+      ],
+      "mechanicIds": ["dnd2024.mechanic.downtime.begin", "dnd2024.mechanic.downtime.progress", "dnd2024.mechanic.downtime.complete", "dnd2024.mechanic.downtime.cancel", "dnd2024.mechanic.downtime.status.project"],
+      "procedureIds": ["dnd2024.procedure.mechanic.downtime"],
+      "visibility": "public",
+      "presentationStatus": "published"
+    }
+  }
+}

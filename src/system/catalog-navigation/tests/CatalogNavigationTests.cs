@@ -256,9 +256,11 @@ public sealed class CatalogNavigationTests
         var records = new[]
         {
             ReadableRule("fixture.rule.combat.attack", "Core attack", "public", "Combat", 20),
-            ReadableRule("fixture.extension.homebrew.rule.combat.attack", "Homebrew attack", "public", "Combat", 20),
+            ReadableRule("fixture.extension.homebrew.rule.combat.attack", "Homebrew attack", "public", "Combat", 20,
+                "fixture.item.sword"),
             ReadableRule("fixture.extension.homebrew.rule.magic.spark", "Spark", "public", "Magic", 30),
-            ReadableRule("fixture.rule.guidance.secrets", "DM guidance", "dm", "Guidance", 40)
+            ReadableRule("fixture.rule.guidance.secrets", "DM guidance", "dm", "Guidance", 40),
+            Record("entity", "fixture.item.sword", "Sword", "A linked item.", "tools", "active", [], [])
         };
         var manifest = CatalogNavigationManifest.Create(Application, new string('E', 64), "catalog-lexical-v1",
             [new("fixtures", "Fixture catalog", "Readable rule fixtures.")],
@@ -275,15 +277,32 @@ public sealed class CatalogNavigationTests
 
         Assert.Equal(new string('F', 64), publicRules.ResolutionFingerprint);
         Assert.Matches("^[0-9A-F]{64}$", publicRules.RulesFingerprint);
+        Assert.Equal(2, publicRules.ArticleCount);
         Assert.Equal(["combat", "magic"], publicRules.Sections.Select(value => value.Id));
-        Assert.Equal("fixture.extension.homebrew.rule.combat.attack",
-            Assert.Single(publicRules.Sections[0].Rules).Id);
+        var attack = Assert.Single(publicRules.Sections[0].Rules);
+        Assert.Equal("fixture.extension.homebrew.rule.combat.attack", attack.Id);
+        var item = Assert.Single(attack.RelatedContent);
+        Assert.True(item.Available);
+        Assert.Equal("item", item.Kind);
+        Assert.Equal("fixture.item.sword", item.EntityId);
+        Assert.Equal("Sword", item.Title);
+        Assert.Equal("fixtures", item.Collection);
+        Assert.Matches("^[0-9A-F]{64}$", item.ContentFingerprint);
         Assert.All(publicRules.Sections.SelectMany(value => value.Rules),
             value => Assert.Equal("homebrew", value.Source.Classification));
         Assert.Equal("rule.combat.attack", publicRules.Sections[0].Rules[0].ResolutionKey);
         Assert.Equal(["combat", "magic", "guidance"], dmRules.Sections.Select(value => value.Id));
+        Assert.Equal(3, dmRules.ArticleCount);
         Assert.Equal("dm", dmRules.Sections.Single(value => value.Id == "guidance").Rules[0].Visibility);
         Assert.NotEqual(publicRules.RulesFingerprint, dmRules.RulesFingerprint);
+
+        var renamedSource = CatalogExtensionResolutionContext.Create(Application, new string('F', 64),
+            [new("homebrew", "Renamed Fixture Homebrew", "Reviewed additions.", "homebrew", ["homebrew-source"],
+                ["fixture.extension.homebrew"], [], true)]);
+        var renamedRules = new InMemoryCatalogNavigator(manifest,
+            new CatalogCursorCodec(CursorKey), renamedSource).ReadableRules(new(Application));
+        Assert.Equal("Renamed Fixture Homebrew", renamedRules.Sections[0].Rules[0].Source.Label);
+        Assert.NotEqual(publicRules.RulesFingerprint, renamedRules.RulesFingerprint);
     }
 
     private static FixtureResult Fixture(string fingerprint = "")
@@ -320,15 +339,19 @@ public sealed class CatalogNavigationTests
     }
 
     private static CatalogRecordDefinition ReadableRule(
-        string id, string title, string visibility, string sectionLabel, int sectionOrder)
+        string id, string title, string visibility, string sectionLabel, int sectionOrder,
+        string? relatedContentId = null)
     {
         var sectionId = sectionLabel.ToLowerInvariant();
+        var relatedContent = relatedContentId is null
+            ? "[]"
+            : $$"""[{"kind":"item","entityId":"{{relatedContentId}}"}]""";
         var content = $$"""
             {"id":"{{id}}","name":"{{title}}","components":{"game.core.rules.readable":{
               "section":{"id":"{{sectionId}}","label":"{{sectionLabel}}","order":{{sectionOrder}}},
               "order":10,"title":"{{title}}","summary":"A readable fixture rule.",
               "blocks":[{"kind":"paragraph","heading":null,"body":"Readable fixture body.","items":[]}],
-              "examples":[],"relatedRuleRefs":[],
+              "examples":[],"relatedRuleRefs":[],"relatedContentRefs":{{relatedContent}},
               "citations":[{"sourceId":"fixture-source","locator":"Fixture > Rule"}],
               "mechanicIds":["fixture.mechanic.rule"],"procedureIds":[],
               "visibility":"{{visibility}}","presentationStatus":"published"}

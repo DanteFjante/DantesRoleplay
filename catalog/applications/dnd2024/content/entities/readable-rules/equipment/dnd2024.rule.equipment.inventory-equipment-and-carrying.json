@@ -1,0 +1,57 @@
+{
+  "id": "dnd2024.rule.equipment.inventory-equipment-and-carrying",
+  "name": "Inventory, Equipment, and Carrying",
+  "components": {
+    "game.core.rules.readable": {
+      "section": { "id": "equipment", "label": "Equipment", "order": 60 },
+      "order": 10,
+      "title": "Inventory, Equipment, and Carrying",
+      "summary": "Inventory records ownership and containment, equipment records how an item is used, and carrying capacity is projected from the character's recorded Strength and size.",
+      "blocks": [
+        {
+          "kind": "list",
+          "heading": "Three distinct records",
+          "body": null,
+          "items": [
+            "Inventory identifies an item instance, its quantity, and its container path.",
+            "Equipment state identifies whether and how a carried item is equipped.",
+            "Carrying capacity compares supported carried weight with the character's recorded capacity."
+          ]
+        },
+        {
+          "kind": "callout",
+          "heading": "Containers preserve identity",
+          "body": "Moving an item into a container changes containment state; it does not turn the item into descriptive text or a different definition.",
+          "items": []
+        }
+      ],
+      "examples": [
+        {
+          "title": "Backpack contents",
+          "body": "A backpack can contain item instances. Opening it reads the recorded child page while retaining each item's definition and quantity."
+        }
+      ],
+      "relatedRuleRefs": [
+        { "entityId": "dnd2024.rule.characters.character-sheet" },
+        { "entityId": "dnd2024.rule.crafting.recipes-and-downtime" }
+      ],
+      "relatedContentRefs": [
+        { "kind": "item", "entityId": "dnd2024.item.backpack.v1" }
+      ],
+      "citations": [
+        {
+          "sourceId": "dnd2024.source.srd-5.2.1",
+          "locator": "Rules Glossary > Carrying Capacity, PDF p. 178"
+        },
+        {
+          "sourceId": "dnd2024.source.srd-5.2.1",
+          "locator": "Equipment > Adventuring Gear > Backpack, PDF pp. 95-96"
+        }
+      ],
+      "mechanicIds": ["dnd2024.mechanic.inventory.read", "dnd2024.mechanic.item.equipment.read", "dnd2024.mechanic.carrying-capacity.read", "dnd2024.mechanic.inventory-container.project", "dnd2024.mechanic.inventory-container-page.project"],
+      "procedureIds": ["dnd2024.procedure.mechanic.inventory-read", "dnd2024.procedure.mechanic.equipment-state", "dnd2024.procedure.mechanic.carrying-capacity"],
+      "visibility": "public",
+      "presentationStatus": "published"
+    }
+  }
+}

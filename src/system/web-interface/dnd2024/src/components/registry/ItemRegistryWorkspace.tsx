@@ -187,6 +187,7 @@ function ItemRegistryList({ campaignId, perspective, loadPage, loadRecipePage }:
 function RegistryItemDetails({ route, loadDefinition, loadRecipePage }: {
   route: RegistryItemRoute; loadDefinition: ItemDefinitionLoader; loadRecipePage?: RecipeRegistryPageLoader;
 }) {
+  const fromRules = window.history.state?.itemMainTab === "rules";
   const [state, setState] = useState<"loading" | "ready" | "error" | "stale">("loading");
   const [definition, setDefinition] = useState<ItemDefinition | null>(null);
   const [retry, setRetry] = useState(0);
@@ -206,12 +207,14 @@ function RegistryItemDetails({ route, loadDefinition, loadRecipePage }: {
   }, [loadDefinition, retry, route.collection, route.contentFingerprint, route.itemId]);
   const back = () => {
     const context = readItemReturn(window.history.state);
-    if (context?.kind === "registry") window.history.back();
+    if (context?.kind === "registry" || fromRules) window.history.back();
     else navigateHubRoute("party", "overview", true, { partySection: "registry" });
   };
   const retryRead = () => { preferCached.current = false; setDefinition(null); setRetry((value) => value + 1); };
   return <ItemView context="registry" tab={route.tab} onTab={(tab) => navigateItemRoute({ ...route,
-    tab: tab === "recipes" ? "recipes" : "details" }, true, readItemReturn(window.history.state))} onBack={back}
+    tab: tab === "recipes" ? "recipes" : "details" }, true, readItemReturn(window.history.state),
+    fromRules ? "rules" : "party")} onBack={back}
+    parent={fromRules ? { label: "Rules", onNavigate: back } : undefined}
     onParty={() => navigateHubRoute("party")} onRegistry={() => navigateHubRoute("party", "overview", false,
       { partySection: "registry" })} name={definition ? cleanName(definition.details.name) : undefined}
     details={definition ? <ItemDetails data={definition.details} scopeKey={`registry:${definition.record.contentFingerprint}`} />

@@ -1,4 +1,7 @@
-import type { RuleReadModel } from "../data/hub-types";
+import type { RuleReadModel, RulesReferencePublication } from "../data/hub-types";
+import { RESOURCE_FRESHNESS_MS, resourceCacheKey } from "../data/resource-policy.ts";
+import { ResourceStore, type ResourceInvalidationReason, type ResourceStoreMetrics } from "../data/resource-store.ts";
+import { ViewReadError } from "../data/view-read-client.ts";
 import { normalizeGameServerOrigin } from "./game-server-context.js";
 import { readBoundedJson } from "./read-model-response.js";
 
@@ -6,6 +9,7 @@ const APPLICATION_ID = "dnd2024";
 const MAXIMUM_SECTIONS = 128;
 const MAXIMUM_RULES = 4_096;
 const MAXIMUM_RESPONSE_BYTES = 2_097_152;
+const CONTENT_KIND = /^[a-z][a-z0-9-]{0,62}$/u;
 
 function object(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -51,11 +55,34 @@ function projectRule(value: unknown, section: RuleReadModel["section"]): RuleRea
   const relatedRuleIds = textArray(rule?.relatedRuleIds, 32, 400);
   const mechanicIds = textArray(authority?.mechanicIds, 32, 400);
   const procedureIds = textArray(authority?.procedureIds, 32, 400);
+  const rawRelatedContent = Array.isArray(rule?.relatedContent) && rule.relatedContent.length <= 32
+    ? rule.relatedContent : null;
   if (!id || !resolutionKey || !title || !summary || order === null || !ownerId || !sourceLabel
     || !["core", "homebrew", "compatibility", "third-party"].includes(classification ?? "")
     || !["public", "dm"].includes(visibility ?? "")
-    || !relatedRuleIds || !mechanicIds || !procedureIds
+    || !relatedRuleIds || !mechanicIds || !procedureIds || !rawRelatedContent
     || mechanicIds.length + procedureIds.length === 0) return null;
+
+  const relatedContent: RuleReadModel["relatedContent"] = [];
+  for (const candidate of rawRelatedContent) {
+    const link = object(candidate);
+    const kind = text(link?.kind, 63);
+    const entityId = text(link?.entityId, 400);
+    const linkTitle = text(link?.title, 400);
+    const collection = link?.collection === null ? null : text(link?.collection, 63);
+    const contentFingerprint = link?.contentFingerprint === null
+      ? null : text(link?.contentFingerprint, 64)?.toUpperCase() ?? null;
+    if (!kind || !CONTENT_KIND.test(kind) || !entityId || !linkTitle
+      || (link?.collection !== null && !collection)
+      || (link?.contentFingerprint !== null
+        && (!contentFingerprint || !/^[A-F0-9]{64}$/u.test(contentFingerprint)))
+      || typeof link?.available !== "boolean"
+      || link.available !== Boolean(collection && contentFingerprint)) return null;
+    relatedContent.push({ kind, entityId, title: linkTitle, collection, contentFingerprint,
+      available: link.available });
+  }
+  if (new Set(relatedContent.map((link) => `${link.kind}\n${link.entityId}`)).size !== relatedContent.length)
+    return null;
 
   const rawBlocks = Array.isArray(rule?.blocks) && rule.blocks.length > 0 && rule.blocks.length <= 64
     ? rule.blocks
@@ -110,6 +137,7 @@ function projectRule(value: unknown, section: RuleReadModel["section"]): RuleRea
     blocks,
     examples,
     relatedRuleIds,
+    relatedContent,
     citations,
     authority: { mechanicIds, procedureIds },
     visibility: visibility as RuleReadModel["visibility"],
@@ -121,11 +149,13 @@ function projectRule(value: unknown, section: RuleReadModel["section"]): RuleRea
   };
 }
 
-export function projectResolvedRules(value: unknown): RuleReadModel[] | null {
+export function projectRulesPublication(value: unknown): RulesReferencePublication | null {
   const envelope = object(value);
   const resolutionFingerprint = text(envelope?.resolutionFingerprint, 128);
   const rulesFingerprint = text(envelope?.rulesFingerprint, 128);
+  const articleCount = integer(envelope?.articleCount);
   if (envelope?.applicationId !== APPLICATION_ID || !resolutionFingerprint || !rulesFingerprint
+    || articleCount === null || articleCount > MAXIMUM_RULES
     || !["public", "dm"].includes(String(envelope?.audience))) return null;
   const rawSections = Array.isArray(envelope?.sections) && envelope.sections.length <= MAXIMUM_SECTIONS
     ? envelope.sections
@@ -149,35 +179,94 @@ export function projectResolvedRules(value: unknown): RuleReadModel[] | null {
       rules.push(rule);
     }
   }
-  if (new Set(rules.map((rule) => rule.id)).size !== rules.length) return null;
-  return rules.sort((left, right) => left.section.order - right.section.order
+  if (new Set(rules.map((rule) => rule.id)).size !== rules.length || articleCount !== rules.length) return null;
+  rules.sort((left, right) => left.section.order - right.section.order
     || left.section.label.localeCompare(right.section.label)
     || left.section.id.localeCompare(right.section.id)
     || left.order - right.order
     || left.title.localeCompare(right.title)
     || left.id.localeCompare(right.id));
+  return {
+    applicationId: APPLICATION_ID,
+    resolutionFingerprint,
+    rulesFingerprint,
+    audience: envelope.audience as RulesReferencePublication["audience"],
+    articleCount,
+    rules,
+  };
+}
+
+export function projectResolvedRules(value: unknown): RuleReadModel[] | null {
+  return projectRulesPublication(value)?.rules ?? null;
 }
 
 export async function readRulesReference({
   serverOrigin,
   applicationId,
+  signal,
   fetchImpl = fetch,
 }: {
   serverOrigin: string;
   applicationId: string;
+  signal?: AbortSignal;
   fetchImpl?: typeof fetch;
-}): Promise<RuleReadModel[]> {
+}): Promise<RulesReferencePublication> {
   const origin = normalizeGameServerOrigin(serverOrigin);
-  if (!origin || applicationId !== APPLICATION_ID) return [];
-  try {
-    const response = await fetchImpl(new URL(`/api/applications/${APPLICATION_ID}/rules`, `${origin}/`), {
-      headers: { Accept: "application/json" },
-      cache: "no-store",
+  if (!origin || applicationId !== APPLICATION_ID)
+    throw new ViewReadError("incompatible-data", "Published rules are unavailable.");
+  const response = await fetchImpl(new URL(`/api/applications/${APPLICATION_ID}/rules`, `${origin}/`), {
+    headers: { Accept: "application/json" },
+    cache: "no-store",
+    signal,
+  });
+  if (!response.ok)
+    throw new ViewReadError("transport", "Published rules could not be loaded.");
+  const decoded = await readBoundedJson(response, MAXIMUM_RESPONSE_BYTES);
+  const publication = decoded.status === "ready" ? projectRulesPublication(decoded.value) : null;
+  if (!publication)
+    throw new ViewReadError("incompatible-data", "The published-rules response did not match its contract.");
+  return publication;
+}
+
+export class RulesReferenceClient {
+  readonly #store: ResourceStore;
+  readonly #publication;
+
+  constructor({ serverOrigin, applicationId = APPLICATION_ID, fetchImpl = fetch }: {
+    serverOrigin: string;
+    applicationId?: string;
+    fetchImpl?: typeof fetch;
+  }) {
+    this.#store = new ResourceStore({ maximumEntries: 4, maximumRetainedBytes: 4 * 1024 * 1024,
+      diagnosticName: "rules-reference-resources" });
+    this.#publication = this.#store.define<string, RulesReferencePublication>({
+      name: "rules-reference-publication",
+      cacheKey: () => resourceCacheKey("rules-reference-v2", applicationId),
+      read: (_, signal) => readRulesReference({ serverOrigin, applicationId, signal, fetchImpl }),
+      validate: (value): value is RulesReferencePublication => projectRulesPublication({
+        ...(value as RulesReferencePublication),
+        sections: publicationSections((value as RulesReferencePublication)?.rules),
+      }) !== null,
+      maximumAgeMs: RESOURCE_FRESHNESS_MS.rulesReference,
+      maximumEntryBytes: MAXIMUM_RESPONSE_BYTES,
     });
-    if (!response.ok) return [];
-    const decoded = await readBoundedJson(response, MAXIMUM_RESPONSE_BYTES);
-    return decoded.status === "ready" ? projectResolvedRules(decoded.value) ?? [] : [];
-  } catch {
-    return [];
   }
+
+  async load(signal?: AbortSignal, preferCached = true) {
+    return (await this.#publication.load(APPLICATION_ID, { signal, preferCached })).value;
+  }
+
+  invalidate(reason: ResourceInvalidationReason = "manual") { this.#publication.invalidate(undefined, reason); }
+  metrics(): ResourceStoreMetrics { return this.#store.metrics(); }
+}
+
+function publicationSections(rules: RuleReadModel[] | undefined) {
+  if (!Array.isArray(rules)) return null;
+  const sections = new Map<string, { id: string; label: string; order: number; rules: RuleReadModel[] }>();
+  for (const rule of rules) {
+    const section = sections.get(rule.section.id) ?? { ...rule.section, rules: [] };
+    section.rules.push(rule);
+    sections.set(rule.section.id, section);
+  }
+  return [...sections.values()];
 }

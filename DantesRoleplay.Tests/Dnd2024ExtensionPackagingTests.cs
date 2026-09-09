@@ -176,6 +176,34 @@ public sealed class Dnd2024ExtensionPackagingTests : IDisposable
         Assert.Equal(12, recipeRegistry.ResolvedWinners.Count);
         Assert.NotNull(recipeRegistry.NextCursor);
 
+        var readableRules = navigator.ReadableRules(new(application));
+        var readableArticles = readableRules.Sections.SelectMany(section => section.Rules).ToArray();
+        Assert.Equal(13, readableRules.ArticleCount);
+        Assert.Equal(readableRules.ArticleCount, readableArticles.Length);
+        Assert.Contains(readableArticles,
+            rule => rule.Id == "dnd2024.rule.characters.character-sheet");
+        Assert.Contains(readableArticles,
+            rule => rule.Id == "dnd2024.rule.combat.weapon-attacks");
+        Assert.Contains(readableArticles,
+            rule => rule.Id == "dnd2024.rule.resting.long-rests");
+        var equipmentRule = Assert.Single(readableArticles,
+            rule => rule.Id == "dnd2024.rule.equipment.inventory-equipment-and-carrying");
+        var backpackLink = Assert.Single(equipmentRule.RelatedContent);
+        Assert.True(backpackLink.Available);
+        Assert.Equal("item", backpackLink.Kind);
+        Assert.Equal("dnd2024.item.backpack.v1", backpackLink.EntityId);
+        var craftingRule = Assert.Single(readableArticles,
+            rule => rule.Id == "dnd2024.rule.crafting.recipes-and-downtime");
+        Assert.Equal(2, craftingRule.RelatedContent.Count);
+        Assert.All(craftingRule.RelatedContent, link =>
+        {
+            Assert.True(link.Available);
+            Assert.Equal("recipe", link.Kind);
+            Assert.NotNull(link.Collection);
+            Assert.Matches("^[0-9A-F]{64}$", link.ContentFingerprint);
+        });
+        Assert.True(JsonSerializer.SerializeToUtf8Bytes(readableRules).Length < 2_097_152);
+
         var extensionAsBase = await Assert.ThrowsAsync<ApplicationPreviewException>(() =>
             previews.PreviewAsync(application, [CoreSourceId, ExtensionSourceId], ["legacy-equipment"]));
         Assert.Equal("BASE_SOURCE_SELECTION_INCLUDES_EXTENSION", extensionAsBase.Code);

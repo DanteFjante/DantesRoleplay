@@ -21,7 +21,7 @@ import {
   type WorldInformationUpdate,
 } from "../data/object-resources";
 import { resolveHubSurface } from "../data/hub-availability.js";
-import type { CampaignReadModel, CanonicalCharacterResult, CharacterSheetResult, ConnectedCampaignDetails, ConnectedCampaignEnvelope, DeferredHubSection, DeferredHubUpdate, HubEnvelope, InventoryContainerPageResult, InventoryContainerResult, Perspective, ReadyHubEnvelope, RuleReadModel } from "../data/hub-types";
+import type { CampaignReadModel, CanonicalCharacterResult, CharacterSheetResult, ConnectedCampaignDetails, ConnectedCampaignEnvelope, DeferredHubSection, DeferredHubUpdate, HubEnvelope, InventoryContainerPageResult, InventoryContainerResult, Perspective, ReadyHubEnvelope, RulesReferencePublication } from "../data/hub-types";
 import { ViewReadError } from "../data/view-read-client";
 import type { ResourceInvalidationReason } from "../data/resource-store";
 import { loadInitialHub } from "../data/hub-preferences";
@@ -32,6 +32,7 @@ import type { CampaignPremiseWriteRequest, CampaignPremiseWriteResult } from "..
 import type { InstalledContentClient, InstalledContentRequest } from "../server/effective-content";
 import type { ItemDefinitionRequest, ItemRegistryClient, ItemRegistryRequest } from "../server/item-registry";
 import type { RecipeDefinitionRequest, RecipeRegistryClient, RecipeRegistryRequest } from "../server/recipe-registry";
+import type { RulesReferenceClient } from "../server/rules-reference";
 import {
   installDevelopmentRequestLedger,
   recordDevelopmentDiagnostic,
@@ -76,6 +77,7 @@ if (process.env.NODE_ENV !== "production") installDevelopmentRequestLedger();
 let installedContentClient: Promise<InstalledContentClient> | null = null;
 let itemRegistryClient: Promise<ItemRegistryClient> | null = null;
 let recipeRegistryClient: Promise<RecipeRegistryClient> | null = null;
+let rulesReferenceClient: Promise<RulesReferenceClient> | null = null;
 
 function envelopeMessage(envelope: HubEnvelope): string {
   return "message" in envelope
@@ -436,12 +438,13 @@ async function loadDeferredSection(
           : readDeferredSectionObject({ envelope }, section, signal);
 }
 
-async function loadRulesReference(): Promise<RuleReadModel[]> {
-  const { readRulesReference } = await import("../server/rules-reference");
-  return withinDevelopmentInteraction("rules-load", () => readRulesReference({
-    serverOrigin: window.location.origin,
-    applicationId: "dnd2024",
-  }));
+async function loadRulesReference(preferCached = true, signal?: AbortSignal): Promise<RulesReferencePublication> {
+  if (!rulesReferenceClient) {
+    rulesReferenceClient = import("../server/rules-reference").then(({ RulesReferenceClient }) =>
+      new RulesReferenceClient({ serverOrigin: window.location.origin, applicationId: "dnd2024" }));
+  }
+  const client = await rulesReferenceClient;
+  return withinDevelopmentInteraction("rules-load", () => client.load(signal, preferCached));
 }
 
 async function loadInstalledContent(

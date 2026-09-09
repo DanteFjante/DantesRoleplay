@@ -1,0 +1,55 @@
+{
+  "id": "dnd2024.rule.checks.ability-checks-and-skills",
+  "name": "Ability Checks and Skills",
+  "components": {
+    "game.core.rules.readable": {
+      "section": { "id": "checks", "label": "Checks and Saves", "order": 20 },
+      "order": 10,
+      "title": "Ability Checks and Skills",
+      "summary": "An ability check tests an attempted action against a Difficulty Class, using the selected ability and any recorded skill proficiency that applies.",
+      "blocks": [
+        {
+          "kind": "steps",
+          "heading": "Resolve a check",
+          "body": null,
+          "items": [
+            "Choose the ability that matches the attempted action and set the Difficulty Class.",
+            "Apply the character's recorded ability modifier and applicable proficiency or Expertise.",
+            "Resolve the d20 test and compare its total with the Difficulty Class."
+          ]
+        },
+        {
+          "kind": "callout",
+          "heading": "Skills describe training",
+          "body": "A skill can supply proficiency for a relevant ability check; it does not replace the ability chosen for the attempt.",
+          "items": []
+        }
+      ],
+      "examples": [
+        {
+          "title": "A trained search",
+          "body": "When Investigation is relevant, the recorded skill rank determines whether proficiency is included in the Intelligence check."
+        }
+      ],
+      "relatedRuleRefs": [
+        { "entityId": "dnd2024.rule.checks.saving-throws" },
+        { "entityId": "dnd2024.rule.characters.character-sheet" }
+      ],
+      "relatedContentRefs": [],
+      "citations": [
+        {
+          "sourceId": "dnd2024.source.srd-5.2.1",
+          "locator": "Playing the Game > D20 Tests > Ability Checks > Ability Modifier and Difficulty Class, PDF p. 6"
+        },
+        {
+          "sourceId": "dnd2024.source.srd-5.2.1",
+          "locator": "Playing the Game > Proficiency > Skill Proficiencies and Skills, PDF pp. 8-9"
+        }
+      ],
+      "mechanicIds": ["dnd2024.mechanic.check.ability", "dnd2024.mechanic.skill-proficiencies.record"],
+      "procedureIds": ["dnd2024.procedure.mechanic.check.ability", "dnd2024.procedure.mechanic.skill-proficiencies"],
+      "visibility": "public",
+      "presentationStatus": "published"
+    }
+  }
+}

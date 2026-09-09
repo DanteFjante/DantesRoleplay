@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import type { RuleReadModel } from "../data/hub-types";
+import type { Perspective, RuleReadModel, RulesReferencePublication } from "../data/hub-types";
+import { navigateItemRoute } from "../data/item-view-route";
+import { ViewReadError } from "../data/view-read-client";
 import { filterRuleReferences, ruleSectionOptions } from "../data/rules-reference.js";
 import { Icon } from "./Icon";
 
 const INITIAL_VISIBLE_RULES = 80;
 
-type RulesLoader = () => Promise<RuleReadModel[]>;
+type RulesLoader = (preferCached?: boolean, signal?: AbortSignal) => Promise<RulesReferencePublication>;
 
 function classificationLabel(classification: RuleReadModel["source"]["classification"]): string {
   return classification === "third-party" ? "Third-party"
@@ -23,18 +25,25 @@ function relatedRule(rules: RuleReadModel[], relatedId: string): RuleReadModel |
 export function RulesView({
   rules: initialRules,
   loadRules,
+  campaignId,
+  perspective,
 }: {
   rules: RuleReadModel[];
   loadRules?: RulesLoader;
+  campaignId: string;
+  perspective: Perspective;
 }) {
   const [rules, setRules] = useState(initialRules);
+  const [articleCount, setArticleCount] = useState<number | null>(null);
   const [query, setQuery] = useState("");
   const [sectionId, setSectionId] = useState("");
   const [selectedRuleId, setSelectedRuleId] = useState(initialRules[0]?.id ?? "");
   const [visibleLimit, setVisibleLimit] = useState(INITIAL_VISIBLE_RULES);
   const [refreshing, setRefreshing] = useState(false);
   const [notice, setNotice] = useState("");
-  const started = useRef(false);
+  const [state, setState] = useState<"loading" | "ready" | "empty" | "error" | "stale">(
+    initialRules.length > 0 ? "ready" : loadRules ? "loading" : "empty",
+  );
   const sections = useMemo(() => ruleSectionOptions(rules), [rules]);
   const visibleRules = useMemo(
     () => filterRuleReferences(rules, query, sectionId),
@@ -48,31 +57,47 @@ export function RulesView({
     window.requestAnimationFrame(() => document.querySelector<HTMLElement>("#rule-detail-heading")?.focus());
   }
 
-  async function refreshRules() {
+  async function refreshRules(preferCached = true, signal?: AbortSignal) {
     if (!loadRules || refreshing) return;
     setRefreshing(true);
     setNotice("");
+    if (rules.length === 0) setState("loading");
     try {
-      const nextRules = await loadRules();
+      const publication = await loadRules(preferCached, signal);
+      const nextRules = publication.rules;
       setRules(nextRules);
+      setArticleCount(publication.articleCount);
       setSelectedRuleId((current) => nextRules.some((rule) => rule.id === current)
         ? current
         : nextRules[0]?.id ?? "");
       setVisibleLimit(INITIAL_VISIBLE_RULES);
+      setState(nextRules.length > 0 ? "ready" : "empty");
       setNotice(nextRules.length > 0
-        ? `${nextRules.length.toLocaleString()} published rules loaded.`
+        ? `${publication.articleCount.toLocaleString()} published rules loaded.`
         : "No published readable rules are available for this audience.");
-    } catch {
-      setNotice("The published rules could not be refreshed. Existing references are still available.");
+    } catch (error) {
+      if (signal?.aborted || error instanceof ViewReadError && error.category === "cancelled") return;
+      const incompatible = error instanceof ViewReadError && error.category === "incompatible-data";
+      if (rules.length > 0) {
+        setState("stale");
+        setNotice(incompatible
+          ? "The rules response changed unexpectedly. The last valid publication is still available."
+          : "The published rules could not be refreshed. The last valid publication is still available.");
+      } else {
+        setState("error");
+        setNotice(incompatible
+          ? "The published-rules response did not match this site's contract."
+          : "The published rules could not be loaded. Check the connection and try again.");
+      }
     } finally {
-      setRefreshing(false);
+      if (!signal?.aborted) setRefreshing(false);
     }
   }
 
   useEffect(() => {
-    if (started.current) return;
-    started.current = true;
-    void refreshRules();
+    const controller = new AbortController();
+    void refreshRules(true, controller.signal);
+    return () => controller.abort();
     // The resolved publication is refreshed once whenever the Rules view mounts.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -85,6 +110,18 @@ export function RulesView({
     setVisibleLimit(INITIAL_VISIBLE_RULES);
   }, [query, sectionId]);
 
+  function openRelatedContent(content: RuleReadModel["relatedContent"][number]) {
+    if (!content.available || !content.collection || !content.contentFingerprint) return;
+    if (content.kind === "item") {
+      navigateItemRoute({ kind: "registry-item", campaignId, perspective, itemId: content.entityId,
+        collection: content.collection, contentFingerprint: content.contentFingerprint, tab: "details" },
+      false, null, "rules");
+    } else if (content.kind === "recipe") {
+      navigateItemRoute({ kind: "registry-recipe", campaignId, perspective, recipeId: content.entityId,
+        collection: content.collection, contentFingerprint: content.contentFingerprint }, false, null, "rules");
+    }
+  }
+
   return (
     <div className="supporting-view rules-view">
       <header className="view-intro rules-view__intro">
@@ -93,18 +130,25 @@ export function RulesView({
         <p>Read published guidance from the active core application and its installed extensions. Catalog mechanics and procedures remain authoritative.</p>
       </header>
 
-      {rules.length === 0 && refreshing ? (
+      {state === "loading" ? (
         <section className="rules-empty-state" aria-live="polite">
           <span><Icon name="BookOpen" size={24} /></span>
           <div><h2>Loading published rules</h2><p>Resolving core and extension guidance for this application.</p></div>
         </section>
-      ) : rules.length === 0 ? (
+      ) : state === "error" ? (
+        <section className="rules-empty-state rules-empty-state--error" role="alert">
+          <span><Icon name="CircleAlert" size={24} /></span>
+          <div><h2>Rules could not be loaded</h2><p>{notice}</p>
+            {loadRules ? <button className="rules-refresh" onClick={() => void refreshRules(false)} type="button">Try again</button> : null}
+          </div>
+        </section>
+      ) : state === "empty" ? (
         <section className="rules-empty-state" aria-live="polite">
           <span><Icon name="BookOpen" size={24} /></span>
           <div>
             <h2>No published readable rules</h2>
             <p>The game remains usable, but its current catalog does not publish readable rules for this audience.</p>
-            {loadRules ? <button className="rules-refresh" onClick={() => void refreshRules()} type="button">Try again</button> : null}
+            {loadRules ? <button className="rules-refresh" onClick={() => void refreshRules(false)} type="button">Refresh rules</button> : null}
           </div>
         </section>
       ) : (
@@ -148,7 +192,7 @@ export function RulesView({
               </select>
             </label>
             {loadRules ? (
-              <button className="rules-refresh" disabled={refreshing} onClick={() => void refreshRules()} type="button">
+              <button className="rules-refresh" disabled={refreshing} onClick={() => void refreshRules(false)} type="button">
                 <Icon name="RefreshCw" size={16} />
                 {refreshing ? "Refreshing…" : "Refresh rules"}
               </button>
@@ -158,6 +202,8 @@ export function RulesView({
           <div className="rules-results-summary">
             <p className="rules-result-count" aria-live="polite">
               {visibleRules.length.toLocaleString()} {visibleRules.length === 1 ? "rule" : "rules"}
+              {articleCount !== null && visibleRules.length !== articleCount
+                ? ` from ${articleCount.toLocaleString()} published` : articleCount !== null ? " published" : ""}
             </p>
             {notice ? <p className="rules-notice" role="status">{notice}</p> : null}
           </div>
@@ -243,6 +289,22 @@ export function RulesView({
                         ) : <span key={relatedId}>{relatedId}</span>;
                       })}
                     </div>
+                  </section>
+                ) : null}
+
+                {selectedRule.relatedContent.length > 0 ? (
+                  <section className="rule-related rule-related--content">
+                    <h3>Related content</h3>
+                    <div>{selectedRule.relatedContent.map((content) => {
+                      const navigable = content.available && (content.kind === "item" || content.kind === "recipe");
+                      return navigable ? <button key={`${content.kind}:${content.entityId}`}
+                        onClick={() => openRelatedContent(content)} type="button">
+                        <Icon name={content.kind === "recipe" ? "CookingPot" : "Package"} size={16} />
+                        {content.title}
+                      </button> : <span key={`${content.kind}:${content.entityId}`}>
+                        {content.title} · unavailable
+                      </span>;
+                    })}</div>
                   </section>
                 ) : null}
 

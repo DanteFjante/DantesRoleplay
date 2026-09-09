@@ -1,0 +1,45 @@
+{
+  "id": "dnd2024.rule.checks.saving-throws",
+  "name": "Saving Throws",
+  "components": {
+    "game.core.rules.readable": {
+      "section": { "id": "checks", "label": "Checks and Saves", "order": 20 },
+      "order": 20,
+      "title": "Saving Throws",
+      "summary": "A saving throw responds to a threat by combining a d20 roll with the selected ability modifier and any recorded saving-throw proficiency.",
+      "blocks": [
+        {
+          "kind": "steps",
+          "heading": "Resolve a save",
+          "body": null,
+          "items": [
+            "Use the ability and Difficulty Class declared by the effect or ruling.",
+            "Apply the subject's recorded ability modifier and saving-throw proficiency.",
+            "Resolve advantage, disadvantage, and relevant condition effects before reporting the result."
+          ]
+        }
+      ],
+      "examples": [
+        {
+          "title": "Condition-aware save",
+          "body": "A recorded condition can alter a saving throw only through its active d20-test state effect."
+        }
+      ],
+      "relatedRuleRefs": [
+        { "entityId": "dnd2024.rule.checks.ability-checks-and-skills" },
+        { "entityId": "dnd2024.rule.conditions.creature-conditions" }
+      ],
+      "relatedContentRefs": [],
+      "citations": [
+        {
+          "sourceId": "dnd2024.source.srd-5.2.1",
+          "locator": "Rules Glossary > Saving Throw, PDF p. 187"
+        }
+      ],
+      "mechanicIds": ["dnd2024.mechanic.saving-throw", "dnd2024.mechanic.saving-throw-proficiencies.record"],
+      "procedureIds": ["dnd2024.procedure.mechanic.saving-throw", "dnd2024.procedure.mechanic.saving-throw-proficiencies"],
+      "visibility": "public",
+      "presentationStatus": "published"
+    }
+  }
+}
