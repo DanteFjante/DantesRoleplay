@@ -921,20 +921,24 @@ test("mounted character inventory exposes nested disclosures, wallet totals, and
   const mounted = await mount(<PartyView party={[member]} />);
   try {
     await click(button(mounted.container, "Inventory"));
-    const text = mounted.container.textContent ?? "";
-    assert.match(text, /Backpack/);
-    assert.match(text, /Belt Pouch/);
-    assert.match(text, /Gold Coins/);
-    assert.match(text, /Gold pieces25/);
-    assert.match(text, /Copper value2(?:,|\u00a0)500/);
-    assert.equal(mounted.container.querySelectorAll(".character-inventory__tree details").length, 2);
+    assert.match(mounted.container.textContent ?? "", /Backpack/);
+    assert.doesNotMatch(mounted.container.textContent ?? "", /Belt Pouch|Gold Coins/);
+    assert.match(mounted.container.textContent ?? "", /Gold pieces25/);
+    assert.match(mounted.container.textContent ?? "", /Copper value2(?:,|\u00a0)500/);
+    assert.equal(mounted.container.querySelectorAll(".character-inventory__disclosure").length, 1);
     assert.ok(mounted.container.querySelector(".character-inventory__item-media svg"));
-    const backpack = mounted.container.querySelector(".character-inventory__tree details") as HTMLDetailsElement;
+    const backpack = mounted.container.querySelector(".character-inventory__disclosure") as HTMLButtonElement;
     await act(async () => {
-      backpack.open = true;
-      backpack.dispatchEvent(new window.Event("toggle"));
+      backpack.click();
     });
+    assert.match(mounted.container.textContent ?? "", /Belt Pouch/);
+    assert.doesNotMatch(mounted.container.textContent ?? "", /Gold Coins/);
     assert.match(mounted.container.querySelector("[aria-live=polite]")?.textContent ?? "", /Backpack expanded\. 1 contained item\./);
+    const pouch = mounted.container.querySelectorAll<HTMLButtonElement>(".character-inventory__disclosure")[1];
+    await act(async () => {
+      pouch.click();
+    });
+    assert.match(mounted.container.textContent ?? "", /Gold Coins/);
   } finally {
     await mounted.cleanup();
   }

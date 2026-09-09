@@ -1,0 +1,10 @@
+{
+  "id": "dnd2024.mechanic.inventory-container-page",
+  "owner": "dnd2024",
+  "description": "Namespace for complete direct inventory-container page projections.",
+  "allowedKinds": ["mechanic"],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Website remediation R08 approved scoped, read-only container pages on 9 September 2026; live synchronization and publication remain separate release work."
+}

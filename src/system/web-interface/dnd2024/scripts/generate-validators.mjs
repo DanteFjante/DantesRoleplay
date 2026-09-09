@@ -90,6 +90,13 @@ const targets = [
     contractOnly: true,
   },
   {
+    name: "inventory-wallet-contract",
+    source: "character/dnd2024.query.inventory-wallet.json",
+    output: "inventory-wallet-contract.js",
+    label: "bounded inventory wallet",
+    contractOnly: true,
+  },
+  {
     name: "character-dossier-contract",
     source: "character/dnd2024.query.character-dossier-v1.json",
     output: "character-dossier-contract.js",

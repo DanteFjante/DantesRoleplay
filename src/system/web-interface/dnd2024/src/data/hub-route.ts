@@ -103,7 +103,8 @@ export function navigateHubRoute(
   if (window.location.hash === route) return;
   const target = `${window.location.pathname}${window.location.search}${route}`;
   window.history[replace ? "replaceState" : "pushState"](
-    { ...window.history.state, itemInventoryReturn: null, itemInventoryOrigin: null, itemMainTab: tab },
+    { ...window.history.state, itemReturnContext: null, itemInventoryReturn: null,
+      itemInventoryOrigin: null, itemMainTab: tab },
     "",
     target,
   );

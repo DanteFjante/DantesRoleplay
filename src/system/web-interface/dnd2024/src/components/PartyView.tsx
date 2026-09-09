@@ -6,6 +6,7 @@ import type { InventoryReturnContext } from "../data/item-view-route";
 
 import type {
   InventoryContainerResult,
+  InventoryContainerPageResult,
   PartyDossierEntry,
   PartyKnowledgeEntry,
   PartyMemberReadModel,
@@ -94,7 +95,8 @@ function SectionHeader({ count, member, section, sectionState }: {
     <header className="character-section-heading">
       <div><span className="eyebrow">{member.name}</span><h2>{CHARACTER_SECTIONS.find((candidate) => candidate.id === section)?.label}</h2></div>
       <p>{unavailable ? "Record count unavailable"
-        : `${count} ${state?.status === "stale" ? "last confirmed" : "recorded"} ${count === 1 ? "entry" : "entries"}`}</p>
+        : section === "inventory" ? `${count} loaded top-level ${count === 1 ? "item" : "items"}`
+          : `${count} ${state?.status === "stale" ? "last confirmed" : "recorded"} ${count === 1 ? "entry" : "entries"}`}</p>
     </header>
   );
 }
@@ -106,6 +108,7 @@ export function CharacterWorkspace({
   loadCharacterSheet,
   loadCharacterDetails,
   loadCharacterInventory,
+  loadInventoryContainer,
   navigationCharacterId,
   navigationSection,
   onNavigationChange,
@@ -119,6 +122,7 @@ export function CharacterWorkspace({
   loadCharacterSheet?: (id: string, signal: AbortSignal) => Promise<PartyMemberReadModel>;
   loadCharacterDetails?: (id: string, signal: AbortSignal) => Promise<PartyMemberReadModel>;
   loadCharacterInventory?: (id: string, signal: AbortSignal) => Promise<InventoryContainerResult>;
+  loadInventoryContainer?: (actorId: string, containerId: string, signal: AbortSignal) => Promise<InventoryContainerPageResult>;
   navigationCharacterId?: string;
   navigationSection?: PartySectionId;
   onNavigationChange?: (id: string, section: PartySectionId, replace?: boolean) => void;
@@ -134,8 +138,7 @@ export function CharacterWorkspace({
   const selectedMemberId = onNavigationChange ? requestedMemberId : localSelectedMemberId;
   const section = summaryOnly ? "overview" : onNavigationChange ? navigationSection ?? "overview" : localSection;
   const [expandedIds, setExpandedIds] = useState<string[]>(inventoryReturn?.expandedIds ?? []);
-  const restored = useRef(false);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(inventoryReturn?.query ?? "");
   const [detail, setDetail] = useState<PartyMemberReadModel | null>(null);
   const [detailKind, setDetailKind] = useState<"sheet" | "details" | null>(null);
   const [detailBusy, setDetailBusy] = useState(false);
@@ -200,7 +203,7 @@ export function CharacterWorkspace({
     setInventoryError(false);
     setInventoryBusy(true);
     void loadCharacterInventory(selectedMemberId, controller.signal).then((value) => {
-      if (!controller.signal.aborted && (value.status !== "ready" || value.data.owner.id === selectedMemberId)) {
+      if (!controller.signal.aborted && (value.status !== "ready" || value.data.container.id === selectedMemberId)) {
         setInventoryResult(value);
       }
     }).catch(() => {
@@ -230,8 +233,7 @@ export function CharacterWorkspace({
     setExpandedIds(inventoryReturn?.characterId === selectedMemberId ? inventoryReturn.expandedIds : []);
     setInventoryResult(null);
     setInventoryError(false);
-    setQuery("");
-    restored.current = false;
+    setQuery(inventoryReturn?.characterId === selectedMemberId ? inventoryReturn.query : "");
   }, [inventoryReturn, selectedMemberId]);
 
   useLayoutEffect(() => {
@@ -260,16 +262,6 @@ export function CharacterWorkspace({
     setRetry((value) => value + 1);
   };
   const inventoryData = inventoryResult?.status === "ready" ? inventoryResult.data : null;
-  useLayoutEffect(() => {
-    if (restored.current || !inventoryReturn || inventoryBusy || section !== "inventory" ||
-        !(inventoryData || !loadCharacterInventory && selectedMember?.characterSheet)) return;
-    const target = [...document.querySelectorAll<HTMLElement>("[data-item-open]")]
-      .find((element) => element.dataset.itemOpen === inventoryReturn.focusItemId);
-    if (!target) return;
-    restored.current = true;
-    target.focus({ preventScroll: true });
-    window.scrollTo(0, inventoryReturn.scrollY);
-  }, [inventoryReturn, inventoryBusy, section, selectedMember, inventoryData, loadCharacterInventory]);
   useEffect(() => {
     if (!loading && selectedMember?.sheetState.status === "ready" && selectedMember.sheetState.source === "canonical") {
       markCharacterReady(selectedMember.id);
@@ -285,7 +277,7 @@ export function CharacterWorkspace({
       : inventoryError ? { status: "error" as const, data: null, failureCategory: "transport" as const,
         diagnosticId: `inventory-${selectedMemberId}-transport` }
       : inventoryResult?.status === "ready"
-        ? { status: inventoryResult.data.items.length || inventoryResult.data.wallet.coinCount ? "ready" as const : "empty" as const,
+        ? { status: inventoryResult.data.items.length || inventoryResult.data.wallet?.coinCount ? "ready" as const : "empty" as const,
           data: [], source: "canonical" as const }
         : inventoryResult ?? { status: "idle" as const, data: null }
     : selectedMember?.inventoryState ?? null;
@@ -378,15 +370,19 @@ export function CharacterWorkspace({
                 onExpandedChange={(id, expanded) => setExpandedIds((previous) => expanded
                   ? previous.includes(id) ? previous : [...previous, id] : previous.filter((value) => value !== id))}
                 onOpenItem={onOpenItem ? (itemId) => onOpenItem(selectedMember.id, itemId, {
-                  characterId: selectedMember.id, expandedIds, focusItemId: itemId, scrollY: window.scrollY,
+                  kind: "inventory", characterId: selectedMember.id, expandedIds, query,
+                  focusItemId: itemId, scrollY: window.scrollY,
                 }) : undefined}
-                complete={inventoryData?.limits.complete ?? true}
-                definitions={[]}
                 items={inventoryData?.items ?? selectedMember.characterSheet?.inventory.items ?? []}
                 reasons={inventoryData?.reasons ?? []}
+                query={query}
+                onQueryChange={setQuery}
+                restore={inventoryReturn?.characterId === selectedMember.id ? inventoryReturn : null}
+                loadContainer={loadInventoryContainer ? (containerId, signal) =>
+                  loadInventoryContainer(selectedMember.id, containerId, signal) : undefined}
               />
-              <WalletSummary complete={inventoryData?.limits.complete ?? true}
-                wallet={inventoryData?.wallet ?? selectedMember.characterSheet!.wallet} />
+              <WalletSummary status={inventoryData?.walletState.status ?? "complete"}
+                wallet={inventoryData ? inventoryData.wallet : selectedMember.characterSheet!.wallet} />
             </div>
           ) : filteredEntries.length ? (
             section === "knowledge"

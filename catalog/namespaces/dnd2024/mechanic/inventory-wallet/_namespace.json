@@ -1,0 +1,10 @@
+{
+  "id": "dnd2024.mechanic.inventory-wallet",
+  "owner": "dnd2024",
+  "description": "Namespace for bounded inventory wallet presentation projections.",
+  "allowedKinds": ["mechanic"],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Website remediation R08 approved the independent, read-only wallet completeness projection on 9 September 2026; live synchronization and publication remain separate release work."
+}

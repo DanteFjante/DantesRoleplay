@@ -18,6 +18,7 @@ import type {
   CampaignReadModel,
   ConnectedCampaignEnvelope,
   HubEnvelope,
+  InventoryContainerPageResult,
   InventoryContainerResult,
   PartyMemberReadModel,
   Perspective,
@@ -106,9 +107,24 @@ function inventory(id: string): InventoryContainerResult {
   return {
     status: "ready", failureCategory: null, diagnosticId: `inventory-${id}`,
     data: {
-      version: 1, owner: { id, label: `Character ${id}` }, state: "ready", reasons: [], items: [],
+      version: 2, container: { id, label: `Character ${id}` }, state: "ready", reasons: [], items: [],
       wallet: { coinCount: 0, copperValue: 0, gpCount: 0, denominations: [] },
-      limits: { contentsDepth: 4, itemCount: 100, complete: true },
+      walletState: { status: "complete", reason: null },
+      limits: { contentsDepth: 1, itemCount: 200, directComplete: true, recursiveComplete: false },
+      projection: {
+        stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
+        resultFingerprint: "4".repeat(64), sourceRevisionFingerprint: "A".repeat(64),
+      },
+    },
+  };
+}
+
+function inventoryPage(containerId: string): InventoryContainerPageResult {
+  return {
+    status: "ready", failureCategory: null, diagnosticId: `inventory-page-${containerId}`,
+    data: {
+      version: 2, container: { id: containerId, label: containerId }, state: "ready", reasons: [], items: [],
+      limits: { contentsDepth: 1, itemCount: 200, directComplete: true, recursiveComplete: false },
       projection: {
         stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
         resultFingerprint: "4".repeat(64), sourceRevisionFingerprint: "A".repeat(64),
@@ -423,28 +439,37 @@ test("Character sheet, detail, and inventory resources deduplicate independently
   let sheetReads = 0;
   let detailReads = 0;
   let inventoryReads = 0;
+  let containerReads = 0;
   const owner = new CharacterResourceOwner({
     readSheet: async ({ actorId }) => { sheetReads += 1; return character(actorId); },
     readDetails: async ({ actorId }) => { detailReads += 1; return character(actorId); },
     readInventory: async ({ actorId }) => { inventoryReads += 1; return inventory(actorId); },
+    readInventoryContainer: async ({ containerId }) => {
+      containerReads += 1; return inventoryPage(containerId);
+    },
   });
   const envelope = scope();
   const first = { envelope, actorId: "actor.first" };
   await Promise.all([owner.loadSheet(first), owner.loadSheet(first)]);
   await owner.loadDetails(first);
   await Promise.all([owner.loadInventory(first), owner.loadInventory(first)]);
+  const bag = { ...first, containerId: "item.bag" };
+  await Promise.all([owner.loadInventoryContainer(bag), owner.loadInventoryContainer(bag)]);
   await owner.loadSheet(first);
   assert.equal(sheetReads, 1);
   assert.equal(detailReads, 1);
   assert.equal(inventoryReads, 1);
+  assert.equal(containerReads, 1);
 
   assert.equal(owner.invalidateObject("dnd2024.object.inventory-item-fixture"), true);
   await owner.loadSheet(first);
   await owner.loadDetails(first);
   await owner.loadInventory(first);
+  await owner.loadInventoryContainer(bag);
   assert.equal(sheetReads, 1, "an inventory transfer keeps the sheet cache");
   assert.equal(detailReads, 2, "an inventory transfer retires dossier-derived detail");
   assert.equal(inventoryReads, 2, "an inventory transfer retires the container projection");
+  assert.equal(containerReads, 2, "an inventory transfer retires every scoped container page");
 
   await owner.loadSheet({ envelope, actorId: "actor.second" });
   await owner.loadSheet(first);

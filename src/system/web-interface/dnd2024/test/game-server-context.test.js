@@ -10,6 +10,7 @@ import { contract as characterSheetContract } from "../src/server/character-shee
 import { contract as characterDossierContract } from "../src/server/character-dossier-contract.js";
 import { contract as factionDirectoryContract } from "../src/server/faction-directory-contract.js";
 import { contract as inventoryContainerContract } from "../src/server/inventory-container-contract.js";
+import { contract as inventoryWalletContract } from "../src/server/inventory-wallet-contract.js";
 import { contract as worldLocationScopeContract } from "../src/server/world-location-scope-contract.js";
 import { contract as worldLocationScopePageContract } from "../src/server/world-location-scope-page-contract.js";
 import { contract as campaignResumeContract } from "../src/server/campaign-resume-contract.js";
@@ -23,6 +24,7 @@ import {
   readCanonicalCharacter,
   readCanonicalCharacterSheet,
   readCanonicalInventory,
+  readCanonicalInventoryPage,
   readConversationCurrentScene,
   readGameServerContext,
   readRegisteredCampaignSummary,
@@ -305,64 +307,87 @@ test("World and Locations deferred view uses one authorized root scope and no ra
 
 function inventoryContainerData(actorId) {
   return {
-    version: 1,
-    owner: { id: actorId, label: "Ganji" },
+    version: 2,
+    container: { id: actorId, label: "Ganji" },
     state: "ready",
     reasons: [],
     items: [
       {
         id: "inventory.backpack", name: "Backpack", definition: { id: "item.backpack", label: "Backpack" },
-        quantity: 1, slot: "carried", parentItemId: null, order: 0, depth: 1, childCount: 1,
-        deeperContentsOmitted: false, equipmentSlots: [], classification: "item",
-      },
-      {
-        id: "inventory.rope", name: "Hempen rope", definition: { id: "item.rope", label: "Hempen rope" },
-        quantity: 1, slot: "contained", parentItemId: "inventory.backpack", order: 0, depth: 2,
-        childCount: 0, deeperContentsOmitted: false, equipmentSlots: [], classification: "item",
+        quantity: 1, slot: "carried", order: 0, equipmentSlots: [], classification: "item",
       },
     ],
+    limits: { contentsDepth: 1, itemCount: 200, directComplete: true, recursiveComplete: false },
+  };
+}
+
+function inventoryWalletData(actorId, complete = true) {
+  return {
+    version: 1, owner: { id: actorId, label: "Ganji" }, state: complete ? "ready" : "partial",
+    reasons: complete ? [] : ["depth-limit"],
     wallet: { coinCount: 3, copperValue: 300, gpCount: 3, denominations: [
       { denomination: { id: "currency.gp", label: "Gold piece" }, code: "gp", count: 3,
         copperValuePerCoin: 100, totalCopperValue: 300 },
     ] },
-    limits: { contentsDepth: 4, itemCount: 100, complete: true },
+    limits: { contentsDepth: 4, complete },
   };
 }
 
-test("inventory container reads one bounded nested projection without item-tab fan-out", async () => {
+test("inventory root reads independent direct contents and wallet without item-tab fan-out", async () => {
   const calls = [];
   const actorId = "actor.ganji";
   const result = await readCanonicalInventory({
     origin: "http://localhost:6217", applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
     actorId, perspective: "player",
     fetchImpl: async (input) => {
-      calls.push(new URL(input));
+      const request = new URL(input); calls.push(request);
+      const wallet = request.pathname.endsWith(inventoryWalletContract.id);
       return response(200, {
-        applicationId: "dnd2024", stateSpaceId: "dnd2024-main", qualifiedQueryId: inventoryContainerContract.id,
+        applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
+        qualifiedQueryId: wallet ? inventoryWalletContract.id : inventoryContainerContract.id,
+        stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
+        outputSchemaHash: wallet ? inventoryWalletContract.outputSchemaHash : inventoryContainerContract.outputSchemaHash,
+        resultFingerprint: "3".repeat(64), sourceRevisionFingerprint: "4".repeat(64),
+        data: wallet ? inventoryWalletData(actorId) : inventoryContainerData(actorId),
+      });
+    },
+  });
+  assert.equal(result.status, "ready");
+  assert.deepEqual(result.data.items.map((item) => [item.id, item.parentItemId]), [["inventory.backpack", null]]);
+  assert.equal(result.data.walletState.status, "complete");
+  assert.equal(calls.length, 2);
+  assert.ok(calls.every((call) => call.searchParams.get("perspective") === "player"));
+  assert.ok(calls.some((call) => call.pathname.endsWith(inventoryContainerContract.id)));
+  assert.ok(calls.some((call) => call.pathname.endsWith(inventoryWalletContract.id)));
+  assert.ok(calls.every((call) => !/recipes|uses|character-dossier/.test(call.pathname)));
+
+  const walletUnavailable = await readCanonicalInventory({
+    origin: "http://localhost:6217", applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
+    actorId, perspective: "dm",
+    fetchImpl: async (input) => {
+      const request = new URL(input);
+      if (request.pathname.endsWith(inventoryWalletContract.id)) return response(500, { code: "wallet-failed" });
+      return response(200, {
+        applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
+        qualifiedQueryId: inventoryContainerContract.id,
         stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
         outputSchemaHash: inventoryContainerContract.outputSchemaHash, resultFingerprint: "3".repeat(64),
         sourceRevisionFingerprint: "4".repeat(64), data: inventoryContainerData(actorId),
       });
     },
   });
-  assert.equal(result.status, "ready");
-  assert.deepEqual(result.data.items.map((item) => [item.id, item.parentItemId]), [
-    ["inventory.backpack", null], ["inventory.rope", "inventory.backpack"],
-  ]);
-  assert.equal(calls.length, 1);
-  assert.equal(calls[0].searchParams.get("perspective"), "player");
-  assert.match(calls[0].pathname, /dnd2024\.query\.inventory-container$/);
-  assert.ok(calls.every((call) => !/recipes|uses|character-dossier/.test(call.pathname)));
+  assert.equal(walletUnavailable.status, "ready");
+  assert.equal(walletUnavailable.data.wallet, null);
+  assert.deepEqual(walletUnavailable.data.walletState, { status: "unavailable", reason: "read-failed" });
 });
 
-test("inventory container rejects cycles and preserves authorization failures", async () => {
+test("scoped inventory pages reject cycles and preserve authorization failures", async () => {
   const actorId = "actor.ganji";
   const cycle = inventoryContainerData(actorId);
-  cycle.items[0].parentItemId = "inventory.rope";
-  cycle.items[0].depth = 3;
-  const incompatible = await readCanonicalInventory({
+  cycle.items[0].id = actorId;
+  const incompatible = await readCanonicalInventoryPage({
     origin: "http://localhost:6217", applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
-    actorId, perspective: "dm", fetchImpl: async () => response(200, {
+    scopeId: actorId, perspective: "dm", fetchImpl: async () => response(200, {
       applicationId: "dnd2024", stateSpaceId: "dnd2024-main", qualifiedQueryId: inventoryContainerContract.id,
       stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
       outputSchemaHash: inventoryContainerContract.outputSchemaHash, resultFingerprint: "3".repeat(64),
@@ -372,9 +397,9 @@ test("inventory container rejects cycles and preserves authorization failures", 
   assert.equal(incompatible.status, "error");
   assert.equal(incompatible.failureCategory, "incompatible-data");
 
-  const forbidden = await readCanonicalInventory({
+  const forbidden = await readCanonicalInventoryPage({
     origin: "http://localhost:6217", applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
-    actorId, perspective: "player", fetchImpl: async () => response(403, { code: "forbidden" }),
+    scopeId: actorId, perspective: "player", fetchImpl: async () => response(403, { code: "forbidden" }),
   });
   assert.equal(forbidden.status, "forbidden");
   assert.equal(forbidden.failureCategory, "authorization");

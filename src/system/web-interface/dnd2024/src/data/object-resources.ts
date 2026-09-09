@@ -1,4 +1,4 @@
-import type { CampaignReadModel, DeferredHubUpdate, HubEnvelope, InventoryContainerResult, ObjectReadEvidence, PartyMemberReadModel, Perspective, ReadyHubEnvelope, WorldFaction } from "./hub-types";
+import type { CampaignReadModel, DeferredHubUpdate, HubEnvelope, InventoryContainerPageResult, InventoryContainerResult, ObjectReadEvidence, PartyMemberReadModel, Perspective, ReadyHubEnvelope, WorldFaction } from "./hub-types";
 import { ResourceStore, type KeyedResource, type ResourceInvalidationReason } from "./resource-store";
 import type { ResourceState } from "./resource-state";
 import { RESOURCE_FRESHNESS_MS, resourceCacheKey, resourceContractToken } from "./resource-policy";
@@ -11,6 +11,7 @@ import { contract as campaignContextContract } from "../server/campaign-context-
 import { contract as characterSheetContract } from "../server/character-sheet-contract.js";
 import { contract as characterDossierContract } from "../server/character-dossier-contract.js";
 import { contract as inventoryContainerContract } from "../server/inventory-container-contract.js";
+import { contract as inventoryWalletContract } from "../server/inventory-wallet-contract.js";
 import { contract as worldLocationScopeContract } from "../server/world-location-scope-contract.js";
 import { contract as worldLocationScopePageContract } from "../server/world-location-scope-page-contract.js";
 import { contract as worldPeopleHoldingsContract } from "../server/world-people-holdings-contract.js";
@@ -46,6 +47,7 @@ export type CampaignDetailsObjectRequest = { envelope: ReadyHubEnvelope };
 export type CampaignContextObjectRequest = { envelope: ReadyHubEnvelope };
 export type CampaignContextUpdate = Extract<DeferredHubUpdate, { section: "context" }>;
 export type CharacterResourceRequest = { envelope: ReadyHubEnvelope; actorId: string };
+export type InventoryContainerResourceRequest = CharacterResourceRequest & { containerId: string };
 export type WorldScopeRequest = { envelope: ReadyHubEnvelope; scopeId: string; cursor?: string | null };
 export type WorldScopeUpdate = Extract<DeferredHubUpdate, { section: "locations" }>;
 export type WorldInformationSection = "people" | "lore" | "history";
@@ -102,6 +104,11 @@ function characterResourceScope({ envelope, actorId }: CharacterResourceRequest,
     envelope.applicationId, envelope.stateSpaceId, campaignId,
     envelope.audience.seat, envelope.audience.perspective,
     evidence?.resolutionFingerprint ?? "no-resolution", actorId);
+}
+
+function inventoryContainerResourceScope(request: InventoryContainerResourceRequest,
+  generation: number, contractToken: string) {
+  return resourceCacheKey(characterResourceScope(request, generation, contractToken), request.containerId);
 }
 
 function characterTableScope(envelope: ReadyHubEnvelope) {
@@ -521,6 +528,7 @@ type CharacterResourceOwnerOptions = {
   readSheet: (request: CharacterResourceRequest, signal: AbortSignal) => Promise<PartyMemberReadModel>;
   readDetails: (request: CharacterResourceRequest, signal: AbortSignal) => Promise<PartyMemberReadModel>;
   readInventory: (request: CharacterResourceRequest, signal: AbortSignal) => Promise<InventoryContainerResult>;
+  readInventoryContainer?: (request: InventoryContainerResourceRequest, signal: AbortSignal) => Promise<InventoryContainerPageResult>;
   maximumEntries?: number;
   maximumRetainedBytes?: number;
   maximumAgeMs?: number;
@@ -532,13 +540,14 @@ export class CharacterResourceOwner {
   readonly #sheet: KeyedResource<CharacterResourceRequest, PartyMemberReadModel>;
   readonly #details: KeyedResource<CharacterResourceRequest, PartyMemberReadModel>;
   readonly #inventory: KeyedResource<CharacterResourceRequest, InventoryContainerResult>;
+  readonly #inventoryContainers: KeyedResource<InventoryContainerResourceRequest, InventoryContainerPageResult> | null;
   #activeScope: string | null = null;
   #generation = 0;
 
   constructor(options: CharacterResourceOwnerOptions) {
     this.#store = new ResourceStore({
-      maximumEntries: options.maximumEntries ?? 12,
-      maximumRetainedBytes: options.maximumRetainedBytes ?? 4 * 1024 * 1024,
+      maximumEntries: options.maximumEntries ?? 64,
+      maximumRetainedBytes: options.maximumRetainedBytes ?? 24 * 1024 * 1024,
       diagnosticName: "character-resources",
     });
     const maximumAgeMs = options.maximumAgeMs;
@@ -556,13 +565,24 @@ export class CharacterResourceOwner {
     });
     this.#inventory = this.#store.define({
       name: "character-inventory", cacheKey: (request) => characterResourceScope(request,
-        this.#generation, resourceContractToken(inventoryContainerContract)),
+        this.#generation, resourceCacheKey(resourceContractToken(inventoryContainerContract),
+          resourceContractToken(inventoryWalletContract))),
       read: options.readInventory,
       validate: (value): value is InventoryContainerResult => Boolean(value && typeof value === "object" &&
         "status" in value && typeof value.status === "string" &&
         ["ready", "error", "forbidden"].includes(value.status)),
-      maximumAgeMs: maximumAgeMs ?? RESOURCE_FRESHNESS_MS.characterInventory, maximumEntryBytes: 280_000,
+      maximumAgeMs: maximumAgeMs ?? RESOURCE_FRESHNESS_MS.characterInventory, maximumEntryBytes: 5_500_000,
     });
+    this.#inventoryContainers = options.readInventoryContainer ? this.#store.define({
+      name: "inventory-container-page",
+      cacheKey: (request) => inventoryContainerResourceScope(request,
+        this.#generation, resourceContractToken(inventoryContainerContract)),
+      read: options.readInventoryContainer,
+      validate: (value): value is InventoryContainerPageResult => Boolean(value && typeof value === "object" &&
+        "status" in value && typeof value.status === "string" &&
+        ["ready", "error", "forbidden"].includes(value.status)),
+      maximumAgeMs: maximumAgeMs ?? RESOURCE_FRESHNESS_MS.characterInventory, maximumEntryBytes: 5_500_000,
+    }) : null;
   }
 
   replaceScope(envelope: ReadyHubEnvelope, force = false,
@@ -597,16 +617,27 @@ export class CharacterResourceOwner {
     return value;
   }
 
+  async loadInventoryContainer(request: InventoryContainerResourceRequest, signal?: AbortSignal,
+    preferCached = true) {
+    if (!this.#inventoryContainers) throw new Error("Scoped inventory loading is unavailable.");
+    this.replaceScope(request.envelope);
+    const value = (await this.#inventoryContainers.load(request, { signal, preferCached })).value;
+    if (value.status === "error") this.#inventoryContainers.invalidate(undefined, "manual");
+    return value;
+  }
+
   invalidateObject(qualifiedId: string) {
     if (qualifiedId === CHARACTER_DOSSIER_OBJECT_ID || qualifiedId === CAMPAIGN_SUMMARY_OBJECT_ID) {
       this.#sheet.invalidate(undefined, "object-change");
       this.#details.invalidate(undefined, "object-change");
       this.#inventory.invalidate(undefined, "object-change");
+      this.#inventoryContainers?.invalidate(undefined, "object-change");
       return true;
     }
     if (qualifiedId.startsWith("dnd2024.object.inventory-item-")) {
       this.#details.invalidate(undefined, "object-change");
       this.#inventory.invalidate(undefined, "object-change");
+      this.#inventoryContainers?.invalidate(undefined, "object-change");
       return true;
     }
     return false;

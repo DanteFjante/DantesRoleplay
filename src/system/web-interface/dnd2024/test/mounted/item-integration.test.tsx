@@ -34,9 +34,10 @@ async function mount(hash = itemRouteHash(integrationInventory)) {
     const sheet = initial.party.find(member => member.id === actorId)?.characterSheet;
     if (!sheet) throw new Error("Missing inventory fixture");
     return { status: "ready", failureCategory: null, diagnosticId: `inventory-${actorId}`, data: {
-      version: 1, owner: sheet.subject, state: "ready", reasons: [],
+      version: 2, container: sheet.subject, state: "ready", reasons: [],
       items: sheet.inventory.items.map(item => ({ ...item, classification: "item" as const })), wallet: sheet.wallet,
-      limits: { contentsDepth: 4, itemCount: 100, complete: true }, projection: {
+      walletState: { status: "complete", reason: null },
+      limits: { contentsDepth: 1, itemCount: 200, directComplete: true, recursiveComplete: false }, projection: {
         stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
         resultFingerprint: "3".repeat(64), sourceRevisionFingerprint: "4".repeat(64),
       },
@@ -48,16 +49,16 @@ async function mount(hash = itemRouteHash(integrationInventory)) {
   return { container, calls, hubCalls, inventoryCalls, pending, control, click, async cleanup(){await act(async()=>root.unmount());dom.window.close();keys.forEach((k,i)=>{if(prior[i])Object.defineProperty(globalThis,k,prior[i]!);else Reflect.deleteProperty(globalThis,k);});} };
 }
 async function openStaff(view: Awaited<ReturnType<typeof mount>>) {
-  const disclosure = view.container.querySelector<HTMLDetailsElement>(".character-inventory__branch")!;assert.ok(disclosure);
-  await perform(()=>{disclosure.open=true;disclosure.dispatchEvent(new Event("toggle"));});
+  const disclosure = view.container.querySelector<HTMLButtonElement>('[aria-controls="inventory-contents-item-pack"]')!;assert.ok(disclosure);
+  await perform(()=>disclosure.click());
   window.scrollTo(0,487);
   await perform(()=>{const b=view.container.querySelector<HTMLButtonElement>('[data-item-open="item.staff"]')!;b.focus();b.click();});
 }
 test("full hub inventory journey respects tab request budgets and caches fresh returns across Back/Forward",async()=>{
   const v=await mount();try{
-    assert.equal(v.calls.length,0);assert.deepEqual(v.inventoryCalls,["actor.fixture"]);await openStaff(v);assert.deepEqual(v.calls.map(c=>c.tab),["details"]);assert.equal(document.activeElement?.id,"main-view-heading");
+    assert.equal(v.calls.length,0);assert.deepEqual(v.inventoryCalls,["actor.fixture"]);await openStaff(v);assert.deepEqual(v.calls.map(c=>c.tab),["details"]);assert.equal(document.activeElement?.id,"item-view-heading");
     await v.click("Known recipes");await v.click("Known uses");await v.click("Details");assert.deepEqual(v.calls.map(c=>c.tab),["details","recipes","uses"]);assert.deepEqual(v.hubCalls,[]);
-    await v.click("Back to inventory");assert.equal(parseItemRoute(window.location.hash).kind,"inventory");assert.equal(v.container.querySelector<HTMLDetailsElement>(".character-inventory__branch")?.open,true);assert.equal(window.scrollY,487);assert.equal((document.activeElement as HTMLElement).dataset.itemOpen,"item.staff");
+    await perform(()=>v.container.querySelector<HTMLButtonElement>(".item-page__breadcrumbs li:nth-last-child(2) button")!.click());assert.equal(parseItemRoute(window.location.hash).kind,"inventory");assert.equal(v.container.querySelector('[aria-controls="inventory-contents-item-pack"]')?.getAttribute("aria-expanded"),"true");assert.equal(window.scrollY,487);assert.equal((document.activeElement as HTMLElement).dataset.itemOpen,"item.staff");
     await perform(()=>window.history.forward());await v.click("Known recipes");await v.click("Known uses");assert.equal(v.calls.length,3);assert.deepEqual(v.hubCalls,[]);
     assert.equal(window.location.pathname,"/published/revision");assert.equal(window.location.search,"?keep=yes");
     await act(async()=>{await new Promise(r=>setTimeout(r,100));});assert.equal(v.calls.length,3);

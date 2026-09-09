@@ -10,7 +10,10 @@ const tabs: { id: ItemTab; label: string }[] = [
 export function focusItemPanel() { document.getElementById("item-panel")?.focus(); }
 
 // Only ConnectedItemView supplies identity from a validated, current response.
-export function ItemView({ tab, onTab, onBack, name, details, recipes, uses }: { tab: ItemTab; onTab: (tab: ItemTab) => void; onBack: () => void; name?: string; details?: ReactNode; recipes?: ReactNode; uses?: ReactNode }) {
+export function ItemView({ tab, onTab, onBack, onParty, characterName, name, details, recipes, uses }: {
+  tab: ItemTab; onTab: (tab: ItemTab) => void; onBack: () => void; onParty?: () => void;
+  characterName?: string; name?: string; details?: ReactNode; recipes?: ReactNode; uses?: ReactNode;
+}) {
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => { heading.current?.focus(); }, []);
   return <section className="item-page" onKeyDown={(event) => {
@@ -18,8 +21,13 @@ export function ItemView({ tab, onTab, onBack, name, details, recipes, uses }: {
       event.preventDefault(); onBack();
     }
   }}>
-    <button className="item-page__back" type="button" onClick={onBack}>Back to inventory</button>
-    <header><span className="eyebrow">Inventory</span><h1 id="main-view-heading" ref={heading} tabIndex={-1}>{name ?? "Item"}</h1></header>
+    <nav aria-label="Breadcrumb" className="item-page__breadcrumbs"><ol>
+      <li><button type="button" onClick={onParty ?? onBack}>Party</button></li>
+      {characterName ? <li><button type="button" onClick={onParty ?? onBack}>{characterName}</button></li> : null}
+      <li><button type="button" onClick={onBack}>Inventory</button></li>
+      <li aria-current="page">{name ?? "Item details"}</li>
+    </ol></nav>
+    <header><span className="eyebrow">Inventory item</span><h2 id="item-view-heading" ref={heading} tabIndex={-1}>{name ?? "Item"}</h2></header>
     <div className="item-page__tabs" role="tablist" aria-label="Item sections">
       {tabs.map((candidate, index) => <button key={candidate.id} type="button" role="tab"
         id={`item-tab-${candidate.id}`} aria-controls="item-panel" aria-selected={tab === candidate.id}

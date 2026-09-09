@@ -68,7 +68,7 @@ test("Details renders exact zero/false, units, partial reasons and uncertain sou
   }) as typeof fetch);
   const view = await mounted(client, request);
   try {
-    assert.equal(view.container.querySelector("h1")?.textContent, data.name);
+    assert.equal(view.container.querySelector("h2")?.textContent, data.name);
     assert.match(view.container.textContent!, /4 lb/); assert.match(view.container.textContent!, /Recorded durability0/);
     assert.match(view.container.textContent!, /AttunedNo/); assert.match(view.container.textContent!, /suspected/);
     assert.match(view.container.textContent!, /Some supporting information is unavailable/);
@@ -93,13 +93,13 @@ test("slow scope switches, invalidation and transfer never resurrect previous he
     await act(async () => { pending[0].resolve(response(itemEnvelope(dm, data))); await tick(); });
     assert.match(view.container.textContent!, /PRIVATE DM ITEM/); assert.equal(view.container.querySelectorAll("img").length, 1);
     await view.render(itemRequest);
-    assert.equal(view.container.querySelector("h1")?.textContent, "Item"); assert.equal(view.container.querySelector("img"), null);
+    assert.equal(view.container.querySelector("h2")?.textContent, "Item"); assert.equal(view.container.querySelector("img"), null);
     const second = { ...itemRequest, itemId: "item.pack" };
     await view.render(second);
     await act(async () => { pending[1].resolve(response(itemEnvelope(itemRequest))); pending[2].resolve(response(itemEnvelope(second))); await tick(); });
     assert.match(view.container.textContent!, /Weathered backpack/); assert.doesNotMatch(view.container.textContent!, /Travel staff|PRIVATE/);
     await act(async () => { client.invalidate(); await tick(); });
-    assert.equal(view.container.querySelector("h1")?.textContent, "Item");
+    assert.equal(view.container.querySelector("h2")?.textContent, "Item");
     await act(async () => { pending[3].resolve(new Response(null, { status: 404 })); await tick(); });
     assert.match(view.container.textContent!, /Item details unavailable/); assert.doesNotMatch(view.container.textContent!, /Weathered backpack|PRIVATE/);
   } finally { await view.cleanup(); }
@@ -113,7 +113,7 @@ test("fresh return uses cache and expiry revalidates without hiding last-good co
   try {
     assert.equal(calls, 1); assert.match(view.container.textContent!, /Travel staff/);
     await act(async () => { await new Promise((resolve) => setTimeout(resolve, 270)); });
-    assert.equal(view.container.querySelector("h1")?.textContent, "Travel staff");
+    assert.equal(view.container.querySelector("h2")?.textContent, "Travel staff");
     assert.equal(calls, 2); assert.match(view.container.textContent!, /Travel staff/);
   } finally { await view.cleanup(); }
 });
@@ -153,7 +153,7 @@ test("failed background refresh keeps the last valid Item details visible", asyn
     await act(async () => { await new Promise((resolve) => setTimeout(resolve, 90)); });
     await act(async () => { await new Promise((resolve) => setTimeout(resolve, 40)); });
     assert.ok(calls >= 2);
-    assert.equal(view.container.querySelector("h1")?.textContent, "Travel staff");
+    assert.equal(view.container.querySelector("h2")?.textContent, "Travel staff");
     assert.match(view.container.textContent!, /last available details remain visible/i);
   } finally { await view.cleanup(); }
 });

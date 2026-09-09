@@ -2,7 +2,8 @@ import type { ItemDetailsData, ItemKnowledge, ItemSource } from "../../server/it
 import { ItemMediaGallery } from "../EntityMediaGallery";
 
 function Knowledge({ value }: { value: ItemKnowledge | null }) {
-  return value === null ? null : <small className="item-details__knowledge">Character knowledge: {value}</small>;
+  return value === null || value === "unknown" ? null
+    : <small className="item-details__knowledge">Knowledge: {value}</small>;
 }
 function Sources({ values }: { values: ItemSource[] }) {
   return values.length ? <details className="item-details__sources"><summary>Sources</summary>
@@ -15,27 +16,31 @@ const reasons: Record<ItemDetailsData["reasons"][number], string> = {
   "dependency-unavailable": "Some supporting information is unavailable.",
 };
 export function ItemDetails({ data, scopeKey }: { data: ItemDetailsData; scopeKey: string }) {
+  const sources = [...data.sources, ...data.properties.flatMap((property) => property.sources)]
+    .filter((source, index, values) => values.findIndex((candidate) =>
+      candidate.label === source.label && candidate.knowledgeState === source.knowledgeState) === index);
   return <div className="item-details">
     {data.state === "partial" ? <div className="item-details__notice" role="status"><strong>Some details are unavailable</strong>
       <ul>{[...new Set(data.reasons.map((reason) => reasons[reason]))].map((reason) => <li key={reason}>{reason}</li>)}</ul></div> : null}
     <div className={`item-details__lead${data.media.length ? "" : " item-details__lead--text"}`}>
-      <div className="item-details__media"><ItemMediaGallery scopeKey={scopeKey} view={{ scopeKey, media: data.media }} /></div>
+      {data.media.length ? <div className="item-details__media"><ItemMediaGallery scopeKey={scopeKey} view={{ scopeKey, media: data.media }} /></div> : null}
       <div>
         <Knowledge value={data.observerKnowledge} />
-        <p className="item-details__description">{data.description ?? "No description available."}</p>
+        <p className={`item-details__description${data.description ? "" : " item-details__description--empty"}`}>
+          {data.description ?? "No description is recorded."}</p>
         <dl className="item-details__facts">
           {data.quantity !== null ? <div><dt>Quantity</dt><dd>{data.quantity}</dd></div> : null}
-          {data.container ? <div><dt>Carried in</dt><dd>{data.container.name}<Knowledge value={data.container.observerKnowledge} /></dd></div> : null}
+          {data.container ? <div><dt>Carried in</dt><dd>{data.container.name}</dd></div> : null}
           {data.equipmentSlots.length ? <div><dt>Equipment</dt><dd>{data.equipmentSlots.join(", ")}</dd></div> : null}
         </dl>
-        <Sources values={data.sources} />
       </div>
     </div>
     {data.properties.length ? <section aria-labelledby="item-properties-heading"><h2 id="item-properties-heading">Known properties</h2>
       <dl className="item-details__properties">{data.properties.map((property, index) => <div key={index}>
         <dt>{property.label}</dt><dd>{typeof property.value === "boolean" ? property.value ? "Yes" : "No" : String(property.value)}{property.unit ? ` ${property.unit}` : ""}
-          <Knowledge value={property.observerKnowledge} /><Sources values={property.sources} />
+          <Knowledge value={property.observerKnowledge} />
         </dd></div>)}</dl>
     </section> : null}
+    <Sources values={sources} />
   </div>;
 }

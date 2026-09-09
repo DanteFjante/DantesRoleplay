@@ -13,6 +13,7 @@ const source = [
   "../src/components/character/WalletSummary.tsx",
 ].map((path) => readFileSync(new URL(path, import.meta.url), "utf8")).join("\n");
 const styles = readFileSync(new URL("../src/character-page.css", import.meta.url), "utf8");
+const itemStyles = readFileSync(new URL("../src/item-page.css", import.meta.url), "utf8");
 
 test("the character page is decomposed and renders every catalog-owned v2 section", () => {
   for (const name of ["CharacterShell", "CharacterHero", "VitalStrip", "AbilityScores", "SavesAndSkills",
@@ -39,20 +40,24 @@ test("large spell and action reference sets remain bounded in the presentation",
 
 test("inventory renders the independent bounded container while retaining reusable item identity", () => {
   assert.match(source, /loadCharacterInventory/u);
+  assert.match(source, /loadInventoryContainer/u);
   assert.match(source, /inventoryData\?\.items/u);
   assert.doesNotMatch(source, /dossier\?\.inventory\.definitions/u);
-  assert.match(source, /definition\?\.summary/u);
-  assert.match(source, /definition\?\.source/u);
+  assert.match(source, /item\.definition\?\.label/u);
+  assert.match(source, /item\.media\?\.illustration/u);
+  assert.match(source, /current\.length \+ page\.length > 512/u);
   assert.doesNotMatch(source, /fixture\.legacy|legacy\.stats/u);
   assert.match(styles, /\.character-inventory__item-copy small\s*\{[^}]*overflow-wrap:\s*anywhere;[^}]*white-space:\s*normal;/su);
+  assert.doesNotMatch(itemStyles, /character-inventory/u, "Inventory styles stay with the Character lazy owner");
 });
 
 test("the character page owns responsive desktop, tablet, and mobile layouts", () => {
   assert.match(styles, /\.character-abilities\s*\{[^}]*grid-template-columns:\s*repeat\(6,\s*minmax\(0,\s*1fr\)\)/u);
   for (const [selector, width] of [["character-sheet-v2__columns", 360],
-    ["character-checks", 230], ["character-inventory-layout", 280]]) {
+    ["character-checks", 230]]) {
     assert.match(styles, new RegExp(`\\.${selector}\\s*\\{[^}]*repeat\\(auto-fit, minmax\\(min\\(100%, ${width}px\\), 1fr\\)\\)`, "u"));
   }
+  assert.match(styles, /\.character-inventory-layout\s*\{[^}]*grid-template-columns:\s*minmax\(0, 2fr\) minmax\(230px, \.72fr\)/u);
   assert.match(styles, /\.character-page\s*\{[^}]*min-width:\s*0/su);
   assert.match(styles, /\.character-workspace\s*\{[^}]*grid-template-columns:\s*minmax\(220px,\s*0\.25fr\)\s*minmax\(0,\s*1fr\)/su);
   for (const breakpoint of ["1100px", "820px", "520px"]) {
@@ -61,14 +66,16 @@ test("the character page owns responsive desktop, tablet, and mobile layouts", (
   assert.match(styles, /@media \(max-width: 820px\)[\s\S]*?\.character-workspace\s*\{\s*grid-template-columns:\s*1fr;/u);
   assert.match(styles, /@media \(max-width: 740px\)[\s\S]*?\.character-tabs\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\);[^}]*overflow-x:\s*visible;/u);
   assert.match(styles, /@media \(max-width: 520px\)[\s\S]*?\.character-wallet__totals\s*\{\s*grid-template-columns:\s*1fr;/u);
+  assert.match(styles, /@media \(max-width: 340px\)[\s\S]*?body:has\(\.character-page\)\s*\{\s*min-width:\s*0;/u);
+  assert.match(itemStyles, /@media \(max-width: 390px\)/u);
 });
 
 test("keyboard, loading, and nested-inventory semantics are explicit", () => {
   assert.match(source, /<aside aria-label="Active party roster"/u);
   assert.match(source, /<nav aria-label="Character dossier sections"/u);
-  assert.match(source, /<details[\s\S]*?<summary>/u);
+  assert.match(source, /className="character-inventory__disclosure"[\s\S]*?aria-controls=\{contentsId\} aria-expanded=\{expanded\}/u);
   assert.match(source, /aria-live="polite"/u);
   assert.match(source, /role="status"/u);
-  assert.match(styles, /\.character-page summary:focus-visible/u);
+  assert.match(styles, /\.character-page button:focus-visible/u);
   assert.match(styles, /min-height:\s*44px/u);
 });

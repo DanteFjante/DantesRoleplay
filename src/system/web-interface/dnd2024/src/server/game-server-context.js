@@ -9,6 +9,7 @@ import { contract as worldCampaignDirectoryContract } from "./world-campaign-dir
 import { contract as characterSheetContract } from "./character-sheet-contract.js";
 import { contract as characterDossierContract } from "./character-dossier-contract.js";
 import { contract as inventoryContainerContract } from "./inventory-container-contract.js";
+import { contract as inventoryWalletContract } from "./inventory-wallet-contract.js";
 import { contract as factionDirectoryContract } from "./faction-directory-contract.js";
 import { contract as worldLocationScopeContract } from "./world-location-scope-contract.js";
 import { contract as worldLocationScopePageContract } from "./world-location-scope-page-contract.js";
@@ -621,62 +622,46 @@ function validCharacterDossier(value, actorId) {
 }
 
 function validInventoryContainer(value, actorId) {
-  const reasons = new Set(["depth-limit", "unclassified-content"]);
-  if (!hasExactKeys(value, ["version", "owner", "state", "reasons", "items", "wallet", "limits"]) ||
-      value.version !== 1 || !namedCharacterReference(value.owner) || value.owner.id !== actorId ||
+  if (!hasExactKeys(value, ["version", "container", "state", "reasons", "items", "limits"]) ||
+      value.version !== 2 || !namedCharacterReference(value.container) || value.container.id !== actorId ||
       !["ready", "partial"].includes(value.state) || !Array.isArray(value.reasons) ||
-      value.reasons.length > 2 || new Set(value.reasons).size !== value.reasons.length ||
-      value.reasons.some((reason) => !reasons.has(reason)) || !Array.isArray(value.items) ||
-      value.items.length > 100 || !validCharacterWallet(value.wallet) ||
-      !hasExactKeys(value.limits, ["contentsDepth", "itemCount", "complete"]) ||
-      value.limits.contentsDepth !== 4 || value.limits.itemCount !== 100 ||
-      typeof value.limits.complete !== "boolean" ||
-      (value.state === "ready") !== value.limits.complete ||
+      value.reasons.length > 1 || new Set(value.reasons).size !== value.reasons.length ||
+      value.reasons.some((reason) => reason !== "unclassified-content") || !Array.isArray(value.items) ||
+      value.items.length > 200 ||
+      !hasExactKeys(value.limits, ["contentsDepth", "itemCount", "directComplete", "recursiveComplete"]) ||
+      value.limits.contentsDepth !== 1 || value.limits.itemCount !== 200 ||
+      value.limits.directComplete !== true || value.limits.recursiveComplete !== false ||
       (value.state === "ready") !== (value.reasons.length === 0)) return false;
   const ids = new Set();
   const positions = new Set();
   for (const item of value.items) {
-    if (!hasExactKeys(item, ["id", "name", "definition", "quantity", "slot", "parentItemId",
-      "order", "depth", "childCount", "deeperContentsOmitted", "equipmentSlots", "classification"]) ||
+    if (!hasExactKeys(item, ["id", "name", "definition", "quantity", "slot", "order", "equipmentSlots", "classification"]) ||
         !token(item.id) || !text(item.name, 400) ||
         !(item.definition === null || namedCharacterReference(item.definition)) ||
         !(item.quantity === null || boundedInteger(item.quantity, 1)) ||
-        typeof item.slot !== "string" || item.slot.length > 200 ||
-        !(item.parentItemId === null || token(item.parentItemId)) ||
-        !boundedInteger(item.order, 0, 99) || !boundedInteger(item.depth, 1, 4) ||
-        !boundedInteger(item.childCount, 0, 100) || typeof item.deeperContentsOmitted !== "boolean" ||
+        typeof item.slot !== "string" || item.slot.length > 200 || !boundedInteger(item.order, 0, 199) ||
         !namedCharacterReferences(item.equipmentSlots, 32) ||
         !["item", "unclassified"].includes(item.classification) || ids.has(item.id) ||
+        item.id === actorId ||
         (item.classification === "item") !== (item.definition !== null && item.quantity !== null) ||
         (item.classification === "unclassified" && item.equipmentSlots.length > 0)) return false;
     ids.add(item.id);
-    const position = `${item.parentItemId ?? "root"}:${item.order}`;
-    if (positions.has(position)) return false;
-    positions.add(position);
+    if (positions.has(item.order)) return false;
+    positions.add(item.order);
   }
-  const byId = new Map(value.items.map((item) => [item.id, item]));
-  const childCounts = new Map();
-  for (const item of value.items) {
-    if (item.parentItemId === null) {
-      if (item.depth !== 1) return false;
-    } else {
-      const parent = byId.get(item.parentItemId);
-      if (!parent || item.depth !== parent.depth + 1) return false;
-      childCounts.set(parent.id, (childCounts.get(parent.id) ?? 0) + 1);
-    }
-    const visited = new Set([item.id]);
-    let parentId = item.parentItemId;
-    while (parentId !== null) {
-      if (visited.has(parentId)) return false;
-      visited.add(parentId);
-      parentId = byId.get(parentId)?.parentItemId ?? null;
-    }
-  }
-  return value.items.every((item) =>
-    item.childCount === (childCounts.get(item.id) ?? 0) &&
-    (item.depth !== 4 || item.deeperContentsOmitted)) &&
-    value.reasons.includes("depth-limit") === value.items.some((item) => item.depth === 4) &&
-    value.reasons.includes("unclassified-content") === value.items.some((item) => item.classification === "unclassified");
+  return value.reasons.includes("unclassified-content") ===
+    value.items.some((item) => item.classification === "unclassified");
+}
+
+function validInventoryWallet(value, actorId) {
+  if (!hasExactKeys(value, ["version", "owner", "state", "reasons", "wallet", "limits"]) ||
+      value.version !== 1 || !namedCharacterReference(value.owner) || value.owner.id !== actorId ||
+      !["ready", "partial"].includes(value.state) || !Array.isArray(value.reasons) ||
+      value.reasons.length > 1 || value.reasons.some((reason) => reason !== "depth-limit") ||
+      !validCharacterWallet(value.wallet) || !hasExactKeys(value.limits, ["contentsDepth", "complete"]) ||
+      value.limits.contentsDepth !== 4 || typeof value.limits.complete !== "boolean") return false;
+  return (value.state === "ready") === value.limits.complete &&
+    value.limits.complete === (value.reasons.length === 0);
 }
 
 function validWorldLocationScope(value, scopeId) {
@@ -1306,49 +1291,54 @@ export async function readCanonicalCharacterSheet({
   }
 }
 
-/** Reads only the bounded physical inventory and wallet for one authorized character. */
-export async function readCanonicalInventory({
-  fetchImpl, origin, applicationId, stateSpaceId, actorId, perspective,
+async function inventoryReadFailure(result, id, label) {
+  if (result.status === "incompatible") return {
+    status: "error", data: null, failureCategory: "incompatible-data",
+    diagnosticId: canonicalCharacterDiagnosticId(result.response, id, `${label}-incompatible`),
+  };
+  const response = result.response;
+  const failureBody = await readBoundedJson(response, 8_192);
+  const failure = failureBody.status === "ready" ? failureBody.value : null;
+  const errorCode = token(failure?.code);
+  const category = canonicalCharacterFailureCategory(response, errorCode);
+  return {
+    status: category === "authorization" ? "forbidden" : "error",
+    data: null,
+    failureCategory: category,
+    diagnosticId: canonicalCharacterDiagnosticId(response, id, `${label}-${category}`),
+    ...(errorCode ? { errorCode } : {}),
+    ...(Number.isInteger(response?.status) ? { httpStatus: response.status } : {}),
+  };
+}
+
+/** Reads one complete direct inventory scope; deeper scopes are separate cached resources. */
+export async function readCanonicalInventoryPage({
+  fetchImpl, origin, applicationId, stateSpaceId, scopeId, perspective,
 }) {
   const entityRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
     `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities`;
   try {
     const result = await readModelResponse({
       fetchImpl,
-      resource: url(origin, `${entityRoot}/${encodeURIComponent(actorId)}` +
+      resource: url(origin, `${entityRoot}/${encodeURIComponent(scopeId)}` +
         `/read-models/${encodeURIComponent(inventoryContainerContract.id)}` +
         (perspective ? `?perspective=${encodeURIComponent(perspective)}` : "")),
       init: { headers: { Accept: "application/json" }, cache: "no-store" },
       applicationId,
       stateSpaceId,
       query: inventoryContainerContract,
-      maximumBodyBytes: 270_000,
-      maximumDataBytes: 262_144,
+      // The closed schema permits 200 rows with up to 32 named equipment slots each.
+      // Keep the byte ceiling aligned with that valid worst case instead of silently
+      // turning a contract-valid large container into an incompatible response.
+      maximumBodyBytes: 5_300_000,
+      maximumDataBytes: 5 * 1024 * 1024,
       statusPolicy: { ready: [200], forbidden: [403], stale: [409], unavailable: "remaining" },
-      validate: (value) => validInventoryContainer(value, actorId),
+      validate: (value) => validInventoryContainer(value, scopeId),
     });
-    if (result.status !== "ready") {
-      if (result.status === "incompatible") return {
-        status: "error", data: null, failureCategory: "incompatible-data",
-        diagnosticId: canonicalCharacterDiagnosticId(result.response, actorId, "inventory-incompatible"),
-      };
-      const response = result.response;
-      const failureBody = await readBoundedJson(response, 8_192);
-      const failure = failureBody.status === "ready" ? failureBody.value : null;
-      const errorCode = token(failure?.code);
-      const category = canonicalCharacterFailureCategory(response, errorCode);
-      return {
-        status: category === "authorization" ? "forbidden" : "error",
-        data: null,
-        failureCategory: category,
-        diagnosticId: canonicalCharacterDiagnosticId(response, actorId, `inventory-${category}`),
-        ...(errorCode ? { errorCode } : {}),
-        ...(Number.isInteger(response?.status) ? { httpStatus: response.status } : {}),
-      };
-    }
+    if (result.status !== "ready") return inventoryReadFailure(result, scopeId, "inventory-container");
     return {
       status: "ready", failureCategory: null,
-      diagnosticId: canonicalCharacterDiagnosticId(result.response, actorId, "inventory-ready"),
+      diagnosticId: canonicalCharacterDiagnosticId(result.response, scopeId, "inventory-container-ready"),
       data: {
         ...result.data,
         projection: {
@@ -1363,9 +1353,56 @@ export async function readCanonicalInventory({
     if (error?.name === "AbortError") throw error;
     return {
       status: "error", data: null, failureCategory: "transport",
-      diagnosticId: canonicalCharacterDiagnosticId(null, actorId, "inventory-transport"),
+      diagnosticId: canonicalCharacterDiagnosticId(null, scopeId, "inventory-container-transport"),
     };
   }
+}
+
+async function readCanonicalInventoryWallet({
+  fetchImpl, origin, applicationId, stateSpaceId, actorId, perspective,
+}) {
+  const resource = `/api/applications/${encodeURIComponent(applicationId)}` +
+    `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities/${encodeURIComponent(actorId)}` +
+    `/read-models/${encodeURIComponent(inventoryWalletContract.id)}` +
+    (perspective ? `?perspective=${encodeURIComponent(perspective)}` : "");
+  try {
+    const result = await readModelResponse({
+      fetchImpl, resource: url(origin, resource), init: { headers: { Accept: "application/json" }, cache: "no-store" },
+      applicationId, stateSpaceId, query: inventoryWalletContract,
+      maximumBodyBytes: 80_000, maximumDataBytes: 65_536,
+      statusPolicy: { ready: [200], forbidden: [403], stale: [409], unavailable: "remaining" },
+      validate: (value) => validInventoryWallet(value, actorId),
+    });
+    return result.status === "ready" ? { status: "ready", data: result.data }
+      : { status: "unavailable", data: null };
+  } catch (error) {
+    if (error?.name === "AbortError") throw error;
+    return { status: "unavailable", data: null };
+  }
+}
+
+/** Reads the root container and wallet independently so a large wallet scan cannot hide inventory. */
+export async function readCanonicalInventory(request) {
+  const [page, walletResult] = await Promise.all([
+    readCanonicalInventoryPage({ ...request, scopeId: request.actorId }),
+    readCanonicalInventoryWallet(request),
+  ]);
+  if (page.status !== "ready") return page;
+  const wallet = walletResult.status === "ready" ? walletResult.data : null;
+  return {
+    ...page,
+    data: {
+      ...page.data,
+      items: page.data.items.map((item) => ({
+        ...item, parentItemId: null, depth: 1, childCount: null, deeperContentsOmitted: true,
+      })),
+      wallet: wallet?.wallet ?? null,
+      walletState: wallet ? {
+        status: wallet.limits.complete ? "complete" : "partial",
+        reason: wallet.limits.complete ? null : "depth-limit",
+      } : { status: "unavailable", reason: "read-failed" },
+    },
+  };
 }
 
 export async function readCanonicalCharacter({ fetchImpl, origin, applicationId, stateSpaceId, actorId, perspective }) {

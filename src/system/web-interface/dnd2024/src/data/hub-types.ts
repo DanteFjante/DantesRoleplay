@@ -494,23 +494,40 @@ export type CharacterWalletV2 = {
   }>;
 };
 
-export type InventoryContainerItem = Omit<CharacterInventoryItemV2, "definition" | "quantity"> & {
+export type InventoryContainerPageItem = Omit<CharacterInventoryItemV2,
+  "definition" | "quantity" | "parentItemId" | "depth" | "childCount" | "deeperContentsOmitted" | "media"> & {
   definition: NamedCharacterReference | null;
   quantity: number | null;
   classification: "item" | "unclassified";
 };
 
+export type InventoryContainerItem = InventoryContainerPageItem & {
+  parentItemId: string | null;
+  depth: number;
+  childCount: number | null;
+  deeperContentsOmitted: boolean;
+  media?: EntityVisualMedia;
+};
+
 export type InventoryContainerProjection = {
+  version: 2;
+  container: NamedCharacterReference;
+  state: "ready" | "partial";
+  reasons: Array<"unclassified-content">;
+  items: InventoryContainerPageItem[];
+  limits: { contentsDepth: 1; itemCount: 200; directComplete: true; recursiveComplete: false };
+};
+
+export type InventoryWalletProjection = {
   version: 1;
   owner: NamedCharacterReference;
   state: "ready" | "partial";
-  reasons: Array<"depth-limit" | "unclassified-content">;
-  items: InventoryContainerItem[];
+  reasons: Array<"depth-limit">;
   wallet: CharacterWalletV2;
-  limits: { contentsDepth: 4; itemCount: 100; complete: boolean };
+  limits: { contentsDepth: 4; complete: boolean };
 };
 
-export type InventoryContainerData = InventoryContainerProjection & {
+export type InventoryContainerPageData = InventoryContainerProjection & {
   projection: {
     stateSpaceFingerprint: string;
     resolutionFingerprint: string;
@@ -518,6 +535,17 @@ export type InventoryContainerData = InventoryContainerProjection & {
     sourceRevisionFingerprint: string;
   };
 };
+
+export type InventoryContainerData = Omit<InventoryContainerPageData, "items"> & {
+  items: InventoryContainerItem[];
+  wallet: CharacterWalletV2 | null;
+  walletState: { status: "complete" | "partial" | "unavailable"; reason: "depth-limit" | "read-failed" | null };
+};
+
+export type InventoryContainerPageResult =
+  | { status: "ready"; data: InventoryContainerPageData; failureCategory: null; diagnosticId: string }
+  | { status: "error"; data: null; failureCategory: Exclude<SectionFailureCategory, "authorization">; diagnosticId: string; errorCode?: string; httpStatus?: number }
+  | { status: "forbidden"; data: null; failureCategory: "authorization"; diagnosticId: string; errorCode?: string; httpStatus?: number };
 
 export type InventoryContainerResult =
   | { status: "ready"; data: InventoryContainerData; failureCategory: null; diagnosticId: string }

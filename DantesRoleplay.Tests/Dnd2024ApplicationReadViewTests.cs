@@ -720,7 +720,7 @@ public sealed class Dnd2024ApplicationReadViewTests
     }
 
     [Fact]
-    public async Task Inventory_container_preserves_nested_items_unknown_contents_and_exact_wallet()
+    public async Task Inventory_container_page_preserves_101_direct_items_and_unknown_contents()
     {
         var rope = new ContainedProjection("inventory.rope", "Hempen Rope", "contents", new Dictionary<string, string>
         {
@@ -732,8 +732,14 @@ public sealed class Dnd2024ApplicationReadViewTests
         {
             ["dnd2024.core.definition-link"] = Json(new { definition = Ref("item.backpack") }),
             ["dnd2024.item.quantity"] = Json(new { current = 1 })
-        }, [rope, unknown]);
-        var subject = Entity("actor.aric", "Aric", new()) with { Contains = [backpack] };
+        }, null);
+        var filler = Enumerable.Range(0, 98).Select(index => new ContainedProjection(
+            $"inventory.filler.{index}", $"Filler {index}", "inventory", new Dictionary<string, string>
+            {
+                ["dnd2024.core.definition-link"] = Json(new { definition = Ref("item.rope") }),
+                ["dnd2024.item.quantity"] = Json(new { current = 1 })
+            }, null)).ToArray();
+        var subject = Entity("actor.aric", "Aric", new()) with { Contains = [backpack, rope, unknown, .. filler] };
         var references = new Dictionary<string, ReferencedEntityProjection>
         {
             ["item.backpack"] = new ReferencedEntityProjection("item.backpack", new Dictionary<string, string>(), "Backpack"),
@@ -743,7 +749,34 @@ public sealed class Dnd2024ApplicationReadViewTests
         {
             Input = "{}",
             Roles = { ["subject"] = subject },
-            References = references,
+            References = references
+        };
+
+        using var output = await Run("data/dnd2024.mechanic.inventory-container-page.project", projection);
+        var data = output.RootElement;
+        var items = data.GetProperty("items").EnumerateArray().ToArray();
+        Assert.Equal(101, items.Length);
+        Assert.Equal("partial", data.GetProperty("state").GetString());
+        Assert.Equal("unclassified", items[2].GetProperty("classification").GetString());
+        Assert.Equal(JsonValueKind.Null, items[2].GetProperty("definition").ValueKind);
+        Assert.Contains("unclassified-content", data.GetProperty("reasons").EnumerateArray().Select(value => value.GetString()));
+        Assert.True(data.GetProperty("limits").GetProperty("directComplete").GetBoolean());
+        Assert.False(data.GetProperty("limits").GetProperty("recursiveComplete").GetBoolean());
+        AssertSchema("character/dnd2024.query.inventory-container.json", data.GetRawText());
+    }
+
+    [Fact]
+    public async Task Inventory_wallet_reports_its_own_depth_completeness()
+    {
+        var boundary = new ContainedProjection("inventory.deep", "Deep coins", "contents", null, null);
+        var levelThree = new ContainedProjection("inventory.three", "Three", "contents", null, [boundary]);
+        var levelTwo = new ContainedProjection("inventory.two", "Two", "contents", null, [levelThree]);
+        var levelOne = new ContainedProjection("inventory.one", "One", "inventory", null, [levelTwo]);
+        var subject = Entity("actor.aric", "Aric", new()) with { Contains = [levelOne] };
+        var projection = new MechanicProjection
+        {
+            Input = "{}",
+            Roles = { ["subject"] = subject },
             Children =
             {
                 ["currency"] = [Child("dnd2024.mechanic.currency-value.read", "root", subject.Id,
@@ -751,16 +784,12 @@ public sealed class Dnd2024ApplicationReadViewTests
             }
         };
 
-        using var output = await Run("data/dnd2024.mechanic.inventory-container.project", projection);
+        using var output = await Run("data/dnd2024.mechanic.inventory-wallet.project", projection);
         var data = output.RootElement;
-        var items = data.GetProperty("items").EnumerateArray().ToArray();
         Assert.Equal("partial", data.GetProperty("state").GetString());
-        Assert.Equal("inventory.backpack", items[1].GetProperty("parentItemId").GetString());
-        Assert.Equal("unclassified", items[2].GetProperty("classification").GetString());
-        Assert.Equal(JsonValueKind.Null, items[2].GetProperty("definition").ValueKind);
-        Assert.Contains("unclassified-content", data.GetProperty("reasons").EnumerateArray().Select(value => value.GetString()));
+        Assert.False(data.GetProperty("limits").GetProperty("complete").GetBoolean());
         Assert.Equal(300, data.GetProperty("wallet").GetProperty("copperValue").GetInt32());
-        AssertSchema("character/dnd2024.query.inventory-container.json", data.GetRawText());
+        AssertSchema("character/dnd2024.query.inventory-wallet.json", data.GetRawText());
     }
 
     [Fact]

@@ -11,6 +11,7 @@ import {
   type CampaignContextUpdate,
   type CampaignDetailsObjectRequest,
   type CharacterResourceRequest,
+  type InventoryContainerResourceRequest,
   type CurrentViewRequest,
   type CurrentViewUpdate,
   type FactionObjectRequest,
@@ -20,7 +21,7 @@ import {
   type WorldInformationUpdate,
 } from "../data/object-resources";
 import { resolveHubSurface } from "../data/hub-availability.js";
-import type { CampaignReadModel, CanonicalCharacterResult, CharacterSheetResult, ConnectedCampaignDetails, ConnectedCampaignEnvelope, DeferredHubSection, DeferredHubUpdate, HubEnvelope, InventoryContainerResult, Perspective, ReadyHubEnvelope, RuleReadModel } from "../data/hub-types";
+import type { CampaignReadModel, CanonicalCharacterResult, CharacterSheetResult, ConnectedCampaignDetails, ConnectedCampaignEnvelope, DeferredHubSection, DeferredHubUpdate, HubEnvelope, InventoryContainerPageResult, InventoryContainerResult, Perspective, ReadyHubEnvelope, RuleReadModel } from "../data/hub-types";
 import { ViewReadError } from "../data/view-read-client";
 import type { ResourceInvalidationReason } from "../data/resource-store";
 import { loadInitialHub } from "../data/hub-preferences";
@@ -165,6 +166,7 @@ const characterResources = new CharacterResourceOwner({
   readSheet: readCharacterSheetResource,
   readDetails: readCharacterDetailsResource,
   readInventory: readCharacterInventoryResource,
+  readInventoryContainer: readInventoryContainerResource,
 });
 
 const worldResources = new WorldResourceOwner({
@@ -218,6 +220,15 @@ async function readCharacterInventoryResource(request: CharacterResourceRequest,
   return await readCanonicalInventory(characterReadRequest(request, signal)) as InventoryContainerResult;
 }
 
+async function readInventoryContainerResource(request: InventoryContainerResourceRequest, signal: AbortSignal) {
+  authorizedCharacter(request);
+  const { readCanonicalInventoryPage } = await import("../server/game-server-context.js");
+  if (signal.aborted) throw new DOMException("Inventory container replaced", "AbortError");
+  return await readCanonicalInventoryPage({
+    ...characterReadRequest(request, signal), scopeId: request.containerId,
+  }) as InventoryContainerPageResult;
+}
+
 async function loadCharacterSheet(envelope: ReadyHubEnvelope, actorId: string, signal: AbortSignal) {
   return characterResources.loadSheet({ envelope, actorId }, signal);
 }
@@ -228,6 +239,11 @@ async function loadCharacterDetails(envelope: ReadyHubEnvelope, actorId: string,
 
 async function loadCharacterInventory(envelope: ReadyHubEnvelope, actorId: string, signal: AbortSignal) {
   return characterResources.loadInventory({ envelope, actorId }, signal);
+}
+
+async function loadInventoryContainer(envelope: ReadyHubEnvelope, actorId: string,
+  containerId: string, signal: AbortSignal) {
+  return characterResources.loadInventoryContainer({ envelope, actorId, containerId }, signal);
 }
 
 async function readFactionObjectPage(
@@ -517,6 +533,7 @@ try {
             loadCharacterSheet={loadCharacterSheet}
             loadCharacterDetails={loadCharacterDetails}
             loadCharacterInventory={loadCharacterInventory}
+            loadInventoryContainer={loadInventoryContainer}
             loadFactionPage={loadFactionPage}
             loadCampaignDetails={loadCampaignDetails}
             loadDeferredSection={loadDeferredSection}

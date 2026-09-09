@@ -4,12 +4,13 @@ import React, { act, useEffect, useState } from "react";
 import { JSDOM } from "jsdom";
 import { ItemWorkspace } from "../../src/components/items/ItemWorkspace";
 import { DndInformationHub } from "../../src/components/DndInformationHub";
-import { ITEM_ROUTE_EVENT, itemRouteHash, navigateItemRoute, parseItemRoute, readInventoryReturn, type InventoryRoute } from "../../src/data/item-view-route";
+import { InventoryTree, mergeInventoryContainerItems } from "../../src/components/character/InventoryTree";
+import { ITEM_ROUTE_EVENT, itemRouteHash, navigateItemRoute, parseItemRoute, readInventoryReturn, readItemReturn, type InventoryRoute } from "../../src/data/item-view-route";
 import { hubRouteHash, parseHubRoute } from "../../src/data/hub-route";
 import { hubSource } from "../support/hub-source.js";
 import { projectHubEnvelope } from "../support/hub-envelope.js";
 import { resolveAudience } from "../support/audience-policy.js";
-import type { PartyMemberReadModel, ReadyHubEnvelope } from "../../src/data/hub-types";
+import type { InventoryContainerItem, InventoryContainerPageItem, PartyMemberReadModel, ReadyHubEnvelope } from "../../src/data/hub-types";
 
 const inventory: InventoryRoute = { kind: "inventory", characterId: "actor.second", campaignId: "campaign.test", perspective: "player" };
 function member(id: string): PartyMemberReadModel {
@@ -21,6 +22,12 @@ function member(id: string): PartyMemberReadModel {
     inventory: { contentsDepth: 4, mayOmitDeeperContents: true, items: [
       { id: "item.bag", name: "Bag", definition: { id: "definition.bag", label: "Bag" }, quantity: 1, slot: "carried", parentItemId: null, order: 0, depth: 1, childCount: 1, deeperContentsOmitted: false, equipmentSlots: [] },
       { id: "item.secret", name: "PRIVATE INVENTORY NAME", definition: { id: "definition.item", label: "PRIVATE DEFINITION" }, quantity: 2, slot: "contents", parentItemId: "item.bag", order: 0, depth: 2, childCount: 0, deeperContentsOmitted: false, equipmentSlots: [] },
+      ...Array.from({ length: 8 }, (_, index) => ({
+        id: `item.filler-${index}`, name: `Trail supply ${index + 1}`,
+        definition: { id: `definition.filler-${index}`, label: `Trail supply ${index + 1}` },
+        quantity: 1, slot: "carried", parentItemId: null, order: index + 1, depth: 1,
+        childCount: 0, deeperContentsOmitted: false, equipmentSlots: [],
+      })),
     ] },
     wallet: { coinCount: 0, copperValue: 0, gpCount: 0, denominations: [] },
   } as PartyMemberReadModel["characterSheet"];
@@ -69,6 +76,62 @@ test("item fragment bounds, tab fallback and return context never accept binding
   assert.equal(parseItemRoute(itemRouteHash(route).replace("item%3Aa.b-1", "%3Cscript%3E")).kind, "invalid");
   assert.equal(parseItemRoute("#information-content").kind, "none");
   assert.equal(readInventoryReturn({ itemInventoryReturn: { characterId: "actor.other" } }, inventory.characterId), null);
+  const inventoryReturn = { kind: "inventory" as const, characterId: inventory.characterId,
+    expandedIds: ["item.bag"], query: "private", focusItemId: "item.secret", scrollY: 487 };
+  assert.deepEqual(readInventoryReturn({ itemReturnContext: inventoryReturn }, inventory.characterId), inventoryReturn);
+  const registryReturn = { kind: "registry" as const, section: "items" as const,
+    query: "knife", focusEntryId: "definition.knife", scrollY: 218 };
+  assert.deepEqual(readItemReturn({ itemReturnContext: registryReturn }), registryReturn);
+});
+
+test("scoped inventory pages reach exactly 512 items and reject repeats or cycles", () => {
+  const root: InventoryContainerItem = {
+    id: "item.root", name: "Root", definition: { id: "definition.root", label: "Root" },
+    quantity: 1, slot: "carried", order: 0, equipmentSlots: [], classification: "item",
+    parentItemId: null, depth: 1, childCount: null, deeperContentsOmitted: true,
+  };
+  const page = (prefix: string, count: number): InventoryContainerPageItem[] => Array.from({ length: count }, (_, index) => ({
+    id: `item.${prefix}-${index}`, name: `${prefix} ${index}`, definition: index === count - 1 ? null
+      : { id: `definition.${prefix}-${index}`, label: `${prefix} ${index}` },
+    quantity: index, slot: "contents", order: index, equipmentSlots: [],
+    classification: index === count - 1 ? "unclassified" : "item",
+  }));
+  let loaded = mergeInventoryContainerItems([root], root.id, page("a", 200));
+  loaded = mergeInventoryContainerItems(loaded, "item.a-0", page("b", 200));
+  loaded = mergeInventoryContainerItems(loaded, "item.b-0", page("c", 111));
+  assert.equal(loaded.length, 512);
+  assert.equal(loaded.at(-1)?.classification, "unclassified", "unknown definitions remain explicit");
+  assert.throws(() => mergeInventoryContainerItems(loaded, "item.c-0", page("overflow", 1)), /512-item display bound/u);
+  assert.throws(() => mergeInventoryContainerItems([root], root.id, [{ ...page("cycle", 1)[0]!, id: root.id }]), /repeats/u);
+});
+
+test("an empty scoped container loads once and unknown records remain honest clickable rows", async () => {
+  const unknown: InventoryContainerItem = {
+    id: "item.unknown", name: "Unknown record", definition: null, quantity: null, slot: "carried",
+    order: 0, equipmentSlots: [], classification: "unclassified", parentItemId: null, depth: 1,
+    childCount: null, deeperContentsOmitted: true,
+  };
+  let reads = 0;
+  const mounted = await mount("", <InventoryTree items={[unknown]} onOpenItem={() => {}}
+    loadContainer={async (_id) => {
+      reads += 1;
+      return { status: "ready", failureCategory: null, diagnosticId: "empty-container", data: {
+        version: 2, container: { id: unknown.id, label: unknown.name }, state: "ready", reasons: [], items: [],
+        limits: { contentsDepth: 1, itemCount: 200, directComplete: true, recursiveComplete: false },
+        projection: { stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
+          resultFingerprint: "3".repeat(64), sourceRevisionFingerprint: "4".repeat(64) },
+      } };
+    }} />);
+  try {
+    assert.match(mounted.container.textContent ?? "", /Unknown item record|View details/);
+    const disclosure = mounted.container.querySelector<HTMLButtonElement>(".character-inventory__disclosure")!;
+    await perform(() => disclosure.click());
+    assert.match(mounted.container.textContent ?? "", /This container is empty\./);
+    assert.equal(reads, 1);
+    await perform(() => disclosure.click());
+    await perform(() => disclosure.click());
+    assert.equal(reads, 1, "an empty loaded page is cached when its disclosure is reopened");
+  } finally { await mounted.cleanup(); }
 });
 
 test("Campaign and Party routes are closed, addressable fragments", () => {
@@ -110,22 +173,30 @@ test("opening image/name is independent of disclosure; Back and Forward restore 
   try {
     const { container } = mounted;
     assert.equal(container.querySelector('[aria-current="true"] strong')?.textContent, "actor.second");
-    const bag = container.querySelector("details")!;
-    await perform(() => { bag.open = true; bag.dispatchEvent(new window.Event("toggle")); });
-    assert.equal(bag.querySelector("summary button, summary a"), null);
+    const bag = container.querySelector<HTMLButtonElement>('.character-inventory__disclosure[aria-controls="inventory-contents-item-bag"]')!;
+    assert.ok(bag);
+    await perform(() => bag.click());
+    assert.equal(bag.getAttribute("aria-expanded"), "true");
+    const search = container.querySelector<HTMLInputElement>('input[placeholder="Search loaded inventory…"]')!;
+    await perform(() => {
+      Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")!.set!.call(search, "private");
+      search.dispatchEvent(new window.Event("input", { bubbles: true }));
+    });
     window.scrollTo(0, 487);
     const trigger = container.querySelector<HTMLButtonElement>('[data-item-open="item.secret"]')!;
     trigger.focus();
     await perform(() => trigger.querySelector<HTMLElement>(".character-inventory__item-media")!.click());
     assert.equal(parseItemRoute(window.location.hash).kind, "item");
-    assert.equal(document.activeElement?.id, "main-view-heading");
-    assert.doesNotMatch(container.textContent!, /PRIVATE INVENTORY NAME|PRIVATE DEFINITION|actor.second/);
+    assert.equal(document.activeElement?.id, "item-view-heading");
+    assert.match(container.querySelector(".item-page__breadcrumbs")?.textContent ?? "", /Partyactor.secondInventory/);
+    assert.doesNotMatch(container.querySelector(".item-page")?.textContent ?? "", /PRIVATE INVENTORY NAME|PRIVATE DEFINITION/);
     assert.equal(window.location.pathname, "/published/release"); assert.equal(window.location.search, "?keep=yes");
     await perform(() => button(container, "Known recipes").click());
     assert.match(container.textContent!, /Known recipes unavailable/);
-    await perform(() => button(container, "Back to inventory").click());
+    await perform(() => container.querySelector<HTMLButtonElement>(".item-page__breadcrumbs li:nth-child(3) button")!.click());
     assert.equal(parseItemRoute(window.location.hash).kind, "inventory");
-    assert.equal(container.querySelector("details")?.open, true);
+    assert.equal(container.querySelector('[aria-controls="inventory-contents-item-bag"]')?.getAttribute("aria-expanded"), "true");
+    assert.equal(container.querySelector<HTMLInputElement>('input[placeholder="Search loaded inventory…"]')?.value, "private");
     assert.equal((document.activeElement as HTMLElement).dataset.itemOpen, "item.secret");
     assert.equal(window.scrollY, 487);
     await perform(() => window.history.forward());
@@ -135,7 +206,7 @@ test("opening image/name is independent of disclosure; Back and Forward restore 
     assert.equal(document.activeElement?.id, "item-tab-uses");
     assert.match(container.textContent!, /Known uses unavailable/);
     await perform(() => document.activeElement!.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
-    assert.equal(container.querySelector("details")?.open, true);
+    assert.equal(container.querySelector('[aria-controls="inventory-contents-item-bag"]')?.getAttribute("aria-expanded"), "true");
     assert.deepEqual(party, before);
   } finally { await mounted.cleanup(); }
 });
@@ -147,9 +218,10 @@ test("reload and unauthorized or malformed deep links expose no item header or c
     const mounted = await mount(hash);
     try {
       assert.equal(mounted.container.querySelectorAll('[role="tab"]').length, 3);
-      assert.doesNotMatch(mounted.container.textContent!, /PRIVATE|actor.first|actor.second|No recipes known/);
+      assert.doesNotMatch(mounted.container.textContent!, /PRIVATE|No recipes known/);
       assert.equal(mounted.container.querySelector("img"), null);
-      await perform(() => button(mounted.container, "Back to inventory").click());
+      const back = mounted.container.querySelector<HTMLButtonElement>(".item-page__breadcrumbs li:nth-last-child(2) button")!;
+      await perform(() => back.click());
       assert.equal(parseItemRoute(window.location.hash).kind === "item", false);
     } finally { await mounted.cleanup(); }
   }

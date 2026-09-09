@@ -1,0 +1,70 @@
+{
+  "id": "dnd2024.query.inventory-wallet",
+  "category": "dnd2024.presentation.inventory.wallet",
+  "name": "D&D 2024 bounded inventory wallet",
+  "description": "Returns physical currency totals independently from inventory browsing and states whether the recursive calculation is complete.",
+  "matches": ["show carried wallet totals"],
+  "roles": { "subject": "The exact audience-authorized character entity." },
+  "executor": "mechanic-projection",
+  "projection": {
+    "qualifiedId": "dnd2024.mechanic.inventory-wallet.project",
+    "version": 1,
+    "contentHash": "0B57FD90D6D75DD118724C58A74D8F48E16C949E97AE9C62D460FEF7A05CE538",
+    "outputSchemaHash": "7D4DF6E9291C24915D53AE7C3072D0FC61A095508247F086FCF71B5A56BCE96B"
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["version", "owner", "state", "reasons", "wallet", "limits"],
+    "properties": {
+      "version": { "const": 1 },
+      "owner": { "$ref": "#/$defs/named" },
+      "state": { "enum": ["ready", "partial"] },
+      "reasons": { "type": "array", "maxItems": 1, "uniqueItems": true, "items": { "const": "depth-limit" } },
+      "wallet": { "$ref": "#/$defs/wallet" },
+      "limits": {
+        "type": "object", "additionalProperties": false, "required": ["contentsDepth", "complete"],
+        "properties": { "contentsDepth": { "const": 4 }, "complete": { "type": "boolean" } }
+      }
+    },
+    "allOf": [
+      { "if": { "properties": { "state": { "const": "ready" } } }, "then": { "properties": { "reasons": { "maxItems": 0 }, "limits": { "properties": { "complete": { "const": true } } } } } },
+      { "if": { "properties": { "state": { "const": "partial" } } }, "then": { "properties": { "reasons": { "minItems": 1 }, "limits": { "properties": { "complete": { "const": false } } } } } }
+    ],
+    "$defs": {
+      "id": { "type": "string", "minLength": 1, "maxLength": 200 },
+      "text": { "type": "string", "minLength": 1, "maxLength": 400 },
+      "nonnegative": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+      "named": {
+        "type": "object", "additionalProperties": false, "required": ["id", "label"],
+        "properties": { "id": { "$ref": "#/$defs/id" }, "label": { "$ref": "#/$defs/text" } }
+      },
+      "wallet": {
+        "type": "object", "additionalProperties": false,
+        "required": ["coinCount", "copperValue", "gpCount", "denominations"],
+        "properties": {
+          "coinCount": { "$ref": "#/$defs/nonnegative" },
+          "copperValue": { "$ref": "#/$defs/nonnegative" },
+          "gpCount": { "$ref": "#/$defs/nonnegative" },
+          "denominations": {
+            "type": "array", "maxItems": 5,
+            "items": {
+              "type": "object", "additionalProperties": false,
+              "required": ["denomination", "code", "count", "copperValuePerCoin", "totalCopperValue"],
+              "properties": {
+                "denomination": { "$ref": "#/$defs/named" },
+                "code": { "enum": ["cp", "sp", "ep", "gp", "pp"] },
+                "count": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 },
+                "copperValuePerCoin": { "enum": [1, 10, 50, 100, 1000] },
+                "totalCopperValue": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "exposure": "binding-only",
+  "status": "active"
+}

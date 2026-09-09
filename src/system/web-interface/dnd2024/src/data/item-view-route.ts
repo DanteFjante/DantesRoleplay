@@ -5,8 +5,12 @@ export type InventoryRoute = { kind: "inventory"; characterId: string; campaignI
 export type ItemRoute = Omit<InventoryRoute, "kind"> & { kind: "item"; itemId: string; tab: ItemTab };
 export type ItemNavigationRoute = ItemRoute | InventoryRoute | { kind: "invalid" } | { kind: "none" };
 export type InventoryReturnContext = {
-  characterId: string; expandedIds: string[]; focusItemId: string; scrollY: number;
+  kind: "inventory"; characterId: string; expandedIds: string[]; query: string; focusItemId: string; scrollY: number;
 };
+export type RegistryReturnContext = {
+  kind: "registry"; section: "items" | "recipes"; query: string; focusEntryId: string; scrollY: number;
+};
+export type ItemReturnContext = InventoryReturnContext | RegistryReturnContext;
 export const ITEM_ROUTE_EVENT = "dnd2024-item-navigation";
 const validId = (value: unknown): value is string => typeof value === "string" && /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,199}$/.test(value);
 
@@ -36,18 +40,34 @@ export function itemRouteHash(route: ItemRoute | InventoryRoute): string {
 }
 
 export function readInventoryReturn(value: unknown, characterId: string): InventoryReturnContext | null {
-  const context = (value as { itemInventoryReturn?: InventoryReturnContext } | null)?.itemInventoryReturn;
-  if (!context || context.characterId !== characterId || !validId(context.characterId) || !validId(context.focusItemId) ||
+  const raw = (value as { itemReturnContext?: ItemReturnContext; itemInventoryReturn?: Partial<InventoryReturnContext> } | null);
+  const context = raw?.itemReturnContext ?? raw?.itemInventoryReturn;
+  if (!context || (context.kind !== undefined && context.kind !== "inventory") ||
+      context.characterId !== characterId || !validId(context.characterId) || !validId(context.focusItemId) ||
       !Array.isArray(context.expandedIds) || context.expandedIds.length > 512 || !context.expandedIds.every(validId) ||
+      !(context.query === undefined || typeof context.query === "string" && context.query.length <= 80) ||
+      !Number.isFinite(context.scrollY) || context.scrollY! < 0 || context.scrollY! > 10_000_000) return null;
+  return { kind: "inventory", characterId: context.characterId, expandedIds: context.expandedIds,
+    query: context.query ?? "", focusItemId: context.focusItemId, scrollY: context.scrollY! };
+}
+
+export function readItemReturn(value: unknown): ItemReturnContext | null {
+  const context = (value as { itemReturnContext?: ItemReturnContext } | null)?.itemReturnContext;
+  if (!context) return null;
+  if (context.kind === "inventory") return readInventoryReturn(value, context.characterId);
+  if (context.kind !== "registry" || !["items", "recipes"].includes(context.section) ||
+      typeof context.query !== "string" || context.query.length > 80 || !validId(context.focusEntryId) ||
       !Number.isFinite(context.scrollY) || context.scrollY < 0 || context.scrollY > 10_000_000) return null;
   return context;
 }
 
-export function navigateItemRoute(route: ItemRoute | InventoryRoute | null, replace = false, returnContext?: InventoryReturnContext | null, mainTab: MainTabId = "party") {
+export function navigateItemRoute(route: ItemRoute | InventoryRoute | null, replace = false, returnContext?: ItemReturnContext | null, mainTab: MainTabId = "party") {
   const url = `${window.location.pathname}${window.location.search}${route ? itemRouteHash(route) : ""}`;
   const origin = route?.kind === "item" ? replace ? window.history.state?.itemInventoryOrigin
     : window.location.hash === itemRouteHash({ ...route, kind: "inventory" }) ? window.location.hash : null : null;
-  const state = { ...window.history.state, itemInventoryReturn: returnContext ?? null, itemInventoryOrigin: origin, itemMainTab: mainTab };
+  const state = { ...window.history.state, itemReturnContext: returnContext ?? null,
+    itemInventoryReturn: returnContext?.kind === "inventory" ? returnContext : null,
+    itemInventoryOrigin: origin, itemMainTab: mainTab };
   window.history[replace ? "replaceState" : "pushState"](state, "", url);
   window.dispatchEvent(new Event(ITEM_ROUTE_EVENT));
 }
