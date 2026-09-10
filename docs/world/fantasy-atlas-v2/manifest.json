@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "generatedAtUtc": "2026-09-09T22:46:13.407914+00:00",
   "generator": "Codex built-in image generation",
-  "registeredMapCount": 54,
+  "registeredMapCount": 60,
   "worldCounts": {
     "caldris": 48,
     "thalorien": 12
@@ -10,9 +10,9 @@
   "totalImageBytes": 195349361,
   "newlyGeneratedImages": 59,
   "reusedApprovedExamples": 1,
-  "status": "artwork-review",
-  "runtimeApplied": false,
-  "geography": "Existing maps guide layout and names. Fine painted terrain and architecture are illustrative. Exact interactive-marker alignment requires review before live replacement.",
+  "status": "runtime-installed",
+  "runtimeApplied": true,
+  "geography": "The new artwork is attached to the existing map-owning entities. Existing map anchors and containment are retained. Painted terrain is illustrative; the 40 proposed local place descriptions remain atlas notes, not new ECS records.",
   "assets": [
     {
       "entityId": "location.caldris.alderwick",
@@ -1228,5 +1228,12 @@
   "mapCount": 60,
   "newlyIllustratedMapCount": 6,
   "expandedAtUtc": "2026-09-10T05:44:34.256606+00:00",
-  "proposedLocalPlaceCount": 40
+  "proposedLocalPlaceCount": 40,
+  "initialRegisteredMapCount": 54,
+  "runtimeAppliedAtUtc": "2026-09-10T06:14:20.518104+00:00",
+  "runtimeStateSpaceId": "dnd2024-main",
+  "runtimeVerification": {
+    "servedImageHashesMatched": 60,
+    "existingLocationStateAndHierarchyPreserved": true
+  }
 }

@@ -11,15 +11,16 @@ The precise capture timestamp and source snapshot hash are in `manifest.json`.
 
 ## Contents
 
-- All 150 tables and 205,242 rows, including deleted records, retained versions,
-  SQLite statistics/sequences and full-text-search storage.
+- Every table and row, including deleted records, retained versions, SQLite
+  statistics/sequences and full-text-search storage; exact counts are in the manifest.
 - The exact schema, including 338 indexes and 513 triggers.
-- Current ECS data: 2,879 entity rows, 5,254 component rows and 5,300 relationship
-  rows across all eight state spaces. These counts include retained/deleted rows.
+- Current ECS entities, components, containment and relationships across all state
+  spaces, including retained/deleted rows.
 - Application registrations, sources, activation history and state-space bindings.
-- All 5,803 operations, 1,210 events, stored conversations and other runtime records.
+- All operations, events, stored conversations and other runtime records.
 - Three stored websites, 71 page revisions, all 687 asset rows and 234 deduplicated asset contents.
-- All 91 external blob files, with their original paths and exact bytes.
+- All external blob files, with their original paths and exact bytes, including
+  the 60 installed fantasy atlas images.
 - The earlier 6 September catalog comparison under `catalog/`. It is historical
   comparison material; the current database is captured by `tables/` and `schema.json`.
   The repository's authored `catalog/` remains separate and includes the newer
@@ -29,7 +30,11 @@ All persisted tables are captured by schema discovery, including generic ECS
 objects, components, relationships and feature-specific storage. This capture
 includes the applied database migrations, D&D activation revision 52, the upgraded main state-space binding, the 12 newer component registrations,
 the two unchanged item quantities upgraded to schema version 2, and website
-revision 53 with the corrected map navigation and compact controls. The export retains the database's actual migration history. New
+revision 53 with the corrected map navigation and compact controls. The 60 fantasy
+atlas images are now installed through reviewed world-state synchronization, including
+the first map attachments for Goatminster, Whitewindow, Copperdeep, Kestrelwatch,
+Merebutton and the Gilded Kettle. Existing location state, marker coordinates and
+containment remain unchanged. The export retains the database's actual migration history. New
 migrations and authored feature files in the repository are not silently applied to the source database during export.
 
 `tables/*.jsonl` stores ordered rows as arrays. Column names, SELECT order, row

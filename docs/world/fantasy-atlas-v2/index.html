@@ -19,7 +19,7 @@ button,input,select{font:inherit}button,a,summary,input{touch-action:manipulatio
 </head>
 <body>
 <a class="skip-link" href="#viewer">Skip to map</a>
-<header><p class="eyebrow">Caldris &amp; Thalorien</p><h1>Fantasy atlas</h1><p id="atlas-intro">Artwork review. These illustrations are available here; they have not been installed in the game.</p><button class="new-maps-link" id="show-new-maps" hidden>Explore the new maps</button></header>
+<header><p class="eyebrow">Caldris &amp; Thalorien</p><h1>Fantasy atlas</h1><p id="atlas-intro">These map illustrations are installed in the game.</p><button class="new-maps-link" id="show-new-maps" hidden>Explore the new maps</button> <a class="open-link" href="http://localhost:6217/ui/dnd2024-play#view?tab=world&amp;section=map">Open maps in the game ↗</a></header>
 <main class="shell">
 <details class="library" open><summary id="library-heading">Browse all maps</summary><div class="library-inner"><label class="search-label" for="map-search">Find a map</label><input class="search" id="map-search" type="search" placeholder="Name or world…" autocomplete="off"><nav class="map-list" id="map-list" aria-label="Maps by world"></nav><p class="no-matches" id="no-matches" hidden>No maps match your search.</p></div></details>
 <section class="viewer" id="viewer" aria-labelledby="map-title" tabindex="-1">
@@ -120,7 +120,7 @@ $('next').addEventListener('click',()=>{const index=maps.findIndex(m=>m.index===
 $('retry').addEventListener('click',renderImage);
 const additions=maps.filter(m=>m.isNew);
 $('library-heading').textContent='Browse the '+maps.length+' maps';
-$('atlas-intro').textContent=maps.length+' fantasy maps'+(additions.length?' · '+additions.length+' new closer views':'')+'. These illustrations are available here; they have not been installed in the game.';
+$('atlas-intro').textContent=maps.length+' fantasy maps'+(additions.length?' · '+additions.length+' new closer views':'')+'. These map illustrations are installed in the game.';
 $('show-new-maps').hidden=additions.length===0;
 $('show-new-maps').textContent='Explore '+additions.length+' new maps';
 $('show-new-maps').addEventListener('click',()=>{$('map-search').value='new';renderList();select(additions[0].index);document.querySelector('.library').open=true;$('map-title').scrollIntoView({block:'start',behavior:'instant'})});
