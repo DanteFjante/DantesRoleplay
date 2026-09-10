@@ -9,8 +9,8 @@
   "projection": {
     "qualifiedId": "dnd2024.mechanic.inventory-container-page.project",
     "version": 1,
-    "contentHash": "C0A41974F91FF665F769098455EFE37444FC47850F0712005FBFB37321C9B681",
-    "outputSchemaHash": "5B8B70D02F040197B44C7957118639DE33C9F0B7E7D288729AC4D39A6BCCC086"
+    "contentHash": "8520DDC6972635D4B7B6ACFCDB4695F46F765D6D361F827B31C9E84FF10A1729",
+    "outputSchemaHash": "47C75C610B22D02B7518A9E3317E9712B344C1D58394363B75C9C6DEAB52426D"
   },
   "outputSchema": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -49,7 +49,7 @@
       "item": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "name", "definition", "quantity", "slot", "order", "equipmentSlots", "classification"],
+        "required": ["id", "name", "definition", "quantity", "slot", "order", "equipmentSlots", "classification", "isContainer"],
         "properties": {
           "id": { "$ref": "#/$defs/id" },
           "name": { "$ref": "#/$defs/text" },
@@ -58,7 +58,8 @@
           "slot": { "type": "string", "maxLength": 200 },
           "order": { "type": "integer", "minimum": 0, "maximum": 199 },
           "equipmentSlots": { "type": "array", "maxItems": 32, "items": { "$ref": "#/$defs/named" } },
-          "classification": { "enum": ["item", "unclassified"] }
+          "classification": { "enum": ["item", "unclassified"] },
+          "isContainer": { "type": "boolean" }
         }
       }
     }

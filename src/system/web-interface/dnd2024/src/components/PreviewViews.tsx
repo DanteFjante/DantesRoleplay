@@ -268,7 +268,7 @@ export function CurrentViewPreview({
     <div className="supporting-view current-scene-view">
       <ViewIntro
         copy={location.description}
-        eyebrow={`${location.region} · Exploration`}
+        eyebrow={location.region === location.name ? "Exploration" : `${location.region} · Exploration`}
         title={location.name}
       />
       <section className={`current-scene-card${image ? "" : " current-scene-card--text-only"}`}>
@@ -276,9 +276,6 @@ export function CurrentViewPreview({
           <MediaImage fallback={<Icon name="Compass" size={30} />} loading="eager" media={image} />
         </div> : null}
         <div className="current-scene-card__copy">
-          <span className="eyebrow">{location.region}</span>
-          <h2>{location.name}</h2>
-          <p>{location.description}</p>
           <div className="current-scene-card__facts" aria-label="Scene facts">
             <span><Icon name="MapPin" size={15} /> {location.kind} · {location.status}</span>
             <span><Icon name="UsersRound" size={15} /> {location.people.length} {location.people.length === 1 ? "person" : "people"} here</span>

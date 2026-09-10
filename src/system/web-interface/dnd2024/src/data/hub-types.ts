@@ -505,6 +505,7 @@ export type InventoryContainerPageItem = Omit<CharacterInventoryItemV2,
   definition: NamedCharacterReference | null;
   quantity: number | null;
   classification: "item" | "unclassified";
+  isContainer: boolean;
 };
 
 export type InventoryContainerItem = InventoryContainerPageItem & {

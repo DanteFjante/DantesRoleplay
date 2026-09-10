@@ -314,7 +314,7 @@ function inventoryContainerData(actorId) {
     items: [
       {
         id: "inventory.backpack", name: "Backpack", definition: { id: "item.backpack", label: "Backpack" },
-        quantity: 1, slot: "carried", order: 0, equipmentSlots: [], classification: "item",
+        quantity: 1, slot: "carried", order: 0, equipmentSlots: [], classification: "item", isContainer: true,
       },
     ],
     limits: { contentsDepth: 1, itemCount: 200, directComplete: true, recursiveComplete: false },

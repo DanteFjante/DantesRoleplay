@@ -7281,3 +7281,6 @@
 [7281,4224,1,"dnd2024-core",1,0,"catalog/applications/dnd2024/queries/world/dnd2024.query.world-location-scope.json","application/json","1D80E63AB8ED8A6FFE0168DDED7F3C42718D2B1CFB9116D8AE2F7057F98E5AE5",3882,1]
 [7282,4225,1,"dnd2024-core",1,0,"catalog/applications/dnd2024/queries/world/dnd2024.query.world-people-holdings-page.json","application/json","B0EB362721CCA2089D3A0A472F12C6B7ECC857ACD3CC424B5F115C7A892C91E1",5771,1]
 [7283,4226,1,"dnd2024-core",1,0,"catalog/applications/dnd2024/queries/world/dnd2024.query.world-people-holdings.json","application/json","1527A2BD2CC66BBC700DE9C49C6BD8CAAE5F3C28B38EDC31CEC48CC723242D66",4682,1]
+[7284,4184,2,"dnd2024-core",1,0,"catalog/applications/dnd2024/mechanics/data/dnd2024.mechanic.inventory-container-page.project.js","application/octet-stream","6FA6FA1EB05F2AA87FA3359706DF0BF9361777B67532AC5749B1607C6C942DEC",4847,1]
+[7285,4185,2,"dnd2024-core",1,0,"catalog/applications/dnd2024/mechanics/data/dnd2024.mechanic.inventory-container-page.project.md","text/markdown","08198184DE95BEB8057510C5800146BE636144914CF2253B4066DA5D9CABEEE0",1147,1]
+[7286,4220,2,"dnd2024-core",1,0,"catalog/applications/dnd2024/queries/character/dnd2024.query.inventory-container.json","application/json","9EF5CA351B81583BC26524B88946CAC8605426A9FE74F22DE0F3852EF709C7F5",3383,1]

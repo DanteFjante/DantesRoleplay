@@ -12,6 +12,10 @@ import { MediaImage } from "../MediaImage";
 type InventoryTreeItem = CharacterInventoryItemV2 | InventoryContainerItem;
 type ScopeState = "loading" | "ready" | "error";
 
+function hasContentsControl(item: InventoryTreeItem) {
+  return ("isContainer" in item && item.isContainer) || (item.childCount ?? 0) > 0;
+}
+
 function validateGraph(items: InventoryTreeItem[]) {
   const byId = new Map<string, InventoryTreeItem>();
   for (const item of items) {
@@ -45,7 +49,7 @@ export function mergeInventoryContainerItems(
     parentItemId: containerId,
     depth: container.depth + 1,
     childCount: null,
-    deeperContentsOmitted: true,
+    deeperContentsOmitted: item.isContainer,
   }));
   const merged = [...current, ...children];
   validateGraph(merged);
@@ -95,9 +99,9 @@ function InventoryBranch({
   visibleIds: Set<string> | null;
 }) {
   const children = (childrenByParent.get(item.id) ?? []).filter((child) => !visibleIds || visibleIds.has(child.id));
-  const expanded = queryActive && children.length > 0 || expandedIds.includes(item.id);
+  const canInspectContents = hasContentsControl(item) || children.length > 0;
+  const expanded = canInspectContents && (queryActive && children.length > 0 || expandedIds.includes(item.id));
   const state = scopeStates.get(item.id);
-  const canInspectContents = item.deeperContentsOmitted || item.childCount === null || item.childCount > 0 || children.length > 0;
   const contentsId = `inventory-contents-${item.id.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
   return <div className="character-inventory__node">
     {onOpenItem ? <button type="button" className="character-inventory__open" data-item-open={item.id}
@@ -164,7 +168,7 @@ export function InventoryTree({
   useEffect(() => () => controllers.current.forEach((controller) => controller.abort()), []);
 
   const ensureScope = useCallback((item: InventoryTreeItem) => {
-    if (!loadContainer || scopeStates.has(item.id) || childrenLoaded(loadedItems, item.id)) return;
+    if (!hasContentsControl(item) || !loadContainer || scopeStates.has(item.id) || childrenLoaded(loadedItems, item.id)) return;
     const controller = new AbortController();
     controllers.current.set(item.id, controller);
     setScopeStates((previous) => new Map(previous).set(item.id, "loading"));
@@ -252,7 +256,7 @@ export function InventoryTree({
           type="search" value={query} />
       </label> : null}
     </div>
-    <p className="character-inventory__scope-note">Counts and search cover loaded containers. Open a row’s contents to load the next complete level.</p>
+    {loadedItems.some(hasContentsControl) ? <p className="character-inventory__scope-note">Open containers to see their contents. Search includes the items currently loaded.</p> : null}
     {reasons.includes("unclassified-content") ? <div className="character-state character-state--stale" role="status">
       <Icon name="Clock3" size={18} /><div><strong>Some records are not classified as items</strong>
         <p>They remain visible as unknown records without invented definitions.</p></div>

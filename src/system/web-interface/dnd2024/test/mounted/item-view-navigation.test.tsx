@@ -97,14 +97,14 @@ test("item fragment bounds, tab fallback and return context never accept binding
 test("scoped inventory pages reach exactly 512 items and reject repeats or cycles", () => {
   const root: InventoryContainerItem = {
     id: "item.root", name: "Root", definition: { id: "definition.root", label: "Root" },
-    quantity: 1, slot: "carried", order: 0, equipmentSlots: [], classification: "item",
+    quantity: 1, slot: "carried", order: 0, equipmentSlots: [], classification: "item", isContainer: true,
     parentItemId: null, depth: 1, childCount: null, deeperContentsOmitted: true,
   };
   const page = (prefix: string, count: number): InventoryContainerPageItem[] => Array.from({ length: count }, (_, index) => ({
     id: `item.${prefix}-${index}`, name: `${prefix} ${index}`, definition: index === count - 1 ? null
       : { id: `definition.${prefix}-${index}`, label: `${prefix} ${index}` },
     quantity: index, slot: "contents", order: index, equipmentSlots: [],
-    classification: index === count - 1 ? "unclassified" : "item",
+    classification: index === count - 1 ? "unclassified" : "item", isContainer: index === 0,
   }));
   let loaded = mergeInventoryContainerItems([root], root.id, page("a", 200));
   loaded = mergeInventoryContainerItems(loaded, "item.a-0", page("b", 200));
@@ -118,7 +118,7 @@ test("scoped inventory pages reach exactly 512 items and reject repeats or cycle
 test("an empty scoped container loads once and unknown records remain honest clickable rows", async () => {
   const unknown: InventoryContainerItem = {
     id: "item.unknown", name: "Unknown record", definition: null, quantity: null, slot: "carried",
-    order: 0, equipmentSlots: [], classification: "unclassified", parentItemId: null, depth: 1,
+    order: 0, equipmentSlots: [], classification: "unclassified", isContainer: true, parentItemId: null, depth: 1,
     childCount: null, deeperContentsOmitted: true,
   };
   let reads = 0;
@@ -141,6 +141,25 @@ test("an empty scoped container loads once and unknown records remain honest cli
     await perform(() => disclosure.click());
     await perform(() => disclosure.click());
     assert.equal(reads, 1, "an empty loaded page is cached when its disclosure is reopened");
+  } finally { await mounted.cleanup(); }
+});
+
+test("ordinary items cannot disclose contents, including stale expanded state", async () => {
+  const knife: InventoryContainerItem = {
+    id: "item.knife", name: "Carving knife", definition: { id: "definition.knife", label: "Knife" },
+    quantity: 1, slot: "carried", order: 0, equipmentSlots: [], classification: "item", isContainer: false,
+    parentItemId: null, depth: 1, childCount: null, deeperContentsOmitted: true,
+  };
+  let reads = 0;
+  let opened = "";
+  const mounted = await mount("", <InventoryTree items={[knife]} expandedIds={[knife.id]}
+    onOpenItem={id => { opened = id; }} loadContainer={async () => { reads++; throw new Error("Unexpected contents read"); }} />);
+  try {
+    assert.equal(mounted.container.querySelector(".character-inventory__disclosure"), null);
+    assert.equal(mounted.container.querySelector(".character-inventory__contents"), null);
+    assert.equal(reads, 0);
+    await perform(() => mounted.container.querySelector<HTMLButtonElement>("[data-item-open]")!.click());
+    assert.equal(opened, knife.id);
   } finally { await mounted.cleanup(); }
 });
 

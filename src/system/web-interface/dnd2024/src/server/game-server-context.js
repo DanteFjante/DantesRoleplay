@@ -652,7 +652,8 @@ function validInventoryContainer(value, actorId) {
   const ids = new Set();
   const positions = new Set();
   for (const item of value.items) {
-    if (!hasExactKeys(item, ["id", "name", "definition", "quantity", "slot", "order", "equipmentSlots", "classification"]) ||
+    if (!hasExactKeys(item, ["id", "name", "definition", "quantity", "slot", "order", "equipmentSlots", "classification", "isContainer"]) ||
+        typeof item.isContainer !== "boolean" ||
         !token(item.id) || !text(item.name, 400) ||
         !(item.definition === null || namedCharacterReference(item.definition)) ||
         !(item.quantity === null || boundedInteger(item.quantity, 1)) ||
@@ -1523,7 +1524,7 @@ export async function readCanonicalInventory(request) {
     data: {
       ...page.data,
       items: page.data.items.map((item) => ({
-        ...item, parentItemId: null, depth: 1, childCount: null, deeperContentsOmitted: true,
+        ...item, parentItemId: null, depth: 1, childCount: item.isContainer ? null : 0, deeperContentsOmitted: item.isContainer,
       })),
       wallet: wallet?.wallet ?? null,
       walletState: wallet ? {

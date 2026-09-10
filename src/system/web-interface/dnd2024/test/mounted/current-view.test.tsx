@@ -178,6 +178,10 @@ test("Current scene presentation covers exploration, recorded play, conversation
       situation={scenario.situation} perspective="dm" />);
     try {
       assert.match(mounted.container.textContent ?? "", scenario.expected);
+      if (scenario.situation.status === "ready" && scenario.situation.kind === "exploration") {
+        assert.equal([...mounted.container.querySelectorAll("h1, h2")].filter(node => node.textContent === location.name).length, 1);
+        assert.equal([...mounted.container.querySelectorAll("p")].filter(node => node.textContent === location.description).length, 1);
+      }
       if (scenario.absent) assert.doesNotMatch(mounted.container.textContent ?? "", scenario.absent);
       assert.equal(mounted.container.querySelector("application-conversation"), null);
       assert.equal(mounted.container.querySelector(".current-scene-card__visual img"), null,
