@@ -4,11 +4,11 @@
   "generator": "Codex built-in image generation",
   "registeredMapCount": 54,
   "worldCounts": {
-    "caldris": 42,
+    "caldris": 48,
     "thalorien": 12
   },
-  "totalImageBytes": 174756379,
-  "newlyGeneratedImages": 53,
+  "totalImageBytes": 195349361,
+  "newlyGeneratedImages": 59,
   "reusedApprovedExamples": 1,
   "status": "artwork-review",
   "runtimeApplied": false,
@@ -931,6 +931,302 @@
       "originalSha256": "0b38b4408636a2630606af3fb52daf6bb8926e3bf5e42be9bfee757d9429ecdd",
       "reusedApprovedExample": false,
       "visualReview": "Viewed both. Sacred tree, root/canopy footprint, pale concentric precinct, southern cascade/bridge and flanking rivers retained. No labels/frame introduced. This is the tree's immediate precinct, so its large local footprint is intentional and inherited from original. Moss/teal/limestone treatment clearer."
+    },
+    {
+      "entityId": "location.caldris.lornesse.goatminster",
+      "parentEntityId": "location.caldris.lornesse",
+      "name": "Goatminster",
+      "world": "caldris",
+      "kind": "site",
+      "file": "../caldris/maps/fantasy-atlas-v2/goatminster.png",
+      "sha256": "8f3fbf798d3849bf6032be4557cf9186cb30b8d5a0dae234b3f4af45b76e7fc8",
+      "bytes": 3533814,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": null,
+      "originalSha256": null,
+      "reusedApprovedExample": false,
+      "firstIllustration": true,
+      "canonicalSummary": "High pasture village whose elected goat judge settles grazing disputes beneath a painted canopy. Present pressure: Prize animals vanish and return wearing unfamiliar bells.",
+      "proposedPlaceDetails": [
+        {
+          "name": "Painted Canopy",
+          "description": "A small green-and-ochre shelter over the grazing court, where the elected judge hears neighbours' pasture disputes."
+        },
+        {
+          "name": "Bellwright's Shed",
+          "description": "A repair shed for collars, buckles and herd bells. Its keeper can compare an unfamiliar bell with local patterns."
+        },
+        {
+          "name": "Grazing Common",
+          "description": "Shared high pasture divided by old stone boundaries; grazing turns are discussed in the village court."
+        },
+        {
+          "name": "High Pens",
+          "description": "Sheltered sorting pens where herders check their animals before taking them onto the higher slopes."
+        },
+        {
+          "name": "Cheese Court",
+          "description": "A dairy yard shared by nearby households, with covered worktables and shelves of young cheeses."
+        },
+        {
+          "name": "Packhorse Yard",
+          "description": "A small approach-side yard for unloading salt, grain and repair materials without blocking the village lanes."
+        },
+        {
+          "name": "Lower Spring",
+          "description": "A covered spring and stone trough below the cottages, reached by a maintained footpath."
+        }
+      ],
+      "visualReview": "Visually inspected for readable labels, plausible access, appropriate scale and consistency with the existing public location summary. Layout and local places are proposed working detail."
+    },
+    {
+      "entityId": "location.caldris.lore.whitewindow",
+      "parentEntityId": "location.caldris.lornesse",
+      "name": "Whitewindow",
+      "world": "caldris",
+      "kind": "settlement",
+      "file": "../caldris/maps/fantasy-atlas-v2/whitewindow.png",
+      "sha256": "5c5f64f420523eb5565b791af9fb2582417ea8d2b6f3d84fccc3648071b5a7b1",
+      "bytes": 3509300,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": null,
+      "originalSha256": null,
+      "reusedApprovedExample": false,
+      "firstIllustration": true,
+      "canonicalSummary": "Location: Northern stone hills reached by a branch road from the Chalklands. Livelihood: Metal fittings, stonework, repair contracts, and upland husbandry. Pale mineral seams give the outer cliff the appearance of narrow lit windows. Most trade takes place in a rebuilt guest hall with a very old floor. Interior neighbourhoods are homes, not an invitation to explore ancestral rooms. The hold imports food in good years as well as bad and regards reliable contracts as part of its winter defences.",
+      "proposedPlaceDetails": [
+        {
+          "name": "Guest Hall",
+          "description": "The rebuilt public hall where visiting traders meet residents, using an old stone floor retained through later repairs."
+        },
+        {
+          "name": "Fittings Yard",
+          "description": "An open workshop court for hinges, braces and cart fittings; finished pieces are checked beside the repair benches."
+        },
+        {
+          "name": "Winter Stores",
+          "description": "Raised, ventilated stores for imported grain and preserved food, with space to unload pack animals under cover."
+        },
+        {
+          "name": "Stonecutters' Steps",
+          "description": "A stair route linking the dressed-stone terraces and work yards. Hand-carried loads use the steps while carts follow the switchbacks."
+        },
+        {
+          "name": "Contract Court",
+          "description": "A public meeting court where deliveries and repair work can be inspected before contracts are settled."
+        },
+        {
+          "name": "High Fold",
+          "description": "A sheltered upper grazing enclosure that keeps livestock close during poor weather."
+        },
+        {
+          "name": "Spring Cistern",
+          "description": "A small maintained cistern supplying the outer settlement; its approach is kept clear of stone dust and workshop waste."
+        }
+      ],
+      "visualReview": "Visually inspected for readable labels, plausible access, appropriate scale and consistency with the existing public location summary. Layout and local places are proposed working detail."
+    },
+    {
+      "entityId": "location.caldris.lornesse.copperdeep",
+      "parentEntityId": "location.caldris.lornesse",
+      "name": "Copperdeep",
+      "world": "caldris",
+      "kind": "settlement",
+      "file": "../caldris/maps/fantasy-atlas-v2/copperdeep.png",
+      "sha256": "734f3b861c2164831efdf8df3c070dc097ef3bc82e289b5e176be7842f86d10b",
+      "bytes": 3528598,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": null,
+      "originalSha256": null,
+      "reusedApprovedExample": false,
+      "firstIllustration": true,
+      "canonicalSummary": "Copperdeep descends through terraces around ancient mine mouths, smelters, baths, chapels, and workers' halls. Upper galleries are active; lower levels have been sealed for generations.",
+      "proposedPlaceDetails": [
+        {
+          "name": "Upper Workings",
+          "description": "Timbered upper portals open onto a shared loading terrace where shifts gather and ore carts emerge."
+        },
+        {
+          "name": "Ore Weighbridge",
+          "description": "A roofed tally station and stout weighing platform record each cart before it descends toward the furnaces."
+        },
+        {
+          "name": "Cinder Court",
+          "description": "Smelting sheds surround a practical yard of fuel stacks, cooled slag and room for laden carts."
+        },
+        {
+          "name": "Workers' Hall",
+          "description": "A communal hall offers shift notices, warm meals and space to settle disagreements away from the mine mouths."
+        },
+        {
+          "name": "Washhouse Steps",
+          "description": "Broad worn steps link the terraces to public washing rooms and open stone bathing courts."
+        },
+        {
+          "name": "Lantern Chapel",
+          "description": "A modest chapel beside the lower stairs keeps a sheltered place for miners' observances and families' vigils."
+        },
+        {
+          "name": "Sealed Lower Gates",
+          "description": "Old lower portals remain blocked by masonry and braced timbers, visible from the road but closed to entry."
+        }
+      ],
+      "visualReview": "Visually inspected for readable labels, plausible access, appropriate scale and consistency with the existing public location summary. Layout and local places are proposed working detail."
+    },
+    {
+      "entityId": "location.caldris.lornesse.kestrelwatch",
+      "parentEntityId": "location.caldris.lornesse",
+      "name": "Kestrelwatch",
+      "world": "caldris",
+      "kind": "settlement",
+      "file": "../caldris/maps/fantasy-atlas-v2/kestrelwatch.png",
+      "sha256": "a1e9e19cb7fbcb7fc2e3a3f67177d1a6d8f68ae9b7559097b53f73e94f134e6e",
+      "bytes": 3547768,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": null,
+      "originalSha256": null,
+      "reusedApprovedExample": false,
+      "firstIllustration": true,
+      "canonicalSummary": "This pass city controls caravans, mountain rescue, and the safest eastern crossing. Houses cluster behind snow walls and connect through covered lanes.",
+      "proposedPlaceDetails": [
+        {
+          "name": "West Caravan Yard",
+          "description": "A broad arrival court gives wagons space to unload, turn and wait for news of the crossing."
+        },
+        {
+          "name": "Covered Market",
+          "description": "Connected roofed stalls keep provisions and repair goods within reach of travellers during foul weather."
+        },
+        {
+          "name": "Rescue Hall",
+          "description": "A communal rescue base stores sleds, ropes and dry blankets beside a yard large enough for returning teams."
+        },
+        {
+          "name": "Snowwall Gate",
+          "description": "The eastern city gate opens from the protected streets onto the exposed climbing road."
+        },
+        {
+          "name": "East Road",
+          "description": "A winding wagon route follows the protected bends toward the mountain crossing and its higher weather."
+        },
+        {
+          "name": "Pass Wardens",
+          "description": "A modest gate-side compound handles caravan reports, road warnings and requests for escorts or rescue."
+        },
+        {
+          "name": "Bell Shelter",
+          "description": "A small roofed refuge by the last visible bend offers cover and a bell for signalling toward the gate."
+        }
+      ],
+      "visualReview": "Visually inspected for readable labels, plausible access, appropriate scale and consistency with the existing public location summary. Layout and local places are proposed working detail."
+    },
+    {
+      "entityId": "location.caldris.alderwick.button-hills.merebutton",
+      "parentEntityId": "location.caldris.alderwick.the-button-hills",
+      "name": "Merebutton",
+      "world": "caldris",
+      "kind": "settlement",
+      "file": "../caldris/maps/fantasy-atlas-v2/merebutton.png",
+      "sha256": "a9e019c59b05d7451338450993ba75d18d8687deaba46a698e3e09ec9fc0ae59",
+      "bytes": 3344386,
+      "dimensions": [
+        1448,
+        1086
+      ],
+      "originalFile": null,
+      "originalSha256": null,
+      "reusedApprovedExample": false,
+      "firstIllustration": true,
+      "canonicalSummary": "A muddy Button Hills sheep village of low stone cottages, stubborn families, and children who gather old coat buttons after rain. Years ago, rumours about an uncanny infant brought passing Tensor monks to its lanes.",
+      "proposedPlaceDetails": [
+        {
+          "name": "Raincut Lane",
+          "description": "The village's muddy cart lane; after rain, children search the shallow ruts for ordinary lost coat buttons."
+        },
+        {
+          "name": "Sheepfold Common",
+          "description": "Communal sorting pens where neighbours count and separate their flocks before returning them to the hills."
+        },
+        {
+          "name": "Shared Well",
+          "description": "A modest roofed well at the lane fork, with space to set buckets clear of passing carts."
+        },
+        {
+          "name": "Wool Shed",
+          "description": "A practical shearing and wool-drying shed beside a fenced work yard."
+        },
+        {
+          "name": "Menders' Cottages",
+          "description": "A row of low stone homes with small gardens, washing lines and rooms used for household repairs."
+        },
+        {
+          "name": "East Gate",
+          "description": "An ordinary timber gate from the village lane into the eastern grazing fields."
+        }
+      ],
+      "visualReview": "Visually inspected for readable labels, plausible access, appropriate scale and consistency with the existing public location summary. Layout and local places are proposed working detail."
+    },
+    {
+      "entityId": "location.caldris.gilded-kettle",
+      "parentEntityId": "location.caldris.bramblebridge",
+      "name": "The Gilded Kettle",
+      "world": "caldris",
+      "kind": "interior",
+      "file": "../caldris/maps/fantasy-atlas-v2/gilded-kettle.png",
+      "sha256": "1b01a8f3334237ed69dfd48f6ac7327efc6234c087b3b9c4601e9bd795769c00",
+      "bytes": 3129116,
+      "dimensions": [
+        1447,
+        1087
+      ],
+      "originalFile": null,
+      "originalSha256": null,
+      "reusedApprovedExample": false,
+      "firstIllustration": true,
+      "canonicalSummary": "Bramblebridge's warm timber inn: copper pots, crowded common tables, excellent dumplings, wet cloaks, a permanently crooked stair, and letters addressed to an inn that burned ninety years ago.",
+      "proposedPlaceDetails": [
+        {
+          "name": "Common Room",
+          "description": "Three communal tables share the timber room with the hearth and Merrit Vale's serving counter."
+        },
+        {
+          "name": "Kitchen",
+          "description": "Copper pots hang beside the range, with a preparation table for the inn's dumplings and doors to the common room and yard."
+        },
+        {
+          "name": "Pantry",
+          "description": "A compact store for flour, vegetables, jars and barrels, entered directly from the kitchen."
+        },
+        {
+          "name": "Cloak Porch",
+          "description": "The covered entrance keeps wet cloaks and muddy boots near the lane and opens into the common room."
+        },
+        {
+          "name": "Yard",
+          "description": "A gated service yard holds firewood, herbs and a rain barrel outside the kitchen door."
+        },
+        {
+          "name": "Stairs Up",
+          "description": "The inn's slightly crooked staircase starts beside the common room; upper rooms are beyond this ground-floor plan."
+        }
+      ],
+      "visualReview": "Visually inspected for readable labels, plausible access, appropriate scale and consistency with the existing public location summary. Layout and local places are proposed working detail."
     }
-  ]
+  ],
+  "mapCount": 60,
+  "newlyIllustratedMapCount": 6,
+  "expandedAtUtc": "2026-09-10T05:44:34.256606+00:00",
+  "proposedLocalPlaceCount": 40
 }
