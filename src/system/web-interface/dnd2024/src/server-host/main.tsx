@@ -363,19 +363,26 @@ async function readDeferredSectionObject(
 }
 
 async function readWorldScopeObject(
-  { envelope, scopeId, cursor }: WorldScopeRequest,
+  { envelope, scopeId, cursor, completeDirectory = false }: WorldScopeRequest,
   signal: AbortSignal,
 ): Promise<WorldScopeUpdate> {
   const key = projectedSourceScope(envelope);
   const source = connectedSources.get(key);
   if (!source || signal.aborted) throw new Error("Refresh the authorized World view before continuing.");
-  const [{ readWorldLocationScopePatch }, { connectedCampaignToDeferredHubUpdate }] = await Promise.all([
+  const [{ readWorldLocationDirectory, readWorldLocationScopePatch }, { connectedCampaignToDeferredHubUpdate }] = await Promise.all([
     import("../server/game-server-context.js"), import("../server/connected-hub-envelope"),
   ]);
-  const patch = await readWorldLocationScopePatch({
+  let patch = await readWorldLocationScopePatch({
     fetchImpl: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, { ...init, signal }),
     origin: window.location.origin, source, scopeId, cursor,
   });
+  const rootId = source.contextSelection.selectedWorldId;
+  if (completeDirectory && cursor === null && scopeId === rootId) {
+    patch = { ...patch, ...await readWorldLocationDirectory({
+      fetchImpl: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, { ...init, signal }),
+      origin: window.location.origin, source: { ...source, ...patch },
+    }) };
+  }
   const latest = connectedSources.get(key);
   if (signal.aborted || !latest) throw new DOMException("World scope replaced", "AbortError");
   const updated = { ...latest, ...patch };
@@ -430,7 +437,12 @@ async function loadDeferredSection(
   return section === "context"
     ? tableResources.loadCampaignContext({ envelope }, signal)
     : section === "locations"
-      ? loadWorldScope(envelope, envelope.contextSelection?.selectedWorldId ?? envelope.world.id, null, signal)
+      ? worldResources.loadScope({
+        envelope,
+        scopeId: envelope.contextSelection?.selectedWorldId ?? envelope.world.id,
+        cursor: null,
+        completeDirectory: true,
+      }, signal)
       : ["people", "lore", "history"].includes(section)
         ? worldResources.loadInformation({ envelope, section: section as WorldInformationRequest["section"] }, signal)
         : section === "current"

@@ -86,9 +86,9 @@ test("Actor lore uses the authorized notebook and preserves all entries", async 
   assert.deepEqual(result.knowledge.entries, entries);
 });
 
-test("deferred locations read one exact root scope and suppress ambient media in preview", async () => {
+test("deferred locations read the complete authorized hierarchy and suppress ambient media in preview", async () => {
   const calls = [];
-  const locations = Array.from({ length: 100 }, (_, index) => ({
+  const locations = Array.from({ length: 2 }, (_, index) => ({
     id: `place-${index}`, name: `Place ${index}`, parentId: "world.caldris", slot: "region",
     kind: "region", status: index % 2 ? "draft" : "active", summary: "A place.",
     visibility: "public", mapAnchor: null,
@@ -97,6 +97,8 @@ test("deferred locations read one exact root scope and suppress ambient media in
     origin, section: "locations", source: { ...source, audience: { seat: "dm", perspective: "player" } },
     fetchImpl: async (input) => {
       const target = new URL(input); calls.push(target);
+      const scopeId = decodeURIComponent(target.pathname.split("/entities/")[1].split("/read-models/")[0]);
+      const root = scopeId === "world.caldris";
       return response({
         applicationId: "dnd2024", stateSpaceId: "state.fixture",
         qualifiedQueryId: worldLocationScopePageContract.id,
@@ -105,20 +107,25 @@ test("deferred locations read one exact root scope and suppress ambient media in
         resultFingerprint: "3".repeat(64), sourceRevisionFingerprint: "4".repeat(64),
         data: {
           version: 1, state: "ready",
-          scope: { id: "world.caldris", name: "Caldris", parentId: null, slot: "", kind: "world",
-            status: "active", summary: "A gentle world.", visibility: "public", mapAnchor: null },
-          locations, totalCount: 100, complete: true, nextCursor: null,
+          scope: root
+            ? { id: "world.caldris", name: "Caldris", parentId: null, slot: "", kind: "world",
+              status: "active", summary: "A gentle world.", visibility: "public", mapAnchor: null }
+            : locations.find((location) => location.id === scopeId),
+          locations: root ? locations : [], totalCount: root ? locations.length : 0,
+          complete: true, nextCursor: null,
         },
       });
     },
   });
-  assert.equal(result.locationDirectory.length, 101);
-  assert.deepEqual(result.locationScopes, [{
+  assert.equal(result.locationDirectory.length, 3);
+  assert.deepEqual(result.locationScopes.find(({ id }) => id === "world.caldris"), {
     id: "world.caldris", name: "Caldris", parentId: null,
-    childIds: locations.map((location) => location.id), totalCount: 100,
+    childIds: locations.map((location) => location.id), totalCount: 2,
     complete: true, nextCursor: null, sourceRevisionFingerprint: "4".repeat(64),
-  }]);
-  assert.equal(calls.length, 1);
+  });
+  assert.ok(locations.every((location) =>
+    result.locationScopes.find(({ id }) => id === location.id)?.childIds.length === 0));
+  assert.equal(calls.length, 3);
   assert.match(calls[0].pathname, /entities\/world\.caldris\/read-models\/dnd2024\.query\.world-location-scope-page$/u);
   assert.ok(calls.every((target) => !target.pathname.endsWith("/entities") && !target.pathname.endsWith("/media")));
 });
@@ -131,14 +138,38 @@ test("failed or incompatible root scopes never produce empty location success", 
   }
 });
 
-test("Current cross-checks registered Resume and Current Scene without raw state reconstruction", async () => {
+for (const mediaCase of [
+  { name: "DM illustration", seat: "dm", perspective: "dm", visible: true },
+  { name: "Actor illustration", seat: "player", perspective: "player", visible: true },
+  { name: "Player preview", seat: "dm", perspective: "player", preview: true },
+  { name: "missing illustration", seat: "dm", perspective: "dm", empty: true },
+  { name: "denied illustration", seat: "dm", perspective: "dm", denied: true },
+  { name: "wrong media owner", seat: "dm", perspective: "dm", foreign: true },
+]) test(`Current cross-checks its scene and resolves exact location media: ${mediaCase.name}`, async () => {
   const calls = [];
+  const imageUrl = "/api/applications/dnd2024/state-spaces/state.fixture/entities/location.caldris.one/media/setting/content";
   const result = await readDeferredHubSection({
     origin, section: "current",
     source: { ...source, knowledge: { status: "empty", entries: [], locations: [] },
-      locationDirectory: [{ id: "location.caldris.one", name: "Place" }] },
-    fetchImpl: async (input) => {
+      audience: { seat: mediaCase.seat, perspective: mediaCase.perspective },
+      locationDirectory: [{ id: "location.caldris.one", name: "Place",
+        ...(!mediaCase.visible ? { media: { setting: { imageUrl: "/stale-private-image.png" } } } : {}),
+      }] },
+    fetchImpl: async (input, init) => {
       const target = new URL(input); calls.push(target);
+      if (target.pathname.endsWith("/media-batch")) {
+        assert.deepEqual(JSON.parse(init.body), {
+          entityIds: ["location.caldris.one"], perspective: mediaCase.perspective,
+        });
+        if (mediaCase.denied) return response({}, 403);
+        return response({ applicationId: source.applicationId, stateSpaceId: source.stateSpaceId,
+          items: [{ entityId: mediaCase.foreign ? "another-location" : "location.caldris.one",
+            attachments: mediaCase.empty ? [] : [{ mediaId: "setting", role: "setting",
+              mediaType: "image/png", width: 800, height: 600, alt: "The current place",
+              caption: "", order: 0, contentUrl: imageUrl }],
+          }],
+        });
+      }
       const resume = target.pathname.endsWith(campaignResumeContract.id);
       const contract = resume ? campaignResumeContract : currentSceneContract;
       const data = resume ? {
@@ -168,11 +199,15 @@ test("Current cross-checks registered Resume and Current Scene without raw state
   assert.deepEqual(result.currentSituation.affordances, [
     { key: "look-around", label: "Look around", summary: "Survey the area." },
   ]);
-  assert.equal(calls.length, 3);
+  assert.equal(calls.length, 2 + (mediaCase.preview ? 0 : 1) + (mediaCase.perspective === "dm" ? 1 : 0));
+  assert.equal(result.locationDirectory[0].media?.setting?.imageUrl, mediaCase.visible ? imageUrl : undefined);
+  assert.equal(calls.filter((target) => target.pathname.endsWith("/media-batch")).length, mediaCase.preview ? 0 : 1);
   assert.equal(calls.filter((target) => target.pathname.includes("/read-models/")).length, 2);
   const routeLookup = calls.find((target) => target.pathname.endsWith("/relationships"));
-  assert.equal(routeLookup.searchParams.get("toEntityId"), "location.caldris.one");
-  assert.equal(routeLookup.searchParams.get("qualifiedKind"), "game.core.world.route.from");
+  if (mediaCase.perspective === "dm") {
+    assert.equal(routeLookup.searchParams.get("toEntityId"), "location.caldris.one");
+    assert.equal(routeLookup.searchParams.get("qualifiedKind"), "game.core.world.route.from");
+  } else assert.equal(routeLookup, undefined);
   assert.ok(calls.every((target) =>
     !target.pathname.includes("/components/") && !target.pathname.endsWith("/containment")));
 });

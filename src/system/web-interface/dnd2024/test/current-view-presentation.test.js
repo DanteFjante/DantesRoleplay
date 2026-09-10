@@ -50,7 +50,7 @@ test("Current keeps the last confirmed scene visible through a local refresh fai
 test("Current uses meaningful scene headings and omits empty image and action regions", () => {
   assert.match(component, /title=\{situation\.conversation\.name\}/u);
   assert.match(component, /title=\{combat\.name\}/u);
-  assert.match(component, /title=\{location\.name\}/u);
+  assert.match(component, /<h1 id="main-view-heading" tabIndex=\{-1\}>\{location\.name\}<\/h1>/u);
   assert.match(component, /title="No current scene"/u);
   assert.match(component, /current-scene-card--text-only/u);
   assert.match(styles, /\.current-scene-card--text-only/u);

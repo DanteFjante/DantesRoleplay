@@ -32,6 +32,7 @@ export function WorldView({
   currentLocation,
   selectedLocation,
   filteredLocations,
+  allFilteredLocations,
   locationScope,
   locationScopeBusy,
   locationScopeError,
@@ -47,6 +48,7 @@ export function WorldView({
   onMapNavigateToFeature,
   onMapFeatureSelect,
   onLocationSelect,
+  onLocationBrowse,
   onLocationScopeBack,
   onLoadMoreLocations,
   onRetryLocationScope,
@@ -68,6 +70,7 @@ export function WorldView({
   currentLocation: WorldLocation | null;
   selectedLocation: WorldLocation | null;
   filteredLocations: WorldLocation[];
+  allFilteredLocations: WorldLocation[];
   locationScope: WorldLocationScope | null;
   locationScopeBusy: boolean;
   locationScopeError: string;
@@ -83,6 +86,7 @@ export function WorldView({
   onMapNavigateToFeature: (mapId: string, featureId: string) => void;
   onMapFeatureSelect: (featureId: string) => void;
   onLocationSelect: (locationId: string) => void;
+  onLocationBrowse: (locationId: string) => void;
   onLocationScopeBack: () => void;
   onLoadMoreLocations: () => void;
   onRetryLocationScope: () => void;
@@ -183,16 +187,19 @@ export function WorldView({
           </header>
           <div className="atlas-grid">
             <LocationBrowser
+              allLocations={allFilteredLocations}
               busy={locationScopeBusy}
               currentLocationId={world.currentLocationId}
               error={locationScopeError}
               locationScope={locationScope}
+              locationScopes={world.locationScopes}
               locations={filteredLocations}
               onBack={onLocationScopeBack}
               onLoadMore={onLoadMoreLocations}
               onQueryChange={onQueryChange}
               onRetry={onRetryLocationScope}
               onSelect={onLocationSelect}
+              onBrowse={onLocationBrowse}
               query={query}
               selectedLocationId={selectedLocation?.id ?? ""}
             />

@@ -34,6 +34,7 @@ import {
   readRegisteredWorldLocationScope,
   readRegisteredWorldLocationScopePage,
   readWorldLocationScopePatch,
+  readWorldLocationDirectory,
   readDeferredHubSection,
   readKnownOpenRoutes,
   resolveRecordedPlaySituation,
@@ -279,7 +280,7 @@ test("scope refresh replaces deleted membership and reconciles a moved location"
   assert.equal(patch.locationScopes.some((scope) => scope.id === "deleted"), false);
 });
 
-test("World and Locations deferred view uses one authorized root scope and no raw directory scan", async () => {
+test("World and Locations deferred view walks authorized scopes without a raw directory scan", async () => {
   const calls = [];
   const source = {
     applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
@@ -290,19 +291,84 @@ test("World and Locations deferred view uses one authorized root scope and no ra
   const patch = await readDeferredHubSection({
     origin: "http://localhost:6217", source, section: "locations",
     fetchImpl: async (input) => {
-      calls.push(new URL(input));
+      const target = new URL(input);
+      calls.push(target);
+      if (target.pathname.includes("/entities/place-azure/")) return response(200, worldScopePageEnvelope({
+        version: 1, state: "ready",
+        scope: {
+          id: "place-azure", name: "Azure Reach", parentId: "realm-root-7", slot: "region",
+          kind: "region", status: "active", summary: "The coast beneath blue cliffs.",
+          visibility: "public", mapAnchor: { x: 125, y: 875 },
+        },
+        locations: [], totalCount: 0, complete: true, nextCursor: null,
+      }));
       return response(200, worldScopePageEnvelope(worldLocationScopePageData()));
     },
   });
   assert.deepEqual(new Set(patch.locationDirectory.map((item) => item.id)), new Set(["realm-root-7", "place-azure"]));
-  assert.deepEqual(patch.locationScopes, [{
+  assert.deepEqual(patch.locationScopes.find((scope) => scope.id === "realm-root-7"), {
     id: "realm-root-7", name: "The Seventh Realm", parentId: null,
     childIds: ["place-azure"], totalCount: 1, complete: true, nextCursor: null,
     sourceRevisionFingerprint: "4".repeat(64),
-  }]);
+  });
   assert.equal(patch.locationDirectoryAudience, "player");
-  assert.equal(calls.length, 1);
+  assert.equal(patch.locationDirectoryComplete, true);
+  assert.deepEqual(patch.locationScopes.find((scope) => scope.id === "place-azure")?.childIds, []);
+  assert.equal(calls.length, 2);
   assert.ok(calls.every((call) => !/\/entities$/u.test(call.pathname) && !call.pathname.endsWith("/media")));
+});
+
+test("location directory walks every authorized scope without loading location media", async () => {
+  const calls = [];
+  const source = {
+    applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
+    audience: { seat: "dm", perspective: "dm", allowedPerspectives: ["dm", "player"] },
+    contextSelection: { selectedWorldId: "realm-root-7", selectedCampaignId: "campaign-9", worlds: [] },
+    locationDirectory: [{
+      id: "realm-root-7", name: "The Seventh Realm", kind: "world", isWorldRoot: true,
+      summary: "Detailed root summary.",
+    }, {
+      id: "atlas", name: "Atlas", kind: "region", containerId: "realm-root-7",
+    }],
+    locationScopes: [{
+      id: "realm-root-7", name: "The Seventh Realm", parentId: null, childIds: ["atlas"],
+      totalCount: 1, complete: true, nextCursor: null, sourceRevisionFingerprint: "4".repeat(64),
+    }],
+  };
+  const patch = await readWorldLocationDirectory({
+    origin: "http://localhost:6217", source,
+    fetchImpl: async (input) => {
+      const target = new URL(input);
+      calls.push(target);
+      const scopeId = decodeURIComponent(target.pathname.split("/entities/")[1].split("/read-models/")[0]);
+      const locations = scopeId === "atlas" ? [{
+        id: "juniper", name: "Juniper Gate", parentId: "atlas", slot: "settlement",
+        kind: "settlement", status: "active", summary: "A guarded gate.", visibility: "public",
+        mapAnchor: { x: 500, y: 500 },
+      }] : [];
+      const scope = scopeId === "atlas" ? {
+        id: "atlas", name: "Atlas", parentId: "realm-root-7", slot: "region", kind: "region",
+        status: "active", summary: "A mapped region.", visibility: "public", mapAnchor: null,
+      } : {
+        id: "juniper", name: "Juniper Gate", parentId: "atlas", slot: "settlement",
+        kind: "settlement", status: "active", summary: "A guarded gate.", visibility: "public",
+        mapAnchor: { x: 500, y: 500 },
+      };
+      return response(200, worldScopePageEnvelope({
+        version: 1, state: "ready", scope, locations, totalCount: locations.length,
+        complete: true, nextCursor: null,
+      }));
+    },
+  });
+
+  assert.equal(patch.locationDirectoryComplete, true);
+  assert.deepEqual(patch.locationDirectory.map(({ id }) => id), ["atlas", "juniper", "realm-root-7"]);
+  assert.deepEqual(patch.locationScopes.find(({ id }) => id === "juniper")?.childIds, []);
+  assert.equal(patch.locationDirectory.find(({ id }) => id === "realm-root-7")?.summary,
+    "Detailed root summary.");
+  assert.equal(calls.length, 2);
+  assert.ok(calls.every((call) => /dnd2024\.query\.world-location-scope-page$/u.test(call.pathname)));
+  assert.ok(calls.every((call) => !call.pathname.endsWith("/media-batch")));
 });
 
 function inventoryContainerData(actorId) {

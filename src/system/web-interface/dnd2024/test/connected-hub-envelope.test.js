@@ -21,6 +21,8 @@ function connectedFixture({
   audience,
   locationDirectoryAudience,
   locationDirectory,
+  locationDirectoryComplete,
+  locationScopes,
   worldDirectory,
   chapters = [],
   arcs = [],
@@ -77,6 +79,8 @@ function connectedFixture({
     },
     ...(locationDirectoryAudience ? { locationDirectoryAudience } : {}),
     ...(locationDirectory ? { locationDirectory } : {}),
+    ...(locationDirectoryComplete !== undefined ? { locationDirectoryComplete } : {}),
+    ...(locationScopes ? { locationScopes } : {}),
     ...(worldDirectory ? { worldDirectory } : {}),
     ...(rules ? { rules } : {}),
   };
@@ -1166,6 +1170,35 @@ test("uses exact live containment for cropped Region map membership", () => {
   assert.equal(grounds?.baseState, "absent");
   assert.equal(grounds?.parentMapId, "map.live.location.thalorien.thalos");
   assert.equal(isReadyHubEnvelope(envelope), true);
+});
+
+test("a complete location directory derives every hierarchy level, including leaf scopes", () => {
+  const rootId = "world.thalorien";
+  const atlasId = "location.thalorien.atlas";
+  const regionId = "location.thalorien.region";
+  const leafId = "location.thalorien.juniper-gate";
+  const envelope = connectedCampaignToHubEnvelope(connectedFixture({
+    audience: { seat: "dm", perspective: "dm", allowedPerspectives: ["dm", "player"] },
+    locationDirectoryAudience: "dm",
+    locationDirectoryComplete: true,
+    locationDirectory: [
+      { id: rootId, name: "Thalorien", kind: "world", isWorldRoot: true },
+      { id: atlasId, name: "Atlas", kind: "region", containerId: rootId },
+      { id: regionId, name: "Roven Approaches", kind: "region", containerId: atlasId },
+      { id: leafId, name: "Juniper Gate", kind: "settlement", containerId: regionId },
+    ],
+    locationScopes: [{
+      id: rootId, name: "Thalorien", parentId: null, childIds: [atlasId], totalCount: 1,
+      complete: true, nextCursor: null, sourceRevisionFingerprint: "A".repeat(64),
+    }],
+  }));
+
+  const scopes = new Map(envelope.world.locationScopes.map((scope) => [scope.id, scope]));
+  assert.deepEqual(scopes.get(atlasId)?.childIds, [regionId]);
+  assert.deepEqual(scopes.get(regionId)?.childIds, [leafId]);
+  assert.deepEqual(scopes.get(leafId)?.childIds, []);
+  assert.equal(scopes.get(leafId)?.totalCount, 0);
+  assert.equal(envelope.world.maps.some((map) => map.subject.id === leafId), false);
 });
 
 test("groups live map markers into deterministic location-kind layers", () => {

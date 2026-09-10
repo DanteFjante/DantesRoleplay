@@ -1158,6 +1158,8 @@ export type ConnectedCampaignEnvelope = {
     }>;
   };
   locationDirectoryAudience?: Perspective;
+  /** True only when the registered world directory proved the complete authorized hierarchy. */
+  locationDirectoryComplete?: boolean;
   locationScopes?: Array<{
     id: string;
     name: string;

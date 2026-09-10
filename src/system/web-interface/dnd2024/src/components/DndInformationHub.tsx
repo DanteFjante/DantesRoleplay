@@ -357,11 +357,13 @@ export function DndInformationHub({
   const activeLocationScope = envelope.world.locationScopes.find((scope) => scope.id === activeLocationScopeId)
     ?? null;
   const locationById = new Map(allLocations.map((location) => [location.id, location]));
+  const directoryLocations = allLocations.filter((location) => location.id !== worldRootId);
   const scopedLocations = (activeLocationScope?.childIds ?? []).flatMap((id) => {
     const location = locationById.get(id);
     return location ? [location] : [];
   });
   const visibleLocations = filterLocations(scopedLocations, locationQuery) as WorldLocation[];
+  const allVisibleLocations = filterLocations(directoryLocations, locationQuery) as WorldLocation[];
   const currentLocation = resolveCurrentSceneLocation(
     allLocations,
     envelope.world.currentLocationId,
@@ -384,10 +386,11 @@ export function DndInformationHub({
     envelope.world.rootMapId,
   ) as string;
   const activeMapDocument = resolveMapDocument(envelope.world.maps, effectiveActiveMapId);
-  const activeMapScopeId = activeMapDocument?.subject.id ?? null;
+  const activeMapScopeId = envelope.world.mapOwnerId === null
+    ? contextSelection.selectedWorldId
+    : activeMapDocument?.subject.id ?? contextSelection.selectedWorldId;
   const activeMapScopeReady = !loadWorldScope || activeMapScopeId === null ||
-    envelope.world.mapOwnerId === null ||
-    envelope.world.locationScopes.some((scope) => scope.id === activeMapScopeId);
+    loadedWorldScopes.current.has(activeMapScopeId);
   const activeMapScopeFailed = activeMapScopeId !== null && failedWorldScopes.current.has(activeMapScopeId);
   const mapScopeState: "loading" | "ready" | "error" = activeMapScopeReady
     ? "ready"
@@ -642,8 +645,8 @@ export function DndInformationHub({
 
   const deferredSection: DeferredHubSection | null = activeTab === "current" ? "current"
     : activeTab === "world" && worldSection === "factions" && perspective !== "dm" ? "lore"
-    : activeTab === "world" && ["map", "locations", "history", "lore", "people"].includes(worldSection)
-      ? worldSection === "map" ? "locations" : worldSection as DeferredHubSection : null;
+    : activeTab === "world" && ["locations", "history", "lore", "people"].includes(worldSection)
+      ? worldSection as DeferredHubSection : null;
   const deferredRestricted = Boolean(loadDeferredSection && playerPreview &&
     (deferredSection === "lore" || deferredSection === "people"));
   const deferredState = deferredSection && loadDeferredSection
@@ -841,6 +844,19 @@ export function DndInformationHub({
     setAnnouncement(`${locationById.get(locationId)?.name ?? "Location"} opened`);
   }
 
+  function selectLocationDetails(locationId: string) {
+    const location = locationById.get(locationId);
+    if (!location) return;
+    setSelectedLocationId(locationId);
+    setLocationSection("details");
+    navigateHubRoute("world", "overview", false, {
+      worldSection: "locations", locationScopePath, locationId,
+    });
+    setAnnouncement(`${location.name} details opened`);
+    if (loadWorldScope && !loadedWorldScopes.current.has(locationId) &&
+        !loadingWorldScopes.current.has(locationId)) void requestWorldScope(locationId);
+  }
+
   function openParentLocationScope() {
     if (locationScopePath.length === 0) return;
     const selectedId = locationScopePath.at(-1)!;
@@ -868,8 +884,9 @@ export function DndInformationHub({
     if (!location) return;
     setSelectedLocationId(locationId);
     setLocationSection("details");
+    setLocationScopePath([]);
     setWorldSection("locations");
-    navigateHubRoute("world");
+    navigateHubRoute("world", "overview", false, { worldSection: "locations", locationId });
     setActiveTab("world");
     setAnnouncement(`${location.name} opened from Campaign`);
     focusViewHeading();
@@ -954,6 +971,7 @@ export function DndInformationHub({
     if (!person) return;
     setSelectedPersonId(personId);
     setWorldSection("people");
+    navigateHubRoute("world", "overview", false, { worldSection: "people" });
     setActiveTab("world");
     setAnnouncement(`${person.name} opened from Campaign`);
     focusWorldEntityCard("person", personId);
@@ -964,6 +982,7 @@ export function DndInformationHub({
     if (!faction) return;
     dispatchObjectUi({ type: "faction-selected", factionId });
     setWorldSection("factions");
+    navigateHubRoute("world", "overview", false, { worldSection: "factions" });
     setActiveTab("world");
     setAnnouncement(`${faction.name} opened from Campaign`);
     focusWorldEntityCard("faction", factionId);
@@ -1146,6 +1165,7 @@ export function DndInformationHub({
             campaign={envelope.campaign}
             currentLocation={currentLocation}
             filteredLocations={visibleLocations}
+            allFilteredLocations={allVisibleLocations}
             locationScope={activeLocationScope}
             locationScopeBusy={locationScopeBusy}
             locationScopeError={locationScopeError}
@@ -1155,7 +1175,8 @@ export function DndInformationHub({
             perspective={perspective}
             selectedFactionId={selectedFactionId}
             selectedPersonId={selectedPersonId}
-            onLocationSelect={openLocationScope}
+            onLocationSelect={selectLocationDetails}
+            onLocationBrowse={openLocationScope}
             onLocationScopeBack={openParentLocationScope}
             onLoadMoreLocations={() => activeLocationScope?.nextCursor
               ? void requestWorldScope(activeLocationScope.id, activeLocationScope.nextCursor)

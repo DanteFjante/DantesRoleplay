@@ -181,6 +181,8 @@ test("Current scene presentation covers exploration, recorded play, conversation
       if (scenario.situation.status === "ready" && scenario.situation.kind === "exploration") {
         assert.equal([...mounted.container.querySelectorAll("h1, h2")].filter(node => node.textContent === location.name).length, 1);
         assert.equal([...mounted.container.querySelectorAll("p")].filter(node => node.textContent === location.description).length, 1);
+        assert.equal(mounted.container.querySelector(".current-scene-card h1")?.textContent, location.name);
+        assert.equal(mounted.container.querySelector(".current-scene-card__copy > p")?.textContent, location.description);
       }
       if (scenario.absent) assert.doesNotMatch(mounted.container.textContent ?? "", scenario.absent);
       assert.equal(mounted.container.querySelector("application-conversation"), null);
@@ -188,6 +190,24 @@ test("Current scene presentation covers exploration, recorded play, conversation
         "a missing illustration does not reserve an empty image region");
     } finally { await mounted.cleanup(); }
   });
+});
+
+test("Current keeps the location illustration, heading and description together inside one card", async () => {
+  const initial = envelope();
+  const location = initial.world.locations.find((candidate) => candidate.id === initial.world.currentLocationId)!;
+  const image = { imageUrl: "/api/applications/fixture/location/media/setting/content",
+    alt: "The current settlement", width: 800, height: 600 };
+  const mounted = await mount(<CurrentViewPreview image={image} location={location}
+    situation={{ status: "ready", kind: "exploration", locationId: location.id }} />);
+  try {
+    const card = mounted.container.querySelector(".current-scene-card");
+    assert.equal(card?.querySelector("img")?.getAttribute("src"), image.imageUrl);
+    assert.equal(card?.querySelector("h1")?.textContent, location.name);
+    assert.equal(card?.querySelector(".current-scene-card__copy > p")?.textContent, location.description);
+    assert.equal(mounted.container.querySelectorAll("h1").length, 1);
+    assert.equal([...mounted.container.querySelectorAll("p")]
+      .filter((node) => node.textContent === location.description).length, 1);
+  } finally { await mounted.cleanup(); }
 });
 
 test("opening and revisiting Current mounts no conversation element and issues no implicit write", async () => {
