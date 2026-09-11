@@ -61,6 +61,30 @@ internal sealed partial class SqliteSystemTaskDurableService(
 
     public Task<InteractionInvocationResult> SubmitAsync(SystemTaskDurableSubmissionRequest request,
         CancellationToken cancellationToken = default)
+        => SubmitCoreAsync(request, allowEphemeralParent: false, cancellationToken);
+
+    /// <summary>
+    /// Trusted workflow-service admission. The non-durable parent command remains explicit
+    /// causation while the admitted task owns a new durable root budget and lifecycle.
+    /// </summary>
+    internal Task<InteractionInvocationResult> SubmitEphemeralRootAsync(
+        SystemTaskDurableSubmissionRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (request.InvocationHost.ParentCommandId is null
+            || StringComparer.Ordinal.Equals(
+                request.InvocationHost.ParentCommandId, request.InvocationHost.CommandId))
+            return Task.FromResult(InteractionInvocationResult.Failed(
+                "SYSTEM_TASK_EPHEMERAL_PARENT_INVALID",
+                "A trusted ephemeral parent command is required."));
+        return SubmitCoreAsync(request, allowEphemeralParent: true, cancellationToken);
+    }
+
+    private Task<InteractionInvocationResult> SubmitCoreAsync(
+        SystemTaskDurableSubmissionRequest request,
+        bool allowEphemeralParent,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
         if (request.InvocationHost.Profile != InteractionExecutionProfile.Workflow)
@@ -72,8 +96,11 @@ internal sealed partial class SqliteSystemTaskDurableService(
                 StandingGrantCapability.Execute, null, null, cancellationToken);
             if (authorization.Failure is not null) return authorization.Failure;
             if (authorization.CurrentActivation is null) return TargetUnavailable();
-            var staged = await store.StageEnqueueAsync(request, false, connection, transaction, cancellationToken,
-                authorization.CurrentActivation);
+            var staged = allowEphemeralParent
+                ? await store.StageEphemeralRootEnqueueAsync(request, false, connection, transaction,
+                    cancellationToken, authorization.CurrentActivation)
+                : await store.StageEnqueueAsync(request, false, connection, transaction, cancellationToken,
+                    authorization.CurrentActivation);
             return staged.Disposition is SystemTaskEnqueueDisposition.Created or SystemTaskEnqueueDisposition.Existing
                 ? InteractionInvocationResult.Pending(staged.Handle!)
                 : InteractionInvocationResult.Failed(staged.Code, staged.SafeMessage);

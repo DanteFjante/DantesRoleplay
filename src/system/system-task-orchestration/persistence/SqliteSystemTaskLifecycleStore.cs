@@ -34,7 +34,7 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
         SystemTaskDurableSubmissionRequest request,
         bool propagateCancellation, SqliteConnection connection, SqliteTransaction transaction,
         CancellationToken cancellationToken = default, StandingGrantActivationOrigin? activationOrigin = null,
-        SystemInnerWorkerResolvedProfile? innerWorkerProfile = null)
+        SystemInnerWorkerResolvedProfile? innerWorkerProfile = null, bool allowEphemeralParent = false)
     {
         ArgumentNullException.ThrowIfNull(request);
         if (request.InvocationHost.StateSpaceId is not { } stateSpaceId
@@ -63,6 +63,7 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
             profile = InteractionExecutionProfileNames.Get(request.InvocationHost.Profile),
             request.InvocationHost.CommandId,
             request.InvocationHost.ParentCommandId,
+            originatingParentMode = allowEphemeralParent ? "ephemeral-root" : null,
             // The requested ceiling is immutable; remaining allowance changes as siblings run.
             // Admission persists the remaining allowance separately from command equivalence.
             maximumOperations = request.InvocationHost.Budget.MaximumOperations,
@@ -172,38 +173,47 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
             if (StringComparer.Ordinal.Equals(request.InvocationHost.ParentCommandId, request.InvocationHost.CommandId))
                 return Rejected("SYSTEM_TASK_PARENT_SELF", "A task cannot be its own parent.");
             var parent = await FindParentAsync(connection, transaction, request.InvocationHost.ParentCommandId, cancellationToken);
-            if (parent is null)
+            if (parent is null && !allowEphemeralParent)
                 return Rejected("SYSTEM_TASK_PARENT_UNKNOWN", "The declared parent task does not exist.");
-            if (parent.Depth >= SystemTaskLifecycleLimits.MaximumParentDepth)
+            if (parent is null)
+            {
+                // A trusted workflow-service host may preserve its ephemeral causal command while
+                // admitting a new durable root. The immutable payload fingerprints this mode, so
+                // a later durable row with the same command cannot reinterpret a replay's ancestry.
+            }
+            else if (parent.Depth >= SystemTaskLifecycleLimits.MaximumParentDepth)
                 return Rejected("SYSTEM_TASK_PARENT_DEPTH", "The durable task parent depth is at its configured bound.");
-            if (request.InvocationHost.Budget.DeadlineUtc > parent.DeadlineUtc || admitted > parent.AdmittedOperations)
+            else if (request.InvocationHost.Budget.DeadlineUtc > parent.DeadlineUtc || admitted > parent.AdmittedOperations)
                 return Rejected("SYSTEM_TASK_CHILD_BUDGET_EXPANDED", "A child task cannot expand its parent deadline or allowance.");
-            var requestedBases = InteractionCanonicalJson.Canonicalize(JsonSerializer.Serialize(
-                request.InvocationHost.ApplicationRevision.BaseApplications.Select(value => value.ToString())));
-            if (!StringComparer.Ordinal.Equals(parent.PrincipalReference, request.InvocationHost.Principal.PrincipalId) ||
-                !StringComparer.Ordinal.Equals(parent.ApplicationId, request.InvocationHost.ApplicationRevision.ApplicationId.ToString()) ||
-                parent.ApplicationRevision != request.InvocationHost.ApplicationRevision.Revision ||
-                !StringComparer.Ordinal.Equals(parent.ApplicationFingerprint, request.InvocationHost.ApplicationRevision.Fingerprint) ||
-                !StringComparer.Ordinal.Equals(parent.BaseApplicationsJson, requestedBases) ||
-                !StringComparer.Ordinal.Equals(parent.StateSpaceId, stateSpaceId) ||
-                !StringComparer.Ordinal.Equals(parent.GrantReference, request.InvocationHost.GrantReference) ||
-                !StringComparer.Ordinal.Equals(parent.StateRevision, stateRevision) ||
-                !StringComparer.Ordinal.Equals(parent.ExecutionProfile, InteractionExecutionProfileNames.Get(request.InvocationHost.Profile)))
-                return Rejected("SYSTEM_TASK_PARENT_SCOPE_MISMATCH", "A child task must retain its parent's exact principal and invocation scope.");
-            var childCount = await ScalarLongAsync(connection, transaction,
-                "SELECT COUNT(*) FROM system_task_lifecycle WHERE parent_task_id = $parent", cancellationToken,
-                ("$parent", parent.TaskId));
-            if (childCount >= SystemTaskLifecycleLimits.MaximumChildrenPerTask)
-                return Rejected("SYSTEM_TASK_FANOUT_LIMIT", "The parent task is at its child fan-out bound.");
-            var descendantCount = await ScalarLongAsync(connection, transaction,
-                "SELECT COUNT(*) FROM system_task_lifecycle WHERE root_task_id = $root AND task_id <> $root", cancellationToken,
-                ("$root", parent.RootTaskId));
-            if (descendantCount >= SystemTaskLifecycleLimits.MaximumDescendantsPerRoot)
-                return Rejected("SYSTEM_TASK_DESCENDANT_LIMIT", "The root task is at its descendant bound.");
-            rootTaskId = parent.RootTaskId;
-            parentTaskId = parent.TaskId;
-            parentDepth = parent.Depth + 1;
-            rootBudget = parent.RootMaximumOperations;
+            if (parent is not null)
+            {
+                var requestedBases = InteractionCanonicalJson.Canonicalize(JsonSerializer.Serialize(
+                    request.InvocationHost.ApplicationRevision.BaseApplications.Select(value => value.ToString())));
+                if (!StringComparer.Ordinal.Equals(parent.PrincipalReference, request.InvocationHost.Principal.PrincipalId) ||
+                    !StringComparer.Ordinal.Equals(parent.ApplicationId, request.InvocationHost.ApplicationRevision.ApplicationId.ToString()) ||
+                    parent.ApplicationRevision != request.InvocationHost.ApplicationRevision.Revision ||
+                    !StringComparer.Ordinal.Equals(parent.ApplicationFingerprint, request.InvocationHost.ApplicationRevision.Fingerprint) ||
+                    !StringComparer.Ordinal.Equals(parent.BaseApplicationsJson, requestedBases) ||
+                    !StringComparer.Ordinal.Equals(parent.StateSpaceId, stateSpaceId) ||
+                    !StringComparer.Ordinal.Equals(parent.GrantReference, request.InvocationHost.GrantReference) ||
+                    !StringComparer.Ordinal.Equals(parent.StateRevision, stateRevision) ||
+                    !StringComparer.Ordinal.Equals(parent.ExecutionProfile, InteractionExecutionProfileNames.Get(request.InvocationHost.Profile)))
+                    return Rejected("SYSTEM_TASK_PARENT_SCOPE_MISMATCH", "A child task must retain its parent's exact principal and invocation scope.");
+                var childCount = await ScalarLongAsync(connection, transaction,
+                    "SELECT COUNT(*) FROM system_task_lifecycle WHERE parent_task_id = $parent", cancellationToken,
+                    ("$parent", parent.TaskId));
+                if (childCount >= SystemTaskLifecycleLimits.MaximumChildrenPerTask)
+                    return Rejected("SYSTEM_TASK_FANOUT_LIMIT", "The parent task is at its child fan-out bound.");
+                var descendantCount = await ScalarLongAsync(connection, transaction,
+                    "SELECT COUNT(*) FROM system_task_lifecycle WHERE root_task_id = $root AND task_id <> $root", cancellationToken,
+                    ("$root", parent.RootTaskId));
+                if (descendantCount >= SystemTaskLifecycleLimits.MaximumDescendantsPerRoot)
+                    return Rejected("SYSTEM_TASK_DESCENDANT_LIMIT", "The root task is at its descendant bound.");
+                rootTaskId = parent.RootTaskId;
+                parentTaskId = parent.TaskId;
+                parentDepth = parent.Depth + 1;
+                rootBudget = parent.RootMaximumOperations;
+            }
         }
 
         var ancestorIds = parentTaskId is null
