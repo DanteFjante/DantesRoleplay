@@ -63,10 +63,8 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
         if (model is not null && (Required(model, 200, nameof(model)) != model || model.Any(char.IsControl)))
             throw new InteractionContractException("INNER_AI_MODEL_ID_INVALID", "The model identity is invalid.");
         var requestHash = AiHash(requestJson);
-        var payloadHash = AiHash(InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
-        {
-            reference, attempt, kind, provider, model, requestHash, ceiling.ProfileFingerprint, ceiling.SchemaFingerprint
-        }, AiJson)));
+        var payloadHash = AiDispatchFingerprint(reference, attempt, kind, provider, model, requestHash,
+            ceiling.ProfileFingerprint, ceiling.SchemaFingerprint);
         var existing = await ScalarStringAsync(connection, transaction, """
             SELECT payload_fingerprint FROM system_task_ai_dispatch_evidence WHERE record_reference=$reference AND sequence=0
             """, cancellationToken, ("$reference", reference));
@@ -81,7 +79,7 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
                 kind,dispatch_kind,request_fingerprint,provider_id,model_id,profile_fingerprint,schema_fingerprint,
                 request_json,observed_at_utc)
             VALUES($reference,0,$event,$payload,'dispatch',$kind,$request,$provider,$model,$profile,$schema,$json,$now)
-            """, cancellationToken, ("$reference", reference), ("$event", "ai-dispatch." + AiHash(reference).ToLowerInvariant()),
+            """, cancellationToken, ("$reference", reference), ("$event", AiDispatchEvent(reference)),
             ("$payload", payloadHash), ("$kind", kind), ("$request", requestHash), ("$provider", provider), ("$model", model),
             ("$profile", ceiling.ProfileFingerprint), ("$schema", ceiling.SchemaFingerprint), ("$json", requestJson), ("$now", ToDb(UtcNow())));
         return new(true, "INNER_AI_DISPATCH_RECORDED", reservation.Evidence);
@@ -98,11 +96,8 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
         if (dispatch is null) return AiRejected("INNER_AI_DISPATCH_EVIDENCE_UNAVAILABLE");
         if (dispatch.Kind != kind) return AiRejected("INNER_AI_DISPATCH_KIND_MISMATCH");
         var report = new SystemInnerWorkerAiUsageReport(reference, attempt, input, output, tools, total, complete);
-        var payloadHash = AiHash(InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
-        {
-            reference, attempt, kind, completion, responseHash, input, output, total, tools, complete,
-            dispatch.RequestFingerprint, dispatch.ProfileFingerprint, dispatch.SchemaFingerprint
-        }, AiJson)));
+        var payloadHash = AiUsageFingerprint(reference, attempt, kind, completion, responseHash, input, output,
+            total, tools, complete, dispatch.RequestFingerprint, dispatch.ProfileFingerprint, dispatch.SchemaFingerprint);
         var existing = await ScalarLongAsync(connection, transaction, """
             SELECT COUNT(*) FROM system_task_ai_dispatch_evidence WHERE record_reference=$reference AND payload_fingerprint=$hash
             """, cancellationToken, ("$reference", reference), ("$hash", payloadHash));
@@ -123,7 +118,7 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
             VALUES($reference,$sequence,$event,$payload,'usage',$kind,$request,$provider,$model,$profile,$schema,
                 $response,$input,$output,$total,$tools,$complete,$completion,$now)
             """, cancellationToken, ("$reference", reference), ("$sequence", sequence),
-            ("$event", "ai-observation." + AiHash(reference + "\n" + payloadHash).ToLowerInvariant()),
+            ("$event", AiUsageEvent(reference, payloadHash)),
             ("$payload", payloadHash), ("$kind", kind), ("$request", dispatch.RequestFingerprint),
             ("$provider", dispatch.Provider), ("$model", dispatch.Model), ("$profile", dispatch.ProfileFingerprint),
             ("$schema", dispatch.SchemaFingerprint), ("$response", responseHash), ("$input", input), ("$output", output),

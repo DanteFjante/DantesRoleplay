@@ -15,9 +15,21 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
         string taskId, CancellationToken cancellationToken)
     {
         if (!await HasAiAccountingTablesAsync(connection, transaction, cancellationToken)) return false;
-        return await ScalarLongAsync(connection, transaction, """
-            SELECT COUNT(*) FROM system_task_ai_reservation WHERE task_id=$task AND status IN ('reserved','unknown')
-            """, cancellationToken, ("$task", taskId)) > 0;
+        var references = new List<string>();
+        await using (var command = Command(connection, transaction,
+            "SELECT record_reference FROM system_task_ai_reservation WHERE task_id=$task LIMIT 17", ("$task", taskId)))
+        await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+            while (await reader.ReadAsync(cancellationToken)) references.Add(reader.GetString(0));
+        if (references.Count > SystemTaskLifecycleLimits.MaximumRootOperations)
+            throw new SystemTaskException("INNER_AI_RESERVATION_LIMIT", "The retained reservation count exceeds the operation bound.");
+        var unresolved = false;
+        foreach (var reference in references)
+        {
+            var reservation = await ReadAiReservationAsync(connection, transaction, reference, cancellationToken)
+                ?? throw new SystemTaskException("INNER_AI_RESERVATION_INVALID", "The retained reservation cannot be resolved.");
+            unresolved |= reservation.State is "reserved" or "unknown";
+        }
+        return unresolved;
     }
 
     private async Task<bool> MarkAiIndeterminateAsync(SqliteConnection connection, SqliteTransaction transaction,

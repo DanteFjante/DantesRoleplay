@@ -423,6 +423,130 @@ public sealed class SystemTaskAiAccountingStoreTests
         Assert.Equal("INNER_AI_TOKEN_THRESHOLD_REACHED", toolStoppedByTokens.Code);
     }
 
+    [Theory]
+    [InlineData("UPDATE system_task_ai_dispatch_evidence SET total_tokens=35 WHERE record_reference=$reference AND sequence=1", "INNER_AI_USAGE_EVIDENCE_INVALID")]
+    [InlineData("UPDATE system_task_ai_dispatch_evidence SET is_complete=0 WHERE record_reference=$reference AND sequence=1", "INNER_AI_USAGE_EVIDENCE_INVALID")]
+    [InlineData("UPDATE system_task_ai_dispatch_evidence SET provider_id='provider.changed' WHERE record_reference=$reference AND sequence=0", "INNER_AI_DISPATCH_EVIDENCE_INVALID")]
+    [InlineData("UPDATE system_task_ai_dispatch_evidence SET model_id='model.changed' WHERE record_reference=$reference AND sequence=0", "INNER_AI_DISPATCH_EVIDENCE_INVALID")]
+    [InlineData("UPDATE system_task_ai_dispatch_evidence SET profile_fingerprint='BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB' WHERE record_reference=$reference AND sequence=0", "INNER_AI_DISPATCH_EVIDENCE_INVALID")]
+    [InlineData("UPDATE system_task_ai_dispatch_evidence SET payload_fingerprint='BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB' WHERE record_reference=$reference AND sequence=0", "INNER_AI_DISPATCH_EVIDENCE_INVALID")]
+    [InlineData("UPDATE system_task_ai_dispatch_evidence SET payload_fingerprint='BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB' WHERE record_reference=$reference AND sequence=1", "INNER_AI_USAGE_EVIDENCE_INVALID")]
+    [InlineData("UPDATE system_task_ai_dispatch_evidence SET response_fingerprint='BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB' WHERE record_reference=$reference AND sequence=1", "INNER_AI_USAGE_EVIDENCE_INVALID")]
+    [InlineData("UPDATE system_task_ai_dispatch_evidence SET event_reference='ai-dispatch.changed' WHERE record_reference=$reference AND sequence=0", "INNER_AI_DISPATCH_EVIDENCE_INVALID")]
+    [InlineData("UPDATE system_task_ai_dispatch_evidence SET event_reference='ai-observation.changed' WHERE record_reference=$reference AND sequence=1", "INNER_AI_USAGE_EVIDENCE_INVALID")]
+    [InlineData("UPDATE system_task_ai_reservation SET charged_provider_tokens=31 WHERE record_reference=$reference", "INNER_AI_SETTLEMENT_EVIDENCE_INVALID")]
+    [InlineData("UPDATE system_task_ai_reservation SET status='exceeded' WHERE record_reference=$reference", "INNER_AI_SETTLEMENT_EVIDENCE_INVALID")]
+    [InlineData("UPDATE system_task_ai_reservation SET settled_evidence_sequence=2 WHERE record_reference=$reference", "INNER_AI_SETTLEMENT_EVIDENCE_INVALID")]
+    [InlineData("UPDATE system_task_ai_reservation SET fencing_counter=fencing_counter+1 WHERE record_reference=$reference", "INNER_AI_ATTEMPT_MISMATCH")]
+    public async Task Corrupted_evidence_or_settlement_cache_rejects_reconcile_admission_and_completion_without_mutation(
+        string corruptionSql, string expectedCode)
+    {
+        await using var fixture = await AccountingFixture.CreateAsync();
+        var budget = new SystemInnerWorkerAiBudget(1_000, 2);
+        var handle = await fixture.EnqueueAsync("command.integrity", budget);
+        var lease = (await fixture.ClaimAsync(1))[handle.CommandId];
+        var reservation = await fixture.ReserveAsync(handle, lease, budget, "reservation.integrity", 100, 0);
+        var reference = reservation.Reservation!.RecordReference;
+        await fixture.RecordProviderDispatchAsync(reference, lease, budget);
+        var settled = await fixture.RecordProviderOutcomeAsync(reference, lease,
+            fixture.ProviderOutcome(20, 10, 40, complete: true));
+        Assert.True(settled.Accepted);
+        Assert.Equal(40, settled.Usage!.ChargedProviderTokens);
+
+        await fixture.ExecuteAsync(corruptionSql, ("$reference", reference));
+        var retainedAfterCorruption = await fixture.ReservationStateAsync(reference);
+        var report = new SystemInnerWorkerAiUsageReport(reference, lease.Attempt, 20, 10, 0, 40, true);
+
+        await AssertIntegrityFailureAsync(expectedCode, () => fixture.ReconcileAsync(handle, report));
+        await AssertIntegrityFailureAsync(expectedCode, () => fixture.ReserveAsync(
+            handle, lease, budget, "reservation.after-corruption", 1, 0));
+        await AssertIntegrityFailureAsync(expectedCode, () => fixture.Store.CompleteAsync(
+            lease, new("{}", "evidence.integrity")));
+
+        Assert.Equal(retainedAfterCorruption, await fixture.ReservationStateAsync(reference));
+        Assert.Equal(2L, await fixture.ScalarAsync(
+            "SELECT COUNT(*) FROM system_task_ai_dispatch_evidence WHERE record_reference=$reference",
+            ("$reference", reference)));
+        Assert.Equal(0L, await fixture.ScalarAsync(
+            "SELECT COUNT(*) FROM system_task_ai_reservation WHERE reservation_id='reservation.after-corruption'"));
+        Assert.Equal(SystemTaskLifecycleState.Running, (await fixture.Store.ReadAsync(handle))!.State);
+    }
+
+    [Fact]
+    public async Task Forged_complete_flag_cannot_turn_uncertain_usage_into_a_released_hold()
+    {
+        await using var fixture = await AccountingFixture.CreateAsync();
+        var budget = new SystemInnerWorkerAiBudget(1_000, 2);
+        var handle = await fixture.EnqueueAsync("command.integrity.unknown", budget);
+        var lease = (await fixture.ClaimAsync(1))[handle.CommandId];
+        var reservation = await fixture.ReserveAsync(handle, lease, budget,
+            "reservation.integrity.unknown", 100, 0);
+        var reference = reservation.Reservation!.RecordReference;
+        await fixture.RecordProviderDispatchAsync(reference, lease, budget);
+        var uncertain = await fixture.RecordProviderOutcomeAsync(reference, lease,
+            fixture.ProviderOutcome(20, 10, 40, complete: false));
+        Assert.True(uncertain.Accepted);
+        Assert.True(uncertain.Usage!.RequiresReconciliation);
+        Assert.Equal(100, uncertain.Usage.ChargedProviderTokens);
+
+        await fixture.ExecuteAsync("""
+            UPDATE system_task_ai_dispatch_evidence SET is_complete=1
+            WHERE record_reference=$reference AND sequence=1
+            """, ("$reference", reference));
+        var retained = await fixture.ReservationStateAsync(reference);
+        var report = new SystemInnerWorkerAiUsageReport(reference, lease.Attempt, 20, 10, 0, 40, true);
+
+        await AssertIntegrityFailureAsync("INNER_AI_USAGE_EVIDENCE_INVALID", () =>
+            fixture.ReconcileAsync(handle, report));
+        await AssertIntegrityFailureAsync("INNER_AI_USAGE_EVIDENCE_INVALID", () => fixture.ReserveAsync(
+            handle, lease, budget, "reservation.integrity.forged-release", 1, 0));
+        await AssertIntegrityFailureAsync("INNER_AI_USAGE_EVIDENCE_INVALID", () =>
+            fixture.Store.CompleteAsync(lease, new("{}", "evidence.integrity.unknown")));
+
+        Assert.Equal(retained, await fixture.ReservationStateAsync(reference));
+        Assert.Equal(100L, await fixture.ScalarAsync(
+            "SELECT charged_provider_tokens FROM system_task_ai_reservation WHERE record_reference=$reference",
+            ("$reference", reference)));
+        Assert.Equal(0L, await fixture.ScalarAsync(
+            "SELECT COUNT(*) FROM system_task_ai_reservation WHERE reservation_id='reservation.integrity.forged-release'"));
+    }
+
+    [Fact]
+    public async Task Missing_root_membership_cannot_hide_a_sibling_charge()
+    {
+        await using var fixture = await AccountingFixture.CreateAsync();
+        var budget = new SystemInnerWorkerAiBudget(100, 2);
+        var root = await fixture.EnqueueAsync("command.membership.root", budget);
+        var charged = await fixture.EnqueueAsync("command.membership.charged", budget, root.CommandId);
+        var sibling = await fixture.EnqueueAsync("command.membership.sibling", budget, root.CommandId);
+        var leases = await fixture.ClaimAsync(3);
+        var reservation = await fixture.ReserveAsync(charged, leases[charged.CommandId], budget,
+            "reservation.membership", 80, 0);
+        var reference = reservation.Reservation!.RecordReference;
+        await fixture.RecordProviderDispatchAsync(reference, leases[charged.CommandId], budget);
+        var usage = await fixture.RecordProviderOutcomeAsync(reference, leases[charged.CommandId],
+            fixture.ProviderOutcome(40, 40, 80, complete: true));
+        Assert.True(usage.Accepted);
+
+        await fixture.ExecuteAsync("""
+            DELETE FROM system_task_ai_reservation_ancestor
+            WHERE record_reference=$reference AND ancestor_task_id=$root
+            """, ("$reference", reference), ("$root", root.TaskId));
+        var retainedAfterCorruption = await fixture.ReservationStateAsync(reference);
+
+        await AssertIntegrityFailureAsync("INNER_AI_ANCESTOR_MEMBERSHIP_INVALID", () => fixture.ReserveAsync(
+            sibling, leases[sibling.CommandId], budget, "reservation.membership.hidden", 1, 0));
+        await AssertIntegrityFailureAsync("INNER_AI_ANCESTOR_MEMBERSHIP_INVALID", () =>
+            fixture.Store.CompleteAsync(leases[charged.CommandId], new("{}", "evidence.membership")));
+
+        Assert.Equal(retainedAfterCorruption, await fixture.ReservationStateAsync(reference));
+        Assert.Equal(80L, await fixture.ScalarAsync(
+            "SELECT charged_provider_tokens FROM system_task_ai_reservation WHERE record_reference=$reference",
+            ("$reference", reference)));
+        Assert.Equal(0L, await fixture.ScalarAsync(
+            "SELECT COUNT(*) FROM system_task_ai_reservation WHERE reservation_id='reservation.membership.hidden'"));
+    }
+
     [Fact]
     public async Task Oversize_provider_request_is_rejected_without_truncation_or_dispatch_evidence()
     {
@@ -442,6 +566,12 @@ public sealed class SystemTaskAiAccountingStoreTests
         Assert.Equal(0L, await fixture.ScalarAsync(
             "SELECT COUNT(*) FROM system_task_ai_dispatch_evidence WHERE record_reference=$reference",
             ("$reference", reservation.Reservation!.RecordReference)));
+    }
+
+    private static async Task AssertIntegrityFailureAsync(string expectedCode, Func<Task> action)
+    {
+        var failure = await Assert.ThrowsAsync<SystemTaskException>(action);
+        Assert.Equal(expectedCode, failure.Code);
     }
 
     private sealed class AccountingFixture : IAsyncDisposable
@@ -587,6 +717,32 @@ public sealed class SystemTaskAiAccountingStoreTests
             command.CommandText = sql;
             foreach (var parameter in parameters) command.Parameters.AddWithValue(parameter.Name, parameter.Value);
             return Convert.ToInt64(await command.ExecuteScalarAsync());
+        }
+
+        internal async Task ExecuteAsync(string sql, params (string Name, object Value)[] parameters)
+        {
+            await using var connection = await schema.OpenAsync();
+            await using var command = connection.CreateCommand();
+            command.CommandText = sql;
+            foreach (var parameter in parameters) command.Parameters.AddWithValue(parameter.Name, parameter.Value);
+            await command.ExecuteNonQueryAsync();
+        }
+
+        internal async Task<string> ReservationStateAsync(string reference)
+        {
+            await using var connection = await schema.OpenAsync();
+            await using var command = connection.CreateCommand();
+            command.CommandText = """
+                SELECT status,charged_provider_tokens,charged_tool_calls,settled_evidence_sequence,
+                    fencing_counter,updated_at_utc
+                FROM system_task_ai_reservation WHERE record_reference=$reference
+                """;
+            command.Parameters.AddWithValue("$reference", reference);
+            await using var reader = await command.ExecuteReaderAsync();
+            Assert.True(await reader.ReadAsync());
+            return string.Join('|', Enumerable.Range(0, reader.FieldCount).Select(index =>
+                reader.IsDBNull(index) ? "<null>" : Convert.ToString(reader.GetValue(index),
+                    System.Globalization.CultureInfo.InvariantCulture)));
         }
 
         internal async Task<T> InTransactionAsync<T>(Func<SqliteConnection, SqliteTransaction, Task<T>> action,

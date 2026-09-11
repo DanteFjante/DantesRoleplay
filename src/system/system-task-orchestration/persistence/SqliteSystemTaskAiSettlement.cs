@@ -73,8 +73,8 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
         // is not uncertain evidence, does not retain an in-flight slot, and cannot block cleanup.
         if (result.UsageKnown) return result with { RequiresReconciliation = false };
         var lowerBound = AiObservedLowerBound(rows);
-        var tokens = Math.Max(reservation.ChargedTokens, Math.Max(result.ChargedProviderTokens, lowerBound));
-        var tools = Math.Max(reservation.ChargedTools, Math.Max(result.ChargedToolCalls, rows.Max(value => value.Tools)));
+        var tokens = Math.Max(result.ChargedProviderTokens, lowerBound);
+        var tools = Math.Max(result.ChargedToolCalls, rows.Max(value => value.Tools));
         return result with
         {
             ChargedProviderTokens = tokens,
@@ -106,25 +106,34 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
         string reference, CancellationToken cancellationToken)
     {
         await using var command = Command(connection, transaction, """
-            SELECT dispatch_kind,request_fingerprint,provider_id,model_id,profile_fingerprint,schema_fingerprint,request_json
+            SELECT dispatch_kind,request_fingerprint,provider_id,model_id,profile_fingerprint,schema_fingerprint,request_json,
+                payload_fingerprint,event_reference
             FROM system_task_ai_dispatch_evidence WHERE record_reference=$reference AND sequence=0 AND kind='dispatch'
             """, ("$reference", reference));
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         if (!await reader.ReadAsync(cancellationToken)) return null;
         if (AiHash(reader.GetString(6)) != reader.GetString(1))
             throw new SystemTaskException("INNER_AI_DISPATCH_EVIDENCE_INVALID", "The retained dispatch bytes do not match their fingerprint.");
-        return new(reader.GetString(0), reader.GetString(1), reader.IsDBNull(2) ? null : reader.GetString(2),
+        var result = new AiDispatchRow(reader.GetString(0), reader.GetString(1), reader.IsDBNull(2) ? null : reader.GetString(2),
             reader.IsDBNull(3) ? null : reader.GetString(3), reader.GetString(4), reader.GetString(5));
+        var attempt = await ReadAiEvidenceAttemptAsync(connection, transaction, reference, cancellationToken);
+        if (reader.GetString(7) != AiDispatchFingerprint(reference, attempt, result.Kind, result.Provider, result.Model,
+                result.RequestFingerprint, result.ProfileFingerprint, result.SchemaFingerprint)
+            || reader.GetString(8) != AiDispatchEvent(reference))
+            throw new SystemTaskException("INNER_AI_DISPATCH_EVIDENCE_INVALID", "The retained dispatch identity does not match its fingerprint.");
+        return result;
     }
 
     private static async Task<IReadOnlyList<AiUsageRow>> ReadAiUsageRowsAsync(SqliteConnection connection,
         SqliteTransaction transaction, string reference, CancellationToken cancellationToken)
     {
         var dispatch = await ReadAiDispatchAsync(connection, transaction, reference, cancellationToken);
+        var attempt = await ReadAiEvidenceAttemptAsync(connection, transaction, reference, cancellationToken);
         var result = new List<AiUsageRow>();
         await using var command = Command(connection, transaction, """
             SELECT sequence,input_tokens,output_tokens,total_tokens,observed_tool_calls,is_complete,completion_kind,
-                dispatch_kind,request_fingerprint,profile_fingerprint,schema_fingerprint,provider_id,model_id
+                dispatch_kind,request_fingerprint,profile_fingerprint,schema_fingerprint,provider_id,model_id,
+                payload_fingerprint,response_fingerprint,event_reference
             FROM system_task_ai_dispatch_evidence WHERE record_reference=$reference AND sequence>0 ORDER BY sequence LIMIT 17
             """, ("$reference", reference));
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
@@ -136,9 +145,18 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
                 || (reader.IsDBNull(11) ? null : reader.GetString(11)) != dispatch.Provider
                 || (reader.IsDBNull(12) ? null : reader.GetString(12)) != dispatch.Model)
                 throw new SystemTaskException("INNER_AI_USAGE_EVIDENCE_INVALID", "Usage evidence does not retain the exact bounded dispatch identity.");
-            result.Add(new(reader.GetInt32(0), reader.IsDBNull(1) ? null : reader.GetInt64(1),
+            var row = new AiUsageRow(reader.GetInt32(0), reader.IsDBNull(1) ? null : reader.GetInt64(1),
                 reader.IsDBNull(2) ? null : reader.GetInt64(2), reader.IsDBNull(3) ? null : reader.GetInt64(3),
-                reader.GetInt64(4), reader.GetInt32(5) == 1, reader.GetString(6)));
+                reader.GetInt64(4), reader.GetInt32(5) == 1, reader.GetString(6));
+            var completion = AiCompletionValue(row.Completion);
+            var hash = AiUsageFingerprint(reference, attempt, dispatch.Kind, completion, reader.GetString(14),
+                row.Input, row.Output, row.Total, row.Tools, row.Complete, dispatch.RequestFingerprint,
+                dispatch.ProfileFingerprint, dispatch.SchemaFingerprint);
+            var report = new SystemInnerWorkerAiUsageReport(reference, attempt, row.Input, row.Output, row.Tools, row.Total, row.Complete);
+            if (reader.GetString(13) != hash || reader.GetString(15) != AiUsageEvent(reference, hash)
+                || !AiUsageIsMonotonic(result, report, completion))
+                throw new SystemTaskException("INNER_AI_USAGE_EVIDENCE_INVALID", "The retained usage does not match its fingerprint or ordered evidence.");
+            result.Add(row);
         }
         return result.AsReadOnly();
     }

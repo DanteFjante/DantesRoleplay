@@ -94,6 +94,7 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
             while (await reader.ReadAsync(cancellationToken)) retained.Add(reader.GetString(0));
         if (!expected.Order(StringComparer.Ordinal).SequenceEqual(retained.Order(StringComparer.Ordinal)))
             throw new SystemTaskException("INNER_AI_ANCESTOR_MEMBERSHIP_INVALID", "The reservation does not cover its exact persisted ancestry.");
+        await ValidateAiSettlementCacheAsync(connection, transaction, result, cancellationToken);
         return result;
     }
 
@@ -103,33 +104,37 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
         long chargedTokens = 0, chargedTools = 0, heldTokens = 0, heldTools = 0;
         var active = 0;
         var blocked = false;
-        await using var command = Command(connection, transaction, """
-            SELECT reservation.status,reservation.reserved_provider_tokens,reservation.reserved_tool_calls,
-                reservation.charged_provider_tokens,reservation.charged_tool_calls
-            FROM system_task_ai_reservation_ancestor AS membership
-            JOIN system_task_ai_reservation AS reservation ON reservation.record_reference=membership.record_reference
-            WHERE membership.ancestor_task_id=$ancestor LIMIT 17
-            """, ("$ancestor", ancestor));
-        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-        var count = 0;
-        while (await reader.ReadAsync(cancellationToken))
+        // Discover from lifecycle ownership, then verify every reservation's membership. An
+        // altered/missing membership row cannot hide a sibling's charge from the root balance.
+        var references = new List<string>();
+        await using (var command = Command(connection, transaction, """
+            SELECT reservation.record_reference FROM system_task_ai_reservation AS reservation
+            JOIN system_task_lifecycle AS task ON task.task_id=reservation.task_id
+            WHERE task.root_task_id=(SELECT root_task_id FROM system_task_lifecycle WHERE task_id=$ancestor) LIMIT 17
+            """, ("$ancestor", ancestor)))
+        await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+            while (await reader.ReadAsync(cancellationToken)) references.Add(reader.GetString(0));
+        if (references.Count > SystemTaskLifecycleLimits.MaximumRootOperations)
+            throw new SystemTaskException("INNER_AI_RESERVATION_LIMIT", "The retained reservation count exceeds the operation bound.");
+        foreach (var reference in references)
         {
-            if (++count > SystemTaskLifecycleLimits.MaximumRootOperations)
-                throw new SystemTaskException("INNER_AI_RESERVATION_LIMIT", "The retained reservation count exceeds the operation bound.");
-            var state = reader.GetString(0);
+            var reservation = await ReadAiReservationAsync(connection, transaction, reference, cancellationToken)
+                ?? throw new SystemTaskException("INNER_AI_RESERVATION_INVALID", "The retained reservation cannot be resolved.");
+            var ancestry = await ReadAiAncestryAsync(connection, transaction, reservation.Evidence.Task.TaskId, cancellationToken);
+            if (!ancestry.Contains(ancestor, StringComparer.Ordinal)) continue;
             checked
             {
-                if (state == "reserved")
+                if (reservation.State == "reserved")
                 {
-                    heldTokens += reader.GetInt64(1);
-                    heldTools += reader.GetInt64(2);
-                    if (reader.GetInt64(1) != 0) active++;
+                    heldTokens += reservation.Evidence.ProviderTokens;
+                    heldTools += reservation.Evidence.ToolCalls;
+                    if (reservation.Evidence.ProviderTokens != 0) active++;
                 }
                 else
                 {
-                    chargedTokens += reader.GetInt64(3);
-                    chargedTools += reader.GetInt64(4);
-                    blocked |= state == "unknown";
+                    chargedTokens += reservation.ChargedTokens;
+                    chargedTools += reservation.ChargedTools;
+                    blocked |= reservation.State == "unknown";
                 }
             }
         }
