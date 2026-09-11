@@ -52,6 +52,13 @@ public interface IStandingGrantTargetResolver
     Task<StandingGrantTargetResolution> ResolveAsync(InteractionInvocationHost host,
         StandingGrantDefinitionReference selection, CancellationToken cancellationToken = default);
 
+    /// <summary>Typed lookup only; the owner freshly verifies retained metadata, selected bytes and current ownership.</summary>
+    Task<StandingGrantTargetResolution> ResolveCandidateReferenceAsync(InteractionInvocationHost host,
+        ApplicationCandidateReference candidate, StandingGrantDefinitionReference selection,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(new StandingGrantTargetResolution(StandingGrantTargetResolutionStatus.Unavailable,
+            "STANDING_GRANT_CANDIDATE_OWNER_UNAVAILABLE", null));
+
     /// <summary>
     /// Candidate path resolves the exact owner-materialized retained candidate and its registered
     /// source. It cannot substitute current active bytes or accept a caller-deserialized snapshot.
