@@ -113,6 +113,49 @@ public sealed class ApplicationActivationRecoveryTests : IDisposable
     }
 
     [Fact]
+    public async Task Candidate_linked_missing_evidence_cannot_be_repaired_as_legacy_metadata()
+    {
+        await using var db = fixture.CreateContext();
+        var setup = Services(db);
+        Write("{\"value\":1}");
+        var first = await Activate(setup, null);
+        var activationLink = await db.Set<ApplicationActivationDocumentRecord>().SingleAsync();
+        var evidence = await db.Set<ApplicationActivationDocumentEvidenceRecord>().SingleAsync();
+        evidence.RetainedBytes = null;
+        db.Add(new Operation { Id = "candidate-source-operation", Timestamp = DateTime.UtcNow, Tool = "test" });
+        await db.SaveChangesAsync();
+        db.Add(new ApplicationCandidateRevisionRecord
+        {
+            ApplicationId = app.Value,
+            CandidateId = "candidate",
+            Revision = 1,
+            ApplicationRevision = first.Activation.ApplicationRevision,
+            ContentFingerprint = new string('A', 64),
+            Origin = "runtime",
+            NewImplementationReason = "test",
+            AuthorGrantReference = "grant@1",
+            SourceOperationId = "candidate-source-operation",
+            CanonicalCommandFingerprint = new string('A', 64)
+        });
+        db.Add(new ApplicationCandidateDocumentRecord
+        {
+            ApplicationId = app.Value,
+            CandidateId = "candidate",
+            Revision = 1,
+            Ordinal = 0,
+            IdentityId = activationLink.IdentityId,
+            EvidenceVersion = activationLink.EvidenceVersion
+        });
+        await db.SaveChangesAsync();
+
+        var error = await Assert.ThrowsAsync<ApplicationActivationException>(() =>
+            Activate(setup, first.Activation.ActivationFingerprint));
+
+        Assert.Equal("ACTIVATION_EVIDENCE_MISSING", error.Code);
+        Assert.Null((await db.Set<ApplicationActivationDocumentEvidenceRecord>().SingleAsync()).RetainedBytes);
+    }
+
+    [Fact]
     public async Task Source_edit_after_preview_remains_inert_and_requires_a_fresh_preview()
     {
         await using var db = fixture.CreateContext();

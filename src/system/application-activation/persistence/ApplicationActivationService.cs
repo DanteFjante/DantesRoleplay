@@ -23,6 +23,7 @@ public sealed class ApplicationActivationService : IApplicationActivationService
     private readonly IAllowedSourceRootResolver? allowedRoots;
     private readonly IProjectionImpactService impacts;
     private readonly IOperationLog operations;
+    private readonly ApplicationRetainedDocumentStore retainedDocuments;
 
     public ApplicationActivationService(
         DantesRoleplayDbContext db,
@@ -40,6 +41,7 @@ public sealed class ApplicationActivationService : IApplicationActivationService
         this.allowedRoots = allowedRoots;
         this.impacts = impacts;
         this.operations = operations;
+        retainedDocuments = new(db);
     }
 
     internal ApplicationActivationService(
@@ -78,6 +80,7 @@ public sealed class ApplicationActivationService : IApplicationActivationService
         this.allowedRoots = null;
         this.impacts = impacts;
         this.operations = operations;
+        retainedDocuments = new(db);
     }
 
     private const string Kind = "system.application.activate";
@@ -513,88 +516,17 @@ public sealed class ApplicationActivationService : IApplicationActivationService
                 HigherPriorityThanJson = JsonSerializer.Serialize(extension.HigherPriorityThan),
                 OverridesBase = extension.OverridesBase
             });
-        var identities = await db.Set<ApplicationActivationDocumentIdentityRecord>()
-            .Where(value => value.ApplicationId == activation.ApplicationId.Value)
-            .ToDictionaryAsync(value => value.LogicalIdentity, StringComparer.Ordinal, cancellationToken);
-        foreach (var logicalIdentity in activation.Winners.Select(value => value.LogicalIdentity)
-                     .Distinct(StringComparer.Ordinal))
+        var retainedLinks = await retainedDocuments.RetainAsync(
+            activation.ApplicationId, activation.Winners, retainedBytes, cancellationToken);
+        foreach (var link in retainedLinks)
         {
-            if (identities.ContainsKey(logicalIdentity)) continue;
-            var identity = new ApplicationActivationDocumentIdentityRecord
-            {
-                ApplicationId = activation.ApplicationId.Value,
-                LogicalIdentity = logicalIdentity
-            };
-            identities.Add(logicalIdentity, identity);
-            db.Add(identity);
-        }
-        await db.SaveChangesAsync(cancellationToken);
-
-        var identityIds = identities.Values.Select(value => value.Id).ToArray();
-        var evidence = await db.Set<ApplicationActivationDocumentEvidenceRecord>()
-            .Where(value => identityIds.Contains(value.IdentityId))
-            .ToArrayAsync(cancellationToken);
-        var evidenceByIdentity = evidence.GroupBy(value => value.IdentityId)
-            .ToDictionary(value => value.Key, value => value.ToList());
-        foreach (var (document, ordinal) in activation.Winners.Select((value, index) => (value, index)))
-        {
-            var identity = identities[document.LogicalIdentity];
-            if (!evidenceByIdentity.TryGetValue(identity.Id, out var candidates))
-            {
-                candidates = [];
-                evidenceByIdentity.Add(identity.Id, candidates);
-            }
-            var retained = candidates.SingleOrDefault(value => SameEvidence(value, document));
-            var bytes = retainedBytes?.GetValueOrDefault(document.LogicalIdentity);
-            if (retained is null)
-            {
-                retained = new ApplicationActivationDocumentEvidenceRecord
-                {
-                    IdentityId = identity.Id,
-                    EvidenceVersion = candidates.Select(value => value.EvidenceVersion).DefaultIfEmpty().Max() + 1,
-                    SourceId = document.SourceId,
-                    Trust = (int)document.Trust,
-                    Precedence = document.Precedence,
-                    RelativePath = document.RelativePath,
-                    MediaType = document.MediaType,
-                    ContentFingerprint = document.ContentFingerprint,
-                    Length = document.Length,
-                    IsText = document.IsText,
-                    RetainedBytes = bytes?.ToArray()
-                };
-                candidates.Add(retained);
-                db.Add(retained);
-            }
-            else
-            {
-                if (retained.RetainedBytes is { } existingBytes &&
-                    (existingBytes.LongLength != retained.Length || HashBytes(existingBytes) != retained.ContentFingerprint))
-                    throw Invalid("ACTIVATION_EVIDENCE_CORRUPT",
-                        "Retained activation document bytes do not match their immutable evidence.");
-                if (bytes is not null && retained.RetainedBytes is null)
-                {
-                    var wasPrepared = await (from link in db.Set<ApplicationActivationDocumentRecord>()
-                        join prior in db.Set<ApplicationActivationRevisionRecord>()
-                            on new { link.ApplicationId, link.ActivationRevision }
-                            equals new { prior.ApplicationId, prior.ActivationRevision }
-                        where link.IdentityId == retained.IdentityId
-                            && link.EvidenceVersion == retained.EvidenceVersion
-                            && prior.PreparationVersion != null
-                        select link).AnyAsync(cancellationToken);
-                    if (wasPrepared)
-                        throw Invalid("ACTIVATION_EVIDENCE_MISSING",
-                            "A prepared activation revision is missing its retained document bytes.");
-                    // Only legacy metadata-only evidence may acquire bytes at a new activation.
-                    retained.RetainedBytes = bytes.ToArray();
-                }
-            }
             db.Add(new ApplicationActivationDocumentRecord
             {
                 ApplicationId = activation.ApplicationId.Value,
                 ActivationRevision = activation.ActivationRevision,
-                Ordinal = ordinal,
-                IdentityId = identity.Id,
-                EvidenceVersion = retained.EvidenceVersion
+                Ordinal = link.Ordinal,
+                IdentityId = link.IdentityId,
+                EvidenceVersion = link.EvidenceVersion
             });
         }
         var current = db.Set<ApplicationActivationCurrentRecord>()
@@ -672,18 +604,6 @@ public sealed class ApplicationActivationService : IApplicationActivationService
         db.Set<ApplicationActivationRevisionRecord>().AsNoTracking()
             .Where(row => row.ApplicationId == applicationId.Value)
             .Max(row => (int?)row.ActivationRevision).GetValueOrDefault() + 1;
-
-    private static bool SameEvidence(
-        ApplicationActivationDocumentEvidenceRecord retained,
-        ActivatedApplicationDocument candidate) =>
-        retained.SourceId == candidate.SourceId
-        && retained.Trust == (int)candidate.Trust
-        && retained.Precedence == candidate.Precedence
-        && retained.RelativePath == candidate.RelativePath
-        && retained.MediaType == candidate.MediaType
-        && retained.ContentFingerprint == candidate.ContentFingerprint
-        && retained.Length == candidate.Length
-        && retained.IsText == candidate.IsText;
 
     private async Task<Operation> RecordPreviewAsync(
         ApplicationActivationContext context,
