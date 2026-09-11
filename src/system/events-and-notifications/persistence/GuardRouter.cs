@@ -64,6 +64,9 @@ public sealed class GuardRouter(
                 .Where(s => s.Status == SubscriptionStatus.Active && (s.Scope == proposal.Scope || s.Scope == ""))
                 .Join(_db.SubscriptionVersions.AsNoTracking(), s => new { SubscriptionId = s.Id, Version = s.CurrentVersion }, v => new { v.SubscriptionId, v.Version }, (s, v) => new { s, v })
                 .Where(x => x.v.Mode == SubscriptionMode.Guard && x.v.EventTypeId == proposal.Type)
+                // Application-scoped guards are rejected at registration until an application
+                // guard evaluator exists; this is also fail-closed for legacy proposals.
+                .Where(x => x.v.ApplicationId == null && x.v.StateSpaceId == null)
                 .OrderBy(x => x.v.Order).ThenBy(x => x.s.Id)
                 .ToListAsync(cancellationToken);
 

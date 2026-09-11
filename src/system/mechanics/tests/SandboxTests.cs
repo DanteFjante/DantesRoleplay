@@ -95,6 +95,42 @@ public sealed class SandboxTests
     }
 
     [Fact]
+    public async Task Parsed_context_arrays_and_prototypes_are_immutably_frozen()
+    {
+        var projection = new MechanicProjection
+        {
+            Input = """{"nested":{"rows":[{"value":3}]}}"""
+        };
+
+        var result = await Engine.RunAsync("""
+            var rejected = 0;
+            try { ctx.input.nested.rows.push({ value: 4 }); } catch (error) { rejected++; }
+            try { ctx.input.nested.rows[0].value = 4; } catch (error) { rejected++; }
+            try { Object.setPrototypeOf(ctx.input.nested, { escaped: true }); } catch (error) { rejected++; }
+            return { narration: [Object.isFrozen(ctx.input.nested.rows),
+              Object.isFrozen(ctx.input.nested.rows[0]), rejected,
+              ctx.input.nested.rows.length, ctx.input.nested.rows[0].value,
+              String(ctx.input.nested.escaped)].join('|') };
+            """, projection, ExecutionLimits.Default);
+
+        Assert.True(result.Ok, result.Error);
+        Assert.Equal("true|true|3|1|3|undefined", result.Output.Narration);
+    }
+
+    [Fact]
+    public async Task Excessively_nested_input_is_rejected_before_trusted_context_preparation()
+    {
+        var input = Enumerable.Repeat("{\"nested\":", 65).Aggregate(string.Empty, (value, next) => value + next)
+            + "0" + new string('}', 65);
+
+        var result = await Engine.RunAsync("return { narration: 'unreachable' };",
+            new MechanicProjection { Input = input }, ExecutionLimits.Default);
+
+        Assert.False(result.Ok);
+        Assert.Contains("nested more than 64", result.Error);
+    }
+
+    [Fact]
     public async Task Host_execution_identity_is_separate_from_input_and_deeply_frozen()
     {
         var projection = new MechanicProjection

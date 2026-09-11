@@ -16,13 +16,36 @@ public sealed class SqliteProjectionCollectionEndpointSelector(DantesRoleplayDbC
 {
     private const string OrdinalCollation = "dantes_ordinal";
 
-    public async Task<ProjectionCollectionEndpointSelection?> SelectAsync(
+    public Task<ProjectionCollectionEndpointSelection?> SelectAsync(
         string stateSpaceId,
         IReadOnlyList<string> candidateEntityIds,
         IReadOnlyList<string> allEntityIds,
         IReadOnlyList<ApplicationObjectEndpointComponent> requiredItemComponents,
         IReadOnlyList<ApplicationObjectEndpointComponent> includedItemComponents,
         IReadOnlyList<ApplicationObjectOrder> order,
+        CancellationToken cancellationToken = default) =>
+        SelectCoreAsync(stateSpaceId, candidateEntityIds, allEntityIds, requiredItemComponents,
+            includedItemComponents, order, false, cancellationToken);
+
+    public Task<ProjectionCollectionEndpointSelection?> SelectCurrentAsync(
+        string stateSpaceId,
+        IReadOnlyList<string> candidateEntityIds,
+        IReadOnlyList<string> allEntityIds,
+        IReadOnlyList<ApplicationObjectEndpointComponent> requiredItemComponents,
+        IReadOnlyList<ApplicationObjectEndpointComponent> includedItemComponents,
+        IReadOnlyList<ApplicationObjectOrder> order,
+        CancellationToken cancellationToken = default) =>
+        SelectCoreAsync(stateSpaceId, candidateEntityIds, allEntityIds, requiredItemComponents,
+            includedItemComponents, order, true, cancellationToken);
+
+    private async Task<ProjectionCollectionEndpointSelection?> SelectCoreAsync(
+        string stateSpaceId,
+        IReadOnlyList<string> candidateEntityIds,
+        IReadOnlyList<string> allEntityIds,
+        IReadOnlyList<ApplicationObjectEndpointComponent> requiredItemComponents,
+        IReadOnlyList<ApplicationObjectEndpointComponent> includedItemComponents,
+        IReadOnlyList<ApplicationObjectOrder> order,
+        bool currentComponents,
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(stateSpaceId);
@@ -76,10 +99,14 @@ public sealed class SqliteProjectionCollectionEndpointSelector(DantesRoleplayDbC
         var componentKeys = rows.Where(value => value.ComponentQualifiedTypeId is not null)
             .Select(value => (value.EntityId, value.ComponentQualifiedTypeId!, value.ComponentTypeVersion,
                 value.ComponentSchemaHash!)).ToHashSet();
+        var attachedKeys = rows.Where(value => value.ComponentQualifiedTypeId is not null)
+            .Select(value => (value.EntityId, value.ComponentQualifiedTypeId!)).ToHashSet();
         var orderedIds = rows.Select(value => value.EntityId).Distinct(StringComparer.Ordinal)
             .Where(candidates.Contains)
-            .Where(entityId => requiredItemComponents.All(required => componentKeys.Contains((entityId,
-                required.Type.QualifiedTypeId, required.Type.TypeVersion, required.Type.SchemaHash))))
+            .Where(entityId => requiredItemComponents.All(required => currentComponents
+                ? attachedKeys.Contains((entityId, required.Type.QualifiedTypeId))
+                : componentKeys.Contains((entityId, required.Type.QualifiedTypeId,
+                    required.Type.TypeVersion, required.Type.SchemaHash))))
             .ToArray();
         var entityRows = rows.DistinctBy(value => value.EntityId).Select(value => new EcsEntityView(
             value.StateSpaceId, value.EntityId, value.Name, value.EntityRevision,

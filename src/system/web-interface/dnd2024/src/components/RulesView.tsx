@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { Perspective, RuleReadModel, RulesReferencePublication } from "../data/hub-types";
+import { selectRulesPublication, useHubSelector } from "../data/hub-store";
 import { navigateItemRoute } from "../data/item-view-route";
 import { ViewReadError } from "../data/view-read-client";
 import { filterRuleReferences, ruleSectionOptions } from "../data/rules-reference.js";
@@ -27,22 +28,36 @@ export function RulesView({
   loadRules,
   campaignId,
   perspective,
+  rulesScope,
 }: {
   rules: RuleReadModel[];
   loadRules?: RulesLoader;
   campaignId: string;
   perspective: Perspective;
+  /** Connected production view: completed publications come only from Redux. */
+  rulesScope?: string;
 }) {
-  const [rules, setRules] = useState(initialRules);
-  const [articleCount, setArticleCount] = useState<number | null>(null);
+  const confirmedPublication = useHubSelector(selectRulesPublication(rulesScope ?? ""));
+  const [fallbackPublication, setFallbackPublication] = useState<RulesReferencePublication | null>(null);
+  const publication = rulesScope ? confirmedPublication : fallbackPublication;
+  const rules = publication?.rules ?? (rulesScope ? [] : initialRules);
+  const articleCount = publication?.articleCount ?? null;
   const [query, setQuery] = useState("");
   const [sectionId, setSectionId] = useState("");
   const [selectedRuleId, setSelectedRuleId] = useState(initialRules[0]?.id ?? "");
   const [visibleLimit, setVisibleLimit] = useState(INITIAL_VISIBLE_RULES);
   const [refreshing, setRefreshing] = useState(false);
   const [notice, setNotice] = useState("");
+  const refreshingRequest = useRef(0);
+  const loadingRef = useRef(false);
+  const loaderRef = useRef(loadRules);
+  const observedLoader = useRef(loadRules);
+  const pendingReload = useRef(false);
+  const attemptedScope = useRef<string | undefined>(undefined);
+  const [reloadVersion, setReloadVersion] = useState(0);
+  loaderRef.current = loadRules;
   const [state, setState] = useState<"loading" | "ready" | "empty" | "error" | "stale">(
-    initialRules.length > 0 ? "ready" : loadRules ? "loading" : "empty",
+    rulesScope ? "loading" : initialRules.length > 0 ? "ready" : loadRules ? "loading" : "empty",
   );
   const sections = useMemo(() => ruleSectionOptions(rules), [rules]);
   const visibleRules = useMemo(
@@ -57,28 +72,40 @@ export function RulesView({
     window.requestAnimationFrame(() => document.querySelector<HTMLElement>("#rule-detail-heading")?.focus());
   }
 
-  async function refreshRules(preferCached = true, signal?: AbortSignal) {
-    if (!loadRules || refreshing) return;
+  async function refreshRules(preferCached = true, signal?: AbortSignal, replace = false) {
+    const loader = loaderRef.current;
+    if (!loader || loadingRef.current && !replace) return;
+    const request = ++refreshingRequest.current;
+    attemptedScope.current = rulesScope;
+    loadingRef.current = true;
+    let succeeded = false;
     setRefreshing(true);
     setNotice("");
     if (rules.length === 0) setState("loading");
     try {
-      const publication = await loadRules(preferCached, signal);
+      const publication = await loader(preferCached, signal);
+      if (signal?.aborted || request !== refreshingRequest.current) return;
       const nextRules = publication.rules;
-      setRules(nextRules);
-      setArticleCount(publication.articleCount);
+      if (!rulesScope) setFallbackPublication(publication);
       setSelectedRuleId((current) => nextRules.some((rule) => rule.id === current)
         ? current
         : nextRules[0]?.id ?? "");
       setVisibleLimit(INITIAL_VISIBLE_RULES);
       setState(nextRules.length > 0 ? "ready" : "empty");
       setNotice(nextRules.length > 0
-        ? `${publication.articleCount.toLocaleString()} published rules loaded.`
+        ? publication.articleCount === null
+          ? `${nextRules.length.toLocaleString()} readable rules loaded; published total unavailable.`
+          : `${publication.articleCount.toLocaleString()} published rules loaded.`
         : "No published readable rules are available for this audience.");
+      succeeded = true;
     } catch (error) {
-      if (signal?.aborted || error instanceof ViewReadError && error.category === "cancelled") return;
+      if (signal?.aborted || request !== refreshingRequest.current || error instanceof ViewReadError && error.category === "cancelled") return;
+      const denied = error instanceof ViewReadError && error.category === "authorization";
       const incompatible = error instanceof ViewReadError && error.category === "incompatible-data";
-      if (rules.length > 0) {
+      if (denied) {
+        setState("error");
+        setNotice("Published rules are not available for this audience.");
+      } else if (rules.length > 0) {
         setState("stale");
         setNotice(incompatible
           ? "The rules response changed unexpectedly. The last valid publication is still available."
@@ -90,17 +117,49 @@ export function RulesView({
           : "The published rules could not be loaded. Check the connection and try again.");
       }
     } finally {
-      if (!signal?.aborted) setRefreshing(false);
+      if (!signal?.aborted && request === refreshingRequest.current) {
+        loadingRef.current = false;
+        setRefreshing(false);
+        // A scope/generation replacement can cancel a shared owner flight
+        // without replacing this component's callback until that cancellation
+        // settles. Queue one retry after that obsolete attempt is fenced.
+        if (pendingReload.current && !succeeded) {
+          pendingReload.current = false;
+          setReloadVersion((value) => value + 1);
+        } else if (succeeded) pendingReload.current = false;
+      }
     }
   }
 
   useEffect(() => {
+    if (observedLoader.current === loadRules) return;
+    observedLoader.current = loadRules;
+    // A callback replacement during a read needs a retry once that obsolete
+    // request settles. Do not refetch a just-confirmed initial publication:
+    // Dnd can replace its callback while wiring the same owner.
+    if (loadingRef.current) {
+      pendingReload.current = true;
+    } else if (attemptedScope.current === rulesScope && !confirmedPublication) {
+      setReloadVersion((value) => value + 1);
+    }
+  }, [confirmedPublication, loadRules, rulesScope]);
+
+  useEffect(() => {
     const controller = new AbortController();
-    void refreshRules(true, controller.signal);
-    return () => controller.abort();
-    // The resolved publication is refreshed once whenever the Rules view mounts.
+    void refreshRules(true, controller.signal, true);
+    return () => {
+      controller.abort();
+      if (loadingRef.current) loadingRef.current = false;
+    };
+    // Scope or a settled owner-generation refresh starts exactly one read.
+    // Redux remains the only completed value owner; this just restarts its read.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [reloadVersion, rulesScope]);
+
+  useEffect(() => {
+    if (!rulesScope) return;
+    if (confirmedPublication) setState(confirmedPublication.rules.length ? "ready" : "empty");
+  }, [confirmedPublication, rulesScope]);
 
   useEffect(() => {
     if (sectionId && !sections.some((section) => section.id === sectionId)) setSectionId("");
@@ -205,6 +264,10 @@ export function RulesView({
               {articleCount !== null && visibleRules.length !== articleCount
                 ? ` from ${articleCount.toLocaleString()} published` : articleCount !== null ? " published" : ""}
             </p>
+            {publication?.coverage === "partial" ? <p className="rules-notice" role="status">
+              Some readable rule fields were unavailable; displayed records retain only confirmed fields.
+            </p> : null}
+            {publication?.notices?.map((message) => <p className="rules-notice" key={message} role="status">{message}</p>)}
             {notice ? <p className="rules-notice" role="status">{notice}</p> : null}
           </div>
 
@@ -251,6 +314,9 @@ export function RulesView({
                   </div>
                 </div>
                 <p className="rule-detail__summary">{selectedRule.summary}</p>
+                {selectedRule.fieldStatus?.summary === "unavailable" ? <p className="rules-notice" role="status">
+                  This rule’s summary was unavailable.
+                </p> : null}
 
                 <div className="rule-readable-blocks">
                   {selectedRule.blocks.map((block, index) => (
@@ -265,12 +331,15 @@ export function RulesView({
                     </section>
                   ))}
                 </div>
+                {selectedRule.fieldStatus?.blocks === "unavailable" ? <p className="rules-notice" role="status">
+                  Readable rule detail was unavailable.
+                </p> : null}
 
                 {selectedRule.examples.length > 0 ? (
                   <section className="rule-examples">
                     <h3>Examples</h3>
-                    {selectedRule.examples.map((example) => (
-                      <article key={example.title}><h4>{example.title}</h4><p>{example.body}</p></article>
+                    {selectedRule.examples.map((example, index) => (
+                      <article key={`${example.title}-${index}`}><h4>{example.title}</h4><p>{example.body}</p></article>
                     ))}
                   </section>
                 ) : null}
@@ -312,16 +381,16 @@ export function RulesView({
                 <footer className="rule-detail__sources">
                   <section>
                     <h3>Sources</h3>
-                    <ul>{selectedRule.citations.map((citation) => (
+                    {selectedRule.citations.length ? <ul>{selectedRule.citations.map((citation) => (
                       <li key={`${citation.sourceId}:${citation.locator}`}><strong>{citation.sourceId}</strong><cite>{citation.locator}</cite></li>
-                    ))}</ul>
+                    ))}</ul> : <p>Source citations unavailable.</p>}
                   </section>
                   <section>
                     <h3>Authoritative implementation</h3>
-                    <ul>
+                    {selectedRule.authority.mechanicIds.length || selectedRule.authority.procedureIds.length ? <ul>
                       {selectedRule.authority.mechanicIds.map((id) => <li key={id}><span>Mechanic</span><code>{id}</code></li>)}
                       {selectedRule.authority.procedureIds.map((id) => <li key={id}><span>Procedure</span><code>{id}</code></li>)}
-                    </ul>
+                    </ul> : <p>Implementation references unavailable.</p>}
                   </section>
                 </footer>
               </article>

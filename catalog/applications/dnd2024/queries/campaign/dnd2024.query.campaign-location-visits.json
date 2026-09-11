@@ -3,36 +3,24 @@
   "category": "game.core.campaign.read-model",
   "name": "Campaign location visits",
   "description": "Returns source-revision-bound pages of explicit campaign visits and their exact World locations for DM.",
-  "matches": ["show campaign places visited", "show campaign location visits"],
-  "roles": { "campaign": "The exact audience-authorized campaign." },
-  "executor": "object-projection",
-  "campaignSelection": { "queryId": "dnd2024.query.recent-consequences", "entityIdField": "campaignId" },
-  "object": { "qualifiedId": "dnd2024.object.campaign-location-visits", "version": 1, "contentFingerprint": "1097CC80B1D7866604305C830BB568D4E972B083C25EDCEDF8FFE06E183B32F9" },
-  "collection": "visits",
-  "outputSchema": {
-    "type": "object", "additionalProperties": false,
-    "required": ["campaignTitle"],
-    "properties": {
-      "campaignTitle": { "type": "string", "minLength": 1, "maxLength": 160 },
-      "visits": {
-        "type": "array", "maxItems": 25,
-        "items": {
-          "type": "object", "additionalProperties": false,
-          "required": ["id", "name", "firstVisitedMinute", "lastVisitedMinute", "visitCount", "status", "summary", "memory", "locations"],
-          "properties": {
-            "id": { "type": "string", "minLength": 1, "maxLength": 200 }, "name": { "type": "string", "minLength": 1, "maxLength": 400 },
-            "firstVisitedMinute": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "lastVisitedMinute": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
-            "visitCount": { "type": "integer", "minimum": 1, "maximum": 1000000 }, "status": { "enum": ["current", "departed"] },
-            "summary": { "type": "string", "minLength": 1, "maxLength": 1000 }, "memory": { "type": "string", "minLength": 1, "maxLength": 2000 },
-            "gmContext": { "type": "string", "minLength": 1, "maxLength": 2000 },
-            "locations": { "type": "array", "minItems": 1, "maxItems": 1, "items": { "$ref": "#/$defs/entityReference" } }
-          }
-        }
-      },
-      "totalCount": { "type": "integer", "minimum": 0, "maximum": 256 }, "complete": { "type": "boolean" }, "nextCursor": { "type": ["string", "null"], "maxLength": 2048 }
-    },
-    "$defs": { "entityReference": { "type": "object", "additionalProperties": false, "required": ["id", "name"], "properties": { "id": { "type": "string", "minLength": 1, "maxLength": 200 }, "name": { "type": "string", "minLength": 1, "maxLength": 400 } } } }
+  "matches": [
+    "show campaign places visited",
+    "show campaign location visits"
+  ],
+  "roles": {
+    "campaign": "The exact audience-authorized campaign."
   },
+  "roleBindings": {
+    "campaign": { "source": "route-entity" }
+  },
+  "executor": "object-projection",
+  "object": {
+    "qualifiedId": "dnd2024.object.campaign-location-visits",
+    "version": 2,
+    "contentFingerprint": "A59863150495454921D56301F9ADA44A6F9E8A2740A59A0754F28FF70390F555"
+  },
+  "collection": "visits",
   "exposure": "model-visible",
-  "status": "active"
+  "status": "active",
+  "profile": "application-object/v2"
 }

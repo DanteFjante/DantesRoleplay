@@ -17,19 +17,19 @@ export type ItemReadSuccess<T> = { status: "ready"; data: T; sourceRevision: str
 export const itemReadId = (value: string) => /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,199}$/.test(value);
 
 export async function readItemResponse<T>({
-  request, input, contract, validate, verify, errorMessage, expectedSourceRevision,
+  request, input, contract, validate, consume, verify, errorMessage, expectedSourceRevision,
 }: {
   request: ItemReadBinding;
   input: Record<string, unknown>;
   contract: ItemReadContract;
-  validate: (value: unknown) => boolean;
+  validate?: (value: unknown) => boolean;
+  consume?: (value: unknown) => T | null;
   verify?: (value: T) => boolean;
   errorMessage: string;
   expectedSourceRevision?: string | null;
 }, signal: AbortSignal, fetchImpl: typeof fetch = fetch): Promise<ItemReadSuccess<T> | ItemReadFailure> {
   const parameters = new URLSearchParams({
     perspective: request.perspective,
-    campaignId: request.campaignId,
     input: JSON.stringify(input),
   });
   const url = `/api/applications/${encodeURIComponent(request.applicationId)}/state-spaces/${encodeURIComponent(request.stateSpaceId)}/entities/${encodeURIComponent(request.observerId)}/read-models/${contract.id}?${parameters}`;
@@ -43,7 +43,7 @@ export async function readItemResponse<T>({
     maximumBodyBytes: 70_000,
     maximumDataBytes: 65_536,
     statusPolicy: { ready: [200], forbidden: [403], stale: [409], unavailable: "remaining" },
-    validate: (value: unknown): value is T => validate(value),
+    ...(consume ? { consume } : { validate: (value: unknown): value is T => Boolean(validate?.(value)) }),
     verify,
     expectedSourceRevision,
   });

@@ -1,4 +1,5 @@
 import type {
+  CampaignDetailFields,
   CampaignMapOverlay,
   ConnectedCampaignDetails,
   ConnectedCampaignEnvelope,
@@ -51,13 +52,36 @@ export function mergeConnectedCampaignDetails(
   connection: ConnectedCampaignEnvelope,
   details: ConnectedCampaignDetails,
 ): ConnectedCampaignEnvelope {
-  return { ...connection, campaign: { ...connection.campaign, ...details } };
+  const { detailFields, ...campaignDetails } = details;
+  const validStatuses = new Set<CampaignDetailFields[keyof CampaignDetailFields]>(
+    ["ready", "partial", "empty", "absent", "invalid"],
+  );
+  const normalizedDetailFields = detailFields ? {
+    chapters: validStatuses.has(detailFields.chapters as CampaignDetailFields[keyof CampaignDetailFields])
+      ? detailFields.chapters as CampaignDetailFields["chapters"] : "invalid",
+    arcs: validStatuses.has(detailFields.arcs as CampaignDetailFields[keyof CampaignDetailFields])
+      ? detailFields.arcs as CampaignDetailFields["arcs"] : "invalid",
+    sessions: validStatuses.has(detailFields.sessions as CampaignDetailFields[keyof CampaignDetailFields])
+      ? detailFields.sessions as CampaignDetailFields["sessions"] : "invalid",
+    visits: validStatuses.has(detailFields.visits as CampaignDetailFields[keyof CampaignDetailFields])
+      ? detailFields.visits as CampaignDetailFields["visits"] : "invalid",
+  } as CampaignDetailFields : undefined;
+  return {
+    ...connection,
+    campaign: {
+      ...connection.campaign,
+      ...campaignDetails,
+      ...(normalizedDetailFields ? { detailFields: normalizedDetailFields } : {}),
+    },
+  };
 }
 
 /** Bootstrap projection: identity and participation only; character details are feature resources. */
 export function projectPartySummary(connection: ConnectedCampaignEnvelope): PartyMemberReadModel[] {
   const members: ConnectedPartyMember[] = connection.party ?? [{ ...connection.actor, current: true }];
-  const canAttachBoundKnowledge = connection.audience.seat === "player" && connection.knowledge.status === "ready";
+  // A shared party union is not the selected character's private notebook.
+  const canAttachBoundKnowledge = connection.audience.seat === "player" &&
+    connection.knowledge.status === "ready" && connection.knowledge.audience === undefined;
   return members.map((member) => ({
     id: member.id,
     initials: initials(member.name),
@@ -577,6 +601,7 @@ export function connectedCampaignToHubEnvelope(
         mapVisualState: entry.mapVisualState,
         mapVisual: entry.mapVisual,
         media: entry.media,
+        unavailableFields: entry.unavailableFields,
       };
     })
     : knownLocations.map((entry, index) => ({
@@ -656,12 +681,11 @@ export function connectedCampaignToHubEnvelope(
   );
   const rootMapId = liveMapTree.rootMapId;
   const liveKnowledgeOverlays: CampaignMapOverlay[] = (() => {
-    // A DM's Player toggle is a local rehearsal over a GM-authorized server request. Until the
-    // server can issue a perspective-bound knowledge read, emitting that knowledge in preview
-    // could put GM notes into Player-shaped bytes, so this path fails closed.
+    // Only the registered, server-filtered party read can admit knowledge to DM Player view.
+    // Retained legacy GM knowledge must never cross that perspective boundary.
     if (
       connection.knowledge.status !== "ready"
-      || (connection.audience.seat === "dm" && perspective === "player")
+      || (connection.audience.seat === "dm" && perspective === "player" && connection.knowledge.audience !== "party")
     ) {
       return [];
     }
@@ -711,8 +735,8 @@ export function connectedCampaignToHubEnvelope(
   })();
   const baseWorldLocations = hasSourceLocations
     ? locationEntries.map((entry, index) => {
-      const x = validAnchor(entry.mapAnchor) ? Math.round(entry.mapAnchor.x / 10) : 0;
-      const y = validAnchor(entry.mapAnchor) ? Math.round(entry.mapAnchor.y / 10) : 0;
+      const mapAnchor = validAnchor(entry.mapAnchor)
+        ? { x: Math.round(entry.mapAnchor.x / 10), y: Math.round(entry.mapAnchor.y / 10) } : null;
       const notes = entry.sourceEntries.map((note) => note.text.trim()).filter(Boolean);
       const normalizedEntryKind = normalizeKind(entry.kind);
       const region = hasLocationDirectory
@@ -727,15 +751,16 @@ export function connectedCampaignToHubEnvelope(
         region,
         kind: normalizedEntryKind ?? "Known place",
         status: "Known",
-        summary: notes[0] ?? `Known place: ${entry.name}.`,
-        description: notes.join("\n\n") || `Known place: ${entry.name}.`,
+        summary: notes[0] ?? (entry.unavailableFields?.includes("summary") ? "Description unavailable." : `Known place: ${entry.name}.`),
+        description: notes.join("\n\n") || (entry.unavailableFields?.includes("summary") ? "Description unavailable." : `Known place: ${entry.name}.`),
         atmosphere: "Observed from campaign knowledge.",
         landmarks: [],
         observations: notes.length
           ? notes
           : ["No additional campaign notes were recorded for this place."],
         routes: [],
-        mapAnchor: { x, y },
+        mapAnchor,
+        ...(entry.unavailableFields ? { unavailableFields: entry.unavailableFields } : {}),
         people: [],
         ...(entry.media ? { media: entry.media } : {}),
       };
@@ -746,17 +771,26 @@ export function connectedCampaignToHubEnvelope(
   const worldPeople = (liveWorldDirectory?.people ?? []).flatMap((person) => {
     const location = baseLocationById.get(person.locationId);
     if (!location) return [];
+    const unavailableFields = person.unavailableFields ?? [];
+    const personName = person.name || "Name unavailable";
+    const personKind = person.kind || "Unknown";
+    const motiveUnavailable = unavailableFields.includes("motive");
     return [{
       id: person.id,
-      initials: initials(person.name),
-      name: person.name,
-      kind: person.kind,
-      role: person.kind === "Creature" ? "Recorded creature" : "Recorded person",
-      summary: person.motive?.summary ?? `${person.name} is recorded at ${location.name}.`,
-      background: "No background has been recorded.",
-      disposition: person.motive ? displayStatus(person.motive.status) : "Not recorded",
+      initials: initials(personName),
+      name: personName,
+      kind: personKind,
+      role: personKind === "Creature" ? "Recorded creature"
+        : personKind === "NPC" ? "Recorded person" : "Classification unavailable",
+      summary: person.motive?.summary ?? (motiveUnavailable
+        ? "Motive unavailable."
+        : `${personName} is recorded at ${location.name}.`),
+      background: "Background unavailable.",
+      disposition: motiveUnavailable ? "Unavailable"
+        : person.motive ? displayStatus(person.motive.status) : "Not recorded",
       ...(person.media?.portrait ? { portrait: person.media.portrait } : {}),
       ...(person.motive ? { motive: person.motive.summary } : {}),
+      ...(unavailableFields.length ? { unavailableFields } : {}),
       location: { id: location.id, name: location.name, region: location.region },
     }];
   });
@@ -802,13 +836,13 @@ export function connectedCampaignToHubEnvelope(
         route.durationMinutes > 1_440) continue;
     const origin = baseLocationById.get(route.originId);
     const destination = baseLocationById.get(route.destinationId);
-    const detail = route.detail.trim();
-    if (!origin || !destination || destination.name !== route.destinationName || !detail) continue;
+    const detail = typeof route.detail === "string" ? route.detail.trim() : "";
+    if (!origin || !destination || destination.name !== route.destinationName) continue;
     seenRouteIds.add(route.id);
     const values = routesByLocation.get(origin.id) ?? [];
     values.push({
       destination: destination.name,
-      detail: `${detail} · On foot, ${route.durationMinutes} ${route.durationMinutes === 1 ? "minute" : "minutes"}.`,
+      detail: `${detail || "Route details unavailable."} · On foot, ${route.durationMinutes} ${route.durationMinutes === 1 ? "minute" : "minutes"}.`,
     });
     routesByLocation.set(origin.id, values);
   }
@@ -880,13 +914,14 @@ export function connectedCampaignToHubEnvelope(
       return target ? [{ id: target.id, name: target.name, stance: relationship.stance }]
         : reference ? [{ ...reference, stance: relationship.stance }] : [];
     }),
-    dmAgenda: faction.agenda.summary,
+    dmAgenda: faction.agenda?.summary,
+    ...(faction.unavailableFields?.length ? { unavailableFields: faction.unavailableFields } : {}),
   }));
   const worldFactions = [...sovereignPowers, ...organizations];
   const projectedFactionById = new Map(worldFactions.map((faction) => [faction.id, faction]));
   const campaignEntityLinks = (entityIds: readonly string[] = []) => {
     const locations: Array<{ id: string; name: string }> = [];
-    const people: Array<{ id: string; name: string; kind: "NPC" | "Creature" }> = [];
+    const people: Array<{ id: string; name: string; kind: string }> = [];
     const factions: Array<{ id: string; name: string }> = [];
     for (const id of [...new Set(entityIds)]) {
       const location = baseLocationById.get(id);
@@ -909,9 +944,9 @@ export function connectedCampaignToHubEnvelope(
     : "";
   const currentSituation = connection.currentSituation
     ? connection.currentSituation
-    : (currentLocationId
-      ? { status: "ready" as const, kind: "exploration" as const, locationId: currentLocationId }
-      : { status: "unavailable" as const, message: "No authoritative current scene is available." });
+    : { status: "unavailable" as const,
+      ...(currentLocationId ? { locationId: currentLocationId } : {}),
+      message: "No authoritative current scene is available." };
   const worldName = deriveWorldName(connection);
   const contextSelection = connection.contextSelection;
   const knowledgeEntries = connection.knowledge.status === "ready" ? connection.knowledge.entries : [];
@@ -931,6 +966,7 @@ export function connectedCampaignToHubEnvelope(
       linkedPeople: entry.linkedPeople,
       linkedFactions: [],
       linkedHistory: [],
+      ...(entry.admissions ? { admissions: entry.admissions } : {}),
     })),
   ];
   const chronologyHistory: WorldHistoryEvent[] = connection.chronology.status === "ready"
@@ -962,12 +998,37 @@ export function connectedCampaignToHubEnvelope(
       };
     })
     : [];
+  // Older connected envelopes predate field-local evidence. Their already-admitted values retain
+  // the previous presentation semantics; new bootstraps carry explicit status instead of making
+  // an absent or malformed field look authoritatively empty.
+  const descriptiveFields = connection.campaign.descriptiveFields ?? {
+    title: "ready",
+    premise: connection.campaign.premise === null ? "empty" : "ready",
+    partyGoals: connection.campaign.partyGoals.length === 0 ? "empty" : "ready",
+    toneAndBoundaries: connection.campaign.toneAndBoundaries.length === 0 ? "empty" : "ready",
+  } as const;
   const campaignGoals = connection.campaign.partyGoals;
-  const premise = connection.campaign.premise ?? "No campaign premise has been recorded yet.";
+  const premise = descriptiveFields.premise === "ready" && connection.campaign.premise
+    ? connection.campaign.premise
+    : descriptiveFields.premise === "empty"
+      ? "No campaign premise has been recorded yet."
+      : "Campaign premise is unavailable.";
+  const partyGoalsAvailable = descriptiveFields.partyGoals === "ready" ||
+    descriptiveFields.partyGoals === "partial" ||
+    descriptiveFields.partyGoals === "empty";
+  const partyObjective = partyGoalsAvailable
+    ? campaignGoals[0] ?? "No party objective has been recorded yet."
+    : "Party objectives are unavailable.";
   const chapters = connection.campaign.chapters ?? [];
   const arcs = connection.campaign.arcs ?? [];
   const sessions = perspective === "dm" ? connection.campaign.sessions ?? [] : [];
   const visits = perspective === "dm" ? connection.campaign.visits ?? [] : [];
+  const campaignDetailFields: CampaignDetailFields = connection.campaign.detailFields ?? {
+    chapters: detailStatus(connection.campaign, "chapters", chapters),
+    arcs: detailStatus(connection.campaign, "arcs", arcs),
+    sessions: detailStatus(connection.campaign, "sessions", sessions),
+    visits: detailStatus(connection.campaign, "visits", visits),
+  };
   const activeChapter = chapters.find((chapter) => chapter.status === "active") ?? null;
   const activeArc = arcs.find((arc) => arc.status === "active") ?? null;
   const preparedQuests = preparedQuestCards(knowledgeEntries, activeChapter?.title ?? null);
@@ -983,11 +1044,11 @@ export function connectedCampaignToHubEnvelope(
         sortOrder: session.ordinal,
         session: `Session ${session.ordinal}`,
         date: campaignDate(orderedMilestones.at(-1)?.timestamp ?? session.updatedAtUtc),
-        title: recap.chapter.title,
-        summary: recap.chapter.partyQuestion,
+        title: recap.chapter.title ?? "Chapter title unavailable",
+        summary: recap.chapter.partyQuestion ?? "Chapter question unavailable.",
         result: orderedMilestones.length
           ? orderedMilestones.map((milestone) => milestone.closingSummary).join(" • ")
-          : `The session ended with ${recap.arc.title} still active.`,
+          : `The session ended with ${recap.arc.title ?? "an arc title unavailable"} still active.`,
         links: campaignEntityLinks(session.worldEntityIds),
       };
     });
@@ -998,8 +1059,8 @@ export function connectedCampaignToHubEnvelope(
       sortOrder: index,
       session: `Chapter ${index + 1}`,
       date: campaignDate(chapter.updatedAtUtc ?? chapter.createdAtUtc),
-      title: chapter.title,
-      summary: chapter.partyQuestion,
+      title: chapter.title ?? "Chapter title unavailable",
+      summary: chapter.partyQuestion ?? "Chapter question unavailable.",
       result: chapter.closingSummary!,
       links: campaignEntityLinks(chapter.worldEntityIds),
       ...(chapter.gmContext ? { dmNote: chapter.gmContext } : {}),
@@ -1013,8 +1074,8 @@ export function connectedCampaignToHubEnvelope(
       id: `live-arc-outcome-${index + 1}`,
       sortOrder: index,
       status: displayStatus(arc.status),
-      title: arc.title,
-      situation: arc.partyStake,
+      title: arc.title ?? "Arc title unavailable",
+      situation: arc.partyStake ?? "Arc stake unavailable.",
       result: arc.closingSummary!,
       consequence: `This campaign arc is recorded as ${arc.status}.`,
       links: campaignEntityLinks(arc.worldEntityIds),
@@ -1028,8 +1089,8 @@ export function connectedCampaignToHubEnvelope(
       category: "Chapter question",
       status: "Active",
       pressure: "Current",
-      title: chapter.title,
-      summary: chapter.partyQuestion,
+      title: chapter.title ?? "Chapter title unavailable",
+      summary: chapter.partyQuestion ?? "Chapter question unavailable.",
       lastChanged: campaignDate(chapter.updatedAtUtc ?? chapter.createdAtUtc),
       links: { locations: [], people: [], factions: [] },
       ...(chapter.gmContext ? { dmTruth: chapter.gmContext } : {}),
@@ -1042,8 +1103,8 @@ export function connectedCampaignToHubEnvelope(
       category: "Campaign arc",
       status: "Active",
       pressure: "Long-term",
-      title: arc.title,
-      summary: arc.partyStake,
+      title: arc.title ?? "Arc title unavailable",
+      summary: arc.partyStake ?? "Arc stake unavailable.",
       lastChanged: campaignDate(arc.updatedAtUtc ?? arc.createdAtUtc),
       links: { locations: [], people: [], factions: [] },
       ...(arc.gmContext ? { dmTruth: arc.gmContext } : {}),
@@ -1056,7 +1117,7 @@ export function connectedCampaignToHubEnvelope(
     .map((entry, index) => {
       const content = splitKnowledgeText(entry.text, `Campaign evidence ${index + 1}`);
       return {
-        id: `live-campaign-clue-${index + 1}`,
+        id: entry.knowledgeId ?? entry.recognitionKey ?? `live-campaign-clue-${index + 1}`,
         sortOrder: index,
         mystery: "Campaign evidence",
         status: displayStatus(entry.stance, "Known"),
@@ -1066,6 +1127,7 @@ export function connectedCampaignToHubEnvelope(
         discoveredAt: "Current campaign knowledge",
         links: campaignEntityLinks(entry.subject ? [entry.subject.id] : []),
         ...(entry.media?.handout ? { handout: entry.media.handout } : {}),
+        ...(entry.admissions ? { admissions: entry.admissions } : {}),
       };
     });
   const campaignVisits = visits.flatMap((visit) => {
@@ -1078,8 +1140,8 @@ export function connectedCampaignToHubEnvelope(
       lastVisited: `Campaign minute ${visit.lastVisitedMinute}`,
       visitCount: visit.visitCount,
       status: displayStatus(visit.status),
-      summary: visit.summary,
-      memory: visit.memory,
+      summary: visit.summary ?? "Visit summary unavailable.",
+      memory: visit.memory ?? "Visit memory unavailable.",
       ...(visit.gmContext ? { dmContext: visit.gmContext } : {}),
     }];
   });
@@ -1108,8 +1170,8 @@ export function connectedCampaignToHubEnvelope(
       perspective,
       allowedPerspectives: connection.audience.allowedPerspectives,
     },
-    ...(connection.campaign.projection ? {
-      objectQueries: { campaignSummary: connection.campaign.projection },
+    ...(connection.campaign.projection || connection.currentPlayProjection ? {
+      objectQueries: { campaignSummary: connection.campaign.projection, currentPlay: connection.currentPlayProjection },
     } : {}),
     currentSituation,
     contextSelection,
@@ -1142,6 +1204,7 @@ export function connectedCampaignToHubEnvelope(
         },
       ],
       history: chronologyHistory,
+      historyCoverage: connection.chronology.coverage ?? "complete",
       locations: worldLocations,
       locationScopes: locationScopeRecords,
       people: worldPeople,
@@ -1149,26 +1212,31 @@ export function connectedCampaignToHubEnvelope(
         peopleDirectory: {
           totalCount: worldPeople.length,
           hierarchyComplete: liveWorldDirectory.peopleHierarchyComplete ?? true,
+          coverage: liveWorldDirectory.peopleCoverage ?? "complete",
           sourceRevisionFingerprint: liveWorldDirectory.peopleSourceRevisionFingerprint ?? null,
         },
       } : {}),
       factions: worldFactions,
       lore: knowledgeLore,
+      loreCoverage: connection.knowledge.coverage ?? "complete",
     },
     campaign: {
       title: connection.campaign.name,
       subtitle: "Connected live campaign",
       status: displayStatus(connection.campaign.status, "Active"),
-      chapter: activeChapter?.title ?? "No active chapter recorded",
-      question: activeChapter?.partyQuestion ?? "No active chapter question has been recorded yet.",
+      chapter: activeChapter?.title ?? detailFallback(campaignDetailFields.chapters,
+        "No active chapter recorded", "Active chapter information unavailable."),
+      question: activeChapter?.partyQuestion ?? detailFallback(campaignDetailFields.chapters,
+        "No active chapter question has been recorded yet.", "Active chapter question unavailable."),
       premise,
       progress: chapters.length || arcs.length
         ? `${chapters.length} ${chapters.length === 1 ? "chapter" : "chapters"} · ${arcs.length} ${arcs.length === 1 ? "arc" : "arcs"}`
         : "Live campaign structure has not been recorded yet",
-      objective: campaignGoals[0] ?? "No party objective has been recorded yet.",
-      stakes: activeArc?.partyStake ?? "No active campaign arc stake has been recorded yet.",
+      objective: partyObjective,
+      stakes: activeArc?.partyStake ?? detailFallback(campaignDetailFields.arcs,
+        "No active campaign arc stake has been recorded yet.", "Active campaign arc stake unavailable."),
       nextMilestone: activeChapter?.partyQuestion
-        ?? campaignGoals[0]
+        ?? (partyGoalsAvailable ? campaignGoals[0] : undefined)
         ?? "No milestone has been recorded yet.",
       facts: [
         {
@@ -1188,8 +1256,16 @@ export function connectedCampaignToHubEnvelope(
             ? "Server-authorized local DM seat"
             : connection.actor.state ?? "Current player character",
         },
-        { label: "Party goals", value: String(campaignGoals.length), detail: "Recorded in the campaign root" },
+        {
+          label: "Party goals",
+          value: partyGoalsAvailable ? String(campaignGoals.length) : "Unavailable",
+          detail: partyGoalsAvailable
+            ? "Recorded in the campaign root"
+            : "The campaign summary did not provide usable party goals.",
+        },
       ],
+      descriptiveFields,
+      detailFields: campaignDetailFields,
       adventureLog: campaignAdventureLog,
       placesVisited: campaignVisits,
       outcomes: campaignOutcomes,
@@ -1207,6 +1283,9 @@ export function connectedCampaignToHubEnvelope(
       })),
       threads: [...chapterThreads, ...arcThreads],
       clues: campaignClues,
+      cluesCoverage: connection.knowledge.status === "unavailable" ? "unavailable"
+        : connection.knowledge.coverage === "partial" ? "partial" : "complete",
+      ...(connection.knowledge.audience ? { knowledgeAudience: connection.knowledge.audience } : {}),
       ...(dmCampaignContext ? { dmContext: dmCampaignContext } : {}),
     },
     party: projectPartySummary(connection),
@@ -1223,14 +1302,16 @@ export function connectedCampaignToDeferredHubUpdate(
     case "context":
       return { section, contextSelection: projected.contextSelection! };
     case "history":
-      return { section, world: { history: projected.world.history } };
+      return { section, world: { history: projected.world.history, historyCoverage: projected.world.historyCoverage } };
     case "lore":
       return {
         section,
-        world: { lore: projected.world.lore },
+        world: { lore: projected.world.lore, loreCoverage: projected.world.loreCoverage },
         campaign: {
           quests: projected.campaign.quests,
           clues: projected.campaign.clues,
+          cluesCoverage: projected.campaign.cluesCoverage,
+          knowledgeAudience: projected.campaign.knowledgeAudience,
           mapOverlays: projected.campaign.mapOverlays,
         },
       };
@@ -1263,6 +1344,7 @@ export function connectedCampaignToDeferredHubUpdate(
       return {
         section,
         currentSituation: projected.currentSituation!,
+        ...(connection.currentPlayProjection ? { projection: connection.currentPlayProjection } : {}),
         world: {
           currentLocationId: projected.world.currentLocationId,
           locations: projected.world.locations,
@@ -1270,4 +1352,88 @@ export function connectedCampaignToDeferredHubUpdate(
         campaign: { mapOverlays: projected.campaign.mapOverlays },
       };
   }
+}
+
+function detailStatus(
+  campaign: ConnectedCampaignEnvelope["campaign"],
+  key: keyof CampaignDetailFields,
+  values: readonly unknown[],
+): CampaignDetailFields[keyof CampaignDetailFields] {
+  return campaign.detailFields?.[key] ?? (values.length > 0 ? "ready" : "absent");
+}
+
+function detailUnavailable(status: CampaignDetailFields[keyof CampaignDetailFields]): boolean {
+  return status !== "ready" && status !== "empty";
+}
+
+function detailFallback(
+  status: CampaignDetailFields[keyof CampaignDetailFields],
+  empty: string,
+  unavailable: string,
+): string {
+  return status === "empty" ? empty : detailUnavailable(status) ? unavailable : empty;
+}
+
+/**
+ * Projects only one authorized location scope into the browser resource response.
+ * The connected source may retain other visited scopes for admission and continuation,
+ * but those unrelated records must not make each cached page grow with browsing history.
+ */
+export function connectedCampaignToWorldScopeUpdate(
+  connection: ConnectedCampaignEnvelope,
+  scopeId: string,
+): Extract<DeferredHubUpdate, { section: "locations" }> & { scopePage: { id: string } } {
+  const sourceScope = connection.locationScopes?.find((scope) => scope.id === scopeId);
+  if (!sourceScope) throw new Error("The requested World scope was not projected.");
+  const directory = connection.locationDirectory ?? [];
+  const directoryById = new Map(directory.map((entry) => [entry.id, entry]));
+  const pageIds = new Set([scopeId, ...sourceScope.childIds]);
+  const projectionIds = new Set(pageIds);
+  const worldId = connection.contextSelection.selectedWorldId;
+  let ancestorId = directoryById.get(scopeId)?.containerId ?? null;
+  const visitedAncestors = new Set<string>();
+  while (ancestorId) {
+    if (visitedAncestors.has(ancestorId) || visitedAncestors.size >= 16)
+      throw new Error("The requested World scope hierarchy exceeds its supported bounds.");
+    visitedAncestors.add(ancestorId);
+    projectionIds.add(ancestorId);
+    if (ancestorId === worldId) break;
+    ancestorId = directoryById.get(ancestorId)?.containerId ?? null;
+  }
+  projectionIds.add(worldId);
+
+  const scopedConnection: ConnectedCampaignEnvelope = {
+    ...connection,
+    locationDirectory: directory.filter((entry) => projectionIds.has(entry.id)),
+    locationDirectoryComplete: false,
+    locationScopes: [sourceScope],
+    // People, holdings, Current routes, and knowledge overlays have independent owners.
+    // A scope page must not copy their previously accumulated records into its cache entry.
+    worldDirectory: undefined,
+    knownRoutes: undefined,
+    knowledge: { status: "empty", entries: [], locations: [] },
+  };
+  const projected = connectedCampaignToDeferredHubUpdate(scopedConnection, "locations");
+  if (projected.section !== "locations") throw new Error("The World scope response is incompatible.");
+  const pageScope = projected.world.locationScopes.find((scope) => scope.id === scopeId);
+  if (!pageScope) throw new Error("The requested World scope metadata was not projected.");
+  const maps = projected.world.maps.filter((map) =>
+    pageIds.has(map.subject.id) || map.id === projected.world.rootMapId);
+  const boundedMaps = maps.length > 0 ? maps : projected.world.maps.slice(0, 1);
+  const mapIds = new Set(boundedMaps.map((map) => map.id));
+  return {
+    section: "locations",
+    scopePage: { id: scopeId },
+    world: {
+      ...projected.world,
+      maps: boundedMaps,
+      regions: [],
+      facts: [],
+      locations: projected.world.locations.filter((location) => pageIds.has(location.id)),
+      locationScopes: [pageScope],
+    },
+    campaign: {
+      mapOverlays: projected.campaign.mapOverlays.filter((overlay) => mapIds.has(overlay.mapId)),
+    },
+  };
 }

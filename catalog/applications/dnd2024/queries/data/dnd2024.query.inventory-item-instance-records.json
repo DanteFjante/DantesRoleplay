@@ -1,0 +1,22 @@
+{
+  "id": "dnd2024.query.inventory-item-instance-records",
+  "category": "item.structural-object",
+  "name": "Inventory item instance records object",
+  "description": "Reads the exact registered structural records for one item instance and its declared definition reference.",
+  "matches": ["read item instance records object", "inspect item instance sources"],
+  "roles": {
+    "item": "The exact item instance to inspect."
+  },
+  "roleBindings": {
+    "item": { "source": "route-entity" }
+  },
+  "executor": "object-projection",
+  "object": {
+    "qualifiedId": "dnd2024.object.inventory-item-instance-records",
+    "version": 3,
+    "contentFingerprint": "74F012F1136D31415673D52666E85D7400C8E570A2A1B64AA0BA83ED5D8D348D"
+  },
+  "exposure": "model-visible",
+  "status": "active",
+  "profile": "application-object/v2"
+}

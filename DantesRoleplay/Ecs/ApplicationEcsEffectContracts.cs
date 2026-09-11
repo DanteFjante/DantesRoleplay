@@ -122,7 +122,17 @@ public sealed record ApplicationEcsEffectReceipt(
     int? Revision,
     int? RemovedRevision = null,
     string TargetEntityId = "",
-    string QualifiedRelationshipKind = "");
+    string QualifiedRelationshipKind = "",
+
+    // Captured by the applier inside its write transaction. These are absent only for effects
+    // that do not change a component; null on a component snapshot means the component itself
+    // was absent, never that the applier skipped the read.
+    string? BeforeJson = null,
+    int? BeforeRevision = null,
+    string? AfterJson = null,
+    int? AfterRevision = null,
+    int? ComponentTypeVersion = null,
+    int BatchEffectIndex = 0);
 
 public sealed record ApplicationEcsEffectResult(
     bool Applied,
@@ -156,6 +166,68 @@ public interface IApplicationEcsTransactionParticipant
         CancellationToken cancellationToken = default);
 }
 
+/// <summary>
+/// A transaction-local producer of immutable application event rows. The applier calls it only
+/// after the corresponding typed effects have actually applied and before terminal participants,
+/// then may route exactly the returned rows through the same transaction.
+/// </summary>
+public interface IApplicationEcsEventSourceParticipant
+{
+    Task<IReadOnlyList<Events.EventDetail>> StageEventsAsync(
+        ApplicationEcsEffectBatch batch,
+        IReadOnlyList<ApplicationEcsEffectReceipt> receipts,
+        ApplicationEcsEventEmissionContext emission,
+        CancellationToken cancellationToken = default);
+}
+
+/// <summary>Provenance fixed by the applier for one root or reaction effect batch.</summary>
+public sealed record ApplicationEcsEventEmissionContext(
+    string RootOperationId,
+    int Depth,
+    string CausationEventId,
+    string ProducerExecutionId);
+
+/// <summary>
+/// The source-bound accepted events a generic application reaction router may inspect. Source is
+/// supplied by the ledger and cannot be upgraded or replaced by the router.
+/// </summary>
+public sealed record ApplicationEcsReactionContext(
+    Events.EventSourceContext Source,
+    IReadOnlyList<Events.EventDetail> AcceptedEvents,
+    string RootOperationId,
+    long RootSeed,
+    Events.ChainBudget Budget);
+
+/// <summary>
+/// One already-evaluated reaction result. The applier owns concurrency checks, effect application,
+/// receipt capture, event emission, auditing and commit; a router never opens a second write path.
+/// </summary>
+public sealed record ApplicationEcsReactionBatch(
+    ApplicationEcsEffectBatch Batch,
+    string ParentEventId,
+    int Depth,
+    string ProducerExecutionId);
+
+public sealed record ApplicationEcsReactionResult(
+    bool Ok,
+    IReadOnlyList<ApplicationEcsReactionBatch> Batches,
+    string Code = "",
+    string Reason = "")
+{
+    public static ApplicationEcsReactionResult Allow(IReadOnlyList<ApplicationEcsReactionBatch> batches) =>
+        new(true, batches);
+
+    public static ApplicationEcsReactionResult Reject(string code, string reason) =>
+        new(false, [], code, reason);
+}
+
+public interface IApplicationEcsReactionRouter
+{
+    IAsyncEnumerable<ApplicationEcsReactionResult> RouteAsync(
+        ApplicationEcsReactionContext context,
+        CancellationToken cancellationToken = default);
+}
+
 public sealed class ApplicationEcsTransactionParticipantException(string message)
     : InvalidOperationException(message);
 
@@ -182,7 +254,9 @@ public static class ApplicationEcsEffectValidation
     public const int MaximumDeclaredEventEntities = 100;
     public const int MaximumDeclaredEventPayloadLength = 65_536;
 
-    public static IReadOnlyList<ApplicationEcsEffectProblem> Validate(ApplicationEcsEffectBatch? batch)
+    public static IReadOnlyList<ApplicationEcsEffectProblem> Validate(
+        ApplicationEcsEffectBatch? batch,
+        bool trustedReaction = false)
     {
         if (batch is null) return [new(-1, "BATCH_REQUIRED", "An ECS effect batch is required.")];
         if (string.IsNullOrWhiteSpace(batch.StateSpaceId) || batch.StateSpaceId.Length > 200)
@@ -440,7 +514,7 @@ public static class ApplicationEcsEffectValidation
                     ValidateComponent(effect, index, problems);
                     break;
                 case ApplicationEcsEffectType.ClockAdvance:
-                    ValidateClockAdvance(effect, index, batch, problems);
+                    ValidateClockAdvance(effect, index, batch, problems, trustedReaction);
                     break;
                 case ApplicationEcsEffectType.ContainmentMove:
                     if (string.IsNullOrWhiteSpace(effect.TargetEntityId) || effect.TargetEntityId.Length > 200)
@@ -486,7 +560,8 @@ public static class ApplicationEcsEffectValidation
         ApplicationEcsEffect effect,
         int index,
         ApplicationEcsEffectBatch batch,
-        List<ApplicationEcsEffectProblem> problems)
+        List<ApplicationEcsEffectProblem> problems,
+        bool trustedReaction)
     {
         if (effect.ComponentType is null)
             problems.Add(new(index, "COMPONENT_TYPE_REQUIRED",
@@ -522,9 +597,9 @@ public static class ApplicationEcsEffectValidation
             || !Bounded(effect.SubjectEntityId) || !Bounded(effect.ActivityId))
             problems.Add(new(index, "CLOCK_METADATA_INVALID",
                 "Clock calendar, event type, subject, and activity IDs are required and bounded."));
-        if (batch.ExecutionIdentity is null || string.IsNullOrWhiteSpace(batch.MechanicId))
+        if ((!trustedReaction && batch.ExecutionIdentity is null) || string.IsNullOrWhiteSpace(batch.MechanicId))
             problems.Add(new(index, "CLOCK_AUDIT_REQUIRED",
-                "A clock advance requires host-owned execution identity and mechanic audit evidence."));
+                "A clock advance requires host-owned audit evidence and, outside a trusted reaction, execution identity."));
         if (effect.PreviousMinute < 0 || effect.PreviousMinute > MaximumClockValue
             || effect.DeltaMinutes < 1 || effect.DeltaMinutes > MaximumClockValue
             || effect.PreviousMinute > MaximumClockValue - effect.DeltaMinutes

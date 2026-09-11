@@ -18,14 +18,17 @@
     "slice19:simulate": "node scripts/campaign-simulation.mjs",
     "test:node": "node scripts/run-test-suite.mjs node",
     "test:mounted": "node scripts/run-test-suite.mjs mounted",
+    "test:shared-browser": "node scripts/run-test-suite.mjs shared",
     "test:map-browser": "node scripts/test-map-browser.mjs",
-    "test": "npm run test:node && npm run test:mounted",
-    "verify": "npm run typecheck && npm run test:node && npm run test:mounted && npm run build:server"
+    "test": "npm run test:node && npm run test:mounted && npm run test:shared-browser",
+    "verify": "npm run typecheck && npm run test:node && npm run test:mounted && npm run test:shared-browser && npm run build:server"
   },
   "dependencies": {
     "@noble/hashes": "2.4.0",
+    "@reduxjs/toolkit": "^2.12.0",
     "react": "19.2.6",
-    "react-dom": "19.2.6"
+    "react-dom": "19.2.6",
+    "react-redux": "^9.3.0"
   },
   "devDependencies": {
     "@types/node": "22.19.19",

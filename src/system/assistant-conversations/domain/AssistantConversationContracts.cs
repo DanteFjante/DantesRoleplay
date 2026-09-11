@@ -246,9 +246,26 @@ public sealed record AssistantConversationDelete(int ExpectedRevision);
 public sealed record AssistantTurnBegin(
     string OperatorId, string Provider, string? ConversationId, int? ExpectedRevision,
     string Message, string IdempotencyKey, string RequestHash,
-    string Scope = AssistantConversationScopes.Advisory);
+    string Scope = AssistantConversationScopes.Advisory,
+    AssistantTurnContextCapture? Context = null);
 
 public sealed record AssistantTurnBeginResult(string ConversationId, string TurnId, bool Replay);
+
+/// <summary>Immutable, pre-provider context binding. It is not completion evidence.</summary>
+public sealed record AssistantTurnContextCapture(
+    string Profile,
+    string Fingerprint,
+    IReadOnlyList<string> SourceReferences);
+
+/// <summary>Opaque durable terminal turn identity and its exact re-authorized correlation binding.</summary>
+public sealed record AssistantTurnRecovery(
+    string ConversationId,
+    string TurnId,
+    string Status,
+    string IdempotencyKey,
+    string Provider,
+    string Scope,
+    AssistantTurnContextCapture? Context);
 
 public sealed record AssistantTurnCompletion(
     string TurnId, string Status, string? Reply, string ErrorCode, string ErrorMessage,
@@ -304,6 +321,11 @@ public sealed class AssistantConversationException(string code, string message)
 public interface IAssistantConversationStore
 {
     Task<AssistantTurnBeginResult> BeginTurnAsync(AssistantTurnBegin request, CancellationToken cancellationToken = default);
+    Task<AssistantTurnRecovery?> FindByIdempotencyKeyAsync(
+        string operatorId, string provider, string idempotencyKey,
+        string scope = AssistantConversationScopes.Advisory,
+        CancellationToken cancellationToken = default,
+        AssistantTurnContextCapture? context = null) => Task.FromResult<AssistantTurnRecovery?>(null);
     Task MarkRunningAsync(string turnId, CancellationToken cancellationToken = default);
     Task BindCodexTurnAsync(CodexTurnBinding binding, CancellationToken cancellationToken = default);
     Task<AssistantTurnActivityDocument> AppendCodexActivityAsync(

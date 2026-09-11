@@ -21,10 +21,15 @@ public sealed class EventLedger(DantesRoleplayDbContext db) : IEventLedger
     public async Task<IReadOnlyList<EventDetail>> WriteAcceptedAsync(
         IReadOnlyList<ProposedEvent> proposals,
         string rootOperationId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        EventSourceContext? source = null)
     {
         ArgumentNullException.ThrowIfNull(proposals);
         ArgumentException.ThrowIfNullOrWhiteSpace(rootOperationId);
+        if (source is { IsValid: false })
+            throw new ArgumentException("An application event source requires bounded application and state-space ids.");
+        if (source is null && proposals.Any(value => value.ComponentSnapshot is not null))
+            throw new ArgumentException("Component snapshots require an application event source.");
 
         if (proposals.Count == 0)
         {
@@ -86,8 +91,28 @@ public sealed class EventLedger(DantesRoleplayDbContext db) : IEventLedger
                 Sequence = sequence++,
 
                 // Empty for a structural event: nothing declared it, it followed from the change.
-                ProducerExecutionId = proposal.ProducerExecutionId
+                ProducerExecutionId = proposal.ProducerExecutionId,
+                ApplicationId = source?.ApplicationId,
+                StateSpaceId = source?.StateSpaceId
             };
+
+            if (proposal.ComponentSnapshot is { } snapshot)
+            {
+                if (source is null || snapshot.EntityId != proposal.EntityIds.SingleOrDefault()
+                    || snapshot.QualifiedTypeId.Length == 0 || snapshot.TypeVersion < 1)
+                    throw new ArgumentException("A component snapshot must describe the one sourced event entity.");
+                row.ComponentSnapshot = new EventComponentSnapshot
+                {
+                    EventId = row.Id,
+                    EntityId = snapshot.EntityId,
+                    QualifiedTypeId = snapshot.QualifiedTypeId,
+                    TypeVersion = snapshot.TypeVersion,
+                    BeforeJson = snapshot.BeforeJson,
+                    BeforeRevision = snapshot.BeforeRevision,
+                    AfterJson = snapshot.AfterJson,
+                    AfterRevision = snapshot.AfterRevision
+                };
+            }
 
             var ordinal = 0;
 
@@ -112,7 +137,7 @@ public sealed class EventLedger(DantesRoleplayDbContext db) : IEventLedger
                 row.Id, row.TypeId, row.TypeVersion, row.Scope, row.PayloadJson, row.Timestamp,
                 row.CorrelationId, row.CausationId, row.Depth, row.Sequence, row.RootOperationId,
                 row.Entities.OrderBy(x => x.Ordinal).Select(x => x.EntityId).ToList(),
-                row.ProducerExecutionId))
+                row.ProducerExecutionId, Source(row), Snapshot(row.ComponentSnapshot)))
             .ToList();
     }
 
@@ -123,6 +148,7 @@ public sealed class EventLedger(DantesRoleplayDbContext db) : IEventLedger
         var row = await _db.Events
             .AsNoTracking()
             .Include(e => e.Entities)
+            .Include(e => e.ComponentSnapshot)
             .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
 
         return row is null
@@ -140,7 +166,9 @@ public sealed class EventLedger(DantesRoleplayDbContext db) : IEventLedger
                 row.Sequence,
                 row.RootOperationId,
                 row.Entities.OrderBy(x => x.Ordinal).Select(x => x.EntityId).ToList(),
-                row.ProducerExecutionId);
+                row.ProducerExecutionId,
+                Source(row),
+                Snapshot(row.ComponentSnapshot));
     }
 
     public async Task<EventHistoryPage> ListRecentAsync(
@@ -192,7 +220,8 @@ public sealed class EventLedger(DantesRoleplayDbContext db) : IEventLedger
                 e.Depth,
                 e.Sequence,
                 e.RootOperationId,
-                e.Entities.OrderBy(x => x.Ordinal).Select(x => x.EntityId).ToList()))
+                e.Entities.OrderBy(x => x.Ordinal).Select(x => x.EntityId).ToList(),
+                e.ApplicationId == null ? null : new EventSourceContext(e.ApplicationId, e.StateSpaceId!)))
             .ToListAsync(cancellationToken);
 
         var hasMore = page.Count > limit;
@@ -280,7 +309,16 @@ public sealed class EventLedger(DantesRoleplayDbContext db) : IEventLedger
                 e.Depth,
                 e.Sequence,
                 e.RootOperationId,
-                e.Entities.OrderBy(x => x.Ordinal).Select(x => x.EntityId).ToList()))
+                e.Entities.OrderBy(x => x.Ordinal).Select(x => x.EntityId).ToList(),
+                e.ApplicationId == null ? null : new EventSourceContext(e.ApplicationId, e.StateSpaceId!)))
             .ToListAsync(cancellationToken);
     }
+
+    private static EventSourceContext? Source(EventRecord row) =>
+        row.ApplicationId is null ? null : new EventSourceContext(row.ApplicationId, row.StateSpaceId!);
+
+    private static EventComponentSnapshotDetail? Snapshot(EventComponentSnapshot? row) => row is null
+        ? null
+        : new EventComponentSnapshotDetail(row.EntityId, row.QualifiedTypeId, row.TypeVersion,
+            row.BeforeJson, row.BeforeRevision, row.AfterJson, row.AfterRevision);
 }

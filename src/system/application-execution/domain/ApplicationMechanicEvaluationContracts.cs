@@ -43,7 +43,9 @@ public sealed record ApplicationMechanicEvaluationRequest(
     long Seed,
     MechanicExecutionContext? Execution = null,
     MechanicAudienceContext? Audience = null,
-    string? ReadModelQueryId = null);
+    string? ReadModelQueryId = null,
+    /// <summary>Host-materialised event envelope for event reactions; absent for ordinary actions.</summary>
+    string? Event = null);
 
 public sealed record ApplicationMechanicEvaluationResult(
     string QualifiedMechanicId,
@@ -69,6 +71,26 @@ public interface IApplicationMechanicProjectionResolver
         IReadOnlyDictionary<string, string> roleAssignments,
         string inputJson,
         long seed,
+        CancellationToken cancellationToken = default);
+}
+
+public sealed record ApplicationGraphSnapshotReadResult(
+    IReadOnlyDictionary<string, MechanicGraphSnapshot> Snapshots,
+    IReadOnlyList<string> Problems,
+    IReadOnlyList<MechanicGraphSnapshotEvidence> Evidence)
+{
+    public bool Ok => Problems.Count == 0;
+}
+
+public interface IApplicationGraphSnapshotReader
+{
+    Task<ApplicationGraphSnapshotReadResult> ReadAsync(
+        string stateSpaceId,
+        ApplicationIdentifier applicationId,
+        MechanicRequirements requirements,
+        ApplicationMechanicProjectionMapping mapping,
+        IReadOnlyDictionary<string, string> roleAssignments,
+        string inputJson = "{}",
         CancellationToken cancellationToken = default);
 }
 

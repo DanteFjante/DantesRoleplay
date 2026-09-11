@@ -1,0 +1,269 @@
+{
+  "id": "dnd2024.object.inventory-item-activity-record",
+  "version": 1,
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "dnd2024.activity.activation": {
+        "type": "object"
+      },
+      "dnd2024.activity.applied-effects": {
+        "type": "object"
+      },
+      "dnd2024.activity.attack": {
+        "type": "object"
+      },
+      "dnd2024.activity.check": {
+        "type": "object"
+      },
+      "dnd2024.activity.cost": {
+        "type": "object"
+      },
+      "dnd2024.activity.damage": {
+        "type": "object"
+      },
+      "dnd2024.activity.duration": {
+        "type": "object"
+      },
+      "dnd2024.activity.healing": {
+        "type": "object"
+      },
+      "dnd2024.activity.range": {
+        "type": "object"
+      },
+      "dnd2024.activity.save": {
+        "type": "object"
+      },
+      "dnd2024.activity.sequence": {
+        "type": "object"
+      },
+      "dnd2024.activity.targeting": {
+        "type": "object"
+      },
+      "dnd2024.core.presentation": {
+        "type": "object"
+      }
+    }
+  },
+  "roles": {
+    "record": {
+      "required": true
+    }
+  },
+  "sources": [
+    {
+      "id": "source0",
+      "role": "record",
+      "component": {
+        "qualifiedId": "dnd2024.activity.activation",
+        "version": 2,
+        "schemaHash": "C9A4FB41B5F24AAC61E691EF602299AE908D931364C176A1664EACA15136D6A6"
+      },
+      "required": false
+    },
+    {
+      "id": "source1",
+      "role": "record",
+      "component": {
+        "qualifiedId": "dnd2024.activity.applied-effects",
+        "version": 1,
+        "schemaHash": "4D69A265CDE796A82E7EE42E4ED7876A8F1B731BA77014899F0895259F90C44D"
+      },
+      "required": false
+    },
+    {
+      "id": "source2",
+      "role": "record",
+      "component": {
+        "qualifiedId": "dnd2024.activity.attack",
+        "version": 2,
+        "schemaHash": "DC35F85FD446B4B7306ECD33874DE97899BE3172933FB794738748FDD4F7D4FE"
+      },
+      "required": false
+    },
+    {
+      "id": "source3",
+      "role": "record",
+      "component": {
+        "qualifiedId": "dnd2024.activity.check",
+        "version": 2,
+        "schemaHash": "32B298F5AB043CC7D7BA93A06E32CA9ED57910B7B86287CDA823EA8E3A16A92C"
+      },
+      "required": false
+    },
+    {
+      "id": "source4",
+      "role": "record",
+      "component": {
+        "qualifiedId": "dnd2024.activity.cost",
+        "version": 2,
+        "schemaHash": "9E0C42ADB76CB67516ED76F5823452C092CD2AD7200E63BD46D1BDEB7F974556"
+      },
+      "required": false
+    },
+    {
+      "id": "source5",
+      "role": "record",
+      "component": {
+        "qualifiedId": "dnd2024.activity.damage",
+        "version": 2,
+        "schemaHash": "36A9D2036E514D0F57446B66C79D79744A1CEEDF4A9537A01EB6BA71ABC3AB2C"
+      },
+      "required": false
+    },
+    {
+      "id": "source6",
+      "role": "record",
+      "component": {
+        "qualifiedId": "dnd2024.activity.duration",
+        "version": 2,
+        "schemaHash": "E4D1E646892EDCC30AC50900110B9C7152D8D5525CE12A77DE45D6EDA9B76200"
+      },
+      "required": false
+    },
+    {
+      "id": "source7",
+      "role": "record",
+      "component": {
+        "qualifiedId": "dnd2024.activity.healing",
+        "version": 2,
+        "schemaHash": "19ED45D3A4AC7CFE51285A158B1FEC84F441D92DAC4CB881AE1A772466325CC9"
+      },
+      "required": false
+    },
+    {
+      "id": "source8",
+      "role": "record",
+      "component": {
+        "qualifiedId": "dnd2024.activity.range",
+        "version": 1,
+        "schemaHash": "BE5C94307F46AD3FB7BC26E8C9EFB6661218091576FC51BE1886E28CBD608593"
+      },
+      "required": false
+    },
+    {
+      "id": "source9",
+      "role": "record",
+      "component": {
+        "qualifiedId": "dnd2024.activity.save",
+        "version": 2,
+        "schemaHash": "69071C08CC1DB7AFF6E924EA91C0F8945A45D7CFFE5C8AFB9BDD3A6F7C394600"
+      },
+      "required": false
+    },
+    {
+      "id": "source10",
+      "role": "record",
+      "component": {
+        "qualifiedId": "dnd2024.activity.sequence",
+        "version": 2,
+        "schemaHash": "7FDF59D4A65AC71787DC671C72E1513564EB858A602C189D9624AA59B8FA3A3D"
+      },
+      "required": false
+    },
+    {
+      "id": "source11",
+      "role": "record",
+      "component": {
+        "qualifiedId": "dnd2024.activity.targeting",
+        "version": 2,
+        "schemaHash": "EA3FE17781E03E6E37E2F088A5687B7E736DF28F106B882CE2BC4157BACBFB8F"
+      },
+      "required": false
+    },
+    {
+      "id": "source12",
+      "role": "record",
+      "component": {
+        "qualifiedId": "dnd2024.core.presentation",
+        "version": 1,
+        "schemaHash": "3CB195DBA52401C9065F6F3581CDDA011A2F636F53B4F3B3A6DF923921F99204"
+      },
+      "required": false
+    }
+  ],
+  "relationships": [],
+  "references": [],
+  "mappings": [
+    {
+      "inputId": "source0",
+      "sourcePointer": "",
+      "targetPointer": "/dnd2024.activity.activation"
+    },
+    {
+      "inputId": "source1",
+      "sourcePointer": "",
+      "targetPointer": "/dnd2024.activity.applied-effects"
+    },
+    {
+      "inputId": "source2",
+      "sourcePointer": "",
+      "targetPointer": "/dnd2024.activity.attack"
+    },
+    {
+      "inputId": "source3",
+      "sourcePointer": "",
+      "targetPointer": "/dnd2024.activity.check"
+    },
+    {
+      "inputId": "source4",
+      "sourcePointer": "",
+      "targetPointer": "/dnd2024.activity.cost"
+    },
+    {
+      "inputId": "source5",
+      "sourcePointer": "",
+      "targetPointer": "/dnd2024.activity.damage"
+    },
+    {
+      "inputId": "source6",
+      "sourcePointer": "",
+      "targetPointer": "/dnd2024.activity.duration"
+    },
+    {
+      "inputId": "source7",
+      "sourcePointer": "",
+      "targetPointer": "/dnd2024.activity.healing"
+    },
+    {
+      "inputId": "source8",
+      "sourcePointer": "",
+      "targetPointer": "/dnd2024.activity.range"
+    },
+    {
+      "inputId": "source9",
+      "sourcePointer": "",
+      "targetPointer": "/dnd2024.activity.save"
+    },
+    {
+      "inputId": "source10",
+      "sourcePointer": "",
+      "targetPointer": "/dnd2024.activity.sequence"
+    },
+    {
+      "inputId": "source11",
+      "sourcePointer": "",
+      "targetPointer": "/dnd2024.activity.targeting"
+    },
+    {
+      "inputId": "source12",
+      "sourcePointer": "",
+      "targetPointer": "/dnd2024.core.presentation"
+    }
+  ],
+  "collections": [],
+  "limits": {
+    "traversalDepth": 1,
+    "itemCount": 1,
+    "outputBytes": 65536,
+    "sqlQueries": 3
+  },
+  "access": {
+    "read": [
+      "player",
+      "dm"
+    ],
+    "write": []
+  }
+}

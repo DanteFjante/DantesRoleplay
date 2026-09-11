@@ -5,12 +5,13 @@
   "description": "Returns the complete direct contents of one authorized inventory owner or contained object without loading item details, recipes, or uses.",
   "matches": ["show one inventory container", "inspect direct contained items"],
   "roles": { "subject": "The exact inventory owner or contained object." },
+  "roleBindings": { "subject": { "source": "route-entity" } },
   "executor": "mechanic-projection",
   "projection": {
     "qualifiedId": "dnd2024.mechanic.inventory-container-page.project",
     "version": 1,
-    "contentHash": "8520DDC6972635D4B7B6ACFCDB4695F46F765D6D361F827B31C9E84FF10A1729",
-    "outputSchemaHash": "47C75C610B22D02B7518A9E3317E9712B344C1D58394363B75C9C6DEAB52426D"
+    "contentHash": "894A94AA6D6C007C2BCDE9D58A0F0C4E32D84DF84D84409F3531E71D4B6660C0",
+    "outputSchemaHash": "A9F1FAB085349F43DB95DA022320289A3B0DE6C7853B32DA4DAC75AF9D817BF8"
   },
   "outputSchema": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -21,7 +22,7 @@
       "version": { "const": 2 },
       "container": { "$ref": "#/$defs/named" },
       "state": { "enum": ["ready", "partial"] },
-      "reasons": { "type": "array", "maxItems": 1, "uniqueItems": true, "items": { "const": "unclassified-content" } },
+      "reasons": { "type": "array", "maxItems": 2, "uniqueItems": true, "items": { "enum": ["unclassified-content", "source-incomplete"] } },
       "items": { "type": "array", "maxItems": 200, "items": { "$ref": "#/$defs/item" } },
       "limits": {
         "type": "object",
@@ -49,7 +50,7 @@
       "item": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "name", "definition", "quantity", "slot", "order", "equipmentSlots", "classification", "isContainer"],
+        "required": ["id", "name", "definition", "quantity", "slot", "order", "classification"],
         "properties": {
           "id": { "$ref": "#/$defs/id" },
           "name": { "$ref": "#/$defs/text" },

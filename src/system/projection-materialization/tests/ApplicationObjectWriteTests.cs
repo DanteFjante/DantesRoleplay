@@ -3,6 +3,7 @@ using DantesRoleplay.Applications;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.Ecs;
 using DantesRoleplay.EcsEffects;
+using DantesRoleplay.Events;
 using DantesRoleplay.Operations;
 using DantesRoleplay.SchemaValidation;
 using DantesRoleplay.Tests;
@@ -13,6 +14,34 @@ namespace DantesRoleplay.Projections.Tests;
 public sealed class ApplicationObjectWriteTests : IDisposable
 {
     private readonly Fixture fixture = new();
+
+    [Fact]
+    public async Task T13_T18_field_based_objects_keep_hidden_fields_atomic_validation_and_revision_authority()
+    {
+        using var scoped = new Fixture(fieldBased: true);
+        var before = await scoped.ReadAsync();
+        var request = scoped.Request(before.SourceRevisionFingerprint, "field-based-save", "{\"premise\":\"Reviewed\"}");
+        var saved = await scoped.Writer.WriteAsync(request);
+        var replayed = await scoped.Writer.WriteAsync(request);
+        Assert.True(saved.Applied);
+        Assert.True(replayed.Replayed);
+        Assert.Equal(2, (await scoped.ComponentAsync(scoped.Primary)).Revision);
+        Assert.Equal("retained-private-field", Json((await scoped.ComponentAsync(scoped.Primary)).ValueJson)
+            .GetProperty("hidden").GetString());
+        Assert.Equal("OBJECT_WRITE_SOURCE_STALE", (await Assert.ThrowsAsync<ApplicationObjectWriteException>(() =>
+            scoped.Writer.WriteAsync(scoped.Request(before.SourceRevisionFingerprint, "stale", "{\"premise\":\"Stale\"}")))).Code);
+        Assert.Equal("OBJECT_WRITE_FORBIDDEN", (await Assert.ThrowsAsync<ApplicationObjectWriteException>(() =>
+            scoped.Writer.WriteAsync(scoped.Request(saved.SourceRevisionFingerprint, "denied", "{}")
+                with { Perspective = "player" }))).Code);
+        Assert.Equal("OBJECT_WRITE_REQUEST_INVALID", (await Assert.ThrowsAsync<ApplicationObjectWriteException>(() =>
+            scoped.Writer.WriteAsync(scoped.Request(saved.SourceRevisionFingerprint, "undeclared", "{\"hidden\":\"Forged\"}")))).Code);
+        Assert.Equal("OBJECT_WRITE_REJECTED", (await Assert.ThrowsAsync<ApplicationObjectWriteException>(() =>
+            scoped.Writer.WriteAsync(scoped.Request(saved.SourceRevisionFingerprint, "rollback",
+                "{\"premise\":\"Must roll back\",\"secondary\":\"rejected\"}")))).Code);
+        Assert.Equal("Reviewed", Json((await scoped.ComponentAsync(scoped.Primary)).ValueJson).GetProperty("premise").GetString());
+        Assert.Equal(2, (await scoped.ComponentAsync(scoped.Primary)).Revision);
+        Assert.Equal(1, (await scoped.ComponentAsync(scoped.Secondary)).Revision);
+    }
 
     [Fact]
     public async Task Scalar_save_preserves_hidden_and_partial_fields_and_replays_once()
@@ -37,6 +66,25 @@ public sealed class ApplicationObjectWriteTests : IDisposable
         Assert.False(replayed.Applied);
         Assert.Equal(written.OperationId, replayed.OperationId);
         Assert.Equal(2, (await fixture.ComponentAsync(fixture.Primary)).Revision);
+        Assert.Single(await fixture.DeliveryRowsAsync());
+    }
+
+    [Fact]
+    public async Task Mapped_two_component_save_notifies_its_registered_object_once_and_not_an_irrelevant_object()
+    {
+        var before = await fixture.ReadAsync();
+        var saved = await fixture.Writer.WriteAsync(fixture.Request(before.SourceRevisionFingerprint,
+            "two-component-change", "{\"premise\":\"Reviewed twice\",\"secondary\":\"changed\"}"));
+
+        Assert.True(saved.Applied);
+        Assert.Equal(2, saved.Receipts.Count);
+        var deliveries = await fixture.DeliveryRowsAsync();
+        Assert.DoesNotContain(deliveries, value => value.ObjectQualifiedId == "write-object.irrelevant");
+        var delivery = Assert.Single(deliveries);
+        Assert.Equal(ApplicationObjectChangeContract.ObjectScope, delivery.Scope);
+        Assert.Equal("write-object.summary", delivery.ObjectQualifiedId);
+        Assert.Equal(1, delivery.ObjectVersion);
+        Assert.Equal("registered-dependency", delivery.Reason);
     }
 
     [Fact]
@@ -48,6 +96,7 @@ public sealed class ApplicationObjectWriteTests : IDisposable
 
         Assert.True(omitted.NoOp);
         Assert.False(omitted.Applied);
+        Assert.Empty(await fixture.DeliveryRowsAsync());
         Assert.Equal("Retained note", Json((await fixture.ComponentAsync(fixture.Primary)).ValueJson)
             .GetProperty("note").GetString());
 
@@ -115,6 +164,7 @@ public sealed class ApplicationObjectWriteTests : IDisposable
             .GetProperty("detail").GetString());
         Assert.Equal(1, (await fixture.ComponentAsync(fixture.Primary)).Revision);
         Assert.Equal(1, (await fixture.ComponentAsync(fixture.Secondary)).Revision);
+        Assert.Empty(await fixture.DeliveryRowsAsync());
     }
 
     [Fact]
@@ -183,6 +233,115 @@ public sealed class ApplicationObjectWriteTests : IDisposable
         Assert.Equal(2, (await fixture.ComponentAsync(fixture.Primary)).Revision);
     }
 
+    [Fact]
+    public async Task Full_object_mode_preserves_omissions_and_replays_the_exact_submission_once()
+    {
+        var before = await fixture.ReadAsync();
+        var request = fixture.Request(before.SourceRevisionFingerprint, "full-object-save", "{}") with
+        {
+            SubmissionMode = "object",
+            SubmittedObjectJson = "{\"premise\":\"Submitted premise\"}"
+        };
+
+        var saved = await fixture.Writer.WriteAsync(request);
+        var replayed = await fixture.Writer.WriteAsync(request);
+
+        Assert.True(saved.Applied);
+        Assert.True(replayed.Replayed);
+        Assert.Equal(saved.OperationId, replayed.OperationId);
+        var component = Json((await fixture.ComponentAsync(fixture.Primary)).ValueJson);
+        Assert.Equal("Submitted premise", component.GetProperty("premise").GetString());
+        Assert.Equal("Retained note", component.GetProperty("note").GetString());
+        Assert.Equal("retained-private-field", component.GetProperty("hidden").GetString());
+        Assert.Equal(1, (await fixture.ComponentAsync(fixture.Secondary)).Revision);
+        Assert.Single(await fixture.DeliveryRowsAsync());
+
+        var eventSummary = Assert.Single(await fixture.Ledger.FindAsync(rootOperationId: saved.OperationId));
+        Assert.Equal("world.component.replaced", eventSummary.TypeId);
+        Assert.Equal(new EventSourceContext("write-object", Fixture.StateSpace), eventSummary.Source);
+        var eventDetail = await fixture.Ledger.GetAsync(eventSummary.Id);
+        Assert.NotNull(eventDetail?.ComponentSnapshot);
+        Assert.Equal(saved.OperationId, eventDetail.RootOperationId);
+        Assert.Equal(Fixture.Subject, eventDetail.ComponentSnapshot.EntityId);
+        Assert.Equal(fixture.Primary.QualifiedTypeId, eventDetail.ComponentSnapshot.QualifiedTypeId);
+        Assert.Equal(1, eventDetail.ComponentSnapshot.BeforeRevision);
+        Assert.Equal(2, eventDetail.ComponentSnapshot.AfterRevision);
+        var beforeEvent = Json(eventDetail.ComponentSnapshot.BeforeJson!);
+        var afterEvent = Json(eventDetail.ComponentSnapshot.AfterJson!);
+        Assert.Equal("Original premise", beforeEvent.GetProperty("premise").GetString());
+        Assert.Equal("Submitted premise", afterEvent.GetProperty("premise").GetString());
+        Assert.Equal("Retained note", afterEvent.GetProperty("note").GetString());
+        Assert.Equal("retained-private-field", afterEvent.GetProperty("hidden").GetString());
+
+        var stale = request with
+        {
+            IdempotencyKey = "full-object-stale",
+            SubmittedObjectJson = "{\"premise\":\"Must not persist\"}"
+        };
+        Assert.Equal("OBJECT_WRITE_SOURCE_STALE",
+            (await Assert.ThrowsAsync<ApplicationObjectWriteException>(() =>
+                fixture.Writer.WriteAsync(stale))).Code);
+        Assert.Single(await fixture.Ledger.FindAsync(rootOperationId: saved.OperationId));
+        Assert.Single(await fixture.Ledger.FindAsync());
+        Assert.Equal("Submitted premise", Json((await fixture.ComponentAsync(fixture.Primary)).ValueJson)
+            .GetProperty("premise").GetString());
+
+        var changesModeConflict = fixture.Request(before.SourceRevisionFingerprint,
+            "full-object-save", "{\"premise\":\"Submitted premise\"}");
+        Assert.Equal("OBJECT_WRITE_IDEMPOTENCY_CONFLICT",
+            (await Assert.ThrowsAsync<ApplicationObjectWriteException>(() =>
+                fixture.Writer.WriteAsync(changesModeConflict))).Code);
+    }
+
+    [Fact]
+    public async Task Full_object_mode_rejects_read_only_and_schema_invalid_changes_without_mutation()
+    {
+        var before = await fixture.ReadAsync();
+        var readOnly = fixture.Request(before.SourceRevisionFingerprint, "full-readonly", "{}") with
+        {
+            SubmissionMode = "object",
+            SubmittedObjectJson = "{\"title\":\"Forged\"}"
+        };
+        var invalid = fixture.Request(before.SourceRevisionFingerprint, "full-invalid", "{}") with
+        {
+            SubmissionMode = "object",
+            SubmittedObjectJson = "{\"premise\":\"\"}"
+        };
+
+        Assert.Equal("OBJECT_WRITE_READ_ONLY_CHANGED",
+            (await Assert.ThrowsAsync<ApplicationObjectWriteException>(() =>
+                fixture.Writer.WriteAsync(readOnly))).Code);
+        Assert.Equal("OBJECT_WRITE_REQUEST_INVALID",
+            (await Assert.ThrowsAsync<ApplicationObjectWriteException>(() =>
+                fixture.Writer.WriteAsync(invalid))).Code);
+        Assert.Equal("Original premise", Json((await fixture.ComponentAsync(fixture.Primary)).ValueJson)
+            .GetProperty("premise").GetString());
+        Assert.Empty(await fixture.DeliveryRowsAsync());
+        Assert.Empty(await fixture.Ledger.FindAsync());
+    }
+
+    [Fact]
+    public async Task Full_object_mode_late_component_failure_rolls_back_every_derived_change()
+    {
+        var before = await fixture.ReadAsync();
+        var request = fixture.Request(before.SourceRevisionFingerprint, "full-rollback", "{}") with
+        {
+            SubmissionMode = "object",
+            SubmittedObjectJson = "{\"premise\":\"Must roll back\",\"secondary\":\"rejected\"}"
+        };
+
+        var failure = await Assert.ThrowsAsync<ApplicationObjectWriteException>(() =>
+            fixture.Writer.WriteAsync(request));
+
+        Assert.Equal("OBJECT_WRITE_REJECTED", failure.Code);
+        Assert.Equal("Original premise", Json((await fixture.ComponentAsync(fixture.Primary)).ValueJson)
+            .GetProperty("premise").GetString());
+        Assert.Equal("accepted", Json((await fixture.ComponentAsync(fixture.Secondary)).ValueJson)
+            .GetProperty("detail").GetString());
+        Assert.Empty(await fixture.DeliveryRowsAsync());
+        Assert.Empty(await fixture.Ledger.FindAsync());
+    }
+
     private static JsonElement Json(string value)
     {
         using var document = JsonDocument.Parse(value);
@@ -219,9 +378,11 @@ public sealed class ApplicationObjectWriteTests : IDisposable
         public readonly IEntityComponentStore Entities;
         public readonly IStateSpaceEdgeStore Edges;
         public readonly IApplicationObjectWriteService Writer;
+        public readonly IEventLedger Ledger;
+        public readonly ApplicationObjectDependencyIndexCache DependencyIndices = new();
         public Func<Task>? BeforeApply { get; set; }
 
-        public Fixture(bool optionalSecondary = false)
+        public Fixture(bool optionalSecondary = false, bool fieldBased = false)
         {
             db = database.CreateContext();
             var owner = ApplicationIdentifier.Parse(Application);
@@ -239,16 +400,41 @@ public sealed class ApplicationObjectWriteTests : IDisposable
             Edges = new SqliteStateSpaceEdgeStore(db, stateSpaces, transactions);
             SeedAsync(member).GetAwaiter().GetResult();
 
-            var registry = new SqliteProjectionDefinitionRegistry(db, types, schemas, applications);
-            projection = registry.Define(Definition(owner, Primary, Secondary, member, optionalSecondary)).Reference;
+            var registry = new SqliteProjectionDefinitionRegistry(db, types, schemas, applications,
+                DependencyIndices);
+            var definition = Definition(owner, Primary, Secondary, member, optionalSecondary);
+            if (fieldBased)
+                definition = definition with
+                {
+                    OutputSchemaJson = RegisteredApplicationObjectContract.TransportSchemaJson,
+                    ObjectContract = definition.ObjectContract! with
+                    {
+                        ProfileId = RegisteredApplicationObjectContract.FieldBasedContractProfileId,
+                        Collections = definition.ObjectContract!.Collections.Select(collection => collection with
+                        { Metadata = new("/totalCount", "/complete", "/nextCursor") }).ToArray()
+                    }
+                };
+            projection = registry.Define(definition).Reference;
+            registry.Define(IrrelevantDefinition(owner, member));
             var source = new SqliteProjectionSourceSnapshotReader(db, stateSpaces, Entities);
             var root = new ProjectionMaterializer(registry, Entities, stateSpaces, schemas,
                 new ProjectionPlanCache(), source);
             materializer = new ProjectionCollectionMaterializer(registry, root,
                 (IRelationshipCollectionReader)Edges, (IEntityBatchReadStore)Entities,
                 Entities, schemas, transactions);
+            var eventTypes = new EventTypeStore(db);
+            eventTypes.WriteAsync(new()
+            {
+                Id = "world.component.replaced", Category = "fixture", Name = "Component replaced",
+                Scope = "", Status = EventTypeStatus.Active, PayloadSchema = StructuralEventSchema
+            }).GetAwaiter().GetResult();
+            Ledger = new EventLedger(db);
+            var structuralEvents = new ApplicationStructuralEventTransactionParticipant(
+                stateSpaces, Ledger, eventTypes, schemas);
             var applier = new ApplicationEcsEffectApplier(
-                db, Entities, stateSpaces, new OperationLog(db), Edges);
+                db, Entities, stateSpaces, new OperationLog(db), Edges,
+                [new ApplicationObjectChangeTransactionParticipant(db, stateSpaces, DependencyIndices)],
+                eventSources: [structuralEvents]);
             Writer = new ApplicationObjectWriteService(
                 registry, materializer, Entities, new BeforeApplyApplier(applier, () => BeforeApply?.Invoke() ?? Task.CompletedTask),
                 new OperationLog(db), schemas);
@@ -271,6 +457,14 @@ public sealed class ApplicationObjectWriteTests : IDisposable
             (await Entities.GetComponentAsync(StateSpace, Subject, type.QualifiedTypeId))!;
 
         public async Task<Operation> AuditAsync() => await db.Operations.AsNoTracking().SingleAsync();
+
+        public async Task<IReadOnlyList<ChangeDelivery>> DeliveryRowsAsync() =>
+            await db.Set<ApplicationObjectChangeRecord>().AsNoTracking()
+                .Where(value => value.Scope != ApplicationObjectChangeContract.NoChangeScope)
+                .OrderBy(value => value.Cursor)
+                .Select(value => new ChangeDelivery(value.Scope, value.ObjectQualifiedId,
+                    value.ObjectVersion, value.Reason))
+                .ToArrayAsync();
 
         public async Task ChangeSnapshotAsync(string change)
         {
@@ -362,6 +556,14 @@ public sealed class ApplicationObjectWriteTests : IDisposable
                         ])),
                 1);
 
+        private static ProjectionDefinitionRequest IrrelevantDefinition(
+            ApplicationIdentifier owner, EcsComponentReference member) => new(
+                owner, "write-object.irrelevant", IrrelevantOutputSchema,
+                [new("member", "subject", member)], [],
+                [new("member", "/status", "/status")],
+                new([new("subject", true)], [new("member", true)], [], [], [],
+                    new(1, 1, 1_024, 4), new(["dm"], []), null), 1);
+
         private static EcsComponentReference Ref(RegisteredComponentTypeVersion type) =>
             new(type.QualifiedId, type.Version, type.SchemaHash);
 
@@ -369,7 +571,7 @@ public sealed class ApplicationObjectWriteTests : IDisposable
         {"type":"object","additionalProperties":false,"required":["title","premise","note","hidden"],"properties":{"title":{"type":"string"},"premise":{"type":"string","minLength":1},"note":{"type":["string","null"]},"hidden":{"type":"string"}}}
         """;
         private const string SecondarySchema = """
-        {"type":"object","additionalProperties":false,"required":["detail"],"properties":{"detail":{"const":"accepted"}}}
+        {"type":"object","additionalProperties":false,"required":["detail"],"properties":{"detail":{"enum":["accepted","changed"]}}}
         """;
         private const string MemberSchema = """
         {"type":"object","additionalProperties":false,"required":["status"],"properties":{"status":{"type":"string"}}}
@@ -380,6 +582,15 @@ public sealed class ApplicationObjectWriteTests : IDisposable
         private const string EditSchema = """
         {"type":"object","additionalProperties":false,"properties":{"premise":{"type":"string","minLength":1},"note":{"type":["string","null"]},"secondary":{"type":"string"}}}
         """;
+        private const string IrrelevantOutputSchema = """
+        {"type":"object","additionalProperties":false,"required":["status"],"properties":{"status":{"type":"string"}}}
+        """;
+        private const string StructuralEventSchema = """
+        {"type":"object","additionalProperties":false,"required":["effectIndex","entityId","definitionId","before","after"],"properties":{"effectIndex":{"type":"integer"},"entityId":{"type":"string"},"definitionId":{"type":"string"},"before":{},"after":{}}}
+        """;
+
+        public sealed record ChangeDelivery(string Scope, string? ObjectQualifiedId,
+            int? ObjectVersion, string Reason);
 
         public void Dispose()
         {

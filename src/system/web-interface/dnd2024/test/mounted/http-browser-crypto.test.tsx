@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import test from "node:test";
-import { requestId, sha256Hex } from "../../src/data/browser-crypto";
+import { requestId, sha256Hex, sha256HexSync } from "../../src/data/browser-crypto";
 import { ViewReadClient } from "../../src/data/view-read-client";
 import { ResourceStore } from "../../src/data/resource-store";
 
@@ -10,6 +10,7 @@ test("HTTP browsers load and fingerprint campaign resources without secure-conte
   t.mock.getter(globalThis, "crypto", () => ({ getRandomValues: crypto.getRandomValues.bind(crypto) }));
   for (const value of ["", "abc", "Caldris — 測試 🐉".repeat(100)]) {
     assert.equal(await sha256Hex(value), createHash("sha256").update(value).digest("hex"));
+    assert.equal(sha256HexSync(value), createHash("sha256").update(value).digest("hex"));
   }
   const payload = { status: "ready", campaign: "fixture" };
   const validate = (value: unknown): value is typeof payload =>

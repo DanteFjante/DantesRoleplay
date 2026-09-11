@@ -85,13 +85,15 @@ public sealed class ApplicationMechanicEvaluator(
         var exactProjection = projection.Projection! with
         {
             Execution = request.Execution,
-            Audience = request.Audience
+            Audience = request.Audience,
+            Event = string.IsNullOrWhiteSpace(request.Event) ? "{}" : request.Event
         };
         var composed = await ComposeAsync(request, requirements, exactProjection, depth, ancestors, budget, cancellationToken);
         if (composed.Projection is null) return Failed(request, composed.Error);
         var limits = request.ReadModelQueryId is null ? ExecutionLimits.Default : ExecutionLimits.ReadModel;
         var run = await engine.RunAsync(document.Source ?? "", composed.Projection, limits, cancellationToken);
-        if ((requirements.AuthorizedContext is not null || requirements.SnapshotObjects.Count > 0) &&
+        if ((requirements.AuthorizedContext is not null || requirements.SnapshotObjects.Count > 0 ||
+             requirements.GraphSnapshots.Count > 0) &&
             (run.Output.Effects.Count != 0 || run.Output.Events.Count != 0 || run.Output.Notifications.Count != 0 ||
              composed.Proposal.Effects.Count != 0 || composed.Proposal.Events.Count != 0 || composed.Proposal.Notifications.Count != 0))
             return Failed(request, "READ_MODEL_OUTPUT_UNSAFE");

@@ -1,0 +1,22 @@
+{
+  "id": "dnd2024.query.rest-begin-policy",
+  "category": "rest.structural-object",
+  "name": "Rest policy object",
+  "description": "Reads the exact registered policy state used by the rest mechanic.",
+  "matches": ["read rest policy object", "inspect rest policy sources"],
+  "roles": {
+    "policy": "The exact policy entity to inspect."
+  },
+  "roleBindings": {
+    "policy": { "source": "route-entity" }
+  },
+  "executor": "object-projection",
+  "object": {
+    "qualifiedId": "dnd2024.object.rest-begin-policy",
+    "version": 2,
+    "contentFingerprint": "0939F59817A4CED231A9F82E6F84986FFCB2FA20D7B780B23AE3DE2DFCBE0162"
+  },
+  "exposure": "model-visible",
+  "status": "active",
+  "profile": "application-object/v2"
+}

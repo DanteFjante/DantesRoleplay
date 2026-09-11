@@ -58,21 +58,34 @@ test("item registry uses a bounded server-side definition filter and source-boun
   assert.equal(result.records[0].id, registryRecord.qualifiedId);
 });
 
-test("item registry caches equivalent pages and rejects a changed continuation", async () => {
+test("item registry shares in-flight reads, retains no completed copies, and rejects a changed continuation", async () => {
   let requests = 0;
   const client = new ItemRegistryClient({ serverOrigin: "https://table.test", fetchImpl: async () => {
     requests += 1; return json(page());
   } });
   const request = { query: "", cursor: null, expectedResolutionFingerprint: null };
-  await client.loadPage(request);
-  await client.loadPage(request);
+  await Promise.all([client.loadPage(request), client.loadPage(request)]);
   assert.equal(requests, 1);
-  assert.equal(client.metrics().hits, 1);
+  assert.deepEqual(client.metrics(), { retainedEntries: 0, retainedBytes: 0 });
+  await client.loadPage(request);
+  assert.equal(requests, 2, "Completed values belong to the Hub Redux owner, not the transport.");
   await assert.rejects(readItemRegistry({
     serverOrigin: "https://table.test", applicationId: "dnd2024",
     request: { query: "", cursor: "next", expectedResolutionFingerprint: "C".repeat(64) },
     fetchImpl: async () => json(page()),
   }), (error) => error instanceof ViewReadError && error.category === "stale-data");
+});
+
+test("item registry keeps valid identities when bounded display rows are malformed or duplicated", async () => {
+  const valid = { ...registryRecord, qualifiedId: "dnd2024.item.rope.v1", name: "Rope" };
+  const malformed = { ...registryRecord, qualifiedId: "dnd2024.item.bad.v1", version: "not-a-version" };
+  const result = await readItemRegistry({
+    serverOrigin: "https://table.test", applicationId: "dnd2024",
+    fetchImpl: async () => json(page([registryRecord, registryRecord, malformed, valid], "next", 4)),
+  });
+  assert.equal(result.partial, true);
+  assert.deepEqual(result.records.map((record) => record.id), [valid.qualifiedId]);
+  assert.equal(result.nextCursor, "next");
 });
 
 test("definition detail is definition-only, handles renamed and retired records, and marks incomplete data", async () => {
@@ -115,4 +128,17 @@ test("definition detail rejects a record changed after its registry page", async
       } },
     }) }),
   }), (error) => error instanceof ViewReadError && error.category === "stale-data");
+});
+
+test("item definition keeps registry identity when its optional definition component is absent", async () => {
+  const result = await readItemDefinition({ serverOrigin: "https://table.test", applicationId: "dnd2024",
+    request: { id: registryRecord.qualifiedId, collection: "dnd2024",
+      expectedContentFingerprint: contentFingerprint, sourceLabel: null },
+    fetchImpl: async () => json({ summary: registryRecord, contentJson: JSON.stringify({
+      id: registryRecord.qualifiedId, name: "Item with unavailable details", components: {},
+    }) }) });
+  assert.equal(result.details.itemId, registryRecord.qualifiedId);
+  assert.equal(result.details.name, "Item with unavailable details");
+  assert.equal(result.details.state, "partial");
+  assert.ok(result.details.reasons.includes("source-incomplete"));
 });

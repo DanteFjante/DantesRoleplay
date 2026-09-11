@@ -1,0 +1,22 @@
+{
+  "id": "dnd2024.query.rest-begin-creature",
+  "category": "rest.structural-object",
+  "name": "Rest creature object",
+  "description": "Reads the exact registered creature state used by the rest mechanic.",
+  "matches": ["read rest creature object", "inspect rest creature sources"],
+  "roles": {
+    "creature": "The exact creature to inspect."
+  },
+  "roleBindings": {
+    "creature": { "source": "route-entity" }
+  },
+  "executor": "object-projection",
+  "object": {
+    "qualifiedId": "dnd2024.object.rest-begin-creature",
+    "version": 2,
+    "contentFingerprint": "AB0EC68C477CA95FB635A4E14A758F2922B16B08393C999C122A4E17E4CA4327"
+  },
+  "exposure": "model-visible",
+  "status": "active",
+  "profile": "application-object/v2"
+}

@@ -88,6 +88,9 @@ export function WorldCampaignSelector({
             {loadState === "error" ? error : "Loading authorized worlds and campaigns…"}
             {loadState === "error" ? <button type="button" onClick={onOpen}>Retry directory</button> : null}
           </p> : null}
+          {selection.coverage === "partial" ? <p role="status">
+            Some directory records or names are unavailable. Only confirmed campaign choices are shown.
+          </p> : null}
           <div aria-label="Available worlds" className="context-picker__worlds">
             {selection.worlds.map((world) => (
               <button

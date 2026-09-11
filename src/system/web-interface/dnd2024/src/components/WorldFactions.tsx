@@ -43,6 +43,11 @@ function FactionCard({
         </div>
       </header>
       <p className="faction-card__summary">{faction.summary}</p>
+      {faction.unavailableFields?.length ? (
+        <p className="directory-record-notice" role="status">
+          Some details are unavailable: {faction.unavailableFields.join(", ")}.
+        </p>
+      ) : null}
       {faction.goals.length || faction.methods.length ? (
         <div className="faction-card__columns">
           {faction.goals.length ? (
@@ -131,6 +136,12 @@ export function WorldFactions({
     () => filterWorldFactions(world.factions, { query, influence }),
     [world.factions, query, influence],
   );
+  const sourceTotal = world.factionDirectory?.totalCount ?? world.factions.length;
+  const completePage = world.factionDirectory?.complete ?? true;
+  const omittedCompleteRows = completePage && sourceTotal > world.factions.length;
+  const partialCoverage = world.factionDirectory?.coverage === "partial" || omittedCompleteRows || world.factions.some(
+    (faction) => (faction.unavailableFields?.length ?? 0) > 0,
+  );
 
   return (
     <div className="world-directory-view">
@@ -139,7 +150,7 @@ export function WorldFactions({
           <span className="eyebrow">Powers in motion</span>
           <h1 id="main-view-heading" tabIndex={-1}>Factions</h1>
         </div>
-        <p aria-live="polite">{factions.length} visible · {world.factions.length} of {world.factionDirectory?.totalCount ?? world.factions.length} loaded</p>
+        <p aria-live="polite">{factions.length} visible · {world.factions.length} displayed from {sourceTotal} source records</p>
       </header>
       <p className="world-directory-introduction">
         Sovereign powers and organizations whose rule, goals, alliances, and rivalries continue to shape {world.name}.
@@ -161,6 +172,11 @@ export function WorldFactions({
         query={query}
         searchLabel="Search factions"
       />
+      {partialCoverage ? (
+        <p className="directory-record-notice" role="status">
+          Some faction records or details are unavailable. Omitted records are not confirmed absent.
+        </p>
+      ) : null}
       {factions.length ? (
         <div className="faction-grid">
           {factions.map((faction) => (
@@ -176,8 +192,10 @@ export function WorldFactions({
       ) : (
         <div className="directory-empty">
           <Icon name="Shield" size={26} />
-          <strong>No factions match</strong>
-          <p>Try another name or influence level.</p>
+          <strong>{partialCoverage ? "Faction records unavailable" : "No factions match"}</strong>
+          <p>{partialCoverage
+            ? "The source reported records that could not be displayed."
+            : "Try another name or influence level."}</p>
         </div>
       )}
       {world.factionDirectory && !world.factionDirectory.complete ? (
@@ -185,7 +203,7 @@ export function WorldFactions({
           <button aria-busy={busy ? "true" : undefined} disabled={busy} onClick={onLoadMore} type="button">
             {busy ? "Loading factions…" : "Load more factions"}
           </button>
-          <p>{world.factionDirectory.totalCount - world.factions.length} factions remain.</p>
+          <p>Additional faction pages may remain.</p>
         </div>
       ) : null}
     </div>

@@ -329,6 +329,156 @@ public sealed class Dnd2024InventoryAndProgressionTests : Dnd2024TestBase
     }
 
     [Fact]
+    public async Task Inventory_mutations_replay_without_second_quantity_containment_component_event_or_invalidation_change()
+    {
+        await using var harness = await DndHarness.CreateAsync(includeObjectChangeParticipant: true);
+        const string arrows = "dnd2024.item.replay-arrow.v1";
+        const string spear = "dnd2024.item.replay-spear.v1";
+        await harness.AddItemDefinitionAsync(arrows, "Replay arrows", FungibleItemDefinition());
+        await harness.AddItemDefinitionAsync(spear, "Replay spear", SeparateItemDefinition("[\"held\"]"));
+        await harness.AddPhysicalItemAsync("item.replay.spear", "Replay Spear", spear, "subject.high");
+
+        async Task<string> InventoryStateAsync()
+        {
+            var arrowsState = await harness.Entities.GetComponentAsync(DndHarness.StateSpaceId,
+                "item.replay.arrows", "dnd2024.item.quantity");
+            var spearEquipment = await harness.Entities.GetComponentAsync(DndHarness.StateSpaceId,
+                "item.replay.spear", "dnd2024.item.equipment");
+            var spearContainment = await harness.Edges.GetContainmentAsync(DndHarness.StateSpaceId,
+                "item.replay.spear");
+            return string.Join("|", arrowsState?.ValueJson ?? "absent", arrowsState?.Revision ?? -1,
+                spearEquipment?.ValueJson ?? "absent", spearEquipment?.Revision ?? -1,
+                spearContainment?.ContainerEntityId ?? "absent", spearContainment?.Slot ?? "absent",
+                spearContainment?.Revision ?? -1);
+        }
+
+        async Task ReplayAsync(ApplicationActionExecutionRequest request)
+        {
+            var first = await harness.Runner.RunAsync(request);
+            Assert.True(first.Disposition == ApplicationActionExecutionDisposition.Succeeded,
+                string.Join("; ", first.Problems.Select(value => value.Code + ": " + value.SafeMessage)));
+            var state = await InventoryStateAsync();
+            var events = (await harness.EventsAsync(first.OperationId)).Count;
+            var changes = await harness.ChangeDeliveryCountAsync();
+            var replay = await harness.Runner.RunAsync(request);
+            Assert.Equal(ApplicationActionExecutionDisposition.Replayed, replay.Disposition);
+            Assert.Equal(first.OperationId, replay.OperationId);
+            Assert.Equal(state, await InventoryStateAsync());
+            Assert.Equal(events, (await harness.EventsAsync(first.OperationId)).Count);
+            Assert.Equal(changes, await harness.ChangeDeliveryCountAsync());
+        }
+
+        await ReplayAsync(harness.ActionForRoles("dnd2024.mechanic.item-stack.create-and-place",
+            new Dictionary<string, string> { ["definition"] = arrows, ["destination"] = "subject.high" },
+            "{\"count\":3,\"itemId\":\"item.replay.arrows\",\"name\":\"Replay Arrows\",\"slot\":\"quiver\"}",
+            0, "a0000000000000000000000000000001"));
+        Assert.Contains("\"current\":3", (await harness.Entities.GetComponentAsync(DndHarness.StateSpaceId,
+            "item.replay.arrows", "dnd2024.item.quantity"))!.ValueJson, StringComparison.Ordinal);
+
+        await ReplayAsync(harness.ActionForRoles("dnd2024.mechanic.item-instance.move",
+            new Dictionary<string, string> { ["item"] = "item.replay.spear", ["destination"] = "subject.low" },
+            "{\"slot\":\"gift\"}", 0, "a0000000000000000000000000000002"));
+        Assert.Equal("subject.low", (await harness.Edges.GetContainmentAsync(DndHarness.StateSpaceId,
+            "item.replay.spear"))!.ContainerEntityId);
+
+        await ReplayAsync(harness.ActionForRoles("dnd2024.mechanic.item.transfer",
+            new Dictionary<string, string>
+            {
+                ["item"] = "item.replay.spear", ["source"] = "subject.low", ["destination"] = "subject.high"
+            }, "{\"slot\":\"carried\"}", 0, "a0000000000000000000000000000003"));
+        Assert.Equal("subject.high", (await harness.Edges.GetContainmentAsync(DndHarness.StateSpaceId,
+            "item.replay.spear"))!.ContainerEntityId);
+
+        var equipmentRoles = new Dictionary<string, string>
+        {
+            ["item"] = "item.replay.spear", ["holder"] = "subject.high"
+        };
+        await ReplayAsync(harness.ActionForRoles("dnd2024.mechanic.item.equip", equipmentRoles,
+            "{\"slotIds\":[\"dnd2024.equipment-slot.main-hand\"]}", 0,
+            "a0000000000000000000000000000004"));
+        Assert.NotNull(await harness.Entities.GetComponentAsync(DndHarness.StateSpaceId,
+            "item.replay.spear", "dnd2024.item.equipment"));
+
+        await ReplayAsync(harness.ActionForRoles("dnd2024.mechanic.item.unequip", equipmentRoles,
+            "{}", 0, "a0000000000000000000000000000005"));
+        Assert.Null(await harness.Entities.GetComponentAsync(DndHarness.StateSpaceId,
+            "item.replay.spear", "dnd2024.item.equipment"));
+
+        await ReplayAsync(harness.ActionForRoles("dnd2024.mechanic.item-stack.consume",
+            new Dictionary<string, string> { ["item"] = "item.replay.arrows", ["definition"] = arrows },
+            "{\"count\":1}", 0, "a0000000000000000000000000000006"));
+        Assert.Contains("\"current\":2", (await harness.Entities.GetComponentAsync(DndHarness.StateSpaceId,
+            "item.replay.arrows", "dnd2024.item.quantity"))!.ValueJson, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Inventory_mutations_late_rollback_preserves_quantity_containment_components_events_and_invalidations()
+    {
+        await using var harness = await DndHarness.CreateAsync(failTransactionAfterEffects: true,
+            includeObjectChangeParticipant: true);
+        const string arrows = "dnd2024.item.rollback-arrow.v1";
+        const string spear = "dnd2024.item.rollback-spear.v1";
+        await harness.AddItemDefinitionAsync(arrows, "Rollback arrows", FungibleItemDefinition());
+        await harness.AddItemDefinitionAsync(spear, "Rollback spear", SeparateItemDefinition("[\"held\"]"));
+        await harness.AddPhysicalItemAsync("item.rollback.arrows", "Rollback Arrows", arrows,
+            "subject.high", quantity: 3);
+        await harness.AddPhysicalItemAsync("item.rollback.spear", "Rollback Spear", spear, "subject.high");
+
+        async Task<string> StateAsync()
+        {
+            var quantity = await harness.Entities.GetComponentAsync(DndHarness.StateSpaceId,
+                "item.rollback.arrows", "dnd2024.item.quantity");
+            var equipment = await harness.Entities.GetComponentAsync(DndHarness.StateSpaceId,
+                "item.rollback.spear", "dnd2024.item.equipment");
+            var containment = await harness.Edges.GetContainmentAsync(DndHarness.StateSpaceId,
+                "item.rollback.spear");
+            var added = await harness.Entities.GetEntityAsync(DndHarness.StateSpaceId, "item.rollback.added");
+            return string.Join("|", quantity!.ValueJson, quantity.Revision, equipment?.ValueJson ?? "absent",
+                equipment?.Revision ?? -1, containment!.ContainerEntityId, containment.Slot,
+                containment.Revision, added?.Revision ?? -1);
+        }
+
+        async Task RejectLateAsync(ApplicationActionExecutionRequest request)
+        {
+            var before = await StateAsync();
+            var eventCount = (await harness.EventsAsync(request.ExecutionIdentity.OperationId)).Count;
+            var changeCount = await harness.ChangeDeliveryCountAsync();
+            var result = await harness.Runner.RunAsync(request);
+            Assert.Equal(ApplicationActionExecutionDisposition.Failed, result.Disposition);
+            Assert.Equal(before, await StateAsync());
+            Assert.Equal(eventCount, (await harness.EventsAsync(request.ExecutionIdentity.OperationId)).Count);
+            Assert.Equal(changeCount, await harness.ChangeDeliveryCountAsync());
+        }
+
+        await RejectLateAsync(harness.ActionForRoles("dnd2024.mechanic.item-stack.create-and-place",
+            new Dictionary<string, string> { ["definition"] = arrows, ["destination"] = "subject.high" },
+            "{\"count\":1,\"itemId\":\"item.rollback.added\",\"name\":\"Never Added\",\"slot\":\"quiver\"}",
+            0, "b0000000000000000000000000000001"));
+        await RejectLateAsync(harness.ActionForRoles("dnd2024.mechanic.item-instance.move",
+            new Dictionary<string, string> { ["item"] = "item.rollback.spear", ["destination"] = "subject.low" },
+            "{\"slot\":\"gift\"}", 0, "b0000000000000000000000000000002"));
+        await RejectLateAsync(harness.ActionForRoles("dnd2024.mechanic.item.transfer",
+            new Dictionary<string, string>
+            {
+                ["item"] = "item.rollback.spear", ["source"] = "subject.high", ["destination"] = "subject.low"
+            }, "{\"slot\":\"gift\"}", 0, "b0000000000000000000000000000003"));
+        var equipmentRoles = new Dictionary<string, string>
+        {
+            ["item"] = "item.rollback.spear", ["holder"] = "subject.high"
+        };
+        await RejectLateAsync(harness.ActionForRoles("dnd2024.mechanic.item.equip", equipmentRoles,
+            "{\"slotIds\":[\"dnd2024.equipment-slot.main-hand\"]}", 0,
+            "b0000000000000000000000000000004"));
+        await harness.AddApplicationComponentAsync("item.rollback.spear", "dnd2024.item.equipment",
+            "{\"equippedBy\":{\"entityId\":\"subject.high\"},\"slots\":[{\"entityId\":\"dnd2024.equipment-slot.main-hand\"}]}" );
+        await RejectLateAsync(harness.ActionForRoles("dnd2024.mechanic.item.unequip", equipmentRoles,
+            "{}", 0, "b0000000000000000000000000000005"));
+        await RejectLateAsync(harness.ActionForRoles("dnd2024.mechanic.item-stack.consume",
+            new Dictionary<string, string> { ["item"] = "item.rollback.arrows", ["definition"] = arrows },
+            "{\"count\":1}", 0, "b0000000000000000000000000000006"));
+    }
+
+    [Fact]
     public async Task Inventory_burden_and_carrying_capacity_compose_exact_bounded_views()
     {
         await using var harness = await DndHarness.CreateAsync();

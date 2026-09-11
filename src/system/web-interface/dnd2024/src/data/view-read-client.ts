@@ -1,6 +1,6 @@
 import { sha256Hex } from "./browser-crypto.ts";
 
-export type ViewReadErrorCategory = "cancelled" | "incompatible-data" | "stale-data" | "transport";
+export type ViewReadErrorCategory = "authorization" | "cancelled" | "incompatible-data" | "stale-data" | "transport";
 
 export class ViewReadError extends Error {
   public readonly category: ViewReadErrorCategory;

@@ -2,6 +2,8 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Text.Json;
 using DantesRoleplay.Applications;
+using DantesRoleplay.Ecs;
+using DantesRoleplay.Interactions;
 using DantesRoleplay.Knowledge;
 using DantesRoleplay.Media;
 using Microsoft.AspNetCore.Http;
@@ -19,7 +21,8 @@ public sealed record LocalKnowledgeSeatSnapshot(
     string CampaignId,
     string? ActorId,
     KnowledgeAudienceRole Role = KnowledgeAudienceRole.Actor,
-    IReadOnlyList<string>? SourceIds = null);
+    IReadOnlyList<string>? SourceIds = null,
+    IReadOnlyDictionary<string, string>? AuthorizedRoleEntityIds = null);
 
 public interface ILocalKnowledgeSeatProvider
 {
@@ -78,9 +81,13 @@ internal sealed class ConfigurationLocalKnowledgeSeatProvider(
     public LocalKnowledgeSeatSnapshot Current()
     {
         var section = configuration?.GetSection("Knowledge:LocalPlayer");
+        var authorizedRoles = (section?.GetSection("RoleEntityIds").GetChildren()
+            .ToDictionary(value => value.Key, value => value.Value ?? "", StringComparer.Ordinal))
+            ?? new Dictionary<string, string>(StringComparer.Ordinal);
         if (SharedWebsiteContext.IsTrusted(http?.HttpContext))
             return new(true, "shared-website", section?["ApplicationId"] ?? "",
-                section?["CampaignId"] ?? "", null, KnowledgeAudienceRole.GameMaster);
+                section?["CampaignId"] ?? "", null, KnowledgeAudienceRole.GameMaster,
+                AuthorizedRoleEntityIds: authorizedRoles);
         var role = section?["Role"] switch
         {
             null or "Actor" => KnowledgeAudienceRole.Actor,
@@ -99,8 +106,52 @@ internal sealed class ConfigurationLocalKnowledgeSeatProvider(
             actorId,
             role,
             Array.AsReadOnly((section?.GetSection("SourceIds").GetChildren()
-                .Select(value => value.Value ?? "").ToArray()) ?? []));
+                .Select(value => value.Value ?? "").ToArray()) ?? []),
+            authorizedRoles);
     }
+}
+
+/// <summary>
+/// Adapts the host's trusted configuration into opaque application role bindings. This adapter
+/// deliberately does not infer bindings from legacy seat fields or interpret application roles.
+/// </summary>
+internal sealed class LocalApplicationQueryAuthorizedContextProvider(
+    ILocalKnowledgeSeatProvider seats,
+    IStateSpaceRegistry stateSpaces,
+    IEntityComponentStore entities) : IApplicationQueryAuthorizedContextProvider
+{
+    public async Task<IReadOnlyDictionary<string, string>?> ResolveAsync(
+        ApplicationIdentifier applicationId,
+        string stateSpaceId,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(applicationId);
+        cancellationToken.ThrowIfCancellationRequested();
+        var seat = seats.Current();
+        var values = seat.AuthorizedRoleEntityIds;
+        var stateSpace = stateSpaces.Get(stateSpaceId);
+        if (!seat.Enabled || seat.ApplicationId != applicationId.Value || stateSpace is null
+            || stateSpace.ApplicationRevision.ApplicationId != applicationId
+            || !Token(stateSpaceId) || values is null
+            || values.Count > 32 || values.Any(value => !Key(value.Key) || !Token(value.Value)))
+            return null;
+
+        var result = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var value in values.OrderBy(value => value.Key, StringComparer.Ordinal))
+        {
+            if (await entities.GetEntityAsync(stateSpaceId, value.Value, cancellationToken) is null)
+                return null;
+            result.Add(value.Key, value.Value);
+        }
+        return result;
+    }
+
+    private static bool Key(string value) => value.Split('.').All(segment =>
+        segment is { Length: > 0 and <= 63 } && char.IsAsciiLetterLower(segment[0])
+        && segment.All(character => char.IsAsciiLetterLower(character)
+            || char.IsAsciiDigit(character) || character == '-'));
+    private static bool Token(string? value) => value is { Length: > 0 and <= 200 }
+        && value == value.Trim() && !value.Any(char.IsControl) && !value.Any(char.IsWhiteSpace);
 }
 
 /// <summary>

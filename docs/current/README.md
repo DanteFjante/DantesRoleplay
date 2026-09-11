@@ -7,6 +7,11 @@ This directory is the maintained entry point for humans and LLMs working on Dant
 | Task | Read next |
 | --- | --- |
 | Decide where behavior belongs or understand runtime boundaries | [ARCHITECTURE.md](ARCHITECTURE.md) |
+| Understand the generic platform's implemented requirements, dynamism, web, AI, retrieval, and storage | [PLATFORM-REQUIREMENTS.md](PLATFORM-REQUIREMENTS.md) |
+| Discuss the intended product, differences from today's platform, and the draft alignment plan | [PRODUCT-DIRECTION.md](PRODUCT-DIRECTION.md) |
+| Plan platform implementation, shared contracts, and parallel agent ownership | [PLATFORM-IMPLEMENTATION.md](PLATFORM-IMPLEMENTATION.md) |
+| Establish the shared implementation foundation before platform workstreams | [00 — Shared foundation](platform-implementation/00-shared-foundation.md) |
+| Implement the proposed field-based website/object-read design while preserving strict ECS writes | [FIELD-BASED-OBJECTS-PLAN.md](FIELD-BASED-OBJECTS-PLAN.md) |
 | Change code, tests, schemas, or catalog content | [DEVELOPMENT.md](DEVELOPMENT.md) |
 | Improve test runtime, select affected domains, or remove obsolete/redundant tests in slices | [TEST-SUITE-IMPROVEMENT.md](TEST-SUITE-IMPROVEMENT.md) |
 | Compare, validate, export, or import catalog/database records | [CATALOG.md](CATALOG.md) |

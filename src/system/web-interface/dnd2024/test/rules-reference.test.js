@@ -79,15 +79,25 @@ test("projects catalog-defined sections and source ownership from the resolved r
   assert.equal(projected[1].source.label, "Caldris Homebrew");
 });
 
-test("rejects malformed resolved rules instead of falling back to catalog folders", () => {
+test("keeps identity-safe rules when unrelated readable fields are unavailable", () => {
   assert.equal(projectResolvedRules({ ...payload(), applicationId: "other" }), null);
   assert.equal(projectResolvedRules({ ...payload(), rulesFingerprint: "" }), null);
-  assert.equal(projectResolvedRules(payload([{ id: "combat", label: "Combat", order: 20, rules: [
+  const missingAuthority = projectResolvedRules(payload([{ id: "combat", label: "Combat", order: 20, rules: [
     { ...rule(), authority: { mechanicIds: [], procedureIds: [] } },
-  ] }])), null);
-  assert.equal(projectResolvedRules(payload([{ id: "combat", label: "Combat", order: 20, rules: [
+  ] }]));
+  assert.equal(missingAuthority?.[0].fieldStatus.authority, undefined);
+  const unknownClassification = projectResolvedRules(payload([{ id: "combat", label: "Combat", order: 20, rules: [
     { ...rule(), source: { ownerId: "base", label: "Core", classification: "unknown" } },
-  ] }])), null);
+  ] }]));
+  assert.equal(unknownClassification?.[0].source.classification, "unknown");
+  assert.equal(unknownClassification?.[0].fieldStatus.sourceClassification, "unavailable");
+  assert.equal(projectRulesPublication(payload([{ id: "combat", label: "Combat", order: 20, rules: [
+    { ...rule(), visibility: "dm" },
+  ] }], { audience: "public" })), null, "A public publication cannot carry a DM-only row.");
+  assert.equal(projectRulesPublication(payload(undefined, { resolutionFingerprint: "none" }))?.resolutionFingerprint, "none",
+    "Core-only rules retain the server's explicit no-resolution marker.");
+  assert.equal(projectRulesPublication(payload(undefined, { rulesFingerprint: "none" })), null,
+    "No extension resolution does not remove the publication's own integrity fingerprint.");
 });
 
 test("loads only the resolved rules endpoint and has no static fallback", async () => {
@@ -156,7 +166,7 @@ test("section navigation and search use readable content rather than directory n
   assert.deepEqual(filterRuleReferences(projected, "", "resting").map(({ title }) => title), ["Long Rest"]);
 });
 
-test("publication contract owns article totals and validates related content links", () => {
+test("publication retains safe rows when a count or unrelated link is malformed", () => {
   const linked = rule();
   linked.relatedContent = [{ kind: "item", entityId: "dnd2024.item.backpack.v1", title: "Backpack",
     collection: "items", contentFingerprint: "C".repeat(64), available: true }];
@@ -165,13 +175,50 @@ test("publication contract owns article totals and validates related content lin
   ]));
   assert.equal(projected.articleCount, 1);
   assert.equal(projected.rules[0].relatedContent[0].title, "Backpack");
-  assert.equal(projectRulesPublication(payload(undefined, { articleCount: 2 })), null);
-  assert.equal(projectRulesPublication(payload([{ id: "combat", label: "Combat", order: 20, rules: [
+  const countUnavailable = projectRulesPublication(payload(undefined, { articleCount: 2 }));
+  assert.equal(countUnavailable?.articleCount, null);
+  assert.equal(countUnavailable?.coverage, "partial");
+  const unavailableLink = projectRulesPublication(payload([{ id: "combat", label: "Combat", order: 20, rules: [
     { ...linked, relatedContent: [{ ...linked.relatedContent[0], available: false }] },
-  ] }])), null);
+  ] }]));
+  assert.equal(unavailableLink?.rules[0].relatedContent.length, 0);
+  assert.equal(unavailableLink?.rules[0].fieldStatus.relatedContent, "unavailable");
 });
 
-test("rules client reuses a fresh publication and observes changed source fingerprints on forced refresh", async () => {
+test("rules retain safe identity and readable fields when display labels or ordering are unavailable", () => {
+  const sparse = rule();
+  delete sparse.title;
+  delete sparse.order;
+  const projected = projectRulesPublication(payload([{ id: "combat", rules: [sparse] }]));
+  assert.equal(projected?.rules.length, 1);
+  assert.equal(projected?.rules[0]?.id, "dnd2024.rule.combat.attack");
+  assert.equal(projected?.rules[0]?.summary, "Resolve an attack through the active mechanic.");
+  assert.equal(projected?.rules[0]?.title, "Unnamed rule");
+  assert.equal(projected?.rules[0]?.order, null);
+  assert.equal(projected?.rules[0]?.section.label, "combat");
+  assert.equal(projected?.rules[0]?.section.order, null);
+  assert.equal(projected?.rules[0]?.fieldStatus.title, "unavailable");
+  assert.equal(projected?.rules[0]?.fieldStatus.sectionOrder, "unavailable");
+});
+
+test("rules retain useful block and example text when unrelated display fields are malformed", () => {
+  const sparse = rule();
+  sparse.blocks = [
+    { kind: "paragraph", heading: 42, body: "A confirmed readable paragraph.", items: null },
+    { kind: "steps", heading: null, body: null, items: ["Confirmed step.", 7] },
+  ];
+  sparse.examples = [{ title: null, body: "A confirmed example body." }];
+  const projected = projectRulesPublication(payload([{ id: "combat", label: "Combat", order: 20, rules: [sparse] }]));
+  assert.deepEqual(projected?.rules[0]?.blocks, [
+    { kind: "paragraph", heading: null, body: "A confirmed readable paragraph.", items: [] },
+    { kind: "steps", heading: null, body: null, items: ["Confirmed step."] },
+  ]);
+  assert.deepEqual(projected?.rules[0]?.examples, [{ title: "Unnamed example", body: "A confirmed example body." }]);
+  assert.equal(projected?.rules[0]?.fieldStatus.blocks, "partial");
+  assert.equal(projected?.rules[0]?.fieldStatus.examples, "partial");
+});
+
+test("rules client coordinates only in-flight reads; Redux owns completed publications", async () => {
   let calls = 0;
   const client = new RulesReferenceClient({ serverOrigin: "https://localhost:5144",
     fetchImpl: async () => {
@@ -182,10 +229,9 @@ test("rules client reuses a fresh publication and observes changed source finger
       })), { status: 200, headers: { "Content-Type": "application/json" } });
     } });
   const first = await client.load();
-  const cached = await client.load();
+  const second = await client.load();
   const changed = await client.load(undefined, false);
-  assert.equal(calls, 2);
-  assert.equal(first.rulesFingerprint, cached.rulesFingerprint);
-  assert.notEqual(first.rulesFingerprint, changed.rulesFingerprint);
-  assert.equal(client.metrics().hits, 1);
+  assert.equal(calls, 3);
+  assert.notEqual(first.rulesFingerprint, second.rulesFingerprint);
+  assert.notEqual(second.rulesFingerprint, changed.rulesFingerprint);
 });

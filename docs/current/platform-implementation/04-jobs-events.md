@@ -1,0 +1,41 @@
+# Durable JavaScript jobs, schedules, and observers
+
+Status: concrete implementation plan, 2026-09-11. This document authorizes no runtime changes. Initial callers are the website, Codex, and runtime JavaScript; additional external integrations remain future extension seams.
+
+Prerequisite: implement [00 — Shared foundation](00-shared-foundation.md) first and have the coordinator supply its accepted foundation revision and contract baseline. This workstream consumes those shared contracts and does not redefine them independently.
+
+## Outcome and existing owners
+
+A stored script can start durable work, schedule an action, register an observer, inspect progress, and request cancellation within configured permissions. Long computation, AI requests, and waits run outside the SQLite writer transaction.
+
+Reuse [trigger scheduling](../../../src/system/trigger-scheduling/domain/TriggerSchedulingContracts.cs), [administration](../../../src/system/trigger-scheduling/domain/TriggerSchedulingAdministrationContracts.cs), [leased scheduled work](../../../src/system/trigger-scheduling/persistence/SqliteScheduledAiTaskWorkStore.cs), and [effect application](../../../DantesRoleplay.DataAccess/Ecs/ApplicationEcsEffectApplier.cs). Current trigger targets produce notifications; scheduled AI has separate leased execution. These are useful foundations, not an existing general script-job service. Extending their owners preserves established scope, transaction, and recovery behavior without introducing a replacement project.
+
+## Proposed contract and storage
+
+Use the shared invocation envelope from plan 01: principal and scope, grant reference, selected definition revision/fingerprint, root operation and parent identities, and budgets. A job adds its durable handle, input, checkpoint state, deadline, retry policy, and optional dependency handles. Capture the selected definition at submission; running jobs retain it. Recurring schedules may resolve a later active revision only under an explicitly configured compatibility/activation policy.
+
+Results use the shared outcome, data, commit evidence, and task-handle shape. Distinguish committed results from prepared proposals and computation output. Extend the existing [system-task lifecycle owner](../../../src/system/system-task-orchestration/domain/SystemTaskContracts.cs) for logical handles/readback and reuse the leased-work patterns for execution attempts. Proposed durable records cover job state, ordered steps/checkpoints, host-call identities and receipts, dependency edges, and observer/schedule bindings. This workstream solely owns generic parent/dependency links, cycle and fan-out enforcement, lease ownership, and cancellation propagation. Plan 05 supplies AI-specific metadata and prerequisite-result mappings against this lifecycle. Reuse existing operation and activation references instead of duplicating their payloads. The coordinator owns schema naming, shared wiring, and migrations.
+
+Do not serialize a live Jint heap. Plan 01 must provide explicit resumable steps/checkpoints with bounded JSON state. Completed host calls are journaled under stable identities; recovery resumes a declared checkpoint and reconciles pending calls before invoking them again.
+
+## Deliverable slices
+
+1. **Agree on the durable execution boundary.** With plans 01 and 02, specify job submission, readback, cancellation, checkpointing, and permission evaluation. Define queued, running, waiting, terminal, and indeterminate outcomes; cancellation is a durable request that workers acknowledge. Select limits for runtime, queued work, checkpoint bytes, host calls, descendants, and retained evidence. Acceptance: one generic script submits bounded work through the same contract from each supported caller. Rejected submissions leave no executable job.
+
+2. **Implement storage and the leased runner.** Extend the scheduling/work ownership with transactional enqueue, claim/renewal, expired-lease recovery, and fencing tokens. Computation happens after claim transactions close. Record a checkpoint before releasing a job into a durable wait; do not keep a worker thread or database transaction occupied. Acceptance: restart during computation or a wait resumes recorded work, and a superseded worker cannot publish completion. Recovery: retain the last valid checkpoint and expose failed/indeterminate attempts with their original operation identities.
+
+3. **Add action calls and schedule targets.** Use plan 01's common invocation and script service interfaces. Add a job/action target alongside current notification targets, preserving existing schedules. Scheduling writes require configured grants from plan 02. Each firing obtains a stable invocation identity from schedule and occurrence, selected revision, and scope. Acceptance: duplicate delivery produces one committed action, revoked grants block execution, and changed definitions follow the recorded version policy. Recovery: reconcile uncertain commits through their receipts; retrying execution must not manufacture a new operation identity.
+
+4. **Add runtime observer registration.** Register a versioned observer with declared event/component/relationship inputs, a bounded pure predicate, scope, target action/job, and causal budgets. A JavaScript predicate receives admitted data only; it cannot recursively perform service calls while matching. Use existing event and conditional-trigger owners to stage durable matching work, with bounded fan-out and explicit coalescing policy. Acceptance: an authorized state change starts the declared action without application-specific host code, while unrelated changes do not execute it. Observer replacement/disable preserves audit evidence and governs future matches; queued jobs retain their own revision and permission checks.
+
+5. **Close cancellation, retries, and operator recovery.** Expose lifecycle readback through this workstream's services and the coordinator's MCP adapters; plan 03 supplies their discoverable contracts and plan 06 presents progress and cancellation. Stop new steps after cancellation, propagate cancellation to linked child work where declared, and preserve already committed effects. Retry only classified transient failures within limits. A stale input result requires fresh reads and a new planned attempt; an uncertain commit requires receipt reconciliation. Acceptance: dependency failure, cancellation, exhausted retries, and restart yield inspectable outcomes with bounded evidence and no silent duplicate writes.
+
+## Atomic effects versus orchestration
+
+Keep the atomic root/child effect set and bounded event reactions under the owning effect transaction. Current child mechanics are evaluated before that commit; their proposed effects join the root batch. Adding asynchronous capabilities must not let transactional reactions call AI, wait on time, or hold network operations under the writer lock. Instead, stage a job enqueue in the same transaction as the triggering state change; execute it after commit.
+
+A durable script may call multiple independently committed actions. Failure later in the script does not roll back earlier commits. Explain this through per-step commit evidence, and support explicitly authored compensating actions only where meaningful.
+
+## Dependencies and release boundary
+
+Plan 01 supplies resumable script/service contracts; plan 02 supplies registration and standing grants; plan 03 supplies discovery/manual context for these operations. This workstream owns lifecycle/readback services; the coordinator integrates MCP adapters. Plan 05 consumes the job lifecycle for INNER work; plan 06 supplies the website presentation. Coordinate shared changes centrally. Preserve existing notifications and schedules during rollout; enable general job targets separately. Acceptance covers website and Codex workflows only. No phone bridge, new provider, arbitrary external API adapter, or storage-engine replacement is included.

@@ -5,12 +5,86 @@ using DantesRoleplay.EcsEffects;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.MCPServer.Mcp;
 using DantesRoleplay.Operations;
+using DantesRoleplay.Projections;
+using DantesRoleplay.Capabilities;
+using DantesRoleplay.Ecs;
+using System.Text.Json;
 
 namespace DantesRoleplay.Interactions.Tests;
 
 public sealed class InteractionProtocolAdapterTests
 {
     private const string Intent = "{\"idempotencyKey\":\"plan.1\",\"intentText\":\"Inspect the fixture\"}";
+
+    [Theory]
+    [InlineData(true, "ready")]
+    [InlineData(false, "ready")]
+    [InlineData(true, "stale")]
+    [InlineData(true, "oversized")]
+    public async Task T12_T23_feature_discovery_resolves_only_authorized_exact_object_provenance(bool authorized, string mode)
+    {
+        var objectReference = new ProjectionReference("fixture-app.object.member", 2, new string('A', 64));
+        var schema = mode == "oversized"
+            ? JsonSerializer.Serialize(new { type = "object", description = new string('x', 20_000), properties = new { name = new { type = "string" } } })
+            : "{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\"}}}";
+        var component = new EcsComponentReference("fixture-app.identity", 3, CapabilityContractBuilder.SchemaHash(schema));
+        var discovery = new ApplicationObjectDiscovery(objectReference, "application-object/v2",
+            [new("source-1", ["identity"], "member", true, component, CapabilityContractBuilder.JsonSchemaProfile, schema)],
+            [new("/name", ["identity"], "member", component, "/name", true)], []);
+        var registry = new DiscoveryRegistry(mode == "stale" ? discovery with
+            { Object = objectReference with { ContentHash = new string('D', 64) } } : discovery);
+        var contract = JsonSerializer.Serialize(new
+        {
+            id = "fixture-app.query.member", category = "members", name = "Member", description = "Read one member.",
+            matches = new[] { "member" }, roles = new Dictionary<string, string> { ["member"] = "Authorized member." },
+            executor = "object-projection", profile = "application-object/v2",
+            @object = new { qualifiedId = objectReference.QualifiedId, version = objectReference.Version, contentFingerprint = objectReference.ContentHash },
+            collection = "members", exposure = "model-visible", status = "active"
+        });
+        var gateway = new Gateway { SearchHit = new(new(ApplicationIdentifier.Parse("fixture-app"),
+            InteractionRetrievalLane.TrustedFeature, new string('B', 64), "query", "fixture-app.query.member", 7, new string('C', 64)),
+            "Member", "Read one member.", contract, 1, null, true) };
+        var result = await new QueryMcpTool().QueryAsync(
+            procedures: null!, world: null!, graphs: null!, mechanics: null!, eventTypes: null!,
+            subscriptions: null!, events: null!, log: new Log(), notifications: null!,
+            kind: "system.feature-search", applicationId: "fixture-app", id: "fixture-app.query.member",
+            privateOperator: new Authorizer(authorized), interactionGateway: gateway, projectionDefinitions: registry);
+        Assert.Equal(authorized, result.Ok);
+        if (!authorized)
+        {
+            Assert.Equal(0, gateway.Calls);
+            Assert.Empty(registry.Requests);
+            return;
+        }
+        Assert.Equal(objectReference, Assert.Single(registry.Requests));
+        using var json = JsonSerializer.SerializeToDocument(result.Data);
+        if (mode != "ready")
+        {
+            Assert.False(json.RootElement.GetProperty("Capabilities")[0].TryGetProperty("ObjectDiscovery", out _));
+            Assert.Equal(mode == "stale" ? "OBJECT_DISCOVERY_UNAVAILABLE" : "OBJECT_DISCOVERY_BUDGET_EXCEEDED",
+                json.RootElement.GetProperty("ObjectDiscoveryDiagnostics")[0].GetProperty("Code").GetString());
+            Assert.True(System.Text.Encoding.UTF8.GetByteCount(json.RootElement.GetRawText()) < 16_384);
+            return;
+        }
+        Assert.Empty(json.RootElement.GetProperty("ObjectDiscoveryDiagnostics").EnumerateArray());
+        var descriptor = json.RootElement.GetProperty("Capabilities")[0].GetProperty("ObjectDiscovery");
+        Assert.Equal(objectReference.ContentHash, descriptor.GetProperty("ContentFingerprint").GetString());
+        Assert.Equal(component.SchemaHash, descriptor.GetProperty("Sources")[0].GetProperty("Schema").GetProperty("SchemaHash").GetString());
+        Assert.Equal("/name", descriptor.GetProperty("Fields")[0].GetProperty("SourcePath").GetString());
+    }
+
+    private sealed class DiscoveryRegistry(ApplicationObjectDiscovery discovery) : IProjectionDefinitionRegistry
+    {
+        public List<ProjectionReference> Requests { get; } = [];
+        public ApplicationObjectDiscovery? Discover(ProjectionReference reference)
+        {
+            Requests.Add(reference);
+            return reference == discovery.Object ? discovery : null;
+        }
+        public RegisteredProjectionDefinition Define(ProjectionDefinitionRequest definition) => throw new NotSupportedException();
+        public RegisteredProjectionDefinition? Get(string qualifiedId, int version) => throw new NotSupportedException();
+        public ProjectionImpactGraph GetImpactGraph(ApplicationIdentifier owner) => throw new NotSupportedException();
+    }
 
     [Fact]
     public async Task Public_plan_requires_the_confirmed_resolve_or_submit_mode()
@@ -134,6 +208,7 @@ public sealed class InteractionProtocolAdapterTests
     private sealed class Gateway : IInteractionGateway
     {
         public int Calls { get; private set; }
+        public InteractionFeatureHit? SearchHit { get; init; }
         public List<string?> SubmittedProposals { get; } = [];
         public List<string> ExecutionRequests { get; } = [];
 
@@ -153,7 +228,12 @@ public sealed class InteractionProtocolAdapterTests
         public Task<InteractionFeatureSearchResult> SearchFeaturesAsync(
             ApplicationIdentifier applicationId, string? query, string? qualifiedId, int limit = 10,
             string? namespaceId = null,
-            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+            CancellationToken cancellationToken = default)
+        {
+            Calls++;
+            return Task.FromResult(InteractionFeatureSearchResult.Create(InteractionRetrievalMode.Exact,
+                SearchHit is null ? [] : [SearchHit]));
+        }
 
         public Task<InteractionReceiptProjection?> GetReceiptAsync(
             TrustedPrincipalContext principal, ApplicationIdentifier applicationId, string stateSpaceId,

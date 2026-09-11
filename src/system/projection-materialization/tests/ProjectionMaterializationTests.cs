@@ -285,11 +285,15 @@ public sealed class ProjectionMaterializationTests : IDisposable
     }
 
     [Theory]
-    [InlineData(0)]
-    [InlineData(1)]
-    [InlineData(3)]
-    [InlineData(20)]
-    public async Task Catalog_campaign_batches_complete_rosters_and_never_reads_hidden_references(int count)
+    [InlineData(0, false)]
+    [InlineData(1, false)]
+    [InlineData(3, false)]
+    [InlineData(20, false)]
+    [InlineData(0, true)]
+    [InlineData(1, true)]
+    [InlineData(3, true)]
+    [InlineData(20, true)]
+    public async Task Catalog_campaign_batches_complete_rosters_and_never_reads_hidden_references(int count, bool legacy)
     {
         var counter = new CommandCounter();
         var options = new DbContextOptionsBuilder<DantesRoleplayDbContext>()
@@ -326,9 +330,10 @@ public sealed class ProjectionMaterializationTests : IDisposable
         await store.CreateEntityAsync("batch-space", "unrelated", "Unrelated");
         var registry = new SqliteProjectionDefinitionRegistry(db, types, schemas, applications);
         RegisteredProjectionDefinition definition = null!;
-        foreach (var suffix in new[] { ".v1", ".v2", "" })
+        foreach (var suffix in new[] { ".v1", ".v2", ".v3", "" })
             definition = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(catalog,
                 "applications", "dnd2024", "objects", "campaign", $"dnd2024.object.campaign-summary{suffix}.json")), app));
+        if (legacy) definition = registry.Get(definition.QualifiedId, 3)!;
         var root = new ProjectionMaterializer(registry, store, spaces, schemas,
             snapshots: new SqliteProjectionSourceSnapshotReader(db, spaces, store));
         var materializer = new ProjectionCollectionMaterializer(registry, root, edges, store, store, schemas,
@@ -359,7 +364,15 @@ public sealed class ProjectionMaterializationTests : IDisposable
         {
             await edges.SetRelationshipAsync("batch-space", "participation.00", "unrelated",
                 "game.core.campaign.character-participation.for-actor", "{}", 0);
-            await Assert.ThrowsAsync<InvalidOperationException>(() => materializer.MaterializeAsync(request));
+            if (legacy || count == 20) await Assert.ThrowsAsync<InvalidOperationException>(() => materializer.MaterializeAsync(request));
+            else
+            {
+                // Structural reads report the actual relationship set. The authority consumer
+                // must refuse an ambiguous actor binding, not silently pick its first member.
+                var ambiguous = await materializer.MaterializeAsync(request);
+                Assert.Equal(2, JsonNode.Parse(ambiguous.OutputJson)!["party"]![0]!["actors"]!.AsArray().Count);
+                Assert.NotEqual(dm.SourceRevisionFingerprint, ambiguous.SourceRevisionFingerprint);
+            }
             await edges.RemoveRelationshipAsync("batch-space", "participation.00", "unrelated",
                 "game.core.campaign.character-participation.for-actor", 1);
             // Hidden link changes do not become a Player cursor/fingerprint side channel.
@@ -369,9 +382,19 @@ public sealed class ProjectionMaterializationTests : IDisposable
             Assert.NotEqual(dm.SourceRevisionFingerprint, changed.SourceRevisionFingerprint);
             var playerAgain = await materializer.MaterializeAsync(request with { Perspective = "player" });
             Assert.Equal(player.SourceRevisionFingerprint, playerAgain.SourceRevisionFingerprint);
-            // Missing participation state cannot be filtered into a supposedly complete roster.
+            // Missing optional state cannot be filtered into an apparently smaller roster.
             await store.RemoveComponentAsync("batch-space", "participation.00", Ref(participationType), 1);
-            await Assert.ThrowsAsync<InvalidOperationException>(() => materializer.MaterializeAsync(request));
+            if (legacy) await Assert.ThrowsAsync<InvalidOperationException>(() => materializer.MaterializeAsync(request));
+            else
+            {
+                var missing = await materializer.MaterializeAsync(request);
+                var missingParty = JsonNode.Parse(missing.OutputJson)!["party"]!.AsArray();
+                Assert.Equal(count, missingParty.Count);
+                var participation = Assert.Single(missingParty, row => row!["id"]!.GetValue<string>() == "participation.00");
+                Assert.False(participation!.AsObject().ContainsKey("status"));
+                Assert.Contains(missing.SourceRevisions, source => source.EntityId == "participation.00"
+                    && source.Type.QualifiedTypeId == participationType.QualifiedId && source.Revision == 0);
+            }
         }
     }
 

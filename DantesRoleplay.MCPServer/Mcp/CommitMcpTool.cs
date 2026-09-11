@@ -17,6 +17,9 @@ using DantesRoleplay.EcsEffects;
 using DantesRoleplay.Blobs;
 using DantesRoleplay.SystemFeedback;
 using DantesRoleplay.ApplicationExecution;
+using DantesRoleplay.CatalogNavigation;
+using DantesRoleplay.Ecs;
+using DantesRoleplay.Projections;
 using ModelContextProtocol.Server;
 
 namespace DantesRoleplay.MCPServer.Mcp;
@@ -28,7 +31,7 @@ public sealed class CommitMcpTool
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
 
     [McpServerTool(Name = "commit")]
-    [Description("Change state with application.action.execute, feedback, system.application.register, system.source.register, system.extension.register, system.component-type.register, system.namespace.register, system.application.activate, system.state-space.create, system.state-space.upgrade, system.state-space.adopt-legacy, system.world-state.sync, system.interaction-execute, system.interaction-recipe-review, system.trigger-scheduling, system.knowledge-state.sync, system.blob-upload.begin, or system.blob-upload.finalize. Generic component, effects, mechanic, and action writes are retired. Use query(kind: \"capabilities\") for each current closed payload contract.")]
+    [Description("Change state with application.action.execute, feedback, system.application-object.submit, system.application.register, system.source.register, system.extension.register, system.component-type.register, system.namespace.register, system.application.activate, system.state-space.create, system.state-space.upgrade, system.state-space.adopt-legacy, system.world-state.sync, system.interaction-execute, system.interaction-recipe-review, system.trigger-scheduling, system.knowledge-state.sync, system.blob-upload.begin, or system.blob-upload.finalize. Generic component, effects, mechanic, and action writes are retired. Use query(kind: \"capabilities\") for each current closed payload contract.")]
     public async Task<ToolEnvelope> CommitAsync(
         IOperationLog log,
         string kind,
@@ -52,7 +55,13 @@ public sealed class CommitMcpTool
         IBlobTransferService? blobTransfers = null,
         ISystemFeedbackService? feedback = null,
         IServiceScopeFactory? serviceScopes = null,
-        IApplicationActionRunner? applicationActions = null)
+        IApplicationActionRunner? applicationActions = null,
+        IApplicationObjectWriteService? applicationObjectWrites = null,
+        IPublicApplicationCatalogProvider? publicCatalogs = null,
+        IApplicationQueryRoleBindingResolver? applicationRoleBindings = null,
+        IApplicationQueryAuthorizedContextProvider? applicationAuthorizedContext = null,
+        IStateSpaceRegistry? applicationStateSpaces = null,
+        IEntityComponentStore? applicationEntities = null)
     {
         var normalizedKind = kind?.Trim().ToLowerInvariant() ?? string.Empty;
         var spec = McpVerbCatalog.DispatchCommit(normalizedKind);
@@ -72,6 +81,10 @@ public sealed class CommitMcpTool
         {
             "application.action.execute" => await new ApplicationActionExecutionHandler().ExecuteAsync(
                 applicationActions, privateOperator, log, payload, intent, proceduresUsed, cancellationToken),
+            "system.application-object.submit" => await new SystemApplicationObjectSubmitHandler().SubmitAsync(
+                applicationObjectWrites, publicCatalogs, applicationRoleBindings, applicationAuthorizedContext,
+                applicationStateSpaces, applicationEntities, privateOperator, log, payload, intent,
+                proceduresUsed, cancellationToken),
             "feedback" => await CommitFeedbackAsync(feedback, log, payload, intent, proceduresUsed, cancellationToken),
             "system.application.register" => await new SystemRegistryCommitHandler().RegisterApplicationAsync(
                 registryAdministration, privateOperator, log, payload, intent, proceduresUsed, dryRun, cancellationToken),

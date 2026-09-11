@@ -28,6 +28,7 @@ public sealed class ApplicationObjectContractTests : IDisposable
         Assert.Equal(registered.Reference, replay.Reference);
         Assert.Equal(registered.Reference, read.Reference);
         Assert.Equal(RegisteredApplicationObjectContract.ContractProfileId, read.ObjectContract!.ProfileId);
+        Assert.Null(read.ObjectContract.FieldProvenance);
         Assert.Equal(["member", "subject"], read.EntityRoles);
         Assert.Equal("members", Assert.Single(read.ObjectContract.Collections).CollectionId);
         Assert.Equal("source-revision-bound", Assert.Single(read.ObjectContract.Collections).Cursor);
@@ -123,52 +124,121 @@ public sealed class ApplicationObjectContractTests : IDisposable
         var objects = Path.Combine(Catalog(), "applications", "dnd2024", "objects");
         var campaignV1 = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
             objects, "campaign", "dnd2024.object.campaign-summary.v1.json")), application));
-        var campaign = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
+        var campaignV2 = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
             objects, "campaign", "dnd2024.object.campaign-summary.v2.json")), application));
         var campaignV3 = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
+            objects, "campaign", "dnd2024.object.campaign-summary.v3.json")), application));
+        var campaignV4 = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
             objects, "campaign", "dnd2024.object.campaign-summary.json")), application));
-        var factions = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
+        var factionsV1 = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
+            objects, "world", "dnd2024.object.faction-directory-page.v1.json")), application));
+        var factionsV2 = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
             objects, "world", "dnd2024.object.faction-directory-page.json")), application));
-        var restCreature = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
+        var restCreatureV1 = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
+            objects, "rest", "dnd2024.object.rest-begin-creature.v1.json")), application));
+        var restCreatureV2 = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
             objects, "rest", "dnd2024.object.rest-begin-creature.json")), application));
-        var restWorld = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
+        var restWorldV1 = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
+            objects, "rest", "dnd2024.object.rest-begin-world.v1.json")), application));
+        var restWorldV2 = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
             objects, "rest", "dnd2024.object.rest-begin-world.json")), application));
-        var restPolicy = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
+        var restPolicyV1 = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
+            objects, "rest", "dnd2024.object.rest-begin-policy.v1.json")), application));
+        var restPolicyV2 = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
             objects, "rest", "dnd2024.object.rest-begin-policy.json")), application));
-        var campaignLocationVisits = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
+        var campaignLocationVisitsV1 = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
+            objects, "campaign", "dnd2024.object.campaign-location-visits.v1.json")), application));
+        var campaignLocationVisitsV2 = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
             objects, "campaign", "dnd2024.object.campaign-location-visits.json")), application));
-        var worldCampaignDirectory = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
+        var worldCampaignDirectoryV1 = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
+            objects, "campaign", "dnd2024.object.world-campaign-directory.v1.json")), application));
+        var worldCampaignDirectoryV2 = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(
             objects, "campaign", "dnd2024.object.world-campaign-directory.json")), application));
 
         Assert.Equal("3AE6FD831B4319BA96E15A1501896549030C80FDBFA49D5503D0568DB9B61DEB", campaignV1.ContentHash);
-        Assert.Equal(2, campaign.Version);
-        Assert.Equal("2C0836E9FF114C4F672D793012F2D0CD258D0A99B9DCFB5A892D63F5146011BF", campaign.ContentHash);
+        Assert.Equal(2, campaignV2.Version);
+        Assert.Equal("2C0836E9FF114C4F672D793012F2D0CD258D0A99B9DCFB5A892D63F5146011BF", campaignV2.ContentHash);
         Assert.Equal(3, campaignV3.Version);
+        Assert.Equal("E3979EB454E4A0D1AEC65446D6E2849D8E2ED29D0C8C43E7B8E5CF3E0783EB42", campaignV3.ContentHash);
+        Assert.Equal(4, campaignV4.Version);
+        Assert.Equal("0836CB401676AEDC9DAD5A21DEB7E5A4C333DEB7F8EDD7545432EF7430A4367C", campaignV4.ContentHash);
         using var queryDocument = JsonDocument.Parse(File.ReadAllText(Path.Combine(Catalog(), "applications", "dnd2024",
             "queries", "campaign", "dnd2024.query.campaign-summary.json")));
-        Assert.True(queryDocument.RootElement.GetProperty("object").GetProperty("contentFingerprint").GetString() == campaignV3.ContentHash,
-            $"Campaign query must pin v3 fingerprint {campaignV3.ContentHash}");
+        Assert.True(queryDocument.RootElement.GetProperty("object").GetProperty("contentFingerprint").GetString() == campaignV4.ContentHash,
+            $"Campaign query must pin v4 fingerprint {campaignV4.ContentHash}");
         Assert.Equal(["relationship.add", "relationship.remove", "set"],
-            campaign.ObjectContract!.Writes!.Capabilities);
-        Assert.Contains(campaign.ObjectContract.GeneratedWriteMappings, value =>
+            campaignV2.ObjectContract!.Writes!.Capabilities);
+        Assert.Contains(campaignV2.ObjectContract.GeneratedWriteMappings, value =>
             value.ObjectPointer == "/premise" && value.Operation == "set" &&
             value.InputId == "campaign" && value.SourcePointer == "/premise");
-        Assert.Contains(campaign.ObjectContract.GeneratedWriteMappings, value =>
+        Assert.Contains(campaignV2.ObjectContract.GeneratedWriteMappings, value =>
             value.ObjectPointer == "/party" && value.Operation == "relationship.add" &&
             value.RelationshipId == "party");
-        Assert.Contains(campaign.ObjectContract.GeneratedWriteMappings, value =>
+        Assert.Contains(campaignV2.ObjectContract.GeneratedWriteMappings, value =>
             value.ObjectPointer == "/party" && value.Operation == "relationship.remove" &&
             value.RelationshipId == "party");
-        Assert.Equal("867C1B1567F1801F34528A3AC7DD8DA2DB72BF69F24A086A3F5FC7F99AD31B3C", factions.ContentHash);
-        Assert.Equal("858D347ED0CB9ADD8F937647703CD89F08F3AE313379037CFDD71B641F670F0C", restCreature.ContentHash);
-        Assert.Equal("6D22CE1103C1E66FC163C8AEF2DF8FAB0C106D21C3EDA0D6A95D0984210B83A9", restWorld.ContentHash);
-        Assert.Equal("4B1B67101E0CE06088AD997A3B8DAFED335EFEB3040851226E08D593A3EE19AD", restPolicy.ContentHash);
-        Assert.Equal("1097CC80B1D7866604305C830BB568D4E972B083C25EDCEDF8FFE06E183B32F9", campaignLocationVisits.ContentHash);
-        Assert.Equal("9417995A10D17B3EA16BBF0155C56BD2ACE9FC49FBF91B7B63384019EEA93215", worldCampaignDirectory.ContentHash);
+        Assert.Equal("867C1B1567F1801F34528A3AC7DD8DA2DB72BF69F24A086A3F5FC7F99AD31B3C", factionsV1.ContentHash);
+        Assert.Equal("5CA3155732D7E39009C7E75F4693E6D507A712D6B671781CB13FBA1647141A75", factionsV2.ContentHash);
+        Assert.Equal("858D347ED0CB9ADD8F937647703CD89F08F3AE313379037CFDD71B641F670F0C", restCreatureV1.ContentHash);
+        Assert.Equal("AB0EC68C477CA95FB635A4E14A758F2922B16B08393C999C122A4E17E4CA4327", restCreatureV2.ContentHash);
+        Assert.Equal("6D22CE1103C1E66FC163C8AEF2DF8FAB0C106D21C3EDA0D6A95D0984210B83A9", restWorldV1.ContentHash);
+        Assert.Equal("F96FA03D1F68002295444132534946C91A60DB1F1CD182D4972D5A744AA88F7E", restWorldV2.ContentHash);
+        Assert.Equal("4B1B67101E0CE06088AD997A3B8DAFED335EFEB3040851226E08D593A3EE19AD", restPolicyV1.ContentHash);
+        Assert.Equal("0939F59817A4CED231A9F82E6F84986FFCB2FA20D7B780B23AE3DE2DFCBE0162", restPolicyV2.ContentHash);
+        Assert.Equal("1097CC80B1D7866604305C830BB568D4E972B083C25EDCEDF8FFE06E183B32F9", campaignLocationVisitsV1.ContentHash);
+        Assert.Equal("A59863150495454921D56301F9ADA44A6F9E8A2740A59A0754F28FF70390F555", campaignLocationVisitsV2.ContentHash);
+        Assert.Equal("9417995A10D17B3EA16BBF0155C56BD2ACE9FC49FBF91B7B63384019EEA93215", worldCampaignDirectoryV1.ContentHash);
+        Assert.Equal("6F43766F6B5EA5ACA21518EFAA61CC09D21589DD0E02725FB07E03C8CF5DD93C", worldCampaignDirectoryV2.ContentHash);
+        foreach (var current in new[] { campaignV4, factionsV2, campaignLocationVisitsV2, worldCampaignDirectoryV2 })
+        {
+            Assert.True(current.ObjectContract!.IsFieldBased);
+            Assert.Equal(RegisteredApplicationObjectContract.FieldBasedContractProfileId,
+                current.ObjectContract.ProfileId);
+            var metadata = Assert.Single(current.ObjectContract.Collections).Metadata!;
+            Assert.Equal("/totalCount", metadata.TotalCount);
+            Assert.Equal("/complete", metadata.Complete);
+            Assert.Equal("/nextCursor", metadata.NextCursor);
+            Assert.NotNull(current.ObjectContract.FieldProvenance);
+        }
+        foreach (var current in new[] { restCreatureV2, restWorldV2, restPolicyV2 })
+        {
+            Assert.Equal(2, current.Version);
+            Assert.True(current.ObjectContract!.IsFieldBased);
+            Assert.Equal(RegisteredApplicationObjectContract.FieldBasedContractProfileId,
+                current.ObjectContract.ProfileId);
+            Assert.NotNull(current.ObjectContract.FieldProvenance);
+        }
+        var restMetadata = Assert.Single(restWorldV2.ObjectContract!.Collections).Metadata!;
+        Assert.Equal("/totalCount", restMetadata.TotalCount);
+        Assert.Equal("/complete", restMetadata.Complete);
+        Assert.Equal("/nextCursor", restMetadata.NextCursor);
+        var restDiscovery = registry.Discover(restWorldV2.Reference)!;
+        var restFields = restDiscovery.Fields.Where(field =>
+            field.ObjectPointer.StartsWith("/rests/*/", StringComparison.Ordinal)).ToArray();
+        Assert.Equal(12, restFields.Length);
+        Assert.Single(restFields, field => field.ObjectPointer == "/rests/*/policyEntityId");
+        Assert.Contains(restFields, field => field.ObjectPointer == "/rests/*/sleepMinutes" && field.Required);
+        Assert.Contains(restFields, field => field.ObjectPointer == "/rests/*/interruptionCount" && field.Required);
+        Assert.DoesNotContain(restFields, field => field.ObjectPointer is "/rests/*/id" or "/rests/*/name");
+        var factionDiscovery = registry.Discover(factionsV2.Reference)!;
+        Assert.Contains(factionDiscovery.Sources, source =>
+            source.Component.QualifiedTypeId == "game.core.world.faction");
+        Assert.Contains(factionDiscovery.Fields, field =>
+            field.ObjectPointer == "/items/*/summary"
+            && field.Component.QualifiedTypeId == "game.core.world.faction"
+            && field.ComponentPointer == "/summary"
+            && field.Required);
+        Assert.DoesNotContain(factionDiscovery.Fields, field =>
+            field.ObjectPointer is "/items/*/id" or "/items/*/name" or "/items/*/members");
+        var partyDiscovery = registry.Discover(campaignV4.Reference)!;
+        Assert.Contains(partyDiscovery.Fields, field =>
+            field.ObjectPointer == "/party/*/status"
+            && field.Component.QualifiedTypeId == "game.core.campaign.character-participation"
+            && !field.Required);
         foreach (var (file, expected) in new[]
         {
-            ("dnd2024.query.campaign-location-visits.json", campaignLocationVisits.ContentHash),
-            ("dnd2024.query.world-campaign-directory.json", worldCampaignDirectory.ContentHash)
+            ("dnd2024.query.campaign-location-visits.json", campaignLocationVisitsV2.ContentHash),
+            ("dnd2024.query.world-campaign-directory.json", worldCampaignDirectoryV2.ContentHash)
         })
         {
             using var query = JsonDocument.Parse(File.ReadAllText(Path.Combine(Catalog(), "applications", "dnd2024",
@@ -190,16 +260,27 @@ public sealed class ApplicationObjectContractTests : IDisposable
             ComponentSchema("dnd2024.creature.ability-scores")));
         var body = types.Define(new(application, "dnd2024.creature.body",
             ComponentSchema("dnd2024.creature.body")));
-        var request = ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(Catalog(),
+        var retainedRequest = ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(Catalog(),
+            "applications", "dnd2024", "objects", "character",
+            "dnd2024.object.carrying-capacity-creature.v1.json")), application);
+        var currentRequest = ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(Catalog(),
             "applications", "dnd2024", "objects", "character",
             "dnd2024.object.carrying-capacity-creature.json")), application);
-        var definition = new SqliteProjectionDefinitionRegistry(db, types, schemas, applications)
-            .Define(request);
+        var registry = new SqliteProjectionDefinitionRegistry(db, types, schemas, applications);
+        var retained = registry.Define(retainedRequest);
+        var definition = registry.Define(currentRequest);
 
         Assert.Equal("234CF49317F99A4468828E77E06A954DCEED4640BEF4307A397CB8BFEE7529AF",
-            definition.ContentHash);
+            retained.ContentHash);
+        Assert.Equal(1, retained.Version);
+        Assert.False(retained.ObjectContract!.IsFieldBased);
+        Assert.Equal("828BC5D694102E129C870CA49291424ABFB79F8BDE17A169037CA26B9D5A3DC1", definition.ContentHash);
         Assert.Equal("dnd2024.object.carrying-capacity-creature", definition.QualifiedId);
-        Assert.Equal(1, definition.Version);
+        Assert.Equal(2, definition.Version);
+        Assert.True(definition.ObjectContract!.IsFieldBased);
+        Assert.Equal(RegisteredApplicationObjectContract.FieldBasedContractProfileId,
+            definition.ObjectContract.ProfileId);
+        Assert.NotNull(definition.ObjectContract.FieldProvenance);
         Assert.Equal([abilities.SchemaHash, body.SchemaHash],
             definition.ComponentInputs.Select(value => value.Type.SchemaHash).ToArray());
         Assert.Equal(["abilityScores", "body"],
@@ -233,10 +314,29 @@ public sealed class ApplicationObjectContractTests : IDisposable
                      "dnd2024.core.definition-link", "dnd2024.item.quantity", "dnd2024.item.equipment" }
             .ToDictionary(componentId => componentId, componentId => types.Define(new(application, componentId,
                 ComponentSchema(componentId))));
+        var recordPaths = new[] { "dnd2024.object.inventory-item-activity-record.json",
+            "dnd2024.object.inventory-item-recipe-record.json" };
+        var recordRequests = recordPaths.Select(path => ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(Catalog(),
+            "applications", "dnd2024", "objects", "item", path)), application)).ToArray();
+        foreach (var type in recordRequests.SelectMany(value => value.ComponentInputs).Select(value => value.Type)
+                     .DistinctBy(value => (value.QualifiedTypeId, value.TypeVersion)))
+        {
+            RegisterPriorVersions(types, application, type.QualifiedTypeId, type.TypeVersion - 1);
+            Assert.Equal(type.SchemaHash, types.Define(new(application, type.QualifiedTypeId,
+                ComponentSchema(type.QualifiedTypeId))).SchemaHash);
+        }
         var registry = new SqliteProjectionDefinitionRegistry(db, types, schemas, applications);
+        var retainedDossier = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(Catalog(),
+            "applications", "dnd2024", "objects", "character", "dnd2024.object.character-dossier-records.v1.json")), application));
         var definition = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(Catalog(),
             "applications", "dnd2024", "objects", "character", "dnd2024.object.character-dossier-records.json")), application));
-        Assert.Equal("115D425F1C8260EDCDE0C5FB8D12F798D82CA435120D1E77A9BA647A88ED9030", definition.ContentHash);
+        Assert.Equal("115D425F1C8260EDCDE0C5FB8D12F798D82CA435120D1E77A9BA647A88ED9030", retainedDossier.ContentHash);
+        Assert.Equal(1, retainedDossier.Version);
+        Assert.False(retainedDossier.ObjectContract!.IsFieldBased);
+        Assert.Equal("35A8A12BD202792DA4E7025788FE1D80CD983583EE5E5D919F71F7C9B3A8F2EB", definition.ContentHash);
+        Assert.Equal(2, definition.Version);
+        Assert.True(definition.ObjectContract!.IsFieldBased);
+        Assert.NotNull(definition.ObjectContract.FieldProvenance);
         Assert.Equal(3, creation.Version);
         Assert.Equal(2, features.Version);
         Assert.Equal(3, definition.ComponentInputs.Single(value => value.InputId == "creation").Type.TypeVersion);
@@ -248,16 +348,47 @@ public sealed class ApplicationObjectContractTests : IDisposable
             "applications", "dnd2024", "objects", "item", "dnd2024.object.inventory-item-instance-records.v1.json")), application));
         Assert.Equal("5974D9AC98344F28D58F05E2065EA1DB5274893AA1D69D492F24DA0453E64A11", retainedDefinition.ContentHash);
         Assert.Equal("8005B25A8AEA43C76C10186369302CAED2B787AF1C38160C94186180253BB442", retainedInstance.ContentHash);
+        var retainedDefinitionV2 = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(Catalog(),
+            "applications", "dnd2024", "objects", "item", "dnd2024.object.inventory-item-definition-records.v2.json")), application));
+        var retainedInstanceV2 = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(Catalog(),
+            "applications", "dnd2024", "objects", "item", "dnd2024.object.inventory-item-instance-records.v2.json")), application));
+        Assert.Equal("4A8578B1A7010EB60AC64ABA7D64DD016106F19FF30A4D023A00CA35BF412476", retainedDefinitionV2.ContentHash);
+        Assert.Equal("8F52017FA6BA33FB9699FB6755A1577B422B414AC55BF19401C27A803F4F15CC", retainedInstanceV2.ContentHash);
+        Assert.False(retainedDefinitionV2.ObjectContract!.IsFieldBased);
+        Assert.False(retainedInstanceV2.ObjectContract!.IsFieldBased);
         var itemDefinition = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(Catalog(),
             "applications", "dnd2024", "objects", "item", "dnd2024.object.inventory-item-definition-records.json")), application));
-        Assert.Equal("4A8578B1A7010EB60AC64ABA7D64DD016106F19FF30A4D023A00CA35BF412476", itemDefinition.ContentHash);
+        Assert.Equal("9065B2C7FF9B616996FE782B8EACC170326D47779A33C1943F5DAC71E612BEC1", itemDefinition.ContentHash);
+        Assert.Equal(3, itemDefinition.Version);
+        Assert.True(itemDefinition.ObjectContract!.IsFieldBased);
         var itemRequest = ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(Catalog(),
             "applications", "dnd2024", "objects", "item", "dnd2024.object.inventory-item-instance-records.json")), application);
         foreach (var input in itemRequest.ComponentInputs)
             Assert.Equal(itemTypes[input.Type.QualifiedTypeId].SchemaHash, input.Type.SchemaHash);
         var itemInstance = registry.Define(itemRequest);
-        Assert.Equal("8F52017FA6BA33FB9699FB6755A1577B422B414AC55BF19401C27A803F4F15CC", itemInstance.ContentHash);
-        Assert.Equal("definition", Assert.Single(itemInstance.ObjectContract!.References).InputId);
+        Assert.Equal("74F012F1136D31415673D52666E85D7400C8E570A2A1B64AA0BA83ED5D8D348D", itemInstance.ContentHash);
+        Assert.Equal(3, itemInstance.Version);
+        Assert.True(itemInstance.ObjectContract!.IsFieldBased);
+        Assert.Equal("definition", Assert.Single(itemInstance.ObjectContract.References).InputId);
+        var reference = Assert.Single(itemInstance.DependencyInputs).Projection;
+        Assert.Equal(3, reference.Version);
+        Assert.Equal(itemDefinition.ContentHash, reference.ContentHash);
+        var retainedActivity = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(Catalog(),
+            "applications", "dnd2024", "objects", "item", "dnd2024.object.inventory-item-activity-record.v1.json")), application));
+        var activity = registry.Define(recordRequests.Single(value => value.QualifiedId ==
+            "dnd2024.object.inventory-item-activity-record"));
+        var retainedRecipe = registry.Define(ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(Catalog(),
+            "applications", "dnd2024", "objects", "item", "dnd2024.object.inventory-item-recipe-record.v1.json")), application));
+        var recipe = registry.Define(recordRequests.Single(value => value.QualifiedId ==
+            "dnd2024.object.inventory-item-recipe-record"));
+        Assert.Equal("523F276015DE95BB16508C202685101DDC3D9F5F11B99C0EC0A48588B6669D19", retainedActivity.ContentHash);
+        Assert.Equal("534018C4A8C2D1A06F9307C89C8F32BCBE08B0FCA7B0CC9809EB5BA51B39DC4F", activity.ContentHash);
+        Assert.Equal("530A2622F6C88B5E283F92ED2CB431CC7C6C96AB76E63E6AF895797DB8415127", retainedRecipe.ContentHash);
+        Assert.Equal("D7F2A4003A65C9E122C1A90EB06E7C97D415D3C060E8C011FF3C4B2A092B3C50", recipe.ContentHash);
+        Assert.False(retainedActivity.ObjectContract!.IsFieldBased);
+        Assert.True(activity.ObjectContract!.IsFieldBased);
+        Assert.False(retainedRecipe.ObjectContract!.IsFieldBased);
+        Assert.True(recipe.ObjectContract!.IsFieldBased);
     }
 
     private static void RegisterPriorVersions(
@@ -386,6 +517,333 @@ public sealed class ApplicationObjectContractTests : IDisposable
     }
 
     [Fact]
+    public void Field_based_parser_uses_the_host_transport_and_requires_an_explicit_closed_profile()
+    {
+        var setup = Setup("field-contract");
+        var type = setup.Types.Define(new(setup.Application, "field-contract.name",
+            "{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\"}}}"));
+        var json = """
+        {
+          "id":"field-contract.summary","version":1,"profile":"application-object/v2",
+          "roles":{"subject":{"required":true}},
+          "sources":[{"id":"identity","role":"subject","component":{"qualifiedId":"TYPE_ID","version":TYPE_VERSION,"schemaHash":"TYPE_HASH"},"required":false}],
+          "relationships":[],"references":[],
+          "mappings":[{"inputId":"identity","sourcePointer":"/name","targetPointer":"/name"}],
+          "collections":[],
+          "limits":{"traversalDepth":1,"itemCount":10,"outputBytes":4096,"sqlQueries":1},
+          "access":{"read":["player","dm"],"write":[]}
+        }
+        """.Replace("TYPE_ID", type.QualifiedId, StringComparison.Ordinal)
+            .Replace("TYPE_VERSION", type.Version.ToString(System.Globalization.CultureInfo.InvariantCulture), StringComparison.Ordinal)
+            .Replace("TYPE_HASH", type.SchemaHash, StringComparison.Ordinal);
+
+        var parsed = ApplicationObjectDocument.Parse(json, setup.Application);
+        var registered = setup.Registry.Define(parsed);
+        var read = setup.Registry.Get(registered.QualifiedId, registered.Version)!;
+
+        Assert.Equal(RegisteredApplicationObjectContract.TransportSchemaJson, parsed.OutputSchemaJson);
+        Assert.Equal(RegisteredApplicationObjectContract.TransportSchemaJson, read.OutputSchemaJson);
+        Assert.Equal(RegisteredApplicationObjectContract.TransportSchemaHash, read.OutputSchemaHash);
+        Assert.True(read.ObjectContract!.IsFieldBased);
+        Assert.Equal(RegisteredApplicationObjectContract.FieldBasedContractProfileId,
+            read.ObjectContract.ProfileId);
+        Assert.Throws<ArgumentException>(() => ApplicationObjectDocument.Parse(
+            json.Replace("\"profile\":\"application-object/v2\",", "", StringComparison.Ordinal), setup.Application));
+        Assert.Throws<ArgumentException>(() => ApplicationObjectDocument.Parse(
+            json.Replace("\"roles\":", "\"schema\":{\"type\":\"object\"},\"roles\":", StringComparison.Ordinal),
+            setup.Application));
+        Assert.Throws<ArgumentException>(() => ApplicationObjectDocument.Parse(
+            json.Replace("application-object/v2", "application-object/v3", StringComparison.Ordinal), setup.Application));
+    }
+
+    [Fact]
+    public void Field_based_registration_requires_disjoint_explicit_metadata_and_object_root_mappings()
+    {
+        var setup = Setup("field-safety");
+        var type = setup.Types.Define(new(setup.Application, "field-safety.name",
+            "{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\"}}}"));
+        var legacy = ValidRequest(setup, Ref(type));
+        var collection = Assert.Single(legacy.ObjectContract!.Collections) with
+        {
+            Order = [new("/name", "asc")],
+            Metadata = new("/page/totalCount", "/page/complete", "/page/nextCursor")
+        };
+        var fieldBased = legacy with
+        {
+            OutputSchemaJson = RegisteredApplicationObjectContract.TransportSchemaJson,
+            ObjectContract = legacy.ObjectContract with
+            {
+                ProfileId = RegisteredApplicationObjectContract.FieldBasedContractProfileId,
+                Collections = [collection]
+            }
+        };
+
+        var registered = setup.Registry.Define(fieldBased);
+        Assert.True(registered.ObjectContract!.IsFieldBased);
+        Assert.Equal("/page/complete", Assert.Single(registered.ObjectContract.Collections).Metadata!.Complete);
+        Assert.Throws<ArgumentException>(() => setup.Registry.Define(fieldBased with
+        {
+            QualifiedId = "field-safety.missing-metadata",
+            ObjectContract = fieldBased.ObjectContract! with
+            {
+                Collections = [collection with { Metadata = null }]
+            }
+        }));
+        Assert.Throws<ArgumentException>(() => setup.Registry.Define(fieldBased with
+        {
+            QualifiedId = "field-safety.overlapping-metadata",
+            ObjectContract = fieldBased.ObjectContract! with
+            {
+                Collections = [collection with
+                {
+                    Metadata = new("/name", "/page/complete", "/page/nextCursor")
+                }]
+            }
+        }));
+        Assert.Throws<ArgumentException>(() => setup.Registry.Define(fieldBased with
+        {
+            QualifiedId = "field-safety.unsafe-target",
+            Mappings = [new("identity", "/name", "/__proto__")]
+        }));
+        Assert.Throws<ArgumentException>(() => setup.Registry.Define(fieldBased with
+        {
+            QualifiedId = "field-safety.unproven-order",
+            ObjectContract = fieldBased.ObjectContract! with
+            {
+                Collections = [collection with { Order = [new("/missing", "asc")] }]
+            }
+        }));
+
+        var secondVersion = setup.Types.Define(new(setup.Application, type.QualifiedId,
+            "{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\"},\"note\":{\"type\":\"string\"}}}"));
+        var parent = Assert.Single(fieldBased.ObjectContract!.Relationships);
+        Assert.Throws<ArgumentException>(() => setup.Registry.Define(fieldBased with
+        {
+            QualifiedId = "field-safety.duplicate-endpoint-type",
+            ObjectContract = fieldBased.ObjectContract! with
+            {
+                Relationships = [parent with
+                {
+                    RequiredEndpointComponents = [new("to", Ref(type)), new("to", Ref(secondVersion))]
+                }]
+            }
+        }));
+
+        var scalarRoot = new ProjectionDefinitionRequest(setup.Application, "field-safety.scalar-root",
+            RegisteredApplicationObjectContract.TransportSchemaJson, [new("identity", "subject", Ref(type))], [],
+            [new("identity", "/name", "")],
+            new ApplicationObjectContractRequest([new("subject", true)], [new("identity", true)], [], [], [],
+                new(1, 10, 4096, 1), new(["player"], []), null)
+            { ProfileId = RegisteredApplicationObjectContract.FieldBasedContractProfileId }, 1);
+        Assert.Throws<ArgumentException>(() => setup.Registry.Define(scalarRoot));
+    }
+
+    [Fact]
+    public void Field_based_collection_provenance_accepts_only_bounded_closed_object_alternatives()
+    {
+        var setup = Setup("field-alternatives");
+        var root = setup.Types.Define(new(setup.Application, "field-alternatives.root",
+            "{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"name\":{\"type\":\"string\"}}}"));
+        var oneOf = setup.Types.Define(new(setup.Application, "field-alternatives.one-of",
+            "{\"oneOf\":[{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"shared\":{\"type\":\"string\"},\"shortOnly\":{\"type\":\"integer\"}}},{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"shared\":{\"type\":\"string\"},\"longOnly\":{\"type\":\"integer\"}}}]}"));
+        var anyOf = setup.Types.Define(new(setup.Application, "field-alternatives.any-of",
+            "{\"anyOf\":[{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"left\":{\"type\":\"string\"}}},{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"right\":{\"type\":\"string\"}}}]}"));
+
+        var first = setup.Registry.Define(CollectionRequest("field-alternatives.one", oneOf));
+        var firstFields = setup.Registry.Discover(first.Reference)!.Fields
+            .Where(field => field.ObjectPointer.StartsWith("/members/*/", StringComparison.Ordinal)).ToArray();
+        Assert.Equal(3, firstFields.Length);
+        Assert.Single(firstFields, field => field.ObjectPointer == "/members/*/shared");
+        // Required describes the endpoint component's presence, not whether every union branch requires the field.
+        Assert.Contains(firstFields, field => field.ObjectPointer == "/members/*/shortOnly" && field.Required);
+        Assert.Contains(firstFields, field => field.ObjectPointer == "/members/*/longOnly" && field.Required);
+
+        var second = setup.Registry.Define(CollectionRequest("field-alternatives.any", anyOf));
+        var secondFields = setup.Registry.Discover(second.Reference)!.Fields;
+        Assert.Contains(secondFields, field => field.ObjectPointer == "/members/*/left");
+        Assert.Contains(secondFields, field => field.ObjectPointer == "/members/*/right");
+
+        var open = setup.Types.Define(new(setup.Application, "field-alternatives.open",
+            "{\"oneOf\":[{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"closed\":{\"type\":\"string\"}}},{\"type\":\"object\",\"additionalProperties\":true,\"properties\":{\"open\":{\"type\":\"string\"}}}]}"));
+        var nonObject = setup.Types.Define(new(setup.Application, "field-alternatives.scalar",
+            "{\"oneOf\":[{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"value\":{\"type\":\"string\"}}},{\"type\":\"string\"}]}"));
+        var composed = setup.Types.Define(new(setup.Application, "field-alternatives.composed",
+            "{\"oneOf\":[{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"value\":{\"type\":\"string\"}},\"allOf\":[{\"type\":\"object\"}]}]}"));
+        Assert.Throws<ArgumentException>(() => setup.Types.Define(new(setup.Application,
+            "field-alternatives.recursive",
+            "{\"$defs\":{\"loop\":{\"$ref\":\"#/$defs/loop\"}},\"oneOf\":[{\"$ref\":\"#/$defs/loop\"}]}")));
+        // The bounded component-schema profile rejects patternProperties before provenance registration.
+        Assert.Throws<ArgumentException>(() => setup.Types.Define(new(setup.Application,
+            "field-alternatives.patterned",
+            "{\"oneOf\":[{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"known\":{\"type\":\"string\"}},\"patternProperties\":{\"^x-\":{\"type\":\"string\"}}}]}")));
+        foreach (var invalid in new[] { open, nonObject, composed })
+            Assert.Throws<ArgumentException>(() => setup.Registry.Define(
+                CollectionRequest("field-alternatives.invalid-" + invalid.QualifiedId.Split('.').Last(), invalid)));
+
+        var colliding = setup.Types.Define(new(setup.Application, "field-alternatives.colliding",
+            "{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"shared\":{\"type\":\"string\"}}}"));
+        var collision = CollectionRequest("field-alternatives.collision", oneOf);
+        var relationship = Assert.Single(collision.ObjectContract!.Relationships);
+        Assert.Throws<ArgumentException>(() => setup.Registry.Define(collision with
+        {
+            ObjectContract = collision.ObjectContract with
+            {
+                Relationships = [relationship with
+                {
+                    RequiredEndpointComponents = [.. relationship.RequiredEndpointComponents,
+                        new("to", Ref(colliding))]
+                }]
+            }
+        }));
+
+        ProjectionDefinitionRequest CollectionRequest(string id, RegisteredComponentTypeVersion endpoint)
+        {
+            var legacy = ValidRequest(setup, Ref(root));
+            var relationship = Assert.Single(legacy.ObjectContract!.Relationships);
+            var collection = Assert.Single(legacy.ObjectContract.Collections) with
+            {
+                Order = [new("/id", "asc")],
+                Metadata = new("/totalCount", "/complete", "/nextCursor")
+            };
+            return legacy with
+            {
+                QualifiedId = id,
+                OutputSchemaJson = RegisteredApplicationObjectContract.TransportSchemaJson,
+                ObjectContract = legacy.ObjectContract with
+                {
+                    ProfileId = RegisteredApplicationObjectContract.FieldBasedContractProfileId,
+                    Relationships = [relationship with
+                    {
+                        RequiredEndpointComponents = [.. relationship.RequiredEndpointComponents,
+                            new("to", Ref(endpoint))]
+                    }],
+                    Collections = [collection]
+                }
+            };
+        }
+    }
+
+    [Fact]
+    public void Field_based_dependency_paths_resolve_bounded_leaf_component_provenance()
+    {
+        var setup = Setup("field-provenance");
+        var type = setup.Types.Define(new(setup.Application, "field-provenance.identity",
+            "{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"profile\":{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"name\":{\"type\":\"string\"}}}}}"));
+        var child = setup.Registry.Define(new ProjectionDefinitionRequest(setup.Application,
+            "field-provenance.child", RegisteredApplicationObjectContract.TransportSchemaJson,
+            [new("identity", "subject", Ref(type))], [],
+            [new("identity", "/profile", "/profile")],
+            FieldContract([new("subject", true)], [new("identity", true)], []), 1));
+        var parent = setup.Registry.Define(new ProjectionDefinitionRequest(setup.Application,
+            "field-provenance.parent", RegisteredApplicationObjectContract.TransportSchemaJson, [],
+            [new("details", child.Reference, new Dictionary<string, string> { ["subject"] = "actor" })],
+            [new("details", "/profile/name", "/displayName")],
+            FieldContract([new("actor", true)], [], [new("details", true)]), 1));
+
+        var field = Assert.Single(parent.ObjectContract!.FieldProvenance!);
+        Assert.Equal("/displayName", field.ObjectPointer);
+        Assert.Equal(["details", "identity"], field.InputPath);
+        Assert.Equal("actor", field.EntityRole);
+        Assert.Equal(Ref(type), field.Component);
+        Assert.Equal("/profile/name", field.ComponentPointer);
+        Assert.True(field.Required);
+
+        var discovery = setup.Registry.Discover(parent.Reference)!;
+        var source = Assert.Single(discovery.Sources);
+        Assert.Equal("field-provenance.identity", source.Component.QualifiedTypeId);
+        Assert.Equal(type.SchemaJson, source.SchemaJson);
+        Assert.Equal("source-1", source.SourceId);
+        Assert.Null(setup.Registry.Discover(parent.Reference with { ContentHash = new string('A', 64) }));
+
+        Assert.Throws<ArgumentException>(() => setup.Registry.Define(new ProjectionDefinitionRequest(
+            setup.Application, "field-provenance.invalid", RegisteredApplicationObjectContract.TransportSchemaJson,
+            [], [new("details", child.Reference, new Dictionary<string, string> { ["subject"] = "actor" })],
+            [new("details", "/profile/missing", "/displayName")],
+            FieldContract([new("actor", true)], [], [new("details", true)]), 1)));
+
+        var objectRoot = setup.Registry.Define(new ProjectionDefinitionRequest(setup.Application,
+            "field-provenance.object-root", RegisteredApplicationObjectContract.TransportSchemaJson, [],
+            [new("details", child.Reference, new Dictionary<string, string> { ["subject"] = "actor" })],
+            [new("details", "/profile", "")],
+            FieldContract([new("actor", true)], [], [new("details", true)]), 1));
+        var rootField = Assert.Single(objectRoot.ObjectContract!.FieldProvenance!);
+        Assert.Equal("", rootField.ObjectPointer);
+        Assert.Equal("/profile", rootField.ComponentPointer);
+    }
+
+    [Fact]
+    public void Authorized_read_discovery_reports_actual_schema_without_entity_identity_or_declared_fallback()
+    {
+        var setup = Setup("actual-provenance");
+        var declared = setup.Types.Define(new(setup.Application, "actual-provenance.identity",
+            "{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\"}}}"));
+        var actual = setup.Types.Define(new(setup.Application, declared.QualifiedId,
+            "{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\"},\"note\":{\"type\":\"string\"}}}"));
+        var definition = setup.Registry.Define(new ProjectionDefinitionRequest(setup.Application,
+            "actual-provenance.object", RegisteredApplicationObjectContract.TransportSchemaJson,
+            [new("identity", "subject", Ref(declared))], [], [new("identity", "/name", "/name")],
+            FieldContract([new("subject", true)], [new("identity", true)], []), 1));
+        var observation = new ProjectionObservedSource(["identity"], "subject", true,
+            Ref(declared), Ref(actual), "available");
+
+        var evidence = setup.Registry.DiscoverRead(definition.Reference, [observation],
+            [new(definition.Reference, "identity", "/name", "/name", "value")],
+            "{\"name\":\"Visible\"}")!;
+
+        Assert.Equal("available", evidence.Availability);
+        var source = Assert.Single(evidence.Sources);
+        Assert.Equal(Ref(declared), source.DeclaredComponent);
+        Assert.Equal(Ref(actual), Assert.Single(source.ActualSources).Component);
+        Assert.Equal(actual.SchemaJson, source.ActualSources[0].SchemaJson);
+        Assert.Equal(["value"], evidence.Fields.Single(value => value.ObjectPointer == "/name").Availability);
+        using (var literal = JsonDocument.Parse("{\"*\":\"Literal\"}"))
+            Assert.Equal(["value"], SqliteProjectionDefinitionRegistry.ReadAvailability(literal.RootElement, "/*"));
+        Assert.DoesNotContain("EntityId", JsonSerializer.Serialize(evidence), StringComparison.Ordinal);
+        Assert.Equal("budget-exceeded", Assert.IsType<ApplicationObjectReadEvidence>(
+            setup.Registry.DiscoverRead(definition.Reference,
+                Enumerable.Repeat(observation, 513).ToArray(), [], "{}")).Availability);
+        Assert.Throws<InvalidOperationException>(() => setup.Registry.DiscoverRead(definition.Reference,
+            [observation with { ActualComponent = new("other.identity", 1, actual.SchemaHash) }], [], "{}"));
+    }
+
+    [Fact]
+    public void Collection_discovery_does_not_attribute_an_escaped_relationship_owned_field_to_a_component()
+    {
+        var setup = Setup("escaped-provenance");
+        var root = setup.Types.Define(new(setup.Application, "escaped-provenance.root",
+            "{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"title\":{\"type\":\"string\"}}}"));
+        var item = setup.Types.Define(new(setup.Application, "escaped-provenance.item",
+            "{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"a/b\":{\"type\":\"string\"},\"shown\":{\"type\":\"string\"}}}"));
+        var parent = new ApplicationObjectRelationship("items", "escaped-provenance.relationship.items",
+            "root", "item", "many", "/items", [new("to", Ref(item))], []);
+        var nested = new ApplicationObjectRelationship("nested", "escaped-provenance.relationship.nested",
+            "item", "root", "many", "/items/*/a~1b", [], []);
+        var collection = new ApplicationObjectCollection("items", "items", 10, 10,
+            [new("/id", "asc")], "source-revision-bound")
+        { Metadata = new("/totalCount", "/complete", "/nextCursor") };
+        var request = new ProjectionDefinitionRequest(setup.Application, "escaped-provenance.object",
+            RegisteredApplicationObjectContract.TransportSchemaJson,
+            [new("root", "root", Ref(root))], [], [new("root", "/title", "/title")],
+            new ApplicationObjectContractRequest([new("root", true), new("item", false)],
+                [new("root", true)], [parent, nested], [], [collection],
+                new(2, 100, 65_536, 8), new(["dm"], []), null)
+            { ProfileId = RegisteredApplicationObjectContract.FieldBasedContractProfileId }, 1);
+
+        var registered = setup.Registry.Define(request);
+        var discovery = setup.Registry.Discover(registered.Reference)!;
+
+        Assert.DoesNotContain(discovery.Fields, field => field.ObjectPointer == "/items/*/a~1b");
+        Assert.Contains(discovery.Sources, source => source.Component.QualifiedTypeId == item.QualifiedId);
+        var read = setup.Registry.DiscoverRead(registered.Reference, [], [],
+            "{\"title\":\"Empty\",\"items\":[],\"totalCount\":0,\"complete\":true,\"nextCursor\":null}")!;
+        var collectionSource = read.Sources.Single(source => source.InputPath.Count > 0
+            && source.InputPath[0] == "collection");
+        Assert.Equal("unobserved", collectionSource.Availability);
+        Assert.Empty(collectionSource.ActualSources);
+        Assert.Equal(["unobserved"], read.Fields.Single(field => field.ObjectPointer == "/items/*/shown").Availability);
+    }
+
+    [Fact]
     public void Object_query_round_trips_through_existing_discovery_contract()
     {
         var app = ApplicationIdentifier.Parse("query-object");
@@ -407,6 +865,29 @@ public sealed class ApplicationObjectContractTests : IDisposable
         Assert.Contains("contentFingerprint", canonical, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Field_based_object_query_omits_authored_schema_and_round_trips_the_transport_contract()
+    {
+        var app = ApplicationIdentifier.Parse("query-field");
+        var json = """
+        {"id":"query-field.query.members","category":"world.members","name":"Members","description":"Lists members.","matches":["list members"],"roles":{"campaign":"The owning campaign.","member":"A listed entity."},"executor":"object-projection","profile":"application-object/v2","object":{"qualifiedId":"query-field.summary","version":1,"contentFingerprint":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"},"collection":"members","exposure":"model-visible","status":"active"}
+        """;
+
+        var parsed = ApplicationQueryContract.Parse(json, app);
+        var canonical = ApplicationCatalogRecordContent.QueryJson(parsed);
+        var read = ApplicationQueryContract.Parse(canonical, app);
+
+        Assert.True(read.IsFieldBasedObject);
+        Assert.Equal(RegisteredApplicationObjectContract.TransportSchemaJson, read.OutputSchemaJson);
+        Assert.Equal(RegisteredApplicationObjectContract.TransportSchemaHash, read.OutputSchemaHash);
+        Assert.Contains("\"profile\":\"application-object/v2\"", canonical, StringComparison.Ordinal);
+        Assert.DoesNotContain("outputSchema", canonical, StringComparison.Ordinal);
+        Assert.Throws<ArgumentException>(() => ApplicationQueryContract.Parse(
+            json.Replace("\"profile\":\"application-object/v2\",", "", StringComparison.Ordinal), app));
+        Assert.Throws<ArgumentException>(() => ApplicationQueryContract.Parse(
+            json.Replace("\"object\":", "\"outputSchema\":{\"type\":\"object\"},\"object\":", StringComparison.Ordinal), app));
+    }
+
     private static ProjectionDefinitionRequest ValidRequest(SetupContext setup, EcsComponentReference type)
     {
         const string schema = "{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"name\":{\"type\":\"string\"},\"members\":{\"type\":\"array\",\"items\":{\"type\":\"string\"}}}}";
@@ -425,6 +906,14 @@ public sealed class ApplicationObjectContractTests : IDisposable
                 new(editSchema, ["set", "clear"], [new("/name", ["set", "clear"])])),
             1);
     }
+
+    private static ApplicationObjectContractRequest FieldContract(
+        IReadOnlyList<ApplicationObjectRole> roles,
+        IReadOnlyList<ApplicationObjectSource> sources,
+        IReadOnlyList<ApplicationObjectReference> references) =>
+        new(roles, sources, [], references, [], new(4, 100, 65_536, 8),
+            new(["player", "dm"], []), null)
+        { ProfileId = RegisteredApplicationObjectContract.FieldBasedContractProfileId };
 
     private SetupContext Setup(string id)
     {

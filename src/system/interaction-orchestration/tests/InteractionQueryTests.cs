@@ -323,11 +323,94 @@ public sealed class InteractionQueryTests
         Assert.Equal("{\"entityId\":\"driver\",\"score\":16}", first.OutputJson);
         await Assert.ThrowsAsync<InteractionContractException>(() => executor.ExecuteAsync(
             request with { RoleBindings = new Dictionary<string, string> { ["other"] = "orban" } }));
-        Assert.Equal("INVALID_QUERY_COLLECTION", Assert.Throws<InteractionContractException>(() =>
-            new InteractionQueryContractReference(ApplicationQueryContract.ObjectProjectionExecutor,
-                projection.QualifiedId, projection.Version, projection.ContentHash,
-                projection.OutputSchemaHash, projection.OutputSchemaJson,
-                ApplicationQueryExposure.BindingOnly, ["subject"])).Code);
+        Assert.Null(new InteractionQueryContractReference(ApplicationQueryContract.ObjectProjectionExecutor,
+            projection.QualifiedId, projection.Version, projection.ContentHash,
+            projection.OutputSchemaHash, projection.OutputSchemaJson,
+            ApplicationQueryExposure.BindingOnly, ["subject"]).CollectionId);
+    }
+
+    [Fact]
+    public async Task Collectionless_object_query_uses_scalar_materializer_and_rejects_paging()
+    {
+        var projection = Projection() with
+        {
+            OutputSchemaJson = RegisteredApplicationObjectContract.TransportSchemaJson,
+            OutputSchemaHash = RegisteredApplicationObjectContract.TransportSchemaHash,
+            ObjectContract = new(RegisteredApplicationObjectContract.FieldBasedContractProfileId,
+                [new("subject", true)], [], [], [], [], new(1, 1, 4096, 4),
+                new(["player"], []), null, [])
+        };
+        var source = new ProjectionSourceRevision("orban",
+            new("sample-app.stats", 1, Hash("component-schema")), 3);
+        var root = new Materializer(new(projection.Reference,
+            "{\"entityId\":\"orban\",\"score\":16}", [source]));
+        var collection = new CollectionMaterializer(new(projection.Reference,
+            "{}", [], Hash("unused-collection")));
+        var evidence = new ApplicationObjectReadEvidence(projection.Reference,
+            RegisteredApplicationObjectContract.FieldBasedContractProfileId, "available", [], []);
+        var executor = new ObjectProjectionInteractionQueryExecutor(
+            collection, new Projections(projection, evidence), root);
+        var contract = new InteractionQueryContractReference(ApplicationQueryContract.ObjectProjectionExecutor,
+            projection.QualifiedId, projection.Version, projection.ContentHash, projection.OutputSchemaHash,
+            projection.OutputSchemaJson, ApplicationQueryExposure.ModelVisible, ["subject"]);
+        var request = new InteractionQueryExecutionRequest("space.1", App,
+            "sample-app.query.scalar", contract,
+            new Dictionary<string, string> { ["subject"] = "orban" },
+            MechanicAudienceContext.Player);
+
+        var first = await executor.ExecuteReadAsync(request, fieldBased: true, includeEvidence: true);
+        var second = await executor.ExecuteReadAsync(request, fieldBased: true, includeEvidence: true);
+
+        Assert.Equal(first, second);
+        Assert.Equal(ProjectionReadPurpose.Display, root.LastRequest!.Purpose);
+        Assert.Null(collection.LastRequest);
+        Assert.Equal(evidence, first.ObjectReadEvidence);
+        Assert.Matches("^[0-9A-F]{64}$", first.SourceRevisionFingerprint);
+        var paging = await Assert.ThrowsAsync<InteractionContractException>(() =>
+            executor.ExecuteReadAsync(request with { Cursor = "cursor" }, fieldBased: true));
+        Assert.Equal("QUERY_ROOT_PAGING_UNSUPPORTED", paging.Code);
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            executor.ExecuteReadAsync(request with { Audience = MechanicAudienceContext.GameMaster }, fieldBased: true));
+    }
+
+    [Fact]
+    public async Task T09_T12_object_display_purpose_is_selected_by_matching_registered_read_profile_only()
+    {
+        var projection = Projection() with
+        {
+            OutputSchemaJson = RegisteredApplicationObjectContract.TransportSchemaJson,
+            OutputSchemaHash = RegisteredApplicationObjectContract.TransportSchemaHash,
+            ObjectContract = new(RegisteredApplicationObjectContract.FieldBasedContractProfileId,
+                [new("subject", true)], [], [], [], [], new(1, 10, 4096, 10), new(["dm"], []), null, [])
+        };
+        var materializer = new CollectionMaterializer(new(projection.Reference,
+            "{\"entityId\":\"driver\",\"added\":true}", [], Hash("current-components")));
+        var evidence = new ApplicationObjectReadEvidence(projection.Reference,
+            RegisteredApplicationObjectContract.FieldBasedContractProfileId, "available", [], []);
+        var executor = new ObjectProjectionInteractionQueryExecutor(materializer, new Projections(projection, evidence));
+        var contract = new InteractionQueryContractReference(ApplicationQueryContract.ObjectProjectionExecutor,
+            projection.QualifiedId, projection.Version, projection.ContentHash, projection.OutputSchemaHash,
+            projection.OutputSchemaJson, ApplicationQueryExposure.BindingOnly, ["subject"], "drivers");
+        var request = new InteractionQueryExecutionRequest("space.1", App,
+            "sample-app.query.find-driver", contract, new Dictionary<string, string> { ["subject"] = "orban" });
+
+        var ordinary = await executor.ExecuteReadAsync(request, fieldBased: true);
+        Assert.Equal(ProjectionReadPurpose.Display, materializer.LastRequest!.Purpose);
+        Assert.Null(ordinary.ObjectReadEvidence);
+        var enriched = await executor.ExecuteReadAsync(request, fieldBased: true, includeEvidence: true);
+        Assert.Equal(evidence, enriched.ObjectReadEvidence);
+        Assert.Equal(ordinary.ResultFingerprint, enriched.ResultFingerprint);
+        Assert.Equal(ordinary.SourceRevisionFingerprint, enriched.SourceRevisionFingerprint);
+        var exact = await executor.ExecuteAsync(request);
+        Assert.Equal(ProjectionReadPurpose.Exact, materializer.LastRequest!.Purpose);
+        Assert.Null(exact.ObjectReadEvidence);
+        await Assert.ThrowsAsync<InteractionContractException>(() => executor.ExecuteReadAsync(request, fieldBased: false));
+        var legacy = new ObjectProjectionInteractionQueryExecutor(materializer,
+            new Projections(projection with { ObjectContract = projection.ObjectContract with
+                { ProfileId = RegisteredApplicationObjectContract.ContractProfileId } }));
+        await Assert.ThrowsAsync<InteractionContractException>(() => legacy.ExecuteReadAsync(request, fieldBased: true));
+        await Assert.ThrowsAsync<InteractionContractException>(() => executor.ExecuteReadAsync(
+            request with { ApplicationId = ApplicationIdentifier.Parse("other-app") }, fieldBased: true));
     }
 
     [Fact]
@@ -473,13 +556,18 @@ public sealed class InteractionQueryTests
         { snapshot = value; return applicationId == App; }
     }
 
-    private sealed class Projections(RegisteredProjectionDefinition value) : IProjectionDefinitionRegistry
+    private sealed class Projections(RegisteredProjectionDefinition value,
+        ApplicationObjectReadEvidence? readEvidence = null) : IProjectionDefinitionRegistry
     {
         public RegisteredProjectionDefinition Define(ProjectionDefinitionRequest definition) => throw new NotSupportedException();
         public RegisteredProjectionDefinition? Get(string qualifiedId, int version) =>
             qualifiedId == value.QualifiedId && version == value.Version ? value : null;
         public ProjectionImpactGraph GetImpactGraph(ApplicationIdentifier owner) => new(
             new Dictionary<string, IReadOnlyList<string>>(), new Dictionary<string, IReadOnlyList<string>>());
+        public ApplicationObjectReadEvidence? DiscoverRead(ProjectionReference reference,
+            IReadOnlyList<ProjectionObservedSource> observedSources,
+            IReadOnlyList<ProjectionMappedFieldEvidence> fields,
+            string outputJson) => reference == value.Reference ? readEvidence : null;
     }
 
     private sealed class Materializer(ProjectionMaterializationResult value) : IProjectionMaterializer

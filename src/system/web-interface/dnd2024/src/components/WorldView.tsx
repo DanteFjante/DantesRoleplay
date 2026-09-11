@@ -32,7 +32,6 @@ export function WorldView({
   currentLocation,
   selectedLocation,
   filteredLocations,
-  allFilteredLocations,
   locationScope,
   locationScopeBusy,
   locationScopeError,
@@ -70,7 +69,6 @@ export function WorldView({
   currentLocation: WorldLocation | null;
   selectedLocation: WorldLocation | null;
   filteredLocations: WorldLocation[];
-  allFilteredLocations: WorldLocation[];
   locationScope: WorldLocationScope | null;
   locationScopeBusy: boolean;
   locationScopeError: string;
@@ -187,7 +185,7 @@ export function WorldView({
           </header>
           <div className="atlas-grid">
             <LocationBrowser
-              allLocations={allFilteredLocations}
+              allLocations={world.locations}
               busy={locationScopeBusy}
               currentLocationId={world.currentLocationId}
               error={locationScopeError}

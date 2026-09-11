@@ -1,0 +1,12 @@
+{
+  "id": "dnd2024.mechanic.party-knowledge",
+  "owner": "dnd2024",
+  "description": "Namespace for the reviewed party-knowledge projection mechanic.",
+  "allowedKinds": [
+    "mechanic"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "The party-knowledge projection is catalog-owned, bounded, and exposed through its registered query contract."
+}

@@ -12,7 +12,10 @@ function read(components, key) {
 function ref(value) { return object(value) && typeof value.entityId === 'string' && value.entityId.length > 0 && value.entityId.length <= 200; }
 if (!observer || observer.version !== 1 || !subject || !campaign || observer.observerId !== subject.id ||
     observer.campaignId !== campaign.id || !ctx.audience || observer.perspective !== ctx.audience.perspective ||
-    !object(ctx.input) || Object.keys(ctx.input).join(',') !== 'itemId') fail();
+    !object(ctx.input)) fail();
+var inputKeys = Object.keys(ctx.input).sort().join(',');
+if (inputKeys !== 'itemId' && inputKeys !== 'itemId,selectionId' ||
+    Object.prototype.hasOwnProperty.call(ctx.input, 'selectionId') && text(ctx.input.selectionId, 200) !== campaign.id) fail();
 var itemId = text(ctx.input.itemId, 200), dm = observer.perspective === 'dm';
 if (['player', 'dm'].indexOf(observer.perspective) < 0) fail();
 var item = null, parent = null, count = 0;

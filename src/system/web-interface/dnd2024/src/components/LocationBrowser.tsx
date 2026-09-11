@@ -1,9 +1,5 @@
-import { useEffect, useState } from "react";
-
 import type { WorldLocation, WorldLocationScope } from "../data/hub-types";
 import { Icon } from "./Icon";
-
-type LocationBrowserMode = "all" | "level";
 
 export function LocationBrowser({
   locations,
@@ -38,11 +34,6 @@ export function LocationBrowser({
   onSelect: (locationId: string) => void;
   onBrowse: (locationId: string) => void;
 }) {
-  const [mode, setMode] = useState<LocationBrowserMode>("all");
-  useEffect(() => {
-    if (locationScope?.parentId) setMode("level");
-  }, [locationScope?.id, locationScope?.parentId]);
-  const visible = mode === "all" ? allLocations : locations;
   const scopeById = new Map(locationScopes.map((scope) => [scope.id, scope]));
   const locationById = new Map(allLocations.map((location) => [location.id, location]));
   const locationContext = (location: WorldLocation) => {
@@ -54,24 +45,14 @@ export function LocationBrowser({
     <section className="location-browser" aria-labelledby="location-browser-heading">
       <div className="location-browser__heading">
         <div>
-          <span className="eyebrow">{mode === "all" ? "Complete directory" : "This location level"}</span>
-          <h2 id="location-browser-heading">{mode === "all" ? "All known locations" : locationScope?.name ?? "Locations"}</h2>
+          <span className="eyebrow">This location level</span>
+          <h2 id="location-browser-heading">{locationScope?.name ?? "Locations"}</h2>
         </div>
-        <span>{mode === "all"
-          ? `${allLocations.length} ${allLocations.length === 1 ? "place" : "places"}`
-          : locationScope
+        <span>{locationScope
           ? `${locationScope.childIds.length} of ${locationScope.totalCount}`
           : "Not loaded"}</span>
       </div>
-      <div aria-label="Location browsing mode" className="location-browser__modes" role="group">
-        <button aria-pressed={mode === "all"} onClick={() => setMode("all")} type="button">
-          <Icon name="List" size={15} /> All places
-        </button>
-        <button aria-pressed={mode === "level"} onClick={() => setMode("level")} type="button">
-          <Icon name="Network" size={15} /> By area
-        </button>
-      </div>
-      {mode === "level" && locationScope?.parentId ? (
+      {locationScope?.parentId ? (
         <button className="location-browser__back" onClick={onBack} type="button">
           <Icon name="ArrowLeft" size={16} /> Parent location
         </button>
@@ -82,14 +63,15 @@ export function LocationBrowser({
         <input
           maxLength={80}
           onChange={(event) => onQueryChange(event.target.value)}
-          placeholder={mode === "all" ? "Search every known location" : "Search this area"}
+          placeholder="Search this area"
           type="search"
           value={query}
         />
       </label>
-      <p className="location-search__scope">{mode === "all"
-        ? "Select a place for details, or browse inside an area to follow the hierarchy."
-        : "Only the direct locations inside this area are shown."}</p>
+      <p className="location-search__scope">Only the direct locations inside this area are shown.</p>
+      {locationScope?.coverage === "partial" ? (
+        <p role="status">Some location information is unavailable. The readable places are shown below.</p>
+      ) : null}
       {error ? (
         <div className="location-browser__error" role="alert">
           <p>{error}</p>
@@ -97,8 +79,8 @@ export function LocationBrowser({
         </div>
       ) : null}
       <div className="location-list" aria-label="Known world locations">
-        {visible.length ? (
-          visible.map((location) => {
+        {locations.length ? (
+          locations.map((location) => {
             const selected = location.id === selectedLocationId;
             const current = location.id === currentLocationId;
             const childScope = scopeById.get(location.id);
@@ -127,7 +109,6 @@ export function LocationBrowser({
                 {canBrowse ? (
                   <button aria-label={`Open ${location.name} and browse its locations`}
                     className="location-row__browse" onClick={() => {
-                      setMode("level");
                       onBrowse(location.id);
                     }} type="button">
                     Browse inside {childScope ? <span>{childCount}</span> : null}
@@ -139,18 +120,20 @@ export function LocationBrowser({
         ) : (
           <div className="location-empty">
             <Icon name="Search" />
-            <strong>{query ? "No matching places" : mode === "all" ? "No known locations" : "No child locations"}</strong>
-            <p>{query ? "Try a location name, region, or type."
-              : mode === "all" ? "No locations are available in this directory."
+            <strong>{busy ? "Loading locations…" : !locationScope || error || locationScope.coverage === "partial"
+              ? "Locations unavailable" : query ? "No matching places" : "No child locations"}</strong>
+            <p>{!locationScope || error || locationScope.coverage === "partial"
+              ? "The available information does not confirm which locations are inside this place."
+              : query ? "Try a location name, region, or type."
                 : "This place has no recorded locations inside it."}</p>
           </div>
         )}
       </div>
-      {mode === "level" && locationScope?.nextCursor ? (
+      {locationScope?.nextCursor ? (
         <button className="location-browser__more" disabled={busy} onClick={onLoadMore} type="button">
           {busy ? "Loading more…" : `Load more locations (${locationScope.childIds.length} of ${locationScope.totalCount})`}
         </button>
-      ) : mode === "level" && busy
+      ) : busy
         ? <p aria-live="polite" className="location-browser__busy">Loading this location level…</p> : null}
     </section>
   );

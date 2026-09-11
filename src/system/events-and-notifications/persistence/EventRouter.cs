@@ -129,6 +129,9 @@ public sealed class EventRouter(
                 v => new { v.SubscriptionId, v.Version },
                 (s, v) => new { s, v })
             .Where(x => x.v.Mode == SubscriptionMode.Reaction && x.v.EventTypeId == @event.TypeId)
+            .Where(x => @event.Source == null
+                ? x.v.ApplicationId == null && x.v.StateSpaceId == null
+                : x.v.ApplicationId == @event.Source.ApplicationId && x.v.StateSpaceId == @event.Source.StateSpaceId)
             .OrderBy(x => x.v.Order).ThenBy(x => x.s.Id)
             .ToListAsync(cancellationToken);
 

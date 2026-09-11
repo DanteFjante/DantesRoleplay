@@ -682,6 +682,7 @@ public sealed class WebInterfaceTests
         Assert.Equal([
             ("/api/control/system/conversations", HttpMethods.Get),
             ("/api/control/system/conversations/{conversationId}", HttpMethods.Get),
+            ("/api/control/system/conversations/recoveries/{idempotencyKey}", HttpMethods.Get),
             ("/api/control/system/conversations", HttpMethods.Post),
             ("/api/control/system/conversations/{conversationId}/turns", HttpMethods.Post),
             ("/api/control/system/conversations/{conversationId}/tasks", HttpMethods.Get),
@@ -865,8 +866,8 @@ public sealed class WebInterfaceTests
             ("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/mechanics/{qualifiedMechanicId}", HttpMethods.Get),
             ("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/mechanics/{qualifiedMechanicId}/prepare", HttpMethods.Post),
             ("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/mechanics/{qualifiedMechanicId}/execute", HttpMethods.Post),
+            ("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/recoveries/{idempotencyKey}", HttpMethods.Get),
             ("/api/applications/{applicationId}/state-spaces", HttpMethods.Get),
-            ("/api/applications/{applicationId}/campaigns/{campaignId}/knowledge", HttpMethods.Get),
             ("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/containments", HttpMethods.Get),
             ("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/relationships", HttpMethods.Get),
             ("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/entities", HttpMethods.Get),
@@ -889,7 +890,8 @@ public sealed class WebInterfaceTests
             .Where(endpoint => endpoint.RoutePattern.RawText!.StartsWith("/api/applications/", StringComparison.Ordinal))
             .Where(endpoint => endpoint.Metadata.GetMetadata<HttpMethodMetadata>()!.HttpMethods.Single() == HttpMethods.Get)
             .ToArray();
-        Assert.Equal(10, applicationStateReads.Length);
+        // The approved interrupted-request lookup adds one read-only state-space route.
+        Assert.Equal(11, applicationStateReads.Length);
         Assert.All(applicationStateReads, endpoint => Assert.Equal(
             WebInterfaceSecurity.ReadRateLimitPolicy,
             endpoint.Metadata.GetMetadata<EnableRateLimitingAttribute>()!.PolicyName));
@@ -945,7 +947,13 @@ public sealed class WebInterfaceTests
         Assert.Contains("method: 'POST'", applicationScript, StringComparison.Ordinal);
         Assert.DoesNotContain("url.searchParams.set('cursor'", applicationScript, StringComparison.Ordinal);
         Assert.DoesNotContain("localStorage", applicationScript, StringComparison.Ordinal);
-        Assert.DoesNotContain("sessionStorage", applicationScript, StringComparison.Ordinal);
+        // Reload recovery stores only bounded request identity, never confirmed ECS data or input.
+        Assert.Contains("const ACTION_RECOVERY_STORE = 'dantes.application-action-recovery.v1'", applicationScript,
+            StringComparison.Ordinal);
+        Assert.Contains("['key', 'phase']", applicationScript, StringComparison.Ordinal);
+        Assert.Contains("['key', 'phase', 'resolutionReceiptId']", applicationScript, StringComparison.Ordinal);
+        Assert.Contains("if (!validActionRecovery(value)) return false", applicationScript, StringComparison.Ordinal);
+        Assert.Contains("if (encoded.length > 8192) return false", applicationScript, StringComparison.Ordinal);
         Assert.DoesNotContain("/api/control", applicationScript, StringComparison.Ordinal);
         Assert.DoesNotContain("/mcp", applicationScript, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("/conversations", applicationScript, StringComparison.Ordinal);
@@ -2812,11 +2820,13 @@ public sealed class WebInterfaceTests
             "/api/control/conversations/{conversationId}/turns/{turnId}/approvals/{approvalId}",
             "/api/control/system/conversations",
             "/api/control/system/conversations/{conversationId}",
+            "/api/control/system/conversations/recoveries/{idempotencyKey}",
             "/api/control/system/capabilities",
             "/api/control/ai/providers",
             "/api/control/ai/providers/{providerId}/models",
             "/api/control/ai/conversations",
             "/api/control/ai/conversations/{conversationId}",
+            "/api/control/ai/recoveries/{idempotencyKey}",
             "/api/control/ai/conversations/{conversationId}",
             "/api/control/ai/requests",
             "/api/control/system/conversations",
@@ -2824,6 +2834,7 @@ public sealed class WebInterfaceTests
             "/api/control/system/conversations/{conversationId}/tasks",
             "/api/control/system/conversations/{conversationId}/tasks",
             "/api/control/system/tasks/{taskId}",
+            "/api/control/system/tasks/recoveries/{idempotencyKey}",
             "/api/control/system/tasks/{taskId}/confirmations",
             "/api/control/system/tasks/{taskId}/executions",
             "/api/control/system/capabilities/{capabilityId}",
@@ -2934,7 +2945,8 @@ public sealed class WebInterfaceTests
 
         Assert.Contains("private const string HomePageId = \"home\"", endpoints, StringComparison.Ordinal);
         Assert.Contains("GetPageAsync(HomePageId", endpoints, StringComparison.Ordinal);
-        Assert.Contains("href=\"/ui/control-center/index.html\"", home, StringComparison.Ordinal);
+        Assert.Contains("href=\"/ui/control-center\"", home, StringComparison.Ordinal);
+        Assert.DoesNotContain("/ui/control-center/index.html", home, StringComparison.Ordinal);
         Assert.Contains("Open control center", home, StringComparison.Ordinal);
         Assert.Contains("<system-navigation>", home, StringComparison.Ordinal);
         Assert.DoesNotContain("href=\"/ui/dnd2024-play\"", home, StringComparison.Ordinal);
@@ -2963,6 +2975,8 @@ public sealed class WebInterfaceTests
         var home = File.ReadAllText(Path.Combine(examples, "home.html"));
         var controlCenter = File.ReadAllText(Path.Combine(examples, "control-center", "index.html"));
         var application = File.ReadAllText(Path.Combine(examples, "application-page.html"));
+        var navigation = File.ReadAllText(Path.Combine(RepositoryRoot(), "DantesRoleplay.Web",
+            "BrowserComponents", "system-workspace.js"));
 
         foreach (var page in new[] { home, controlCenter, application })
         {
@@ -2977,6 +2991,9 @@ public sealed class WebInterfaceTests
         Assert.Contains("application-id=\"dnd2024\"", application, StringComparison.Ordinal);
         Assert.Contains("aria-label=\"Control center functions\"", controlCenter, StringComparison.Ordinal);
         Assert.Contains("#/applications/", controlCenter, StringComparison.Ordinal);
+        Assert.Contains("const CONTROL_CENTER_PATH = '/ui/control-center'", navigation,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain("/ui/control-center/index.html", navigation, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -3194,6 +3211,51 @@ public sealed class WebInterfaceTests
 
         Assert.Equal("AI_STATE_SPACE_CONTEXT_STALE", exception.Code);
         Assert.Equal(StatusCodes.Status409Conflict, exception.StatusCode);
+    }
+
+    [Fact]
+    public async Task Provider_neutral_ai_recovery_requires_the_original_terminal_surface_context_binding()
+    {
+        using var fixture = new SqliteFixture();
+        await using var db = fixture.CreateContext();
+        var principal = PrivateOperatorPrincipal.Create("test", "recovery-operator");
+        var authorization = new PrivateOperatorAuthorizationPolicy().Evaluate(new(
+            principal,
+            PrivateOperatorCapability.ControlAiMessage,
+            PrivateOperatorAuthorizationPolicy.PrivateHostScope,
+            "web-ai-recovery-test")).Evidence;
+        var fingerprint = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes("inner\0system-ai-context-v1")));
+        var capture = new AssistantTurnContextCapture(AssistantTurnContextProfiles.SystemReadV1,
+            fingerprint, ["surface:inner"]);
+        var store = new AssistantConversationStore(db, new OperationLog(db));
+        var begin = await store.BeginTurnAsync(new(principal.PrincipalId, "local", null, null,
+            "private prompt", "web-ai-recovery", new string('A', 64), AssistantConversationScopes.System, capture));
+        await store.CompleteTurnAsync(new(begin.TurnId, AssistantConversationStatuses.Failed, null,
+            "RECOVERY_FIXTURE", "The request ended safely.", "local", "fixture", "", "", 0, 0, 0));
+        var gateway = new WebAiGateway(null, null, null, store, null, null, null);
+
+        var recovered = await gateway.RecoverAsync(authorization, new("inner", "ollama", "web-ai-recovery"));
+        Assert.NotNull(recovered);
+        Assert.Equal("web-ai-recovery", recovered!.IdempotencyKey);
+        Assert.Equal("ollama", recovered.Provider);
+        Assert.Equal(AssistantConversationScopes.System, recovered.Scope);
+        Assert.Equal(fingerprint, recovered.Context!.Fingerprint);
+        Assert.Null(await gateway.RecoverAsync(authorization, new("outer", "ollama", "web-ai-recovery")));
+        Assert.Null(await gateway.RecoverAsync(authorization, new("inner", "codex", "web-ai-recovery")));
+
+        var codexFingerprint = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes("outer\0system-ai-context-v1")));
+        var codexCapture = new AssistantTurnContextCapture(AssistantTurnContextProfiles.SystemReadV1,
+            codexFingerprint, ["surface:outer"]);
+        var codex = await store.BeginTurnAsync(new(principal.PrincipalId, "codex", null, null,
+            "private prompt", "web-ai-recovery-codex", new string('B', 64), AssistantConversationScopes.System,
+            codexCapture));
+        await store.CompleteTurnAsync(new(codex.TurnId, AssistantConversationStatuses.Failed, null,
+            "RECOVERY_FIXTURE", "The request ended safely.", "codex", "fixture", "", "", 0, 0, 0));
+
+        var codexRecovered = await gateway.RecoverAsync(authorization,
+            new("outer", "codex", "web-ai-recovery-codex"));
+        Assert.NotNull(codexRecovered);
+        Assert.Equal("codex", codexRecovered!.Provider);
     }
 
     [Fact]

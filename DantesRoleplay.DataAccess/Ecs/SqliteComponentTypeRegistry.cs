@@ -1,6 +1,7 @@
 using DantesRoleplay.Applications;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.SchemaValidation;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 
 namespace DantesRoleplay.Ecs;
@@ -8,8 +9,53 @@ namespace DantesRoleplay.Ecs;
 /// <summary>Version-append-only SQLite owner for active application component type contracts.</summary>
 public sealed class SqliteComponentTypeRegistry(
     DantesRoleplayDbContext db,
-    IBoundedJsonSchemaValidator validator) : IApplicationComponentTypeRegistry
+    IBoundedJsonSchemaValidator validator) : IApplicationComponentTypeRegistry,
+    IApplicationComponentTypeIdentityReader, IApplicationComponentTypeVersionReader
 {
+    public IReadOnlyList<ComponentTypeVersion> ReadIdentities(IReadOnlyList<EcsComponentReference> references)
+    {
+        ArgumentNullException.ThrowIfNull(references);
+        if (references.Count > 512) throw new ArgumentOutOfRangeException(nameof(references));
+        foreach (var reference in references) reference.Validate();
+        if (references.Count == 0) return [];
+        var keys = JsonSerializer.Serialize(references.Select(value => new
+            { id = value.QualifiedTypeId, version = value.TypeVersion }).Distinct());
+        // Exact pairs are passed as one parameter. Only identity evidence is selected:
+        // neither all historical versions nor potentially large schemas are hydrated.
+        var versions = db.Set<ComponentTypeVersionRecord>().FromSqlInterpolated($"""
+            SELECT version.* FROM system_component_type_version AS version
+            JOIN json_each({keys}) AS requested
+              ON version.QualifiedId = json_extract(requested.value, '$.id')
+             AND version.Version = json_extract(requested.value, '$.version')
+            """).AsNoTracking();
+        return versions.Join(db.Set<ComponentTypeRecord>().AsNoTracking(),
+                version => version.QualifiedId, type => type.QualifiedId,
+                (version, type) => new { type.ApplicationId, version.QualifiedId, version.Version, version.SchemaHash })
+            .AsEnumerable().Select(value => new ComponentTypeVersion(ParseOwner(value.ApplicationId),
+                value.QualifiedId, value.Version, value.SchemaHash)).ToArray();
+    }
+
+    public IReadOnlyList<RegisteredComponentTypeVersion> ReadVersions(
+        IReadOnlyList<EcsComponentReference> references)
+    {
+        ArgumentNullException.ThrowIfNull(references);
+        if (references.Count > 512) throw new ArgumentOutOfRangeException(nameof(references));
+        foreach (var reference in references) reference.Validate();
+        if (references.Count == 0) return [];
+        var keys = JsonSerializer.Serialize(references.Select(value => new
+            { id = value.QualifiedTypeId, version = value.TypeVersion }).Distinct());
+        var versions = db.Set<ComponentTypeVersionRecord>().FromSqlInterpolated($"""
+            SELECT version.* FROM system_component_type_version AS version
+            JOIN json_each({keys}) AS requested
+              ON version.QualifiedId = json_extract(requested.value, '$.id')
+             AND version.Version = json_extract(requested.value, '$.version')
+            """).AsNoTracking();
+        return versions.Join(db.Set<ComponentTypeRecord>().AsNoTracking(),
+                version => version.QualifiedId, type => type.QualifiedId,
+                (version, type) => new { type.ApplicationId, Version = version })
+            .AsEnumerable().Select(value => ToContract(value.Version, ParseOwner(value.ApplicationId))).ToArray();
+    }
+
     public RegisteredComponentTypeVersion Define(ComponentTypeDefinition definition)
     {
         ArgumentNullException.ThrowIfNull(definition);

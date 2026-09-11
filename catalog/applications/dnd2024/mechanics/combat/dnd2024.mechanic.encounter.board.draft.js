@@ -6,10 +6,13 @@ function integer(value, min, max) { return Number.isSafeInteger(value) && value 
 function read(entity, key) { var value = JSON.parse(entity.components[key]); if (!object(value)) throw new Error('Malformed draft source.'); return value; }
 if (!ctx.audience || ctx.audience.perspective !== 'dm') throw new Error('Only the GM may request a draft.');
 var campaign = ctx.roles.campaign, encounter = ctx.roles.encounter, input = ctx.input;
-if (!campaign || !encounter || !closed(input, ['columns','rows','obstacleCount','seed','setting','prompt']) ||
+var inputKeys = object(input) ? Object.keys(input).sort().join(',') : '';
+if (!campaign || !encounter || (inputKeys !== 'columns,obstacleCount,prompt,rows,seed,setting' &&
+    inputKeys !== 'columns,obstacleCount,prompt,rows,seed,selectionId,setting') ||
     !integer(input.columns,4,64) || !integer(input.rows,4,64) || !integer(input.obstacleCount,0,32) ||
     !integer(input.seed,0,2147483647) || ['woodland','ruin','chamber'].indexOf(input.setting) < 0 ||
-    typeof input.prompt !== 'string' || input.prompt.length > 600) throw new Error('Invalid bounded map request.');
+    typeof input.prompt !== 'string' || input.prompt.length > 600 ||
+    Object.prototype.hasOwnProperty.call(input, 'selectionId') && (typeof input.selectionId !== 'string' || input.selectionId !== campaign.id)) throw new Error('Invalid bounded map request.');
 var scene = read(campaign, SCENE), root = read(campaign, ROOT);
 if (root.status !== 'active' || !scene.encounter || scene.encounter.entityId !== encounter.id || !scene.location)
   throw new Error('The encounter is no longer the active campaign scene.');

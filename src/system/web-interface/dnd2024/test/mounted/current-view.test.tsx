@@ -5,6 +5,16 @@ import { JSDOM } from "jsdom";
 import React, { act, type ReactNode } from "react";
 
 import { CurrentViewPreview } from "../../src/components/PreviewViews";
+import {
+  allocateCurrentRequestToken,
+  commitCurrentBootstrap,
+  createHubStore,
+  currentActions,
+  currentScope,
+  selectCurrentDisplay,
+  selectCurrentFresh,
+} from "../../src/data/hub-store";
+import { ViewReadError } from "../../src/data/view-read-client";
 import type {
   CurrentSituationReadModel,
   DeferredHubUpdate,
@@ -192,6 +202,25 @@ test("Current scene presentation covers exploration, recorded play, conversation
   });
 });
 
+test("Current tactical board warns when omitted geometry is not confirmed clear and preserves valid participants", async () => {
+  const initial = envelope();
+  const location = initial.world.locations.find((candidate) => candidate.id === initial.world.currentLocationId)!;
+  const partialBoard: TacticalEncounterBoard = { ...board, coverage: "partial",
+    notices: ["Terrain data is incomplete; uninspected areas may contain terrain."] };
+  const mounted = await mount(<CurrentViewPreview image={null} location={location} perspective="dm"
+    situation={{ status: "ready", kind: "combat", locationId: location.id, combat: {
+      id: "encounter.partial", name: "Partial clash", board: partialBoard,
+      participants: [{ id: "participant.guard", name: "Gate Guard", initiative: 14, active: true }],
+      turn: { id: "turn.one", participationId: "participant.guard", actorName: "Gate Guard", ordinal: 1,
+        budget: { actions: 1, bonusActions: 1, reactions: 1 } },
+    } }} />);
+  try {
+    assert.match(mounted.container.textContent ?? "", /Board information is partial[\s\S]*uninspected areas may contain terrain/u);
+    assert.match(mounted.container.textContent ?? "", /Gate Guard/u);
+    assert.match(mounted.container.textContent ?? "", /Terrain information is incomplete; omitted areas are not confirmed clear/u);
+  } finally { await mounted.cleanup(); }
+});
+
 test("Current keeps the location illustration, heading and description together inside one card", async () => {
   const initial = envelope();
   const location = initial.world.locations.find((candidate) => candidate.id === initial.world.currentLocationId)!;
@@ -208,6 +237,316 @@ test("Current keeps the location illustration, heading and description together 
     assert.equal([...mounted.container.querySelectorAll("p")]
       .filter((node) => node.textContent === location.description).length, 1);
   } finally { await mounted.cleanup(); }
+});
+
+test("Current keeps conversation identity when its location is unavailable", async () => {
+  const mounted = await mount(<CurrentViewPreview image={null} location={null} perspective="dm"
+    situation={{ status: "ready", kind: "conversation", locationId: "location.hidden", affordances: [], conversation: {
+      id: "conversation.known", name: "Known conversation", participants: [],
+    } }} />);
+  try {
+    assert.match(mounted.container.textContent ?? "", /Known conversation/u);
+    assert.match(mounted.container.textContent ?? "", /Current location unavailable/u);
+    assert.doesNotMatch(mounted.container.textContent ?? "", /Where you are/u);
+  } finally { await mounted.cleanup(); }
+});
+
+test("Current renders sparse location fields and distinguishes unavailable routes from empty routes", async () => {
+  const initial = envelope();
+  const location = initial.world.locations.find((candidate) => candidate.id === initial.world.currentLocationId)!;
+  const sparseLocation = { ...location } as typeof location;
+  delete (sparseLocation as Partial<typeof location>).description;
+  delete (sparseLocation as Partial<typeof location>).observations;
+  delete (sparseLocation as Partial<typeof location>).people;
+  delete (sparseLocation as Partial<typeof location>).routes;
+  const mounted = await mount(<CurrentViewPreview image={null} location={sparseLocation} perspective="dm"
+    situation={{ status: "ready", kind: "exploration", locationId: location.id, affordances: [],
+      unavailableFields: ["affordances"], routesCoverage: "unavailable" }} />);
+  try {
+    assert.match(mounted.container.textContent ?? "", /Location description is unavailable/);
+    assert.match(mounted.container.textContent ?? "", /Known ways onward are unavailable for this read/);
+    assert.match(mounted.container.textContent ?? "", /Some scene affordances are unavailable for this read/);
+    assert.match(mounted.container.textContent ?? "", /0 ways shown/);
+    assert.match(mounted.container.textContent ?? "", /0 people shown/);
+    assert.doesNotMatch(mounted.container.textContent ?? "", /0 known ways/);
+    assert.doesNotMatch(mounted.container.textContent ?? "", /No known exits have been projected/);
+  } finally { await mounted.cleanup(); }
+});
+
+test("Current retains known routes alongside partial route coverage", async () => {
+  const initial = envelope();
+  const location = initial.world.locations.find((candidate) => candidate.id === initial.world.currentLocationId)!;
+  const mounted = await mount(<CurrentViewPreview image={null} location={location} perspective="dm"
+    situation={{ status: "ready", kind: "exploration", locationId: location.id, affordances: [], routesCoverage: "partial" }} />);
+  try {
+    assert.match(mounted.container.textContent ?? "", new RegExp(location.routes[0].destination, "u"));
+    assert.match(mounted.container.textContent ?? "", /Known ways onward are partially available/u);
+  } finally { await mounted.cleanup(); }
+});
+
+test("Current preserves affordance identity when its descriptive summary is unavailable", async () => {
+  const initial = envelope();
+  const location = initial.world.locations.find((candidate) => candidate.id === initial.world.currentLocationId)!;
+  const mounted = await mount(<CurrentViewPreview image={null} location={location} perspective="dm"
+    situation={{ status: "ready", kind: "exploration", locationId: location.id,
+      affordances: [{ key: "inspect", label: "Inspect" }], unavailableFields: ["affordances"] }} />);
+  try {
+    assert.match(mounted.container.textContent ?? "", /Inspect/u);
+    assert.match(mounted.container.textContent ?? "", /Affordance details unavailable/u);
+    assert.match(mounted.container.textContent ?? "", /Some scene affordances are unavailable/u);
+  } finally { await mounted.cleanup(); }
+});
+
+test("Current recorded history distinguishes unavailable participants and dialogue from confirmed empty fields", async () => {
+  const initial = envelope();
+  const location = initial.world.locations.find((candidate) => candidate.id === initial.world.currentLocationId)!;
+  const mounted = await mount(<CurrentViewPreview image={null} location={location} perspective="dm"
+    situation={{ status: "ready", kind: "recorded", locationId: location.id, coverage: "partial",
+      unavailableFields: ["participants", "interactions"], recorded: {
+        id: "play.partial", kind: "conversation", summary: "Summary remains readable.",
+        participants: [], interactions: [], location: { id: location.id, name: location.name },
+      } }} />);
+  try {
+    assert.match(mounted.container.textContent ?? "", /Summary remains readable/u);
+    assert.match(mounted.container.textContent ?? "", /Participant identities are unavailable for this read/u);
+    assert.match(mounted.container.textContent ?? "", /Recorded dialogue is unavailable for this read/u);
+    assert.doesNotMatch(mounted.container.textContent ?? "", /No participant identities were recorded/u);
+    assert.doesNotMatch(mounted.container.textContent ?? "", /No recorded dialogue is available yet/u);
+  } finally { await mounted.cleanup(); }
+});
+
+test("Current keeps useful rows while visibly marking withheld siblings", async () => {
+  const initial = envelope();
+  const location = initial.world.locations.find((candidate) => candidate.id === initial.world.currentLocationId)!;
+  const mounted = await mount(<CurrentViewPreview image={null} location={location} perspective="dm"
+    situation={{ status: "ready", kind: "recorded", locationId: location.id, coverage: "partial",
+      unavailableFields: ["participants", "interactions"], recorded: {
+        id: "play.partial-rows", kind: "conversation", participants: [{ id: "actor.keep", name: "Kept" }],
+        interactions: [{ id: "message.keep", role: "player", text: "Still visible." }],
+      } }} />);
+  try {
+    assert.match(mounted.container.textContent ?? "", /Kept/u);
+    assert.match(mounted.container.textContent ?? "", /Still visible/u);
+    assert.match(mounted.container.textContent ?? "", /Some participant identities are unavailable for this read/u);
+    assert.match(mounted.container.textContent ?? "", /Some recorded dialogue is unavailable for this read/u);
+  } finally { await mounted.cleanup(); }
+});
+
+test("Current bootstrap and deferred fixtures project bad optional rows without crashing the Dnd hub", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const initial = envelope();
+  const rawSituation = {
+    status: "ready", kind: "recorded", recorded: {
+      id: "play.sparse", kind: "conversation",
+      participants: [{ id: "actor.keep", name: "Kept" }, { id: "actor.keep", name: "Duplicate" }, { id: "actor.unnamed" }],
+      interactions: [{ id: "message.keep", role: "player", text: "Useful", ordinal: 1 }, { id: "message.bad", role: "other" }],
+    },
+  };
+  initial.currentSituation = rawSituation as unknown as CurrentSituationReadModel;
+  const mounted = await mount(<DndInformationHub initialEnvelope={initial}
+    loadContent={async () => { throw new Error("not used"); }}
+    loadDeferredSection={async (_source, section) => {
+      assert.equal(section, "current");
+      return { section: "current", currentSituation: rawSituation as unknown as CurrentSituationReadModel,
+        world: { currentLocationId: initial.world.currentLocationId, locations: initial.world.locations },
+        campaign: { mapOverlays: initial.campaign.mapOverlays } };
+    }} />);
+  try {
+    await click(button(mounted.container, "Current View"));
+    await flush();
+    assert.match(mounted.container.textContent ?? "", /Recorded situation summary unavailable/u);
+    assert.match(mounted.container.textContent ?? "", /Unnamed participant/u);
+    assert.match(mounted.container.textContent ?? "", /Useful/u);
+    assert.doesNotMatch(mounted.container.textContent ?? "", /Duplicate/u);
+    assert.doesNotMatch(mounted.container.textContent ?? "", /message.bad/u);
+  } finally { await mounted.cleanup(); }
+});
+
+test("an unusable optional Current bootstrap stays local to the Current workspace", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const initial = envelope();
+  const unusable = { status: "ready", kind: "future-scene", locationId: initial.world.currentLocationId };
+  initial.currentSituation = unusable as unknown as CurrentSituationReadModel;
+  const mounted = await mount(<DndInformationHub initialEnvelope={initial}
+    loadContent={async () => { throw new Error("not used"); }}
+    loadDeferredSection={async (_source, section) => {
+      assert.equal(section, "current");
+      return { section: "current", currentSituation: unusable as unknown as CurrentSituationReadModel,
+        world: { currentLocationId: initial.world.currentLocationId, locations: initial.world.locations },
+        campaign: { mapOverlays: initial.campaign.mapOverlays } };
+    }} />);
+  try {
+    assert.match(mounted.container.textContent ?? "", /World view ready/u);
+    await click(button(mounted.container, "Current View"));
+    await flush();
+    assert.match(mounted.container.textContent ?? "", /Current view unavailable/u);
+  } finally { await mounted.cleanup(); }
+});
+
+test("Current admits a scene with no campaign wrapper or World fallback location", async () => {
+  const { normalizeCurrentViewUpdate } = await import("../../src/data/current-deferred-projection");
+  const initial = envelope();
+  const location = initial.world.locations.find((candidate) => candidate.id === initial.world.currentLocationId)!;
+  const update = await normalizeCurrentViewUpdate({
+    section: "current",
+    currentSituation: { status: "ready", kind: "exploration", locationId: location.id, affordances: [] },
+    // The World wrapper intentionally has no currentLocationId and there is no
+    // unrelated campaign/map overlay payload to admit before rendering Current.
+    world: { locations: [location] },
+  });
+  assert.equal(update?.currentSituation.status, "ready");
+  assert.deepEqual(update?.world.locations.map((candidate) => candidate.id), [location.id]);
+  assert.equal("campaign" in (update ?? {}), false);
+});
+
+test("the standalone Current bootstrap adapter preserves stale data without reseeding it", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const initial = envelope();
+  const location = initial.world.locations.find((candidate) => candidate.id === initial.world.currentLocationId)!;
+  initial.currentSituation = { status: "ready", kind: "exploration", locationId: location.id, affordances: [] };
+  const store = createHubStore();
+  const scope = currentScope(initial);
+  const mounted = await mount(<DndInformationHub store={store} initialEnvelope={initial}
+    loadContent={async () => { throw new Error("not used"); }} />);
+  try {
+    await flush();
+    assert.equal(selectCurrentDisplay(scope)(store.getState())?.situation.status, "ready");
+    await act(async () => store.dispatch(currentActions.invalidated()));
+    await flush();
+    assert.equal(selectCurrentDisplay(scope)(store.getState())?.situation.status, "ready",
+      "recoverable invalidation keeps the last authorized scene visible");
+    assert.equal(selectCurrentFresh(scope)(store.getState()), false,
+      "the retained scene cannot satisfy a fresh cache read");
+
+    const requestToken = allocateCurrentRequestToken();
+    await act(async () => {
+      store.dispatch(currentActions.currentRequestStarted({ scope, requestToken }));
+      store.dispatch(currentActions.currentDenied({ scope, requestToken }));
+    });
+    await flush();
+    assert.equal(selectCurrentDisplay(scope)(store.getState()), null,
+      "a denial remains authoritative until a new bootstrap/read commits");
+
+    const newerToken = allocateCurrentRequestToken();
+    await act(async () => store.dispatch(commitCurrentBootstrap({ scope, value: {
+      situation: { status: "ready", kind: "exploration", locationId: location.id, affordances: [] },
+      location,
+    } }, { generation: store.getState().current.generation, requestToken: newerToken,
+      bytes: 512, confirmedAt: 1 })));
+    assert.equal(selectCurrentDisplay(scope)(store.getState())?.situation.status, "ready",
+      "a distinct authoritative bootstrap may seed Current after a denial");
+  } finally { await mounted.cleanup(); }
+});
+
+test("Current invalidation retries once and exposes a bounded retry when its source is not ready", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const initial = envelope();
+  const first = initial.world.locations.find((candidate) => candidate.id === initial.world.currentLocationId)!;
+  const second = initial.world.locations.find((candidate) => candidate.id === "hollow-beacon")!;
+  const store = createHubStore();
+  let reads = 0;
+  const read = async (): Promise<DeferredHubUpdate> => {
+    reads += 1;
+    if (reads === 2) throw new ViewReadError("transport", "Current source is reconnecting.");
+    const location = reads === 1 ? first : second;
+    return { section: "current", currentSituation: {
+      status: "ready", kind: "exploration", locationId: location.id, affordances: [],
+    }, world: { locations: initial.world.locations } };
+  };
+  const mounted = await mount(<DndInformationHub store={store} currentBootstrapManaged initialEnvelope={initial}
+    loadContent={async () => { throw new Error("not used"); }}
+    loadDeferredSection={async (_source, section) => {
+      assert.equal(section, "current");
+      return read();
+    }} />);
+  try {
+    await click(button(mounted.container, "Current View"));
+    await flush();
+    assert.equal(reads, 1);
+    assert.match(mounted.container.textContent ?? "", new RegExp(first.name, "u"));
+
+    await act(async () => {
+      store.dispatch(currentActions.invalidated());
+      window.dispatchEvent(new window.CustomEvent("dnd2024-view-invalidated", {
+        detail: { reason: "object-change" },
+      }));
+    });
+    await flush();
+    assert.equal(reads, 2, "a stale canonical Current generation gets one revalidation");
+    assert.match(mounted.container.textContent ?? "", /Current scene could not be refreshed/u);
+    assert.match(mounted.container.textContent ?? "", new RegExp(first.name, "u"));
+    assert.ok(button(mounted.container, "Retry current scene"));
+    await flush();
+    assert.equal(reads, 2, "a failed revalidation waits for the explicit retry");
+
+    await click(button(mounted.container, "Retry current scene"));
+    await flush();
+    assert.equal(reads, 3);
+    assert.match(mounted.container.textContent ?? "", new RegExp(second.name, "u"));
+  } finally { await mounted.cleanup(); }
+});
+
+test("an authoritative unavailable Current completion does not retry itself", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const initial = envelope();
+  const store = createHubStore();
+  let reads = 0;
+  const mounted = await mount(<DndInformationHub store={store} currentBootstrapManaged initialEnvelope={initial}
+    loadContent={async () => { throw new Error("not used"); }}
+    loadDeferredSection={async () => {
+      reads += 1;
+      return { section: "current", currentSituation: {
+        status: "unavailable", message: "No play has been authorized.",
+      }, world: { locations: [] } } as DeferredHubUpdate;
+    }} />);
+  try {
+    await click(button(mounted.container, "Current View"));
+    await flush();
+    await flush();
+    assert.equal(reads, 1, "a confirmed unavailable scene is a completed read, not a retry trigger");
+    assert.doesNotMatch(mounted.container.textContent ?? "", /Retry view/u);
+  } finally { await mounted.cleanup(); }
+});
+
+test("the DM game hub shows combat read-only without map upload or acceptance controls", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  for (const acceptedBoard of [board, undefined]) {
+    const initial = envelope();
+    const location = initial.world.locations.find((candidate) => candidate.id === initial.world.currentLocationId)!;
+    initial.currentSituation = { status: "ready", kind: "combat", locationId: location.id, combat: {
+      id: "encounter.readonly", name: "Read-only clash", board: acceptedBoard,
+      participants: [{ id: "participant.guard", name: "Gate Guard", initiative: 14, active: true }],
+    } };
+    let directRequests = 0;
+    const previousFetch = globalThis.fetch;
+    const mounted = await mount(<DndInformationHub initialEnvelope={initial}
+      loadContent={async () => { throw new Error("not used"); }}
+      loadDeferredSection={async (_source, section) => {
+        assert.equal(section, "current");
+        return { section: "current", currentSituation: initial.currentSituation!, world: {
+          currentLocationId: location.id, locations: initial.world.locations,
+        }, campaign: { mapOverlays: initial.campaign.mapOverlays } };
+      }} />);
+    try {
+      globalThis.fetch = async () => { directRequests += 1; throw new Error("Unexpected direct request"); };
+      await click(button(mounted.container, "Current View"));
+      await flush();
+      assert.match(mounted.container.textContent ?? "", /Read-only clash[\s\S]*Initiative[\s\S]*Gate Guard/u);
+      assert.ok(mounted.container.querySelector(".tactical-board-svg"), "the existing board or honest placeholder remains visible");
+      assert.equal(mounted.container.querySelector('.board-draft-workshop, input[type="file"], textarea'), null);
+      assert.doesNotMatch(mounted.container.textContent ?? "", /Review acceptance|Accept reviewed board|GM combat-map workshop/u);
+      for (const control of mounted.container.querySelectorAll<HTMLButtonElement>("button")) {
+        if (control.textContent === "Generate combat map") assert.equal(control.disabled, true);
+      }
+      await click(button(mounted.container, "World"));
+      await click(button(mounted.container, "Current View"));
+      assert.equal(mounted.container.querySelector(".board-draft-workshop"), null);
+      assert.equal(directRequests, 0, "Current cannot upload, prepare or execute a board mutation");
+    } finally {
+      globalThis.fetch = previousFetch;
+      await mounted.cleanup();
+    }
+  }
 });
 
 test("opening and revisiting Current mounts no conversation element and issues no implicit write", async () => {
@@ -259,11 +598,13 @@ test("a failed Current refresh preserves the confirmed scene and retry installs 
   const changed = initial.world.locations.find((candidate) => candidate.id === "hollow-beacon")!;
   initial.currentSituation = { status: "ready", kind: "exploration", locationId: first.id, affordances: [] };
   let attempt = 0;
+  const cachePreferences: Array<boolean | undefined> = [];
   let finishRetry: (update: DeferredHubUpdate) => void = () => { throw new Error("Retry not started"); };
   const mounted = await mount(<DndInformationHub initialEnvelope={initial}
     loadContent={async () => { throw new Error("not used"); }}
-    loadDeferredSection={async (_source, section) => {
+    loadDeferredSection={async (_source, section, _signal, preferCached) => {
       assert.equal(section, "current");
+      cachePreferences.push(preferCached);
       attempt += 1;
       if (attempt === 1) throw new Error("Current projection is temporarily unavailable.");
       return new Promise<DeferredHubUpdate>((resolve) => { finishRetry = resolve; });
@@ -274,6 +615,7 @@ test("a failed Current refresh preserves the confirmed scene and retry installs 
     assert.match(mounted.container.textContent ?? "", new RegExp(first.name, "u"));
     assert.match(mounted.container.textContent ?? "", /Current scene could not be refreshed[\s\S]*Showing the last confirmed scene/u);
     await click(button(mounted.container, "Retry current scene"));
+    assert.deepEqual(cachePreferences, [true, false], "explicit retry must bypass the Current owner's completed value");
     assert.match(mounted.container.textContent ?? "", new RegExp(first.name, "u"));
     await act(async () => finishRetry({
       section: "current",

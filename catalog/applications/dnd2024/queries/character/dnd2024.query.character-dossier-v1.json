@@ -11,11 +11,12 @@
   "roles": {
     "subject": "The exact audience-authorized character entity."
   },
+  "roleBindings": { "subject": { "source": "route-entity" } },
   "executor": "mechanic-projection",
   "projection": {
     "qualifiedId": "dnd2024.mechanic.character-dossier-v1.project",
     "version": 1,
-    "contentHash": "AB3DD31CF0402D14B51504696F53A3C558D8F879328E2DF0817F8B167FB87419",
+    "contentHash": "A1761C8613D5F412E36EB4B2695692D21D5EE4B8BB1C8E6B994971DD8EF45157",
     "outputSchemaHash": "A57AB0A19A611918A41877EBBA2A29D0D7C39EB3A9DB04AA8B7DCED039DB646E"
   },
   "outputSchema": {

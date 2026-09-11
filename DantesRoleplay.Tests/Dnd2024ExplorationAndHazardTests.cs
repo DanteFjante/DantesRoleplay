@@ -114,7 +114,7 @@ public sealed class Dnd2024ExplorationAndHazardTests : Dnd2024TestBase
             DndHarness.StateSpaceId, "subject.high");
         Assert.Equal("location.travel.destination", containment!.ContainerEntityId);
         Assert.Equal("presence", containment.Slot);
-        Assert.Equal(3, (await harness.EventsAsync(first.OperationId)).Count);
+        Assert.Equal(3, (await harness.RuleEventsAsync(first.OperationId)).Count);
     }
 
     [Fact]
@@ -218,7 +218,7 @@ public sealed class Dnd2024ExplorationAndHazardTests : Dnd2024TestBase
                 : "dnd2024.hazard.trap-phase.armed",
             state.RootElement.GetProperty("phase").GetProperty("entityId").GetString());
         Assert.Equal(expectedDisarmed ? 1 : 0,
-            (await harness.EventsAsync(disarmed.OperationId)).Count);
+            (await harness.RuleEventsAsync(disarmed.OperationId)).Count);
     }
 
     [Theory]
@@ -250,7 +250,7 @@ public sealed class Dnd2024ExplorationAndHazardTests : Dnd2024TestBase
                    DndHarness.StateSpaceId, "subject.high", "dnd2024.conditions"))!.ValueJson))
             Assert.Contains(conditions.RootElement.GetProperty("entries").EnumerateArray(),
                 value => value.GetProperty("condition").GetString() == "prone");
-        Assert.Single(await harness.EventsAsync(first.OperationId));
+        Assert.Single(await harness.RuleEventsAsync(first.OperationId));
 
         var reset = await harness.Runner.RunAsync(harness.ActionForRoles(
             "dnd2024.mechanic.trap.reset", TrapLifecycleRoles(),
@@ -312,7 +312,7 @@ public sealed class Dnd2024ExplorationAndHazardTests : Dnd2024TestBase
             Assert.Equal(160, clock.RootElement.GetProperty("currentMinute").GetInt32());
             Assert.Equal(8, clock.RootElement.GetProperty("revision").GetInt32());
         }
-        Assert.Equal(2, (await harness.EventsAsync(progress.OperationId)).Count);
+        Assert.Equal(2, (await harness.RuleEventsAsync(progress.OperationId)).Count);
 
         var recovered = await harness.Runner.RunAsync(harness.ActionForRoles(
             "dnd2024.mechanic.environment-exposure.recover", ExposureRecoverRoles("hazard.exposure.fixture"),
@@ -395,7 +395,7 @@ public sealed class Dnd2024ExplorationAndHazardTests : Dnd2024TestBase
         using (var conditions = JsonDocument.Parse((await harness.Entities.GetComponentAsync(
                    DndHarness.StateSpaceId, "subject.high", "dnd2024.conditions"))!.ValueJson))
             Assert.Single(conditions.RootElement.GetProperty("entries").EnumerateArray());
-        Assert.Single(await harness.EventsAsync(applied.OperationId));
+        Assert.Single(await harness.RuleEventsAsync(applied.OperationId));
         Assert.Contains(harness.Search("apply an authored poison").Records,
             value => value.Record.QualifiedId == "dnd2024.mechanic.poison.apply");
     }
@@ -629,7 +629,7 @@ public sealed class Dnd2024ExplorationAndHazardTests : Dnd2024TestBase
                    "dnd2024.hazard.trap-state"))!.ValueJson))
             Assert.Equal("dnd2024.hazard.trap-phase.disabled",
                 trap.RootElement.GetProperty("phase").GetProperty("entityId").GetString());
-        Assert.Equal(2, (await harness.EventsAsync(destroyed.OperationId)).Count);
+        Assert.Equal(2, (await harness.RuleEventsAsync(destroyed.OperationId)).Count);
 
         var ineligible = await harness.Runner.RunAsync(harness.ActionForRoles(
             "dnd2024.mechanic.object.repair", roles,

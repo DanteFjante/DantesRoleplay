@@ -1,5 +1,6 @@
 using DantesRoleplay.Assistants;
 using DantesRoleplay.Operations;
+using DantesRoleplay.SystemConversations;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
@@ -23,6 +24,38 @@ public sealed class AssistantConversationStore(
         finally { BeginGate.Release(); }
     }
 
+    public async Task<AssistantTurnRecovery?> FindByIdempotencyKeyAsync(
+        string operatorId, string provider, string idempotencyKey,
+        string scope = AssistantConversationScopes.Advisory,
+        CancellationToken cancellationToken = default,
+        AssistantTurnContextCapture? context = null)
+    {
+        if (string.IsNullOrWhiteSpace(operatorId) || string.IsNullOrWhiteSpace(provider) ||
+            string.IsNullOrWhiteSpace(idempotencyKey) || !AssistantConversationScopes.IsKnown(scope) ||
+            context is not null && !ValidContext(context, out _))
+            return null;
+        var query = db.AssistantTurns.AsNoTracking().Include(value => value.Conversation).Include(value => value.Messages)
+            .Where(value => value.OperatorId == operatorId && value.Provider == provider &&
+                value.IdempotencyKey == idempotencyKey && value.Conversation!.Scope == scope &&
+                value.Status != AssistantConversationStatuses.Pending &&
+                value.Status != AssistantConversationStatuses.Running &&
+                value.Status != AssistantConversationStatuses.AwaitingApproval);
+        if (context is null) query = query.Where(value => value.ContextProfile == "" ||
+            value.ContextProfile == AssistantTurnContextProfiles.SystemReadV1);
+        else
+        {
+            _ = ValidContext(context, out var referencesJson);
+            query = query.Where(value => value.ContextProfile == context.Profile && value.ContextFingerprint == context.Fingerprint &&
+                value.ContextSourceReferencesJson == referencesJson);
+        }
+        var turns = await query.OrderBy(value => value.CreatedAtUtc).Take(2).ToArrayAsync(cancellationToken);
+        if (context is null) turns = turns.Where(IsLegacyOmittedContextReplay).ToArray();
+        return turns.Length == 1
+            ? new(turns[0].ConversationId, turns[0].Id, turns[0].Status, turns[0].IdempotencyKey,
+                turns[0].Provider, scope, context)
+            : null;
+    }
+
     private async Task<AssistantTurnBeginResult> BeginTurnCoreAsync(
         AssistantTurnBegin request, CancellationToken cancellationToken)
     {
@@ -31,7 +64,7 @@ public sealed class AssistantConversationStore(
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
-            var replay = await db.AssistantTurns.AsNoTracking().Include(turn => turn.Conversation)
+            var replay = await db.AssistantTurns.AsNoTracking().Include(turn => turn.Conversation).Include(turn => turn.Messages)
                 .SingleOrDefaultAsync(turn =>
                 turn.OperatorId == request.OperatorId && turn.Provider == request.Provider &&
                 turn.IdempotencyKey == request.IdempotencyKey, cancellationToken);
@@ -41,7 +74,7 @@ public sealed class AssistantConversationStore(
                     ? replay.TurnNumber == 1
                     : replay.ConversationId == request.ConversationId && replay.TurnNumber > 1;
                 if (replay.RequestHash != request.RequestHash ||
-                    !sameRequestTarget || replay.Conversation?.Scope != request.Scope)
+                    !sameRequestTarget || replay.Conversation?.Scope != request.Scope || !SameCapture(replay, request.Context))
                     throw Conflict("ASSISTANT_IDEMPOTENCY_CONFLICT", "The idempotency key was already used for another request.");
                 await transaction.CommitAsync(cancellationToken);
                 return new(replay.ConversationId, replay.Id, true);
@@ -88,6 +121,7 @@ public sealed class AssistantConversationStore(
                 RequestHash = request.RequestHash, Status = AssistantConversationStatuses.Pending,
                 CreatedAtUtc = now
             };
+            ApplyCapture(turn, request.Context, request.Scope);
             conversation.Turns.Add(turn);
             conversation.Messages.Add(new AssistantMessage
             {
@@ -659,24 +693,91 @@ public sealed class AssistantConversationStore(
                 throw new ArgumentException("Failed system turns cannot claim completed context evidence.", nameof(context));
             return;
         }
-        if (context is null || context.Profile is not (
-                AssistantTurnContextProfiles.SystemReadV1 or AssistantTurnContextProfiles.ApplicationAiV1) ||
-            context.Fingerprint.Length != 64 || context.Fingerprint.Any(character =>
-                character is not (>= '0' and <= '9') and not (>= 'A' and <= 'F')) ||
-            !AssistantTurnResponseDispositions.IsKnown(context.Disposition) ||
-            context.SourceReferences is null || context.SourceReferences.Count > 24 ||
-            context.SourceReferences.Any(value => string.IsNullOrWhiteSpace(value) ||
-                value.Length > 320 || value.Any(char.IsControl)) ||
-            context.SourceReferences.Distinct(StringComparer.Ordinal).Count() != context.SourceReferences.Count ||
-            !context.SourceReferences.SequenceEqual(context.SourceReferences.OrderBy(value => value, StringComparer.Ordinal)))
+        if (context is null || !ValidContext(new(context.Profile, context.Fingerprint, context.SourceReferences), out var referencesJson) ||
+            !AssistantTurnResponseDispositions.IsKnown(context.Disposition))
             throw new ArgumentException("The assistant context completion is invalid.", nameof(context));
-        var referencesJson = JsonSerializer.Serialize(context.SourceReferences);
-        if (referencesJson.Length > 8_000)
-            throw new ArgumentException("The assistant context references are too large.", nameof(context));
+        if (!string.IsNullOrEmpty(turn.ContextProfile) &&
+            (turn.ContextProfile != context.Profile || turn.ContextFingerprint != context.Fingerprint ||
+             turn.ContextSourceReferencesJson != referencesJson))
+            throw new ArgumentException("Completed context must preserve the original turn binding.", nameof(context));
         turn.ContextProfile = context.Profile;
         turn.ContextFingerprint = context.Fingerprint;
         turn.ContextSourceReferencesJson = referencesJson;
         turn.ResponseDisposition = context.Disposition;
+    }
+
+    private static void ApplyCapture(AssistantTurn turn, AssistantTurnContextCapture? context, string scope)
+    {
+        if (context is null)
+        {
+            return;
+        }
+        if (scope != AssistantConversationScopes.System || !ValidContext(context, out var referencesJson))
+            throw new ArgumentException("The assistant context capture is invalid.", nameof(context));
+        turn.ContextProfile = context.Profile;
+        turn.ContextFingerprint = context.Fingerprint;
+        turn.ContextSourceReferencesJson = referencesJson;
+        turn.ResponseDisposition = AssistantTurnResponseDispositions.Unknown;
+    }
+
+    private static bool SameCapture(AssistantTurn turn, AssistantTurnContextCapture? context) =>
+        context is null
+            ? IsLegacyOmittedContextReplay(turn)
+            : ValidContext(context, out var referencesJson) && turn.ContextProfile == context.Profile &&
+                turn.ContextFingerprint == context.Fingerprint && turn.ContextSourceReferencesJson == referencesJson;
+
+    /**
+     * Before pre-provider capture existed, a System turn acquired its context
+     * only at completion. Its system-read profile is therefore not itself a
+     * capture marker. Recompute the original server-owned request identity
+     * from the one persisted user message before admitting an omitted context.
+     * Web AI captures always include a surface reference and use a different
+     * request identity, so neither a missing nor forged capture can cross this
+     * compatibility boundary.
+     */
+    private static bool IsLegacyOmittedContextReplay(AssistantTurn turn)
+    {
+        // Advisory turns have always been unbound. System turns are different:
+        // their omitted capture is a narrow compatibility path and must prove
+        // the original persisted system request, even when a failed historic
+        // turn never reached completion-time context materialization.
+        if (turn.Conversation?.Scope == AssistantConversationScopes.Advisory)
+            return string.IsNullOrEmpty(turn.ContextProfile);
+        if (turn.ContextProfile is not ("" or AssistantTurnContextProfiles.SystemReadV1) ||
+            turn.Provider != SystemConversationRequestIdentity.Provider ||
+            turn.Conversation?.Scope != AssistantConversationScopes.System ||
+            turn.Conversation.OperatorId != turn.OperatorId) return false;
+        var userMessages = turn.Messages.Where(message => message.Role == "user" &&
+            message.TurnId == turn.Id && message.ConversationId == turn.ConversationId).ToArray();
+        if (userMessages.Length != 1 || !string.Equals(turn.RequestHash,
+                SystemConversationRequestIdentity.Hash(userMessages[0].Content), StringComparison.Ordinal)) return false;
+        if (string.IsNullOrEmpty(turn.ContextProfile)) return true;
+        if (turn.ContextFingerprint is null || turn.ContextFingerprint.Length != 64 ||
+            turn.ContextFingerprint.Any(character => character is not (>= '0' and <= '9') and not (>= 'A' and <= 'F')))
+            return false;
+        if (turn.ContextSourceReferencesJson is null) return false;
+        try
+        {
+            var references = JsonSerializer.Deserialize<string[]>(turn.ContextSourceReferencesJson);
+            return references is not null && references.All(SystemConversationRequestIdentity.IsMaterializedReference);
+        }
+        catch (JsonException) { return false; }
+    }
+
+    private static bool ValidContext(AssistantTurnContextCapture? context, out string referencesJson)
+    {
+        referencesJson = "";
+        if (context is null || context.Profile is not (
+                AssistantTurnContextProfiles.SystemReadV1 or AssistantTurnContextProfiles.ApplicationAiV1) ||
+            context.Fingerprint is null || context.Fingerprint.Length != 64 || context.Fingerprint.Any(character =>
+                character is not (>= '0' and <= '9') and not (>= 'A' and <= 'F')) ||
+            context.SourceReferences is null || context.SourceReferences.Count > 24 ||
+            context.SourceReferences.Any(value => string.IsNullOrWhiteSpace(value) ||
+                value.Length > 320 || value.Any(char.IsControl)) ||
+            context.SourceReferences.Distinct(StringComparer.Ordinal).Count() != context.SourceReferences.Count ||
+            !context.SourceReferences.SequenceEqual(context.SourceReferences.OrderBy(value => value, StringComparer.Ordinal))) return false;
+        referencesJson = JsonSerializer.Serialize(context.SourceReferences);
+        return referencesJson.Length <= 8_000;
     }
 
     private static AssistantTurnActivityDocument Activity(AssistantTurnActivity item) => new(

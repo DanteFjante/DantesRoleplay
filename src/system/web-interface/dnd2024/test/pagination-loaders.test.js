@@ -123,11 +123,33 @@ test("people pagination rejects repeated cursors and mixed source revisions", as
     sourceRevisionFingerprint, projection: {},
   });
   const repeated = await readAllWorldPeopleHoldingsPages(async () => page("50", "A".repeat(64)));
-  assert.equal(repeated.status, "error");
+  assert.equal(repeated.status, "stale");
   let call = 0;
   const mixed = await readAllWorldPeopleHoldingsPages(async () =>
     page(call++ === 0 ? "50" : null, (call === 1 ? "A" : "B").repeat(64)));
   assert.equal(mixed.status, "stale");
+});
+
+test("T06 People transport completes even when a source row cannot enter the display index", async () => {
+  let calls = 0;
+  const result = await readAllWorldPeopleHoldingsPages(async (cursor) => {
+    calls += 1;
+    return {
+      status: "ready", world: { id: "world.fixture", name: "Fixture" }, locations: [],
+      people: Array.from({ length: cursor === null ? 49 : 1 }, (_, index) => ({
+        id: `person-${cursor ?? "first"}-${index}`, name: "Person", locationId: "place", kind: "NPC",
+      })),
+      holdings: [], totalCount: 51, pageRecordCount: cursor === null ? 50 : 1,
+      coverage: cursor === null ? "partial" : "complete",
+      complete: cursor !== null, nextCursor: cursor === null ? "50" : null, hierarchyComplete: true,
+      sourceRevisionFingerprint: "A".repeat(64), projection: {},
+    };
+  });
+  assert.equal(calls, 2);
+  assert.equal(result.status, "ready");
+  assert.equal(result.coverage, "partial");
+  assert.equal(result.people.length, 50);
+  assert.equal(result.totalCount, 51);
 });
 
 test("people pagination never falls back to the legacy snapshot after continuation starts", async () => {

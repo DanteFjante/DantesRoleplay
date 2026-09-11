@@ -27,7 +27,6 @@ public static class KnowledgeComponentRegistration
                 : new UnavailableAuthorizedProjectionResolver());
         services.AddSingleton<IKnowledgeLexicalRetriever, DeterministicKnowledgeLexicalRetriever>();
         services.AddScoped<IAuthorizedKnowledgeCandidateResolver, AuthorizedKnowledgeCandidateResolver>();
-        services.AddScoped<IAuthorizedKnowledgeNotebookReader, AuthorizedKnowledgeNotebookReader>();
         services.AddScoped<IReviewedKnowledgeStateSynchronizer, ReviewedKnowledgeStateSynchronizer>();
         services.AddScoped<IAuthorizedKnowledgeCoordinator>(provider =>
         {

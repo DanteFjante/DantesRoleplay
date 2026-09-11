@@ -1,5 +1,10 @@
 import { sha256 } from "@noble/hashes/sha2.js";
 
+/** Small bounded request identities must join a flight before any async work. */
+export function sha256HexSync(value: string): string {
+  return Array.from(sha256(new TextEncoder().encode(value)), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
 /** HTTP origins have getRandomValues, but not SubtleCrypto or randomUUID. */
 export async function sha256Hex(value: string): Promise<string> {
   const bytes = new TextEncoder().encode(value);

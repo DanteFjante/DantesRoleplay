@@ -126,7 +126,7 @@ function object(v, id, hash, roles) {
       "version",
     ]) ||
     v.qualifiedId !== id ||
-    v.version !== 1 ||
+    v.version !== 2 ||
     v.contentFingerprint !== hash ||
     !closed(v.roles, roles)
   )
@@ -152,19 +152,19 @@ if (
 var creatureValue = object(
     creatureObject,
     "dnd2024.object.rest-begin-creature",
-    "858D347ED0CB9ADD8F937647703CD89F08F3AE313379037CFDD71B641F670F0C",
+    "AB0EC68C477CA95FB635A4E14A758F2922B16B08393C999C122A4E17E4CA4327",
     ["creature"],
   ),
   worldValue = object(
     worldObject,
     "dnd2024.object.rest-begin-world",
-    "6D22CE1103C1E66FC163C8AEF2DF8FAB0C106D21C3EDA0D6A95D0984210B83A9",
+    "F96FA03D1F68002295444132534946C91A60DB1F1CD182D4972D5A744AA88F7E",
     ["world"],
   ),
   policyValue = object(
     policyObject,
     "dnd2024.object.rest-begin-policy",
-    "4B1B67101E0CE06088AD997A3B8DAFED335EFEB3040851226E08D593A3EE19AD",
+    "0939F59817A4CED231A9F82E6F84986FFCB2FA20D7B780B23AE3DE2DFCBE0162",
     ["policy"],
   ),
   creature = creatureObject.roles.creature,

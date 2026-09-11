@@ -1,10 +1,10 @@
-import {systemWebClient, validSystemIdentifier} from '/components/system-client.js';
+import {systemWebClient, validSystemIdentifier, interruptedRequestStore} from '/components/system-client.js';
 import '/components/system-publication.js';
 import '/components/ai-workspace.js';
 import '/components/page-administration.js';
 import '/components/governance-control-center.js';
 
-const CONTROL_CENTER_PATH = '/ui/control-center/index.html';
+const CONTROL_CENTER_PATH = '/ui/control-center';
 
 class SystemNavigation extends HTMLElement {
   static get observedAttributes() { return ['application-id']; }
@@ -120,9 +120,21 @@ class SystemNavigation extends HTMLElement {
       const applications = result.applications;
       this._applications = applications;
       this._renderApplications();
+      const unavailableFields = Array.isArray(result.unavailableFields) ? result.unavailableFields : [];
+      const applicationsUnavailable = unavailableFields.includes('applications');
+      const systemPagesUnavailable = unavailableFields.includes('systemPages');
+      const emptyStatus = applicationsUnavailable && systemPagesUnavailable
+        ? 'Application and system-page publication entries are unavailable.'
+        : applicationsUnavailable ? 'Application publication entries are unavailable.'
+          : systemPagesUnavailable ? 'System-page publication entries are unavailable.'
+            : 'No applications registered.';
+      const partialSuffix = applicationsUnavailable && systemPagesUnavailable
+        ? '; some application and system-page entries are unavailable.'
+        : applicationsUnavailable ? '; some application entries are unavailable.'
+          : systemPagesUnavailable ? '; some system-page entries are unavailable.' : '';
       this._status.textContent = applications.length === 0
-        ? 'No applications registered.'
-        : `${applications.length} application${applications.length === 1 ? '' : 's'}`;
+        ? emptyStatus
+        : `${applications.length} application${applications.length === 1 ? '' : 's'}${partialSuffix}`;
       this._emit('system-progress', {phase: 'ready', applicationCount: applications.length,
         pageCount: result.pageCount, resolutionFingerprints: result.resolutionFingerprints});
     } catch (error) {
@@ -164,7 +176,7 @@ class SystemNavigation extends HTMLElement {
     }
     if (path === '/' || path === '/ui/home' || path === '/ui/home/index.html') {
       this._home.setAttribute('aria-current', 'page');
-    } else if (path === this._routePath(CONTROL_CENTER_PATH) || path === '/ui/control-center') {
+    } else if (path === this._routePath(CONTROL_CENTER_PATH)) {
       this._control.setAttribute('aria-current', 'page');
     }
   }
@@ -198,6 +210,9 @@ class SystemChat extends HTMLElement {
     this._connected = false;
     this._request = null;
     this._conversation = null;
+    this._pendingQuestion = null;
+    this._recoveryBlocked = false;
+    this._conversationPartial = false;
     this.attachShadow({mode: 'open'});
     this._renderShell();
   }
@@ -206,6 +221,7 @@ class SystemChat extends HTMLElement {
     if (this._connected) return;
     this._connected = true;
     this._loadConversations();
+    this._recoverInterruptedQuestion();
   }
 
   disconnectedCallback() {
@@ -295,12 +311,17 @@ class SystemChat extends HTMLElement {
     this._status = document.createElement('p');
     this._status.setAttribute('part', 'status');
     this._status.setAttribute('role', 'status');
+    this._recheck = document.createElement('button');
+    this._recheck.type = 'button';
+    this._recheck.textContent = 'Check earlier question again';
+    this._recheck.hidden = true;
+    this._recheck.addEventListener('click', () => this._recoverInterruptedQuestion());
     this._evidence = document.createElement('p');
     this._evidence.setAttribute('part', 'evidence');
     this._tasks = document.createElement('section');
     this._tasks.setAttribute('part', 'tasks');
     this._tasks.setAttribute('aria-label', 'System tasks');
-    this.shadowRoot.append(style, toolbar, this._transcript, form, this._status, this._evidence, this._tasks);
+    this.shadowRoot.append(style, toolbar, this._transcript, form, this._status, this._recheck, this._evidence, this._tasks);
     this._updateMode();
   }
 
@@ -314,8 +335,9 @@ class SystemChat extends HTMLElement {
       option.textContent = 'New conversation';
       const fragment = document.createDocumentFragment();
       fragment.append(option);
+      let partial = false;
       for (const item of page.items) {
-        if (!this._validSummary(item)) throw new Error('invalid-summary');
+        if (!this._validSummary(item)) { partial = true; continue; }
         const choice = document.createElement('option');
         choice.value = item.id;
         choice.textContent = item.title;
@@ -323,8 +345,9 @@ class SystemChat extends HTMLElement {
       }
       if (!this._connected) return;
       this._history.replaceChildren(fragment);
+      this._conversationPartial = partial;
       if (page.items.length > 0) await this._open(page.items[0].id);
-      else this._setStatus('Ready for a new read-only system question.');
+      else this._setStatus(partial ? 'Some saved conversations are unavailable.' : 'Ready for a new read-only system question.');
     } catch (error) {
       if (error.name === 'AbortError') return;
       this._setStatus('System conversations are unavailable.');
@@ -356,33 +379,102 @@ class SystemChat extends HTMLElement {
   }
 
   async _submit() {
+    if (this._recoveryBlocked && !this._pendingQuestion) {
+      this._setStatus('An earlier question remains uncertain. Recheck it before asking another.', true);
+      await this._recoverInterruptedQuestion();
+      return;
+    }
+    if (this._pendingQuestion) {
+      if (this._send.disabled) return;
+      await this._sendQuestion(this._pendingQuestion);
+      return;
+    }
     const message = this._message.value.trim();
     if (!message || message.length > 8000 || this._send.disabled) return;
     if (this._mode.value === 'task') {
       await this._submitTask(message);
       return;
     }
+    const key = 'system-chat.' + this._randomId();
+    const path = this._conversation
+      ? '/api/control/system/conversations/' + encodeURIComponent(this._conversation.summary.id) + '/turns'
+      : '/api/control/system/conversations';
+    const body = this._conversation
+      ? {expectedRevision: this._conversation.summary.revision, message, idempotencyKey: key}
+      : {message, idempotencyKey: key};
+    this._pendingQuestion = {path, body};
+    if (!this._rememberInterruptedQuestion(body.idempotencyKey)) {
+      this._pendingQuestion = null;
+      this._setStatus('The question cannot be safely sent because interrupted-request recovery is unavailable.', true);
+      return;
+    }
+    await this._sendQuestion(this._pendingQuestion);
+  }
+
+  async _sendQuestion(pending) {
     this._setBusy(true, 'The local system assistant is reading bounded system context…');
     this._emit('system-progress', {phase: 'working'});
+    let accepted = false;
     try {
-      const key = 'system-chat.' + this._randomId();
-      const path = this._conversation
-        ? '/api/control/system/conversations/' + encodeURIComponent(this._conversation.summary.id) + '/turns'
-        : '/api/control/system/conversations';
-      const body = this._conversation
-        ? {expectedRevision: this._conversation.summary.revision, message, idempotencyKey: key}
-        : {message, idempotencyKey: key};
-      const document = await this._requestJson(path, body);
+      const document = await this._requestJson(pending.path, pending.body);
+      accepted = true;
+      this._pendingQuestion = null; this._clearInterruptedQuestion();
       this._message.value = '';
       this._accept(document);
-      await this._refreshHistory();
-      await this._loadTasks();
-      this._emit('system-progress', {phase: 'complete', conversationId: document.summary.id});
+      try {
+        await this._refreshHistory();
+        await this._loadTasks();
+        this._emit('system-progress', {phase: 'complete', conversationId: document.summary.id});
+      } catch (refreshError) {
+        this._setStatus('Question saved, but the conversation view could not be refreshed.');
+        this._emit('system-error', {code: 'SYSTEM_CHAT_REFRESH_FAILED'});
+      }
     } catch (error) {
       if (error.name !== 'AbortError') {
-        this._setStatus(error.message || 'The system question failed.');
-        this._emit('system-error', {code: 'SYSTEM_CHAT_REQUEST_FAILED'});
+        this._setStatus(accepted ? 'Question saved, but the conversation view could not be refreshed.'
+          : 'The question may have been saved. Press Ask again to retry the same request before sending another.');
+        this._emit('system-error', {code: accepted ? 'SYSTEM_CHAT_REFRESH_FAILED' : 'SYSTEM_CHAT_REQUEST_FAILED'});
       }
+    } finally { this._setBusy(false); }
+  }
+
+  _rememberInterruptedQuestion(key) {
+    if (typeof key === 'string' && key.length > 0 && key.length <= 100)
+      return interruptedRequestStore?.write('system-chat', {kind: 'system-conversation', key}) === true;
+    return false;
+  }
+  _clearInterruptedQuestion() { interruptedRequestStore?.remove('system-chat'); }
+  async _recoverInterruptedQuestion() {
+    const pending = interruptedRequestStore?.read('system-chat');
+    if (pending?.malformed === true) {
+      this._recoveryBlocked = true;
+      this._setStatus('Saved interrupted-question metadata is invalid. Reload before asking another.', true);
+      return;
+    }
+    if (!pending) return;
+    if (pending.kind !== 'system-conversation' || typeof pending.key !== 'string' ||
+        pending.key.length < 1 || pending.key.length > 100) {
+      this._recoveryBlocked = true; this._setStatus('Saved interrupted-question metadata is invalid. Reload before asking another.', true); return;
+    }
+    this._recoveryBlocked = true;
+    this._setBusy(true, 'Checking an earlier system question without sending it again…');
+    try {
+      const recovered = await this._requestJson('/api/control/system/conversations/recoveries/' + encodeURIComponent(pending.key));
+      if (!recovered || typeof recovered.conversationId !== 'string' || !recovered.conversationId ||
+          typeof recovered.turnId !== 'string' || !recovered.turnId ||
+          recovered.idempotencyKey !== pending.key || recovered.provider !== 'local' || recovered.scope !== 'system' ||
+          !['completed', 'failed', 'cancelled'].includes(recovered.status)) throw new Error('invalid-recovery');
+      this._clearInterruptedQuestion();
+      this._recoveryBlocked = false;
+      if (this._recheck) this._recheck.hidden = true;
+      await this._open(recovered.conversationId);
+      this._setStatus('The earlier system question was recovered.');
+    } catch (error) {
+      if (error?.status === 403) {
+        this._clearInterruptedQuestion();
+        if (this._recheck) this._recheck.hidden = true;
+        this._setStatus('Authorization changed. The earlier question was discarded without replaying it; reload before asking another.', true);
+      } else { if (this._recheck) this._recheck.hidden = false; this._setStatus('The earlier question remains uncertain. Check again later; no new question was sent.', true); }
     } finally { this._setBusy(false); }
   }
 
@@ -421,11 +513,14 @@ class SystemChat extends HTMLElement {
         encodeURIComponent(this._conversation.summary.id) + '/tasks?limit=10');
       if (!page || !Array.isArray(page.items) || page.items.length > 10) throw new Error('invalid-task-page');
       const tasks = [];
+      let partial = false;
       for (const summary of page.items) {
-        if (!summary || typeof summary.id !== 'string') throw new Error('invalid-task-summary');
-        tasks.push(await this._requestJson('/api/control/system/tasks/' + encodeURIComponent(summary.id)));
+        if (!summary || typeof summary.id !== 'string') { partial = true; continue; }
+        try { tasks.push(await this._requestJson('/api/control/system/tasks/' + encodeURIComponent(summary.id))); }
+        catch (error) { if (error.name === 'AbortError') throw error; partial = true; }
       }
       this._renderTasks(tasks);
+      if (partial) this._setStatus('Some system task receipts are unavailable.');
     } catch (error) {
       if (error.name !== 'AbortError') this._setStatus('System task receipts are unavailable.');
     }
@@ -543,13 +638,14 @@ class SystemChat extends HTMLElement {
 
   async _refreshHistory() {
     const page = await this._requestJson('/api/control/system/conversations?limit=25');
-    if (!page || !Array.isArray(page.items) || page.items.some(item => !this._validSummary(item))) return;
+    if (!page || !Array.isArray(page.items)) throw new Error('invalid-history-page');
+    const valid = page.items.filter(item => this._validSummary(item));
     const fragment = document.createDocumentFragment();
     const fresh = document.createElement('option');
     fresh.value = '';
     fresh.textContent = 'New conversation';
     fragment.append(fresh);
-    for (const item of page.items) {
+    for (const item of valid) {
       const option = document.createElement('option');
       option.value = item.id;
       option.textContent = item.title;
@@ -557,20 +653,23 @@ class SystemChat extends HTMLElement {
     }
     this._history.replaceChildren(fragment);
     this._history.value = this._conversation ? this._conversation.summary.id : '';
+    this._conversationPartial = valid.length !== page.items.length;
   }
 
   _accept(conversation) {
-    if (!conversation || !this._validSummary(conversation.summary) ||
-        !Array.isArray(conversation.messages) || conversation.messages.length > 1000 ||
-        !Array.isArray(conversation.turns) || conversation.turns.length > 500) throw new Error('invalid-conversation');
-    this._conversation = conversation;
+    if (!conversation || !this._validSummary(conversation.summary)) throw new Error('invalid-conversation-summary');
+    const rawMessages = Array.isArray(conversation.messages) ? conversation.messages : [];
+    const messages = rawMessages.length <= 1000 ? rawMessages.filter(message => message &&
+      typeof message === 'object' && !Array.isArray(message) && ['user', 'assistant'].includes(message.role) &&
+      typeof message.content === 'string' && message.content.length >= 1 && message.content.length <= 8000) : [];
+    const rawTurns = Array.isArray(conversation.turns) ? conversation.turns : [];
+    const turns = rawTurns.length <= 500 ? rawTurns.filter(turn => turn && typeof turn === 'object' && !Array.isArray(turn)) : [];
+    this._conversationPartial = messages.length !== rawMessages.length || turns.length !== rawTurns.length ||
+      !Array.isArray(conversation.messages) || !Array.isArray(conversation.turns);
+    this._conversation = {...conversation, messages, turns};
     this._history.value = conversation.summary.id;
     const fragment = document.createDocumentFragment();
-    for (const message of conversation.messages) {
-      if (!message || !['user', 'assistant'].includes(message.role) ||
-          typeof message.content !== 'string' || message.content.length < 1 || message.content.length > 8000) {
-        throw new Error('invalid-message');
-      }
+    for (const message of messages) {
       const paragraph = document.createElement('p');
       paragraph.setAttribute('part', 'message');
       paragraph.dataset.role = message.role;
@@ -578,14 +677,15 @@ class SystemChat extends HTMLElement {
       fragment.append(paragraph);
     }
     this._transcript.replaceChildren(fragment);
-    const turn = [...conversation.turns].reverse().find(value => value.context);
+    const turn = [...turns].reverse().find(value => value.context);
     if (turn && this._validContext(turn.context)) {
       this._evidence.textContent = `${turn.context.disposition}. Evidence: ${turn.context.sourceReferences.join(', ') || 'none'}`;
     } else this._evidence.textContent = '';
-    const latest = conversation.turns[conversation.turns.length - 1];
+    const latest = turns[turns.length - 1];
     this._setStatus(latest && latest.status !== 'completed'
       ? (latest.errorMessage || `Turn ${latest.status}.`)
       : 'Read-only system answer complete.');
+    if (this._conversationPartial) this._setStatus('Conversation loaded; some optional entries are unavailable.');
     this._transcript.scrollTop = this._transcript.scrollHeight;
   }
 
@@ -609,11 +709,13 @@ class SystemChat extends HTMLElement {
     const request = new AbortController();
     this._request = request;
     try {
-      return await systemWebClient.requestJson(path, {
+      const value = await systemWebClient.requestJson(path, {
         method: body ? 'POST' : 'GET',
         body: body || undefined,
         signal: request.signal
       });
+      if (!this._connected || request.signal.aborted) throw new DOMException('The request was cancelled.', 'AbortError');
+      return value;
     } finally {
       if (this._request === request) this._request = null;
     }
@@ -929,6 +1031,7 @@ class SystemInteractionElement extends HTMLElement {
     this._descriptorRequest = null;
     this._operationRequest = null;
     this._busy = false;
+    this._recoveryBlocked = false;
     this.attachShadow({mode: 'open'});
   }
 
@@ -976,7 +1079,8 @@ class SystemInteractionElement extends HTMLElement {
       if (!this._connected || (this.getAttribute('capability-id') || '').trim() !== capabilityId) return;
       this._descriptor = descriptor;
       this._renderDescriptor(descriptor);
-      this._setReady(true);
+      this._recoverInterruptedTask();
+      this._setReady(!this._recoveryBlocked);
       this._setStatus(`Ready: ${descriptor.description}`);
       this._emit('system-progress', {phase: 'capability-ready', capabilityId,
         version: descriptor.version, descriptorFingerprint: descriptor.fingerprint});
@@ -990,7 +1094,7 @@ class SystemInteractionElement extends HTMLElement {
   }
 
   async _prepare(input) {
-    if (this._busy || !this._descriptor) return;
+    if (this._busy || this._recoveryBlocked || !this._descriptor) return;
     const descriptor = this._descriptor;
     let declared;
     try { declared = systemComponentClone(input); }
@@ -1007,11 +1111,16 @@ class SystemInteractionElement extends HTMLElement {
     this._emit('system-progress', {phase: 'preparing', capabilityId: descriptor.id});
     try {
       const conversationId = await systemComponentConversation(request.signal);
+      const preparationKey = 'system-component.' + systemComponentRandomId();
+      if (!this._rememberInterruptedTask(preparationKey)) throw new SystemComponentError('SYSTEM_TASK_RECOVERY_UNAVAILABLE',
+        'The task cannot be safely sent because interrupted-request recovery is unavailable.');
       const task = systemComponentTask(await systemComponentRequest(
         '/api/control/system/conversations/' + encodeURIComponent(conversationId) + '/tasks',
         {operation: 'submit', intent: `Use ${descriptor.id} with the supplied reviewed values.`,
           agenda: [{capabilityId: descriptor.id, input: declared}],
-          idempotencyKey: 'system-component.' + systemComponentRandomId()}, request.signal), descriptor);
+          idempotencyKey: preparationKey}, request.signal), descriptor);
+      if (!this._rememberInterruptedTask(preparationKey, task.summary.id)) throw new SystemComponentError('SYSTEM_TASK_RECOVERY_UNAVAILABLE',
+        'The task cannot be safely continued because interrupted-request recovery is unavailable.');
       this._showTask(task);
       if (task.summary.status === 'prepared') {
         this._setStatus('Review the exact proposal before confirming it.');
@@ -1051,8 +1160,12 @@ class SystemInteractionElement extends HTMLElement {
     this._operationRequest = request;
     this._setBusy(true);
     button.disabled = true;
-    const confirmationKey = 'system-component-confirm.' + systemComponentRandomId();
-    const executionKey = 'system-component-execute.' + systemComponentRandomId();
+      const confirmationKey = 'system-component-confirm.' + systemComponentRandomId();
+      const executionKey = 'system-component-execute.' + systemComponentRandomId();
+    if (!this._rememberInterruptedTask(confirmationKey, task.summary.id)) {
+      button.disabled = false; this._setBusy(false);
+      this._setStatus('The task cannot be safely sent because interrupted-request recovery is unavailable.', true); return;
+    }
     this._setStatus('Confirming the exact displayed plan for five minutes…');
     this._emit('system-progress', {phase: 'confirming', taskId: task.summary.id});
     try {
@@ -1066,11 +1179,14 @@ class SystemInteractionElement extends HTMLElement {
       }
       this._setStatus('Running the confirmed task with durable receipts…');
       this._emit('system-progress', {phase: 'executing', taskId: task.summary.id});
+      if (!this._rememberInterruptedTask(executionKey, task.summary.id)) throw new SystemComponentError('SYSTEM_TASK_RECOVERY_UNAVAILABLE',
+        'The task cannot be safely continued because interrupted-request recovery is unavailable.');
       const receipt = systemComponentExecution(await systemComponentRequest(
         '/api/control/system/tasks/' + encodeURIComponent(task.summary.id) + '/executions',
         {confirmationId: confirmation.id, planFingerprint: task.summary.planFingerprint,
           idempotencyKey: executionKey}, request.signal), task);
       this._showReceipt(task, receipt);
+      this._clearInterruptedTask();
     } catch (error) {
       if (error.name !== 'AbortError') {
         const recovered = await this._recoverReceipt(task).catch(() => false);
@@ -1105,7 +1221,55 @@ class SystemInteractionElement extends HTMLElement {
 
   _setBusy(value) {
     this._busy = value;
-    this._setReady(!value && !!this._descriptor);
+    this._setReady(!value && !!this._descriptor && !this._recoveryBlocked);
+  }
+
+  _taskRecoverySlot() { return `system-task-${this.getAttribute('capability-id') || ''}`; }
+  _rememberInterruptedTask(key, taskId = null) {
+    if (typeof key === 'string' && key.length > 0 && key.length <= 100)
+      return interruptedRequestStore?.write(this._taskRecoverySlot(), {kind: 'system-task', key, taskId}) === true;
+    return false;
+  }
+  _clearInterruptedTask() { interruptedRequestStore?.remove(this._taskRecoverySlot()); }
+  async _recoverInterruptedTask() {
+    const pending = interruptedRequestStore?.read(this._taskRecoverySlot());
+    if (pending?.malformed === true) {
+      this._recoveryBlocked = true;
+      this._setStatus('Saved interrupted-task metadata is invalid. Reload before starting another task.', true);
+      return;
+    }
+    if (!pending) return;
+    if (pending.kind !== 'system-task' || typeof pending.key !== 'string' || pending.key.length < 1 || pending.key.length > 100) {
+      this._recoveryBlocked = true; this._setStatus('Saved interrupted-task metadata is invalid. Reload before starting another task.', true); return;
+    }
+    this._recoveryBlocked = true;
+    const request = new AbortController(); this._operationRequest = request;
+    const capabilityId = this.getAttribute('capability-id') || '';
+    this._setStatus('Checking an earlier system task without sending it again…');
+    try {
+      const recovered = await systemComponentRequest('/api/control/system/tasks/recoveries/' + encodeURIComponent(pending.key), undefined, request.signal);
+      if (!this._connected || this._operationRequest !== request || (this.getAttribute('capability-id') || '') !== capabilityId) return;
+      if (!recovered || typeof recovered.taskId !== 'string' || !recovered.taskId || typeof recovered.status !== 'string' ||
+          recovered.idempotencyKey !== pending.key || pending.taskId !== null && pending.taskId !== recovered.taskId ||
+          !['prepared', 'completed', 'needs-input', 'unknown', 'unsupported', 'unavailable', 'failed', 'confirmed',
+            'succeeded', 'partial', 'stale', 'unauthorized', 'cancelled', 'timed-out', 'indeterminate'].includes(recovered.status)) throw new Error('invalid-recovery');
+      const task = systemComponentTask(await systemComponentRequest(
+        '/api/control/system/tasks/' + encodeURIComponent(recovered.taskId), undefined, request.signal), this._descriptor);
+      if (!this._connected || this._operationRequest !== request || (this.getAttribute('capability-id') || '') !== capabilityId) return;
+      this._clearInterruptedTask(); this._recoveryBlocked = false; this._showTask(task);
+      this._setStatus('The earlier system task was recovered.'); this._setReady(true);
+    } catch (error) {
+      if (error?.status === 403) {
+        this._clearInterruptedTask();
+        this._setStatus('Authorization changed. The earlier task was discarded without replaying it; reload before starting another.', true);
+      } else { this._setStatus('The earlier task remains uncertain. Check again later; no new task was sent.', true); this._renderRecoveryReview(); }
+    } finally { if (this._operationRequest === request) this._operationRequest = null; }
+  }
+
+  _renderRecoveryReview() {
+    this._clearResult(); const retry = document.createElement('button'); retry.type = 'button';
+    retry.textContent = 'Check earlier task again'; retry.addEventListener('click', () => this._recoverInterruptedTask());
+    this._result?.append(retry);
   }
 
   _setStatus(message, error = false) {

@@ -212,7 +212,7 @@ export class ApplicationNavigation extends HTMLElement {
       [aria-current='page'],[data-current='true']{background:var(--system-navigation-current-background,rgba(128,170,128,.16));border-color:currentColor}
       button:disabled{cursor:not-allowed;opacity:.58}[part='menu-trigger']{padding-inline:.55rem}
       [part='menu']{background:var(--system-navigation-menu-background,Canvas);border:1px solid currentColor;border-radius:.6rem;box-shadow:0 .5rem 1.5rem rgba(0,0,0,.2);display:grid;gap:.15rem;left:0;min-width:12rem;padding:.3rem;position:absolute;top:calc(100% + .25rem);z-index:100}
-      [part='menu'] a{border-radius:.4rem;white-space:nowrap}[part='state']{font-size:.72rem;max-width:12rem}[hidden]{display:none!important}`;
+      [part='menu'] a{border-radius:.4rem;white-space:nowrap}[part='state'],[part='partial-status']{font-size:.72rem;max-width:12rem}[part='partial-status']{color:var(--system-navigation-muted-color,inherit)}[hidden]{display:none!important}`;
     const item = document.createElement('span');
     item.setAttribute('part', 'application');
     item.dataset.applicationId = application.applicationId;
@@ -268,6 +268,15 @@ export class ApplicationNavigation extends HTMLElement {
       this._trigger = trigger;
       this._menu = menu;
       item.append(trigger, menu);
+    }
+    if (application.coverage === 'partial') {
+      const status = document.createElement('span');
+      status.setAttribute('part', 'partial-status');
+      status.setAttribute('role', 'status');
+      status.textContent = application.pageCoverage === 'partial'
+        ? 'Some application pages are unavailable.'
+        : 'Some application publication details are unavailable.';
+      item.append(status);
     }
     if (!application.isClickable) {
       const state = document.createElement('span');

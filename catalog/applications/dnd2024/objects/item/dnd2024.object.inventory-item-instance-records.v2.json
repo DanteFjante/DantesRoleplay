@@ -1,0 +1,59 @@
+{
+  "id": "dnd2024.object.inventory-item-instance-records",
+  "version": 2,
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [],
+    "properties": {
+      "definitionLink": { "type": "object" },
+      "quantity": { "type": "object" },
+      "equipment": { "type": "object" },
+      "definition": { "type": "object" }
+    }
+  },
+  "roles": {
+    "item": { "required": true },
+    "definition": { "required": false }
+  },
+  "sources": [
+    {"id": "definitionLink", "role": "item", "component": {"qualifiedId": "dnd2024.core.definition-link", "version": 1, "schemaHash": "4EEB5C2EDCAFFA1B9DEF830FD4650B574AACE8D41BFAB6EB2978114B0C591890"}, "required": false},
+    {"id": "quantity", "role": "item", "component": {"qualifiedId": "dnd2024.item.quantity", "version": 2, "schemaHash": "EE3183B792C710122B0ABA4B4B230EB732136EB4519C0C6A4F5E2E3E6F1D695C"}, "required": false},
+    {"id": "equipment", "role": "item", "component": {"qualifiedId": "dnd2024.item.equipment", "version": 1, "schemaHash": "49B3805C1BE10A5FB12E7C739D535CF878F54090D104F3078C04E51595A1CE58"}, "required": false}
+  ],
+  "relationships": [],
+  "references": [
+    {
+      "id": "definition",
+      "object": {
+        "qualifiedId": "dnd2024.object.inventory-item-definition-records",
+        "version": 2,
+        "contentFingerprint": "4A8578B1A7010EB60AC64ABA7D64DD016106F19FF30A4D023A00CA35BF412476"
+      },
+      "roles": {
+        "definition": "definition"
+      },
+      "required": false
+    }
+  ],
+  "mappings": [
+    {"inputId": "definitionLink", "sourcePointer": "", "targetPointer": "/definitionLink"},
+    {"inputId": "quantity", "sourcePointer": "", "targetPointer": "/quantity"},
+    {"inputId": "equipment", "sourcePointer": "", "targetPointer": "/equipment"},
+    {"inputId": "definition", "sourcePointer": "", "targetPointer": "/definition"}
+  ],
+  "collections": [],
+  "limits": {
+    "traversalDepth": 2,
+    "itemCount": 2,
+    "outputBytes": 65536,
+    "sqlQueries": 6
+  },
+  "access": {
+    "read": [
+      "player",
+      "dm"
+    ],
+    "write": []
+  }
+}

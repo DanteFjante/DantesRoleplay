@@ -42,6 +42,15 @@ public sealed class ControlSystemConversationExplorer(ISystemConversationService
         catch (SystemConversationException exception) { throw Map(exception); }
     }
 
+    public async Task<AssistantTurnRecovery?> RecoverAsync(
+        AuthorizationAuditEvidence authorization, string idempotencyKey,
+        CancellationToken cancellationToken = default)
+    {
+        try { return await conversations.RecoverAsync(
+            SystemConversationRequestContext.FromAuthorization(authorization), idempotencyKey, cancellationToken); }
+        catch (SystemConversationException exception) { throw Map(exception); }
+    }
+
     public async Task<AssistantConversationDocument> CreateAsync(
         AuthorizationAuditEvidence authorization,
         SystemConversationCreate request,

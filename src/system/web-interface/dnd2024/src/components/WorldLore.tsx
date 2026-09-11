@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import type { WorldLoreEntry, WorldReadModel } from "../data/hub-types";
 import { filterWorldLore } from "../state.js";
 import { Icon } from "./Icon";
+import { KnowledgeAdmissions } from "./KnowledgeAdmissions";
 import { WorldDirectoryControls } from "./WorldDirectoryControls";
 
 function LoreLinks({
@@ -71,6 +72,7 @@ function LoreCard({
       </header>
       <p className="lore-card__summary">{entry.summary}</p>
       <p className="lore-card__body">{entry.body}</p>
+      <KnowledgeAdmissions admissions={entry.admissions} />
       <LoreLinks
         entry={entry}
         onOpenFaction={onOpenFaction}
@@ -127,6 +129,9 @@ export function WorldLore({
       <p className="world-directory-introduction">
         Customs, relics, places, rumours, and established truths available in this perspective.
       </p>
+      {world.loreCoverage === "partial" ? <p role="status" className="directory-completeness-notice">
+        Some lore fields or records are unavailable. The readable entries are shown below.
+      </p> : null}
       <WorldDirectoryControls
         filters={[
           {
@@ -168,8 +173,9 @@ export function WorldLore({
       ) : (
         <div className="directory-empty">
           <Icon name="BookOpen" size={26} />
-          <strong>No lore matches</strong>
-          <p>Try another phrase, category, or status.</p>
+          <strong>{world.loreCoverage === "partial" && world.lore.length === 0 ? "Lore unavailable" : "No lore matches"}</strong>
+          <p>{world.loreCoverage === "partial" && world.lore.length === 0
+            ? "This response does not establish an empty lore collection." : "Try another phrase, category, or status."}</p>
         </div>
       )}
     </div>

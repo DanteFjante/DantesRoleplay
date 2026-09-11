@@ -15,7 +15,7 @@ function sheetEntries(memberId: string, sheet: CharacterSheetData): PartyDossier
   const entries: PartyDossierEntry[] = [];
   const dossier = (sheet as CanonicalCharacterData).dossier ?? null;
   for (const membership of sheet.classes ?? []) {
-    const definition = dossier?.classes.find((entry) => entry.id === membership.id)?.definition;
+    const definition = dossier?.classes?.find((entry) => entry.id === membership.id)?.definition;
     entries.push({
       id: `${memberId}:canonical:class:${membership.id}`,
       kind: "class",
@@ -78,23 +78,25 @@ function originEntries(memberId: string, sheet: CharacterSheetData): PartyDossie
   return [
     {
       id: `${memberId}:canonical:origin:species`, kind: "species", title: sheet.origin.species.label,
-      detail: dossier?.origin.species.summary ?? "Stored canonical species selection.",
+      detail: dossier?.origin?.species?.summary ?? "Stored canonical species selection.",
     },
     {
       id: `${memberId}:canonical:origin:background`, kind: "background", title: sheet.origin.background.label,
-      detail: dossier?.origin.background.summary ?? "Stored canonical background selection.",
+      detail: dossier?.origin?.background?.summary ?? "Stored canonical background selection.",
     },
-    ...(dossier?.origin.traits ?? []).map((trait) => ({
+    ...(dossier?.origin?.traits ?? []).map((trait) => ({
       id: `${memberId}:canonical:origin:trait:${trait.key}`, kind: "trait", title: trait.label,
       detail: trait.status === "active" ? "Active canonical origin trait."
-        : `Recorded origin trait; ${trait.reason?.replaceAll("-", " ") ?? "executable rules behavior is pending"}.`,
+        : trait.status === "pending" ? `Recorded origin trait; ${trait.reason?.replaceAll("-", " ") ?? "executable rules behavior is pending"}.`
+          : "Recorded origin trait; status unavailable.",
     })),
   ];
 }
 
 function inventoryEntries(memberId: string, sheet: CanonicalCharacterData): PartyDossierEntry[] {
+  if (!sheet.inventory) return [];
   return sheet.inventory.items.map((item) => {
-    const definition = sheet.dossier.inventory.definitions.find((entry) => entry.id === item.definition.id);
+    const definition = sheet.dossier?.inventory?.definitions.find((entry) => entry.id === item.definition.id);
     const equipped = item.equipmentSlots.length
       ? ` Equipped in ${item.equipmentSlots.map((entry) => entry.label).join(", ")}.` : "";
     return {
@@ -120,12 +122,20 @@ function failedState(result: Exclude<CharacterReadResult, { status: "ready" }>):
   };
 }
 
+function portraitCoverage(result: CharacterReadResult): NonNullable<PartyMemberReadModel["portraitCoverage"]> {
+  return result.status === "forbidden" ? "denied"
+    : result.media === undefined ? "unavailable" : "confirmed";
+}
+
 export function projectCharacterSheet(
   summary: PartyMemberReadModel,
   result: CharacterSheetResult,
 ): PartyMemberReadModel {
   if (result.status !== "ready") return {
     ...summary,
+    portrait: result.status === "forbidden" ? undefined
+      : result.media === undefined ? summary.portrait : result.media?.portrait,
+    portraitCoverage: portraitCoverage(result),
     recordStatus: "Canonical character unavailable",
     sheetStatus: "unavailable",
     sheetState: failedState(result),
@@ -137,6 +147,8 @@ export function projectCharacterSheet(
   return {
     ...summary,
     detail: origin[0]?.title ?? entries[0]?.title ?? summary.detail,
+    portrait: result.media === undefined ? summary.portrait : result.media?.portrait,
+    portraitCoverage: portraitCoverage(result),
     recordStatus: "Canonical character sheet",
     sheetStatus: "canonical",
     sheetState: { status: entries.length ? "ready" : "empty", data: entries, source: "canonical" },
@@ -155,6 +167,9 @@ export function projectCharacterDetails(
     const state = failedState(result);
     return {
       ...summary,
+      portrait: result.status === "forbidden" ? undefined
+        : result.media === undefined ? summary.portrait : result.media?.portrait,
+      portraitCoverage: portraitCoverage(result),
       detail: "Character details temporarily unavailable",
       recordStatus: "Canonical character unavailable",
       sheetStatus: "unavailable",
@@ -168,14 +183,21 @@ export function projectCharacterDetails(
   const projectedSheet = sheetEntries(summary.id, sheet);
   const origin = originEntries(summary.id, sheet);
   const inventory = inventoryEntries(summary.id, sheet);
+  const inventoryUnavailable = !sheet.inventory;
+  const projectedInventoryState: SectionState<PartyDossierEntry[]> = inventoryUnavailable
+    ? { status: "error", data: null, failureCategory: "incompatible-data",
+      diagnosticId: `${summary.id}:canonical-inventory-unavailable` }
+    : { status: inventory.length ? "ready" : "empty", data: inventory, source: "canonical" };
   return {
     ...summary,
     detail: origin[0]?.title ?? projectedSheet[0]?.title ?? summary.detail,
+    portrait: result.media === undefined ? summary.portrait : result.media?.portrait,
+    portraitCoverage: portraitCoverage(result),
     recordStatus: "Canonical character state",
     sheetStatus: "canonical",
-    inventoryStatus: inventory.length ? "canonical" : "empty",
+    inventoryStatus: inventoryUnavailable ? "unavailable" : inventory.length ? "canonical" : "empty",
     sheetState: { status: projectedSheet.length ? "ready" : "empty", data: projectedSheet, source: "canonical" },
-    inventoryState: { status: inventory.length ? "ready" : "empty", data: inventory, source: "canonical" },
+    inventoryState: projectedInventoryState,
     sheet: projectedSheet,
     backstory: backstoryEntries(summary.id, sheet),
     origin,

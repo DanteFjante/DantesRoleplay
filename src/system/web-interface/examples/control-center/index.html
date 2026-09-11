@@ -141,6 +141,8 @@
         "ecs-explorer": { title: "ECS & contracts", waiting: "Loading ECS availability…" },
         "site-editor": { title: "Site editor", waiting: "Loading site-editor availability…" }
       };
+      const COMPONENT_TYPE_PAGE_SIZE = 25;
+      const MAX_COMPONENT_TYPES_RETAINED = 512;
       const workspaceRoutes = Object.freeze({
         settings: { panelId: "server-settings", title: "Server settings", navRoute: "settings" },
         effects: { panelId: "effect-history", title: "Past effects", navRoute: "effects" },
@@ -894,6 +896,12 @@
       }
 
       class EcsExplorerPanel extends ControlPanel {
+        constructor() {
+          super();
+          this._applicationEpoch = 0;
+          this._componentTypeState = null;
+        }
+
         async refresh(retry) {
           this.render("loading", "Loading applications and their contracts…", false);
           try {
@@ -926,6 +934,8 @@
 
         showApplicationListFromRoute() {
           this.routedApplicationId = null;
+          this._applicationEpoch += 1;
+          this._componentTypeState = null;
           if (this.applicationsPage) this.renderApplications(this.applicationsPage);
         }
 
@@ -952,6 +962,8 @@
         async selectApplication(applicationId, body) {
           if (!body || this.routedApplicationId !== applicationId) return;
           if (body.dataset.applicationId === applicationId && body.querySelector(".explorer-grid")) return;
+          const epoch = ++this._applicationEpoch;
+          this._componentTypeState = null;
           body.dataset.applicationId = applicationId;
           this.clearDetails(body);
           const loading = this.section(body, "Application detail");
@@ -960,9 +972,9 @@
             const root = "/api/control/structure/applications/" + encodeURIComponent(applicationId);
             const [application, spaces, types, catalog] = await Promise.all([
               this.read(root), this.read(root + "/state-spaces"),
-              this.read(root + "/component-types"), this.read(root + "/catalog")
+              this.read(root + "/component-types?limit=" + COMPONENT_TYPE_PAGE_SIZE), this.read(root + "/catalog")
             ]);
-            if (this.routedApplicationId !== applicationId) return;
+            if (this.routedApplicationId !== applicationId || this._applicationEpoch !== epoch) return;
             this.clearDetails(body);
             const detail = this.section(body, application.displayName || application.id);
             const copy = document.createElement("p");
@@ -979,11 +991,13 @@
               () => this.selectSpace(space.stateSpaceId, body))));
             if (!spaces.items || spaces.items.length === 0) spaceList.append(this.empty("No state spaces."));
             const typeList = this.section(grid, "Component contracts", true);
-            (types.items || []).forEach(type => typeList.append(this.choice(
-              type.qualifiedId,
-              "version " + type.version,
-              () => this.inspectType(type.qualifiedId, type.version, body))));
-            if (!types.items || types.items.length === 0) typeList.append(this.empty("No component contracts."));
+            const typeState = {
+              applicationId, body, epoch, list: typeList, items: [], keys: new Set(),
+              nextCursor: null, requestedCursors: new Set([""]), inFlight: false,
+              partialReason: null, loadError: null
+            };
+            this._componentTypeState = typeState;
+            this.applyComponentTypePage(types, typeState, null);
             const catalogBox = this.section(grid, "Public catalog", true);
             if (catalog.status === "unavailable") {
               catalogBox.append(this.empty("No public catalog is active. Private files are not inferred."));
@@ -1013,6 +1027,116 @@
           } catch (_) {
             if (this.routedApplicationId !== applicationId) return;
             loading.replaceChildren(this.empty("This application structure is unavailable. Choose the application again to retry."));
+          }
+        }
+
+        componentTypeStateCurrent(state) {
+          return this._componentTypeState === state && this._applicationEpoch === state.epoch &&
+            this.routedApplicationId === state.applicationId &&
+            state.body.dataset.applicationId === state.applicationId;
+        }
+
+        applyComponentTypePage(page, state, cursor) {
+          if (!page || !Array.isArray(page.items) || page.items.length > 100 ||
+              (page.nextCursor !== null && typeof page.nextCursor !== "string") ||
+              (typeof page.nextCursor === "string" && (!page.nextCursor || page.nextCursor.length > 1024))) {
+            throw new Error("malformed-component-types");
+          }
+          for (const type of page.items) {
+            if (!type || typeof type.qualifiedId !== "string" || !type.qualifiedId ||
+                !Number.isInteger(type.version) || type.version < 1) {
+              state.partialReason ||= "malformed component contract";
+              continue;
+            }
+            const key = type.qualifiedId + "\n" + type.version;
+            if (state.keys.has(key)) {
+              state.partialReason ||= "duplicate component contract";
+              continue;
+            }
+            if (state.items.length >= MAX_COMPONENT_TYPES_RETAINED) {
+              state.partialReason = "the 512-contract display bound was reached";
+              state.nextCursor = null;
+              break;
+            }
+            state.keys.add(key);
+            state.items.push(type);
+          }
+          state.nextCursor = page.nextCursor;
+          if (cursor !== null && page.nextCursor === cursor) {
+            state.partialReason = "the server repeated a continuation cursor";
+            state.nextCursor = null;
+          }
+          if (state.items.length >= MAX_COMPONENT_TYPES_RETAINED && state.nextCursor) {
+            state.partialReason = "the 512-contract display bound was reached";
+            state.nextCursor = null;
+          }
+          state.loadError = null;
+          this.renderComponentTypeState(state);
+        }
+
+        renderComponentTypeState(state) {
+          if (!this.componentTypeStateCurrent(state)) return;
+          state.list.replaceChildren();
+          state.items.forEach(type => state.list.append(this.choice(
+            type.qualifiedId,
+            "version " + type.version,
+            () => this.inspectType(type.qualifiedId, type.version, state.body))));
+          const status = document.createElement("p");
+          status.dataset.componentTypeStatus = "true";
+          if (state.partialReason) {
+            status.textContent = "Loaded " + state.items.length + " component contract" +
+              (state.items.length === 1 ? "" : "s") + "; display is partial because " + state.partialReason + ".";
+          } else if (state.loadError) {
+            status.textContent = "Loaded " + state.items.length + " component contract" +
+              (state.items.length === 1 ? "" : "s") + "; the next page is unavailable. Retry to continue.";
+          } else if (state.nextCursor) {
+            status.textContent = "Loaded " + state.items.length + " component contract" +
+              (state.items.length === 1 ? "" : "s") + "; more contracts are available.";
+          } else if (state.items.length === 0) {
+            status.textContent = "No component contracts are registered.";
+          } else {
+            status.textContent = "Loaded all " + state.items.length + " component contract" +
+              (state.items.length === 1 ? "" : "s") + ".";
+          }
+          state.list.append(status);
+          if (state.nextCursor && !state.partialReason) {
+            const more = document.createElement("button");
+            more.type = "button";
+            more.textContent = state.loadError ? "Retry component contracts" : "Load more component contracts";
+            more.disabled = state.inFlight;
+            more.addEventListener("click", () => this.loadMoreComponentTypes(state));
+            state.list.append(more);
+          }
+        }
+
+        async loadMoreComponentTypes(state) {
+          if (!this.componentTypeStateCurrent(state) || state.inFlight || !state.nextCursor || state.partialReason) return;
+          const cursor = state.nextCursor;
+          if (state.requestedCursors.has(cursor) && !state.loadError) {
+            state.partialReason = "the server repeated a continuation cursor";
+            state.nextCursor = null;
+            this.renderComponentTypeState(state);
+            return;
+          }
+          state.requestedCursors.add(cursor);
+          state.inFlight = true;
+          state.loadError = null;
+          this.renderComponentTypeState(state);
+          try {
+            const path = "/api/control/structure/applications/" + encodeURIComponent(state.applicationId) +
+              "/component-types?limit=" + COMPONENT_TYPE_PAGE_SIZE + "&cursor=" + encodeURIComponent(cursor);
+            const page = await this.read(path);
+            if (!this.componentTypeStateCurrent(state)) return;
+            this.applyComponentTypePage(page, state, cursor);
+          } catch (_) {
+            if (!this.componentTypeStateCurrent(state)) return;
+            state.loadError = true;
+            this.renderComponentTypeState(state);
+          } finally {
+            if (this.componentTypeStateCurrent(state)) {
+              state.inFlight = false;
+              this.renderComponentTypeState(state);
+            }
           }
         }
 

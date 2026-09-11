@@ -229,6 +229,18 @@ public sealed class CatalogImportTests : IDisposable
     }
 
     [Fact]
+    public void Subscription_source_requires_the_complete_bounded_pair_and_legacy_serialization_stays_unchanged()
+    {
+        var legacy = new SubscriptionFile("subscription.hash.test", "test", "test.hash.changed",
+            "mechanic.hash.test", SubscriptionMode.Reaction, 0, "{}", "[]", "{}", 1, "", SubscriptionStatus.Active);
+        Assert.DoesNotContain("\"source\"", legacy.ToJson());
+        var scoped = legacy with { Source = new("fixture", "space.one") };
+        Assert.Equal(scoped.Source, SubscriptionFile.Parse(scoped.ToJson(), "fixture").Source);
+        Assert.Throws<InvalidOperationException>(() => SubscriptionFile.Parse(
+            (legacy with { Source = new("fixture", "") }).ToJson(), "fixture"));
+    }
+
+    [Fact]
     public void Subscription_canonicalization_keeps_its_existing_golden_identity()
     {
         var subscription = SubscriptionFile.Parse(

@@ -18,7 +18,7 @@ test("Conversation and Combat retain the exact projected location context", () =
 test("Current View presents authored scene affordances without an execution contract", () => {
   assert.match(component, /function SceneAffordancesPanel/u);
   assert.match(component, />Available now</u);
-  assert.match(component, /if \(items\.length === 0\) return null/u);
+  assert.match(component, /if \(items\.length === 0 && !partial\) return null/u);
   assert.doesNotMatch(component, /application-action|mechanic-id|prepare-action|execute-action/iu);
   assert.match(component, /function DmLocationContext/u);
 });
@@ -32,11 +32,11 @@ test("Current View presents durable recorded play continuity as a distinct non-a
   assert.match(component, /message\.text/u);
 });
 
-test("Current tab has no live conversation composer or Current-only conversation styles", () => {
+test("Current tab connects neither a live conversation composer nor board editing", () => {
   assert.doesNotMatch(hub, /PlayConversationPanel|application-conversation|conversation-change/u);
   assert.doesNotMatch(styles, /play-conversation-panel|application-conversation/u);
   assert.match(hub, /<CurrentViewPreview/u);
-  assert.match(hub, /onBoardAccepted=\{\(\) => void requestHub/u);
+  assert.doesNotMatch(hub, /onBoardAccepted\s*=|draftScope\s*=/u);
 });
 
 test("Current keeps the last confirmed scene visible through a local refresh failure", () => {

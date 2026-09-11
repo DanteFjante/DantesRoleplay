@@ -1,0 +1,88 @@
+{
+  "id": "dnd2024.object.carrying-capacity-creature",
+  "version": 1,
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["abilityScores", "sizeRef"],
+    "properties": {
+      "abilityScores": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["scores"],
+        "properties": {
+          "scores": {
+            "type": "object",
+            "minProperties": 1,
+            "maxProperties": 32,
+            "propertyNames": { "type": "string", "minLength": 1, "pattern": "\\S", "maxLength": 200 },
+            "additionalProperties": { "type": "integer", "minimum": 0, "maximum": 100 }
+          }
+        }
+      },
+      "sizeRef": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["entityId"],
+        "properties": {
+          "entityId": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "expectedArchetype": {
+            "type": "string",
+            "pattern": "^dnd2024\\.[a-z][a-z0-9-]*(?:\\.[a-z][a-z0-9-]*)*$",
+            "maxLength": 200
+          }
+        }
+      }
+    }
+  },
+  "roles": {
+    "creature": { "required": true }
+  },
+  "sources": [
+    {
+      "id": "abilityScores",
+      "role": "creature",
+      "component": {
+        "qualifiedId": "dnd2024.creature.ability-scores",
+        "version": 1,
+        "schemaHash": "70820A438B63998E7053DCB0F9FAEB4C7E4ED46E24327265E4D934A92E1DE5C2"
+      },
+      "required": true
+    },
+    {
+      "id": "body",
+      "role": "creature",
+      "component": {
+        "qualifiedId": "dnd2024.creature.body",
+        "version": 1,
+        "schemaHash": "377F29DBB6E9BA0715DED2C585BB9451D3BE474295C32B85F21AE1E4BF9109E0"
+      },
+      "required": true
+    }
+  ],
+  "relationships": [],
+  "references": [],
+  "mappings": [
+    {
+      "inputId": "abilityScores",
+      "sourcePointer": "",
+      "targetPointer": "/abilityScores"
+    },
+    {
+      "inputId": "body",
+      "sourcePointer": "/sizeRef",
+      "targetPointer": "/sizeRef"
+    }
+  ],
+  "collections": [],
+  "limits": {
+    "traversalDepth": 1,
+    "itemCount": 1,
+    "outputBytes": 4096,
+    "sqlQueries": 3
+  },
+  "access": {
+    "read": ["player", "dm"],
+    "write": []
+  }
+}

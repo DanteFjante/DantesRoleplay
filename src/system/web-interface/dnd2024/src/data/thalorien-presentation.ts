@@ -103,7 +103,7 @@ export function classifyThalorienKnowledge(entries: KnowledgeEntry[]): {
 
     if (presentation) {
       history.push({
-        id: `live-history-${index}`,
+        id: entry.knowledgeId ?? entry.recognitionKey ?? `live-history-${index}`,
         ...presentation,
         title: parsed.title,
         status: entry.stance,
@@ -111,12 +111,13 @@ export function classifyThalorienKnowledge(entries: KnowledgeEntry[]): {
         consequence: remainingConsequence(parsed.body, parsed.summary),
         linkedLocations: [],
         linkedPeople: [],
+        ...(entry.admissions ? { admissions: entry.admissions } : {}),
       });
       return;
     }
 
     lore.push({
-      id: `live-lore-${index}`,
+      id: entry.knowledgeId ?? entry.recognitionKey ?? `live-lore-${index}`,
       title: parsed.title,
       category: entry.presentationKind === "statement" ? "World lore" : entry.presentationKind,
       status: entry.stance,
@@ -126,6 +127,7 @@ export function classifyThalorienKnowledge(entries: KnowledgeEntry[]): {
       linkedPeople: [],
       linkedFactions: [],
       linkedHistory: [],
+      ...(entry.admissions ? { admissions: entry.admissions } : {}),
     });
   });
 

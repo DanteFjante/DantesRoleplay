@@ -5,6 +5,8 @@ import React, { act } from "react";
 import { JSDOM } from "jsdom";
 
 import { RulesView } from "../../src/components/RulesView";
+import { createHubStore } from "../../src/data/hub-store";
+import { Provider } from "react-redux";
 import type { RuleReadModel, RulesReferencePublication } from "../../src/data/hub-types";
 import { parseItemRoute } from "../../src/data/item-view-route";
 import { ViewReadError } from "../../src/data/view-read-client";
@@ -46,8 +48,9 @@ async function mount(initial: RuleReadModel[], loadRules?: (preferCached?: boole
   dom.window.requestAnimationFrame = (callback) => dom.window.setTimeout(() => callback(0), 0);
   const { createRoot } = await import("react-dom/client");
   const root = createRoot(document.getElementById("root")!);
-  await act(async () => { root.render(<RulesView rules={initial} loadRules={loadRules}
-    campaignId="campaign.test" perspective="dm" />); await new Promise((resolve) => setTimeout(resolve, 30)); });
+  const store = createHubStore();
+  await act(async () => { root.render(<Provider store={store}><RulesView rules={initial} loadRules={loadRules}
+    campaignId="campaign.test" perspective="dm" /></Provider>); await new Promise((resolve) => setTimeout(resolve, 30)); });
   return { dom, async cleanup() { await act(async () => root.unmount()); dom.window.close();
     keys.forEach((key, index) => { if (previous[index]) Object.defineProperty(globalThis, key, previous[index]!);
       else Reflect.deleteProperty(globalThis, key); }); } };

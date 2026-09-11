@@ -10,11 +10,15 @@
     "subject": "Exact authorized active character.",
     "campaign": "Host-authorized campaign for that character."
   },
+  "roleBindings": {
+    "subject": { "source": "route-entity" },
+    "campaign": { "source": "input", "pointer": "/selectionId" }
+  },
   "executor": "mechanic-projection",
   "projection": {
     "qualifiedId": "dnd2024.mechanic.inventory-item-details.project",
     "version": 1,
-    "contentHash": "B66A9A163481F2EE8E752A48479BE5ADF5D50A60D164D2FD3EAA29FC03E7C2D8",
+    "contentHash": "28282A0035AC622752C7D2FB31DB22D6E531FCAF91C57042A8BB19B845A32034",
     "outputSchemaHash": "B5232D57E9A0305591D2A9630701E4331A9645E0BFB033FD6E4569B18CFB2148"
   },
   "inputSchema": {
@@ -25,6 +29,11 @@
     ],
     "properties": {
       "itemId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200
+      },
+      "selectionId": {
         "type": "string",
         "minLength": 1,
         "maxLength": 200

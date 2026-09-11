@@ -9,18 +9,38 @@
     "where is everyone in this encounter"
   ],
   "roles": {
+    "campaign": "The exact authorized campaign containing the selected current scene.",
     "encounter": "The exact audience-authorized encounter."
   },
+  "roleBindings": {
+    "campaign": { "source": "input", "pointer": "/selectionId" },
+    "encounter": { "source": "route-entity" }
+  },
   "executor": "mechanic-projection",
-  "campaignSelection": {
+  "selection": {
     "queryId": "dnd2024.query.current-scene",
-    "entityIdField": "encounterId"
+    "targetRole": "encounter",
+    "resultPointer": "/encounterId",
+    "roleBindings": {
+      "campaign": "campaign"
+    }
   },
   "projection": {
     "qualifiedId": "dnd2024.mechanic.encounter.board.project",
     "version": 1,
-    "contentHash": "CE51BFD7AE90A51332D7A6BE3526ADF0E71FDB4495134FCCCB9F2CA19DE19F97",
+    "contentHash": "123BD8BA1FA1674AFC89E2BD8E6757063E3D39CC565BEFD6216592CC22CA399E",
     "outputSchemaHash": "40EBE81FA45C4738B3BB573A26453C7773A7545D0765AF1CD2E4902797F234A5"
+  },
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "selectionId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200
+      }
+    }
   },
   "outputSchema": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",

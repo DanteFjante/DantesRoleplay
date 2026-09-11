@@ -13,6 +13,7 @@ import type {
   ReadyHubEnvelope,
   SectionState,
   TacticalEncounterBoard,
+  type InventoryContainerResult,
 } from "../../src/data/hub-types";
 import { resolveAudience } from "../support/audience-policy.js";
 import { projectHubEnvelope } from "../support/hub-envelope.js";
@@ -33,6 +34,9 @@ import { TacticalBoard } from "../../src/components/TacticalBoard";
 import { CombatBoard } from "../../src/components/CombatBoard";
 import { BootstrapShell } from "../../src/components/BootstrapShell";
 import { PERFORMANCE_MARKS, resetPerformanceMarksForTests } from "../../src/observability/performance.js";
+import { ViewReadError } from "../../src/data/view-read-client";
+import { CharacterResourceOwner } from "../../src/data/object-resources";
+import { characterScope, commitCharacterFacet, commitInventory, createHubStore, hubActions, peekCharacterFacet } from "../../src/data/hub-store";
 
 const dmPrincipal = "principal.dm.fixture";
 
@@ -48,9 +52,9 @@ test("startup shell exposes navigation as visibly unavailable until the table is
   }
 });
 
-async function mount(element: ReactNode) {
+async function mount(element: ReactNode, url = "https://table.example.test/") {
   const dom = new JSDOM("<!doctype html><html><body><div id=\"root\"></div></body></html>", {
-    url: "https://table.example.test/",
+    url,
   });
   const previous = {
     document: globalThis.document,
@@ -569,8 +573,10 @@ test("Character overview loads the selected summary once while broader details s
   let sheetReads = 0;
   let detailReads = 0;
   const mounted = await mount(<PartyView party={[member]}
-    loadCharacterSheet={async () => { sheetReads += 1; return { ...member, recordStatus: "Sheet loaded" }; }}
-    loadCharacterDetails={async () => { detailReads += 1; return { ...member, recordStatus: "Details loaded" }; }} />);
+    loadCharacterSheet={async () => { sheetReads += 1; return { ...member, recordStatus: "Sheet loaded",
+      sheetState: { status: "empty", source: "canonical", data: [] } }; }}
+    loadCharacterDetails={async () => { detailReads += 1; return { ...member, recordStatus: "Details loaded",
+      sheetState: { status: "empty", source: "canonical", data: [] } }; }} />);
   try {
     assert.equal(sheetReads, 1);
     assert.equal(detailReads, 0);
@@ -695,7 +701,8 @@ function deferredUpdate(section: DeferredHubSection, ready = envelope("dm")): De
       return { section, world: { history: ready.world.history } };
     case "lore":
       return { section, world: { lore: ready.world.lore }, campaign: {
-        quests: ready.campaign.quests, clues: ready.campaign.clues, mapOverlays: ready.campaign.mapOverlays,
+        quests: ready.campaign.quests, clues: ready.campaign.clues, cluesCoverage: ready.campaign.cluesCoverage,
+        mapOverlays: ready.campaign.mapOverlays,
       } };
     case "locations":
       return { section, world: {
@@ -798,7 +805,7 @@ test("mounted Party view distinguishes loading, ready, empty, stale, forbidden, 
         failureCategory: "incompatible-data",
         diagnosticId: "diag-malformed",
       },
-      expected: "incompatible character sheet; no values were displayed",
+      expected: "character sheet response unavailable",
       excluded: "Confirmed Ranger",
     },
   ];
@@ -1099,7 +1106,7 @@ test("mounted hub loads and pages the DM faction directory only when Factions is
 
     await click(button(mounted.container, "Factions"));
     assert.deepEqual(calls, [null]);
-    assert.match(mounted.container.textContent ?? "", /1 visible · 1 of 2 loaded/);
+    assert.match(mounted.container.textContent ?? "", /1 visible · 1 displayed from 2 source records/);
     assert.match(mounted.container.textContent ?? "", /First Compact/);
 
     const selectFirst = button(mounted.container, "F");
@@ -1110,7 +1117,7 @@ test("mounted hub loads and pages the DM faction directory only when Factions is
 
     await click(button(mounted.container, "Load more factions"));
     assert.deepEqual(calls, [null, "page-two"]);
-    assert.match(mounted.container.textContent ?? "", /2 visible · 2 of 2 loaded/);
+    assert.match(mounted.container.textContent ?? "", /2 visible · 2 displayed from 2 source records/);
     assert.match(mounted.container.textContent ?? "", /Second Compact/);
     assert.equal([...mounted.container.querySelectorAll("button")]
       .some((candidate) => candidate.textContent?.trim() === "Load more factions"), false);
@@ -1272,6 +1279,10 @@ test("Campaign detail failures stay local, preserve the last validated result, a
 
     await click(button(mounted.container, "Party"));
     fail = true;
+    await act(async () => {
+      window.dispatchEvent(new window.Event("dnd2024-view-invalidated"));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
     await click(button(mounted.container, "Campaign"));
     assert.equal(reads, 2);
     assert.match(mounted.container.querySelector('[role="alert"]')?.textContent ?? "", /Latest campaign details unavailable/u);
@@ -1449,6 +1460,95 @@ test("deferred hub sections stay unloaded until navigation and never display fai
   } finally { await mounted.cleanup(); }
 });
 
+test("Campaign Clues loads its authorized collection on navigation and can retry without claiming absence", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const initial = envelope("dm");
+  initial.campaign.clues = [];
+  initial.campaign.cluesCoverage = "unavailable";
+  const loaded = structuredClone(initial);
+  loaded.campaign.cluesCoverage = "complete";
+  let calls = 0;
+  const mounted = await mount(<DndInformationHub initialEnvelope={initial}
+    loadContent={async () => { throw new Error("not used"); }}
+    loadCampaignDetails={async () => initial.campaign}
+    loadDeferredSection={async (_scope, section) => {
+      assert.equal(section, "lore");
+      if (++calls === 1) throw new Error("Clue transport failed.");
+      return deferredUpdate("lore", loaded);
+    }} />, "https://table.example.test/ui/dnd2024-play#view?tab=campaign&section=overview");
+  try {
+    assert.equal(calls, 0);
+    assert.match(mounted.container.textContent ?? "", /Clues not loaded/);
+    assert.doesNotMatch(mounted.container.textContent ?? "", /0 recorded clues/);
+    await click(button(mounted.container, "Browse clues"));
+    assert.equal(calls, 1);
+    assert.match(mounted.container.textContent ?? "", /Clue transport failed/);
+    assert.doesNotMatch(mounted.container.textContent ?? "", /No campaign clues recorded/);
+    await click(button(mounted.container, "Retry view"));
+    assert.equal(calls, 2);
+    assert.match(mounted.container.textContent ?? "", /No clues available yet/);
+    await click(button(mounted.container, "Overview"));
+    await click(button(mounted.container, "Browse clues"));
+    assert.equal(calls, 2, "the confirmed Redux collection is reused while fresh");
+  } finally { await mounted.cleanup(); }
+});
+
+test("Campaign Clues renders a source-fenced partial prefix while its owned continuation remains in flight", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const initial = envelope("dm");
+  initial.campaign.clues = [];
+  initial.campaign.cluesCoverage = "unavailable";
+  const prefix = structuredClone(initial);
+  prefix.campaign.clues = [structuredClone(envelope("dm").campaign.clues[0]!)];
+  prefix.campaign.cluesCoverage = "partial";
+  let progressCalls = 0;
+  const mounted = await mount(<DndInformationHub initialEnvelope={initial}
+    loadContent={async () => { throw new Error("not used"); }}
+    loadCampaignDetails={async () => initial.campaign}
+    loadDeferredSection={async (_scope, section, _signal, _preferCached, onProgress) => {
+      assert.equal(section, "lore");
+      await onProgress?.(deferredUpdate("lore", prefix));
+      progressCalls += 1;
+      throw new Error("Later page unavailable.");
+    }} />, "https://table.example.test/ui/dnd2024-play#view?tab=campaign&section=clues");
+  try {
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
+    assert.equal(progressCalls, 1);
+    assert.match(mounted.container.textContent ?? "", /partial view/);
+    assert.doesNotMatch(mounted.container.textContent ?? "", /View unavailable|Later page unavailable/,
+      "a later failure does not erase the independently retained partial prefix");
+  } finally { await mounted.cleanup(); }
+});
+
+test("a rejected deferred Redux commit stays retryable instead of marking unloaded clues ready", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const initial = envelope("dm");
+  initial.campaign.cluesCoverage = "unavailable";
+  const loaded = structuredClone(initial);
+  loaded.campaign.cluesCoverage = "complete";
+  loaded.campaign.clues = [];
+  let calls = 0;
+  const mounted = await mount(<DndInformationHub initialEnvelope={initial}
+    loadContent={async () => { throw new Error("not used"); }}
+    loadCampaignDetails={async () => initial.campaign}
+    loadDeferredSection={async () => {
+      const update = deferredUpdate("lore", loaded);
+      if (++calls === 1 && update.section === "lore") {
+        const duplicate = { id: "clue.duplicate" } as typeof initial.campaign.clues[number];
+        update.campaign.clues = [duplicate, duplicate];
+      }
+      return update;
+    }} />, "https://table.example.test/ui/dnd2024-play#view?tab=campaign&section=clues");
+  try {
+    assert.equal(calls, 1);
+    assert.match(mounted.container.querySelector('[role="alert"]')?.textContent ?? "", /could not be retained safely/);
+    assert.doesNotMatch(mounted.container.textContent ?? "", /No campaign clues recorded yet/);
+    await click(button(mounted.container, "Retry view"));
+    assert.equal(calls, 2);
+    assert.match(mounted.container.textContent ?? "", /No clues available yet/);
+  } finally { await mounted.cleanup(); }
+});
+
 test("mounted deferred navigation wires Locations, People, Lore, Current and context discovery", async () => {
   const { DndInformationHub } = await import("../../src/components/DndInformationHub");
   const calls: string[] = [];
@@ -1490,18 +1590,22 @@ test("a deferred view cannot replace newer independently loaded context discover
   } finally { await mounted.cleanup(); }
 });
 
-test("Player preview shows the safe Party roster while Actor-only views make no private or futile reads", async () => {
+test("Player view loads shared knowledge while private character resources stay unavailable", async () => {
   const { DndInformationHub } = await import("../../src/components/DndInformationHub");
   let reads = 0;
+  const sharedReads: string[] = [];
   const mounted = await mount(<DndInformationHub initialEnvelope={envelope("player")}
     loadContent={async () => { throw new Error("not used"); }}
     loadCharacterSheet={async () => { ++reads; throw new Error("private character"); }}
     loadCharacterDetails={async () => { ++reads; throw new Error("private character"); }}
-    loadDeferredSection={async () => { ++reads; throw new Error("private directory"); }} />);
+    loadDeferredSection={async (_scope, section) => {
+      sharedReads.push(section);
+      return deferredUpdate(section, envelope("player"));
+    }} />);
   try {
     for (const label of ["Lore", "People", "Factions"]) {
       await click(button(mounted.container, label));
-      assert.ok(mounted.container.querySelector('#information-content [data-view-status="unavailable"][data-reason-code="audience-restricted"]'));
+      assert.equal(mounted.container.querySelector('#information-content [data-reason-code="audience-restricted"]'), null);
       assert.equal(mounted.container.querySelector('#information-content [role="alert"], #information-content [aria-busy="true"]'), null);
     }
     await click(button(mounted.container, "Party"));
@@ -1513,6 +1617,7 @@ test("Player preview shows the safe Party roster while Actor-only views make no 
     await click(button(mounted.container, "Registry"));
     assert.match(mounted.container.textContent ?? "", /Registry unavailable/);
     assert.equal(reads, 0);
+    assert.deepEqual(sharedReads, ["lore", "people"]);
   } finally { await mounted.cleanup(); }
 });
 
@@ -1560,14 +1665,427 @@ test("mounted hub replaces the change subscription on both authorized perspectiv
   assert.deepEqual(closed, ["player", "dm", "player"]);
 });
 
+test("a noisy stream recovery triggers one bounded active-scope revalidation", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const initial = envelope("dm");
+  const requests: Array<[Perspective, string, boolean]> = [];
+  const mounted = await mount(<DndInformationHub initialEnvelope={initial}
+    loadContent={async () => { throw new Error("not used"); }}
+    recoveryRetryDelaysMs={[20, 30, 40]}
+    loadEnvelope={async (perspective, campaignId, preferCached) => {
+      requests.push([perspective, campaignId, preferCached]);
+      return initial;
+    }} />);
+  try {
+    await act(async () => {
+      for (let index = 0; index < 3; index += 1)
+        window.dispatchEvent(new window.CustomEvent("dnd2024-view-invalidated", { detail: { reason: "stream-recovery" } }));
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+    assert.deepEqual(requests, [["dm", "campaign.fixture.eldervale", false]]);
+    assert.equal(mounted.container.querySelector(".perspective-notice"), null,
+      "the successful bounded refresh clears the stale-connection notice");
+
+    await act(async () => {
+      window.dispatchEvent(new window.CustomEvent("dnd2024-view-invalidated", { detail: { reason: "stream-error" } }));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    assert.equal(requests.length, 1, "disconnect waits for a confirmed stream reopen before rereading");
+    await act(async () => {
+      window.dispatchEvent(new window.Event("dnd2024-stream-reconnected"));
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+    assert.equal(requests.length, 2);
+  } finally { await mounted.cleanup(); }
+});
+
+test("a reopened stream retries one transient bootstrap failure and stops after recovery", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const initial = envelope("dm");
+  const requests: Array<[Perspective, string, boolean]> = [];
+  const mounted = await mount(<DndInformationHub initialEnvelope={initial}
+    loadContent={async () => { throw new Error("not used"); }}
+    recoveryRetryDelaysMs={[20, 30, 40]}
+    loadEnvelope={async (perspective, campaignId, preferCached) => {
+      requests.push([perspective, campaignId, preferCached]);
+      if (requests.length === 1)
+        throw new ViewReadError("transport", "The restarted host is not ready yet.");
+      return { ...initial, party: initial.party.map((member) => ({ ...member })) };
+    }} />);
+  try {
+    await act(async () => {
+      window.dispatchEvent(new window.CustomEvent("dnd2024-view-invalidated", { detail: { reason: "stream-error" } }));
+      window.dispatchEvent(new window.Event("dnd2024-stream-reconnected"));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 120));
+    });
+    assert.deepEqual(requests, [
+      ["dm", "campaign.fixture.eldervale", false],
+      ["dm", "campaign.fixture.eldervale", false],
+    ]);
+    assert.equal(mounted.container.querySelector(".perspective-notice"), null);
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 80)); });
+    assert.equal(requests.length, 2, "a successful retry ends the bounded recovery cycle");
+  } finally { await mounted.cleanup(); }
+});
+
+test("stream recovery does not retry a terminal bootstrap failure", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const initial = envelope("dm");
+  let requests = 0;
+  const mounted = await mount(<DndInformationHub initialEnvelope={initial}
+    loadContent={async () => { throw new Error("not used"); }}
+    recoveryRetryDelaysMs={[20, 30, 40]}
+    loadEnvelope={async () => {
+      requests += 1;
+      throw new ViewReadError("incompatible-data", "The requested view is unavailable.");
+    }} />);
+  try {
+    await act(async () => {
+      window.dispatchEvent(new window.CustomEvent("dnd2024-view-invalidated", { detail: { reason: "stream-error" } }));
+      window.dispatchEvent(new window.Event("dnd2024-stream-reconnected"));
+      await new Promise((resolve) => setTimeout(resolve, 120));
+    });
+    assert.equal(requests, 1);
+    assert.match(mounted.container.textContent ?? "", /current information is still available/iu);
+  } finally { await mounted.cleanup(); }
+});
+
+test("stream recovery stops after its bounded transient retry schedule", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const initial = envelope("dm");
+  let requests = 0;
+  const mounted = await mount(<DndInformationHub initialEnvelope={initial}
+    loadContent={async () => { throw new Error("not used"); }}
+    recoveryRetryDelaysMs={[10, 15, 20]}
+    loadEnvelope={async () => {
+      requests += 1;
+      throw new ViewReadError("transport", "The restarted host is not ready yet.");
+    }} />);
+  try {
+    await act(async () => {
+      window.dispatchEvent(new window.CustomEvent("dnd2024-view-invalidated", { detail: { reason: "stream-error" } }));
+      window.dispatchEvent(new window.Event("dnd2024-stream-reconnected"));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    // Retries re-enter through React's guarded effect rather than invoking the
+    // loader directly from the timer. Flush each bounded timer/effect turn.
+    for (let tick = 0; tick < 100 && requests < 4; tick += 1)
+      await act(async () => { await new Promise((resolve) => setTimeout(resolve, 10)); });
+    assert.equal(requests, 4, "one immediate read plus three delayed retries exhaust the bound");
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 60)); });
+    assert.equal(requests, 4);
+  } finally { await mounted.cleanup(); }
+});
+
+test("a scope change cancels the old stream recovery retry", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const initial = envelope("dm");
+  const requests: Perspective[] = [];
+  const mounted = await mount(<DndInformationHub initialEnvelope={initial}
+    loadContent={async () => { throw new Error("not used"); }}
+    recoveryRetryDelaysMs={[50]}
+    loadEnvelope={async (perspective) => {
+      requests.push(perspective);
+      if (perspective === "dm")
+        throw new ViewReadError("transport", "The old scope is temporarily unavailable.");
+      return envelope(perspective);
+    }} />);
+  try {
+    await act(async () => {
+      window.dispatchEvent(new window.CustomEvent("dnd2024-view-invalidated", { detail: { reason: "stream-error" } }));
+      window.dispatchEvent(new window.Event("dnd2024-stream-reconnected"));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    assert.deepEqual(requests, ["dm"]);
+    await click(button(mounted.container, "Player"));
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 80)); });
+    assert.deepEqual(requests, ["dm", "player"]);
+  } finally { await mounted.cleanup(); }
+});
+
+test("unmount cancels a pending stream bootstrap retry", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const initial = envelope("dm");
+  let requests = 0;
+  const mounted = await mount(<DndInformationHub initialEnvelope={initial}
+    loadContent={async () => { throw new Error("not used"); }}
+    recoveryRetryDelaysMs={[50]}
+    loadEnvelope={async () => {
+      requests += 1;
+      throw new ViewReadError("transport", "The restarted host is not ready yet.");
+    }} />);
+  await act(async () => {
+    window.dispatchEvent(new window.CustomEvent("dnd2024-view-invalidated", { detail: { reason: "stream-error" } }));
+    window.dispatchEvent(new window.Event("dnd2024-stream-reconnected"));
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  });
+  assert.equal(requests, 1);
+  await mounted.cleanup();
+  await new Promise((resolve) => setTimeout(resolve, 80));
+  assert.equal(requests, 1);
+});
+
+test("a stream invalidation arriving during refresh schedules one follow-up bootstrap", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const initial = envelope("dm");
+  let resolveFirst: ((value: ReadyHubEnvelope) => void) | undefined;
+  let calls = 0;
+  const mounted = await mount(<DndInformationHub initialEnvelope={initial}
+    loadContent={async () => { throw new Error("not used"); }}
+    loadEnvelope={async () => {
+      calls += 1;
+      return calls === 1 ? new Promise<ReadyHubEnvelope>((resolve) => { resolveFirst = resolve; }) : initial;
+    }} />);
+  try {
+    await act(async () => {
+      window.dispatchEvent(new window.CustomEvent("dnd2024-view-invalidated", { detail: { reason: "stream-recovery" } }));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    assert.equal(calls, 1);
+    await act(async () => {
+      window.dispatchEvent(new window.CustomEvent("dnd2024-view-invalidated", { detail: { reason: "stream-recovery" } }));
+      resolveFirst?.(initial);
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+    assert.equal(calls, 2, "a later stream sequence is not acknowledged by the earlier bootstrap");
+  } finally { await mounted.cleanup(); }
+});
+
+test("unopened Campaign details use the authorized bootstrap chapter instead of a persistent loading label", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const initial = envelope("dm");
+  const mounted = await mount(<DndInformationHub initialEnvelope={initial}
+    loadContent={async () => { throw new Error("not used"); }}
+    loadCampaignDetails={async () => new Promise<CampaignReadModel>(() => {})} />);
+  try {
+    assert.match(mounted.container.textContent ?? "", new RegExp(initial.campaign.chapter, "u"));
+    assert.doesNotMatch(mounted.container.textContent ?? "", /Campaign details loading/u);
+  } finally { await mounted.cleanup(); }
+});
+
+for (const kind of ["item", "inventory"]) test(`a cold ${kind} route hydrates its CharacterShell portrait through the shared owner`, async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const initial = envelope("dm");
+  const actor = initial.party[0]!;
+  delete actor.portrait;
+  let sheetReads = 0;
+  const hydrated = { ...actor, portrait: { imageUrl: "/portrait/cold-route", alt: "Cold route portrait", width: 100, height: 150 },
+    portraitCoverage: "confirmed" as const };
+  const route = `https://table.example.test/#${kind}?campaign=campaign.fixture.eldervale&perspective=dm` +
+    `&character=${encodeURIComponent(actor.id)}` + (kind === "item" ? "&item=item.fixture&tab=details" : "");
+  const mounted = await mount(<DndInformationHub initialEnvelope={initial}
+    loadContent={async () => { throw new Error("not used"); }}
+    loadCharacterSheet={async () => { sheetReads += 1; return hydrated; }} />, route);
+  try {
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 20)); });
+    assert.equal(sheetReads, 1);
+    assert.equal(mounted.container.querySelector(".character-roster__portrait img")?.getAttribute("src"), "/portrait/cold-route");
+  } finally { await mounted.cleanup(); }
+});
+
+test("Party inventory route restores its scoped sheet and portrait after bootstrap recovery without hiding inventory", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const initial = envelope("dm");
+  const actor = initial.party[0]!;
+  const canonicalSheet = structuredClone(actor.characterSheet);
+  const recovered = structuredClone(initial);
+  const recoveredActor = recovered.party.find((member) => member.id === actor.id)!;
+  // A successful bootstrap can honestly contain an empty sheet/header while
+  // the separately authorized sheet/media resource is still available.
+  delete recoveredActor.portrait;
+  delete recoveredActor.characterSheet;
+  recoveredActor.sheet = [];
+  recoveredActor.sheetStatus = "empty";
+  recoveredActor.sheetState = { status: "empty", source: "canonical", data: [] };
+  delete actor.portrait;
+  delete actor.characterSheet;
+  actor.sheet = [];
+  actor.sheetState = { status: "unavailable", data: [], diagnosticId: "header-offline" };
+  const hydrated = { ...actor, portrait: { imageUrl: "/portrait/party-recovered", alt: "Recovered portrait", width: 100, height: 150 },
+    portraitCoverage: "confirmed" as const, characterSheet: canonicalSheet,
+    sheetState: { status: "ready" as const, source: "canonical" as const, data: [] } };
+  const inventory: InventoryContainerResult = {
+    status: "ready", failureCategory: null, diagnosticId: "party-inventory-ready",
+    data: {
+      container: { id: actor.id, label: actor.name }, state: "ready", reasons: [], notices: [],
+      items: [{ id: "item.party.recovered", name: "Recovered pack", definition: { id: "definition.pack", label: "Pack" },
+        quantity: 1, quantityState: "value", slot: "carried", order: 0, equipmentSlots: [], equipmentSlotsKnown: true,
+        classification: "item", isContainer: false, containerState: "value", unavailableFields: [],
+        parentItemId: null, depth: 1, childCount: 0, deeperContentsOmitted: false }],
+      limits: { contentsDepth: 1, directComplete: true, recursiveComplete: false },
+      wallet: { coinCount: 0, copperValue: 0, gpCount: 0, denominations: [] },
+      walletState: { status: "complete", reason: null },
+      projection: { stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
+        resultFingerprint: "3".repeat(64), sourceRevisionFingerprint: "4".repeat(64) },
+    },
+  };
+  let online = false;
+  let sheetReads = 0;
+  let bootstrapReads = 0;
+  const store = createHubStore();
+  const route = `https://table.example.test/#view?tab=party&section=inventory&character=${encodeURIComponent(actor.id)}`;
+  const mounted = await mount(<DndInformationHub initialEnvelope={initial}
+    store={store}
+    loadContent={async () => { throw new Error("not used"); }}
+    loadEnvelope={async () => { bootstrapReads += 1; return recovered; }}
+    loadCharacterInventory={async () => inventory}
+    loadCharacterSheet={async () => {
+      sheetReads += 1;
+      if (!online) throw new ViewReadError("transport", "The host is restarting.");
+      return hydrated;
+    }} />, route);
+  try {
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 30)); });
+    assert.match(mounted.container.textContent ?? "", /Recovered pack/);
+    assert.equal(sheetReads, 1, "the failed bootstrap generation makes one independent header attempt");
+    assert.equal(mounted.container.querySelector(".character-roster__portrait img"), null,
+      "A failed header read must not hide independently ready inventory or invent a portrait.");
+    online = true;
+    await act(async () => {
+      window.dispatchEvent(new window.CustomEvent("dnd2024-view-invalidated", { detail: { reason: "stream-recovery" } }));
+      window.dispatchEvent(new window.Event("dnd2024-stream-reconnected"));
+      await new Promise((resolve) => setTimeout(resolve, 60));
+    });
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 20)); });
+    assert.equal(bootstrapReads, 1, "the recovery must replace the active bootstrap generation once");
+    assert.equal(sheetReads, 2, `the successful bootstrap generation retries the Party inventory header facet once (reads ${sheetReads}, bootstraps ${bootstrapReads})`);
+    assert.match(mounted.container.textContent ?? "", /Recovered pack/);
+    assert.equal(store.getState().confirmed.facetsById[actor.id]?.sheet?.value.portrait?.imageUrl,
+      "/portrait/party-recovered", "the recovered sheet/media facet must commit before the header selector renders it");
+    assert.equal(mounted.container.querySelector(".character-roster__portrait img")?.getAttribute("src"), "/portrait/party-recovered");
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 40)); });
+    assert.equal(sheetReads, 2, "confirmed media must complete the bounded header attempt instead of looping");
+  } finally { await mounted.cleanup(); }
+});
+
+test("Party inventory never starts a canonical header read in DM player preview", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const preview = envelope("dm");
+  preview.audience = { ...preview.audience, perspective: "player", allowedPerspectives: ["dm", "player"] };
+  const actor = preview.party[0]!;
+  let sheetReads = 0;
+  const route = `https://table.example.test/#view?tab=party&section=inventory&character=${encodeURIComponent(actor.id)}`;
+  const mounted = await mount(<DndInformationHub initialEnvelope={preview}
+    loadContent={async () => { throw new Error("not used"); }}
+    loadCharacterSheet={async () => {
+      sheetReads += 1;
+      return actor;
+    }} />, route);
+  try {
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 30)); });
+    assert.equal(sheetReads, 0, "the preview's identity-only Party route must not fetch canonical media or sheet data");
+  } finally { await mounted.cleanup(); }
+});
+
+test("Dnd character wrappers finish Redux cache hits without renewing any facet timestamp", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const initial = envelope("dm");
+  const actor = initial.party[0]!;
+  const scope = characterScope(initial);
+  const sheet = { ...actor, portraitCoverage: "confirmed" as const,
+    sheetState: { status: "ready" as const, source: "canonical" as const, data: actor.sheet } };
+  const details = { ...actor, portraitCoverage: "confirmed" as const,
+    sheetState: { status: "ready" as const, source: "canonical" as const, data: actor.sheet } };
+  const inventory: InventoryContainerResult = {
+    status: "ready", failureCategory: null, diagnosticId: "cached-inventory",
+    data: {
+      container: { id: actor.id, label: actor.name }, state: "ready", reasons: [], notices: [], items: [],
+      limits: { contentsDepth: 1, directComplete: true, recursiveComplete: true },
+      wallet: { coinCount: 0, copperValue: 0, gpCount: 0, denominations: [] }, walletState: { status: "complete", reason: null },
+      projection: { stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
+        resultFingerprint: "3".repeat(64), sourceRevisionFingerprint: "4".repeat(64) },
+    },
+  };
+  const store = createHubStore();
+  store.dispatch(hubActions.bootstrapCommitted({ scope, party: [actor] }));
+  const confirmedAt = { sheet: Date.now() - 300, details: Date.now() - 200, inventory: Date.now() - 100 };
+  for (const [facet, value, requestToken] of [["sheet", sheet, 1], ["details", details, 2]] as const) {
+    store.dispatch(hubActions.characterRequestStarted({ scope, actorId: actor.id, facet, requestToken }));
+    store.dispatch(commitCharacterFacet({ scope, actorId: actor.id, facet, value },
+      { generation: 1, requestToken, confirmedAt: confirmedAt[facet], bytes: 100 }));
+  }
+  store.dispatch(hubActions.characterRequestStarted({ scope, actorId: actor.id, facet: "inventory", requestToken: 3 }));
+  store.dispatch(commitInventory({ scope, actorId: actor.id, value: inventory },
+    { generation: 1, requestToken: 3, confirmedAt: confirmedAt.inventory, bytes: 100 }));
+  const rawReads = { sheet: 0, details: 0, inventory: 0 };
+  const owner = new CharacterResourceOwner({
+    readSheet: async () => { rawReads.sheet += 1; return sheet; },
+    readDetails: async () => { rawReads.details += 1; return details; },
+    readInventory: async () => { rawReads.inventory += 1; return inventory; },
+    readConfirmed: (facet, request, maximumAgeMs) => peekCharacterFacet(
+      store.getState(), characterScope(request.envelope), request.actorId, facet, maximumAgeMs),
+  });
+  const readers = {
+    loadCharacterSheet: (value: ReadyHubEnvelope, id: string, signal: AbortSignal) => owner.loadSheetOutcome({ envelope: value, actorId: id }, signal),
+    loadCharacterDetails: (value: ReadyHubEnvelope, id: string, signal: AbortSignal) => owner.loadDetailsOutcome({ envelope: value, actorId: id }, signal),
+    loadCharacterInventory: (value: ReadyHubEnvelope, id: string, signal: AbortSignal) => owner.loadInventoryOutcome({ envelope: value, actorId: id }, signal),
+  };
+  for (const [section, facet] of [["sheet", "sheet"], ["backstory", "details"], ["inventory", "inventory"]] as const) {
+    const route = `https://table.example.test/#view?tab=party&section=${section}&character=${encodeURIComponent(actor.id)}`;
+    const mounted = await mount(<DndInformationHub initialEnvelope={initial} store={store}
+      loadContent={async () => { throw new Error("not used"); }} {...readers} />, route);
+    try {
+      await act(async () => { await new Promise((resolve) => setTimeout(resolve, 30)); });
+      assert.equal(store.getState().confirmed.facetsById[actor.id]?.[facet]?.confirmedAt, confirmedAt[facet],
+        `${facet} cache hit must retain its original confirmation timestamp`);
+      assert.equal(store.getState().confirmed.requestsByKey[`${actor.id}|${facet}`], undefined,
+        `${facet} cache hit must finish only its transient request`);
+    } finally { await mounted.cleanup(); }
+  }
+  assert.deepEqual(rawReads, { sheet: 0, details: 0, inventory: 0 });
+});
+
+test("Dnd commits a fresh same-reference character read at completion time", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const initial = envelope("dm");
+  const actor = initial.party[0]!;
+  const scope = characterScope(initial);
+  const sameReference = { ...actor, sheetState: { status: "ready" as const, source: "canonical" as const, data: actor.sheet } };
+  const store = createHubStore();
+  store.dispatch(hubActions.bootstrapCommitted({ scope, party: [actor] }));
+  const oldConfirmedAt = Date.now() - 60_000;
+  store.dispatch(hubActions.characterRequestStarted({ scope, actorId: actor.id, facet: "sheet", requestToken: 1 }));
+  store.dispatch(commitCharacterFacet({ scope, actorId: actor.id, facet: "sheet", value: sameReference },
+    { generation: 1, requestToken: 1, confirmedAt: oldConfirmedAt, bytes: 100 }));
+  const route = `https://table.example.test/#view?tab=party&section=sheet&character=${encodeURIComponent(actor.id)}`;
+  let reads = 0;
+  let complete: (() => void) | undefined;
+  const originalNow = Date.now;
+  const mounted = await mount(<DndInformationHub initialEnvelope={initial} store={store}
+    loadContent={async () => { throw new Error("not used"); }}
+    loadCharacterSheet={async () => {
+      reads += 1;
+      return new Promise<PartyMemberReadModel>((resolve) => { complete = () => resolve(sameReference); });
+    }} />, route);
+  try {
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 30)); });
+    assert.equal(reads, 1, "the loader returns the already-used value as a genuine fresh read");
+    assert.equal(store.getState().confirmed.facetsById[actor.id]?.sheet?.confirmedAt, oldConfirmedAt);
+    const observedTime = originalNow() + 5_000;
+    Date.now = () => observedTime;
+    await act(async () => complete!());
+    assert.equal(store.getState().confirmed.facetsById[actor.id]?.sheet?.confirmedAt, observedTime,
+      "a real read records completion time, not request start, even with the same object identity");
+  } finally { Date.now = originalNow; await mounted.cleanup(); }
+});
+
 test("mounted Character reloads for its object and legacy notices without a focus change", async () => {
   const { DndInformationHub } = await import("../../src/components/DndInformationHub");
   const fixture = envelope("dm");
   let calls = 0;
+  const readCharacter = async () => {
+    const revision = ++calls;
+    const sheet = [{ id: "sheet.revision", kind: "class", title: `Revision ${revision}`, detail: "Refreshed sheet field" }];
+    return { ...fixture.party[0], sheet,
+      sheetState: { status: "ready" as const, source: "canonical" as const, data: sheet } };
+  };
   const mounted = await mount(<DndInformationHub initialEnvelope={fixture}
     loadContent={async () => { throw new Error("not used"); }}
-    loadCharacterSheet={async () => ({ ...fixture.party[0], name: `Revision ${++calls}` })}
-    loadCharacterDetails={async () => ({ ...fixture.party[0], name: `Revision ${++calls}` })} />);
+    loadCharacterSheet={readCharacter}
+    loadCharacterDetails={readCharacter} />);
   try {
     await click(button(mounted.container, "Party"));
     assert.equal(calls, 1);
@@ -1631,6 +2149,46 @@ test("a mounted view error boundary keeps a rendering failure local", async () =
     }
   } finally {
     console.error = originalConsoleError;
+  }
+});
+
+test("the default DM game hub reads Campaign without an editor and still receives server changes", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const initial = envelope("dm");
+  const refreshed = structuredClone(initial);
+  refreshed.campaign.premise = "A premise updated through the authorized server.";
+  refreshed.objectQueries!.campaignSummary!.sourceRevisionFingerprint = "B".repeat(64);
+  let reads = 0;
+  let directRequests = 0;
+  const previousFetch = globalThis.fetch;
+  const mounted = await mount(<DndInformationHub
+    initialEnvelope={initial}
+    loadContent={async () => { throw new Error("not used"); }}
+    loadEnvelope={async () => { reads += 1; return refreshed; }}
+  />, "https://table.example.test/ui/dnd2024-play#view?tab=campaign&section=overview");
+  try {
+    globalThis.fetch = async () => { directRequests += 1; throw new Error("Unexpected direct request"); };
+    const assertReadOnly = () => {
+      assert.equal(mounted.container.querySelector(".campaign-premise-editor__open, .campaign-premise-editor, #campaign-premise-draft"), null);
+      assert.doesNotMatch(mounted.container.textContent ?? "", /Edit campaign premise|Save premise|Retry save/u);
+    };
+    assert.equal(mounted.container.querySelector(".campaign-premise-current")?.textContent, initial.campaign.premise);
+    assertReadOnly();
+    await act(async () => {
+      window.dispatchEvent(new window.CustomEvent("dnd2024-object-changed", {
+        detail: { cursor: 1, object: { qualifiedId: "dnd2024.object.campaign-summary" } },
+      }));
+    });
+    assert.equal(reads, 1);
+    assert.equal(mounted.container.querySelector(".campaign-premise-current")?.textContent, refreshed.campaign.premise);
+    assertReadOnly();
+    await click(button(mounted.container, "World"));
+    await click(button(mounted.container, "Campaign"));
+    assertReadOnly();
+    assert.equal(directRequests, 0, "browsing and server refresh cannot invoke a game-data write client");
+  } finally {
+    globalThis.fetch = previousFetch;
+    await mounted.cleanup();
   }
 });
 
@@ -1703,6 +2261,40 @@ test("mounted Campaign premise edit uses the production PATCH client once and re
     assert.equal(mounted.container.querySelector("#campaign-premise-draft"), null);
     assert.match(mounted.container.textContent ?? "", /Campaign premise saved/);
     assert.doesNotMatch(mounted.container.textContent ?? "", /The server changed or the live connection was interrupted/);
+  } finally { await mounted.cleanup(); }
+});
+
+test("a stream notice during a confirmed premise refresh waits for the write and requires a newer read", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const initial = envelope("dm");
+  const refreshed = structuredClone(initial);
+  refreshed.campaign.premise = "Committed premise.";
+  let reads = 0, writes = 0;
+  const completions: Array<(value: ReadyHubEnvelope) => void> = [];
+  const mounted = await mount(<DndInformationHub initialEnvelope={initial}
+    loadContent={async () => { throw new Error("not used"); }}
+    loadEnvelope={async () => { reads += 1; return new Promise(resolve => completions.push(resolve)); }}
+    writeCampaignPremise={async ({ premise }) => {
+      writes += 1;
+      return { premise, applied: true, replayed: false, noOp: false,
+        operationId: "operation.stream-write", sourceRevisionFingerprint: "B".repeat(64) };
+    }} />);
+  try {
+    await click(button(mounted.container, "Campaign"));
+    await click(button(mounted.container, "Edit campaign premise"));
+    await enterTextarea(mounted.container.querySelector("#campaign-premise-draft") as HTMLTextAreaElement, refreshed.campaign.premise);
+    await click(button(mounted.container, "Save premise"));
+    assert.equal(reads, 1);
+    await act(async () => window.dispatchEvent(new window.CustomEvent("dnd2024-object-changed", {
+      detail: { cursor: 101, object: { qualifiedId: "dnd2024.object.campaign-summary", version: 4 } },
+    })));
+    assert.equal(reads, 1, "stream recovery cannot compete with the confirmed write's refresh");
+    await act(async () => completions[0]!(refreshed));
+    assert.equal(reads, 2, "a notice newer than the post-write read requires one follow-up");
+    assert.match(mounted.container.textContent ?? "", /server changed|live connection was interrupted/u);
+    await act(async () => completions[1]!(structuredClone(refreshed)));
+    assert.doesNotMatch(mounted.container.textContent ?? "", /server changed|live connection was interrupted/u);
+    assert.equal(writes, 1, "recovery never resubmits the write");
   } finally { await mounted.cleanup(); }
 });
 

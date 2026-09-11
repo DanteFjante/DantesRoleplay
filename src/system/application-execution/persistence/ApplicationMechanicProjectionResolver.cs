@@ -1,19 +1,52 @@
 ﻿using System.Text.Json;
+using System.Data;
 using DantesRoleplay.Applications;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.Ecs;
 using DantesRoleplay.Mechanics;
+using DantesRoleplay.Projections;
 using Microsoft.EntityFrameworkCore;
 
 namespace DantesRoleplay.ApplicationExecution;
 
 public sealed class ApplicationMechanicProjectionResolver(
     DantesRoleplayDbContext db,
-    IStateSpaceRegistry stateSpaces) : IApplicationMechanicProjectionResolver
+    IStateSpaceRegistry stateSpaces,
+    IApplicationGraphSnapshotReader? graphSnapshots = null,
+    IProjectionReadTransaction? transactions = null) : IApplicationMechanicProjectionResolver
 {
     private sealed record Node(string ContainerId, string Id, string Name, string Slot);
 
     public async Task<ProjectionResult> ResolveAsync(
+        string stateSpaceId,
+        ApplicationIdentifier applicationId,
+        MechanicRequirements requirements,
+        ApplicationMechanicProjectionMapping mapping,
+        IReadOnlyDictionary<string, string> roleAssignments,
+        string inputJson,
+        long seed,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(requirements);
+        if (requirements.GraphSnapshots.Count == 0 || db.Database.CurrentTransaction is not null)
+            return await ResolveCoreAsync(stateSpaceId, applicationId, requirements, mapping, roleAssignments,
+                inputJson, seed, cancellationToken);
+
+        if (transactions is not null)
+            return await transactions.ExecuteAsync(ct => ResolveCoreAsync(stateSpaceId, applicationId, requirements,
+                mapping, roleAssignments, inputJson, seed, ct), cancellationToken);
+
+        // Ordinary roles and explicit graph paths must observe one SQLite snapshot even when this
+        // resolver is constructed outside the host's shared read-transaction registration.
+        await using var transaction = await db.Database.BeginTransactionAsync(
+            IsolationLevel.Serializable, cancellationToken);
+        var result = await ResolveCoreAsync(stateSpaceId, applicationId, requirements, mapping, roleAssignments,
+            inputJson, seed, cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return result;
+    }
+
+    private async Task<ProjectionResult> ResolveCoreAsync(
         string stateSpaceId,
         ApplicationIdentifier applicationId,
         MechanicRequirements requirements,
@@ -34,8 +67,11 @@ public sealed class ApplicationMechanicProjectionResolver(
         if (!MechanicInput.TryValidateObject(inputJson, out var inputProblem))
             problems.Add($"INVALID_INPUT: {inputProblem}");
         problems.AddRange(requirements.ProjectionProblems().Select(value => $"INVALID_PROJECTION_REQUIREMENTS: {value}"));
+        var graphRootRoles = requirements.GraphSnapshots.Values
+            .Select(value => value.RootRole).ToHashSet(StringComparer.Ordinal);
         foreach (var supplied in roleAssignments.Keys.Where(value => !requirements.Roles.ContainsKey(value)))
-            problems.Add($"UNKNOWN_ROLE: This mechanic does not declare role '{supplied}'.");
+            if (!graphRootRoles.Contains(supplied))
+                problems.Add($"UNKNOWN_ROLE: This mechanic does not declare role '{supplied}'.");
 
         var needed = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var (role, requirement) in requirements.Roles)
@@ -74,7 +110,19 @@ public sealed class ApplicationMechanicProjectionResolver(
         }
         if (problems.Count > 0) return new(null, problems);
         if (needed.Count == 0)
-            return new(new MechanicProjection { StateSpaceId = stateSpaceId, Input = inputJson, Seed = seed }, []);
+        {
+            if (requirements.GraphSnapshots.Count == 0)
+                return new(new MechanicProjection { StateSpaceId = stateSpaceId, Input = inputJson, Seed = seed }, []);
+            if (graphSnapshots is null)
+                return ProjectionResult.Failed("GRAPH_PROJECTION_UNAVAILABLE: The graph projection reader is not registered.");
+            var graphOnly = await graphSnapshots.ReadAsync(stateSpaceId, applicationId, requirements, mapping,
+                roleAssignments, inputJson, cancellationToken);
+            if (!graphOnly.Ok) return new(null, graphOnly.Problems);
+            return new(MergeGraph(new MechanicProjection
+            {
+                StateSpaceId = stateSpaceId, Input = inputJson, Seed = seed
+            }, graphOnly), []);
+        }
 
         var allEntities = await db.Set<ApplicationEcsEntityRecord>().AsNoTracking()
             .Where(value => value.StateSpaceId == stateSpaceId && value.DeletedAtUtc == null)
@@ -249,7 +297,56 @@ public sealed class ApplicationMechanicProjectionResolver(
         }
         foreach (var (entityId, localIds) in references)
             RecordComponentRevisions(entityId, localIds);
-        return problems.Count == 0 ? new(projection, []) : new(null, problems);
+        if (problems.Count > 0) return new(null, problems);
+        if (requirements.GraphSnapshots.Count > 0)
+        {
+            if (graphSnapshots is null)
+                return ProjectionResult.Failed("GRAPH_PROJECTION_UNAVAILABLE: The graph projection reader is not registered.");
+            var graph = await graphSnapshots.ReadAsync(stateSpaceId, applicationId, requirements, mapping,
+                roleAssignments, inputJson, cancellationToken);
+            if (!graph.Ok) return new(null, graph.Problems);
+            projection = MergeGraph(projection, graph);
+        }
+        return new(projection, []);
+
+        static MechanicProjection MergeGraph(MechanicProjection projection,
+            ApplicationGraphSnapshotReadResult graph)
+        {
+            var graphNodes = graph.Snapshots.Values
+                .SelectMany(value => new[] { value.Root }.Concat(value.Steps.Values.SelectMany(step => step.Nodes)))
+                .GroupBy(value => value.Id, StringComparer.Ordinal)
+                .Select(group =>
+                {
+                    var first = group.First();
+                    var components = group.SelectMany(value => value.Components)
+                        .GroupBy(value => value.Key, StringComparer.Ordinal)
+                        .ToDictionary(value => value.Key, value => value.First().Value, StringComparer.Ordinal);
+                    var revisions = group.SelectMany(value => value.ComponentRevisions)
+                        .GroupBy(value => value.Key, StringComparer.Ordinal)
+                        .ToDictionary(value => value.Key, value => value.First().Value, StringComparer.Ordinal);
+                    return first with { Components = components, ComponentRevisions = revisions };
+                }).ToArray();
+            var graphComponents = graphNodes.SelectMany(node => node.ComponentRevisions.Select(component =>
+                new MechanicComponentRevision(node.Id, component.Key, component.Value.TypeVersion,
+                    component.Value.SchemaHash, component.Value.Revision)));
+            var graphEntities = graphNodes.Select(node => new MechanicEntityRevision(node.Id, node.Revision));
+            var graphRelationships = graph.Evidence.Select(value => new MechanicRelationshipCollectionSnapshot(
+                value.QualifiedKind, value.EntityId, value.Incoming, value.Relationships));
+            return projection with
+            {
+                GraphSnapshots = graph.Snapshots.ToDictionary(value => value.Key, value => value.Value,
+                    StringComparer.Ordinal),
+                GraphSnapshotEvidence = graph.Evidence,
+                ObservedComponents = projection.ObservedComponents.Concat(graphComponents)
+                    .GroupBy(value => (value.EntityId, value.QualifiedTypeId))
+                    .Select(value => value.First()).ToArray(),
+                ObservedEntities = projection.ObservedEntities.Concat(graphEntities)
+                    .GroupBy(value => value.EntityId, StringComparer.Ordinal).Select(value => value.First()).ToArray(),
+                RelationshipCollections = projection.RelationshipCollections.Concat(graphRelationships)
+                    .GroupBy(value => (value.QualifiedKind, value.AnchorEntityId, value.Incoming))
+                    .Select(value => value.First()).ToArray()
+            };
+        }
 
         void RecordComponentRevisions(string entityId, IEnumerable<string> localIds)
         {

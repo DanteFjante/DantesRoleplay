@@ -5,6 +5,8 @@ import { JSDOM } from "jsdom";
 import React, { act } from "react";
 
 import { InstalledContentView, type InstalledContentLoader } from "../../src/components/InstalledContentView";
+import { createHubStore } from "../../src/data/hub-store";
+import { Provider } from "react-redux";
 import type { InstalledContentPage, InstalledContentRequest } from "../../src/server/effective-content";
 
 const fingerprint = "A".repeat(64);
@@ -38,6 +40,8 @@ function page(records: ReturnType<typeof record>[], nextCursor: string | null, t
     availableKinds: ["entity", "procedure"],
     totalCount,
     nextCursor,
+    coverage: "ready",
+    notices: [],
   };
 }
 
@@ -68,14 +72,16 @@ test("installed content pages compact contributions and sends source, type, and 
   const loader: InstalledContentLoader = async (request) => {
     calls.push(structuredClone(request));
     if (request.query === "needle") return page([record("extension.needle", "Needle")], null, 1);
-    if (request.cursor) return page([record("extension.third", "Third")], null);
+    if (request.cursor) return { ...page([record("extension.third", "Third")], null), coverage: "partial" as const,
+      notices: ["One optional field on a later page was unavailable."] };
     return page([record("extension.first", "First"), record("extension.second", "Second")], "next-page");
   };
   const { createRoot } = await import("react-dom/client");
   const root = createRoot(document.getElementById("root")!);
+  const store = createHubStore();
   try {
     await act(async () => {
-      root.render(<InstalledContentView loadContent={loader} resolutionFingerprint={fingerprint} />);
+      root.render(<Provider store={store}><InstalledContentView loadContent={loader} resolutionFingerprint={fingerprint} /></Provider>);
       await tick();
     });
     assert.match(document.body.textContent!, /Showing 2 of 3/);
@@ -87,6 +93,8 @@ test("installed content pages compact contributions and sends source, type, and 
     assert.equal(calls[1]!.cursor, "next-page");
     assert.equal(calls[1]!.expectedResolutionFingerprint, fingerprint);
     assert.match(document.body.textContent!, /Showing 3 of 3/);
+    assert.match(document.body.textContent!, /Some descriptive contribution fields were unavailable/);
+    assert.match(document.body.textContent!, /One optional field on a later page was unavailable/);
 
     const source = document.querySelectorAll<HTMLSelectElement>("select")[0]!;
     await act(async () => {

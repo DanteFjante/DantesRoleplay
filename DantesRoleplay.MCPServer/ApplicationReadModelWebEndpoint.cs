@@ -1,6 +1,7 @@
 using System.Text.Json;
 using DantesRoleplay.Applications;
 using DantesRoleplay.CatalogNavigation;
+using DantesRoleplay.Ecs;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Knowledge;
 using DantesRoleplay.Mechanics;
@@ -20,8 +21,12 @@ public static class ApplicationReadModelWebEndpoint
     public sealed record WriteBody(
         string IdempotencyKey,
         string ExpectedSourceRevisionFingerprint,
-        JsonElement Changes,
-        IReadOnlyList<RelationshipEditBody>? RelationshipEdits);
+        JsonElement Changes = default,
+        IReadOnlyList<RelationshipEditBody>? RelationshipEdits = null)
+    {
+        public string Mode { get; init; } = "changes";
+        public JsonElement Object { get; init; }
+    }
 
     public static async Task<IResult> ReadAsync(
         string applicationId,
@@ -33,9 +38,10 @@ public static class ApplicationReadModelWebEndpoint
         IApplicationReadModelService readModels,
         CancellationToken cancellationToken,
         IPublicApplicationCatalogProvider? catalogs = null,
-        IAuthorizedKnowledgeAudiencePolicy? audiences = null,
-        IKnowledgeApplicationBindingResolver? bindings = null,
-        IKnowledgeActorParticipationVerifier? participation = null)
+        IApplicationQueryRoleBindingResolver? roleResolver = null,
+        IApplicationQueryAuthorizedContextProvider? authorizedContext = null,
+        IEntityComponentStore? entities = null,
+        IStateSpaceRegistry? stateSpaces = null)
     {
         context.Response.Headers.CacheControl = "private, no-store";
         var inputAware = context.Request.Query.ContainsKey("input") || context.Request.Query.ContainsKey("campaignId")
@@ -73,48 +79,53 @@ public static class ApplicationReadModelWebEndpoint
         try
         {
             var crossEntity = seat.Role == KnowledgeAudienceRole.Actor && seat.ActorId != entityId;
-            ApplicationQueryContract? queryContract = null;
-            if (catalogs is not null && catalogs.TryGet(application!, out var catalog))
-                queryContract = ApplicationQueryContract.Parse(catalog.Inspect(new(application!, application!.Value,
-                    qualifiedQueryId)).ContentJson, application!);
-            if (crossEntity && queryContract?.CampaignSelection is null) return SafeError("READ_MODEL_FORBIDDEN");
-            inputAware |= queryContract?.CampaignSelection is not null;
+            if (catalogs is null || !catalogs.TryGet(application!, out var catalog))
+                return SafeError("READ_MODEL_UNAVAILABLE");
+            var queryContract = ApplicationQueryContract.Parse(catalog.Inspect(new(application!, application!.Value,
+                qualifiedQueryId)).ContentJson, application!);
+            if (queryContract.CampaignSelection is not null)
+                return SafeError("READ_MODEL_FORBIDDEN");
+            if (crossEntity && queryContract.RoleBindings is null)
+                return SafeError("READ_MODEL_FORBIDDEN");
+            inputAware = true;
             var suppliedInput = context.Request.Query["input"];
             var suppliedCampaign = context.Request.Query["campaignId"];
             var suppliedCursor = context.Request.Query["cursor"];
             var suppliedLimit = context.Request.Query["limit"];
             var parsedLimit = 0;
-            if (suppliedInput.Count > 1 || suppliedCampaign.Count > 1 || suppliedCursor.Count > 1
+            if (suppliedInput.Count > 1 || suppliedCampaign.Count > 0 || suppliedCursor.Count > 1
                 || suppliedLimit.Count > 1 || suppliedCursor.Count == 1 && suppliedCursor[0]!.Length > 2_048
                 || suppliedLimit.Count == 1 && (!int.TryParse(suppliedLimit[0], out parsedLimit)
                     || parsedLimit is < 1 or > 500))
                 return SafeError("READ_MODEL_INPUT_INVALID");
             var input = ApplicationReadModelInput.Normalize(suppliedInput.Count == 0 ? "{}" : suppliedInput[0]!);
-            if (suppliedCampaign.Count == 1 || queryContract?.CampaignSelection is not null)
+            IReadOnlyDictionary<string, string>? roleBindings;
+            if (queryContract.RoleBindings is not null)
             {
-                var campaignId = suppliedCampaign.Count == 1 ? suppliedCampaign[0] : seat.CampaignId;
-                var authorized = await SystemAudienceContextHandler.ResolveAsync(
-                    seats, audiences, bindings, participation, campaignId, cancellationToken);
-                var authorization = JsonSerializer.SerializeToElement(authorized.Data);
-                if (authorized.Error is not null || bindings is null ||
-                    authorization.ValueKind != JsonValueKind.Object ||
-                    !authorization.TryGetProperty("status", out var status) || status.GetString() != "bound")
+                if (roleResolver is null || entities is null || stateSpaces is null)
+                    return SafeError("READ_MODEL_UNAVAILABLE");
+                var registeredSpace = stateSpaces.Get(stateSpaceId);
+                if (registeredSpace is null || registeredSpace.ApplicationRevision.ApplicationId != application)
                     return SafeError("READ_MODEL_FORBIDDEN");
-                var binding = await bindings.ResolveAsync(campaignId!, cancellationToken);
-                if (binding is null || binding.ApplicationId != applicationId || binding.StateSpaceId != stateSpaceId ||
-                    binding.CampaignEntityId != campaignId) return SafeError("READ_MODEL_FORBIDDEN");
-                // This local value binds roles; it never changes the ambient host seat.
-                seat = seat with { CampaignId = campaignId! };
+                var needsAuthorizedContext = queryContract.RoleBindings.Values.Any(
+                    value => value.Source == "authorized-context");
+                var needsEntityGrant = ApplicationObjectHostAccess.RequiresAuthorizedEntityGrant(seat);
+                if ((needsAuthorizedContext || needsEntityGrant) && authorizedContext is null)
+                    return SafeError("READ_MODEL_FORBIDDEN");
+                var authorizedRoles = needsAuthorizedContext || needsEntityGrant
+                    ? await authorizedContext!.ResolveAsync(application!, stateSpaceId, cancellationToken)
+                    : new Dictionary<string, string>(StringComparer.Ordinal);
+                if (authorizedRoles is null) return SafeError("READ_MODEL_FORBIDDEN");
+                roleBindings = roleResolver.Resolve(queryContract, input,
+                    new(entityId, authorizedRoles));
+                if (roleBindings.Values.Any(roleEntityId =>
+                        !ApplicationObjectHostAccess.CanReadRoleEntity(seat, roleEntityId, authorizedRoles)))
+                    return SafeError("READ_MODEL_FORBIDDEN");
+                foreach (var roleEntityId in roleBindings.Values.Distinct(StringComparer.Ordinal))
+                    if (await entities.GetEntityAsync(stateSpaceId, roleEntityId, cancellationToken) is null)
+                        return SafeError("READ_MODEL_FORBIDDEN");
             }
-            ApplicationReadModelResult? selectionResult = null;
-            if (queryContract?.CampaignSelection is { } selection)
-            {
-                selectionResult = await ReadSelectionAsync(selection, catalogs!, readModels, application!,
-                    stateSpaceId, seat.CampaignId, audience, cancellationToken);
-                if (!SelectionMatches(selectionResult, selection.EntityIdField, entityId)) return SafeError("READ_MODEL_FORBIDDEN");
-            }
-            var roleBindings = ResolveRoleBindings(
-                catalogs, application!, qualifiedQueryId, entityId, seat);
+            else roleBindings = ResolveRouteEntityBinding(queryContract, entityId);
             if (roleBindings is null)
                 return Results.Json(new
                 {
@@ -129,13 +140,6 @@ public static class ApplicationReadModelWebEndpoint
                 audience, input,
                 suppliedCursor.Count == 1 ? suppliedCursor[0] : null,
                 suppliedLimit.Count == 1 ? parsedLimit : null), cancellationToken);
-            if (selectionResult is not null && queryContract?.CampaignSelection is { } recheck)
-            {
-                var current = await ReadSelectionAsync(recheck, catalogs!, readModels, application!,
-                    stateSpaceId, seat.CampaignId, audience, cancellationToken);
-                if (current.SourceRevisionFingerprint != selectionResult.SourceRevisionFingerprint ||
-                    !SelectionMatches(current, recheck.EntityIdField, entityId)) return SafeError("READ_MODEL_SOURCE_STALE");
-            }
             using var data = JsonDocument.Parse(result.DataJson);
             return Results.Json(new
             {
@@ -189,38 +193,20 @@ public static class ApplicationReadModelWebEndpoint
         ILocalKnowledgeSeatProvider seats,
         IApplicationObjectWriteService writes,
         IPublicApplicationCatalogProvider catalogs,
-        IAuthorizedKnowledgeAudiencePolicy audiences,
-        IKnowledgeApplicationBindingResolver bindings,
-        IKnowledgeActorParticipationVerifier participation,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        IApplicationQueryRoleBindingResolver? roleResolver = null,
+        IApplicationQueryAuthorizedContextProvider? authorizedContext = null,
+        IEntityComponentStore? entities = null,
+        IStateSpaceRegistry? stateSpaces = null)
     {
         context.Response.Headers.CacheControl = "private, no-store";
         var seat = seats.Current();
         if (!Authorized(seat, applicationId, entityId, out var application) ||
-            seat.Role != KnowledgeAudienceRole.GameMaster)
+            !ApplicationObjectHostAccess.CanWrite(seat))
             return SafeWriteError("OBJECT_WRITE_FORBIDDEN");
-
-        // Workspace selection is not authority. Resolve it through the same binding as reads
-        // before using it to materialize roles or applying a mapped edit.
-        if (context.Request.Query.TryGetValue("campaign", out var campaigns))
-        {
-            var campaign = campaigns.ToString();
-            if (campaigns.Count != 1 || string.IsNullOrWhiteSpace(campaign) ||
-                campaign.Length > 200 || campaign.Any(char.IsWhiteSpace))
-                return SafeWriteError("OBJECT_WRITE_REQUEST_INVALID");
-            seat = seat with { CampaignId = campaign };
-        }
 
         try
         {
-            var authorization = await SystemAudienceContextHandler.ResolveAsync(
-                seats, audiences, bindings, participation, seat.CampaignId, cancellationToken);
-            if (authorization.Error is not null)
-                return SafeWriteError("OBJECT_WRITE_FORBIDDEN");
-            var binding = await bindings.ResolveAsync(seat.CampaignId, cancellationToken);
-            if (binding is null || binding.ApplicationId != applicationId ||
-                binding.StateSpaceId != stateSpaceId || binding.CampaignEntityId != seat.CampaignId)
-                return SafeWriteError("OBJECT_WRITE_FORBIDDEN");
             if (!catalogs.TryGet(application!, out var catalog))
                 return SafeWriteError("OBJECT_WRITE_UNAVAILABLE");
             var query = ApplicationQueryContract.Parse(catalog.Inspect(new(
@@ -228,26 +214,67 @@ public static class ApplicationReadModelWebEndpoint
             if (query.Id != qualifiedQueryId || query.Status != "active" || !query.IsObjectProjection ||
                 query.ObjectCollectionId is null)
                 return SafeWriteError("OBJECT_WRITE_UNKNOWN");
-            var roleBindings = ResolveRoleBindings(catalogs, application!, qualifiedQueryId, entityId, seat);
+            if (context.Request.Query.ContainsKey("campaign"))
+                return SafeWriteError("OBJECT_WRITE_REQUEST_INVALID");
+            if (stateSpaces is null) return SafeWriteError("OBJECT_WRITE_UNAVAILABLE");
+            {
+                var registeredSpace = stateSpaces.Get(stateSpaceId);
+                if (registeredSpace is null || registeredSpace.ApplicationRevision.ApplicationId != application)
+                    return SafeWriteError("OBJECT_WRITE_FORBIDDEN");
+            }
+            var suppliedInput = context.Request.Query["input"];
+            if (suppliedInput.Count > 1) return SafeWriteError("OBJECT_WRITE_REQUEST_INVALID");
+            var input = ApplicationReadModelInput.Normalize(
+                suppliedInput.Count == 0 ? "{}" : suppliedInput[0]!);
+            IReadOnlyDictionary<string, string>? roleBindings;
+            if (query.RoleBindings is not null)
+            {
+                if (roleResolver is null || entities is null) return SafeWriteError("OBJECT_WRITE_UNAVAILABLE");
+                var needsAuthorizedContext = query.RoleBindings.Values.Any(
+                    value => value.Source == "authorized-context");
+                if (needsAuthorizedContext && authorizedContext is null)
+                    return SafeWriteError("OBJECT_WRITE_FORBIDDEN");
+                var authorizedRoles = needsAuthorizedContext
+                    ? await authorizedContext!.ResolveAsync(application!, stateSpaceId, cancellationToken)
+                    : new Dictionary<string, string>(StringComparer.Ordinal);
+                if (authorizedRoles is null) return SafeWriteError("OBJECT_WRITE_FORBIDDEN");
+                roleBindings = roleResolver.Resolve(query, input, new(entityId, authorizedRoles));
+                foreach (var roleEntityId in roleBindings.Values.Distinct(StringComparer.Ordinal))
+                    if (await entities.GetEntityAsync(stateSpaceId, roleEntityId, cancellationToken) is null)
+                        return SafeWriteError("OBJECT_WRITE_FORBIDDEN");
+            }
+            else roleBindings = ResolveRouteEntityBinding(query, entityId);
             if (roleBindings is null || !roleBindings.Values.Contains(entityId, StringComparer.Ordinal))
                 return SafeWriteError("OBJECT_WRITE_FORBIDDEN");
-            if (body is null || body.Changes.ValueKind != JsonValueKind.Object ||
+            var validSubmission = body?.Mode switch
+            {
+                "changes" => body.Changes.ValueKind == JsonValueKind.Object
+                    && body.Object.ValueKind == JsonValueKind.Undefined,
+                "object" => body.Object.ValueKind == JsonValueKind.Object
+                    && body.Changes.ValueKind == JsonValueKind.Undefined,
+                _ => false
+            };
+            if (body is null || !validSubmission ||
                 body.RelationshipEdits?.Any(value => value is null) == true)
                 return SafeWriteError("OBJECT_WRITE_REQUEST_INVALID");
 
-            var result = await writes.WriteAsync(new(
+            var request = new ApplicationObjectWriteRequest(
                 stateSpaceId,
                 application!,
                 new(query.ProjectionQualifiedId, query.ProjectionVersion, query.ProjectionContentHash),
                 roleBindings,
                 query.ObjectCollectionId,
-                "dm",
+                ApplicationObjectHostAccess.PrivilegedWritePerspective,
                 body.IdempotencyKey,
                 body.ExpectedSourceRevisionFingerprint,
-                body.Changes.GetRawText(),
+                body.Mode == "changes" ? body.Changes.GetRawText() : "{}",
                 body.RelationshipEdits?.Select(value => new ApplicationObjectRelationshipEdit(
-                    value.Path, value.Operation, value.TargetEntityId, value.ExpectedRevision)).ToArray() ?? []),
-                cancellationToken);
+                    value.Path, value.Operation, value.TargetEntityId, value.ExpectedRevision)).ToArray() ?? [])
+            {
+                SubmissionMode = body.Mode,
+                SubmittedObjectJson = body.Mode == "object" ? body.Object.GetRawText() : "{}"
+            };
+            var result = await writes.WriteAsync(request, cancellationToken);
             using var data = JsonDocument.Parse(result.OutputJson);
             return Results.Json(new
             {
@@ -265,6 +292,17 @@ public static class ApplicationReadModelWebEndpoint
         catch (ApplicationObjectWriteException exception)
         {
             return SafeWriteError(exception.Code);
+        }
+        catch (ApplicationReadModelException exception)
+        {
+            return SafeWriteError(exception.Code switch
+            {
+                "READ_MODEL_INPUT_INVALID" or "READ_MODEL_REQUEST_INVALID"
+                    => "OBJECT_WRITE_REQUEST_INVALID",
+                "READ_MODEL_ROLES_UNAVAILABLE" or "READ_MODEL_ROLES_INVALID"
+                    or "READ_MODEL_FORBIDDEN" => "OBJECT_WRITE_FORBIDDEN",
+                _ => "OBJECT_WRITE_UNAVAILABLE"
+            });
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
         catch (KeyNotFoundException)
@@ -286,6 +324,7 @@ public static class ApplicationReadModelWebEndpoint
             "OBJECT_WRITE_UNKNOWN" => (404, "The writable object is unavailable."),
             "OBJECT_WRITE_SOURCE_STALE" => (409, "The object changed. Refresh before saving."),
             "OBJECT_WRITE_IDEMPOTENCY_CONFLICT" => (409, "The edit key is already bound to another request."),
+            "OBJECT_WRITE_READ_ONLY_CHANGED" => (422, "The submitted object changes a read-only field."),
             "OBJECT_WRITE_REJECTED" => (422, "The declared object edit was rejected."),
             _ => (503, "The writable object is temporarily unavailable.")
         };
@@ -305,46 +344,18 @@ public static class ApplicationReadModelWebEndpoint
         return Results.Json(new { code, message }, statusCode: status);
     }
 
-    private static IReadOnlyDictionary<string, string>? ResolveRoleBindings(
-        IPublicApplicationCatalogProvider? catalogs,
-        ApplicationIdentifier application,
-        string qualifiedQueryId,
-        string entityId,
-        LocalKnowledgeSeatSnapshot seat)
+    private static IReadOnlyDictionary<string, string>? ResolveRouteEntityBinding(
+        ApplicationQueryContract contract,
+        string entityId)
     {
-        // Retain the original subject contract for isolated callers and older tests. The live host
-        // supplies the catalog so role binding follows the query's own declaration rather than a
-        // second handwritten list of D&D read models.
-        if (catalogs is null)
-            return new Dictionary<string, string>(StringComparer.Ordinal) { ["subject"] = entityId };
-        try
-        {
-            if (!catalogs.TryGet(application, out var catalog))
-                throw new ApplicationReadModelException("READ_MODEL_CATALOG_UNAVAILABLE",
-                    "The active application catalog is unavailable. Inspect application readiness and restore or reactivate the reviewed catalog before retrying.");
-            var record = catalog.Inspect(new(application, application.Value, qualifiedQueryId));
-            var contract = ApplicationQueryContract.Parse(record.ContentJson, application);
-            var bindings = new Dictionary<string, string>(StringComparer.Ordinal);
-            foreach (var role in contract.Roles.Keys)
-            {
-                var value = role switch
-                {
-                    "campaign" when !string.IsNullOrWhiteSpace(seat.CampaignId) => seat.CampaignId,
-                    "actor" when !string.IsNullOrWhiteSpace(seat.ActorId) => seat.ActorId,
-                    "actor" => entityId,
-                    "subject" => entityId,
-                    _ when contract.Roles.Count == 1 || contract.Roles.Count == 2 && contract.Roles.ContainsKey("campaign") => entityId,
-                    _ => null
-                };
-                if (string.IsNullOrWhiteSpace(value)) return null;
-                bindings.Add(role, value);
-            }
-            return bindings;
-        }
-        catch (Exception exception) when (exception is ArgumentException or KeyNotFoundException or JsonException)
-        {
+        // A transition-only generic compatibility path: only a single declared role may bind to
+        // the route entity. It deliberately has no role-name or seat-field inference.
+        if (contract.RoleBindings is not null || contract.Roles.Count != 1)
             return null;
-        }
+        return new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            [contract.Roles.Keys.Single()] = entityId
+        };
     }
 
     private static bool Authorized(
@@ -370,26 +381,4 @@ public static class ApplicationReadModelWebEndpoint
         }
     }
 
-    private static async Task<ApplicationReadModelResult> ReadSelectionAsync(
-        ApplicationQueryCampaignSelection selection, IPublicApplicationCatalogProvider catalogs,
-        IApplicationReadModelService readModels, ApplicationIdentifier application, string stateSpaceId,
-        string campaignId, MechanicAudienceContext audience, CancellationToken cancellationToken)
-    {
-        if (!catalogs.TryGet(application, out var catalog))
-            throw new ApplicationReadModelException("READ_MODEL_FORBIDDEN", "Selection is unavailable.");
-        var contract = ApplicationQueryContract.Parse(catalog.Inspect(new(application, application.Value,
-            selection.QueryId)).ContentJson, application);
-        if (contract.CampaignSelection is not null || contract.Roles.Count != 1 || !contract.Roles.ContainsKey("campaign"))
-            throw new ApplicationReadModelException("READ_MODEL_FORBIDDEN", "Selection is unavailable.");
-        return await readModels.ReadAsync(new(stateSpaceId, application, selection.QueryId,
-            new Dictionary<string, string> { ["campaign"] = campaignId }, audience), cancellationToken);
-    }
-
-    private static bool SelectionMatches(ApplicationReadModelResult result, string field, string entityId)
-    {
-        using var data = JsonDocument.Parse(result.DataJson);
-        return data.RootElement.ValueKind == JsonValueKind.Object &&
-            data.RootElement.TryGetProperty(field, out var selected) && selected.ValueKind == JsonValueKind.String
-            && selected.GetString() == entityId;
-    }
 }

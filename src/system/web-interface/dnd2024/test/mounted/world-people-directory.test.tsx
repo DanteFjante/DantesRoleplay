@@ -82,3 +82,29 @@ test("People list/detail stacks and releases sticky detail on narrow screens", a
   assert.match(css, /@media \(max-width: 620px\)[\s\S]*?\.world-person-workspace\s*\{\s*grid-template-columns:\s*1fr/u);
   assert.match(css, /@media \(max-width: 620px\)[\s\S]*?\.world-person-detail\s*\{\s*position:\s*static/u);
 });
+
+test("People keeps unfamiliar classifications and local facet gaps visible", async () => {
+  const unknown = {
+    ...person("person.unknown", "Unfamiliar Person", "location.unknown"),
+    kind: "Archivist",
+    role: "Classification unavailable",
+    background: "Background unavailable.",
+    disposition: "Unavailable",
+    unavailableFields: ["motive"],
+  };
+  const partialWorld = {
+    ...world,
+    people: [unknown],
+    peopleDirectory: { totalCount: 1, hierarchyComplete: true, coverage: "partial" as const, sourceRevisionFingerprint: "A".repeat(64) },
+  } as WorldReadModel;
+  const mounted = await mount(<WorldPeopleDirectory world={partialWorld} selectedPersonId={unknown.id}
+    onPersonSelect={() => {}} onOpenLocation={() => {}} />);
+  try {
+    assert.match(mounted.container.textContent!, /Some people records are unavailable/);
+    assert.match(mounted.container.textContent!, /Archivist/);
+    assert.match(mounted.container.textContent!, /Classification unavailable/);
+    assert.match(mounted.container.textContent!, /Motive/);
+    assert.match(mounted.container.textContent!, /Background unavailable/);
+    assert.doesNotMatch(mounted.container.textContent!, /Not recorded/);
+  } finally { await mounted.cleanup(); }
+});

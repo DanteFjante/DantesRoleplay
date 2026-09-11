@@ -38,21 +38,23 @@ class GovernanceControlCenter extends HTMLElement {
     super();
     this._connected = false;
     this._request = null;
+    this._sequence = 0;
     this._capabilities = [];
     this.attachShadow({mode: 'open'});
     this._renderShell();
+  }
+
+  disconnectedCallback() {
+    this._connected = false;
+    this._request?.abort();
+    this._request = null;
+    ++this._sequence;
   }
 
   connectedCallback() {
     if (this._connected) return;
     this._connected = true;
     this._load();
-  }
-
-  disconnectedCallback() {
-    this._connected = false;
-    if (this._request) this._request.abort();
-    this._request = null;
   }
 
   _renderShell() {
@@ -103,8 +105,10 @@ class GovernanceControlCenter extends HTMLElement {
   }
 
   async _load() {
+    this._request?.abort();
     const request = new AbortController();
     this._request = request;
+    const sequence = ++this._sequence;
     this._status.textContent = 'Loading current authorized capabilities…';
     try {
       const response = await fetch(CAPABILITY_INDEX, {
@@ -115,10 +119,19 @@ class GovernanceControlCenter extends HTMLElement {
         : 'System capability discovery is unavailable.');
       const body = await response.json();
       if (!Array.isArray(body) || body.length > 200) throw new Error('The capability index is malformed.');
-      this._capabilities = body.map(capability);
-      this._renderCapabilities();
+      const capabilities = [];
+      let partial = false;
+      for (const item of body) {
+        try { capabilities.push(capability(item)); }
+        catch { partial = true; }
+      }
+      if (!request.signal.aborted && this._connected && this._sequence === sequence) {
+        this._capabilities = capabilities;
+        this._partial = partial;
+        this._renderCapabilities();
+      }
     } catch (error) {
-      if (error.name === 'AbortError') return;
+      if (error.name === 'AbortError' || request.signal.aborted || !this._connected || this._sequence !== sequence) return;
       this._status.textContent = error.message || 'System capability discovery is unavailable.';
       this._status.setAttribute('role', 'alert');
     } finally {
@@ -148,7 +161,8 @@ class GovernanceControlCenter extends HTMLElement {
       this._groups.append(section);
     }
     this._status.removeAttribute('role');
-    this._status.textContent = `${visible.length} of ${this._capabilities.length} current authorized capabilities shown.`;
+    this._status.textContent = `${visible.length} of ${this._capabilities.length} current authorized capabilities shown.` +
+      (this._partial ? ' Some capability entries are unavailable.' : '');
   }
 
   _card(item) {

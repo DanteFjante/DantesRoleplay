@@ -1,0 +1,55 @@
+{
+  "id": "dnd2024.object.rest-begin-world",
+  "version": 1,
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["root", "clock"],
+    "properties": {
+      "root": {
+        "type": "object", "additionalProperties": false, "required": ["status", "summary", "visibility"],
+        "properties": { "status": { "enum": ["draft", "active", "archived"] }, "summary": { "type": "string", "minLength": 1, "maxLength": 1000 }, "visibility": { "enum": ["public", "party", "gm"] } }
+      },
+      "clock": {
+        "type": "object", "additionalProperties": false, "required": ["calendarId", "currentMinute", "revision"],
+        "properties": { "calendarId": { "type": "string", "minLength": 1, "maxLength": 100 }, "currentMinute": { "type": "integer", "minimum": 0, "maximum": 1000000000 }, "revision": { "type": "integer", "minimum": 0, "maximum": 2147483647 } }
+      },
+      "rests": {
+        "type": "array", "maxItems": 100,
+        "items": {
+          "type": "object", "additionalProperties": false,
+          "required": ["id", "name", "policyEntityId", "kind", "worldId", "startedAtMinute", "observedAtMinute", "observedClockRevision", "requiredMinutes", "lightActivityMinutes", "status", "sourceRef"],
+          "properties": {
+            "id": { "type": "string", "minLength": 1, "maxLength": 200 }, "name": { "type": "string", "minLength": 1, "maxLength": 400 },
+            "policyEntityId": { "const": "dnd2024.content.rest-policy.standard.v1" }, "kind": { "enum": ["short", "long"] },
+            "worldId": { "type": "string", "minLength": 1, "maxLength": 200 }, "startedAtMinute": { "type": "integer", "minimum": 0, "maximum": 1000000000 },
+            "observedAtMinute": { "type": "integer", "minimum": 0, "maximum": 1000000000 }, "observedClockRevision": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
+            "requiredMinutes": { "type": "integer", "minimum": 60, "maximum": 1000000000 }, "sleepMinutes": { "type": "integer", "minimum": 0, "maximum": 1000000000 },
+            "lightActivityMinutes": { "type": "integer", "minimum": 0, "maximum": 1000000000 }, "interruptionCount": { "type": "integer", "minimum": 0, "maximum": 16666658 },
+            "status": { "enum": ["active", "ready"] },
+            "sourceRef": { "type": "object", "additionalProperties": false, "required": ["sourceId", "locator"], "properties": { "sourceId": { "const": "dnd2024.source.srd-5.2.1" }, "locator": { "enum": ["Rules Glossary > Short Rest, PDF page 187", "Rules Glossary > Long Rest, PDF page 185"] } } }
+          }
+        }
+      },
+      "totalCount": { "type": "integer", "minimum": 0, "maximum": 100 },
+      "complete": { "const": true },
+      "nextCursor": { "type": "null" }
+    }
+  },
+  "roles": { "world": { "required": true }, "creature": { "required": false } },
+  "sources": [
+    { "id": "root", "role": "world", "component": { "qualifiedId": "game.core.world.root", "version": 1, "schemaHash": "B958F2DF352FA2B15FA704DCAAB340B4EE5EB4F838437943A90DFB77675C615D" }, "required": true },
+    { "id": "clock", "role": "world", "component": { "qualifiedId": "game.core.world.clock", "version": 1, "schemaHash": "FFF065DCF4CA04E525093C6C0F9227ACB707DFB9CA8A9B96C5D3845A31525948" }, "required": true }
+  ],
+  "relationships": [
+    { "id": "rests", "qualifiedKind": "dnd2024.rest.world", "fromRole": "world", "toRole": "creature", "cardinality": "many", "targetPointer": "/rests", "requiredEndpointComponents": [ { "endpoint": "to", "component": { "qualifiedId": "dnd2024.rest-episode", "version": 1, "schemaHash": "4C98C39F20B604DFD07274E53CBF2A36C174078727C4E70645DE4E3814CEB95A" } } ], "optionalEndpointComponents": [] }
+  ],
+  "references": [],
+  "mappings": [
+    { "inputId": "root", "sourcePointer": "", "targetPointer": "/root" },
+    { "inputId": "clock", "sourcePointer": "", "targetPointer": "/clock" }
+  ],
+  "collections": [ { "id": "rests", "sourceId": "rests", "pageSize": 100, "maximumPageSize": 100, "order": [ { "path": "/id", "direction": "asc" } ], "cursor": "source-revision-bound" } ],
+  "limits": { "traversalDepth": 2, "itemCount": 100, "outputBytes": 262144, "sqlQueries": 12 },
+  "access": { "read": ["dm"], "write": [] }
+}

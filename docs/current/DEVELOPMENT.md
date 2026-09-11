@@ -315,6 +315,14 @@ a runtime database must include both the SQLite file and its adjacent `blobs/` d
 
 ## Published web bundles
 
+The published D&D game website is read-only until the user explicitly approves website editing.
+Do not connect the campaign-premise writer or combat-map upload/acceptance workshop from its
+production entry or hub. Browsing, local view preferences and refreshes from server-side changes
+remain available. Retained editor/client safety tests do not authorize exposing those controls.
+This UI restriction does not disable the server's authorized MCP/AI operations or weaken their
+component schemas, mapping, revision, confirmation and transaction safeguards. Separate system
+administration surfaces are outside this game-page restriction.
+
 Portable host settings do not select a personal campaign or actor. Optional machine-local
 defaults belong in the ignored `DantesRoleplay.MCPServer/appsettings.Local.json`, which the host
 loads before environment and command-line overrides and excludes from build/publish output.
@@ -325,6 +333,10 @@ Map navigation distinguishes a missing attachment from a failed media lookup. A 
 confirmed absent map opens its nearest mapped parent and selects that parent's existing marker;
 coordinates are never transferred between map scopes. Failed lookups retain their retry state.
 Scopes without a usable image show readable places without a canvas or zoom controls.
+The illustrated map frame follows the decoded image's proportions, not a fixed viewport height.
+Image, marker and overlay layers share the same untransformed stage. Image changes and container
+resizes re-constrain the local pan/zoom: fitting images are centered, larger images stay bounded,
+and zooming does not resize the surrounding page or change authored marker coordinates.
 
 Server startup applies the kernel and web schema initialization, bootstrap contracts, saved host
 settings, and interrupted-conversation recovery before opening the listener. It logs phase timings,

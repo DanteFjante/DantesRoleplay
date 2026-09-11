@@ -40,12 +40,22 @@ test("shared read-model transport returns only exact, scoped, schema-valid envel
   assert.equal(result.evidence.sourceRevisionFingerprint, "D".repeat(64));
 });
 
+test("shared read-model transport accepts additive envelope metadata and a different valid schema hash", async () => {
+  const value = envelope();
+  value.private = true;
+  value.data.newField = { retainedByServer: true };
+  value.outputSchemaHash = "F".repeat(64);
+  const result = await read(async () => response(value));
+  assert.equal(result.status, "ready");
+  assert.deepEqual(result.data, { version: 1, value: "visible", newField: { retainedByServer: true } });
+  assert.equal(result.evidence.outputSchemaHash, "F".repeat(64));
+});
+
 for (const [name, mutate] of [
-  ["extra envelope field", (value) => { value.private = true; }],
   ["wrong application scope", (value) => { value.applicationId = "other"; }],
   ["wrong state-space scope", (value) => { value.stateSpaceId = "other"; }],
   ["wrong query", (value) => { value.qualifiedQueryId = "dnd2024.query.other"; }],
-  ["wrong schema", (value) => { value.outputSchemaHash = "0".repeat(64); }],
+  ["malformed schema", (value) => { value.outputSchemaHash = "not-a-fingerprint"; }],
   ["missing provenance", (value) => { delete value.sourceRevisionFingerprint; }],
   ["invalid schema data", (value) => { value.data.version = 2; }],
   ["wrong feature binding", (value) => { value.data.value = "foreign"; }],

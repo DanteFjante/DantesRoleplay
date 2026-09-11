@@ -1,15 +1,3 @@
-const ENVELOPE_KEYS = [
-  "applicationId",
-  "stateSpaceId",
-  "qualifiedQueryId",
-  "stateSpaceFingerprint",
-  "resolutionFingerprint",
-  "outputSchemaHash",
-  "resultFingerprint",
-  "sourceRevisionFingerprint",
-  "data",
-];
-
 const fingerprint = (value) =>
   typeof value === "string" && /^[a-f0-9]{64}$/iu.test(value);
 
@@ -97,9 +85,10 @@ export async function readBoundedJson(response, maximumBodyBytes) {
  * @param {{
  *   applicationId: string,
  *   stateSpaceId: string,
- *   query: {id: string, outputSchemaHash: string},
+ *   query: {id: string, outputSchemaHash?: string},
  *   maximumDataBytes?: number,
- *   validate: (value: unknown) => value is T,
+ *   validate?: (value: unknown) => value is T,
+ *   consume?: (value: unknown) => T | null,
  *   verify?: (value: T) => boolean,
  * }} contract
  * @returns {{data: T, evidence: ReadModelEvidence} | null}
@@ -110,26 +99,32 @@ export function validateReadModelEnvelope(value, {
   query,
   maximumDataBytes,
   validate,
+  consume,
   verify,
 }) {
-  if (!value || typeof value !== "object" || Array.isArray(value) ||
-      Object.keys(value).length !== ENVELOPE_KEYS.length ||
-      !ENVELOPE_KEYS.every((key) => Object.hasOwn(value, key))) return null;
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const record = /** @type {Record<string, unknown>} */ (value);
-  if (record.applicationId !== applicationId || record.stateSpaceId !== stateSpaceId ||
-      record.qualifiedQueryId !== query.id || record.outputSchemaHash !== query.outputSchemaHash ||
-      ![record.stateSpaceFingerprint, record.resolutionFingerprint, record.resultFingerprint,
-        record.sourceRevisionFingerprint].every(fingerprint) || !validate(record.data)) return null;
+  const mandatory = ["applicationId", "stateSpaceId", "qualifiedQueryId", "outputSchemaHash",
+    "stateSpaceFingerprint", "resolutionFingerprint", "resultFingerprint", "sourceRevisionFingerprint", "data"];
+  if (!mandatory.every((key) => Object.hasOwn(record, key)) ||
+      record.applicationId !== applicationId || record.stateSpaceId !== stateSpaceId ||
+      record.qualifiedQueryId !== query.id ||
+      ![record.outputSchemaHash, record.stateSpaceFingerprint, record.resolutionFingerprint,
+        record.resultFingerprint, record.sourceRevisionFingerprint].every(fingerprint)) return null;
   if (maximumDataBytes !== undefined &&
       new TextEncoder().encode(JSON.stringify(record.data)).length > maximumDataBytes) return null;
-  if (verify && !verify(record.data)) return null;
+  const data = consume ? consume(record.data) : record.data;
+  if (data === null || data === undefined || (validate && !validate(data))) return null;
+  if (verify && !verify(data)) return null;
   return {
-    data: record.data,
+    data,
     evidence: {
       qualifiedQueryId: query.id,
       stateSpaceFingerprint: /** @type {string} */ (record.stateSpaceFingerprint),
       resolutionFingerprint: /** @type {string} */ (record.resolutionFingerprint),
-      outputSchemaHash: query.outputSchemaHash,
+      // Output-shape fingerprints are useful release evidence, but equality with the generated
+      // browser contract is not a display-admission condition.
+      outputSchemaHash: /** @type {string} */ (record.outputSchemaHash),
       resultFingerprint: /** @type {string} */ (record.resultFingerprint),
       sourceRevisionFingerprint: /** @type {string} */ (record.sourceRevisionFingerprint),
     },
@@ -137,8 +132,8 @@ export function validateReadModelEnvelope(value, {
 }
 
 /**
- * Applies the shared read-model transport and exact-envelope contract. Feature adapters remain
- * responsible for constructing authorized URLs and for all application-specific data semantics.
+ * Applies the shared read-model transport and scope contract. Feature adapters consume only their
+ * bounded fields; output-schema fingerprints remain evidence rather than display admission.
  *
  * @template T
  * @param {{
@@ -147,11 +142,12 @@ export function validateReadModelEnvelope(value, {
  *   init?: RequestInit,
  *   applicationId: string,
  *   stateSpaceId: string,
- *   query: {id: string, outputSchemaHash: string},
+ *   query: {id: string, outputSchemaHash?: string},
  *   maximumBodyBytes: number,
  *   maximumDataBytes?: number,
  *   statusPolicy: ReadModelStatusPolicy,
- *   validate: (value: unknown) => value is T,
+ *   validate?: (value: unknown) => value is T,
+ *   consume?: (value: unknown) => T | null,
  *   verify?: (value: T) => boolean,
  *   expectedSourceRevision?: string | null,
  * }} options
@@ -172,6 +168,7 @@ export async function readModelResponse({
   maximumDataBytes,
   statusPolicy,
   validate,
+  consume,
   verify,
   expectedSourceRevision,
 }) {
@@ -191,6 +188,7 @@ export async function readModelResponse({
     query,
     maximumDataBytes,
     validate,
+    consume,
     verify,
   });
   if (!envelope)

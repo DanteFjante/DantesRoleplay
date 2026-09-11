@@ -201,6 +201,22 @@ public sealed class ApplicationMechanicWebServiceTests
         Assert.Equal(0, fixture.Gateway.PlanCalls);
     }
 
+    [Fact]
+    public void Application_recovery_route_binds_gateway_from_services_not_request_body()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.Services.AddDantesRoleplayWeb("Data Source=:memory:", new ConfigurationBuilder().Build());
+        var application = builder.Build();
+        application.MapDantesRoleplayWeb();
+
+        var route = Assert.Single(((IEndpointRouteBuilder)application).DataSources
+            .SelectMany(source => source.Endpoints).OfType<RouteEndpoint>(), endpoint =>
+                endpoint.RoutePattern.RawText ==
+                "/api/applications/{applicationId}/state-spaces/{stateSpaceId}/recoveries/{idempotencyKey}");
+        Assert.DoesNotContain(route.Metadata, value => value.GetType().Name.Contains("FromBody", StringComparison.Ordinal)
+            || value.GetType().GetInterfaces().Any(type => type.Name == "IFromBodyMetadata"));
+    }
+
     private static async Task<HttpResponse> InvokePrepareRouteAsync(Fixture fixture, byte[] body)
     {
         var builder = WebApplication.CreateBuilder();

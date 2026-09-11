@@ -97,27 +97,61 @@ export function SavesAndSkills({ sheet }: { sheet: CharacterSheetProjectionV2 })
 
 export function FeatureGroups({ sheet }: { sheet: CharacterSheetData }) {
   const dossier = (sheet as CanonicalCharacterData).dossier ?? null;
+  const dossierFeatures = dossier?.features ?? [];
+  const sheetFeatures = sheet.features ?? [];
+  const dossierFeatureMatches = (entry: { feature: { id: string }; grantedBy: { id: string } }) =>
+    dossierFeatures.filter((candidate) =>
+      candidate.definition.id === entry.feature.id && candidate.grantedBy.id === entry.grantedBy.id);
+  const dossierOnlyFeatures = dossierFeatures.filter((candidate) =>
+    !sheetFeatures.some((entry) => entry.feature.id === candidate.definition.id && entry.grantedBy.id === candidate.grantedBy.id));
   const hasState = sheet.movement?.length || sheet.senses?.length || sheet.conditions?.length;
-  const hasTraining = sheet.proficiencies?.length || sheet.features?.length || sheet.resources?.length;
+  const hasTraining = sheet.proficiencies?.length || sheetFeatures.length || sheet.resources?.length ||
+    dossierFeatures.length || dossier?.origin?.traits?.length;
   if (!hasState && !hasTraining) return null;
   return (
     <section className="character-panel">
       <SectionHeading eyebrow="Capabilities" title="Features & training" />
       <div className="character-feature-groups">
-        {sheet.features?.length ? <div><h4>Features</h4><ul>{sheet.features.map((entry) => (
+        {sheetFeatures.length || dossierOnlyFeatures.length ? <div><h4>Features</h4><ul>
+          {sheetFeatures.map((entry) => (
           <li key={`${entry.feature.id}:${entry.grantedBy.id}`}>
-            <strong>{entry.feature.label}</strong>
-            <span>{entry.grantKind.label}{entry.classLevel ? ` · level ${entry.classLevel}` : ""}</span>
-            {dossier?.features.find((detail) => detail.definition.id === entry.feature.id)?.definition.summary
-              ? <small>{dossier.features.find((detail) => detail.definition.id === entry.feature.id)?.definition.summary}</small>
-              : null}
-            {dossier?.features.find((detail) => detail.definition.id === entry.feature.id)?.implementation.status === "pending"
-              ? <small>Pending: {dossier.features.find((detail) => detail.definition.id === entry.feature.id)?.implementation.reason?.replaceAll("-", " ") ?? "a required choice"}.</small>
-              : dossier ? <small>Executable from current canonical state.</small> : null}
+            {(() => {
+              const matches = dossierFeatureMatches(entry);
+              const detail = matches.length === 1 ? matches[0] : undefined;
+              return <>
+                <strong>{entry.feature.label}</strong>
+                <span>{entry.grantKind.label}{entry.classLevel ? ` · level ${entry.classLevel}` : ""}</span>
+                {detail?.definition.summary ? <small>{detail.definition.summary}</small> : null}
+                {detail?.implementation?.status === "pending"
+                  ? <small>Pending: {detail.implementation.reason?.replaceAll("-", " ") ?? "a required choice"}.</small>
+                  : detail?.implementation?.status === "executable"
+                    ? <small>Executable from current canonical state.</small>
+                    : detail?.implementation?.status === "recorded"
+                      ? <small>Recorded capability; execution status is not confirmed.</small>
+                      : <small>Execution status unavailable.</small>}
+              </>;
+            })()}
           </li>
-        ))}</ul></div> : null}
-        {dossier?.origin.traits.length ? <div><h4>Origin traits</h4><ul>{dossier.origin.traits.map((trait) => (
-          <li key={trait.key}><strong>{trait.label}</strong><span>{trait.status === "active" ? "Active canonical rule" : `Pending · ${trait.reason?.replaceAll("-", " ") ?? "missing rule owner"}`}</span></li>
+          ))}
+          {dossierOnlyFeatures.map((detail) => (
+            <li key={`${detail.definition.id}:${detail.grantedBy.id}`}>
+              <strong>{detail.definition.label}</strong>
+              {detail.grantKind || detail.classLevel !== undefined
+                ? <span>{detail.grantKind ?? "Grant kind unavailable"}{detail.classLevel ? ` · level ${detail.classLevel}` : ""}</span>
+                : null}
+              {detail.definition.summary ? <small>{detail.definition.summary}</small> : null}
+              {detail.implementation?.status === "pending"
+                ? <small>Pending: {detail.implementation.reason?.replaceAll("-", " ") ?? "a required choice"}.</small>
+                : detail.implementation?.status === "executable"
+                  ? <small>Executable from current canonical state.</small>
+                  : detail.implementation?.status === "recorded"
+                    ? <small>Recorded capability; execution status is not confirmed.</small>
+                    : <small>Execution status unavailable.</small>}
+            </li>
+          ))}
+        </ul></div> : null}
+        {dossier?.origin?.traits?.length ? <div><h4>Origin traits</h4><ul>{dossier.origin.traits.map((trait) => (
+          <li key={trait.key}><strong>{trait.label}</strong><span>{trait.status === "active" ? "Active canonical rule" : trait.status === "pending" ? `Pending · ${trait.reason?.replaceAll("-", " ") ?? "missing rule owner"}` : "Trait status unavailable"}</span></li>
         ))}</ul></div> : null}
         {sheet.proficiencies?.length ? <div><h4>Proficiencies</h4><ul>{sheet.proficiencies.map((entry) => (
           <li key={entry.proficiency.id}><strong>{entry.proficiency.label}</strong><span>{entry.rank.label}</span></li>

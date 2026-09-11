@@ -34,6 +34,15 @@ public interface IInteractionGateway
         string receiptId,
         CancellationToken cancellationToken = default);
 
+    Task<InteractionReceiptProjection?> FindReceiptByIdempotencyKeyAsync(
+        TrustedPrincipalContext principal,
+        ApplicationIdentifier applicationId,
+        string stateSpaceId,
+        string idempotencyKey,
+        string? resolutionReceiptId = null,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<InteractionReceiptProjection?>(null);
+
     Task<InteractionExecutionOutcome> ExecuteAsync(
         TrustedPrincipalContext principal,
         ApplicationIdentifier applicationId,

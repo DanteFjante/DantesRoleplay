@@ -1,9 +1,28 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { connectedCampaignToHubEnvelope } from "../src/server/connected-hub-envelope.ts";
+import { connectedCampaignToHubEnvelope, connectedCampaignToDeferredHubUpdate,
+  connectedCampaignToWorldScopeUpdate } from "../src/server/connected-hub-envelope.ts";
+import { applyDeferredHubUpdate } from "../src/data/section-state.ts";
 import { projectCharacterDetails } from "../src/features/character/project-character.ts";
 import { isReadyHubEnvelope } from "../src/state.js";
+
+test("Current source observations are projected for the scoped Current owner, never merged into the hub envelope", () => {
+  const evidence = (qualifiedQueryId) => ({ qualifiedQueryId, stateSpaceFingerprint: "1".repeat(64),
+    resolutionFingerprint: "2".repeat(64), outputSchemaHash: "3".repeat(64), resultFingerprint: "4".repeat(64),
+    sourceRevisionFingerprint: "5".repeat(64) });
+  const currentPlayProjection = { resume: evidence("dnd2024.query.campaign-resume"), scene: evidence("dnd2024.query.current-scene") };
+  const source = { ...connectedFixture(), currentPlayProjection };
+  const initial = connectedCampaignToHubEnvelope(source);
+  assert.deepEqual(initial.objectQueries.currentPlay, currentPlayProjection);
+  const update = connectedCampaignToDeferredHubUpdate(source, "current");
+  assert.deepEqual(update.projection, currentPlayProjection);
+  const next = applyDeferredHubUpdate(initial, update);
+  assert.equal(next, initial, "a partial Current read cannot become a World/Campaign patch");
+  const { projection: _oldEvidence, ...withoutEvidence } = update;
+  assert.equal(applyDeferredHubUpdate(next, withoutEvidence), initial,
+    "Current provenance is retained only with its selected Redux display");
+});
 
 function visual(id, alt) {
   return {
@@ -11,6 +30,40 @@ function visual(id, alt) {
     alt,
   };
 }
+
+test("clue coverage follows authorized knowledge loading and survives the deferred update", () => {
+  for (const [status, coverage, expected] of [
+    ["unavailable", undefined, "unavailable"], ["ready", "partial", "partial"],
+    ["empty", undefined, "complete"], ["ready", "complete", "complete"],
+  ]) {
+    const source = connectedFixture({ knowledgeStatus: status, knowledgeEntries: [] });
+    source.knowledge.coverage = coverage;
+    assert.equal(connectedCampaignToHubEnvelope(source).campaign.cluesCoverage, expected);
+    assert.equal(connectedCampaignToDeferredHubUpdate(source, "lore").campaign.cluesCoverage, expected);
+  }
+});
+
+test("shared knowledge keeps member provenance without becoming a private notebook", () => {
+  const admissions = [
+    { actorId: "orban", actorName: "Orban", stance: "known", source: "explicit" },
+    { actorId: "ganji", actorName: "Ganji", stance: "doubted", source: "baseline", scopeId: "world.thalorien" },
+  ];
+  const source = connectedFixture({ audience: { seat: "player", perspective: "player", allowedPerspectives: ["player"] },
+    knowledgeEntries: [{ knowledgeId: "knowledge.evidence", documentRevision: "1", text: "A clue\nA useful detail.",
+      stance: "mixed", presentationKind: "evidence", admissions },
+    { knowledgeId: "knowledge.lore", documentRevision: "2", text: "A tale\nA useful tale.",
+      stance: "mixed", presentationKind: "statement", admissions }] });
+  source.knowledge.audience = "party";
+  const result = connectedCampaignToHubEnvelope(source);
+  assert.equal(result.campaign.clues[0].id, "knowledge.evidence");
+  assert.deepEqual(result.campaign.clues[0].admissions, admissions);
+  assert.equal(result.campaign.clues[0].status, "Mixed");
+  assert.equal(result.campaign.knowledgeAudience, "party");
+  assert.equal(result.world.lore[0].id, "knowledge.lore");
+  assert.deepEqual(result.world.lore[0].admissions, admissions);
+  assert.deepEqual(result.party[0].knowledge, [], "an outer join is not the selected member's notebook");
+  assert.equal(connectedCampaignToDeferredHubUpdate(source, "lore").campaign.knowledgeAudience, "party");
+});
 
 function connectedFixture({
   knowledgeStatus = "ready",
@@ -329,6 +382,7 @@ test("prefers canonical character state and direct inventory over provisional no
   const envelope = connectedCampaignToHubEnvelope(source);
   const member = projectCharacterDetails(envelope.party[0], {
     status: "ready", data: source.party[0].canonical,
+    media: { portrait },
     failureCategory: null, diagnosticId: "fixture-ready",
   });
   assert.deepEqual(member.portrait, portrait);
@@ -1199,6 +1253,42 @@ test("a complete location directory derives every hierarchy level, including lea
   assert.deepEqual(scopes.get(leafId)?.childIds, []);
   assert.equal(scopes.get(leafId)?.totalCount, 0);
   assert.equal(envelope.world.maps.some((map) => map.subject.id === leafId), false);
+});
+
+test("a World scope response stays page-local when the authorized workspace has other visited scopes", () => {
+  const rootId = "world.thalorien";
+  const scopeId = "location.thalorien.atlas";
+  const children = ["location.thalorien.first", "location.thalorien.second"];
+  const scope = {
+    id: scopeId, name: "Atlas", parentId: rootId, childIds: children, totalCount: 2,
+    complete: true, nextCursor: null, sourceRevisionFingerprint: "A".repeat(64),
+  };
+  const relevant = [
+    { id: rootId, name: "Thalorien", kind: "world", isWorldRoot: true },
+    { id: scopeId, name: "Atlas", kind: "region", containerId: rootId },
+    ...children.map((id, index) => ({ id, name: `Place ${index + 1}`, kind: "site", containerId: scopeId })),
+  ];
+  const base = connectedFixture({
+    audience: { seat: "dm", perspective: "dm", allowedPerspectives: ["dm", "player"] },
+    locationDirectoryAudience: "dm", locationDirectory: relevant, locationScopes: [scope],
+  });
+  const first = connectedCampaignToWorldScopeUpdate(base, scopeId);
+  const expanded = connectedCampaignToWorldScopeUpdate({
+    ...base,
+    locationDirectory: [
+      ...relevant,
+      ...Array.from({ length: 300 }, (_, index) => ({
+        id: `location.unrelated.${index}`, name: `Unrelated ${index}`, kind: "site",
+        containerId: `location.unrelated.parent.${index}`, summary: "x".repeat(1_000),
+      })),
+    ],
+  }, scopeId);
+
+  assert.deepEqual(expanded.world.locations.map((location) => location.id).sort(), [scopeId, ...children].sort());
+  assert.deepEqual(expanded.world.locationScopes.map((item) => item.id), [scopeId]);
+  assert.equal(expanded.scopePage.id, scopeId);
+  assert.equal(JSON.stringify(expanded).length, JSON.stringify(first).length,
+    "unrelated visited scopes never enlarge this scope's retained response");
 });
 
 test("groups live map markers into deterministic location-kind layers", () => {

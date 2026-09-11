@@ -483,8 +483,8 @@ public sealed class Dnd2024MechanicContractRepairTests
             {
                 ["creature"] = new MechanicObjectProjection(
                     "dnd2024.object.carrying-capacity-creature",
-                    1,
-                    "234CF49317F99A4468828E77E06A954DCEED4640BEF4307A397CB8BFEE7529AF",
+                    2,
+                    "828BC5D694102E129C870CA49291424ABFB79F8BDE17A169037CA26B9D5A3DC1",
                     new Dictionary<string, MechanicObjectEntity>
                     {
                         ["creature"] = new(creature.Id, creature.Name)

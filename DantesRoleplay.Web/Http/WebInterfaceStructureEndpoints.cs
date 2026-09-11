@@ -117,57 +117,6 @@ public static partial class WebInterfaceEndpoints
             context.Request.Query["cursor"].FirstOrDefault(),
             context.Request.Query["limit"].FirstOrDefault()));
 
-    private static async Task<IResult> GetAuthorizedKnowledgeAsync(
-        string applicationId,
-        string campaignId,
-        HttpContext context,
-        [FromServices] KnowledgeApplicationSelection application,
-        [FromServices] IAuthorizedKnowledgeNotebookReader notebook,
-        CancellationToken cancellationToken)
-    {
-        context.Response.Headers.CacheControl = "no-store";
-        if (!string.Equals(applicationId, application.ApplicationId, StringComparison.Ordinal))
-            return Results.NotFound();
-
-        var result = await notebook.ReadAsync(
-            new AuthorizedKnowledgeNotebookRequest(campaignId), cancellationToken);
-        return result.Status switch
-        {
-            "ready" or "empty" => Results.Json(new
-            {
-                status = result.Status,
-                entries = result.Entries.Select(KnowledgeNotebookEntry).ToArray(),
-                locations = result.Locations.Select(location => new
-                {
-                    name = location.Name,
-                    entries = location.Entries.Select(KnowledgeNotebookEntry).ToArray()
-                }).ToArray()
-            }),
-            "invalid" => Results.Json(new { error = "INVALID_KNOWLEDGE_REQUEST" },
-                statusCode: StatusCodes.Status400BadRequest),
-            "denied" => Results.Json(new { error = "KNOWLEDGE_UNAVAILABLE" },
-                statusCode: StatusCodes.Status403Forbidden),
-            _ => Results.Json(new { error = "KNOWLEDGE_UNAVAILABLE" },
-                statusCode: StatusCodes.Status503ServiceUnavailable)
-        };
-    }
-
-    private static IReadOnlyDictionary<string, object> KnowledgeNotebookEntry(
-        AuthorizedKnowledgeNotebookEntry value)
-    {
-        var entry = new Dictionary<string, object>(StringComparer.Ordinal)
-        {
-            ["text"] = value.Text,
-            ["stance"] = value.Stance,
-            ["presentationKind"] = value.PresentationKind
-        };
-        if (value.MediaOwnerId is not null)
-            entry["mediaOwnerId"] = value.MediaOwnerId;
-        if (value.Subject is not null)
-            entry["subject"] = new { id = value.Subject.Id, name = value.Subject.Name };
-        return entry;
-    }
-
     private static Task<IResult> GetApplicationEntitiesAsync(
         string applicationId, string stateSpaceId, HttpContext context,
         ControlStructureExplorer explorer, CancellationToken cancellationToken) =>

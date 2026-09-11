@@ -44,7 +44,7 @@ public sealed class SystemCatalogProtocolTests : IDisposable
             item.GetProperty("SourceKind").GetString() == "mcp-query"
             && item.GetProperty("Name").GetString() == "system.catalog.browse");
         Assert.Equal(
-            ["system.application.activate", "system.application.register", "system.blob-upload.begin", "system.blob-upload.finalize", "system.component-type.register", "system.extension.register", "system.interaction-execute", "system.interaction-recipe-review", "system.knowledge-state.sync", "system.namespace.register", "system.source.register", "system.state-space.adopt-legacy", "system.state-space.create", "system.state-space.upgrade", "system.trigger-scheduling", "system.world-state.sync"],
+            ["system.application-object.submit", "system.application.activate", "system.application.register", "system.blob-upload.begin", "system.blob-upload.finalize", "system.component-type.register", "system.extension.register", "system.interaction-execute", "system.interaction-recipe-review", "system.knowledge-state.sync", "system.namespace.register", "system.source.register", "system.state-space.adopt-legacy", "system.state-space.create", "system.state-space.upgrade", "system.trigger-scheduling", "system.world-state.sync"],
             data.GetProperty("Capabilities").EnumerateArray()
                 .Where(item => item.GetProperty("SourceKind").GetString() == "mcp-commit")
                 .Select(item => item.GetProperty("Name").GetString())

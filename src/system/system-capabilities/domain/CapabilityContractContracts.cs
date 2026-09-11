@@ -68,6 +68,55 @@ public sealed record CapabilityRecoveryActionContract(
     string Description,
     string InputJson);
 
+public sealed record CapabilityObjectSourceContract(
+    string Reference,
+    IReadOnlyList<string> InputPath,
+    string Role,
+    bool Required,
+    string QualifiedComponentId,
+    int ComponentVersion,
+    CapabilitySchemaContract Schema);
+
+public sealed record CapabilityObjectFieldContract(
+    string Path,
+    string SourceReference,
+    string SourcePath);
+
+public sealed record CapabilityObjectWritePathContract(
+    string Path,
+    IReadOnlyList<string> Operations,
+    string? SourceReference,
+    string? SourcePath,
+    string? RelationshipId);
+
+/// <summary>
+/// Discovery-only provenance for one application-declared role parameter. Source names are
+/// structural host concepts; role names and authorized-context keys remain opaque catalog data.
+/// </summary>
+public sealed record CapabilityObjectRoleBindingContract(
+    string Role,
+    string Source,
+    string? Pointer,
+    string? Key);
+
+/// <summary>
+/// Registry-derived structural-object discovery. Component schemas remain authoritative; fields
+/// describe declared copies and do not form another assembled-value admission schema.
+/// </summary>
+public sealed record CapabilityObjectDiscoveryContract(
+    string Profile,
+    string QualifiedId,
+    int Version,
+    string ContentFingerprint,
+    IReadOnlyList<CapabilityObjectSourceContract> Sources,
+    IReadOnlyList<CapabilityObjectFieldContract> Fields,
+    IReadOnlyList<CapabilityObjectWritePathContract> Writes)
+{
+    [System.Text.Json.Serialization.JsonIgnore(
+        Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<CapabilityObjectRoleBindingContract>? RoleBindings { get; init; }
+}
+
 /// <summary>
 /// One transport-neutral description of something the system can do. The descriptor points back
 /// to its owning registry through SourceKind and SourceFingerprint; it never replaces that owner.
@@ -93,7 +142,12 @@ public sealed record CapabilityContractDescriptor(
     IReadOnlyList<string> ProcedureIds,
     IReadOnlyList<CapabilityExampleContract> Examples,
     IReadOnlyList<CapabilityErrorContract> Errors,
-    IReadOnlyList<CapabilityRecoveryActionContract> RecoveryActions);
+    IReadOnlyList<CapabilityRecoveryActionContract> RecoveryActions)
+{
+    [System.Text.Json.Serialization.JsonIgnore(
+        Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public CapabilityObjectDiscoveryContract? ObjectDiscovery { get; init; }
+}
 
 public static class CapabilityContractBuilder
 {
@@ -125,7 +179,8 @@ public static class CapabilityContractBuilder
         string inputSchemaProfile = JsonSchemaProfile,
         string outputSchemaProfile = JsonSchemaProfile,
         string? inputSchemaHash = null,
-        string? outputSchemaHash = null)
+        string? outputSchemaHash = null,
+        CapabilityObjectDiscoveryContract? objectDiscovery = null)
     {
         if (!Identifier(id, 240) || version < 1 || !Identifier(sourceKind, 80)
             || !FingerprintOrIdentifier(sourceFingerprint) || !Identifier(owner, 200)
@@ -172,11 +227,13 @@ public static class CapabilityContractBuilder
                 || !Text(value.Description, 500) || !JsonObject(value.InputJson)))
             throw new ArgumentException("A capability contract requires bounded examples, stable errors, and recovery actions.", nameof(examples));
 
+        var normalizedDiscovery = ObjectDiscovery(objectDiscovery);
         var withoutFingerprint = new CapabilityContractDescriptor(
             id, version, "", sourceKind, sourceFingerprint, owner, name, description, lifecycle,
             operations, input, output, scope, Array.AsReadOnly(copiedRoles), authorization,
             requiresConfirmation, requiresIdempotencyKey, Array.AsReadOnly(procedures),
-            Array.AsReadOnly(copiedExamples), Array.AsReadOnly(copiedErrors), Array.AsReadOnly(copiedRecovery));
+            Array.AsReadOnly(copiedExamples), Array.AsReadOnly(copiedErrors), Array.AsReadOnly(copiedRecovery))
+        { ObjectDiscovery = normalizedDiscovery };
         return withoutFingerprint with { Fingerprint = Fingerprint(withoutFingerprint) };
     }
 
@@ -215,7 +272,7 @@ public static class CapabilityContractBuilder
     public static string Fingerprint(CapabilityContractDescriptor descriptor)
     {
         ArgumentNullException.ThrowIfNull(descriptor);
-        return Hash(JsonSerializer.Serialize(new
+        var legacy = JsonSerializer.Serialize(new
         {
             descriptor.Id,
             descriptor.Version,
@@ -237,7 +294,82 @@ public static class CapabilityContractBuilder
             descriptor.Examples,
             descriptor.Errors,
             descriptor.RecoveryActions
+        });
+        if (descriptor.ObjectDiscovery is null) return Hash(legacy);
+        return Hash(JsonSerializer.Serialize(new
+        {
+            legacy = JsonSerializer.Deserialize<JsonElement>(legacy),
+            descriptor.ObjectDiscovery
         }));
+    }
+
+    private static CapabilityObjectDiscoveryContract? ObjectDiscovery(
+        CapabilityObjectDiscoveryContract? discovery)
+    {
+        if (discovery is null) return null;
+        if (!Identifier(discovery.Profile, 120) || !Identifier(discovery.QualifiedId, 240)
+            || discovery.Version < 1 || !FingerprintOrIdentifier(discovery.ContentFingerprint)
+            || discovery.Sources is null || discovery.Sources.Count > 256
+            || discovery.Fields is null || discovery.Fields.Count > 1_024
+            || discovery.Writes is null || discovery.Writes.Count > 128)
+            throw new ArgumentException("Object discovery metadata is invalid or unbounded.", nameof(discovery));
+
+        var sources = discovery.Sources.OrderBy(value => value.Reference, StringComparer.Ordinal).ToArray();
+        if (sources.Select(value => value.Reference).Distinct(StringComparer.Ordinal).Count() != sources.Length
+            || sources.Any(value => !Identifier(value.Reference, 120) || !Identifier(value.Role, 120)
+                || value.InputPath is null || value.InputPath.Count is < 1 or > 17
+                || value.InputPath.Any(segment => !Identifier(segment, 200))
+                || !Identifier(value.QualifiedComponentId, 240) || value.ComponentVersion < 1
+                || value.Schema is null))
+            throw new ArgumentException("Object discovery sources are invalid or ambiguous.", nameof(discovery));
+        var normalizedSources = sources.Select(value => value with
+        {
+            InputPath = Array.AsReadOnly(value.InputPath.ToArray()),
+            Schema = Schema(value.Schema.Profile, value.Schema.SchemaJson, value.Schema.Status,
+                value.Schema.SchemaHash)
+        }).ToArray();
+        if (normalizedSources.Sum(value => Encoding.UTF8.GetByteCount(value.Schema.SchemaJson)) > 2 * 1024 * 1024)
+            throw new ArgumentException("Object discovery component schemas exceed the fixed byte bound.", nameof(discovery));
+        var sourceIds = normalizedSources.Select(value => value.Reference).ToHashSet(StringComparer.Ordinal);
+
+        var fields = discovery.Fields.OrderBy(value => value.Path, StringComparer.Ordinal)
+            .ThenBy(value => value.SourceReference, StringComparer.Ordinal)
+            .ThenBy(value => value.SourcePath, StringComparer.Ordinal).ToArray();
+        if (fields.Any(value => !Pointer(value.Path) || !Pointer(value.SourcePath)
+                || !sourceIds.Contains(value.SourceReference))
+            || fields.Select(value => (value.Path, value.SourceReference, value.SourcePath)).Distinct().Count() != fields.Length)
+            throw new ArgumentException("Object discovery fields have invalid source provenance.", nameof(discovery));
+
+        var writes = discovery.Writes.OrderBy(value => value.Path, StringComparer.Ordinal).ToArray();
+        if (writes.Select(value => value.Path).Distinct(StringComparer.Ordinal).Count() != writes.Length
+            || writes.Any(value => !Pointer(value.Path) || value.Operations is null
+                || value.Operations.Count is < 1 or > 4
+                || value.Operations.Distinct(StringComparer.Ordinal).Count() != value.Operations.Count
+                || value.Operations.Any(operation => !Identifier(operation, 80))
+                || value.SourceReference is not null && !sourceIds.Contains(value.SourceReference)
+                || value.SourcePath is not null && !Pointer(value.SourcePath)
+                || (value.SourceReference is null) != (value.SourcePath is null)
+                || value.RelationshipId is not null && !Identifier(value.RelationshipId, 200)
+                || value.RelationshipId is not null && value.SourceReference is not null))
+            throw new ArgumentException("Object discovery write paths are invalid or ambiguous.", nameof(discovery));
+        var roleBindings = discovery.RoleBindings?.OrderBy(value => value.Role, StringComparer.Ordinal).ToArray();
+        if (roleBindings is not null && (roleBindings.Length is < 1 or > 32
+            || roleBindings.Select(value => value.Role).Distinct(StringComparer.Ordinal).Count() != roleBindings.Length
+            || roleBindings.Any(value => !Identifier(value.Role, 120)
+                || value.Source is not ("route-entity" or "input" or "authorized-context")
+                || value.Source == "route-entity" && (value.Pointer is not null || value.Key is not null)
+                || value.Source == "input" && (!Pointer(value.Pointer ?? "invalid") || value.Key is not null)
+                || value.Source == "authorized-context" && (value.Pointer is not null
+                    || !OpaqueKey(value.Key)))))
+            throw new ArgumentException("Object discovery role bindings are invalid or ambiguous.", nameof(discovery));
+        return discovery with
+        {
+            Sources = Array.AsReadOnly(normalizedSources),
+            Fields = Array.AsReadOnly(fields),
+            Writes = Array.AsReadOnly(writes.Select(value => value with
+            { Operations = Array.AsReadOnly(value.Operations.Order(StringComparer.Ordinal).ToArray()) }).ToArray()),
+            RoleBindings = roleBindings is null ? null : Array.AsReadOnly(roleBindings)
+        };
     }
 
     private static CapabilitySchemaContract Schema(string profile, string json, string status, string? expectedHash)
@@ -352,5 +484,24 @@ public static class CapabilityContractBuilder
     private static bool Identifier(string value, int maximum) => !string.IsNullOrWhiteSpace(value)
         && value.Length <= maximum && value == value.Trim() && !value.Any(char.IsControl);
     private static bool FingerprintOrIdentifier(string value) => Identifier(value, 240);
+    private static bool OpaqueKey(string? value) => value is { Length: > 0 and <= 200 }
+        && value == value.Trim() && value.Split('.').All(segment => segment.Length > 0
+            && char.IsAsciiLetter(segment[0])
+            && segment.All(character => char.IsAsciiLetterOrDigit(character) || character is '-' or '_'));
     private static bool Text(string value, int maximum) => Identifier(value, maximum);
+    private static bool Pointer(string value)
+    {
+        if (value.Length > 1_000 || value.Any(char.IsControl)) return false;
+        if (value == "") return true;
+        if (!value.StartsWith("/", StringComparison.Ordinal)) return false;
+        foreach (var segment in value.Split('/').Skip(1))
+        {
+            if (segment.Contains('~') && segment.Replace("~0", "", StringComparison.Ordinal)
+                    .Replace("~1", "", StringComparison.Ordinal).Contains('~')) return false;
+            var decoded = segment.Replace("~1", "/", StringComparison.Ordinal)
+                .Replace("~0", "~", StringComparison.Ordinal);
+            if (decoded is "__proto__" or "prototype" or "constructor") return false;
+        }
+        return true;
+    }
 }

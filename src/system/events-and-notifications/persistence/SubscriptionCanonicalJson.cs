@@ -7,6 +7,10 @@ internal static class SubscriptionCanonicalJson
 {
     private static readonly JsonSerializerOptions Compact = new() { WriteIndented = false };
 
+    public static string ScopedFingerprint(string legacyFingerprint, Events.EventSourceContext? source) =>
+        source is null ? legacyFingerprint : Content.ContentHash.Of(
+            "application-subscription-source/v1", legacyFingerprint, source.ApplicationId, source.StateSpaceId);
+
     public static string Object(string json)
     {
         using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(json) ? "{}" : json);

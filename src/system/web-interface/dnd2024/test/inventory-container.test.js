@@ -25,7 +25,9 @@ test("inventory distinguishes ordinary items, inherited and instance containers 
       item("item.unknown", "Unknown bag", null),
     ],
   } } });
-  assert.deepEqual(result.data.items.map(item => item.isContainer), [false, true, true, true, false]);
+  assert.deepEqual(result.data.items.map(item => item.isContainer), [false, true, true, true, undefined]);
   assert.equal(result.data.items.length, 5);
+  assert.equal(result.data.state, "partial");
+  assert.deepEqual(result.data.reasons, ["unclassified-content", "source-incomplete"]);
   assert.deepEqual(result.effects, []);
 });

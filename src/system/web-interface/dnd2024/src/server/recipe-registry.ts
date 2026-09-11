@@ -1,5 +1,7 @@
-import { RESOURCE_FRESHNESS_MS, resourceCacheKey } from "../data/resource-policy.ts";
-import { ResourceStore, type ResourceInvalidationReason, type ResourceStoreMetrics } from "../data/resource-store.ts";
+import { resourceCacheKey } from "../data/resource-policy.ts";
+import type { ResourceInvalidationReason } from "../data/resource-store.ts";
+import { RequestCoordinator } from "../data/request-coordinator.ts";
+import { sha256HexSync } from "../data/browser-crypto.ts";
 import { ViewReadError } from "../data/view-read-client.ts";
 import type { RecipeEntry } from "./item-recipes-client.ts";
 import type { ItemRegistryRecord } from "./item-registry.ts";
@@ -38,6 +40,8 @@ export type RecipeRegistryPage = {
   records: RecipeRegistryRecord[];
   totalCount: number;
   nextCursor: string | null;
+  /** True when one or more bounded source rows were not display-admitted. */
+  partial?: boolean;
 };
 export type RecipeDefinitionRequest = {
   id: string;
@@ -115,6 +119,7 @@ function isRegistryPage(value: unknown): value is RecipeRegistryPage {
     && new Set((page.records as RecipeRegistryRecord[]).map((record) => record.id)).size === page.records.length
     && Number.isSafeInteger(page.totalCount) && (page.totalCount as number) >= page.records.length
     && (page.totalCount as number) <= MAXIMUM_RECORDS
+    && (page.partial === undefined || typeof page.partial === "boolean")
     && optionalText(page.nextCursor, MAXIMUM_CURSOR_LENGTH) === page.nextCursor);
 }
 
@@ -134,28 +139,35 @@ export async function readRecipeRegistry({ serverOrigin, applicationId, request 
   if (normalized.query) url.searchParams.set("query", normalized.query);
   if (normalized.cursor) url.searchParams.set("cursor", normalized.cursor);
   const response = await fetchImpl(url, { headers: { Accept: "application/json" }, cache: "no-store", signal });
-  if (!response.ok) throw new ViewReadError(response.status === 409 ? "stale-data" : "transport",
+  if (!response.ok) throw new ViewReadError(response.status === 401 || response.status === 403 ? "authorization" : response.status === 409 ? "stale-data" : "transport",
     response.status === 409 ? "The recipe registry changed while this page was loading." : "The recipe registry is unavailable.");
   const decoded = await readBoundedJson(response, MAXIMUM_PAGE_BYTES);
   const page = decoded.status === "ready" ? object(decoded.value) : null;
   const fingerprint = page?.resolutionFingerprint === "none" ? "none"
     : text(page?.resolutionFingerprint, 64)?.toUpperCase() ?? null;
   const rawRecords = Array.isArray(page?.resolvedWinners) ? page.resolvedWinners : null;
-  const records = rawRecords?.map((value) => {
+  const projectedRecords = rawRecords?.map((value) => {
     const candidate = object(value);
     return summary(candidate?.record, candidate?.sourceLabel, candidate?.classification);
   }) ?? null;
+  // Keep valid identities usable when an unrelated source row is malformed.
+  // If an identity is repeated, omit every copy instead of choosing an
+  // ambiguous winner; callers receive an explicit partial page.
+  const identityCounts = new Map<string, number>();
+  for (const record of projectedRecords ?? []) if (record) identityCounts.set(record.id, (identityCounts.get(record.id) ?? 0) + 1);
+  const records = projectedRecords?.filter((record): record is RecipeRegistryRecord =>
+    record !== null && identityCounts.get(record.id) === 1) ?? null;
+  const partial = projectedRecords !== null && records !== null && records.length !== projectedRecords.length;
   const nextCursor = optionalText(page?.nextCursor, MAXIMUM_CURSOR_LENGTH);
   if (page?.applicationId !== APPLICATION_ID || !fingerprint || (fingerprint !== "none" && !FINGERPRINT.test(fingerprint))
-      || !records || records.some((record) => !record) || records.length > PAGE_SIZE
-      || new Set(records.map((record) => record!.id)).size !== records.length
+      || !records || rawRecords === null || rawRecords.length > PAGE_SIZE
       || !Number.isSafeInteger(page?.totalCount) || (page!.totalCount as number) < records.length
       || (page!.totalCount as number) > MAXIMUM_RECORDS || nextCursor !== page?.nextCursor)
     throw new ViewReadError("incompatible-data", "The recipe-registry response is invalid.");
   if (normalized.expectedResolutionFingerprint && normalized.expectedResolutionFingerprint !== fingerprint)
     throw new ViewReadError("stale-data", "The recipe registry changed while this page was loading.");
-  const result = { resolutionFingerprint: fingerprint, records: records as RecipeRegistryRecord[],
-    totalCount: page.totalCount as number, nextCursor };
+  const result = { resolutionFingerprint: fingerprint, records,
+    totalCount: page.totalCount as number, nextCursor, partial };
   if (!isRegistryPage(result)) throw new ViewReadError("incompatible-data", "The recipe-registry response is invalid.");
   return result;
 }
@@ -275,8 +287,18 @@ function recipeEntry(record: RecipeRegistryRecord, contentJson: string): { entry
   const root = object(parsed);
   const components = object(root?.components);
   const recipe = object(components?.[RECIPE_COMPONENT]);
-  if (!root || !components || !recipe || text(root.id, 200) === null || text(root.name, 160) === null)
+  if (!root)
     throw new ViewReadError("incompatible-data", "The recipe definition is invalid.");
+  const source = { label: record.sourceLabel, knowledgeState: "known" as const };
+  const rootName = text(root.name, 160) ?? record.name.slice(0, 160);
+  // The registry summary remains a useful, request-bound identity when the
+  // optional recipe composition is absent. Do not turn that omission into an
+  // unavailable whole definition or invent outputs/requirements.
+  if (!recipe) return { entry: {
+    id: record.id, name: rootName, description: null, knowledgeState: "known", sources: [source],
+    requirements: [], availability: "definition-incomplete", outputs: [], materials: [], tools: [], duration: null,
+    observerKnowledge: null,
+  }, references: [] };
   const outputs = quantityReferences(recipe.outputs);
   const materials = recipe.materialRequirements === undefined
     ? { values: [] as RecipeEntry["outputs"], incomplete: false }
@@ -284,7 +306,6 @@ function recipeEntry(record: RecipeRegistryRecord, contentJson: string): { entry
   const workDuration = duration(recipe.workDuration);
   const tool = requirement(recipe.toolRequirement);
   const crafter = requirement(recipe.crafterRequirement);
-  const source = { label: record.sourceLabel, knowledgeState: "known" as const };
   const requirements: RecipeEntry["requirements"] = [
     { label: "Tool requirement", value: tool.text.slice(0, 512), unit: null, sources: [source], observerKnowledge: null },
     { label: "Crafter requirement", value: crafter.text.slice(0, 512), unit: null, sources: [source], observerKnowledge: null },
@@ -302,7 +323,7 @@ function recipeEntry(record: RecipeRegistryRecord, contentJson: string): { entry
     : [];
   if (effects.length) requirements.push({ label: "Completion effects", value: effects.map(referenceLabel).join(", ").slice(0, 512),
     unit: null, sources: [source], observerKnowledge: null });
-  const coreSource = object(components["dnd2024.core.source"]);
+  const coreSource = object(components?.["dnd2024.core.source"]);
   const citation = Array.isArray(coreSource?.citations) ? object(coreSource.citations[0]) : null;
   const locator = text(citation?.locator, 1_024);
   const incomplete = outputs.incomplete || materials.incomplete || outputs.values.length === 0 || workDuration === null
@@ -366,7 +387,7 @@ export async function readRecipeDefinition({ serverOrigin, applicationId, reques
   const url = new URL(`/api/applications/${APPLICATION_ID}/catalog/records/${encodeURIComponent(request.id)}`, `${origin}/`);
   url.searchParams.set("collection", request.collection);
   const response = await fetchImpl(url, { headers: { Accept: "application/json" }, cache: "no-store", signal });
-  if (!response.ok) throw new ViewReadError(response.status === 404 ? "stale-data" : "transport",
+  if (!response.ok) throw new ViewReadError(response.status === 401 || response.status === 403 ? "authorization" : response.status === 404 ? "stale-data" : "transport",
     response.status === 404 ? "This recipe is no longer in the registry." : "The recipe definition is unavailable.");
   const decoded = await readBoundedJson(response, MAXIMUM_DETAIL_BYTES);
   const body = decoded.status === "ready" ? object(decoded.value) : null;
@@ -392,38 +413,38 @@ export async function readRecipeDefinition({ serverOrigin, applicationId, reques
 }
 
 export class RecipeRegistryClient {
-  readonly #store: ResourceStore;
+  readonly #coordinator = new RequestCoordinator();
+  #generation = 0;
   readonly #page;
   readonly #definition;
 
   constructor({ serverOrigin, applicationId = APPLICATION_ID, fetchImpl = fetch }:
     { serverOrigin: string; applicationId?: string; fetchImpl?: typeof fetch }) {
-    this.#store = new ResourceStore({ maximumEntries: 32, maximumRetainedBytes: 10 * 1024 * 1024,
-      diagnosticName: "recipe-registry-resources" });
-    this.#page = this.#store.define<RecipeRegistryRequest, RecipeRegistryPage>({
-      name: "recipe-registry-page",
-      cacheKey: (value) => { const request = normalizeRequest(value); return resourceCacheKey("recipe-registry-v1",
+    this.#page = {
+      cacheKey: (value: RecipeRegistryRequest) => { const request = normalizeRequest(value); return resourceCacheKey("recipe-registry-v1",
         applicationId, request.query, request.cursor, request.expectedResolutionFingerprint, request.relatedItemId); },
-      read: (request, signal) => readRecipeRegistry({ serverOrigin, applicationId, request, signal, fetchImpl }),
-      validate: isRegistryPage, maximumAgeMs: RESOURCE_FRESHNESS_MS.recipeRegistry,
-      maximumEntryBytes: MAXIMUM_PAGE_BYTES,
-    });
-    this.#definition = this.#store.define<RecipeDefinitionRequest, RecipeDefinition>({
-      name: "recipe-registry-definition",
-      cacheKey: (request) => resourceCacheKey("recipe-definition-v1", applicationId, request.collection,
+      read: (request: RecipeRegistryRequest, signal: AbortSignal) => readRecipeRegistry({ serverOrigin, applicationId, request, signal, fetchImpl }),
+      validate: isRegistryPage, maximumBytes: MAXIMUM_PAGE_BYTES,
+    };
+    this.#definition = {
+      cacheKey: (request: RecipeDefinitionRequest) => resourceCacheKey("recipe-definition-v1", applicationId, request.collection,
         request.id, request.expectedContentFingerprint, request.sourceLabel),
-      read: (request, signal) => readRecipeDefinition({ serverOrigin, applicationId, request, signal, fetchImpl }),
-      validate: isDefinition, maximumAgeMs: RESOURCE_FRESHNESS_MS.recipeDefinition,
-      maximumEntryBytes: MAXIMUM_DETAIL_BYTES,
-    });
+      read: (request: RecipeDefinitionRequest, signal: AbortSignal) => readRecipeDefinition({ serverOrigin, applicationId, request, signal, fetchImpl }),
+      validate: isDefinition, maximumBytes: MAXIMUM_DETAIL_BYTES,
+    };
   }
 
-  async loadPage(request: RecipeRegistryRequest, signal?: AbortSignal, preferCached = true) {
-    return (await this.#page.load(normalizeRequest(request), { signal, preferCached })).value;
+  async loadPage(request: RecipeRegistryRequest, signal?: AbortSignal, _preferCached = true) {
+    const normalized = normalizeRequest(request), generation = this.#generation;
+    const key = sha256HexSync(this.#page.cacheKey(normalized));
+    if (generation !== this.#generation || signal?.aborted) throw new ViewReadError("cancelled", "Registry scope changed.");
+    return this.#coordinator.load({ ...this.#page, key: () => key }, normalized, signal);
   }
-  async loadDefinition(request: RecipeDefinitionRequest, signal?: AbortSignal, preferCached = true) {
-    return (await this.#definition.load(request, { signal, preferCached })).value;
+  async loadDefinition(request: RecipeDefinitionRequest, signal?: AbortSignal, _preferCached = true) {
+    const generation = this.#generation, key = sha256HexSync(this.#definition.cacheKey(request));
+    if (generation !== this.#generation || signal?.aborted) throw new ViewReadError("cancelled", "Registry scope changed.");
+    return this.#coordinator.load({ ...this.#definition, key: () => key }, request, signal);
   }
-  invalidate(reason: ResourceInvalidationReason = "manual") { this.#store.invalidateAll(reason); }
-  metrics(): ResourceStoreMetrics { return this.#store.metrics(); }
+  invalidate(_reason: ResourceInvalidationReason = "manual") { this.#generation++; this.#coordinator.invalidate(); }
+  metrics() { return { retainedEntries: 0, retainedBytes: 0 }; }
 }

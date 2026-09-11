@@ -10,15 +10,23 @@
     "campaign": "The authorized campaign.",
     "encounter": "The exact selected encounter."
   },
+  "roleBindings": {
+    "campaign": { "source": "input", "pointer": "/selectionId" },
+    "encounter": { "source": "route-entity" }
+  },
   "executor": "mechanic-projection",
-  "campaignSelection": {
+  "selection": {
     "queryId": "dnd2024.query.current-scene",
-    "entityIdField": "encounterId"
+    "targetRole": "encounter",
+    "resultPointer": "/encounterId",
+    "roleBindings": {
+      "campaign": "campaign"
+    }
   },
   "projection": {
     "qualifiedId": "dnd2024.mechanic.encounter.board.draft",
     "version": 1,
-    "contentHash": "9DF4F8FFA8163B1E6292989C6E55F5397AB41F93D3E3B6FECD8A4C03E1C788D2",
+    "contentHash": "ABB6C84801FD4F37C464466B4A76FA687EEA0AC9D81098EB39B137E94F1DDDF4",
     "outputSchemaHash": "92EEF98F92BF2AF46440D37790B6B735CB3EEBAF84E9FC8449618C719470CCC0"
   },
   "inputSchema": {
@@ -63,6 +71,11 @@
       "prompt": {
         "type": "string",
         "maxLength": 600
+      },
+      "selectionId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200
       }
     }
   },

@@ -5,14 +5,36 @@
   const MAXIMUM_ENTITY_PAGE = 100;
   const MAXIMUM_ROLES = 32;
   const MAXIMUM_FIELDS = 12;
+  const EXECUTION_STATUSES = new Set(['succeeded', 'failed', 'partial', 'skipped', 'stale', 'unauthorized', 'cancelled', 'timed-out']);
+  const EXECUTION_CODES = Object.freeze({
+    succeeded: 'INTERACTION_EXECUTION_SUCCEEDED', failed: 'INTERACTION_EXECUTION_FAILED',
+    partial: 'INTERACTION_EXECUTION_PARTIAL', skipped: 'INTERACTION_EXECUTION_SKIPPED',
+    stale: 'INTERACTION_EXECUTION_STALE', unauthorized: 'INTERACTION_EXECUTION_UNAUTHORIZED',
+    cancelled: 'INTERACTION_EXECUTION_CANCELLED', 'timed-out': 'INTERACTION_EXECUTION_TIMEDOUT'
+  });
 
   class ApplicationWorkspaceError extends Error {
     constructor(code, message) { super(message); this.code = code; }
   }
 
+  function terminalControlError(error) {
+    return error?.terminal === true || (Number.isInteger(error?.status) && error.status >= 400 && error.status < 500);
+  }
+
   function validId(value, maximum = MAXIMUM_ID_LENGTH) {
     return typeof value === 'string' && value.length > 0 && value.length <= maximum &&
       value.trim() === value && !/[\u0000-\u001f\u007f]/.test(value);
+  }
+
+  function validDisplayText(value, maximum = 400) {
+    return typeof value === 'string' && value.length <= maximum ? value : '';
+  }
+
+  function displayEntity(value) {
+    if (!value || typeof value !== 'object' || Array.isArray(value) ||
+        !validId(value.entityId) || !Object.hasOwn(value, 'name')) return null;
+    return Object.freeze({entityId: value.entityId, name: validDisplayText(value.name),
+      partial: typeof value.name !== 'string'});
   }
 
   function copyObject(value, code = 'APPLICATION_CONTROL_INPUT_INVALID') {
@@ -30,6 +52,38 @@
     return `${prefix}.${Array.from(values, value => value.toString(16)).join('')}`;
   }
 
+  const ACTION_RECOVERY_STORE = 'dantes.application-action-recovery.v1';
+  function actionRecoverySlot(scope) { return `${scope.applicationId}\n${scope.stateSpaceId}\n${scope.mechanicId}`; }
+  function validActionRecovery(value) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+    const own = Object.keys(value).sort();
+    const expected = value.phase === 'prepare' ? ['key', 'phase']
+      : value.phase === 'execute' ? ['key', 'phase', 'resolutionReceiptId'] : null;
+    return expected !== null && own.length === expected.length && own.every((key, index) => key === expected[index]) &&
+      validId(value.key, 128) && (value.phase === 'prepare' || validId(value.resolutionReceiptId, 80));
+  }
+  function readActionRecovery(scope) {
+    try { const raw = sessionStorage.getItem(ACTION_RECOVERY_STORE); if (!raw) return null;
+      if (raw.length > 8192) return {malformed: true};
+      const values = JSON.parse(raw); if (!values || typeof values !== 'object' || Array.isArray(values)) return {malformed: true};
+      const value = values[actionRecoverySlot(scope)];
+      return value === undefined ? null : validActionRecovery(value) ? value : {malformed: true};
+    } catch { return {malformed: true}; }
+  }
+  function writeActionRecovery(scope, value) {
+    if (!validActionRecovery(value)) return false;
+    try { const values = JSON.parse(sessionStorage.getItem(ACTION_RECOVERY_STORE) || '{}');
+      if (!values || typeof values !== 'object' || Array.isArray(values)) return false;
+      values[actionRecoverySlot(scope)] = value;
+      const encoded = JSON.stringify(values); if (encoded.length > 8192) return false;
+      sessionStorage.setItem(ACTION_RECOVERY_STORE, encoded); return sessionStorage.getItem(ACTION_RECOVERY_STORE) === encoded;
+    } catch { return false; }
+  }
+  function clearActionRecovery(scope) {
+    try { const values = JSON.parse(sessionStorage.getItem(ACTION_RECOVERY_STORE) || '{}'); delete values?.[actionRecoverySlot(scope)];
+      sessionStorage.setItem(ACTION_RECOVERY_STORE, JSON.stringify(values)); } catch { }
+  }
+
   function applicationRoot(applicationId, stateSpaceId) {
     return `/api/applications/${encodeURIComponent(applicationId)}/state-spaces/${encodeURIComponent(stateSpaceId)}`;
   }
@@ -40,8 +94,10 @@
     let value = null;
     try { value = await response.json(); } catch { }
     if (!response.ok) {
-      throw new ApplicationWorkspaceError(value?.error || `HTTP_${response.status}`,
+      const error = new ApplicationWorkspaceError(value?.error || `HTTP_${response.status}`,
         value?.message || 'The application control request is unavailable.');
+      error.status = response.status;
+      throw error;
     }
     return value;
   }
@@ -85,6 +141,7 @@
       this._connected = false;
       this._request = null;
       this._entities = [];
+      this._partial = false;
       this.attachShadow({mode: 'open'});
       this._renderShell();
     }
@@ -121,18 +178,21 @@
         const url = new URL(applicationRoot(scope.applicationId, scope.stateSpaceId) + '/entities', window.location.origin);
         url.searchParams.set('limit', String(MAXIMUM_ENTITY_PAGE));
         const page = await readJson(url, {signal: request.signal});
-        if (!Array.isArray(page?.items) || page.items.length > MAXIMUM_ENTITY_PAGE ||
-          page.items.some(item => !item || !validId(item.entityId) || typeof item.name !== 'string')) {
+        if (!Array.isArray(page?.items) || page.items.length > MAXIMUM_ENTITY_PAGE) {
           throw new ApplicationWorkspaceError('APPLICATION_ENTITY_PAGE_INVALID', 'The current entity list is invalid.');
         }
+        const entities = page.items.map(displayEntity);
         if (!this._connected || this._request !== request) return;
-        this._entities = page.items;
+        this._entities = entities.filter(Boolean);
+        this._partial = entities.some(item => item === null || item.partial);
         this._boundary = typeof page.nextCursor === 'string' && page.nextCursor.length > 0;
-        this._setStatus(this._boundary ? 'Showing the first 100 current entities.' : 'Choose an entity for this role.');
+        this._setStatus(this._partial ? 'Some current entities are unavailable.' :
+          (this._boundary ? 'Showing the first 100 current entities.' : 'Choose an entity for this role.'));
         this._renderEntities();
       } catch (error) {
-        if (error.name === 'AbortError') return;
+        if (error.name === 'AbortError' || !this._connected || this._request !== request || request.signal.aborted) return;
         this._entities = [];
+        this._partial = false;
         this._boundary = false;
         this._setStatus(error.message || 'The current entities are unavailable.', true);
         this._renderEntities();
@@ -187,6 +247,10 @@
       this._roles = {};
       this._input = {};
       this._prepared = null;
+      this._pendingPrepare = null;
+      this._pendingExecute = null;
+      this._recoveryBlocked = false;
+      this._recoveryScope = null;
       this._busy = false;
       this.attachShadow({mode: 'open'});
     }
@@ -196,9 +260,9 @@
     attributeChangedCallback(name, before, after) { if (this._connected && before !== after) this._loadDescriptor(); }
 
     get roleEntityIds() { return copyObject(this._roles, 'APPLICATION_ACTION_ROLES_INVALID'); }
-    set roleEntityIds(value) { this._roles = this._copyRoles(value); this._discardPrepared(); this._rolesChanged(); }
+    set roleEntityIds(value) { this._requireSettledExecution(); this._roles = this._copyRoles(value); this._discardPrepared(); this._rolesChanged(); }
     get input() { return copyObject(this._input); }
-    set input(value) { this._input = copyObject(value); this._discardPrepared(); this._inputChanged(); }
+    set input(value) { this._requireSettledExecution(); this._input = copyObject(value); this._discardPrepared(); this._inputChanged(); }
 
     _scope() {
       const applicationId = this.getAttribute('application-id')?.trim() || '';
@@ -210,7 +274,9 @@
 
     async _loadDescriptor() {
       this._descriptorRequest?.abort(); this._operationRequest?.abort();
-      this._descriptor = null; this._prepared = null; this._busy = false;
+      this._descriptor = null; this._busy = false;
+      this._operationRequest = null;
+      if (!this._pendingExecute) this._prepared = null;
       const scope = this._scope();
       if (!scope) { this._setStatus('Set one application, state space, and action before using this control.', true); this._renderUnavailable(); return; }
       const request = new AbortController(); this._descriptorRequest = request;
@@ -221,10 +287,18 @@
         if (!this._connected || this._descriptorRequest !== request) return;
         this._descriptor = descriptor;
         this._renderDescriptor(descriptor);
-        this._setStatus(`Ready: ${descriptor.description}`);
+        this._recoverInterruptedRequest(scope);
+        if (this._pendingExecute || this._pendingPrepare) {
+          const pending = this._pendingExecute ?? this._pendingPrepare;
+          const sameScope = JSON.stringify(pending.scope) === JSON.stringify(scope);
+          if (sameScope && this._pendingExecute) this._renderPrepared();
+          this._setStatus(sameScope ? 'An earlier request may have been accepted. Retry the exact request before starting another.'
+            : 'An earlier request may have been accepted. Return to its application, state space and action to recover it.', true);
+          this._setReady(sameScope && !this._pendingExecute);
+        } else this._setStatus(`Ready: ${descriptor.description}`);
         this._emit('application-progress', {phase: 'ready', ...scope, version: descriptor.version, fingerprint: descriptor.contentFingerprint});
       } catch (error) {
-        if (error.name === 'AbortError') return;
+        if (error.name === 'AbortError' || !this._connected || this._descriptorRequest !== request || request.signal.aborted) return;
         this._setStatus(error.message || 'The current action contract is unavailable.', true);
         this._renderUnavailable();
         this._emit('application-error', {code: error.code || 'APPLICATION_ACTION_UNAVAILABLE'});
@@ -254,46 +328,169 @@
     }
 
     async _prepare() {
-      if (this._busy) return;
-      let scope; let roles; let input;
-      try { scope = this._scope(); if (!scope) throw new ApplicationWorkspaceError('APPLICATION_ACTION_SCOPE_INVALID', 'The action scope is invalid.'); roles = this._validatedRoles(); input = copyObject(this._input); }
+      if (this._busy || this._recoveryBlocked) return;
+      if (this._pendingExecute) {
+        this._setStatus('Execution may have been accepted. Retry the exact reviewed execution before preparing another action.', true);
+        return;
+      }
+      let scope; let roles; let input; let pending;
+      try {
+        scope = this._scope();
+        if (!scope) throw new ApplicationWorkspaceError('APPLICATION_ACTION_SCOPE_INVALID', 'The action scope is invalid.');
+        roles = this._validatedRoles(); input = copyObject(this._input);
+        pending = this._pendingPrepare;
+        if (pending && (pending.scope.applicationId !== scope.applicationId ||
+            pending.scope.stateSpaceId !== scope.stateSpaceId || pending.scope.mechanicId !== scope.mechanicId ||
+            JSON.stringify(pending.roles) !== JSON.stringify(roles) || JSON.stringify(pending.input) !== JSON.stringify(input))) {
+          throw new ApplicationWorkspaceError('APPLICATION_ACTION_RECOVERY_REQUIRED',
+            'An earlier action request may have been accepted. Restore its inputs to retry the exact request before starting another action.');
+        }
+      }
       catch (error) { this._setStatus(error.message, true); this._emit('application-error', {code: error.code || 'APPLICATION_ACTION_PREPARE_INVALID'}); return; }
+      pending ??= {scope, roles, input, key: requestKey('application-prepare')};
+      this._pendingPrepare = pending;
+      if (!writeActionRecovery(scope, {phase: 'prepare', key: pending.key})) {
+        this._pendingPrepare = null;
+        this._setStatus('The action cannot be safely sent because interrupted-request recovery is unavailable.', true);
+        return;
+      }
       const request = new AbortController(); this._operationRequest = request; this._setBusy(true);
       this._setStatus('Preparing an exact action for review…'); this._emit('application-progress', {phase: 'preparing', ...scope});
       try {
-        const result = await readJson(applicationRoot(scope.applicationId, scope.stateSpaceId) + `/mechanics/${encodeURIComponent(scope.mechanicId)}/prepare`, {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({idempotencyKey: requestKey('application-prepare'), roleEntityIds: roles, input}), signal: request.signal});
-        if (!result?.ready || typeof result.proposalFingerprint !== 'string' || !result.proposal || typeof result.proposal !== 'object' || typeof result.receipt?.id !== 'string') {
-          throw new ApplicationWorkspaceError(result?.code || 'APPLICATION_ACTION_NOT_READY', result?.safeSummary || 'The action could not be prepared for review.');
+        const result = await readJson(applicationRoot(scope.applicationId, scope.stateSpaceId) + `/mechanics/${encodeURIComponent(scope.mechanicId)}/prepare`, {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({idempotencyKey: pending.key, roleEntityIds: pending.roles, input: pending.input}), signal: request.signal});
+        if (result?.ready !== true || !/^[0-9A-F]{64}$/.test(result.proposalFingerprint || '') ||
+            !result.proposal || typeof result.proposal !== 'object' || Array.isArray(result.proposal) ||
+            !validId(result.receipt?.id, 80)) {
+          const error = new ApplicationWorkspaceError(result?.code || 'APPLICATION_ACTION_NOT_READY', result?.safeSummary || 'The action could not be prepared for review.');
+          if (result && typeof result === 'object' && result.ready === false) error.terminal = true;
+          throw error;
         }
         if (!this._connected || this._operationRequest !== request) return;
         this._prepared = {scope, roles, input, proposalFingerprint: result.proposalFingerprint, proposal: result.proposal, receiptId: result.receipt.id, safeSummary: result.safeSummary || 'Review the exact prepared action.', evidence: Array.isArray(result.evidence) ? result.evidence : []};
+        this._pendingPrepare = null; clearActionRecovery(scope);
         this._renderPrepared(); this._setStatus(this._prepared.safeSummary);
         this._emit('application-proposal', {phase: 'prepared', ...scope, receiptId: this._prepared.receiptId, proposalFingerprint: this._prepared.proposalFingerprint});
       } catch (error) {
-        if (error.name !== 'AbortError') { this._setStatus(error.message || 'The action could not be prepared.', true); this._emit('application-error', {code: error.code || 'APPLICATION_ACTION_PREPARE_FAILED'}); }
-      } finally { if (this._operationRequest === request) this._operationRequest = null; this._setBusy(false); }
+        if (error.name !== 'AbortError' && this._connected && this._operationRequest === request) {
+          if (terminalControlError(error)) { this._pendingPrepare = null; clearActionRecovery(scope); }
+          else writeActionRecovery(scope, {phase: 'prepare', key: pending.key});
+          this._setStatus(terminalControlError(error) ? (error.message || 'The action could not be prepared.')
+            : 'The action may have been accepted. Retry the same request before changing its inputs.', true);
+          this._emit('application-error', {code: error.code || 'APPLICATION_ACTION_PREPARE_FAILED'});
+        }
+      } finally {
+        if (this._operationRequest === request) { this._operationRequest = null; this._setBusy(false); }
+      }
     }
 
     async _execute() {
-      if (this._busy || !this._prepared) return;
+      if (this._busy || this._recoveryBlocked || !this._prepared) return;
       const prepared = this._prepared; const current = this._scope();
       if (!current || current.applicationId !== prepared.scope.applicationId || current.stateSpaceId !== prepared.scope.stateSpaceId || current.mechanicId !== prepared.scope.mechanicId) { this._discardPrepared(); this._setStatus('The prepared action no longer matches this control.', true); return; }
+      const pending = this._pendingExecute;
+      if (pending && (pending.scope.applicationId !== current.applicationId || pending.scope.stateSpaceId !== current.stateSpaceId ||
+          pending.scope.mechanicId !== current.mechanicId || pending.receiptId !== prepared.receiptId ||
+          pending.proposalFingerprint !== prepared.proposalFingerprint)) {
+        this._setStatus('An earlier execution may have been accepted. Reload the prepared action before retrying.', true);
+        return;
+      }
+      const execution = pending ?? {scope: current, receiptId: prepared.receiptId,
+        proposalFingerprint: prepared.proposalFingerprint, key: requestKey('application-execute')};
+      this._pendingExecute = execution;
+      if (!writeActionRecovery(current, {phase: 'execute', key: execution.key, resolutionReceiptId: execution.receiptId})) {
+        this._pendingExecute = null;
+        this._setStatus('The action cannot be safely sent because interrupted-request recovery is unavailable.', true);
+        return;
+      }
       const request = new AbortController(); this._operationRequest = request; this._setBusy(true);
       this._setStatus('Executing the exact reviewed action…'); this._emit('application-progress', {phase: 'executing', ...current, receiptId: prepared.receiptId});
       try {
-        const result = await readJson(applicationRoot(current.applicationId, current.stateSpaceId) + `/mechanics/${encodeURIComponent(current.mechanicId)}/execute`, {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({resolutionReceiptId: prepared.receiptId, proposalFingerprint: prepared.proposalFingerprint, idempotencyKey: requestKey('application-execute'), proposal: prepared.proposal}), signal: request.signal});
+        const result = await readJson(applicationRoot(current.applicationId, current.stateSpaceId) + `/mechanics/${encodeURIComponent(current.mechanicId)}/execute`, {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({resolutionReceiptId: execution.receiptId, proposalFingerprint: execution.proposalFingerprint, idempotencyKey: execution.key, proposal: prepared.proposal}), signal: request.signal});
         if (!this._connected || this._operationRequest !== request) return;
-        this._prepared = null; this._renderOutcome(result);
+        const executionStatus = result?.receipt?.receipt?.status;
+        const codeMatchesStatus = typeof result?.code === 'string' &&
+          result.code === EXECUTION_CODES[executionStatus];
+        if (!result || typeof result !== 'object' || Array.isArray(result) || typeof result.successful !== 'boolean' ||
+            typeof result.code !== 'string' || !result.code || typeof result.safeSummary !== 'string' ||
+            !result.receipt || typeof result.receipt !== 'object' || Array.isArray(result.receipt) ||
+            !result.receipt.receipt || typeof result.receipt.receipt !== 'object' ||
+            !validId(result.receipt.receipt.id, 80) || !EXECUTION_STATUSES.has(executionStatus) ||
+            result.successful !== (executionStatus === 'succeeded') || !codeMatchesStatus) {
+          throw new ApplicationWorkspaceError('APPLICATION_ACTION_OUTCOME_INVALID',
+            'The action response did not include a complete execution outcome.');
+        }
+        this._prepared = null; this._pendingExecute = null; clearActionRecovery(current); this._renderOutcome(result);
         const summary = typeof result?.safeSummary === 'string' ? result.safeSummary : 'The reviewed action completed.';
         this._setStatus(summary, result?.successful === false);
         this._emit('application-receipt', {phase: 'complete', ...current, status: result?.code || 'APPLICATION_ACTION_COMPLETE', receiptId: result?.receipt?.receipt?.id || null});
       } catch (error) {
-        if (error.name !== 'AbortError') { this._setStatus(error.message || 'The reviewed action could not be executed.', true); this._emit('application-error', {code: error.code || 'APPLICATION_ACTION_EXECUTE_FAILED'}); }
-      } finally { if (this._operationRequest === request) this._operationRequest = null; this._setBusy(false); }
+        if (error.name !== 'AbortError' && this._connected && this._operationRequest === request) {
+          if (terminalControlError(error)) { this._pendingExecute = null; clearActionRecovery(current); }
+          else writeActionRecovery(current, {phase: 'execute', key: execution.key, resolutionReceiptId: execution.receiptId});
+          this._setStatus(terminalControlError(error) ? (error.message || 'The action was rejected.')
+            : 'Execution may have been accepted. Retry the same request before starting another action.', true);
+          this._emit('application-error', {code: error.code || 'APPLICATION_ACTION_EXECUTE_FAILED'});
+        }
+      } finally {
+        if (this._operationRequest === request) { this._operationRequest = null; this._setBusy(false); }
+      }
     }
 
-    _discardPrepared() { if (this._prepared) { this._prepared = null; this._clearReview(); } }
-    _setBusy(value) { this._busy = value; this._setReady(!value && !!this._descriptor); }
+    _requireSettledExecution() {
+      if (this._pendingExecute) throw new ApplicationWorkspaceError('APPLICATION_ACTION_RECOVERY_REQUIRED',
+        'Execution may have been accepted. Recover the exact reviewed execution before changing its inputs.');
+    }
+    async _recoverInterruptedRequest(scope, force = false) {
+      const pending = readActionRecovery(scope);
+      if (!pending || this._pendingPrepare || this._pendingExecute || (!force && this._recoveryScope === actionRecoverySlot(scope))) return;
+      if (pending.malformed === true) {
+        this._recoveryScope = actionRecoverySlot(scope); this._recoveryBlocked = true; this._setReady(false);
+        this._setStatus('Saved interrupted-action metadata is invalid. Reload before starting another action.', true);
+        return;
+      }
+      if ((pending.phase !== 'prepare' && pending.phase !== 'execute') || !validId(pending.key, 128) ||
+          (pending.phase === 'execute' && !validId(pending.resolutionReceiptId, 80))) return;
+      this._recoveryScope = actionRecoverySlot(scope); this._recoveryBlocked = true; this._setReady(false);
+      this._setStatus('Checking an earlier action without sending it again…');
+      try {
+        const url = new URL(applicationRoot(scope.applicationId, scope.stateSpaceId) + `/recoveries/${encodeURIComponent(pending.key)}`, window.location.origin);
+        if (pending.phase === 'execute') url.searchParams.set('resolutionReceiptId', pending.resolutionReceiptId);
+        const result = await readJson(url);
+        const current = this._scope();
+        if (!this._connected || !current || current.applicationId !== scope.applicationId ||
+            current.stateSpaceId !== scope.stateSpaceId || current.mechanicId !== scope.mechanicId) return;
+        const terminalExecution = new Set(['succeeded', 'failed', 'partial', 'skipped', 'stale', 'unauthorized', 'cancelled', 'timed-out']);
+        const terminalResolution = new Set(['resolved', 'needs-input', 'ambiguous', 'unknown', 'unsupported', 'unavailable', 'unsafe', 'stale']);
+        const valid = result && typeof result === 'object' && typeof result.id === 'string' && validId(result.id, 80) &&
+          typeof result.safeSummary === 'string' && typeof result.status === 'string' &&
+          result.idempotencyKey === pending.key && result.applicationId === scope.applicationId && result.stateSpaceId === scope.stateSpaceId &&
+          (pending.phase === 'prepare'
+            ? result.kind === 'resolution' && terminalResolution.has(result.status)
+            : result.kind === 'execution' && result.resolutionReceiptId === pending.resolutionReceiptId && terminalExecution.has(result.status));
+        if (!valid) throw new ApplicationWorkspaceError('APPLICATION_ACTION_RECOVERY_INVALID',
+          'The interrupted-action recovery response is incomplete.');
+        clearActionRecovery(scope); this._recoveryBlocked = false;
+        this._setStatus(typeof result?.safeSummary === 'string' ? result.safeSummary : 'The earlier action was recovered.');
+        this._setReady(true);
+      } catch (error) {
+        const current = this._scope();
+        if (!this._connected || !current || current.applicationId !== scope.applicationId ||
+            current.stateSpaceId !== scope.stateSpaceId || current.mechanicId !== scope.mechanicId) return;
+        if (error?.status === 403) {
+          clearActionRecovery(scope);
+          this._setStatus('Authorization changed. The earlier action was discarded without replaying it; reload before starting another.', true);
+        } else {
+          this._setStatus('The earlier action remains uncertain. Check again later; no new action was sent.', true);
+          this._renderRecoveryReview(scope);
+        }
+      }
+    }
+    _renderRecoveryReview(scope) {
+      this._clearReview(); const retry = element('button', 'action-button', 'Check earlier action again'); retry.type = 'button';
+      retry.addEventListener('click', () => this._recoverInterruptedRequest(scope, true)); this._review.append(retry);
+    }
+    _discardPrepared() { if (this._prepared && !this._pendingExecute) { this._prepared = null; this._clearReview(); } }
+    _setBusy(value) { this._busy = value; this._setReady(!value && !!this._descriptor && !this._pendingExecute && !this._recoveryBlocked); }
     _setStatus(message, error = false) { this._status.textContent = message; this._status.setAttribute('role', error ? 'alert' : 'status'); }
     _emit(name, detail) { this.dispatchEvent(new CustomEvent(name, {detail, bubbles: true, composed: true})); }
     _rolesChanged() { }
@@ -312,7 +509,7 @@
       this.shadowRoot.append(style, this._button, this._status, this._review);
     }
 
-    _renderDescriptor(descriptor) { this._button.textContent = this.textContent.trim() || `Prepare ${descriptor.name}`; this._clearReview(); }
+    _renderDescriptor(descriptor) { this._button.textContent = this.textContent.trim() || `Prepare ${descriptor.name}`; this._clearReview(); this._setReady(true); }
     _renderUnavailable() { this._button.disabled = true; this._clearReview(); }
     _setReady(value) { this._button.disabled = !value; }
     _clearReview() { this._review.replaceChildren(); }

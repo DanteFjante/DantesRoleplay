@@ -40,6 +40,14 @@ public sealed record WebAiRequest(
     int MaximumToolRounds = 4,
     int MaximumOutputTokens = 2_048);
 
+public sealed record WebAiRecoveryRequest(
+    string Surface,
+    string Provider,
+    string IdempotencyKey,
+    string? ApplicationId = null,
+    string? ResolutionFingerprint = null,
+    string? StateSpaceId = null);
+
 public sealed record WebAiToolCallView(
     string Id,
     string Name,
@@ -112,6 +120,9 @@ public interface IWebAiGateway
         string conversationId,
         int expectedRevision,
         CancellationToken cancellationToken = default);
+    Task<AssistantTurnRecovery?> RecoverAsync(
+        AuthorizationAuditEvidence authorization, WebAiRecoveryRequest request,
+        CancellationToken cancellationToken = default) => Task.FromResult<AssistantTurnRecovery?>(null);
 }
 
 /// <summary>
@@ -203,7 +214,8 @@ public sealed class WebAiGateway(
             message,
             normalized.IdempotencyKey,
             requestHash,
-            AssistantConversationScopes.System), cancellationToken);
+            AssistantConversationScopes.System,
+            new(AssistantTurnContextProfiles.SystemReadV1, binding.ContextFingerprint, binding.References)), cancellationToken);
         if (begin.Replay)
         {
             var replay = await ExactConversation(principal.PrincipalId, begin.ConversationId, cancellationToken);
@@ -354,6 +366,40 @@ public sealed class WebAiGateway(
             cancellationToken,
             AssistantConversationScopes.System);
 
+    public async Task<AssistantTurnRecovery?> RecoverAsync(
+        AuthorizationAuditEvidence authorization, WebAiRecoveryRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        var recoveryKey = request.IdempotencyKey ?? "";
+        if (request.Surface is not ("outer" or "inner")) throw Error("AI_SURFACE_INVALID",
+            "The interrupted request surface is invalid.");
+        RequireProvider(request.Provider);
+        if (!Bounded(recoveryKey, 100)) throw Error("AI_IDEMPOTENCY_KEY_INVALID",
+            "The interrupted request identity is invalid.");
+        if (conversations is null) return null;
+        var binding = ResolveBinding(new WebAiRequest(
+            Surface: request.Surface,
+            Provider: request.Provider,
+            Model: "recovery",
+            Operation: "message",
+            Input: "recovery",
+            IdempotencyKey: recoveryKey,
+            ApplicationId: request.ApplicationId,
+            ResolutionFingerprint: request.ResolutionFingerprint,
+            StateSpaceId: request.StateSpaceId));
+        var recovered = await conversations.FindByIdempotencyKeyAsync(
+            Principal(authorization).PrincipalId, ConversationProvider(request.Provider), recoveryKey,
+            AssistantConversationScopes.System,
+            cancellationToken,
+            new(AssistantTurnContextProfiles.SystemReadV1, binding.ContextFingerprint, binding.References));
+        // Storage aliases provider implementations (for example ollama uses
+        // the durable local conversation lane). The recovery response is part
+        // of the browser's exact request fence, so echo the validated public
+        // provider selector rather than leaking that implementation alias.
+        return recovered is null ? null : recovered with { Provider = request.Provider };
+    }
+
     public Task<bool> DeleteConversationAsync(
         AuthorizationAuditEvidence authorization,
         string conversationId,
@@ -380,8 +426,10 @@ public sealed class WebAiGateway(
             if (!string.IsNullOrWhiteSpace(request.StateSpaceId)) throw Error(
                 "AI_APPLICATION_CONTEXT_REQUIRED",
                 "A runtime state space can only be selected with its application.");
-            var systemFingerprint = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes("system-ai-context-v1")));
-            return new(null, null, null, systemFingerprint, systemFingerprint, []);
+            var systemReferences = new[] { $"surface:{request.Surface}" };
+            var systemFingerprint = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
+                request.Surface + "\0system-ai-context-v1")));
+            return new(null, null, null, systemFingerprint, systemFingerprint, systemReferences);
         }
         ApplicationIdentifier application;
         try { application = ApplicationIdentifier.Parse(request.ApplicationId); }
@@ -419,7 +467,7 @@ public sealed class WebAiGateway(
         }
         var contextFingerprint = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
             request.Surface + "\0" + application.Value + "\0" + current + "\0" + stateSpaceId + "\0" + stateFingerprint)));
-        var references = new List<string> { $"application:{application.Value}@{current}" };
+        var references = new List<string> { $"application:{application.Value}@{current}", $"surface:{request.Surface}" };
         if (stateSpaceId is not null) references.Add($"state-space:{stateSpaceId}@{stateFingerprint}");
         references.Sort(StringComparer.Ordinal);
         return new(application, application.Value, stateSpaceId, current, contextFingerprint,

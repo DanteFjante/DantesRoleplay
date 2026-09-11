@@ -98,7 +98,7 @@ test("installed content sends normalized server-side filters and one explicit co
   assert.equal(url.searchParams.get("cursor"), "next-page");
 });
 
-test("installed content cache reuses a completed page on a fresh revisit", async () => {
+test("installed content client coordinates only in-flight reads; Redux owns completed pages", async () => {
   let requests = 0;
   let responseBytes = 0;
   const client = new InstalledContentClient({
@@ -124,17 +124,31 @@ test("installed content cache reuses a completed page on a fresh revisit", async
   };
 
   const cold = await client.load(request);
-  const coldRequests = requests;
-  const coldBytes = responseBytes;
   await client.load(request);
 
   assert.ok(cold.records.length <= 100);
-  assert.equal(coldRequests, 1);
-  assert.ok(coldBytes <= 524_288);
-  assert.equal(requests - coldRequests, 0, "fresh revisit issues no content requests");
-  assert.equal(responseBytes - coldBytes, 0, "fresh revisit reads no response bytes");
-  assert.equal(client.metrics().hits, 1);
-  assert.equal(client.metrics().retainedEntries, 1);
+  assert.equal(requests, 2);
+  assert.ok(responseBytes <= 2 * 524_288);
+});
+
+test("installed content retains a safe identity when optional display metadata is malformed", async () => {
+  const result = await readInstalledContent({
+    serverOrigin: "https://localhost:5144", applicationId: "dnd2024",
+    fetchImpl: async () => response({
+      applicationId: "dnd2024", resolutionFingerprint: "A".repeat(64),
+      activeExtensions: [{ extensionId: "caldris-homebrew", displayName: "Caldris", description: null, classification: "unfamiliar" }],
+      resolvedWinners: [{ record: { qualifiedId: "dnd2024.extension.caldris.content.fixture.v1", name: null,
+        description: null, kind: null, path: null }, ownerId: "caldris-homebrew", sourceLabel: null,
+        classification: "unfamiliar", presentationRoles: ["entity", null], isAdditive: null }],
+      availableKinds: ["entity", "not a kind"], totalCount: "unknown", nextCursor: null,
+    }),
+  });
+  assert.equal(result.records[0].id, "dnd2024.extension.caldris.content.fixture.v1");
+  assert.equal(result.records[0].name, "Unnamed contribution");
+  assert.equal(result.records[0].classification, "unknown");
+  assert.equal(result.records[0].description, null);
+  assert.equal(result.totalCount, null);
+  assert.equal(result.coverage, "partial");
 });
 
 test("installed content rejects a changed resolution between pages", async () => {

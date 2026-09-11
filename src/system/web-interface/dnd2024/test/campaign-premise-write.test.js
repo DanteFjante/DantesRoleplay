@@ -74,6 +74,14 @@ test("premise writer sends one exact mapped PATCH and accepts committed or no-op
   }), 0)({ envelope: envelope(), premise: "Existing premise.", idempotencyKey: "edit-fixture-noop" });
   assert.equal(noOp.noOp, true);
   assert.equal(noOp.applied, false);
+
+  const fieldLocalAcknowledgement = await createCampaignPremiseWriter(async () => success("Mapped premise.", {
+    data: {
+      status: "active", premise: "Mapped premise.", title: 7, partyGoals: "unavailable",
+      unrelatedProducerMetadata: { version: 4 },
+    },
+  }), 0)({ envelope: envelope(), premise: "Mapped premise.", idempotencyKey: "field-local-ack" });
+  assert.equal(fieldLocalAcknowledgement.premise, "Mapped premise.");
 });
 
 test("an uncertain response retries once with byte-identical input and the same idempotency key", async () => {

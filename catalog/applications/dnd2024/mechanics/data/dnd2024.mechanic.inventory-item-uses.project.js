@@ -6,7 +6,9 @@ function read(c, key) { if (!c || !Object.prototype.hasOwnProperty.call(c,key)) 
 function ref(v) { return obj(v) && typeof v.entityId==='string' && v.entityId.length>0 && v.entityId.length<=200; }
 if (!observer || observer.version!==1 || !subject || !campaign || observer.observerId!==subject.id || observer.campaignId!==campaign.id ||
     !ctx.audience || observer.perspective!==ctx.audience.perspective || !observer.knowledgeComplete || !obj(ctx.input)) fail();
-if(Object.keys(ctx.input).sort().join(',')!=='expectedSourceRevision,itemId,offset') fail();
+var inputKeys=Object.keys(ctx.input).sort().join(',');
+if(inputKeys!=='expectedSourceRevision,itemId,offset'&&inputKeys!=='expectedSourceRevision,itemId,offset,selectionId'||
+  Object.prototype.hasOwnProperty.call(ctx.input,'selectionId')&&text(ctx.input.selectionId,200)!==campaign.id) fail();
 var itemId=text(ctx.input.itemId,200), offset=ctx.input.offset, dm=observer.perspective==='dm';
 if(['player','dm'].indexOf(observer.perspective)<0 || !Number.isSafeInteger(offset) || offset<0 || offset>10000 || offset && !ctx.input.expectedSourceRevision) fail();
 if(ctx.input.expectedSourceRevision!==null && ctx.input.expectedSourceRevision!==observer.authorizedSourceRevision) fail();

@@ -1,40 +1,6 @@
 {
   "id": "dnd2024.object.carrying-capacity-creature",
-  "version": 1,
-  "schema": {
-    "type": "object",
-    "additionalProperties": false,
-    "required": ["abilityScores", "sizeRef"],
-    "properties": {
-      "abilityScores": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["scores"],
-        "properties": {
-          "scores": {
-            "type": "object",
-            "minProperties": 1,
-            "maxProperties": 32,
-            "propertyNames": { "type": "string", "minLength": 1, "pattern": "\\S", "maxLength": 200 },
-            "additionalProperties": { "type": "integer", "minimum": 0, "maximum": 100 }
-          }
-        }
-      },
-      "sizeRef": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["entityId"],
-        "properties": {
-          "entityId": { "type": "string", "minLength": 1, "maxLength": 200 },
-          "expectedArchetype": {
-            "type": "string",
-            "pattern": "^dnd2024\\.[a-z][a-z0-9-]*(?:\\.[a-z][a-z0-9-]*)*$",
-            "maxLength": 200
-          }
-        }
-      }
-    }
-  },
+  "version": 2,
   "roles": {
     "creature": { "required": true }
   },
@@ -84,5 +50,6 @@
   "access": {
     "read": ["player", "dm"],
     "write": []
-  }
+  },
+  "profile": "application-object/v2"
 }

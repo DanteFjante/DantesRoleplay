@@ -5,6 +5,7 @@
   "description": "Returns bounded party-visible outcomes already committed to session recaps, closed chapters, resolved arcs, and location-visit memory.",
   "matches": ["what happened recently", "show recent campaign consequences", "recap the latest durable outcomes"],
   "roles": { "campaign": "The exact audience-authorized active campaign." },
+  "roleBindings": { "campaign": { "source": "route-entity" } },
   "executor": "mechanic-projection",
   "projection": {
     "qualifiedId": "dnd2024.mechanic.campaign.recent-consequences.project",

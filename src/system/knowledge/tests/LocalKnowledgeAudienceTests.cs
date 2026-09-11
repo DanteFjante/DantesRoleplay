@@ -16,7 +16,7 @@ namespace DantesRoleplay.Tests;
 public sealed class LocalKnowledgeAudienceTests
 {
     [Fact]
-    public void Application_and_chronology_bindings_are_selected_per_request_instead_of_at_startup()
+    public void Application_binding_is_selected_per_request_instead_of_at_startup()
     {
         using var app = Host();
         using var first = app.Services.CreateScope();
@@ -26,8 +26,6 @@ public sealed class LocalKnowledgeAudienceTests
         using var second = app.Services.CreateScope();
         Assert.Equal("another-application", second.ServiceProvider
             .GetRequiredService<KnowledgeApplicationSelection>().ApplicationId);
-        Assert.Equal("another-application", second.ServiceProvider
-            .GetRequiredService<WorldChronologyApplicationSelection>().ApplicationId);
         Assert.Equal("fixture", original.ApplicationId);
     }
 

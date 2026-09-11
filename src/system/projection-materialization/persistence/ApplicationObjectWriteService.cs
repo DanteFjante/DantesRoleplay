@@ -40,14 +40,19 @@ public sealed class ApplicationObjectWriteService(
         if (!contract.Collections.Any(value => value.CollectionId == request.CollectionId))
             throw Failure("OBJECT_WRITE_REQUEST_INVALID", "The object collection is not declared.");
 
-        var changes = CanonicalObject(request.ChangesJson);
+        var submitted = request.SubmissionMode == "object"
+            ? CanonicalObject(request.SubmittedObjectJson)
+            : CanonicalObject(request.ChangesJson);
         var editSchema = schemas.Compile(contract.Writes.EditSchemaJson);
         if (!editSchema.IsAccepted || editSchema.ProfileId != contract.Writes.EditSchemaProfileId ||
-            editSchema.SchemaHash != contract.Writes.EditSchemaHash || schemas.Validate(
-                editSchema.ProfileId, editSchema.NormalizedSchema, changes).Status != SchemaValueStatus.Valid)
+            editSchema.SchemaHash != contract.Writes.EditSchemaHash)
             throw Failure("OBJECT_WRITE_REQUEST_INVALID", "The object changes do not satisfy the exact edit schema.");
 
-        var identity = Identity(request, changes);
+        if (request.SubmissionMode == "changes" && schemas.Validate(
+                editSchema.ProfileId, editSchema.NormalizedSchema, submitted).Status != SchemaValueStatus.Valid)
+            throw Failure("OBJECT_WRITE_REQUEST_INVALID", "The object changes do not satisfy the exact edit schema.");
+
+        var identity = Identity(request, submitted);
         var replay = await operations.GetAsync(identity.OperationId, cancellationToken);
         if (replay is not null)
         {
@@ -64,6 +69,14 @@ public sealed class ApplicationObjectWriteService(
         var current = await ReadAsync(request, cancellationToken);
         if (current.SourceRevisionFingerprint != request.ExpectedSourceRevisionFingerprint)
             throw Failure("OBJECT_WRITE_SOURCE_STALE", "The object sources changed. Refresh before saving.");
+
+        var changes = request.SubmissionMode == "object"
+            ? ApplicationObjectSubmissionDiffer.CreateChanges(
+                current.OutputJson, submitted, contract.GeneratedWriteMappings)
+            : submitted;
+        if (request.SubmissionMode == "object" && schemas.Validate(
+                editSchema.ProfileId, editSchema.NormalizedSchema, changes).Status != SchemaValueStatus.Valid)
+            throw Failure("OBJECT_WRITE_REQUEST_INVALID", "The object changes do not satisfy the exact edit schema.");
 
         var currentObject = JsonNode.Parse(current.OutputJson)?.AsObject()
             ?? throw Failure("OBJECT_WRITE_UNAVAILABLE", "The current object is unavailable.");
@@ -229,7 +242,7 @@ public sealed class ApplicationObjectWriteService(
 
     private static ApplicationEcsExecutionIdentity Identity(
         ApplicationObjectWriteRequest request,
-        string changes)
+        string submission)
     {
         var scope = CanonicalObject(JsonSerializer.Serialize(new
         {
@@ -242,13 +255,22 @@ public sealed class ApplicationObjectWriteService(
             request.Perspective,
             request.IdempotencyKey
         }));
-        var requestJson = CanonicalObject(JsonSerializer.Serialize(new
-        {
-            scope = JsonSerializer.Deserialize<JsonElement>(scope),
-            request.ExpectedSourceRevisionFingerprint,
-            changes = JsonSerializer.Deserialize<JsonElement>(changes),
-            relationshipEdits = request.RelationshipEdits
-        }));
+        var requestJson = request.SubmissionMode == "changes"
+            ? CanonicalObject(JsonSerializer.Serialize(new
+            {
+                scope = JsonSerializer.Deserialize<JsonElement>(scope),
+                request.ExpectedSourceRevisionFingerprint,
+                changes = JsonSerializer.Deserialize<JsonElement>(submission),
+                relationshipEdits = request.RelationshipEdits
+            }))
+            : CanonicalObject(JsonSerializer.Serialize(new
+            {
+                scope = JsonSerializer.Deserialize<JsonElement>(scope),
+                mode = request.SubmissionMode,
+                request.ExpectedSourceRevisionFingerprint,
+                submittedObject = JsonSerializer.Deserialize<JsonElement>(submission),
+                relationshipEdits = request.RelationshipEdits
+            }));
         var operationHash = Hash(scope);
         return new(operationHash[..32].ToLowerInvariant(), Hash(requestJson));
     }
@@ -260,6 +282,7 @@ public sealed class ApplicationObjectWriteService(
         request.Object.Validate();
         if (!Token(request.StateSpaceId, 200) || !Token(request.CollectionId, 200) ||
             request.Perspective is not ("player" or "dm") || !Token(request.IdempotencyKey, 128) ||
+            request.SubmissionMode is not ("changes" or "object") ||
             !HashValue(request.ExpectedSourceRevisionFingerprint) || request.RoleEntityIds is null ||
             request.RoleEntityIds.Count is < 1 or > 32 || request.RoleEntityIds.Any(value =>
                 !Token(value.Key, 200) || !Token(value.Value, 200)) || request.RelationshipEdits is null ||

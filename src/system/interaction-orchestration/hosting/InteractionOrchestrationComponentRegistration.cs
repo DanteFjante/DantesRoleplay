@@ -3,6 +3,7 @@ using DantesRoleplay.CatalogNamespaces;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Knowledge;
 using DantesRoleplay.Play;
+using DantesRoleplay.Projections;
 using DantesRoleplay.SystemCapabilities;
 using DantesRoleplay.Retrieval;
 using Microsoft.Extensions.DependencyInjection;
@@ -81,11 +82,12 @@ internal static class InteractionOrchestrationComponentRegistration
         services.TryAddScoped<IInteractionProposalVerifier, InteractionProposalVerifier>();
         services.TryAddEnumerable(ServiceDescriptor.Scoped<IInteractionQueryExecutor, ProjectionInteractionQueryExecutor>());
         services.AddScoped<ObjectProjectionInteractionQueryExecutor>();
-        services.AddScoped<IInteractionQueryExecutor>(provider =>
-            provider.GetRequiredService<ObjectProjectionInteractionQueryExecutor>());
+        services.TryAddEnumerable(ServiceDescriptor.Scoped<IInteractionQueryExecutor,
+            RegisteredObjectProjectionInteractionQueryExecutor>());
         services.TryAddEnumerable(ServiceDescriptor.Scoped<IInteractionQueryExecutor, MechanicProjectionInteractionQueryExecutor>());
         services.TryAddScoped<IInteractionQueryExecutorRegistry, InteractionQueryExecutorRegistry>();
         services.TryAddScoped<IApplicationReadModelService, ApplicationReadModelService>();
+        services.TryAddScoped<IApplicationQueryRoleBindingResolver, ApplicationQueryRoleBindingResolver>();
         services.TryAddScoped<IInteractionTaskContextMaterializer>(provider =>
             new InteractionTaskContextMaterializer(
                 provider.GetRequiredService<IInteractionAuthorizationPolicy>(),
@@ -94,7 +96,8 @@ internal static class InteractionOrchestrationComponentRegistration
                 provider.GetRequiredService<IApplicationReadModelService>(),
                 provider.GetService<IAuthorizedKnowledgeCandidateResolver>(),
                 provider.GetService<IApplicationPlayRecordStore>(),
-                provider.GetService<IInteractionRecentReceiptReader>()));
+                provider.GetService<IInteractionRecentReceiptReader>(),
+                provider.GetService<IProjectionDefinitionRegistry>()));
         services.TryAddScoped<IInteractionEnvelopeFactory, InteractionEnvelopeFactory>();
         services.TryAddScoped<IInteractionExecutionCoordinator, InteractionExecutionCoordinator>();
         services.TryAddScoped<IInteractionGateway, InteractionGateway>();

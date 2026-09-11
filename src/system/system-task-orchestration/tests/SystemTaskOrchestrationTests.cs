@@ -22,6 +22,33 @@ public sealed class SystemTaskOrchestrationTests
         "principal.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
     [Fact]
+    public async Task Interrupted_task_lookup_returns_only_owned_durable_identities_without_reexecution()
+    {
+        using var fixture = new SqliteFixture();
+        await using var db = fixture.CreateContext();
+        var store = new AssistantConversationStore(db, new OperationLog(db));
+        var conversationId = await ConversationAsync(store);
+        var capability = new FixtureWriteHandler();
+        var catalog = Catalog(capability);
+        var descriptor = catalog.Discover(Invocation()).Capabilities.Single(value => value.Mode == SystemCapabilityMode.Write);
+        var service = Service(db, store, catalog, new QueueProvider(), [Reference(descriptor)]);
+        var task = await service.PrepareAsync(Context(), conversationId, new(SystemTaskOperations.Submit,
+            "Register recoverable fixture", [new(descriptor.Id, JsonSerializer.SerializeToElement(new { name = "recover" }))], "recover.task"));
+        var confirmation = await service.ConfirmAsync(Context(), task.Summary.Id,
+            new(task.Summary.PlanFingerprint, "recover.confirm"));
+        var receipt = await service.ExecuteAsync(Context(), task.Summary.Id,
+            new(confirmation.Id, task.Summary.PlanFingerprint, "recover.execute"));
+
+        Assert.Equal(task.Summary.Id, (await service.RecoverAsync(Context(), "recover.task"))!.TaskId);
+        Assert.Equal(confirmation.Id, (await service.RecoverAsync(Context(), "recover.confirm"))!.ConfirmationId);
+        var recovered = await service.RecoverAsync(Context(), "recover.execute");
+        Assert.Equal(receipt.Id, recovered!.ExecutionId);
+        Assert.Equal(SystemTaskExecutionStatuses.Succeeded, recovered.Status);
+        Assert.Null(await service.RecoverAsync(Context(), "recover.unknown"));
+        Assert.Equal(1, capability.ExecuteCalls);
+    }
+
+    [Fact]
     public async Task Local_planning_reads_then_prepares_inert_writes_and_replays_without_more_model_calls()
     {
         using var fixture = new SqliteFixture();

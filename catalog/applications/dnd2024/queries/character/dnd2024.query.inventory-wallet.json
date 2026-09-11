@@ -5,6 +5,7 @@
   "description": "Returns physical currency totals independently from inventory browsing and states whether the recursive calculation is complete.",
   "matches": ["show carried wallet totals"],
   "roles": { "subject": "The exact audience-authorized character entity." },
+  "roleBindings": { "subject": { "source": "route-entity" } },
   "executor": "mechanic-projection",
   "projection": {
     "qualifiedId": "dnd2024.mechanic.inventory-wallet.project",

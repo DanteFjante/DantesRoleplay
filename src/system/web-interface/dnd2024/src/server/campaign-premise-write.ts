@@ -1,5 +1,5 @@
 import type { ReadyHubEnvelope } from "../data/hub-types";
-import { validateRegisteredCampaignSummary } from "./campaign-summary.js";
+import { validateCampaignPremiseWriteAcknowledgement } from "./campaign-summary.js";
 import { contract as campaignSummaryContract } from "./campaign-summary-contract.js";
 import { readBoundedJson } from "./read-model-response.js";
 import { requestId } from "../data/browser-crypto.ts";
@@ -85,7 +85,7 @@ function validResult(value: unknown, request: CampaignPremiseWriteRequest, premi
       !fingerprint(result.sourceRevisionFingerprint) ||
       (result.applied && (result.replayed || result.noOp)) ||
       (!result.applied && !result.noOp) || (result.replayed && !result.noOp)) return null;
-  const projected = validateRegisteredCampaignSummary(result.data, null, "dm");
+  const projected = validateCampaignPremiseWriteAcknowledgement(result.data, null);
   if (!projected || projected.premise !== premise) return null;
   return {
     premise: projected.premise,

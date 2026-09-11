@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Text.Json.Serialization;
 using DantesRoleplay.Applications;
 using DantesRoleplay.Ecs;
 
@@ -50,10 +51,33 @@ public sealed record RegisteredProjectionDefinition(
             .Order(StringComparer.Ordinal).ToArray());
 }
 
-public sealed record ProjectionMaterializationRequest(string StateSpaceId, ProjectionReference Projection, IReadOnlyDictionary<string, string> RoleEntityIds);
+/// <summary>Host-selected read semantics. Executable snapshots and edits always use Exact.</summary>
+public enum ProjectionReadPurpose { Exact, Display }
+
+public sealed record ProjectionMaterializationRequest(string StateSpaceId, ProjectionReference Projection, IReadOnlyDictionary<string, string> RoleEntityIds)
+{
+    // This is not a client protocol option. Only the authorized read owner can select display semantics.
+    [JsonIgnore]
+    public ProjectionReadPurpose Purpose { get; init; } = ProjectionReadPurpose.Exact;
+}
 /// <summary>Observed component evidence; revision zero records absence of the qualified type.</summary>
 public sealed record ProjectionSourceRevision(string EntityId, EcsComponentReference Type, int Revision);
-public sealed record ProjectionMaterializationResult(ProjectionReference Projection, string OutputJson, IReadOnlyList<ProjectionSourceRevision> SourceRevisions);
+public sealed record ProjectionMappedFieldEvidence(
+    ProjectionReference Composition, string InputId, string SourcePointer, string TargetPointer,
+    string Availability);
+public sealed record ProjectionObservedSource(
+    IReadOnlyList<string> InputPath,
+    string EntityRole,
+    bool Required,
+    EcsComponentReference DeclaredComponent,
+    EcsComponentReference? ActualComponent,
+    string Availability);
+public sealed record ProjectionMaterializationResult(ProjectionReference Projection, string OutputJson, IReadOnlyList<ProjectionSourceRevision> SourceRevisions)
+{
+    public IReadOnlyList<ProjectionMappedFieldEvidence> Fields { get; init; } = [];
+    [JsonIgnore]
+    public IReadOnlyList<ProjectionObservedSource> ObservedSources { get; init; } = [];
+}
 public sealed record ProjectionCollectionMaterializationRequest(
     string StateSpaceId,
     ProjectionReference Projection,
@@ -61,7 +85,11 @@ public sealed record ProjectionCollectionMaterializationRequest(
     string CollectionId,
     string Perspective,
     string? Cursor = null,
-    int? PageSize = null);
+    int? PageSize = null)
+{
+    [JsonIgnore]
+    public ProjectionReadPurpose Purpose { get; init; } = ProjectionReadPurpose.Exact;
+}
 public sealed record ProjectionCollectionMaterializationResult(
     ProjectionReference Projection,
     string OutputJson,
@@ -72,6 +100,9 @@ public sealed record ProjectionCollectionMaterializationResult(
     public IReadOnlyList<ProjectionRelationshipCollectionSnapshot> RelationshipCollections { get; init; } = [];
     public IReadOnlyList<ProjectionEntityRevision> EntityRevisions { get; init; } = [];
     public bool Complete { get; init; } = true;
+    public IReadOnlyList<ProjectionMappedFieldEvidence> Fields { get; init; } = [];
+    [JsonIgnore]
+    public IReadOnlyList<ProjectionObservedSource> ObservedSources { get; init; } = [];
 }
 public sealed record ProjectionRelationshipRevision(
     string FromEntityId,
@@ -101,6 +132,19 @@ public interface IProjectionDefinitionRegistry
     RegisteredProjectionDefinition Define(ProjectionDefinitionRequest definition);
     RegisteredProjectionDefinition? Get(string qualifiedId, int version);
     ProjectionImpactGraph GetImpactGraph(ApplicationIdentifier owner);
+
+    /// <summary>
+    /// Returns registry-owned source/schema provenance only for one exact immutable object
+    /// reference. Providers without discovery support return null.
+    /// </summary>
+    ApplicationObjectDiscovery? Discover(ProjectionReference reference) => null;
+
+    /// <summary>Resolves authorized, materialized v2 evidence without changing declaration discovery.</summary>
+    ApplicationObjectReadEvidence? DiscoverRead(
+        ProjectionReference reference,
+        IReadOnlyList<ProjectionObservedSource> observedSources,
+        IReadOnlyList<ProjectionMappedFieldEvidence> fields,
+        string outputJson) => null;
 }
 
 public interface IProjectionMaterializer

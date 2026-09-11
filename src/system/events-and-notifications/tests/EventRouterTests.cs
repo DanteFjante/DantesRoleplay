@@ -438,6 +438,27 @@ public sealed class EventRouterTests : IDisposable
         Assert.Equal("spark", root.GetProperty("entityIds")[0].GetString());
     }
 
+    [Fact]
+    public void An_application_reaction_receives_trusted_source_and_component_snapshot_without_changing_legacy_shape()
+    {
+        var legacy = EventEnvelope.ForReaction(new EventDetail("legacy", "test.changed", 1, "", "{}",
+            DateTime.UtcNow, "corr", "", 0, 0, "root", []));
+        using var legacyDocument = JsonDocument.Parse(legacy);
+        Assert.False(legacyDocument.RootElement.TryGetProperty("source", out _));
+
+        var app = EventEnvelope.ForReaction(new EventDetail("app", "test.changed", 1, "", "{}",
+            DateTime.UtcNow, "corr", "", 0, 0, "root", ["actor"],
+            Source: new EventSourceContext("fixture", "space"),
+            ComponentSnapshot: new EventComponentSnapshotDetail("actor", "fixture.stats", 1,
+                "{\"value\":1}", 1, "{\"value\":2}", 2)));
+        using var appDocument = JsonDocument.Parse(app);
+        var source = appDocument.RootElement.GetProperty("source");
+        Assert.Equal("fixture", source.GetProperty("applicationId").GetString());
+        Assert.Equal("space", source.GetProperty("stateSpaceId").GetString());
+        Assert.Equal("{\"value\":1}", appDocument.RootElement.GetProperty("componentSnapshot").GetProperty("before").GetRawText());
+        Assert.Equal("{\"value\":2}", appDocument.RootElement.GetProperty("componentSnapshot").GetProperty("after").GetRawText());
+    }
+
     /// <summary>
     /// A reaction sees the entities the event affected, keyed by id, carrying the components it
     /// declared — and nothing it did not declare.

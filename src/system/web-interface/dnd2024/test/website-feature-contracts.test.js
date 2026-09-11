@@ -27,7 +27,7 @@ async function findCatalogRecord(directory, id) {
     if (entry.isDirectory()) {
       const nested = await findCatalogRecord(candidate, id);
       if (nested) return nested;
-    } else if (entry.name.endsWith(".json")) {
+    } else if (entry.name === `${id}.json`) {
       const value = await readJson(candidate);
       if (value.id === id) return value;
     }
@@ -63,7 +63,7 @@ test("W01 freezes one explicit contract for every visible website surface", () =
   }
 });
 
-test("W01 preserves all existing registered query and object owners at their current versions", async () => {
+test("registered owners remain active through the reviewed append-only structural migration", async () => {
   const expectedQueries = [
     "dnd2024.query.campaign-summary",
     "dnd2024.query.character-dossier-v1",
@@ -75,6 +75,7 @@ test("W01 preserves all existing registered query and object owners at their cur
     "dnd2024.query.faction-directory-page",
     "dnd2024.query.campaign-resume",
     "dnd2024.query.current-scene",
+    "dnd2024.query.campaign-details",
     "dnd2024.query.encounter-board",
     "dnd2024.query.encounter-board-draft",
   ];
@@ -84,13 +85,36 @@ test("W01 preserves all existing registered query and object owners at their cur
   }
 
   const versions = new Map([
-    ["dnd2024.object.campaign-summary", 3],
-    ["dnd2024.object.character-dossier-records", 1],
-    ["dnd2024.object.faction-directory-page", 1],
+    ["dnd2024.object.campaign-summary", 4],
+    ["dnd2024.object.character-dossier-records", 2],
+    ["dnd2024.object.faction-directory-page", 2],
   ]);
   for (const [id, version] of versions) {
     const object = await findCatalogRecord(catalogObjectRoot, id);
     assert.equal(object?.version, version, `${id} version`);
+  }
+});
+
+test("active single-root website queries declare their generic route entity", async () => {
+  const expectedBindings = new Map([
+    ["dnd2024.query.campaign-context", "campaign"],
+    ["dnd2024.query.character-dossier-v1", "subject"],
+    ["dnd2024.query.character-sheet", "subject"],
+    ["dnd2024.query.character-sheet-v2", "subject"],
+    ["dnd2024.query.inventory-container", "subject"],
+    ["dnd2024.query.inventory-wallet", "subject"],
+    ["dnd2024.query.world-location-scope", "scope"],
+    ["dnd2024.query.world-location-scope-page", "scope"],
+    ["dnd2024.query.world-people-holdings", "world"],
+    ["dnd2024.query.world-people-holdings-page", "world"],
+  ]);
+  for (const [id, role] of expectedBindings) {
+    const query = await findCatalogRecord(catalogQueryRoot, id);
+    assert.equal(query?.status, "active", `${id} remains active`);
+    assert.deepEqual(query?.roleBindings, {
+      [role]: { source: "route-entity" },
+    }, `${id} binds its single role to the independently authorized route entity`);
+    assert.equal(query?.campaignSelection, undefined, `${id} does not use legacy named selection`);
   }
 });
 
@@ -155,22 +179,37 @@ test("R13 keeps registered Current owners while removing the live conversation c
     assert.equal(query?.status, "active", `${id} remains active`);
     assert.equal(query?.executor, "mechanic-projection", `${id} remains catalog-owned`);
     if (id !== "dnd2024.query.encounter-board") {
-      assert.deepEqual(query?.campaignSelection, {
+      assert.deepEqual(query?.roleBindings, {
+        campaign: { source: "route-entity" },
+      }, `${id} binds its selected root through the generic route contract`);
+      assert.deepEqual(query?.selection, {
         queryId: "dnd2024.query.recent-consequences",
-        entityIdField: "campaignId",
-      }, `${id} authorizes Actor reads through the bound campaign selection`);
+        targetRole: "campaign",
+        resultPointer: "/campaignId",
+        roleBindings: { campaign: "campaign" },
+      }, `${id} rechecks its selected root through the neutral proof contract`);
     }
   }
 });
 
-test("W09 limits the first website write to the existing mapped DM premise field", async () => {
+test("the website is read-only while the retained W09 mapped-write safeguards remain intact", async () => {
   const feature = contract.features.find(({ id }) => id === "campaign");
   assert.match(feature?.target?.slice ?? "", /W09/u);
   assert.match(feature?.browserAssembly ?? "", /CampaignPremiseEditor/u);
-  assert.match(feature?.editCapability ?? "", /only the existing DM premise set mapping/u);
-  assert.match(feature?.editCapability ?? "", /Player writes remain intentionally unavailable/u);
+  assert.match(feature?.browserAssembly ?? "", /not connected by the published entry/u);
+  assert.match(feature?.editCapability ?? "", /read-only website/u);
+  assert.match(feature?.editCapability ?? "", /without enabling website writes/u);
+  assert.match(contract.authority.browser, /read-only game website until explicitly approved/u);
+  const board = contract.features.find(({ id }) => id === "tactical-board");
+  assert.deepEqual(board.screens, ["encounter board"]);
+  assert.match(board.editCapability, /no draft generation, upload or acceptance controls/u);
   const object = await findCatalogRecord(catalogObjectRoot, "dnd2024.object.campaign-summary");
-  assert.equal(object?.version, 3);
+  assert.equal(object?.version, 4);
+  assert.equal(object?.profile, "application-object/v2");
+  assert.equal(Object.hasOwn(object, "schema"), false);
+  const retained = await readJson(path.join(catalogObjectRoot, "campaign/dnd2024.object.campaign-summary.v3.json"));
+  assert.equal(retained.version, 3);
+  assert.deepEqual(object.writes, retained.writes, "v2 preserves the narrow legacy write authority");
   assert.deepEqual(object?.access?.write, ["dm"]);
   assert.deepEqual(object?.writes?.schema?.properties?.premise,
     { type: "string", minLength: 1, maxLength: 1000 });
@@ -191,7 +230,12 @@ test("W10 records one exact mechanic-input pilot without claiming a ruleset-wide
 
   const object = await findCatalogRecord(catalogObjectRoot,
     "dnd2024.object.carrying-capacity-creature");
-  assert.equal(object?.version, 1);
+  assert.equal(object?.version, 2);
+  assert.equal(object?.profile, "application-object/v2");
+  assert.equal(Object.hasOwn(object, "schema"), false);
+  assert.equal(pilot.object.version, object.version);
+  assert.equal(pilot.object.contentFingerprint,
+    "828BC5D694102E129C870CA49291424ABFB79F8BDE17A169037CA26B9D5A3DC1");
   assert.deepEqual(object?.access, { read: ["player", "dm"], write: [] });
   assert.deepEqual(object?.relationships, []);
   assert.deepEqual(object?.references, []);
@@ -232,8 +276,7 @@ test("W01 coverage follows every current navigation section and item/board route
   assert.deepEqual(Object.keys(coverage.worldSections), WORLD_SECTIONS.map(({ id }) => id));
   assert.deepEqual(Object.keys(coverage.locationSections), LOCATION_SECTIONS.map(({ id }) => id));
   assert.deepEqual(Object.keys(coverage.itemRoutes), ["inventory", "details", "uses", "recipes"]);
-  assert.deepEqual(Object.keys(coverage.boardActions),
-    ["generate", "upload-optional-background", "prepare", "confirm", "execute"]);
+  assert.deepEqual(coverage.boardActions, {}, "the read-only game website exposes no board mutation routes");
   const featureIds = new Set(expectedFeatures);
   const covered = [
     ...coverage.persistentShell,

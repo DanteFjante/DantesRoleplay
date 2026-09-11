@@ -10,7 +10,11 @@ public interface ISubscriptionStore
 }
 
 public sealed record SubscriptionSummary(string Id, string Category, string EventTypeId, string EventMechanicId, SubscriptionMode Mode, int Order, string Scope, SubscriptionStatus Status, int Version, bool DependenciesHealthy);
-public sealed record SubscriptionDetail(string Id, string Category, string EventTypeId, string EventMechanicId, SubscriptionMode Mode, int Order, string FixedRoleEntityIdsJson, string RoleFromEventPayloadJson, string FanoutSelectorJson, string TrackedEntityIdsJson, string PayloadEqualsJson, int MaxExecutionsPerChain, string Scope, SubscriptionStatus Status, int Version, int LatestVersion, string CreatedBy, string ChangeNote, DateTime CreatedAt, bool DependenciesHealthy) { public string SourceHash { get; init; } = string.Empty; }
+public sealed record SubscriptionDetail(string Id, string Category, string EventTypeId, string EventMechanicId, SubscriptionMode Mode, int Order, string FixedRoleEntityIdsJson, string RoleFromEventPayloadJson, string FanoutSelectorJson, string TrackedEntityIdsJson, string PayloadEqualsJson, int MaxExecutionsPerChain, string Scope, SubscriptionStatus Status, int Version, int LatestVersion, string CreatedBy, string ChangeNote, DateTime CreatedAt, bool DependenciesHealthy)
+{
+    public string SourceHash { get; init; } = string.Empty;
+    public EventSourceContext? Source { get; init; }
+}
 public sealed record SubscriptionCheck(string Name, bool Passed, string Detail, bool Blocking = true);
 public sealed record WriteSubscriptionRequest
 {
@@ -30,5 +34,6 @@ public sealed record WriteSubscriptionRequest
     public SubscriptionStatus? Status { get; init; }
     public string CreatedBy { get; init; } = "llm";
     public string ChangeNote { get; init; } = string.Empty;
+    public EventSourceContext? Source { get; init; }
 }
 public sealed record WriteSubscriptionResult(SubscriptionDetail Subscription, bool Created);

@@ -6,6 +6,7 @@ using DantesRoleplay.Ecs;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.Projections;
 using DantesRoleplay.SchemaValidation;
+using DantesRoleplay.DataAccess.Catalog;
 
 namespace DantesRoleplay.Tests;
 
@@ -37,25 +38,39 @@ internal static class SnapshotObjectTestHarness
     {
         var root = new DirectoryInfo(AppContext.BaseDirectory);
         while (root is not null && !File.Exists(Path.Combine(root.FullName, "DantesRoleplay.slnx"))) root = root.Parent;
-        var catalog = Path.Combine(root!.FullName, "catalog/applications/dnd2024");
+        var catalogRoot = Path.Combine(root!.FullName, "catalog");
+        var catalog = Path.Combine(catalogRoot, "applications/dnd2024");
         var owner = ApplicationIdentifier.Parse("dnd2024");
-        var paths = new[] { "character/dnd2024.object.character-dossier-records.json",
-            "item/dnd2024.object.inventory-item-definition-records.v1.json", "item/dnd2024.object.inventory-item-definition-records.json",
-            "item/dnd2024.object.inventory-item-instance-records.v1.json", "item/dnd2024.object.inventory-item-instance-records.json",
-            "item/dnd2024.object.inventory-item-recipe-record.json", "item/dnd2024.object.inventory-item-activity-record.json" };
+        var paths = new[] { "character/dnd2024.object.character-dossier-records.v1.json",
+            "character/dnd2024.object.character-dossier-records.json",
+            "item/dnd2024.object.inventory-item-definition-records.v1.json", "item/dnd2024.object.inventory-item-definition-records.v2.json",
+            "item/dnd2024.object.inventory-item-definition-records.json",
+            "item/dnd2024.object.inventory-item-instance-records.v1.json", "item/dnd2024.object.inventory-item-instance-records.v2.json",
+            "item/dnd2024.object.inventory-item-instance-records.json",
+            "item/dnd2024.object.inventory-item-recipe-record.v1.json", "item/dnd2024.object.inventory-item-recipe-record.json",
+            "item/dnd2024.object.inventory-item-activity-record.v1.json", "item/dnd2024.object.inventory-item-activity-record.json",
+            "rest/dnd2024.object.rest-begin-creature.v1.json", "rest/dnd2024.object.rest-begin-creature.json",
+            "rest/dnd2024.object.rest-begin-world.v1.json", "rest/dnd2024.object.rest-begin-world.json",
+            "rest/dnd2024.object.rest-begin-policy.v1.json", "rest/dnd2024.object.rest-begin-policy.json" };
         var requests = paths.Select(path => ApplicationObjectDocument.Parse(File.ReadAllText(Path.Combine(catalog, "objects", path)), owner)).ToArray();
         using var database = new SqliteFixture();
         using var db = database.CreateContext();
         var applications = new SqliteApplicationRegistry(db);
-        applications.Register(new(owner, "Snapshot fixture", "", []));
+        var gameOwner = ApplicationIdentifier.Parse("game");
+        applications.Register(new(gameOwner, "Shared game fixture", "", []));
+        applications.Register(new(owner, "Snapshot fixture", "", [gameOwner]));
         var schemas = new BoundedJsonSchemaValidator();
         var types = new SqliteComponentTypeRegistry(db, schemas);
         foreach (var type in requests.SelectMany(value => value.ComponentInputs).Select(value => value.Type).Distinct())
         {
+            var shared = type.QualifiedTypeId.StartsWith("game.", StringComparison.Ordinal);
+            var componentOwner = shared ? gameOwner : owner;
+            var schemaPath = shared
+                ? CatalogLayout.ToFileSystemPath(catalogRoot, CatalogLayout.ComponentSchema(type.QualifiedTypeId))
+                : Path.Combine(catalog, "components", type.QualifiedTypeId + ".schema.json");
             for (var version = 1; version < type.TypeVersion; version++)
-                types.Define(new(owner, type.QualifiedTypeId, "{\"type\":\"object\",\"properties\":{\"prior" + version + "\":{\"type\":\"string\"}}}"));
-            var registered = types.Define(new(owner, type.QualifiedTypeId,
-                File.ReadAllText(Path.Combine(catalog, "components", type.QualifiedTypeId + ".schema.json"))));
+                types.Define(new(componentOwner, type.QualifiedTypeId, "{\"type\":\"object\",\"properties\":{\"prior" + version + "\":{\"type\":\"string\"}}}"));
+            var registered = types.Define(new(componentOwner, type.QualifiedTypeId, File.ReadAllText(schemaPath)));
             Assert.Equal(type.SchemaHash, registered.SchemaHash);
         }
         var registry = new SqliteProjectionDefinitionRegistry(db, types, schemas, applications);

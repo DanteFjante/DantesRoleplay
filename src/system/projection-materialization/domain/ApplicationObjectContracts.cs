@@ -23,13 +23,21 @@ public sealed record ApplicationObjectRelationship(
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Direction = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<string>? ReadPerspectives = null);
 public sealed record ApplicationObjectOrder(string Pointer, string Direction);
+public sealed record ApplicationObjectCollectionMetadata(
+    string TotalCount,
+    string Complete,
+    string NextCursor);
 public sealed record ApplicationObjectCollection(
     string CollectionId,
     string SourceId,
     int PageSize,
     int MaximumPageSize,
     IReadOnlyList<ApplicationObjectOrder> Order,
-    string Cursor);
+    string Cursor)
+{
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public ApplicationObjectCollectionMetadata? Metadata { get; init; }
+}
 public sealed record ProjectionCollectionEndpointSelection(
     IReadOnlyList<string> OrderedCandidateEntityIds,
     IReadOnlyList<EcsEntityView> Entities,
@@ -48,6 +56,20 @@ public interface IProjectionCollectionEndpointSelector
         IReadOnlyList<ApplicationObjectEndpointComponent> includedItemComponents,
         IReadOnlyList<ApplicationObjectOrder> order,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Selects endpoint identities using the current registered versions of the declared qualified
+    /// component types. Providers may return null to retain bounded in-memory hydration.
+    /// </summary>
+    Task<ProjectionCollectionEndpointSelection?> SelectCurrentAsync(
+        string stateSpaceId,
+        IReadOnlyList<string> candidateEntityIds,
+        IReadOnlyList<string> allEntityIds,
+        IReadOnlyList<ApplicationObjectEndpointComponent> requiredItemComponents,
+        IReadOnlyList<ApplicationObjectEndpointComponent> includedItemComponents,
+        IReadOnlyList<ApplicationObjectOrder> order,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<ProjectionCollectionEndpointSelection?>(null);
 }
 public sealed record ApplicationObjectLimits(
     int TraversalDepth,
@@ -75,6 +97,70 @@ public sealed record GeneratedApplicationObjectWriteMapping(
     string? SourcePointer,
     string? RelationshipId);
 
+/// <summary>
+/// Generated evidence that one declared object path is copied from one exact component path.
+/// InputPath records the bounded structural-input or collection-source chain; it is descriptive
+/// evidence, not a writable selector supplied by a caller.
+/// </summary>
+public sealed record ApplicationObjectFieldProvenance(
+    string ObjectPointer,
+    IReadOnlyList<string> InputPath,
+    string EntityRole,
+    EcsComponentReference Component,
+    string ComponentPointer,
+    bool Required);
+
+public sealed record ApplicationObjectSourceDiscovery(
+    string SourceId,
+    IReadOnlyList<string> InputPath,
+    string EntityRole,
+    bool Required,
+    EcsComponentReference Component,
+    string SchemaProfileId,
+    string SchemaJson);
+
+/// <summary>An exact, registry-derived description of a structural object's read/write sources.</summary>
+public sealed record ApplicationObjectDiscovery(
+    ProjectionReference Object,
+    string ProfileId,
+    IReadOnlyList<ApplicationObjectSourceDiscovery> Sources,
+    IReadOnlyList<ApplicationObjectFieldProvenance> Fields,
+    IReadOnlyList<GeneratedApplicationObjectWriteMapping> Writes);
+
+/// <summary>One actual registered component schema observed through a declared object source.</summary>
+public sealed record ApplicationObjectActualSource(
+    EcsComponentReference Component,
+    string SchemaProfileId,
+    string SchemaJson);
+
+/// <summary>Authorized result-side source evidence. It deliberately contains no entity identity.</summary>
+public sealed record ApplicationObjectReadSourceEvidence(
+    string SourceId,
+    IReadOnlyList<string> InputPath,
+    string EntityRole,
+    bool Required,
+    EcsComponentReference DeclaredComponent,
+    string Availability,
+    IReadOnlyList<ApplicationObjectActualSource> ActualSources);
+
+/// <summary>Final object-path availability, linked to immutable declaration discovery.</summary>
+public sealed record ApplicationObjectReadFieldEvidence(
+    string ObjectPointer,
+    string SourceId,
+    string ComponentPointer,
+    IReadOnlyList<string> Availability);
+
+/// <summary>
+/// Result-side evidence for one authorized materialization. This is not capability discovery,
+/// write authority, or part of result/source fingerprint inputs.
+/// </summary>
+public sealed record ApplicationObjectReadEvidence(
+    ProjectionReference Object,
+    string ProfileId,
+    string Availability,
+    IReadOnlyList<ApplicationObjectReadSourceEvidence> Sources,
+    IReadOnlyList<ApplicationObjectReadFieldEvidence> Fields);
+
 public sealed record ApplicationObjectContractRequest(
     IReadOnlyList<ApplicationObjectRole> Roles,
     IReadOnlyList<ApplicationObjectSource> Sources,
@@ -83,7 +169,10 @@ public sealed record ApplicationObjectContractRequest(
     IReadOnlyList<ApplicationObjectCollection> Collections,
     ApplicationObjectLimits Limits,
     ApplicationObjectAccess Access,
-    ApplicationObjectWriteContractRequest? Writes);
+    ApplicationObjectWriteContractRequest? Writes)
+{
+    public string ProfileId { get; init; } = RegisteredApplicationObjectContract.ContractProfileId;
+}
 
 public sealed record RegisteredApplicationObjectContract(
     string ProfileId,
@@ -98,6 +187,15 @@ public sealed record RegisteredApplicationObjectContract(
     IReadOnlyList<GeneratedApplicationObjectWriteMapping> GeneratedWriteMappings)
 {
     public const string ContractProfileId = "application-object/v1";
+    public const string FieldBasedContractProfileId = "application-object/v2";
+    public const string TransportSchemaJson = "{\"type\":\"object\"}";
+    public const string TransportSchemaHash = "C2C7529D3F9283F0D0D2F1E5E64C28C3300BA89B9AE84F90606F4A3FC54CF51D";
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<ApplicationObjectFieldProvenance>? FieldProvenance { get; init; }
+
+    [JsonIgnore]
+    public bool IsFieldBased => ProfileId == FieldBasedContractProfileId;
 }
 
 /// <summary>Strict parser for one catalog-authored application object document.</summary>
@@ -116,13 +214,21 @@ public static class ApplicationObjectDocument
             MaxDepth = 32
         });
         var root = document.RootElement;
-        Exact(root, "id", "version", "schema", "roles", "sources", "relationships", "references",
+        var hasProfile = root.TryGetProperty("profile", out _);
+        var profileId = hasProfile
+            ? Identifier(root, "profile", 64)
+            : RegisteredApplicationObjectContract.ContractProfileId;
+        if (hasProfile && profileId != RegisteredApplicationObjectContract.FieldBasedContractProfileId)
+            throw Invalid("An application object profile is not supported.");
+        Exact(root, "id", "version", hasProfile ? "profile" : "schema", "roles", "sources", "relationships", "references",
             "mappings", "collections", "limits", "access", root.TryGetProperty("writes", out _) ? "writes" : null);
         var id = Identifier(root, "id", 200);
         if (!id.StartsWith(owner.Value + ".", StringComparison.Ordinal))
             throw Invalid("An application object ID must be qualified by its owner.");
         var version = Positive(root, "version", 1_000_000);
-        var schema = Object(root, "schema").GetRawText();
+        var schema = hasProfile
+            ? RegisteredApplicationObjectContract.TransportSchemaJson
+            : Object(root, "schema").GetRawText();
 
         var roles = Properties(Object(root, "roles"), 32).Select(property =>
         {
@@ -178,15 +284,24 @@ public static class ApplicationObjectDocument
 
         var collections = Array(root, "collections", 8).Select(value =>
         {
-            Exact(value, "id", "sourceId", "pageSize", "maximumPageSize", "order", "cursor");
+            Exact(value, "id", "sourceId", "pageSize", "maximumPageSize", "order", "cursor",
+                hasProfile ? "metadata" : null);
             var order = Array(value, "order", 4).Select(item =>
             {
                 Exact(item, "path", "direction");
                 return new ApplicationObjectOrder(Pointer(item, "path"), Identifier(item, "direction", 8));
             }).ToArray();
-            return new ApplicationObjectCollection(Identifier(value, "id", 200), Identifier(value, "sourceId", 200),
+            var collection = new ApplicationObjectCollection(Identifier(value, "id", 200), Identifier(value, "sourceId", 200),
                 Positive(value, "pageSize", 500), Positive(value, "maximumPageSize", 500), order,
                 Identifier(value, "cursor", 64));
+            if (!hasProfile) return collection;
+            var metadata = Object(value, "metadata");
+            Exact(metadata, "totalCount", "complete", "nextCursor");
+            return collection with
+            {
+                Metadata = new(Pointer(metadata, "totalCount"), Pointer(metadata, "complete"),
+                    Pointer(metadata, "nextCursor"))
+            };
         }).ToArray();
 
         var limitsValue = Object(root, "limits");
@@ -213,7 +328,8 @@ public static class ApplicationObjectDocument
                 }).ToArray());
         }
         return new(owner, id, schema, sources, references, mappings,
-            new(roles, sourceDeclarations, relationships, referenceDeclarations, collections, limits, access, writes),
+            new ApplicationObjectContractRequest(roles, sourceDeclarations, relationships, referenceDeclarations,
+                collections, limits, access, writes) { ProfileId = profileId },
             version);
     }
 

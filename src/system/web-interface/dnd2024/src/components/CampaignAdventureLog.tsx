@@ -25,12 +25,15 @@ export function CampaignAdventureLog({
     () => filterCampaignLog(campaign.adventureLog, { query, order }),
     [campaign.adventureLog, query, order],
   );
+  const logCoverage = campaign.detailFields
+    ? [campaign.detailFields.chapters, campaign.detailFields.sessions].some((status) => status !== "ready" && status !== "empty")
+    : false;
 
   return (
     <div className="campaign-section-view">
       <header className="atlas-heading">
         <div><span className="eyebrow">The remembered thread</span><h1 id="main-view-heading" tabIndex={-1}>Adventure log</h1></div>
-        <p>{entries.length} of {campaign.adventureLog.length} entries</p>
+        <p>{logCoverage ? "Coverage unavailable" : `${entries.length} of ${campaign.adventureLog.length} entries`}</p>
       </header>
       <p className="campaign-section-introduction">Session-sized memories of what the party experienced and what those moments changed.</p>
       {campaign.adventureLog.length ? <div className="campaign-controls campaign-controls--two">
@@ -64,11 +67,13 @@ export function CampaignAdventureLog({
           ))}
         </ol>
       ) : <CampaignEmptyState
-        description={campaign.adventureLog.length
+        description={logCoverage
+          ? "Some campaign memories are unavailable for this read; omitted entries are not confirmed absent."
+          : campaign.adventureLog.length
           ? "Try a different person, place, chapter, or session."
           : "Completed chapters and retained session recaps will appear here when the live campaign records them."}
         icon="Clock3"
-        title={campaign.adventureLog.length ? "No memories match" : "No completed campaign memories yet"}
+        title={logCoverage ? "Campaign memories unavailable" : campaign.adventureLog.length ? "No memories match" : "No completed campaign memories yet"}
       />}
     </div>
   );

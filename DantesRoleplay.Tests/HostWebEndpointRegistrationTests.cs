@@ -39,8 +39,7 @@ public sealed class HostWebEndpointRegistrationTests
             ("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/entities/{entityId}/media/{mediaId}/content", HttpMethods.Get, WebInterfaceSecurity.ReadRateLimitPolicy),
             ("/api/read-model-media/{token}/content", HttpMethods.Get, WebInterfaceSecurity.ReadRateLimitPolicy),
             ("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/entities/{entityId}/read-models/{qualifiedQueryId}", HttpMethods.Get, WebInterfaceSecurity.ReadRateLimitPolicy),
-            ("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/entities/{entityId}/read-models/{qualifiedQueryId}", HttpMethods.Patch, WebInterfaceSecurity.UploadRateLimitPolicy),
-            ("/api/applications/{applicationId}/campaigns/{campaignId}/chronology", HttpMethods.Get, WebInterfaceSecurity.ReadRateLimitPolicy)
+            ("/api/applications/{applicationId}/state-spaces/{stateSpaceId}/entities/{entityId}/read-models/{qualifiedQueryId}", HttpMethods.Patch, WebInterfaceSecurity.UploadRateLimitPolicy)
         ], routes);
     }
 
@@ -54,8 +53,7 @@ public sealed class HostWebEndpointRegistrationTests
             typeof(ApplicationReadinessWebEndpoint),
             typeof(EntityMediaWebEndpoints),
             typeof(ReadModelMediaWebEndpoint),
-            typeof(ApplicationReadModelWebEndpoint),
-            typeof(WorldChronologyWebEndpoint)
+            typeof(ApplicationReadModelWebEndpoint)
         ];
         var serviceTypes = adapters
             .SelectMany(type => type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static))

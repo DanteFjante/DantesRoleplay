@@ -74,7 +74,7 @@ export function CharacterSectionState({
     const title = state.status === "forbidden"
       ? "Information restricted"
       : incompatible
-        ? "Character data incompatible"
+        ? `${label} response unavailable`
         : stale
           ? "Character data changed"
           : transport
@@ -85,7 +85,7 @@ export function CharacterSectionState({
     const message = state.status === "forbidden"
       ? `This seat is not authorized to read ${label}. Ask the DM to check the current seat and campaign binding.`
       : incompatible
-        ? `The server returned incompatible ${label}; no values were displayed. Reload after the page and catalog revisions are aligned.`
+        ? `The server response for ${label} did not meet required transport, scope, or identity checks. Other character sections remain available.`
         : stale
           ? `The ${label} fingerprint no longer matches the active application. Reload the current application data.`
           : transport

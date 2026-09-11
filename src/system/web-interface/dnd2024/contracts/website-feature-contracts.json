@@ -6,7 +6,7 @@
   "authority": {
     "liveGameState": "SQLite through audience-authorized host queries, generic relationships, containment, and mechanics",
     "authoredRulesAndFixtures": "catalog",
-    "browser": "bounded validated response cache, selection state, and uncommitted drafts only",
+    "browser": "read-only game website until explicitly approved; bounded confirmed read data and local selection/preferences only; authorized server/MCP/AI writes remain separate",
     "forbiddenShortcut": "A browser, document, or second service must not become an authoritative game-state store."
   },
   "decisions": {
@@ -53,8 +53,8 @@
     "mechanic": "dnd2024.mechanic.carrying-capacity.read",
     "object": {
       "qualifiedId": "dnd2024.object.carrying-capacity-creature",
-      "version": 1,
-      "contentFingerprint": "234CF49317F99A4468828E77E06A954DCEED4640BEF4307A397CB8BFEE7529AF",
+      "version": 2,
+      "contentFingerprint": "828BC5D694102E129C870CA49291424ABFB79F8BDE17A169037CA26B9D5A3DC1",
       "sourceComponents": ["dnd2024.creature.ability-scores", "dnd2024.creature.body"],
       "outputBytes": 4096,
       "sqlStatements": 3
@@ -203,13 +203,7 @@
       "uses": "inventory-and-items",
       "recipes": "inventory-and-items"
     },
-    "boardActions": {
-      "generate": "tactical-board",
-      "upload-optional-background": "tactical-board",
-      "prepare": "tactical-board",
-      "confirm": "tactical-board",
-      "execute": "tactical-board"
-    }
+    "boardActions": {}
   },
   "gateSemantics": {
     "status": "These are acceptance ceilings, not measured improvement claims. A target gate becomes mandatory when its target owner replaces the legacy path; currentCost records the existing bound until then.",
@@ -251,13 +245,13 @@
       "id": "campaign",
       "screens": ["Campaign overview", "Adventure Log", "Places Visited", "Outcomes", "Quests", "Open Threads", "Clues"],
       "currentOwner": ["dnd2024.object.campaign-summary v3", "dnd2024.query.campaign-summary", "dnd2024.query.campaign-details and dnd2024.query.campaign-location-visits"],
-      "browserAssembly": "summary arrives in bootstrap; non-overview sections call readDeferredCampaignDetails; CampaignPremiseEditor keeps a local draft and submits one source-revision-bound mapped PATCH before refetching Campaign Summary",
+      "browserAssembly": "summary arrives in bootstrap; non-overview sections call readDeferredCampaignDetails; CampaignPremiseEditor and its writer are retained for explicit safety fixtures but are not connected by the published entry",
       "authority": "SQLite campaign components and relationships through object/query projections",
       "audience": { "game-master": "full", "gm-player-preview": "player-projected", "actor": "player-projected", "unbound": "forbidden" },
-      "editCapability": "W09 exposes only the existing DM premise set mapping with validation, idempotent uncertain-response retry, pending state, conflict recovery, and confirmed refetch; participation and Player writes remain intentionally unavailable",
-      "completeness": "summary is source-revision-bound and limited to 20 participation records; premise edits require exact Campaign Summary evidence and retain drafts across stale refreshes; every detail collection must be complete or the view fails",
-      "currentCost": "Campaign Summary is frozen at 12 statements; details use one registered projection and visits use stable 100-record continuation pages. The first mapped edit adds one PATCH and one confirmed summary refetch.",
-      "target": { "slice": "W03+W09", "owner": "reuse campaign summary v3 for reads, membership, and the first mapped premise edit", "pageSize": 25, "maximumPages": 40, "maximumRecords": 1000 },
+      "editCapability": "read-only website; no premise, participation or Player editing controls; the retained DM mapped-write protocol keeps validation, idempotency, source-revision and confirmed-refetch safety tests without enabling website writes",
+      "completeness": "summary is source-revision-bound and limited to 20 participation records; every detail collection must be complete or the view fails; retained mapped writes still require exact Campaign Summary evidence",
+      "currentCost": "Campaign Summary is frozen at 12 statements; details use one registered projection and visits use stable 100-record continuation pages. The website performs no premise PATCH.",
+      "target": { "slice": "W03+W09", "owner": "campaign summary for read-only campaign and membership display; W09 writer retained only for safety fixtures", "pageSize": 25, "maximumPages": 40, "maximumRecords": 1000 },
       "gates": { "requests": 2, "sqlStatements": 12, "responseBytes": 524288, "retainedResponseBytes": 2097152 },
       "fixtureCases": ["small", "large", "unauthorized"]
     },
@@ -268,7 +262,7 @@
       "browserAssembly": "projectRegisteredPartyReferences derives actors from one source-revision-bound campaign object response",
       "authority": "campaign participation relationships in SQLite; no Party entity",
       "audience": { "game-master": "full", "gm-player-preview": "forbidden", "actor": "authorized-roster", "unbound": "forbidden" },
-      "editCapability": "DM membership changes use campaign-summary relationship writes after confirmation; selection is local UI state",
+      "editCapability": "read-only website; membership changes remain authorized server operations; selection is local UI state",
       "completeness": "at most 20 participation records; each active participation must resolve exactly one actor or the roster fails closed",
       "currentCost": "Included in the campaign-summary request and its 12-SQL, 65536-data-byte object limits.",
       "target": { "slice": "W03", "owner": "reuse campaign summary v3 and existing participation edges", "pageSize": 20, "maximumPages": 1, "maximumRecords": 20 },
@@ -380,7 +374,7 @@
       "browserAssembly": "CurrentViewResourceOwner cross-checks Campaign Resume and Current Scene at one source revision, composes combat from Encounter Board, caches the validated result by campaign and observer, and renders no live conversation custom element",
       "authority": "SQLite campaign/play records and catalog mechanics; rendered scene state is not authoritative",
       "audience": { "game-master": "full", "gm-player-preview": "player-projected", "actor": "player-projected", "unbound": "forbidden" },
-      "editCapability": "Current exposes no conversation composer or implicit play write; Encounter Board review and accept retain their proposal, confirmation, operation-history, and mechanic-result protocols",
+      "editCapability": "read-only website: no conversation composer or implicit play write, no board workshop or upload/accept controls; retained server and fixture paths preserve proposal, confirmation, operation-history, and mechanic-result protocols",
       "completeness": "Resume and Current Scene must agree on source revision, location, conversation, encounter, and affordances; Encounter Board exclusively owns combat participants and active turn; unavailable is explicit",
       "currentCost": "Scene selection uses one Campaign Resume response and, when a scene exists, one Current Scene response. Combat adds one Encounter Board response; recorded history may use the bounded play-session fallback, but opening Current mounts no conversation endpoint client.",
       "target": { "slice": "R13", "owner": "registered Resume, Current Scene, and Encounter Board queries behind CurrentViewResourceOwner; recorded play remains read-only", "pageSize": 25, "maximumPages": 4, "maximumRecords": 100 },
@@ -389,14 +383,14 @@
     },
     {
       "id": "tactical-board",
-      "screens": ["encounter board", "GM board draft", "optional background upload", "prepare", "confirm", "execute"],
+      "screens": ["encounter board"],
       "currentOwner": ["dnd2024.query.encounter-board", "dnd2024.query.encounter-board-draft", "dnd2024.mechanic.encounter.board.accept"],
-      "browserAssembly": "validated board projection plus an isolated GM draft workflow; geometry remains structured even when a background is uploaded",
+      "browserAssembly": "read-only board projection or honest empty-grid placeholder; the isolated GM draft workflow is retained for safety fixtures but not connected to the game hub",
       "authority": "SQLite encounter records and catalog JavaScript board mechanics",
-      "audience": { "game-master": "read-and-confirm", "gm-player-preview": "player-projected-read", "actor": "player-projected-read", "unbound": "forbidden" },
-      "editCapability": "GM-only draft then explicit prepare/confirm/execute; upload is optional and capped at 10 MiB",
+      "audience": { "game-master": "read-only", "gm-player-preview": "player-projected-read", "actor": "player-projected-read", "unbound": "forbidden" },
+      "editCapability": "read-only website; no draft generation, upload or acceptance controls; retained fixtures preserve GM-only prepare/confirm/execute and the 10 MiB upload bound",
       "completeness": "closed board v1 with at most 256 terrain, 256 obstacles, and 100 participants; hidden terrain never enters player data",
-      "currentCost": "Board read is one response capped at 262144 body bytes; a complete confirmed draft uses draft, optional upload, prepare, and execute requests.",
+      "currentCost": "Board read is one response capped at 262144 body bytes; retained draft/upload/prepare/execute budgets below apply only to the isolated safety workflow, not the published website.",
       "target": { "slice": "W06", "owner": "reuse board/draft v1 and existing accept mechanic", "pageSize": 1, "maximumPages": 1, "maximumRecords": 1 },
       "gates": { "requests": 4, "sqlStatements": 16, "responseBytes": 11010048, "retainedResponseBytes": 12582912 },
       "fixtureCases": ["small", "large", "unauthorized"]

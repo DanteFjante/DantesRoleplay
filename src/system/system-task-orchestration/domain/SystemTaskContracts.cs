@@ -159,6 +159,10 @@ public sealed record SystemTaskExecutionDocument(
     DateTime? CompletedAtUtc,
     IReadOnlyList<SystemTaskExecutionStepDocument> Steps);
 
+/// <summary>Opaque durable task identities for re-reading an interrupted, already-authorized request.</summary>
+public sealed record SystemTaskRecoveryDocument(
+    string TaskId, string? ConfirmationId, string? ExecutionId, string Status);
+
 public sealed record SystemTaskSummary(
     string Id,
     string ConversationId,
@@ -237,6 +241,10 @@ public interface ISystemTaskService
         string taskId,
         SystemTaskExecutionRequest request,
         CancellationToken cancellationToken = default);
+
+    Task<SystemTaskRecoveryDocument?> RecoverAsync(
+        SystemTaskRequestContext context, string idempotencyKey,
+        CancellationToken cancellationToken = default) => Task.FromResult<SystemTaskRecoveryDocument?>(null);
 }
 
 public sealed class SystemTaskRecord

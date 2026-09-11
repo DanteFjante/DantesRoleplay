@@ -1,0 +1,65 @@
+{
+  "id": "dnd2024.object.campaign-location-visits",
+  "version": 1,
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["campaignTitle"],
+    "properties": {
+      "campaignTitle": { "type": "string", "minLength": 1, "maxLength": 160 },
+      "visits": {
+        "type": "array",
+        "maxItems": 25,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "name", "firstVisitedMinute", "lastVisitedMinute", "visitCount", "status", "summary", "memory", "locations"],
+          "properties": {
+            "id": { "type": "string", "minLength": 1, "maxLength": 200 },
+            "name": { "type": "string", "minLength": 1, "maxLength": 400 },
+            "firstVisitedMinute": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+            "lastVisitedMinute": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+            "visitCount": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+            "status": { "enum": ["current", "departed"] },
+            "summary": { "type": "string", "minLength": 1, "maxLength": 1000 },
+            "memory": { "type": "string", "minLength": 1, "maxLength": 2000 },
+            "gmContext": { "type": "string", "minLength": 1, "maxLength": 2000 },
+            "locations": { "type": "array", "minItems": 1, "maxItems": 1, "items": { "$ref": "#/$defs/entityReference" } }
+          }
+        }
+      },
+      "totalCount": { "type": "integer", "minimum": 0, "maximum": 256 },
+      "complete": { "type": "boolean" },
+      "nextCursor": { "type": ["string", "null"], "maxLength": 2048 }
+    },
+    "$defs": {
+      "entityReference": {
+        "type": "object", "additionalProperties": false, "required": ["id", "name"],
+        "properties": { "id": { "type": "string", "minLength": 1, "maxLength": 200 }, "name": { "type": "string", "minLength": 1, "maxLength": 400 } }
+      }
+    }
+  },
+  "roles": { "campaign": { "required": true }, "visit": { "required": false }, "location": { "required": false } },
+  "sources": [{
+    "id": "campaign", "role": "campaign",
+    "component": { "qualifiedId": "game.core.campaign.root", "version": 1, "schemaHash": "FF68DCFF34FA11442CFAF9E75C8F1E73C64FBD6CE525C34EA06A197614D68BD9" },
+    "required": true
+  }],
+  "relationships": [
+    {
+      "id": "visits", "qualifiedKind": "game.core.campaign.has-location-visit", "fromRole": "campaign", "toRole": "visit",
+      "cardinality": "many", "targetPointer": "/visits",
+      "requiredEndpointComponents": [{ "endpoint": "to", "component": { "qualifiedId": "game.core.campaign.location-visit", "version": 1, "schemaHash": "04774C3839AF3D3337BF9BE2ED064DC2E2A709E0FA0A2117929EE27793C4A690" } }],
+      "optionalEndpointComponents": []
+    },
+    {
+      "id": "locations", "qualifiedKind": "game.core.campaign.location-visit.at-location", "fromRole": "visit", "toRole": "location",
+      "cardinality": "many", "targetPointer": "/visits/*/locations", "requiredEndpointComponents": [], "optionalEndpointComponents": []
+    }
+  ],
+  "references": [],
+  "mappings": [{ "inputId": "campaign", "sourcePointer": "/title", "targetPointer": "/campaignTitle" }],
+  "collections": [{ "id": "visits", "sourceId": "visits", "pageSize": 25, "maximumPageSize": 25, "order": [{ "path": "/lastVisitedMinute", "direction": "desc" }, { "path": "/id", "direction": "asc" }], "cursor": "source-revision-bound" }],
+  "limits": { "traversalDepth": 2, "itemCount": 256, "outputBytes": 262144, "sqlQueries": 12 },
+  "access": { "read": ["dm"], "write": [] }
+}

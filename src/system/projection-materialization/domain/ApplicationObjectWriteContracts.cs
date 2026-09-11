@@ -19,7 +19,11 @@ public sealed record ApplicationObjectWriteRequest(
     string IdempotencyKey,
     string ExpectedSourceRevisionFingerprint,
     string ChangesJson,
-    IReadOnlyList<ApplicationObjectRelationshipEdit> RelationshipEdits);
+    IReadOnlyList<ApplicationObjectRelationshipEdit> RelationshipEdits)
+{
+    public string SubmissionMode { get; init; } = "changes";
+    public string SubmittedObjectJson { get; init; } = "{}";
+}
 
 public sealed record ApplicationObjectWriteResult(
     bool Applied,

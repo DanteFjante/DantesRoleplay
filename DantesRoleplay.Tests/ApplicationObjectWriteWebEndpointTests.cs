@@ -1,6 +1,7 @@
 using System.Text.Json;
 using DantesRoleplay.Applications;
 using DantesRoleplay.CatalogNavigation;
+using DantesRoleplay.Ecs;
 using DantesRoleplay.Knowledge;
 using DantesRoleplay.MCPServer;
 using DantesRoleplay.Projections;
@@ -101,16 +102,17 @@ public sealed class ApplicationObjectWriteWebEndpointTests
         [new("/items", "relationship.add", "entity.target", 0)]);
 
     [Theory]
-    [InlineData("?campaign=scope.other", 200)]
-    [InlineData("?campaign=bad%20scope", 400)]
-    [InlineData("?campaign=scope.one&campaign=scope.two", 400)]
-    public async Task Workspace_selection_is_validated_before_a_mapped_write(string selection, int expectedStatus)
+    [InlineData("?campaign=scope.other")]
+    [InlineData("?campaign=bad%20scope")]
+    [InlineData("?campaign=scope.one&campaign=scope.two")]
+    public async Task Retired_campaign_alias_is_rejected_before_a_mapped_write(string selection)
     {
         var writes = new Writes();
         var response = await WriteAsync(new(true, "gm", Application, "scope.fixture", null,
             KnowledgeAudienceRole.GameMaster), writes, Body("selected-scope"), queryString: selection);
-        Assert.Equal(expectedStatus, response.StatusCode);
-        Assert.Equal(expectedStatus == 200 ? 1 : 0, writes.Calls);
+        Assert.Equal(StatusCodes.Status400BadRequest, response.StatusCode);
+        Assert.Equal("OBJECT_WRITE_REQUEST_INVALID", response.Body.GetProperty("code").GetString());
+        Assert.Equal(0, writes.Calls);
     }
 
     private static async Task<(int StatusCode, JsonElement Body, string? CacheControl)> WriteAsync(
@@ -128,8 +130,7 @@ public sealed class ApplicationObjectWriteWebEndpointTests
             .Services.AddLogging().BuildServiceProvider();
         var result = await ApplicationReadModelWebEndpoint.WriteAsync(
             Application, stateSpaceId, Entity, Query, body, context,
-            new Seats(seat), writes, new Catalog(), new Audience(seat), new Bindings(), new Participation(),
-            CancellationToken.None);
+            new Seats(seat), writes, new Catalog(), CancellationToken.None, stateSpaces: new StateSpaces());
         await result.ExecuteAsync(context);
         context.Response.Body.Position = 0;
         using var document = await JsonDocument.ParseAsync(context.Response.Body);
@@ -203,6 +204,18 @@ public sealed class ApplicationObjectWriteWebEndpointTests
             value = navigator;
             return applicationId.Value == Application;
         }
+    }
+
+    private sealed class StateSpaces : IStateSpaceRegistry
+    {
+        private static readonly ApplicationIdentifier App = ApplicationIdentifier.Parse(Application);
+        private static readonly StateSpaceView State = new("space.fixture",
+            new(App, 1, new string('A', 64), []), new string('B', 64), 1,
+            DateTime.UnixEpoch, DateTime.UnixEpoch);
+        public StateSpaceView? Get(string stateSpaceId) => stateSpaceId == State.StateSpaceId ? State : null;
+        public StateSpaceView Create(StateSpaceBinding binding) => throw new NotSupportedException();
+        public StateSpaceDiscoveryPage ListPage(ApplicationIdentifier applicationId,
+            string? afterStateSpaceId, int limit) => throw new NotSupportedException();
     }
 
     private sealed class Navigator : ICatalogNavigator

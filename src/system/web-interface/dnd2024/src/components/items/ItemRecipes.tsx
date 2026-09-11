@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { focusItemPanel } from "./ItemView";
 import { ViewReadError } from "../../data/view-read-client";
-import type { ItemDetailsRequest, ItemViewClient } from "../../server/item-view-client";
-import { recipesKey, type ItemRecipesRequest, type ItemRecipesResult, type RecipeEntry, type RecipeGroup } from "../../server/item-recipes-client";
+import { itemFacetKey, selectItemFacet, selectItemRefreshEpoch, useHubSelector } from "../../data/hub-store";
+import type { ItemDetailsRequest } from "../../server/item-view-client";
+import { type ItemRecipesRequest, type ItemRecipesResult, type RecipeEntry, type RecipeGroup } from "../../server/item-recipes-client";
+import type { ItemRecipesLoader } from "./ConnectedItemView";
 const availability: Record<RecipeEntry["availability"], string> = { "not-evaluated": "Availability not evaluated", available: "Requirements met", "requirements-not-met": "Requirements not met", "definition-incomplete": "Recipe definition incomplete" };
 const reasons = { "inventory-bound": "Some inventory contents are outside this view.", "source-incomplete": "Some recorded recipe information is incomplete.", "dependency-unavailable": "Some supporting details are unavailable.", "page-limit": "More recipes are available on the next page.", "byte-limit": "More recipes are available on the next page." };
 
@@ -44,50 +46,42 @@ function Group({ group, title, next }: { group: RecipeGroup; title: string; next
     {group.nextOffset !== null ? <button type="button" onClick={next}>Next page: {title.toLowerCase()}</button> : null}
   </section>;
 }
-export function ItemRecipes({ client, request, active }: { client: ItemViewClient; request: ItemDetailsRequest; active: boolean }) {
+export function ItemRecipes({ request, scope, loadRecipes, active }: { request: ItemDetailsRequest; scope: string;
+  loadRecipes?: ItemRecipesLoader; active: boolean }) {
   const [page, setPage] = useState({ makesOffset: 0, usesOffset: 0, expectedSourceRevision: null as string | null });
   const [retry, setRetry] = useState(0);
-  const full: ItemRecipesRequest = { ...request, ...page }, key = recipesKey(client.identity, full);
-  const [loaded, setLoaded] = useState<{ key: string; result: ItemRecipesResult } | null>(null);
+  const [loading, setLoading] = useState(false);
   const [refreshFailed, setRefreshFailed] = useState(false);
-  const current = loaded?.key === key ? loaded.result : null;
+  const full: ItemRecipesRequest = { ...request, ...page }, key = itemFacetKey("recipes", full);
+  const current = useHubSelector(selectItemFacet(scope, key)) as ItemRecipesResult | null;
+  const refreshEpoch = useHubSelector(selectItemRefreshEpoch);
+  const hasConfirmedResult = current !== null;
   useEffect(() => {
     if (!active) return;
-    let live = true; let timer: ReturnType<typeof setTimeout> | undefined;
     const controller = new AbortController();
-    const accept = (result: ItemRecipesResult, schedule = true) => {
-      if (!live) return; setLoaded({ key, result });
-      setRefreshFailed(false);
-      if (schedule && result.status === "ready") timer = setTimeout(() => {
-        if (live) setRetry((value) => value + 1);
-      }, Math.max(0, result.expiresAt - Date.now()));
-    };
-    const cached = client.recipes.peek(full);
-    if (cached) accept(cached.value);
-    else {
-      const previous = client.recipes.state(full);
-      if ((previous.status === "ready" || previous.status === "stale") && previous.result.value.status === "ready")
-        setLoaded({ key, result: previous.result.value });
-      else setLoaded(null);
-      void client.recipes.load(full, { signal: controller.signal }).then(value => accept(value.value)).catch((error) => {
-        if (!live || error instanceof ViewReadError && error.category === "cancelled") return;
-        const retained = client.recipes.state(full);
-        if (retained.status === "stale" && retained.result.value.status === "ready") {
-          setLoaded({ key, result: retained.result.value });
-          setRefreshFailed(true);
-        } else accept({ status: "unavailable", data: null }, false);
-      });
-    }
-    return () => { live = false; clearTimeout(timer); controller.abort(); };
-  }, [client, key, active, retry]);
+    setLoading(true);
+    if (!loadRecipes) { setLoading(false); return () => controller.abort(); }
+    void loadRecipes(full, controller.signal, retry === 0).then((value) => {
+      if (!controller.signal.aborted) setRefreshFailed(value.status !== "ready");
+    }).catch((error) => {
+      if (!controller.signal.aborted && !(error instanceof ViewReadError && error.category === "cancelled")) setRefreshFailed(true);
+    }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [active, scope, key, loadRecipes, retry, hasConfirmedResult, refreshEpoch]);
+  const expiresAt = current?.status === "ready" ? current.expiresAt : null;
+  useEffect(() => {
+    if (!active || expiresAt === null) return;
+    const timer = window.setTimeout(() => setRetry((value) => value + 1), Math.max(0, expiresAt - Date.now()));
+    return () => window.clearTimeout(timer);
+  }, [active, key, expiresAt]);
   const data = current?.status === "ready" ? current.data : null;
-  const refresh = () => { focusItemPanel(); client.recipes.invalidate(undefined, "manual"); setLoaded(null); setPage({ makesOffset: 0, usesOffset: 0, expectedSourceRevision: null }); setRetry(v => v + 1); };
+  const refresh = () => { focusItemPanel(); setRefreshFailed(false); setPage({ makesOffset: 0, usesOffset: 0, expectedSourceRevision: null }); setRetry(v => v + 1); };
   const next = (group: "makes" | "uses") => { if (!data || current?.status !== "ready" || data[group].nextOffset === null) return;
     focusItemPanel();
     setPage({ ...page, [group === "makes" ? "makesOffset" : "usesOffset"]: data[group].nextOffset, expectedSourceRevision: current.sourceRevision }); };
-  if (!data) return <div role="status" aria-busy={!current}><h2>{!current ? "Loading known recipes" : current.status === "stale" || current.status === "ready" ? "Recipes need a refresh" : "Recipes unavailable"}</h2>
-    <p>{!current ? "Reading the selected character’s recipe knowledge…" : "Refresh to read the current recipes. Previous recipe details are no longer shown."}</p>
-    {current ? <button type="button" onClick={refresh}>Refresh recipes</button> : null}</div>;
+  if (!data) return <div role="status" aria-busy={loading}><h2>{loading ? "Loading known recipes" : current?.status === "forbidden" ? "Recipes unavailable" : "Recipes need a refresh"}</h2>
+    <p>{loading ? "Reading the selected character’s recipe knowledge…" : "Refresh to read the current recipes. Previous recipe details are no longer shown."}</p>
+    {!loading ? <button type="button" onClick={refresh}>Refresh recipes</button> : null}</div>;
   return <div className="item-recipes"><p>Recipes recorded in this character’s knowledge.</p>
     {refreshFailed ? <div className="item-details__notice" role="status"><strong>Could not refresh recipes</strong><p>The last available recipes remain visible.</p><button type="button" onClick={refresh}>Try again</button></div> : null}
     {(page.makesOffset > 0 || page.usesOffset > 0) ? <button type="button" onClick={refresh}>Back to first recipes</button> : null}

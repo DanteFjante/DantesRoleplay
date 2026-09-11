@@ -5,39 +5,89 @@ const token = (value) => typeof value === "string" && value.length > 0 && value.
   value === value.trim() && !/\s/u.test(value) ? value : null;
 const text = (value, maximum) => typeof value === "string" && value.length > 0 && value.length <= maximum
   ? value : null;
-const textList = (value, maximumItems, maximumLength) => {
-  if (!Array.isArray(value) || value.length > maximumItems) return [];
-  const values = value.map((item) => text(item, maximumLength));
-  return values.every(Boolean) ? values : [];
-};
+const own = (value, key) => Boolean(value && typeof value === "object" && !Array.isArray(value) &&
+  Object.hasOwn(value, key));
 const hasExactKeys = (value, keys) => value && typeof value === "object" && !Array.isArray(value) &&
   Object.keys(value).length === keys.length && keys.every((key) => Object.hasOwn(value, key));
 
-export function validateRegisteredCampaignSummary(data, projection, perspective) {
-  if (!hasExactKeys(data, ["status", "title", "premise", "partyGoals", "toneAndBoundaries", "party",
-    "totalCount", "complete", "nextCursor"]) || data.status !== "active") return null;
-  const title = text(data.title, 160);
-  const premise = text(data.premise, 1_000);
-  const partyGoals = textList(data.partyGoals, 3, 500);
-  const toneAndBoundaries = textList(data.toneAndBoundaries, 8, 300);
-  if (!title || !premise || partyGoals.length === 0 || toneAndBoundaries.length === 0 ||
-      !Array.isArray(data.party) || data.party.length > 20 || !Number.isInteger(data.totalCount) ||
-      data.totalCount < data.party.length || data.totalCount > 20 || typeof data.complete !== "boolean" ||
-      !(data.nextCursor === null || token(data.nextCursor)) || data.complete !== (data.nextCursor === null)) return null;
+function descriptiveText(data, key, maximum) {
+  if (!own(data, key)) return { status: "absent", value: null };
+  if (data[key] === null) return { status: "empty", value: null };
+  const value = text(data[key], maximum);
+  return value ? { status: "ready", value } : { status: "invalid", value: null };
+}
+
+function descriptiveList(data, key, maximumItems, maximumLength) {
+  if (!own(data, key)) return { status: "absent", value: [] };
+  if (data[key] === null) return { status: "empty", value: [] };
+  if (!Array.isArray(data[key])) return { status: "invalid", value: [] };
+  const source = data[key];
+  const inspected = source.slice(0, maximumItems);
+  const value = inspected.map((item) => text(item, maximumLength)).filter(Boolean);
+  const partial = source.length > maximumItems || value.length !== inspected.length;
+  if (value.length === 0) return partial ? { status: "invalid", value } : { status: "empty", value };
+  return { status: partial ? "partial" : "ready", value };
+}
+
+function registeredParty(data, perspective) {
+  if (!own(data, "party") || !Array.isArray(data.party) || data.party.length > 20) return null;
   const party = data.party.map((entry) => {
-    const fields = ["id", "name", "status", ...(Object.hasOwn(entry ?? {}, "actors") ? ["actors"] : [])];
-    if (!hasExactKeys(entry, fields) || !token(entry.id) || !text(entry.name, 400) ||
+    if (!entry || typeof entry !== "object" || Array.isArray(entry) ||
+        !own(entry, "id") || !own(entry, "status") || !token(entry.id) ||
         !["active", "withdrawn"].includes(entry.status)) return null;
-    if (Object.hasOwn(entry, "actors") && (!Array.isArray(entry.actors) || entry.actors.length > 1 ||
+    if (own(entry, "actors") && (!Array.isArray(entry.actors) || entry.actors.length > 1 ||
         perspective !== "dm" && entry.actors.length !== 0 || entry.actors.some((actor) =>
-          !hasExactKeys(actor, ["id", "name"]) || !token(actor.id) || !text(actor.name, 400)))) return null;
-    return { id: entry.id, name: entry.name, status: entry.status,
-      ...(Object.hasOwn(entry, "actors") ? { actors: entry.actors.map((actor) => ({ id: actor.id, name: actor.name })) } : {}) };
+          !actor || typeof actor !== "object" || Array.isArray(actor) || !own(actor, "id") || !token(actor.id)))) return null;
+    // IDs and status bind participation. A missing or malformed descriptive name is never a
+    // reason to erase an otherwise authorized identity from the bootstrap.
+    return { id: entry.id, name: text(entry.name, 400) ?? entry.id, status: entry.status,
+      ...(own(entry, "actors") ? { actors: entry.actors.map((actor) => ({
+        id: actor.id, name: text(actor.name, 400) ?? actor.id,
+      })) } : {}) };
   });
-  if (party.some((entry) => entry === null) || new Set(party.map((entry) => entry.id)).size !== party.length)
-    return null;
-  return { status: data.status, title, premise, partyGoals, toneAndBoundaries, party,
-    totalCount: data.totalCount, complete: data.complete, nextCursor: data.nextCursor, projection };
+  return party.some((entry) => entry === null) || new Set(party.map((entry) => entry.id)).size !== party.length
+    ? null
+    : party;
+}
+
+export function validateRegisteredCampaignSummary(data, projection, perspective) {
+  if (!data || typeof data !== "object" || Array.isArray(data) || !own(data, "status") ||
+      data.status !== "active" || !own(data, "totalCount") || !Number.isInteger(data.totalCount) ||
+      data.totalCount < 0 || data.totalCount > 20 || !own(data, "complete") ||
+      typeof data.complete !== "boolean" || !own(data, "nextCursor") ||
+      !(data.nextCursor === null || token(data.nextCursor))) return null;
+  const party = registeredParty(data, perspective);
+  if (!party || data.totalCount < party.length || data.complete !== (data.nextCursor === null)) return null;
+  const title = descriptiveText(data, "title", 160);
+  const premise = descriptiveText(data, "premise", 1_000);
+  const partyGoals = descriptiveList(data, "partyGoals", 3, 500);
+  const toneAndBoundaries = descriptiveList(data, "toneAndBoundaries", 8, 300);
+  return {
+    status: data.status,
+    title: title.value,
+    premise: premise.value,
+    partyGoals: partyGoals.value,
+    toneAndBoundaries: toneAndBoundaries.value,
+    descriptiveFields: {
+      title: title.status,
+      premise: premise.status,
+      partyGoals: partyGoals.status,
+      toneAndBoundaries: toneAndBoundaries.status,
+    },
+    party,
+    totalCount: data.totalCount,
+    complete: data.complete,
+    nextCursor: data.nextCursor,
+    projection,
+  };
+}
+
+/** Strict, mapped acknowledgement parser for the Campaign premise write only. */
+export function validateCampaignPremiseWriteAcknowledgement(data, projection) {
+  if (!data || typeof data !== "object" || Array.isArray(data) || !own(data, "status") ||
+      data.status !== "active" || !own(data, "premise")) return null;
+  const premise = text(data.premise, 1_000);
+  return premise ? { premise, projection } : null;
 }
 
 export function projectRegisteredPartyReferences(party) {
@@ -45,8 +95,8 @@ export function projectRegisteredPartyReferences(party) {
   for (const entry of party.filter((value) => value.status === "active")) {
     if (!Array.isArray(entry.actors) || entry.actors.length !== 1) return null;
     const actor = entry.actors[0];
-    if (actors.has(actor.id) && actors.get(actor.id).name !== actor.name) return null;
-    actors.set(actor.id, actor);
+    // A display label must not turn an already-bound actor identity into an incompatible roster.
+    if (!actors.has(actor.id)) actors.set(actor.id, actor);
   }
   return [...actors.values()].map((actor) => ({
     ...actor, state: "active", current: false, entries: [], detailsDeferred: true,
@@ -59,7 +109,7 @@ export async function readRegisteredCampaignSummary({
 }) {
   const entityRoot = `/api/applications/${encodeURIComponent(applicationId)}` +
     `/state-spaces/${encodeURIComponent(stateSpaceId)}/entities`;
-  const parameters = new URLSearchParams({ perspective, campaignId, limit: "20" });
+  const parameters = new URLSearchParams({ perspective, limit: "20" });
   const result = await readModelResponse({
     fetchImpl,
     resource: new URL(`${entityRoot}/${encodeURIComponent(campaignId)}` +

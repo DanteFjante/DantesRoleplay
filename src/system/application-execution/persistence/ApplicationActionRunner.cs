@@ -20,7 +20,8 @@ public sealed class ApplicationActionRunner(
     IApplicationMechanicProjectionMappingResolver mappings,
     IApplicationMechanicEvaluator evaluator,
     IApplicationEcsEffectApplier effects,
-    IOperationLog operations) : IApplicationActionRunner
+    IOperationLog operations,
+    IApplicationEcsEffectBatchBuilder? batchBuilder = null) : IApplicationActionRunner
 {
     private static readonly JsonSerializerOptions AuditProjectionJson = new()
     {
@@ -127,57 +128,15 @@ public sealed class ApplicationActionRunner(
             return Failed(request, ApplicationActionExecutionDisposition.Unsupported,
                 "MECHANIC_OUTPUT_UNSUPPORTED", "Application notification output is not enabled for direct execution.");
 
-        var translated = await TranslateAsync(
-            stateSpace, mapping.Mapping!, evaluation.Projection!, proposal.Effects, cancellationToken);
-        if (translated.Problems.Count > 0)
-            return Failed(request, translated.Stale
+        var built = await BuildEffectBatchAsync(stateSpace, mapping.Mapping!, evaluation.Projection!, requirements,
+            proposal, record.Summary.QualifiedId, record.Summary.Version, request.Seed, cancellationToken);
+        if (!built.Ok)
+            return Failed(request, built.Stale
                     ? ApplicationActionExecutionDisposition.Stale
                     : ApplicationActionExecutionDisposition.Unsupported,
-                translated.Problems[0].Code, translated.Problems[0].SafeMessage);
-        var clockAdvanceCount = translated.Effects.Count(effect =>
-            effect.Type == ApplicationEcsEffectType.ClockAdvance);
-        var elapsedMode = requirements.ElapsedTime?.Mode?.Trim();
-        if (clockAdvanceCount > 1)
-            return Failed(request, ApplicationActionExecutionDisposition.Unsupported,
-                "CLOCK_ADVANCE_MULTIPLE", "One action may advance the authoritative clock only once.");
-        if (clockAdvanceCount == 1 && elapsedMode is not ("fixed" or "derived" or "supplied"))
-            return Failed(request, ApplicationActionExecutionDisposition.Unsupported,
-                "ELAPSED_TIME_CONTRACT_MISSING",
-                "A time-coupled action must declare how its elapsed time is obtained.");
-        if (clockAdvanceCount == 0 && elapsedMode is "fixed" or "derived" or "supplied")
-            return Failed(request, ApplicationActionExecutionDisposition.Unsupported,
-                "CLOCK_ADVANCE_MISSING",
-                "A non-zero elapsed-time declaration must produce one authoritative clock advance.");
+                built.Problems[0].Code, built.Problems[0].SafeMessage);
 
-        var applied = await effects.ApplyAsync(new ApplicationEcsEffectBatch
-        {
-            StateSpaceId = request.StateSpaceId,
-            Effects = translated.Effects,
-            Intent = "Execute one verified application interaction step.",
-            ProceduresUsed = [],
-            ExecutionIdentity = request.ExecutionIdentity,
-            ComponentExpectations = evaluation.Projection!.ObservedComponents
-                .Select(value => new ApplicationEcsComponentExpectation(value.EntityId,
-                    new EcsComponentReference(value.QualifiedTypeId, value.TypeVersion, value.SchemaHash),
-                    value.Revision))
-                .ToArray(),
-            EntityExpectations = evaluation.Projection.ObservedEntities.Select(value =>
-                new ApplicationEcsEntityExpectation(value.EntityId, value.Revision)).ToArray(),
-            RelationshipExpectations = evaluation.Projection.RelationshipCollections.Select(value =>
-                new ApplicationEcsRelationshipExpectation(value.QualifiedKind, value.AnchorEntityId, value.Incoming,
-                    value.Relationships.Select(edge => new ApplicationEcsRelationshipExpectationItem(
-                        edge.FromEntityId, edge.ToEntityId, edge.Revision)).ToArray())).ToArray(),
-            ContainmentExpectations = evaluation.Projection!.ContainmentRevisions
-                .OrderBy(pair => pair.Key, StringComparer.Ordinal)
-                .Select(pair => new ApplicationEcsContainmentExpectation(pair.Key,
-                    pair.Value.Select(value => new EcsContainmentExpectationItem(value.EntityId, value.Slot, value.Revision)).ToArray()))
-                .ToArray(),
-            DeclaredEvents = proposal.Events,
-            MechanicId = record.Summary.QualifiedId,
-            MechanicVersion = record.Summary.Version,
-            Seed = request.Seed,
-            ProjectionJson = JsonSerializer.Serialize(evaluation.Projection, AuditProjectionJson)
-        }, cancellationToken: cancellationToken);
+        var applied = await effects.ApplyAsync(built.Batch! with { ExecutionIdentity = request.ExecutionIdentity }, cancellationToken: cancellationToken);
         if (applied.Replayed)
             return Result(request, ApplicationActionExecutionDisposition.Replayed, applied.OperationId,
                 "The exact application action was already committed.", 0, [], applied.Receipts);
@@ -194,6 +153,70 @@ public sealed class ApplicationActionRunner(
         }
         return Result(request, ApplicationActionExecutionDisposition.Succeeded, applied.OperationId,
             evaluation.Run.Output.Narration, applied.Receipts.Count, [], applied.Receipts);
+    }
+
+    /// <summary>
+    /// Builds the same typed, snapshot-checked effect batch used by direct actions. Event
+    /// reactions call this before the applier-owned reaction loop; this method never applies a
+    /// batch and deliberately leaves execution identity to the root applier.
+    /// </summary>
+    public async Task<ApplicationEcsEffectBatchBuildResult> BuildEffectBatchAsync(
+        StateSpaceView stateSpace,
+        ApplicationMechanicProjectionMapping mapping,
+        MechanicProjection projection,
+        MechanicRequirements requirements,
+        CompositionProposal proposal,
+        string mechanicId,
+        int mechanicVersion,
+        long seed,
+        CancellationToken cancellationToken = default)
+    {
+        if (batchBuilder is not null)
+            return await batchBuilder.BuildAsync(stateSpace, mapping, projection, requirements, proposal,
+                mechanicId, mechanicVersion, seed, cancellationToken);
+
+        var translated = await TranslateAsync(stateSpace, mapping, projection, proposal.Effects,
+            componentTypes, entities, edges, cancellationToken);
+        if (translated.Problems.Count > 0)
+            return new(null, translated.Problems, translated.Stale);
+
+        var clockAdvanceCount = translated.Effects.Count(effect => effect.Type == ApplicationEcsEffectType.ClockAdvance);
+        var elapsedMode = requirements.ElapsedTime?.Mode?.Trim();
+        if (clockAdvanceCount > 1)
+            return new(null, [new("CLOCK_ADVANCE_MULTIPLE", "One reaction may advance the authoritative clock only once.")], false);
+        if (clockAdvanceCount == 1 && elapsedMode is not ("fixed" or "derived" or "supplied"))
+            return new(null, [new("ELAPSED_TIME_CONTRACT_MISSING", "A time-coupled reaction must declare how its elapsed time is obtained.")], false);
+        if (clockAdvanceCount == 0 && elapsedMode is "fixed" or "derived" or "supplied")
+            return new(null, [new("CLOCK_ADVANCE_MISSING", "A non-zero elapsed-time declaration must produce one authoritative clock advance.")], false);
+
+        var batch = new ApplicationEcsEffectBatch
+        {
+            StateSpaceId = stateSpace.StateSpaceId,
+            Effects = translated.Effects,
+            Intent = "Execute one verified application event reaction.",
+            ProceduresUsed = [],
+            ComponentExpectations = projection.ObservedComponents
+                .Select(value => new ApplicationEcsComponentExpectation(value.EntityId,
+                    new EcsComponentReference(value.QualifiedTypeId, value.TypeVersion, value.SchemaHash),
+                    value.Revision)).ToArray(),
+            EntityExpectations = projection.ObservedEntities.Select(value =>
+                new ApplicationEcsEntityExpectation(value.EntityId, value.Revision)).ToArray(),
+            RelationshipExpectations = projection.RelationshipCollections.Select(value =>
+                new ApplicationEcsRelationshipExpectation(value.QualifiedKind, value.AnchorEntityId, value.Incoming,
+                    value.Relationships.Select(edge => new ApplicationEcsRelationshipExpectationItem(
+                        edge.FromEntityId, edge.ToEntityId, edge.Revision)).ToArray())).ToArray(),
+            ContainmentExpectations = projection.ContainmentRevisions
+                .OrderBy(pair => pair.Key, StringComparer.Ordinal)
+                .Select(pair => new ApplicationEcsContainmentExpectation(pair.Key,
+                    pair.Value.Select(value => new EcsContainmentExpectationItem(value.EntityId, value.Slot, value.Revision)).ToArray()))
+                .ToArray(),
+            DeclaredEvents = proposal.Events,
+            MechanicId = mechanicId,
+            MechanicVersion = mechanicVersion,
+            Seed = seed,
+            ProjectionJson = JsonSerializer.Serialize(projection, AuditProjectionJson)
+        };
+        return new(batch, [], false);
     }
 
     private async Task<ApplicationActionExecutionResult?> ReplayAsync(
@@ -214,8 +237,9 @@ public sealed class ApplicationActionRunner(
                     "The same exact application action previously failed.")]);
     }
 
-    private EcsComponentReference? ResolveComponent(
+    private static EcsComponentReference? ResolveComponent(
         IReadOnlyList<ApplicationIdentifier> owners,
+        IApplicationComponentTypeRegistry componentTypes,
         string localOrQualifiedId)
     {
         if (string.IsNullOrWhiteSpace(localOrQualifiedId) || owners.Count == 0) return null;
@@ -251,11 +275,14 @@ public sealed class ApplicationActionRunner(
         return null;
     }
 
-    private async Task<TranslationResult> TranslateAsync(
+    internal static async Task<TranslationResult> TranslateAsync(
         StateSpaceView stateSpace,
         ApplicationMechanicProjectionMapping mapping,
         MechanicProjection projection,
         IReadOnlyList<Effect> proposed,
+        IApplicationComponentTypeRegistry componentTypes,
+        IEntityComponentStore entities,
+        IStateSpaceEdgeStore edges,
         CancellationToken cancellationToken)
     {
         if (proposed.Count > ApplicationEcsEffectValidation.MaximumEffects)
@@ -286,7 +313,7 @@ public sealed class ApplicationActionRunner(
                 case EffectType.ComponentRemove:
                 {
                     var type = mapping.Components.TryGetValue(effect.DefinitionId, out var declared)
-                        ? declared : ResolveComponent(owners, effect.DefinitionId);
+                        ? declared : ResolveComponent(owners, componentTypes, effect.DefinitionId);
                     if (type is null) return TranslationResult.Failed("COMPONENT_MAPPING_MISSING", "An affected component has no exact mapping.");
                     var localId = mapping.Components.ContainsKey(effect.DefinitionId)
                         ? effect.DefinitionId
@@ -316,7 +343,7 @@ public sealed class ApplicationActionRunner(
                 case EffectType.ClockAdvance:
                 {
                     var type = mapping.Components.TryGetValue(effect.DefinitionId, out var declared)
-                        ? declared : ResolveComponent(owners, effect.DefinitionId);
+                        ? declared : ResolveComponent(owners, componentTypes, effect.DefinitionId);
                     if (type is null)
                         return TranslationResult.Failed("COMPONENT_MAPPING_MISSING",
                             "The authoritative clock has no exact component mapping.");
@@ -467,7 +494,7 @@ public sealed class ApplicationActionRunner(
     private static bool UpperSha256(string value) => value is { Length: 64 }
         && value.All(character => char.IsAsciiDigit(character) || character is >= 'A' and <= 'F');
 
-    private sealed record TranslationResult(
+    internal sealed record TranslationResult(
         IReadOnlyList<ApplicationEcsEffect> Effects,
         IReadOnlyList<ApplicationActionExecutionProblem> Problems,
         bool Stale)

@@ -171,6 +171,27 @@ public sealed partial class SystemTaskService : ISystemTaskService
         }
     }
 
+    public async Task<SystemTaskRecoveryDocument?> RecoverAsync(
+        SystemTaskRequestContext context, string idempotencyKey,
+        CancellationToken cancellationToken = default)
+    {
+        Authorize(context, PrivateOperatorCapability.ControlRead);
+        ValidateIdempotencyKey(idempotencyKey);
+        var tasks = await _db.SystemTasks.AsNoTracking().Where(value =>
+            value.PrincipalReference == context.Principal.PrincipalId && value.IdempotencyKey == idempotencyKey)
+            .Take(2).ToArrayAsync(cancellationToken);
+        var confirmations = await _db.SystemTaskConfirmations.AsNoTracking().Where(value =>
+            value.PrincipalReference == context.Principal.PrincipalId && value.IdempotencyKey == idempotencyKey)
+            .Take(2).ToArrayAsync(cancellationToken);
+        var executions = await _db.SystemTaskExecutions.AsNoTracking().Where(value =>
+            value.PrincipalReference == context.Principal.PrincipalId && value.IdempotencyKey == idempotencyKey)
+            .Take(2).ToArrayAsync(cancellationToken);
+        if (tasks.Length + confirmations.Length + executions.Length != 1) return null;
+        if (tasks.Length == 1) return new(tasks[0].Id, null, null, tasks[0].Status);
+        if (confirmations.Length == 1) return new(confirmations[0].TaskId, confirmations[0].Id, null, "confirmed");
+        return new(executions[0].TaskId, executions[0].ConfirmationId, executions[0].Id, executions[0].Status);
+    }
+
     public async Task<SystemTaskDocument?> GetAsync(
         SystemTaskRequestContext context,
         string taskId,

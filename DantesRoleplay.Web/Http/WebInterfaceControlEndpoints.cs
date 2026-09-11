@@ -60,11 +60,13 @@ public static partial class WebInterfaceEndpoints
             PrivateOperatorCapability.ControlCodexApprove, DecideCodexApprovalAsync);
         endpoints.MapDantesRoleplayControlGet("/system/conversations", GetSystemConversationsAsync);
         endpoints.MapDantesRoleplayControlGet("/system/conversations/{conversationId}", GetSystemConversationAsync);
+        endpoints.MapDantesRoleplayControlGet("/system/conversations/recoveries/{idempotencyKey}", RecoverSystemConversationAsync);
         endpoints.MapDantesRoleplayControlGet("/system/capabilities", GetSystemCapabilities);
         endpoints.MapDantesRoleplayControlGet("/ai/providers", GetAiProviders);
         endpoints.MapDantesRoleplayControlGet("/ai/providers/{providerId}/models", GetAiModelsAsync);
         endpoints.MapDantesRoleplayControlGet("/ai/conversations", GetAiConversationsAsync);
         endpoints.MapDantesRoleplayControlGet("/ai/conversations/{conversationId}", GetAiConversationAsync);
+        endpoints.MapDantesRoleplayControlGet("/ai/recoveries/{idempotencyKey}", RecoverAiRequestAsync);
         endpoints.MapDantesRoleplayControlDelete(
             "/ai/conversations/{conversationId}", PrivateOperatorCapability.ControlAiMessage,
             DeleteAiConversationAsync);
@@ -82,6 +84,7 @@ public static partial class WebInterfaceEndpoints
             "/system/conversations/{conversationId}/tasks", PrivateOperatorCapability.ControlAiMessage,
             PrepareSystemTaskAsync);
         endpoints.MapDantesRoleplayControlGet("/system/tasks/{taskId}", GetSystemTaskAsync);
+        endpoints.MapDantesRoleplayControlGet("/system/tasks/recoveries/{idempotencyKey}", RecoverSystemTaskAsync);
         endpoints.MapDantesRoleplayControlPost(
             "/system/tasks/{taskId}/confirmations", PrivateOperatorCapability.Modify,
             ConfirmSystemTaskAsync);
@@ -245,6 +248,19 @@ public static partial class WebInterfaceEndpoints
             conversationId,
             cancellationToken));
 
+    private static Task<IResult> RecoverSystemConversationAsync(
+        string idempotencyKey, HttpContext context, ControlSystemConversationExplorer explorer,
+        CancellationToken cancellationToken) => AssistantAsync(context, async () =>
+    {
+        var recovered = await explorer.RecoverAsync(WebControlRequestFilter.GetAuthorizationEvidence(context),
+            idempotencyKey, cancellationToken);
+        return (object?)(recovered is null ? null : new
+        {
+            recovered.ConversationId, recovered.TurnId, recovered.Status, recovered.IdempotencyKey,
+            recovered.Provider, recovered.Scope
+        });
+    });
+
     private static async Task<IResult> CreateSystemConversationAsync(
         HttpContext context,
         ControlSystemConversationExplorer explorer,
@@ -292,8 +308,28 @@ public static partial class WebInterfaceEndpoints
         CancellationToken cancellationToken) => WebAiAsync(context, async () =>
             (object?)await gateway.GetConversationAsync(
                 WebControlRequestFilter.GetAuthorizationEvidence(context),
-                conversationId,
-                cancellationToken));
+            conversationId,
+            cancellationToken));
+
+    private static Task<IResult> RecoverAiRequestAsync(
+        string idempotencyKey, HttpContext context, IWebAiGateway gateway,
+        CancellationToken cancellationToken) => WebAiAsync(context, async () =>
+    {
+        var request = new WebAiRecoveryRequest(
+            context.Request.Query["surface"].FirstOrDefault() ?? "",
+            context.Request.Query["provider"].FirstOrDefault() ?? "",
+            idempotencyKey,
+            context.Request.Query["applicationId"].FirstOrDefault(),
+            context.Request.Query["resolutionFingerprint"].FirstOrDefault(),
+            context.Request.Query["stateSpaceId"].FirstOrDefault());
+        var recovered = await gateway.RecoverAsync(WebControlRequestFilter.GetAuthorizationEvidence(context),
+            request, cancellationToken);
+        return (object?)(recovered is null ? null : new
+        {
+            recovered.ConversationId, recovered.TurnId, recovered.Status, recovered.IdempotencyKey,
+            recovered.Provider, recovered.Scope, recovered.Context!.Fingerprint, recovered.Context.SourceReferences
+        });
+    });
 
     private static async Task<IResult> DeleteAiConversationAsync(
         string conversationId,
@@ -363,6 +399,18 @@ public static partial class WebInterfaceEndpoints
         string taskId, HttpContext context, ControlSystemTaskExplorer explorer,
         CancellationToken cancellationToken) => AssistantAsync(context, async () => (object?)await explorer.GetAsync(
             WebControlRequestFilter.GetAuthorizationEvidence(context), taskId, cancellationToken));
+
+    private static Task<IResult> RecoverSystemTaskAsync(
+        string idempotencyKey, HttpContext context, ControlSystemTaskExplorer explorer,
+        CancellationToken cancellationToken) => AssistantAsync(context, async () =>
+    {
+        var recovered = await explorer.RecoverAsync(WebControlRequestFilter.GetAuthorizationEvidence(context),
+            idempotencyKey, cancellationToken);
+        return (object?)(recovered is null ? null : new
+        {
+            recovered.TaskId, recovered.ConfirmationId, recovered.ExecutionId, recovered.Status, IdempotencyKey = idempotencyKey
+        });
+    });
 
     private static async Task<IResult> PrepareSystemTaskAsync(
         string conversationId, HttpContext context, ControlSystemTaskExplorer explorer,

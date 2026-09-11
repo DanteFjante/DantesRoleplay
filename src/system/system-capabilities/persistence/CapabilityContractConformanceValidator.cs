@@ -1,5 +1,6 @@
 using System.Text.Json;
 using DantesRoleplay.Capabilities;
+using DantesRoleplay.Projections;
 using DantesRoleplay.SchemaValidation;
 
 namespace DantesRoleplay.SystemCapabilities;
@@ -22,7 +23,8 @@ public static class CapabilityContractConformanceValidator
             problems.Add(output.Diagnostics.FirstOrDefault()?.Message ?? "The output schema is invalid.");
         if (!ClosedObject(descriptor.Input.SchemaJson, allowBoundedCompatibility: true))
             problems.Add("The input schema must reject unknown top-level properties or declare a bounded compatibility object.");
-        if (!ClosedObject(descriptor.Output.SchemaJson, allowBoundedCompatibility: false))
+        if (!ClosedObject(descriptor.Output.SchemaJson, allowBoundedCompatibility: false)
+            && !FieldBasedObjectTransport(descriptor))
             problems.Add("The output schema must reject unknown top-level properties.");
         if (!input.IsAccepted || !output.IsAccepted) return problems;
 
@@ -38,6 +40,15 @@ public static class CapabilityContractConformanceValidator
         }
         return problems;
     }
+
+    private static bool FieldBasedObjectTransport(CapabilityContractDescriptor descriptor) =>
+        descriptor.SourceKind == "application-query"
+        && descriptor.Output.Status == CapabilityContractSchemaStatus.Generated
+        && descriptor.Output.SchemaJson == RegisteredApplicationObjectContract.TransportSchemaJson
+        && descriptor.Output.SchemaHash == CapabilityContractBuilder.SchemaHash(
+            RegisteredApplicationObjectContract.TransportSchemaJson)
+        && (descriptor.ObjectDiscovery is null
+            || descriptor.ObjectDiscovery.Profile == RegisteredApplicationObjectContract.FieldBasedContractProfileId);
 
     private static bool ClosedObject(string schemaJson, bool allowBoundedCompatibility)
     {

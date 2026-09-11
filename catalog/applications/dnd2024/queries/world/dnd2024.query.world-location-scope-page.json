@@ -10,12 +10,13 @@
   "roles": {
     "scope": "The exact World root or previously authorized location scope."
   },
+  "roleBindings": { "scope": { "source": "route-entity" } },
   "executor": "mechanic-projection",
   "projection": {
     "qualifiedId": "dnd2024.mechanic.world.location-scope.page",
     "version": 1,
-    "contentHash": "48EEC09C774F715170A4788298D479A3B0473D29C9C0F6BBEDADA768509806F9",
-    "outputSchemaHash": "EE87C0D9BAE8AC8909600013B9054085EAAC637592BEFC175E567837FA86EFA3"
+    "contentHash": "672CBE564A7E10624EBD34BBB5B8FB8E8D1B69D3635ECFEBE7ED44AE1E2C7FB1",
+    "outputSchemaHash": "3FB3B8282F095DEAD46601F691832BC1E83955A8185F670132DBC8A995D599FF"
   },
   "inputSchema": {
     "type": "object",
@@ -94,7 +95,8 @@
           "status": { "enum": ["draft", "active"] },
           "summary": { "$ref": "#/$defs/summary" },
           "visibility": { "enum": ["public", "party", "gm"] },
-          "mapAnchor": { "$ref": "#/$defs/anchor" }
+          "mapAnchor": { "$ref": "#/$defs/anchor" },
+          "childScopeKnownEmpty": { "const": true }
         }
       },
       "scope": { "$ref": "#/$defs/common" },

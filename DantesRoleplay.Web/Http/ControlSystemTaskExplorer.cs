@@ -39,6 +39,14 @@ public sealed class ControlSystemTaskExplorer(ISystemTaskService tasks)
         catch (SystemTaskException exception) { throw Map(exception); }
     }
 
+    public async Task<SystemTaskRecoveryDocument?> RecoverAsync(AuthorizationAuditEvidence authorization,
+        string idempotencyKey, CancellationToken cancellationToken)
+    {
+        try { return await tasks.RecoverAsync(SystemTaskRequestContext.FromAuthorization(authorization),
+            idempotencyKey, cancellationToken); }
+        catch (SystemTaskException exception) { throw Map(exception); }
+    }
+
     public async Task<SystemTaskDocument> PrepareAsync(AuthorizationAuditEvidence authorization,
         string conversationId, SystemTaskPrepareRequest request, CancellationToken cancellationToken)
     {

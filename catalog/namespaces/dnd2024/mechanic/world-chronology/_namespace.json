@@ -1,0 +1,10 @@
+{
+  "id": "dnd2024.mechanic.world-chronology",
+  "owner": "dnd2024",
+  "description": "Namespace for the registered world history projection.",
+  "allowedKinds": ["mechanic"],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Approved neutral-read migration: catalog JavaScript owns chronology and visibility; the host supplies a bounded graph."
+}

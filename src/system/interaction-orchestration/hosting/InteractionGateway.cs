@@ -83,6 +83,17 @@ internal sealed class InteractionGateway(
         receipts.GetAsync(new(principal, applicationId, stateSpaceId,
             InteractionCapability.ReadReceipt, "system.interaction-receipt"), receiptId, cancellationToken);
 
+    public Task<InteractionReceiptProjection?> FindReceiptByIdempotencyKeyAsync(
+        TrustedPrincipalContext principal,
+        ApplicationIdentifier applicationId,
+        string stateSpaceId,
+        string idempotencyKey,
+        string? resolutionReceiptId = null,
+        CancellationToken cancellationToken = default) =>
+        receipts.FindByIdempotencyKeyAsync(new(principal, applicationId, stateSpaceId,
+            InteractionCapability.ReadReceipt, "system.interaction-receipt-recovery"),
+            idempotencyKey, resolutionReceiptId, cancellationToken);
+
     public Task<InteractionExecutionOutcome> ExecuteAsync(
         TrustedPrincipalContext principal,
         ApplicationIdentifier applicationId,

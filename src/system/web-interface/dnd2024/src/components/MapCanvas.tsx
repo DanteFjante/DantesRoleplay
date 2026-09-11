@@ -3,6 +3,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
@@ -66,6 +67,8 @@ export function MapCanvas({
   const [loadedImageUrl, setLoadedImageUrl] = useState<string | null>(null);
   const [imageAttempt, setImageAttempt] = useState(0);
   const centeredSelection = useRef("");
+  const latestView = useRef({ viewport, onViewportChange });
+  useLayoutEffect(() => { latestView.current = { viewport, onViewportChange }; });
   const imageFailed = !!map.base && failedImageUrl === map.base.imageUrl;
   const imageLoading = !!map.base && !imageFailed && loadedImageUrl !== map.base.imageUrl;
 
@@ -108,6 +111,34 @@ export function MapCanvas({
   };
 
   const updateViewport = (candidate: MapViewportState) => onViewportChange(constrain(candidate));
+
+  useLayoutEffect(() => {
+    const element = viewportRef.current;
+    const stage = stageRef.current;
+    if (!element || !stage || imageLoading || imageFailed) return;
+    let active = true;
+    const keepInBounds = () => {
+      if (!active || element.clientWidth === 0 || element.clientHeight === 0 ||
+          stage.offsetWidth === 0 || stage.offsetHeight === 0) return;
+      const current = latestView.current;
+      const next = constrain(current.viewport);
+      if (next.zoom !== current.viewport.zoom || next.x !== current.viewport.x || next.y !== current.viewport.y) {
+        current.onViewportChange(next);
+      }
+    };
+    // Image load, map replacement and container resizing must also constrain an
+    // unselected/restored view. Transforms do not change these layout dimensions.
+    keepInBounds();
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(keepInBounds);
+    observer?.observe(element);
+    observer?.observe(stage);
+    window.addEventListener("resize", keepInBounds);
+    return () => {
+      active = false;
+      observer?.disconnect();
+      window.removeEventListener("resize", keepInBounds);
+    };
+  }, [map.id, map.base?.imageUrl, imageLoading, imageFailed, imageAttempt]);
 
   const localPoint = (clientX: number, clientY: number): Point => {
     const bounds = viewportRef.current?.getBoundingClientRect();

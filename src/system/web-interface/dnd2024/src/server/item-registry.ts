@@ -1,5 +1,7 @@
-import { RESOURCE_FRESHNESS_MS, resourceCacheKey } from "../data/resource-policy.ts";
-import { ResourceStore, type ResourceInvalidationReason, type ResourceStoreMetrics } from "../data/resource-store.ts";
+import { resourceCacheKey } from "../data/resource-policy.ts";
+import type { ResourceInvalidationReason } from "../data/resource-store.ts";
+import { RequestCoordinator } from "../data/request-coordinator.ts";
+import { sha256HexSync } from "../data/browser-crypto.ts";
 import { ViewReadError } from "../data/view-read-client.ts";
 import type { ItemDetailsData, ItemSource } from "./item-view-client.ts";
 import { normalizeGameServerOrigin } from "./game-server-context.js";
@@ -46,6 +48,8 @@ export type ItemRegistryPage = {
   records: ItemRegistryRecord[];
   totalCount: number;
   nextCursor: string | null;
+  /** True when one or more bounded source rows were not display-admitted. */
+  partial?: boolean;
 };
 
 export type ItemDefinitionRequest = {
@@ -129,6 +133,7 @@ function isRegistryPage(value: unknown): value is ItemRegistryPage {
     && new Set((page.records as ItemRegistryRecord[]).map((record) => record.id)).size === page.records.length
     && Number.isSafeInteger(page.totalCount) && (page.totalCount as number) >= page.records.length
     && (page.totalCount as number) <= MAXIMUM_RECORDS
+    && (page.partial === undefined || typeof page.partial === "boolean")
     && optionalText(page.nextCursor, MAXIMUM_CURSOR_LENGTH) === page.nextCursor);
 }
 
@@ -157,28 +162,35 @@ export async function readItemRegistry({
   if (normalized.query) url.searchParams.set("query", normalized.query);
   if (normalized.cursor) url.searchParams.set("cursor", normalized.cursor);
   const response = await fetchImpl(url, { headers: { Accept: "application/json" }, cache: "no-store", signal });
-  if (!response.ok) throw new ViewReadError(response.status === 409 ? "stale-data" : "transport",
+  if (!response.ok) throw new ViewReadError(response.status === 401 || response.status === 403 ? "authorization" : response.status === 409 ? "stale-data" : "transport",
     response.status === 409 ? "The item registry changed while this page was loading." : "The item registry is unavailable.");
   const decoded = await readBoundedJson(response, MAXIMUM_PAGE_BYTES);
   const page = decoded.status === "ready" ? object(decoded.value) : null;
   const fingerprint = page?.resolutionFingerprint === "none" ? "none"
     : text(page?.resolutionFingerprint, 64)?.toUpperCase() ?? null;
   const rawRecords = Array.isArray(page?.resolvedWinners) ? page.resolvedWinners : null;
-  const records = rawRecords?.map((value) => {
+  const projectedRecords = rawRecords?.map((value) => {
     const candidate = object(value);
     return summary(candidate?.record, candidate?.sourceLabel, candidate?.classification);
   }) ?? null;
+  // A malformed display row must not erase otherwise useful registry entries.
+  // Duplicate identities are all withheld: retaining the first would make the
+  // selected source ambiguous. The page remains explicitly partial.
+  const identityCounts = new Map<string, number>();
+  for (const record of projectedRecords ?? []) if (record) identityCounts.set(record.id, (identityCounts.get(record.id) ?? 0) + 1);
+  const records = projectedRecords?.filter((record): record is ItemRegistryRecord =>
+    record !== null && identityCounts.get(record.id) === 1) ?? null;
+  const partial = projectedRecords !== null && records !== null && records.length !== projectedRecords.length;
   const nextCursor = optionalText(page?.nextCursor, MAXIMUM_CURSOR_LENGTH);
   if (page?.applicationId !== APPLICATION_ID || !fingerprint || (fingerprint !== "none" && !FINGERPRINT.test(fingerprint))
-      || !records || records.some((record) => !record) || records.length > PAGE_SIZE
-      || new Set(records.map((record) => record!.id)).size !== records.length
+      || !records || rawRecords === null || rawRecords.length > PAGE_SIZE
       || !Number.isSafeInteger(page?.totalCount) || (page!.totalCount as number) < records.length
       || (page!.totalCount as number) > MAXIMUM_RECORDS || nextCursor !== page?.nextCursor)
     throw new ViewReadError("incompatible-data", "The item-registry response is invalid.");
   if (normalized.expectedResolutionFingerprint && normalized.expectedResolutionFingerprint !== fingerprint)
     throw new ViewReadError("stale-data", "The item registry changed while this page was loading.");
-  const result = { resolutionFingerprint: fingerprint, records: records as ItemRegistryRecord[],
-    totalCount: page.totalCount as number, nextCursor };
+  const result = { resolutionFingerprint: fingerprint, records,
+    totalCount: page.totalCount as number, nextCursor, partial };
   if (!isRegistryPage(result)) throw new ViewReadError("incompatible-data", "The item-registry response is invalid.");
   return result;
 }
@@ -212,14 +224,14 @@ function definitionDetails(record: ItemRegistryRecord, contentJson: string): Ite
   const definition = object(components?.[ITEM_DEFINITION_COMPONENT]);
   const archetype = text(root?.archetype, 200);
   const currentDefinition = archetype !== null && ITEM_ARCHETYPES.includes(archetype as typeof ITEM_ARCHETYPES[number]);
-  if (!root || !components || (!definition && !currentDefinition) || text(root.id, 400) === null || text(root.name, 400) === null)
+  if (!root)
     throw new ViewReadError("incompatible-data", "The item definition is invalid.");
   const source: ItemSource = { label: record.sourceLabel, knowledgeState: "known" };
   const properties: Array<ItemDetailsData["properties"][number] | null> = [];
   const kind = text(definition?.kind, 80) ?? (archetype === "dnd2024.archetype.weapon-definition" ? "weapon"
     : archetype === "dnd2024.archetype.tool-definition" ? "tool"
       : archetype === "dnd2024.archetype.consumable-definition" ? "consumable" : currentDefinition ? "item" : null);
-  const physical = object(components["dnd2024.item.physical"]);
+  const physical = object(components?.["dnd2024.item.physical"]);
   const weight = object(physical?.weight);
   const mass = fraction(definition?.massPounds) ?? fraction(weight?.value);
   const massUnit = definition?.massPounds ? "Pound" : referenceLabel(weight?.unit);
@@ -229,23 +241,23 @@ function definitionDetails(record: ItemRegistryRecord, contentJson: string): Ite
   const modes = Array.isArray(definition?.equipmentModes)
     ? definition!.equipmentModes.map((value) => text(value, 80)).filter(Boolean) as string[] : [];
   if (modes.length) properties.push(property("Equipment modes", modes.map(display).join(", "), null, source));
-  const coreVersion = object(components["dnd2024.core.version"]);
+  const coreVersion = object(components?.["dnd2024.core.version"]);
   const status = text(coreVersion?.status, 80) ?? record.status;
   properties.push(property("Record status", display(status), null, source));
   const version = Number.isSafeInteger(definition?.definitionVersion) ? definition!.definitionVersion as number
     : Number.isSafeInteger(coreVersion?.revision) ? coreVersion!.revision as number : record.version;
   properties.push(property("Definition version", version, null, source));
   const sourceRef = object(definition?.sourceRef);
-  const coreSource = object(components["dnd2024.core.source"]);
+  const coreSource = object(components?.["dnd2024.core.source"]);
   const citation = Array.isArray(coreSource?.citations) ? object(coreSource.citations[0]) : null;
   const locator = text(sourceRef?.locator, 2_048) ?? text(citation?.locator, 2_048);
   const description = text(definition?.description, 2_048) ?? locator;
-  const weapon = object(components["dnd2024.item.weapon"]);
+  const weapon = object(components?.["dnd2024.item.weapon"]);
   properties.push(property("Weapon category", referenceLabel(weapon?.category), null, source));
   const weaponProperties = Array.isArray(weapon?.properties)
     ? weapon.properties.map(referenceLabel).filter(Boolean) as string[] : [];
   if (weaponProperties.length) properties.push(property("Weapon properties", weaponProperties.join(", "), null, source));
-  const tool = object(components["dnd2024.item.tool"]);
+  const tool = object(components?.["dnd2024.item.tool"]);
   properties.push(property("Tool category", referenceLabel(tool?.category), null, source));
   const valid = properties.filter((value): value is ItemDetailsData["properties"][number] => value !== null).slice(0, 32);
   return {
@@ -296,7 +308,7 @@ export async function readItemDefinition({
   const url = new URL(`/api/applications/${APPLICATION_ID}/catalog/records/${encodeURIComponent(request.id)}`, `${origin}/`);
   url.searchParams.set("collection", request.collection);
   const response = await fetchImpl(url, { headers: { Accept: "application/json" }, cache: "no-store", signal });
-  if (!response.ok) throw new ViewReadError(response.status === 404 ? "stale-data" : "transport",
+  if (!response.ok) throw new ViewReadError(response.status === 401 || response.status === 403 ? "authorization" : response.status === 404 ? "stale-data" : "transport",
     response.status === 404 ? "This item definition is no longer in the registry." : "The item definition is unavailable.");
   const decoded = await readBoundedJson(response, MAXIMUM_DETAIL_BYTES);
   const body = decoded.status === "ready" ? object(decoded.value) : null;
@@ -312,46 +324,46 @@ export async function readItemDefinition({
 }
 
 export class ItemRegistryClient {
-  readonly #store: ResourceStore;
+  readonly #coordinator = new RequestCoordinator();
+  #generation = 0;
   readonly #page;
   readonly #definition;
 
   constructor({ serverOrigin, applicationId = APPLICATION_ID, fetchImpl = fetch }: {
     serverOrigin: string; applicationId?: string; fetchImpl?: typeof fetch;
   }) {
-    this.#store = new ResourceStore({ maximumEntries: 32, maximumRetainedBytes: 10 * 1024 * 1024,
-      diagnosticName: "item-registry-resources" });
-    this.#page = this.#store.define<ItemRegistryRequest, ItemRegistryPage>({
-      name: "item-registry-page",
-      cacheKey: (value) => {
+    this.#page = {
+      cacheKey: (value: ItemRegistryRequest) => {
         const request = normalizeRegistryRequest(value);
         return resourceCacheKey("item-registry-v1", applicationId, request.query, request.cursor,
           request.expectedResolutionFingerprint);
       },
-      read: (request, signal) => readItemRegistry({ serverOrigin, applicationId, request, signal, fetchImpl }),
+      read: (request: ItemRegistryRequest, signal: AbortSignal) => readItemRegistry({ serverOrigin, applicationId, request, signal, fetchImpl }),
       validate: isRegistryPage,
-      maximumAgeMs: RESOURCE_FRESHNESS_MS.itemRegistry,
-      maximumEntryBytes: MAXIMUM_PAGE_BYTES,
-    });
-    this.#definition = this.#store.define<ItemDefinitionRequest, ItemDefinition>({
-      name: "item-registry-definition",
-      cacheKey: (request) => resourceCacheKey("item-definition-v1", applicationId, request.collection,
+      maximumBytes: MAXIMUM_PAGE_BYTES,
+    };
+    this.#definition = {
+      cacheKey: (request: ItemDefinitionRequest) => resourceCacheKey("item-definition-v1", applicationId, request.collection,
         request.id, request.expectedContentFingerprint, request.sourceLabel),
-      read: (request, signal) => readItemDefinition({ serverOrigin, applicationId, request, signal, fetchImpl }),
+      read: (request: ItemDefinitionRequest, signal: AbortSignal) => readItemDefinition({ serverOrigin, applicationId, request, signal, fetchImpl }),
       validate: isItemDefinition,
-      maximumAgeMs: RESOURCE_FRESHNESS_MS.itemDefinition,
-      maximumEntryBytes: MAXIMUM_DETAIL_BYTES,
-    });
+      maximumBytes: MAXIMUM_DETAIL_BYTES,
+    };
   }
 
-  async loadPage(request: ItemRegistryRequest, signal?: AbortSignal, preferCached = true) {
-    return (await this.#page.load(normalizeRegistryRequest(request), { signal, preferCached })).value;
+  async loadPage(request: ItemRegistryRequest, signal?: AbortSignal, _preferCached = true) {
+    const normalized = normalizeRegistryRequest(request), generation = this.#generation;
+    const key = sha256HexSync(this.#page.cacheKey(normalized));
+    if (generation !== this.#generation || signal?.aborted) throw new ViewReadError("cancelled", "Registry scope changed.");
+    return this.#coordinator.load({ ...this.#page, key: () => key }, normalized, signal);
   }
 
-  async loadDefinition(request: ItemDefinitionRequest, signal?: AbortSignal, preferCached = true) {
-    return (await this.#definition.load(request, { signal, preferCached })).value;
+  async loadDefinition(request: ItemDefinitionRequest, signal?: AbortSignal, _preferCached = true) {
+    const generation = this.#generation, key = sha256HexSync(this.#definition.cacheKey(request));
+    if (generation !== this.#generation || signal?.aborted) throw new ViewReadError("cancelled", "Registry scope changed.");
+    return this.#coordinator.load({ ...this.#definition, key: () => key }, request, signal);
   }
 
-  invalidate(reason: ResourceInvalidationReason = "manual") { this.#store.invalidateAll(reason); }
-  metrics(): ResourceStoreMetrics { return this.#store.metrics(); }
+  invalidate(_reason: ResourceInvalidationReason = "manual") { this.#generation++; this.#coordinator.invalidate(); }
+  metrics() { return { retainedEntries: 0, retainedBytes: 0 }; }
 }

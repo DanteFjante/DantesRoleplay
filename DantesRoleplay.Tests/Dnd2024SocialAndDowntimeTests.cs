@@ -47,7 +47,7 @@ public sealed class Dnd2024SocialAndDowntimeTests : Dnd2024TestBase
 
         AssertSucceeded(recorded);
         Assert.Equal(ApplicationActionExecutionDisposition.Replayed, replay.Disposition);
-        Assert.Single(await harness.EventsAsync(recorded.OperationId));
+        Assert.Single(await harness.RuleEventsAsync(recorded.OperationId));
         Assert.NotNull(await harness.Entities.GetEntityAsync(
             DndHarness.StateSpaceId, "social.consequence.primary"));
         using (var state = JsonDocument.Parse((await harness.Entities.GetComponentAsync(

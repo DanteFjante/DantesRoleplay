@@ -1,66 +1,22 @@
 {
   "id": "dnd2024.object.faction-directory-page",
-  "version": 1,
-  "schema": {
-    "type": "object",
-    "additionalProperties": false,
-    "properties": {
-      "worldSummary": { "type": "string", "minLength": 1, "maxLength": 1000 },
-      "items": {
-        "type": "array",
-        "maxItems": 25,
-        "items": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["id", "name", "status", "summary", "visibility", "goals", "methods", "assets", "agenda", "members", "controlledSites", "territories", "allies", "opponents"],
-          "properties": {
-            "id": { "type": "string", "minLength": 1, "maxLength": 200 },
-            "name": { "type": "string", "minLength": 1, "maxLength": 400 },
-            "status": { "enum": ["draft", "active", "archived"] },
-            "summary": { "type": "string", "minLength": 1, "maxLength": 1000 },
-            "visibility": { "enum": ["public", "party", "gm"] },
-            "goals": { "type": "array", "minItems": 1, "maxItems": 5, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 500 } },
-            "methods": { "type": "array", "minItems": 1, "maxItems": 5, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 500 } },
-            "assets": { "type": "array", "maxItems": 10, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 500 } },
-            "agenda": {
-              "type": "object",
-              "additionalProperties": false,
-              "required": ["state", "summary"],
-              "properties": {
-                "state": { "enum": ["ready", "advanced"] },
-                "summary": { "type": "string", "minLength": 1, "maxLength": 1000 }
-              }
-            },
-            "members": { "type": "array", "maxItems": 10, "uniqueItems": true, "items": { "$ref": "#/$defs/entityReference" } },
-            "controlledSites": { "type": "array", "maxItems": 10, "uniqueItems": true, "items": { "$ref": "#/$defs/entityReference" } },
-            "territories": { "type": "array", "maxItems": 10, "uniqueItems": true, "items": { "$ref": "#/$defs/entityReference" } },
-            "allies": { "type": "array", "maxItems": 10, "uniqueItems": true, "items": { "$ref": "#/$defs/entityReference" } },
-            "opponents": { "type": "array", "maxItems": 10, "uniqueItems": true, "items": { "$ref": "#/$defs/entityReference" } }
-          }
-        }
-      },
-      "totalCount": { "type": "integer", "minimum": 0, "maximum": 100 },
-      "complete": { "type": "boolean" },
-      "nextCursor": { "type": ["string", "null"], "maxLength": 2048 }
-    },
-    "$defs": {
-      "entityReference": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["id", "name"],
-        "properties": {
-          "id": { "type": "string", "minLength": 1, "maxLength": 200 },
-          "name": { "type": "string", "minLength": 1, "maxLength": 400 }
-        }
-      }
-    }
-  },
+  "version": 2,
   "roles": {
-    "world": { "required": true },
-    "faction": { "required": false },
-    "member": { "required": false },
-    "site": { "required": false },
-    "related-faction": { "required": false }
+    "world": {
+      "required": true
+    },
+    "faction": {
+      "required": false
+    },
+    "member": {
+      "required": false
+    },
+    "site": {
+      "required": false
+    },
+    "related-faction": {
+      "required": false
+    }
   },
   "sources": [
     {
@@ -148,7 +104,11 @@
   ],
   "references": [],
   "mappings": [
-    { "inputId": "world", "sourcePointer": "/summary", "targetPointer": "/worldSummary" }
+    {
+      "inputId": "world",
+      "sourcePointer": "/summary",
+      "targetPointer": "/worldSummary"
+    }
   ],
   "collections": [
     {
@@ -156,10 +116,31 @@
       "sourceId": "factions",
       "pageSize": 25,
       "maximumPageSize": 25,
-      "order": [{ "path": "/name", "direction": "asc" }],
-      "cursor": "source-revision-bound"
+      "order": [
+        {
+          "path": "/name",
+          "direction": "asc"
+        }
+      ],
+      "cursor": "source-revision-bound",
+      "metadata": {
+        "totalCount": "/totalCount",
+        "complete": "/complete",
+        "nextCursor": "/nextCursor"
+      }
     }
   ],
-  "limits": { "traversalDepth": 2, "itemCount": 100, "outputBytes": 262144, "sqlQueries": 12 },
-  "access": { "read": ["dm"], "write": [] }
+  "limits": {
+    "traversalDepth": 2,
+    "itemCount": 100,
+    "outputBytes": 262144,
+    "sqlQueries": 12
+  },
+  "access": {
+    "read": [
+      "dm"
+    ],
+    "write": []
+  },
+  "profile": "application-object/v2"
 }

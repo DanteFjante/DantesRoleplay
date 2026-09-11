@@ -1499,12 +1499,17 @@ strong {
 
 .world-map-canvas {
   position: relative;
-  height: clamp(360px, 64vh, 840px);
+  /* The untransformed image defines the frame; zoom/pan never change page size. */
+  height: auto;
   overflow: hidden;
   background: #171811;
   cursor: grab;
   touch-action: pan-y pinch-zoom;
   user-select: none;
+}
+
+.world-map-canvas[data-image-state="loading"] {
+  min-height: 12rem;
 }
 
 .world-map-canvas:active {
@@ -5889,10 +5894,6 @@ button.campaign-link:hover {
 
   .map-viewport-toolbar button {
     min-height: 44px;
-  }
-
-  .world-map-canvas {
-    height: clamp(340px, 66vh, 540px);
   }
 
   .tactical-board-heading {

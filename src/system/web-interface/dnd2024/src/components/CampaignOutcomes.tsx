@@ -23,10 +23,13 @@ export function CampaignOutcomes({
   const [status, setStatus] = useState("all");
   const statuses = useMemo(() => [...new Set(campaign.outcomes.map((outcome) => outcome.status))].sort(), [campaign.outcomes]);
   const outcomes = useMemo(() => filterCampaignOutcomes(campaign.outcomes, { query, status }), [campaign.outcomes, query, status]);
+  const outcomesUnavailable = campaign.detailFields
+    ? campaign.detailFields.arcs !== "ready" && campaign.detailFields.arcs !== "empty"
+    : false;
 
   return (
     <div className="campaign-section-view">
-      <header className="atlas-heading"><div><span className="eyebrow">Cause and consequence</span><h1 id="main-view-heading" tabIndex={-1}>Situation outcomes</h1></div><p>{outcomes.length} of {campaign.outcomes.length} outcomes</p></header>
+      <header className="atlas-heading"><div><span className="eyebrow">Cause and consequence</span><h1 id="main-view-heading" tabIndex={-1}>Situation outcomes</h1></div><p>{outcomesUnavailable ? "Coverage unavailable" : `${outcomes.length} of ${campaign.outcomes.length} outcomes`}</p></header>
       <p className="campaign-section-introduction">A readable account of how important situations ended—or why they are still changing.</p>
       {campaign.outcomes.length ? <div className="campaign-controls campaign-controls--two">
         <label className="campaign-search"><Icon name="Search" size={16} /><span className="sr-only">Search campaign outcomes</span><input onChange={(event) => setQuery(event.target.value.slice(0, 80))} placeholder="Search outcomes and consequences…" type="search" value={query} /></label>
@@ -51,11 +54,13 @@ export function CampaignOutcomes({
           ))}
         </section>
       ) : <CampaignEmptyState
-        description={campaign.outcomes.length
+        description={outcomesUnavailable
+          ? "Arc outcome coverage is unavailable for this read; omitted outcomes are not confirmed absent."
+          : campaign.outcomes.length
           ? "Try a broader status or search."
           : "Resolved or abandoned campaign arcs will appear here when they have an authored closing summary."}
         icon="ScrollText"
-        title={campaign.outcomes.length ? "No outcomes match" : "No campaign outcomes recorded yet"}
+        title={outcomesUnavailable ? "Campaign outcomes unavailable" : campaign.outcomes.length ? "No outcomes match" : "No campaign outcomes recorded yet"}
       />}
     </div>
   );

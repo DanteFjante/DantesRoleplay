@@ -68,11 +68,21 @@ export function CampaignView({
         ? <button onClick={onRetryDetails} type="button">Retry campaign details</button> : null}
     </section>
   );
+  const incompleteFields = Object.entries(campaign.detailFields ?? {})
+    .filter(([, status]) => status !== "ready" && status !== "empty")
+    .map(([field]) => field);
+  const coverageNotice = detailsStatus === "ready" && incompleteFields.length > 0 ? (
+    <section className="campaign-detail-status campaign-detail-status--partial" role="status">
+      <strong>Some campaign details are unavailable</strong>
+      <p>{incompleteFields.map((field) => field === "visits" ? "recorded visits" : field).join(", ")} could not be fully read. Displayed records are retained; omitted records are not confirmed absent.</p>
+    </section>
+  ) : null;
 
   return (
     <div className="campaign-view">
       <CampaignSectionNavigation activeSection={section} onSelect={onSectionChange} />
       {detailNotice}
+      {coverageNotice}
       {!hasValidatedDetails && section !== "overview" ? null : section === "log" ? (
         <CampaignAdventureLog campaign={campaign} onOpenFaction={onOpenFaction} onOpenLocation={onOpenLocation} onOpenPerson={onOpenPerson} />
       ) : section === "places" ? (

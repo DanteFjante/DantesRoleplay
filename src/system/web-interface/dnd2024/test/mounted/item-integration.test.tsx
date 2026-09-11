@@ -3,19 +3,36 @@ import test from "node:test";
 import React, { act } from "react";
 import { JSDOM } from "jsdom";
 import { DndInformationHub } from "../../src/components/DndInformationHub";
-import { integrationEnvelope, integrationInventory, integrationRead, integrationResponse, type ItemRead } from "../fixtures/item-integration";
+import { integrationEnvelope, integrationInventory, integrationParty, integrationRead, integrationResponse, type ItemRead } from "../fixtures/item-integration";
 import { itemRouteHash, navigateItemRoute, parseItemRoute } from "../../src/data/item-view-route";
+import { parseHubRoute } from "../../src/data/hub-route";
+import { createHubStore } from "../../src/data/hub-store";
+import { ItemResourceOwner } from "../../src/data/item-resource-owner";
+import { readItemDetails } from "../../src/server/item-view-client";
+import { readItemUses } from "../../src/server/item-uses-client";
+import { readItemRecipes } from "../../src/server/item-recipes-client";
 import type { InventoryContainerResult } from "../../src/data/hub-types";
 const tick = () => new Promise(resolve => setTimeout(resolve, 25));
 async function perform(action: () => void) { await act(async () => { action(); await tick(); }); await act(tick); }
-async function mount(hash = itemRouteHash(integrationInventory)) {
+async function mount(hash = itemRouteHash(integrationInventory), options: {
+  initialEnvelope?: ReturnType<typeof integrationEnvelope>;
+  loadCharacterSheet?: (envelope: ReturnType<typeof integrationEnvelope>, actorId: string, signal: AbortSignal) => Promise<ReturnType<typeof integrationParty>[number]>;
+  delayDm?: boolean;
+} = {}) {
   const dom = new JSDOM("<!doctype html><html lang='en'><head><title>Integration</title></head><body><div id='root'></div></body></html>", { url: "https://table.test/published/revision?keep=yes" + hash, pretendToBeVisual: true });
   const keys = ["window", "document", "HTMLElement", "Element", "Node", "Event", "MouseEvent", "fetch", "IS_REACT_ACT_ENVIRONMENT"] as const;
   const prior = keys.map(k => Object.getOwnPropertyDescriptor(globalThis,k));
   const calls: ItemRead[] = [], hubCalls: string[] = [], inventoryCalls: string[] = [], pending: { read: ItemRead; resolve: (r: Response) => void }[] = [];
-  const control = { delayDm: false, mode: "ready", quantity: 1 };
+  const control = { delayDm: options.delayDm ?? false, mode: "ready", inventoryMode: "ready" as "ready" | "error", quantity: 1 };
   const fetchImpl = (async (url, init) => { assert.ok(!init?.method || init.method === "GET");const read = integrationRead(String(url)); calls.push(read);
-    if(control.delayDm && read.request.perspective === "dm") return new Promise<Response>(resolve => pending.push({ read, resolve }));
+    if(control.delayDm && read.request.perspective === "dm") return new Promise<Response>((resolve, reject) => {
+      const abort = () => reject(new DOMException("The item read was replaced.", "AbortError"));
+      init?.signal?.addEventListener("abort", abort, { once: true });
+      pending.push({ read, resolve: (response) => {
+        init?.signal?.removeEventListener("abort", abort);
+        resolve(response);
+      } });
+    });
     const response = integrationResponse(read, control.mode);
     if (read.tab === "details" && control.mode === "ready") {
       const payload = await response.json();
@@ -28,9 +45,16 @@ async function mount(hash = itemRouteHash(integrationInventory)) {
   dom.window.requestAnimationFrame = cb => dom.window.setTimeout(() => cb(0),0);
   dom.window.scrollTo = (_x,y) => Object.defineProperty(dom.window,"scrollY",{ configurable:true,value:y });
   const { createRoot } = await import("react-dom/client");const container = document.getElementById("root")!;const root = createRoot(container);
-  const initial = integrationEnvelope();
+  const initial = options.initialEnvelope ?? integrationEnvelope();
+  const store = createHubStore();
+  const itemOwner = new ItemResourceOwner({ store, readDetails: readItemDetails, readUses: readItemUses, readRecipes: readItemRecipes });
+  itemOwner.replaceScope(initial);
   const loadCharacterInventory = async (_envelope: unknown, actorId: string): Promise<InventoryContainerResult> => {
     inventoryCalls.push(actorId);
+    assert.ok(inventoryCalls.length <= 10, "A confirmed Redux response must not restart its own read indefinitely");
+    if (control.inventoryMode === "error") return {
+      status: "error", data: null, failureCategory: "transport", diagnosticId: `inventory-${actorId}-offline`,
+    };
     const sheet = initial.party.find(member => member.id === actorId)?.characterSheet;
     if (!sheet) throw new Error("Missing inventory fixture");
     return { status: "ready", failureCategory: null, diagnosticId: `inventory-${actorId}`, data: {
@@ -43,7 +67,13 @@ async function mount(hash = itemRouteHash(integrationInventory)) {
       },
     } };
   };
-  await act(async()=>{root.render(<DndInformationHub initialEnvelope={initial} loadContent={async()=>({}) as never} loadEnvelope={async perspective=>{hubCalls.push(perspective);return integrationEnvelope(perspective);}} loadCharacterInventory={loadCharacterInventory}/>);await tick();});
+  await act(async()=>{root.render(<DndInformationHub store={store} initialEnvelope={initial} loadContent={async()=>({}) as never} loadEnvelope={async perspective=>{hubCalls.push(perspective);return integrationEnvelope(perspective);}} loadCharacterInventory={loadCharacterInventory}
+    loadCharacterSheet={options.loadCharacterSheet}
+    loadItemDetails={(envelope, request, signal, preferCached) => itemOwner.loadDetails(envelope, request, signal, preferCached)}
+    loadItemUses={(envelope, request, signal, preferCached) => itemOwner.loadUses(envelope, request, signal, preferCached)}
+    loadItemRecipes={(envelope, request, signal, preferCached) => itemOwner.loadRecipes(envelope, request, signal, preferCached)}
+    invalidateItemResources={() => itemOwner.invalidateAll()}
+  />);await tick();});
   await act(tick);await act(tick);
   const click = (label:string) => perform(()=>{const b=[...container.querySelectorAll<HTMLButtonElement>("button")].find(b=>b.textContent?.trim()===label);assert.ok(b,"Missing button "+label);b.focus();b.click();});
   return { container, calls, hubCalls, inventoryCalls, pending, control, click, async cleanup(){await act(async()=>root.unmount());dom.window.close();keys.forEach((k,i)=>{if(prior[i])Object.defineProperty(globalThis,k,prior[i]!);else Reflect.deleteProperty(globalThis,k);});} };
@@ -66,6 +96,124 @@ test("full hub inventory journey respects tab request budgets and caches fresh r
     assert.equal(v.calls.length,3,"focus and visibility changes keep fresh item resources");
     const before=window.scrollY;await perform(()=>v.container.dispatchEvent(new window.WheelEvent("wheel",{deltaY:80,bubbles:true})));assert.equal(window.scrollY,before);assert.equal(v.calls.length,3);
   }finally{await v.cleanup();}
+});
+test("an active inventory retries after an offline result when a refreshed hub installs a new owner", async () => {
+  const view = await mount();
+  try {
+    const initiallyRequested = view.inventoryCalls.length;
+    assert.ok(initiallyRequested >= 1 && initiallyRequested <= 2);
+    view.control.inventoryMode = "error";
+    await perform(() => window.dispatchEvent(new Event("dnd2024-view-invalidated")));
+    assert.equal(view.inventoryCalls.length, initiallyRequested + 1);
+    assert.match(view.container.textContent ?? "", /Connection unavailable/);
+
+    view.control.inventoryMode = "ready";
+    await view.click("Refresh view");
+    assert.deepEqual(view.hubCalls, ["player"]);
+    assert.equal(view.inventoryCalls.length, initiallyRequested + 2);
+    assert.doesNotMatch(view.container.textContent ?? "", /Connection unavailable/);
+    assert.match(view.container.textContent ?? "", /Weathered backpack/);
+  } finally { await view.cleanup(); }
+});
+
+test("item details can leave through every character tab and preserve Back/Forward navigation", async () => {
+  const view = await mount();
+  try {
+    await openStaff(view);
+    const itemHash = window.location.hash;
+    for (const section of ["overview", "sheet", "knowledge", "backstory", "origin", "registry"]) {
+      if (window.location.hash !== itemHash)
+        await perform(() => navigateItemRoute({ ...integrationInventory, kind: "item", itemId: "item.staff", tab: "details" }));
+      const tab = view.container.querySelector<HTMLButtonElement>(`.character-tabs [data-character-section="${section}"]`);
+      assert.ok(tab, `Missing character tab ${section} inside item details`);
+      await perform(() => tab.click());
+      const route = parseHubRoute(window.location.hash);
+      assert.equal(route.kind, "hub", `${section} must leave the item route`);
+      if (route.kind !== "hub") throw new Error("Expected a hub route");
+      assert.equal(route.tab, "party");
+      assert.equal(route.partySection, section);
+      assert.equal(route.characterId, integrationInventory.characterId);
+      assert.equal(view.container.querySelector("#item-view-heading"), null);
+      assert.equal(view.container.querySelector(`[data-character-section="${section}"]`)?.getAttribute("aria-current"), "page");
+    }
+    const finalHash = window.location.hash;
+    await perform(() => window.history.back());
+    assert.equal(window.location.hash, itemHash);
+    assert.ok(view.container.querySelector("#item-view-heading"));
+    await perform(() => window.history.forward());
+    assert.equal(window.location.hash, finalHash);
+    assert.equal(view.container.querySelector("#item-view-heading"), null);
+    assert.equal(window.location.pathname, "/published/revision");
+    assert.equal(window.location.search, "?keep=yes");
+    assert.deepEqual(view.hubCalls, [], "Local section navigation must not reload the whole campaign");
+  } finally { await view.cleanup(); }
+});
+
+test("an item deep link can select another party member without retaining the old item", async () => {
+  const view = await mount(itemRouteHash({ ...integrationInventory, kind: "item", itemId: "item.staff", tab: "details" }));
+  try {
+    assert.ok(view.container.querySelector("#item-view-heading"));
+    const member = view.container.querySelector<HTMLButtonElement>('[data-character-member="actor.second"]');
+    assert.ok(member);
+    await perform(() => member.click());
+    const route = parseHubRoute(window.location.hash);
+    assert.equal(route.kind, "hub");
+    if (route.kind !== "hub") throw new Error("Expected a hub route");
+    assert.equal(route.characterId, "actor.second");
+    assert.equal(route.partySection, "overview");
+    assert.equal(view.container.querySelector(".character-page")?.getAttribute("data-record-id"), "actor.second");
+    assert.equal(view.container.querySelector("#item-view-heading"), null);
+    assert.deepEqual(view.hubCalls, []);
+  } finally { await view.cleanup(); }
+});
+test("an unloaded direct-link header commits once without restarting the item details effect", async () => {
+  const initial = integrationEnvelope("dm");
+  const sparse = initial.party.find((member) => member.id === integrationInventory.characterId)!;
+  delete sparse.characterSheet;
+  delete sparse.portrait;
+  sparse.sheet = [];
+  sparse.sheetStatus = "unavailable";
+  sparse.sheetState = { status: "loading", data: null };
+  let completeHeader: ((value: ReturnType<typeof integrationParty>[number]) => void) | null = null;
+  let headerReads = 0;
+  const hydrated = integrationParty().find((member) => member.id === integrationInventory.characterId)!;
+  const route = itemRouteHash({ ...integrationInventory, perspective: "dm", kind: "item", itemId: "item.staff", tab: "details" });
+  const view = await mount(route, { initialEnvelope: initial,
+    loadCharacterSheet: async () => {
+      headerReads += 1;
+      return new Promise((resolve) => { completeHeader = resolve; });
+    },
+  });
+  try {
+    assert.equal(headerReads, 1);
+    assert.deepEqual(view.calls.map((read) => read.tab), ["details"]);
+    assert.equal(view.container.querySelector(".view-render-error"), null);
+    await act(async () => { completeHeader?.(hydrated); await tick(); });
+    await act(tick);
+    assert.equal(headerReads, 1, "the header facet must not restart the route-owned item read");
+    assert.deepEqual(view.calls.map((read) => read.tab), ["details"],
+      "the header facet must not restart the route-owned item details effect");
+    assert.equal(view.container.querySelector(".view-render-error"), null);
+    assert.match(view.container.textContent ?? "", /Travel staff/);
+  } finally { await view.cleanup(); }
+});
+test("a cold item deep link replaces an invalidated in-flight details read without manual refresh", async () => {
+  const initial = integrationEnvelope("dm");
+  const route = itemRouteHash({ ...integrationInventory, perspective: "dm", kind: "item", itemId: "item.staff", tab: "details" });
+  const view = await mount(route, { initialEnvelope: initial, delayDm: true });
+  try {
+    assert.deepEqual(view.calls.map((read) => read.tab), ["details"]);
+    await perform(() => window.dispatchEvent(new window.CustomEvent("dnd2024-object-changed", { detail: {
+      object: { qualifiedId: "dnd2024.object.inventory-item-instance-records" },
+    } })));
+    assert.deepEqual(view.calls.map((read) => read.tab), ["details", "details"],
+      "an invalidation must replace the aborted cold read without exposing a manual retry state");
+    view.control.delayDm = false;
+    const latest = view.pending.at(-1)!;
+    await act(async () => { latest.resolve(integrationResponse(latest.read)); await tick(); });
+    assert.equal(view.container.querySelector(".view-render-error"), null);
+    assert.match(view.container.textContent ?? "", /Travel staff/);
+  } finally { await view.cleanup(); }
 });
 test("three-tab keyboard navigation and explicit continuation/refresh preserve focus",async()=>{
   const v=await mount();try{

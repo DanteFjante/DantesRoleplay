@@ -30,6 +30,9 @@ public sealed record MechanicRequirements
     /// <summary>Read-only exact objects assembled only from the already-authorized mechanic snapshot.</summary>
     public Dictionary<string, MechanicSnapshotObjectRequirement> SnapshotObjects { get; init; } = [];
 
+    /// <summary>Explicit, bounded graph paths supplied to a read-only mechanic.</summary>
+    public Dictionary<string, GraphSnapshotRequirement> GraphSnapshots { get; init; } = [];
+
     /// <summary>
     /// Optional authored JSON Schema for the mechanic's input object. Discovery surfaces expose
     /// this contract before execution; JavaScript still performs semantic checks that depend on
@@ -80,6 +83,8 @@ public sealed record MechanicRequirements
                 .Concat((r.RelationshipComponents ?? []).SelectMany(reference =>
                     reference.TargetComponentIds.Concat(reference.OptionalTargetComponentIds ?? []))))
             .Concat(AuthorizedContext?.SourceSets.ComponentIds() ?? [])
+            .Concat(GraphSnapshots.Values.SelectMany(graph => graph.ComponentIds
+                .Concat(graph.Steps.SelectMany(step => step.ComponentIds))))
             .Distinct(StringComparer.Ordinal)
             .ToList();
 
@@ -100,6 +105,7 @@ public sealed record MechanicRequirements
         if (string.IsNullOrWhiteSpace(json)) return new();
         var parsed = JsonSerializer.Deserialize<MechanicRequirements>(json, JsonOptions) ?? new();
         if (parsed.SnapshotObjects is null) throw new JsonException("Invalid snapshot object declaration.");
+        if (parsed.GraphSnapshots is null) throw new JsonException("Invalid graph snapshot declaration.");
         if (parsed.SnapshotObjects.Count > 0)
         {
             using var document = JsonDocument.Parse(json);
@@ -122,6 +128,10 @@ public sealed record MechanicRequirements
                 throw new JsonException("Invalid authorized projection declaration.", exception);
             }
         }
+        if (parsed.GraphSnapshots.Count > ProjectionLimits.MaxGraphSnapshots
+            || parsed.GraphSnapshots.Any(pair => string.IsNullOrWhiteSpace(pair.Key) || pair.Key.Length > 100
+                || pair.Value is null || !pair.Value.Valid()))
+            throw new JsonException("Invalid graph snapshot declaration.");
         return parsed;
     }
 
@@ -631,6 +641,115 @@ public static class ProjectionLimits
     public const int MaxRelatedNodes = 100;
     public const int MaxReferencedEntities = 512;
     public const int MaxObjectRoles = 32;
+    public const int MaxGraphSnapshots = 16;
+    public const int MaxGraphSteps = 16;
+    public const int MaxGraphEntities = 4_096;
+    public const int MaxGraphEdges = 8_192;
+    public const int MaxGraphComponents = 16_384;
+    public const int MaxGraphDepth = 16;
+    public const int MaxGraphBytes = 4 * 1024 * 1024;
+    public const int MaxGraphPageSize = 200;
+}
+
+/// <summary>
+/// One explicit graph read. Each step starts at the root role or a prior step's nodes; the host
+/// never interprets the relationship kinds or component identifiers.
+/// </summary>
+public sealed record GraphSnapshotRequirement
+{
+    public string RootRole { get; init; } = string.Empty;
+    public IReadOnlyList<string> ComponentIds { get; init; } = [];
+    public IReadOnlyList<GraphSnapshotStepRequirement> Steps { get; init; } = [];
+    public int MaxSteps { get; init; } = ProjectionLimits.MaxGraphSteps;
+    public int MaxEntities { get; init; } = ProjectionLimits.MaxGraphEntities;
+    public int MaxEdges { get; init; } = ProjectionLimits.MaxGraphEdges;
+    public int MaxComponents { get; init; } = ProjectionLimits.MaxGraphComponents;
+    public int MaxDepth { get; init; } = ProjectionLimits.MaxGraphDepth;
+    public int MaxBytes { get; init; } = ProjectionLimits.MaxGraphBytes;
+    public bool RequireComplete { get; init; } = true;
+    public GraphSnapshotPageRequirement? Page { get; init; }
+
+    public bool Valid()
+    {
+        if (string.IsNullOrWhiteSpace(RootRole) || RootRole.Length > 100
+            || ComponentIds is null || ComponentIds.Count is < 1 or > ProjectionLimits.MaxContentComponentIds
+            || ComponentIds.Any(value => string.IsNullOrWhiteSpace(value) || value.Length > 200
+                || !Identifier(value))
+            || Steps is null || Steps.Count > MaxSteps || Steps.Count > ProjectionLimits.MaxGraphSteps
+            || MaxSteps is < 0 or > ProjectionLimits.MaxGraphSteps
+            || MaxEntities is < 1 or > ProjectionLimits.MaxGraphEntities
+            || MaxEdges is < 0 or > ProjectionLimits.MaxGraphEdges
+            || MaxComponents is < 1 or > ProjectionLimits.MaxGraphComponents
+            || MaxDepth is < 1 or > ProjectionLimits.MaxGraphDepth
+            || MaxBytes is < 1 or > ProjectionLimits.MaxGraphBytes)
+            return false;
+        var ids = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var step in Steps)
+            if (step is null || !step.Valid(ids, Steps)) return false;
+        if (Page is not null && !Page.Valid(ids, Steps)) return false;
+        if (Page is not null && Steps.Any(step => step.Direction == "either")) return false;
+        if (Steps.Any(step => step.FilterEndpointStep is not null &&
+            (Page is null || !step.FilterEndpointStep.Equals(Page.StepId, StringComparison.Ordinal)
+             || step.Containment is not null || step.Direction is "either"))) return false;
+        return true;
+    }
+
+    private static bool Identifier(string value) => value.Length is > 0 and <= 200
+        && value.All(character => char.IsAsciiLetterOrDigit(character) || character is '.' or '-' or '_');
+}
+
+public sealed record GraphSnapshotStepRequirement
+{
+    public string Id { get; init; } = string.Empty;
+    public string From { get; init; } = string.Empty;
+    public IReadOnlyList<string> RelationshipKinds { get; init; } = [];
+    public string Direction { get; init; } = "outgoing";
+    public IReadOnlyList<string> ComponentIds { get; init; } = [];
+    public bool IncludeEdgeData { get; init; }
+    public string? Containment { get; init; }
+    public string? FilterEndpointStep { get; init; }
+    public int MaxEntities { get; init; } = ProjectionLimits.MaxGraphEntities;
+    public int MaxEdges { get; init; } = ProjectionLimits.MaxGraphEdges;
+    public int MaxDepth { get; init; } = ProjectionLimits.MaxGraphDepth;
+
+    internal bool Valid(HashSet<string> ids, IReadOnlyList<GraphSnapshotStepRequirement> all)
+    {
+        if (string.IsNullOrWhiteSpace(Id) || Id.Length > 100
+            || string.IsNullOrWhiteSpace(From) || From.Length > 100
+            || ComponentIds is null || ComponentIds.Count > ProjectionLimits.MaxContentComponentIds
+            || RelationshipKinds is null
+            || (FilterEndpointStep is not null && (FilterEndpointStep.Length > 100 || !ids.Contains(FilterEndpointStep)))
+            || ComponentIds.Any(value => string.IsNullOrWhiteSpace(value) || value.Length > 200)
+            || MaxEntities is < 1 or > ProjectionLimits.MaxGraphEntities
+            || MaxEdges is < 0 or > ProjectionLimits.MaxGraphEdges
+            || MaxDepth is < 1 or > ProjectionLimits.MaxGraphDepth)
+            return false;
+        if (!From.Equals("root", StringComparison.Ordinal) && !ids.Contains(From)) return false;
+        if (!ids.Add(Id)) return false;
+        if (Containment is not null)
+            return Containment == "ancestors" && RelationshipKinds.Count == 0;
+        return RelationshipKinds.Count is > 0 and <= 32
+            && RelationshipKinds.All(value => !string.IsNullOrWhiteSpace(value) && value.Length <= 200)
+            && Direction is "outgoing" or "incoming" or "either";
+    }
+}
+
+/// <summary>One bounded, deterministic materialization page over an already bounded graph step.</summary>
+public sealed record GraphSnapshotPageRequirement
+{
+    public string StepId { get; init; } = string.Empty;
+    public string CursorInput { get; init; } = string.Empty;
+    public int PageSize { get; init; }
+
+    internal bool Valid(IReadOnlySet<string> stepIds, IReadOnlyList<GraphSnapshotStepRequirement> steps) =>
+        StepId.Length is > 0 and <= 100 && CursorInput.Length is > 0 and <= 100
+        && Identifier(StepId) && Identifier(CursorInput)
+        && PageSize is >= 1 and <= ProjectionLimits.MaxGraphPageSize
+        && stepIds.Contains(StepId)
+        && steps.FirstOrDefault(step => step.Id.Equals(StepId, StringComparison.Ordinal)) is { Containment: null, Direction: not "either" };
+
+    private static bool Identifier(string value) => value.All(character =>
+        char.IsAsciiLetterOrDigit(character) || character is '.' or '-' or '_');
 }
 
 /// <summary>
@@ -753,6 +872,9 @@ public sealed record MechanicProjection
     /// <summary>Exact registered object values supplied to an object-based reducer.</summary>
     public Dictionary<string, MechanicObjectProjection> Objects { get; init; } = [];
 
+    /// <summary>Host-materialized explicit graph paths available to a read-only mechanic.</summary>
+    public Dictionary<string, MechanicGraphSnapshot> GraphSnapshots { get; init; } = [];
+
     /// <summary>Host-only exact component evidence carried from registered object materialization.</summary>
     [JsonIgnore]
     public IReadOnlyList<MechanicComponentRevision> ObservedComponents { get; init; } = [];
@@ -763,6 +885,9 @@ public sealed record MechanicProjection
     /// <summary>Host-only complete relationship collections used for stale effect translation.</summary>
     [JsonIgnore]
     public IReadOnlyList<MechanicRelationshipCollectionSnapshot> RelationshipCollections { get; init; } = [];
+
+    [JsonIgnore]
+    public IReadOnlyList<MechanicGraphSnapshotEvidence> GraphSnapshotEvidence { get; init; } = [];
 
     /// <summary>Host-only component revisions observed while materialising the immutable projection.</summary>
     [JsonIgnore]
@@ -889,6 +1014,64 @@ public sealed record RelatedEntityProjection(
     string Kind,
     string Data,
     IReadOnlyDictionary<string, string> Components);
+
+public sealed record MechanicGraphSnapshot(
+    MechanicGraphNode Root,
+    IReadOnlyDictionary<string, MechanicGraphStepSnapshot> Steps,
+    IReadOnlyList<MechanicGraphContainment> Containment,
+    bool Complete,
+    GraphSnapshotCoverage Coverage,
+    string SourceRevisionFingerprint,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] MechanicGraphPage? Page = null);
+
+public sealed record MechanicGraphPage(int Offset, int TotalCount, int PageSize,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? NextCursor);
+
+public sealed record MechanicGraphStepSnapshot(
+    IReadOnlyList<MechanicGraphNode> Nodes,
+    IReadOnlyList<MechanicGraphEdge> Edges,
+    bool Complete,
+    string? Reason,
+    int Depth,
+    int NodeCount,
+    int EdgeCount);
+
+public sealed record MechanicGraphNode(
+    string Id,
+    string Name,
+    IReadOnlyDictionary<string, JsonElement> Components,
+    IReadOnlyDictionary<string, MechanicGraphComponentRevision> ComponentRevisions,
+    int Revision);
+
+public sealed record MechanicGraphComponentRevision(int TypeVersion, string SchemaHash, int Revision);
+
+public sealed record MechanicGraphEdge(
+    string FromEntityId,
+    string ToEntityId,
+    string Kind,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] JsonElement? Data,
+    int Revision);
+
+public sealed record MechanicGraphContainment(
+    string ContainerEntityId,
+    string ContainedEntityId,
+    string Slot,
+    int Revision);
+
+public sealed record GraphSnapshotCoverage(
+    int Steps,
+    int Nodes,
+    int Edges,
+    int Components,
+    int Depth,
+    int Bytes);
+
+/// <summary>Host-only evidence for graph reads, including empty relationship collections.</summary>
+public sealed record MechanicGraphSnapshotEvidence(
+    string EntityId,
+    string QualifiedKind,
+    bool Incoming,
+    IReadOnlyList<MechanicRelationshipRevision> Relationships);
 
 public sealed record ContainmentRevision(string EntityId, string Slot, int Revision);
 

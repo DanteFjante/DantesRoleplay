@@ -1,4 +1,91 @@
-import type { DeferredHubUpdate, PartyMemberReadModel, ReadyHubEnvelope, SectionState } from "./hub-types";
+import type { DeferredHubUpdate, PartyMemberReadModel, ReadyHubEnvelope, SectionState, WorldLocation } from "./hub-types";
+
+type LocationUpdate = Extract<DeferredHubUpdate, { section: "locations" }>;
+
+function mergeLocation(previous: WorldLocation | undefined, next: WorldLocation): WorldLocation {
+  if (!previous) return next;
+  return {
+    ...previous,
+    ...next,
+    // These fields are populated by independent People/Current reads. A location-scope
+    // page refresh must not turn their omission from this source into a deletion.
+    people: previous.people,
+    routes: previous.routes,
+    ...(Object.hasOwn(previous, "holdings") ? { holdings: previous.holdings } : {}),
+    ...(Object.hasOwn(previous, "dmSecret") ? { dmSecret: previous.dmSecret } : {}),
+  };
+}
+
+function applyWorldScopePage(current: ReadyHubEnvelope, update: LocationUpdate): ReadyHubEnvelope {
+  const scopeId = update.scopePage?.id;
+  const incomingScope = update.world.locationScopes.find((scope) => scope.id === scopeId);
+  if (!scopeId || !incomingScope) return current;
+
+  const scopeById = new Map(current.world.locationScopes.map((scope) => [scope.id, scope]));
+  const admittedHere = new Set(incomingScope.childIds);
+  for (const [id, scope] of scopeById) {
+    if (id === scopeId || !scope.childIds.some((childId) => admittedHere.has(childId))) continue;
+    const childIds = scope.childIds.filter((childId) => !admittedHere.has(childId));
+    scopeById.set(id, {
+      ...scope,
+      childIds,
+      totalCount: Math.max(childIds.length, scope.totalCount - (scope.childIds.length - childIds.length)),
+    });
+  }
+  scopeById.set(scopeId, incomingScope);
+
+  const rootId = current.contextSelection?.selectedWorldId ?? current.world.id;
+  const reachable = new Set<string>();
+  const pending = [rootId];
+  while (pending.length > 0) {
+    const id = pending.pop()!;
+    if (reachable.has(id)) continue;
+    if (reachable.size >= 1_001) return current;
+    reachable.add(id);
+    pending.push(...(scopeById.get(id)?.childIds ?? []));
+  }
+
+  const locationById = new Map(current.world.locations.map((location) => [location.id, location]));
+  const pageLocationIds = new Set([scopeId, ...incomingScope.childIds]);
+  for (const location of update.world.locations.filter((item) => pageLocationIds.has(item.id)))
+    locationById.set(location.id, mergeLocation(locationById.get(location.id), location));
+  const locationScopes = [...scopeById.values()].filter((scope) => reachable.has(scope.id));
+  const locations = [...locationById.values()].filter((location) => reachable.has(location.id));
+
+  const mapById = new Map(current.world.maps.map((map) => [map.id, map]));
+  const rootPage = scopeId === rootId;
+  const pageMaps = update.world.maps.filter((map) =>
+    pageLocationIds.has(map.subject.id) || rootPage && map.id === update.world.rootMapId);
+  for (const map of pageMaps) mapById.set(map.id, map);
+  const rootMapId = rootPage ? update.world.rootMapId : current.world.rootMapId;
+  // Bootstrap may contain a synthetic world-root map before the atlas owner is
+  // known. Retaining it makes the old selected ID appear valid forever, leaving
+  // Map on an empty placeholder instead of opening the newly discovered atlas.
+  if (rootPage && current.world.mapOwnerId === null && rootMapId !== current.world.rootMapId) {
+    mapById.delete(current.world.rootMapId);
+  }
+  const maps = [...mapById.values()].filter((map) =>
+    reachable.has(map.subject.id) || map.id === rootMapId);
+  const mapIds = new Set(maps.map((map) => map.id));
+  // Location scope pages do not own Lore/knowledge overlays. Retain those independent
+  // records while their authorized map remains reachable, and prune only retired maps.
+  const mapOverlays = current.campaign.mapOverlays.filter((overlay) => mapIds.has(overlay.mapId));
+
+  return {
+    ...current,
+    world: {
+      ...current.world,
+      currentLocationId: update.world.currentLocationId,
+      map: rootPage ? update.world.map : current.world.map,
+      mapOwnerId: rootPage ? update.world.mapOwnerId : current.world.mapOwnerId,
+      rootMapId,
+      maps,
+      locations,
+      locationScopes,
+    },
+    campaign: { ...current.campaign, mapOverlays },
+  };
+}
 
 export function applyDeferredHubUpdate(
   current: ReadyHubEnvelope,
@@ -7,11 +94,14 @@ export function applyDeferredHubUpdate(
   if (update.section === "context") {
     return { ...current, contextSelection: update.contextSelection };
   }
+  if (update.section === "locations" && update.scopePage) return applyWorldScopePage(current, update);
+  // Current is a selected-scene facet in the Redux owner. Its partial selected
+  // location and overlay inputs are never a World/Campaign directory patch.
+  if (update.section === "current") return current;
   return {
     ...current,
-    ...(update.section === "current" ? { currentSituation: update.currentSituation } : {}),
     world: { ...current.world, ...update.world },
-    ...(update.section === "lore" || update.section === "locations" || update.section === "current"
+    ...(update.section === "lore" || update.section === "locations"
       ? { campaign: { ...current.campaign, ...update.campaign } }
       : {}),
   };
@@ -57,7 +147,15 @@ function staleFrom<T>(
   };
 }
 
-function preserveMember(previous: PartyMemberReadModel, next: PartyMemberReadModel): PartyMemberReadModel {
+/**
+ * Carries canonical character fields through a transient refresh failure only.
+ * The scoped confirmed-character owner uses this at its write boundary; callers
+ * must supply a member from the same confirmed scope.
+ */
+export function preserveMemberOnTransientFailure(
+  previous: PartyMemberReadModel,
+  next: PartyMemberReadModel,
+): PartyMemberReadModel {
   const sheetState = next.sheetState.status === "error"
     ? staleFrom(previous.sheetState, next.sheetState)
     : next.sheetState;
@@ -89,7 +187,7 @@ export function preserveLastGoodPartyData(
     ...next,
     party: next.party.map((member) => {
       const prior = previousById.get(member.id);
-      return prior ? preserveMember(prior, member) : member;
+      return prior ? preserveMemberOnTransientFailure(prior, member) : member;
     }),
   };
 }

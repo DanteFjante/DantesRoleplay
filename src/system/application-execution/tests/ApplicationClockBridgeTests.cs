@@ -82,13 +82,13 @@ public sealed class ApplicationClockBridgeTests : IDisposable
             new ApplicationMechanicProjectionResolver(db, stateSpaces), new JintMechanicEngine());
         var ledger = new EventLedger(db);
         var participant = new ApplicationClockEventTransactionParticipant(
-            eventTypes, ledger, schemas);
+            eventTypes, ledger, stateSpaces, schemas);
         var mappingResolver = new ApplicationMechanicProjectionMappingResolver(
             catalogs, stateSpaces, types, edges);
         var runner = new ApplicationActionRunner(catalogs, activation, stateSpaces, types, entities, edges,
             mappingResolver,
             evaluator, new ApplicationEcsEffectApplier(db, entities, stateSpaces, operations, edges,
-                [participant]), operations);
+                eventSources: [participant]), operations);
         ApplicationActionExecutionRequest Request(string input, string operationId) => new(
             "clock-space", app, record.QualifiedId, record.Version, record.ContentFingerprint,
             new Dictionary<string, string> { ["world"] = "world" }, input, 1,
@@ -106,11 +106,11 @@ public sealed class ApplicationClockBridgeTests : IDisposable
         var rejectingRunner = new ApplicationActionRunner(catalogs, activation, stateSpaces, types,
             entities, edges, mappingResolver, evaluator,
             new ApplicationEcsEffectApplier(db, entities, stateSpaces, operations, edges,
-                [participant, new RejectAfterClockParticipant()]), operations);
+                transactionParticipants: [new RejectAfterClockParticipant()], eventSources: [participant]), operations);
         var rejectedAfterStaging = await rejectingRunner.RunAsync(Request("{\"minutes\":15}",
             "10000000000000000000000000000003"));
         var stale = await new ApplicationEcsEffectApplier(db, entities, stateSpaces, operations, edges,
-            [participant]).ApplyAsync(new ApplicationEcsEffectBatch
+            eventSources: [participant]).ApplyAsync(new ApplicationEcsEffectBatch
         {
             StateSpaceId = "clock-space",
             Effects = [new()

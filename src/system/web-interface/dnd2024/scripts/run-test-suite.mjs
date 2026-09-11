@@ -6,11 +6,11 @@ import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const mode = process.argv[2];
-assert.ok(["node", "mounted"].includes(mode), "Expected the node or mounted test suite");
+assert.ok(["node", "mounted", "shared"].includes(mode), "Expected the node, mounted or shared browser test suite");
 
-const directoryName = mode === "node" ? "test" : "test/mounted";
+const directoryName = mode === "node" ? "test" : mode === "shared" ? "../tests/browser" : "test/mounted";
 const directory = resolve(root, directoryName);
-const suffix = mode === "node" ? ".test.js" : ".test.tsx";
+const suffix = mode === "node" ? ".test.js" : mode === "shared" ? ".test.mjs" : ".test.tsx";
 const files = readdirSync(directory, { withFileTypes: true })
   .filter(entry => entry.isFile() && entry.name.endsWith(suffix))
   .map(entry => `${directoryName}/${entry.name}`)

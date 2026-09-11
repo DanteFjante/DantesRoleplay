@@ -52,7 +52,7 @@ function validDraftData(data: BoardDraft, scope: BoardDraftScope): boolean {
 }
 
 export async function generateBoardDraft(scope: BoardDraftScope, input: BoardDraftInput, signal: AbortSignal): Promise<DraftProjection> {
-  const parameters = new URLSearchParams({ perspective: "dm", campaignId: scope.campaignId, input: JSON.stringify(input) });
+  const parameters = new URLSearchParams({ perspective: "dm", input: JSON.stringify({ ...input, selectionId: scope.campaignId }) });
   const result = await readModelResponse({
     resource: `${base(scope)}/entities/${encodeURIComponent(scope.encounterId)}/read-models/${query.id}?${parameters}`,
     init: { cache: "no-store", signal: AbortSignal.any([signal, AbortSignal.timeout(30_000)]), headers: { Accept: "application/json" } },

@@ -14,10 +14,13 @@ internal static class EventsAndNotificationsComponentRegistration
         services.AddScoped<IGuardRouter, GuardRouter>();
         services.AddScoped<IEventLedger, EventLedger>();
         services.AddScoped<IEventRouter, EventRouter>();
-        services.AddScoped<IApplicationEcsTransactionParticipant,
+        services.AddScoped<IApplicationEcsEventSourceParticipant,
+            ApplicationStructuralEventTransactionParticipant>();
+        services.AddScoped<IApplicationEcsEventSourceParticipant,
             ApplicationClockEventTransactionParticipant>();
-        services.AddScoped<IApplicationEcsTransactionParticipant,
+        services.AddScoped<IApplicationEcsEventSourceParticipant,
             ApplicationDeclaredEventTransactionParticipant>();
+        services.AddScoped<IApplicationEcsReactionRouter, ApplicationEcsReactionRouter>();
         services.AddScoped<INotificationStore, NotificationStore>();
         return services;
     }

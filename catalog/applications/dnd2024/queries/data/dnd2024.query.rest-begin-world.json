@@ -1,0 +1,23 @@
+{
+  "id": "dnd2024.query.rest-begin-world",
+  "category": "rest.structural-object",
+  "name": "Rest world object",
+  "description": "Reads the exact registered World state and complete bounded rest collection used by the rest mechanic.",
+  "matches": ["read rest world object", "inspect world rest records"],
+  "roles": {
+    "world": "The exact World to inspect."
+  },
+  "roleBindings": {
+    "world": { "source": "route-entity" }
+  },
+  "executor": "object-projection",
+  "object": {
+    "qualifiedId": "dnd2024.object.rest-begin-world",
+    "version": 2,
+    "contentFingerprint": "F96FA03D1F68002295444132534946C91A60DB1F1CD182D4972D5A744AA88F7E"
+  },
+  "collection": "rests",
+  "exposure": "model-visible",
+  "status": "active",
+  "profile": "application-object/v2"
+}

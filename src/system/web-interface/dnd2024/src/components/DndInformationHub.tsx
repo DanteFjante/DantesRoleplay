@@ -1,6 +1,7 @@
 "use client";
 
-import { lazy, Suspense, useCallback, useEffect, useReducer, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from "react";
+import { useStore } from "react-redux";
 
 import {
   CAMPAIGN_SUMMARY_OBJECT_ID,
@@ -13,8 +14,18 @@ import { createHubObjectUiState, hubObjectUiReducer } from "../data/hub-object-u
 import { resolveCampaignWorldTarget } from "../data/campaign-navigation";
 import { HUB_ROUTE_EVENT, navigateHubRoute, parseHubRoute } from "../data/hub-route";
 import { ITEM_ROUTE_EVENT, navigateItemRoute, parseItemRoute, readInventoryReturn } from "../data/item-view-route";
-import { applyDeferredHubUpdate, preserveLastGoodPartyData } from "../data/section-state";
 import { ViewReadError } from "../data/view-read-client";
+import { allocateCharacterRequestToken, allocateCurrentRequestToken, allocateTableRequestToken, characterScope,
+  commitCampaignDetails, commitCharacterFacet, commitCurrentBootstrap, commitDeferredTable, commitFactionPage,
+  commitInventory, currentActions, hubActions, itemActions, itemScope, selectCharacterGeneration,
+  selectCharacterParty, selectCharacterScope, selectCurrentDisplay, selectCurrentGeneration, selectCurrentScope,
+  selectCurrentFresh,
+  selectTableEnvelope, tableActions, tableFacetFresh, tableScope,
+  type HubStore, useHubDispatch, useHubSelector } from "../data/hub-store";
+import type { CurrentDisplay } from "../data/hub-store";
+import { HubStoreProvider } from "../data/hub-store-provider";
+import { ReferenceResourceOwner } from "../data/reference-resource-owner";
+import { isCharacterReadOutcome, type CharacterReadOutcome } from "../data/object-resources";
 import type {
   CampaignSectionId,
   CampaignReadModel,
@@ -46,8 +57,11 @@ import {
   resolveSelectedMapFeature,
 } from "../state.js";
 import { MainNavigation } from "./MainNavigation";
+import { CharacterShell } from "./character/CharacterShell";
 import type { InstalledContentLoader } from "./InstalledContentView";
-import type { ItemViewClient } from "../server/item-view-client";
+import type { ItemDetailsRequest, ItemDetailsResult } from "../server/item-view-client";
+import type { ItemUsesRequest, ItemUsesResult } from "../server/item-uses-client";
+import type { ItemRecipesRequest, ItemRecipesResult } from "../server/item-recipes-client";
 import type { ItemDefinitionLoader, ItemRegistryPageLoader } from "./registry/ItemRegistryWorkspace";
 import type { RecipeDefinitionLoader, RecipeRegistryPageLoader } from "./registry/RecipeRegistryWorkspace";
 import type { CampaignPremiseWriter } from "../server/campaign-premise-write";
@@ -55,9 +69,13 @@ import { TopBar } from "./TopBar";
 import { WorldView } from "./WorldView";
 import { markActiveViewReady } from "../observability/performance.js";
 import { ViewErrorBoundary } from "./ViewErrorBoundary";
+import { RESOURCE_FRESHNESS_MS } from "../data/resource-policy";
 
 const PERSPECTIVE_KEY = "dnd2024-table-mode";
 const CAMPAIGN_KEY = "dnd2024-table-campaign";
+const STREAM_RECOVERY_RETRY_DELAYS_MS = [1_000, 2_000, 4_000] as const;
+const STREAM_RECOVERY_TRAILING_DELAY_MS = 1_000;
+const useConfirmedStore = useStore.withTypes<HubStore>();
 const CampaignView = lazy(() => import("./CampaignView")
   .then((module) => ({ default: module.CampaignView })));
 const InstalledContentView = lazy(() => import("./InstalledContentView")
@@ -73,6 +91,15 @@ const CurrentViewPreview = lazy(() => import("./PreviewViewsFeature")
 const RulesView = lazy(() => import("./RulesView")
   .then((module) => ({ default: module.RulesView })));
 
+function confirmedBytes(value: unknown) {
+  try { return new TextEncoder().encode(JSON.stringify(value)).byteLength; }
+  catch { return Number.MAX_SAFE_INTEGER; }
+}
+
+function characterRequestCancelled() {
+  return new ViewReadError("cancelled", "The character request is no longer current.");
+}
+
 function ViewLoading({ label }: { label: string }) {
   return (
     <section aria-busy="true" className="view-loading" role="status">
@@ -81,14 +108,6 @@ function ViewLoading({ label }: { label: string }) {
       <p>The current authorized view is loading.</p>
     </section>
   );
-}
-
-function ObserverPreviewUnavailable() {
-  return <section className="view-unavailable" role="status"
-    data-view-status="unavailable" data-reason-code="audience-restricted">
-    <h1 id="main-view-heading" tabIndex={-1}>Unavailable in observer preview</h1>
-    <p>This optional preview omits private table information. Return to the shared table to open the complete view.</p>
-  </section>;
 }
 
 function loadRequestedPerspective(): Perspective | null {
@@ -140,13 +159,53 @@ type FactionPageLoader = (
   signal: AbortSignal,
 ) => Promise<FactionDirectoryPage>;
 type CampaignDetailsLoader = (envelope: ReadyHubEnvelope, signal: AbortSignal) => Promise<CampaignReadModel>;
+type CharacterLoader<T> = (envelope: ReadyHubEnvelope, actorId: string, signal: AbortSignal) => Promise<T | CharacterReadOutcome<T>>;
 type CampaignDetailsViewState = {
   status: "unloaded" | "loading" | "ready" | "error";
-  data: CampaignReadModel | null;
   error: string;
 };
 
-export function DndInformationHub({
+type DndInformationHubProps = {
+  initialEnvelope: ReadyHubEnvelope;
+  loadEnvelope?: HubEnvelopeLoader;
+  loadRules?: RulesLoader;
+  loadContent: InstalledContentLoader;
+  loadCharacterSheet?: CharacterLoader<import("../data/hub-types").PartyMemberReadModel>;
+  loadCharacterDetails?: CharacterLoader<import("../data/hub-types").PartyMemberReadModel>;
+  loadCharacterInventory?: CharacterLoader<import("../data/hub-types").InventoryContainerResult>;
+  loadInventoryContainer?: (envelope: ReadyHubEnvelope, actorId: string, containerId: string, signal: AbortSignal) => Promise<import("../data/hub-types").InventoryContainerPageResult>;
+  loadItemDetails?: (envelope: ReadyHubEnvelope, request: ItemDetailsRequest, signal: AbortSignal,
+    preferCached?: boolean) => Promise<ItemDetailsResult>;
+  loadItemUses?: (envelope: ReadyHubEnvelope, request: ItemUsesRequest, signal: AbortSignal,
+    preferCached?: boolean) => Promise<ItemUsesResult>;
+  loadItemRecipes?: (envelope: ReadyHubEnvelope, request: ItemRecipesRequest, signal: AbortSignal,
+    preferCached?: boolean) => Promise<ItemRecipesResult>;
+  /** The transport owner aborts flights while this hub clears the canonical slice. */
+  invalidateItemResources?: () => void;
+  loadItemRegistryPage?: ItemRegistryPageLoader;
+  loadItemDefinition?: ItemDefinitionLoader;
+  loadRecipeRegistryPage?: RecipeRegistryPageLoader;
+  loadRecipeDefinition?: RecipeDefinitionLoader;
+  loadFactionPage?: FactionPageLoader;
+  loadCampaignDetails?: CampaignDetailsLoader;
+  loadDeferredSection?: (envelope: ReadyHubEnvelope, section: DeferredHubSection, signal: AbortSignal,
+    preferCached?: boolean, onProgress?: (update: DeferredHubUpdate) => Promise<void> | void) => Promise<DeferredHubUpdate | CurrentDisplay>;
+  loadWorldScope?: (envelope: ReadyHubEnvelope, scopeId: string, cursor: string | null, signal: AbortSignal) => Promise<Extract<DeferredHubUpdate, { section: "locations" }>>;
+  /** Retained for explicit editor/safety fixtures; the published read-only entry never supplies it. */
+  writeCampaignPremise?: CampaignPremiseWriter;
+  subscribeChanges?: (envelope: ReadyHubEnvelope) => () => void;
+  /** Main has already handed the bootstrap Current projection to its Redux owner. */
+  currentBootstrapManaged?: boolean;
+  /** Focused tests can shorten the bounded production recovery schedule. */
+  recoveryRetryDelaysMs?: readonly number[];
+  /** Focused tests can shorten the one bounded post-burst coalescing delay. */
+  recoveryTrailingDelayMs?: number;
+  /** Test fixtures can inject the same confirmed-data store used by their loaders. */
+  store?: HubStore;
+};
+type HubRequestOutcome = { refreshed: boolean; retryable: boolean; invalidatedDuringRead?: boolean };
+
+function DndInformationHubContent({
   initialEnvelope,
   loadEnvelope,
   loadRules,
@@ -155,6 +214,10 @@ export function DndInformationHub({
   loadCharacterDetails,
   loadCharacterInventory,
   loadInventoryContainer,
+  loadItemDetails,
+  loadItemUses,
+  loadItemRecipes,
+  invalidateItemResources,
   loadItemRegistryPage,
   loadItemDefinition,
   loadRecipeRegistryPage,
@@ -165,55 +228,192 @@ export function DndInformationHub({
   loadWorldScope,
   writeCampaignPremise,
   subscribeChanges,
-}: {
-  initialEnvelope: ReadyHubEnvelope;
-  loadEnvelope?: HubEnvelopeLoader;
-  loadRules?: RulesLoader;
-  loadContent: InstalledContentLoader;
-  loadCharacterSheet?: (envelope: ReadyHubEnvelope, actorId: string, signal: AbortSignal) => Promise<import("../data/hub-types").PartyMemberReadModel>;
-  loadCharacterDetails?: (envelope: ReadyHubEnvelope, actorId: string, signal: AbortSignal) => Promise<import("../data/hub-types").PartyMemberReadModel>;
-  loadCharacterInventory?: (envelope: ReadyHubEnvelope, actorId: string, signal: AbortSignal) => Promise<import("../data/hub-types").InventoryContainerResult>;
-  loadInventoryContainer?: (envelope: ReadyHubEnvelope, actorId: string, containerId: string, signal: AbortSignal) => Promise<import("../data/hub-types").InventoryContainerPageResult>;
-  loadItemRegistryPage?: ItemRegistryPageLoader;
-  loadItemDefinition?: ItemDefinitionLoader;
-  loadRecipeRegistryPage?: RecipeRegistryPageLoader;
-  loadRecipeDefinition?: RecipeDefinitionLoader;
-  loadFactionPage?: FactionPageLoader;
-  loadCampaignDetails?: CampaignDetailsLoader;
-  loadDeferredSection?: (envelope: ReadyHubEnvelope, section: DeferredHubSection, signal: AbortSignal) => Promise<DeferredHubUpdate>;
-  loadWorldScope?: (envelope: ReadyHubEnvelope, scopeId: string, cursor: string | null, signal: AbortSignal) => Promise<Extract<DeferredHubUpdate, { section: "locations" }>>;
-  writeCampaignPremise?: CampaignPremiseWriter;
-  subscribeChanges?: (envelope: ReadyHubEnvelope) => () => void;
-}) {
-  const [envelope, setEnvelope] = useState(initialEnvelope);
+  currentBootstrapManaged = false,
+  recoveryRetryDelaysMs = STREAM_RECOVERY_RETRY_DELAYS_MS,
+  recoveryTrailingDelayMs = STREAM_RECOVERY_TRAILING_DELAY_MS,
+}: DndInformationHubProps) {
+  const confirmedStore = useConfirmedStore();
+  const dispatch = useHubDispatch();
+  const storedEnvelope = useHubSelector(selectTableEnvelope);
+  const envelope = storedEnvelope ?? initialEnvelope;
+  const envelopeRef = useRef(envelope);
+  envelopeRef.current = envelope;
+  const activeTableScope = tableScope(envelope);
+  const campaignDetailsLoaded = useHubSelector((state) => state.table.campaignDetailsLoaded);
+  const characterParty = useHubSelector(selectCharacterParty);
+  const storedCharacterScope = useHubSelector(selectCharacterScope);
+  const confirmedGeneration = useHubSelector(selectCharacterGeneration);
+  const currentCharacterScope = characterScope(envelope);
+  const storedCurrentScope = useHubSelector(selectCurrentScope);
+  const currentGeneration = useHubSelector(selectCurrentGeneration);
+  const confirmedCurrent = useHubSelector(selectCurrentDisplay(currentCharacterScope));
+  const confirmedCurrentFresh = useHubSelector(selectCurrentFresh(currentCharacterScope));
+  const currentItemScope = itemScope(envelope);
+  const confirmedCharacterParty = storedCharacterScope === currentCharacterScope ? characterParty : envelope.party;
   const [bootstrapGeneration, setBootstrapGeneration] = useState(0);
-  const itemClientScope = `${envelope.applicationId}:${envelope.stateSpaceId}:${bootstrapGeneration}:${envelope.audience.seat}:${envelope.audience.perspective}`;
-  const itemClientScopeRef = useRef(itemClientScope);
-  itemClientScopeRef.current = itemClientScope;
-  const itemClientCache = useRef<{ scope: string; client: ItemViewClient } | null>(null);
-  const retainItemClient = useCallback((client: ItemViewClient) => {
-    const previous = itemClientCache.current;
-    if (previous && previous.client !== client) previous.client.invalidate("workspace-replaced");
-    itemClientCache.current = { scope: itemClientScopeRef.current, client };
-  }, []);
-  useEffect(() => () => itemClientCache.current?.client.invalidate("scope-replaced"), []);
+  const fallbackCurrentBootstrap = useRef<string | null>(null);
+  const observedCurrentEpoch = useRef<string | null>(null);
+  useLayoutEffect(() => {
+    dispatch(tableActions.bootstrapCommitted({ scope: tableScope(initialEnvelope), envelope: initialEnvelope }));
+    dispatch(hubActions.bootstrapCommitted({ scope: characterScope(initialEnvelope), party: initialEnvelope.party }));
+  }, [dispatch, initialEnvelope]);
+  // `envelope` is intentionally captured at the bootstrap boundary. Deferred
+  // World/Campaign patches are not new Current authority and must not restart
+  // this compatibility seed.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    // This compatibility path is only a bootstrap adapter for standalone
+    // fixtures. It must never turn a Redux eviction, denial, or deferred World
+    // patch into a new authoritative Current read from an old envelope.
+    if (currentBootstrapManaged) return;
+    const bootstrapKey = `${currentCharacterScope}\u0000${bootstrapGeneration}`;
+    if (fallbackCurrentBootstrap.current === bootstrapKey) return;
+    fallbackCurrentBootstrap.current = bootstrapKey;
+    const snapshot = confirmedStore.getState().current;
+    const generation = snapshot.scope === currentCharacterScope ? snapshot.generation : snapshot.generation + 1;
+    const requestToken = allocateCurrentRequestToken();
+    if (snapshot.scope !== currentCharacterScope)
+      dispatch(currentActions.scopeReplaced({ scope: currentCharacterScope }));
+    let retired = false;
+    void Promise.all([
+      import("../data/current-deferred-projection.js"), import("../data/current-resource-owner.js"),
+    ]).then(async ([projection, owner]) => {
+      const update = await projection.normalizeCurrentViewUpdate({
+        section: "current",
+        currentSituation: envelope.currentSituation ?? null,
+        projection: envelope.objectQueries?.currentPlay,
+        world: { currentLocationId: envelope.world.currentLocationId, locations: envelope.world.locations },
+      });
+      if (!retired && update) {
+        const value = owner.currentDisplayFromUpdate(update);
+        dispatch(commitCurrentBootstrap({ scope: currentCharacterScope, value }, {
+          generation, requestToken, bytes: confirmedBytes(value), confirmedAt: Date.now(),
+        }));
+      }
+    }).catch(() => {
+      // An incompatible optional Current bootstrap stays unavailable locally.
+    });
+    return () => {
+      retired = true;
+      if (fallbackCurrentBootstrap.current === bootstrapKey)
+        fallbackCurrentBootstrap.current = null;
+    };
+  }, [bootstrapGeneration, confirmedStore, currentBootstrapManaged, currentCharacterScope, dispatch]);
+  const referenceResources = useMemo(() => new ReferenceResourceOwner({
+    store: confirmedStore,
+    readRules: (signal) => {
+      if (!loadRules) return Promise.reject(new Error("Published rules loading is unavailable."));
+      return loadRules(false, signal);
+    },
+    readContent: (request, signal) => loadContent(request, signal, false),
+  }), [confirmedStore, loadRules, loadContent]);
+  const referenceGeneration = useHubSelector((state) => state.references.generation);
+  useLayoutEffect(() => {
+    referenceResources.replaceScope(envelope, bootstrapGeneration > 0);
+    // Only an authorized scope/bootstrap replacement retires completed reference
+    // reads. Loading an unrelated deferred section must not evict them.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [referenceResources, currentCharacterScope, bootstrapGeneration]);
+  useEffect(() => () => referenceResources.invalidate(), [referenceResources]);
+  const readReferenceRules = useCallback((preferCached = true, signal?: AbortSignal) =>
+    referenceResources.loadRules(envelope, signal, preferCached),
+  [referenceResources, envelope, referenceGeneration]);
+  const readReferenceContent = useCallback<InstalledContentLoader>((request, signal, preferCached = true) =>
+    referenceResources.loadContent(envelope, request, signal, preferCached),
+  [referenceResources, envelope, referenceGeneration]);
   const readCharacterSheet = useCallback((id: string, signal: AbortSignal) => {
     if (!loadCharacterSheet) throw new Error("Character sheet loading is unavailable.");
-    return loadCharacterSheet(envelope, id, signal);
-  }, [envelope, loadCharacterSheet]);
+    const requestEnvelope = envelopeRef.current;
+    const scope = characterScope(requestEnvelope);
+    const requestToken = allocateCharacterRequestToken();
+    const metadata = { generation: confirmedGeneration, requestToken };
+    dispatch(hubActions.characterRequestStarted({ scope, actorId: id, facet: "sheet", requestToken }));
+    const finish = () => dispatch(hubActions.characterRequestFinished({ scope, actorId: id, facet: "sheet", requestToken }));
+    return Promise.resolve().then(() => {
+      if (signal.aborted) throw characterRequestCancelled();
+      return loadCharacterSheet(requestEnvelope, id, signal);
+    }).then((read) => {
+      if (signal.aborted) throw characterRequestCancelled();
+      const outcome = isCharacterReadOutcome<import("../data/hub-types").PartyMemberReadModel>(read)
+        ? read : { cacheHit: false, value: read };
+      if (outcome.cacheHit) { finish(); return outcome.value; }
+      dispatch(commitCharacterFacet({ scope, actorId: id, facet: "sheet", value: outcome.value },
+        { ...metadata, confirmedAt: Date.now(), bytes: confirmedBytes(outcome.value) }));
+      return outcome.value;
+    }).catch((error) => { finish(); throw error; });
+  }, [bootstrapGeneration, confirmedGeneration, dispatch, loadCharacterSheet]);
   const readCharacterDetails = useCallback((id: string, signal: AbortSignal) => {
     if (!loadCharacterDetails) throw new Error("Character detail loading is unavailable.");
-    return loadCharacterDetails(envelope, id, signal);
-  }, [envelope, loadCharacterDetails]);
+    const requestEnvelope = envelopeRef.current;
+    const scope = characterScope(requestEnvelope);
+    const requestToken = allocateCharacterRequestToken();
+    const metadata = { generation: confirmedGeneration, requestToken };
+    dispatch(hubActions.characterRequestStarted({ scope, actorId: id, facet: "details", requestToken }));
+    const finish = () => dispatch(hubActions.characterRequestFinished({ scope, actorId: id, facet: "details", requestToken }));
+    return Promise.resolve().then(() => {
+      if (signal.aborted) throw characterRequestCancelled();
+      return loadCharacterDetails(requestEnvelope, id, signal);
+    }).then((read) => {
+      if (signal.aborted) throw characterRequestCancelled();
+      const outcome = isCharacterReadOutcome<import("../data/hub-types").PartyMemberReadModel>(read)
+        ? read : { cacheHit: false, value: read };
+      if (outcome.cacheHit) { finish(); return outcome.value; }
+      dispatch(commitCharacterFacet({ scope, actorId: id, facet: "details", value: outcome.value },
+        { ...metadata, confirmedAt: Date.now(), bytes: confirmedBytes(outcome.value) }));
+      return outcome.value;
+    }).catch((error) => { finish(); throw error; });
+  }, [bootstrapGeneration, confirmedGeneration, dispatch, loadCharacterDetails]);
   const readCharacterInventory = useCallback((id: string, signal: AbortSignal) => {
     if (!loadCharacterInventory) throw new Error("Character inventory loading is unavailable.");
-    return loadCharacterInventory(envelope, id, signal);
-  }, [envelope, loadCharacterInventory]);
+    const requestEnvelope = envelopeRef.current;
+    const scope = characterScope(requestEnvelope);
+    const requestToken = allocateCharacterRequestToken();
+    const metadata = { generation: confirmedGeneration, requestToken };
+    dispatch(hubActions.characterRequestStarted({ scope, actorId: id, facet: "inventory", requestToken }));
+    const finish = () => dispatch(hubActions.characterRequestFinished({ scope, actorId: id, facet: "inventory", requestToken }));
+    return Promise.resolve().then(() => {
+      if (signal.aborted) throw characterRequestCancelled();
+      return loadCharacterInventory(requestEnvelope, id, signal);
+    }).then((read) => {
+      if (signal.aborted) throw characterRequestCancelled();
+      const outcome = isCharacterReadOutcome<import("../data/hub-types").InventoryContainerResult>(read)
+        ? read : { cacheHit: false, value: read };
+      if (outcome.cacheHit) { finish(); return outcome.value; }
+      dispatch(commitInventory({ scope, actorId: id, value: outcome.value },
+        { ...metadata, confirmedAt: Date.now(), bytes: confirmedBytes(outcome.value) }));
+      return outcome.value;
+    }).catch((error) => { finish(); throw error; });
+  }, [bootstrapGeneration, confirmedGeneration, dispatch, loadCharacterInventory]);
   const readInventoryContainer = useCallback((actorId: string, containerId: string, signal: AbortSignal) => {
     if (!loadInventoryContainer) throw new Error("Inventory container loading is unavailable.");
-    return loadInventoryContainer(envelope, actorId, containerId, signal);
-  }, [envelope, loadInventoryContainer]);
+    return loadInventoryContainer(envelopeRef.current, actorId, containerId, signal);
+  }, [bootstrapGeneration, loadInventoryContainer]);
   const [itemRoute, setItemRoute] = useState(() => parseItemRoute(window.location.hash));
+  const itemHeaderRequestKey = itemRoute.kind === "item" || itemRoute.kind === "inventory"
+    ? `${currentCharacterScope}\u0000${confirmedGeneration}\u0000${bootstrapGeneration}\u0000${itemRoute.kind}\u0000${itemRoute.campaignId}` +
+      `\u0000${itemRoute.perspective}\u0000${itemRoute.characterId}`
+    : itemRoute.kind;
+  useEffect(() => {
+    // Direct item/inventory links do not visit the sheet first, so their header
+    // still needs the authorized sheet/media read that hydrates the shared
+    // Redux member. This is deliberately a read through CharacterResourceOwner,
+    // not a second item-route cache.
+    if (storedCharacterScope !== currentCharacterScope ||
+        (itemRoute.kind !== "item" && itemRoute.kind !== "inventory") || !loadCharacterSheet ||
+        itemRoute.campaignId !== (envelope.contextSelection?.selectedCampaignId ?? envelope.revision) ||
+        itemRoute.perspective !== envelope.audience.perspective ||
+        envelope.audience.seat === "dm" && envelope.audience.perspective === "player" ||
+        !envelope.party.some((member) => member.id === itemRoute.characterId)) return;
+    const controller = new AbortController();
+    void readCharacterSheet(itemRoute.characterId, controller.signal).catch(() => {
+      // Item details stay independently useful if optional header media fails.
+    });
+    return () => controller.abort();
+    // The key is the authorized request, not the reconstructed envelope object.
+    // A completed sheet facet changes that envelope's Party projection and must
+    // not recursively start the same header read again.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itemHeaderRequestKey, loadCharacterSheet, storedCharacterScope]);
   const [activeTab, setActiveTab] = useState<MainTabId>(() => {
     const item = parseItemRoute(window.location.hash);
     if (item.kind !== "none")
@@ -283,8 +483,8 @@ export function DndInformationHub({
   const { selectedFactionId } = objectUi;
   const [campaignDetails, setCampaignDetails] = useState<CampaignDetailsViewState>(() =>
     loadCampaignDetails
-      ? { status: "unloaded", data: null, error: "" }
-      : { status: "ready", data: initialEnvelope.campaign, error: "" });
+      ? { status: "unloaded", error: "" }
+      : { status: "ready", error: "" });
   const [selectedPersonId, setSelectedPersonId] = useState(initialEnvelope.world.people[0]?.id ?? "");
   const [activeMapId, setActiveMapId] = useState(
     normalizeMapId(initialEnvelope.world.maps, initialEnvelope.world.rootMapId, initialEnvelope.world.rootMapId) as string,
@@ -298,6 +498,23 @@ export function DndInformationHub({
   // also keep notices received during a read from being acknowledged by that older read.
   const [pendingChange, setPendingChange] = useState<string | null>(null);
   const changeSequence = useRef(0);
+  const acknowledgedChangeSequence = useRef(0);
+  const streamChangeSequence = useRef(0);
+  const streamAfterWrite = useRef(false);
+  // A stream can replay several conservative fallback notices together. One
+  // active-scope refresh absorbs that burst; later notices may schedule another
+  // refresh only after the first has settled.
+  const streamRecovery = useRef({
+    scope: null as string | null,
+    queued: false,
+    running: false,
+    attempts: 0,
+    refreshed: 0,
+    trailingUsed: false,
+    cycle: 0,
+    timer: null as ReturnType<typeof setTimeout> | null,
+  });
+  const [streamRefreshRevision, setStreamRefreshRevision] = useState(0);
   const sectionAbort = useRef<AbortController | null>(null);
   const campaignDetailsAbort = useRef<AbortController | null>(null);
   const deferredAbort = useRef<AbortController | null>(null);
@@ -313,24 +530,115 @@ export function DndInformationHub({
   const [deferredStates, setDeferredStates] = useState<Partial<Record<DeferredHubSection, DeferredViewState>>>({});
   const [deferredErrors, setDeferredErrors] = useState<Partial<Record<DeferredHubSection, string>>>({});
   useEffect(() => {
+    const epoch = storedCurrentScope === currentCharacterScope
+      ? `${currentCharacterScope}\u0000${currentGeneration}` : null;
+    const previous = observedCurrentEpoch.current;
+    observedCurrentEpoch.current = epoch;
+    // The owner advances generation for every scope/object/stream invalidation.
+    // A confirmed value from a new bootstrap is already authoritative; only a
+    // cleared entry needs one view-owned reread. Deliberate unavailable/denied
+    // outcomes do not change this epoch and therefore never form a retry loop.
+    if (previous === null || previous === epoch || epoch === null || confirmedCurrentFresh) return;
+    setDeferredStates((states) => ({ ...states, current: "unloaded" }));
+    setDeferredErrors((errors) => ({ ...errors, current: "" }));
+  }, [confirmedCurrentFresh, currentCharacterScope, currentGeneration, storedCurrentScope]);
+  useEffect(() => {
+    const clearRecoveryTimer = () => {
+      const current = streamRecovery.current;
+      if (current.timer !== null) clearTimeout(current.timer);
+      current.timer = null;
+    };
+    const scheduleRecovery = () => {
+      const current = streamRecovery.current;
+      if (current.scope !== currentCharacterScope) {
+        clearRecoveryTimer();
+        current.scope = currentCharacterScope;
+        current.queued = false;
+        current.running = false;
+        current.attempts = 0;
+        current.refreshed = 0;
+        current.trailingUsed = false;
+        current.cycle += 1;
+      }
+      if (current.queued || current.timer !== null) return;
+      if (!current.running) {
+        current.attempts = 0;
+        current.refreshed = 0;
+        current.trailingUsed = false;
+        current.cycle += 1;
+      }
+      current.queued = true;
+      setStreamRefreshRevision((revision) => revision + 1);
+    };
+    const invalidateItems = () => {
+      if (invalidateItemResources) invalidateItemResources();
+      else dispatch(itemActions.invalidated(undefined));
+    };
     const invalidate = () => {
+      invalidateItems();
+      referenceResources.invalidate();
+      dispatch(tableActions.invalidated());
       ++changeSequence.current;
       setPendingChange("scope");
     };
     const objectChanged = (event: Event) => {
       const qualifiedId = (event as CustomEvent).detail?.object?.qualifiedId;
+      if (typeof qualifiedId === "string" && qualifiedId.startsWith("dnd2024.object.inventory-item-")) {
+        invalidateItems();
+        return;
+      }
       if (![CAMPAIGN_SUMMARY_OBJECT_ID, CAMPAIGN_LOCATION_VISITS_OBJECT_ID,
         WORLD_CAMPAIGN_DIRECTORY_OBJECT_ID, FACTION_DIRECTORY_OBJECT_ID].includes(qualifiedId)) return;
+      dispatch(tableActions.invalidated());
       ++changeSequence.current;
       setPendingChange((current) => current === null || current === qualifiedId ? qualifiedId : "scope");
+      // The scoped stream supplies a validated cursor. Cursorless local notices
+      // retain their existing targeted/manual or post-write refresh owner.
+      const cursor = (event as CustomEvent).detail?.cursor;
+      if (Number.isSafeInteger(cursor) && cursor > 0) {
+        streamChangeSequence.current = changeSequence.current;
+        if (campaignWritePending.current) streamAfterWrite.current = true;
+        else scheduleRecovery();
+      }
+    };
+    const reconnected = () => scheduleRecovery();
+    const recoverableInvalidation = (event: Event) => {
+      const reason = (event as CustomEvent<{ reason?: unknown }>).detail?.reason;
+      if (reason === "stream-recovery" || reason === "unknown-object") {
+        streamChangeSequence.current = changeSequence.current;
+        if (campaignWritePending.current) streamAfterWrite.current = true;
+        else scheduleRecovery();
+      }
     };
     window.addEventListener("dnd2024-view-invalidated", invalidate);
+    window.addEventListener("dnd2024-view-invalidated", recoverableInvalidation);
     window.addEventListener("dnd2024-object-changed", objectChanged);
+    window.addEventListener("dnd2024-stream-reconnected", reconnected);
     return () => {
+      const current = streamRecovery.current;
+      if (current.scope === currentCharacterScope) {
+        clearRecoveryTimer();
+        current.queued = false;
+        current.running = false;
+        current.attempts = 0;
+        current.trailingUsed = false;
+        current.cycle += 1;
+      }
       window.removeEventListener("dnd2024-view-invalidated", invalidate);
+      window.removeEventListener("dnd2024-view-invalidated", recoverableInvalidation);
       window.removeEventListener("dnd2024-object-changed", objectChanged);
+      window.removeEventListener("dnd2024-stream-reconnected", reconnected);
     };
-  }, []);
+  }, [currentCharacterScope, dispatch, invalidateItemResources, referenceResources]);
+  useEffect(() => {
+    if (hubBusy || campaignWritePending.current || !streamAfterWrite.current) return;
+    streamAfterWrite.current = false;
+    // Run after the confirmed write's bootstrap/scope has rendered. A stream
+    // notice received during that read needs one newer, separately owned read.
+    window.dispatchEvent(new window.CustomEvent("dnd2024-view-invalidated", {
+      detail: { reason: "stream-recovery" },
+    }));
+  }, [hubBusy, currentCharacterScope, streamRefreshRevision]);
   const hubRequestSequence = useRef(0);
 
   const perspective = envelope.audience.perspective;
@@ -338,6 +646,30 @@ export function DndInformationHub({
   const selectedPartyCharacterId = envelope.party.some((member) => member.id === partyCharacterId)
     ? partyCharacterId
     : envelope.party[0]?.id ?? null;
+  const registryHeaderScope = itemRoute.kind === "registry-item" || itemRoute.kind === "registry-recipe"
+    ? `${itemRoute.campaignId}\u0000${itemRoute.perspective}` : null;
+  useEffect(() => {
+    // Inventory and Registry bypass CharacterWorkspace's sheet tab.
+    // Their content can recover independently after a restart, but the shared
+    // header still needs the scoped sheet/media facet. Keep this in the one
+    // Redux owner rather than retaining a Party-local header copy.
+    if (storedCharacterScope !== currentCharacterScope || playerPreview ||
+        activeTab !== "party" || !((itemRoute.kind === "none" && (partySection === "inventory" || partySection === "registry")) ||
+          ((itemRoute.kind === "registry-item" || itemRoute.kind === "registry-recipe") &&
+            itemRoute.campaignId === envelope.contextSelection?.selectedCampaignId && itemRoute.perspective === perspective)) ||
+        !selectedPartyCharacterId || !loadCharacterSheet ||
+        !envelope.party.some((member) => member.id === selectedPartyCharacterId)) return;
+    const controller = new AbortController();
+    void readCharacterSheet(selectedPartyCharacterId, controller.signal).catch(() => {
+      // The active section remains useful while the optional header facet
+      // is temporarily unavailable; a later scope/bootstrap recovery retries.
+    });
+    return () => controller.abort();
+    // The reconstructed Party projection changes while this request is in flight.
+    // Only an actual route/bootstrap/scope change owns another header attempt.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, bootstrapGeneration, confirmedGeneration, currentCharacterScope, registryHeaderScope, itemRoute.kind, loadCharacterSheet, partySection,
+    playerPreview, selectedPartyCharacterId, storedCharacterScope]);
   useEffect(() => subscribeChanges?.(envelope), [
     subscribeChanges, envelope.applicationId, envelope.stateSpaceId, perspective,
     envelope.contextSelection?.selectedCampaignId,
@@ -357,25 +689,24 @@ export function DndInformationHub({
   const activeLocationScope = envelope.world.locationScopes.find((scope) => scope.id === activeLocationScopeId)
     ?? null;
   const locationById = new Map(allLocations.map((location) => [location.id, location]));
-  const directoryLocations = allLocations.filter((location) => location.id !== worldRootId);
   const scopedLocations = (activeLocationScope?.childIds ?? []).flatMap((id) => {
     const location = locationById.get(id);
     return location ? [location] : [];
   });
   const visibleLocations = filterLocations(scopedLocations, locationQuery) as WorldLocation[];
-  const allVisibleLocations = filterLocations(directoryLocations, locationQuery) as WorldLocation[];
   const currentLocation = resolveCurrentSceneLocation(
     allLocations,
     envelope.world.currentLocationId,
   ) as WorldLocation | null;
-  const currentSituation = envelope.currentSituation ?? {
+  const currentSituation = storedCurrentScope === currentCharacterScope && confirmedCurrent
+    ? confirmedCurrent.situation
+    : {
     status: "unavailable" as const,
     message: "No authoritative current scene is available.",
   };
-  const currentSceneLocation = resolveCurrentSceneLocation(
-    allLocations,
-    currentSituation.locationId ?? envelope.world.currentLocationId,
-  ) as WorldLocation | null;
+  const currentSceneLocation = storedCurrentScope === currentCharacterScope && confirmedCurrent
+    ? confirmedCurrent.location
+    : null;
   const currentSceneImage = currentSituation.status === "ready" && "scene" in currentSituation && currentSituation.scene
     ? currentSituation.scene
     : currentSceneLocation?.media?.scene ?? currentSceneLocation?.media?.setting ?? null;
@@ -401,17 +732,17 @@ export function DndInformationHub({
     setSelectedMapFeatureId("");
   }, [activeMapId, effectiveActiveMapId]);
 
-  async function requestHub(
+  async function requestHubOutcome(
     nextPerspective: Perspective,
     nextCampaignId: string,
     announce = true,
     force = false,
-  ) {
+  ): Promise<HubRequestOutcome> {
     const requested = normalizePerspective(nextPerspective) as Perspective;
     if (
       (!force && requested === perspective && nextCampaignId === contextSelection.selectedCampaignId) ||
       !envelope.audience.allowedPerspectives.includes(requested)
-    ) return false;
+    ) return { refreshed: false, retryable: false };
 
     const requestId = ++hubRequestSequence.current;
     const observedChange = changeSequence.current;
@@ -435,12 +766,15 @@ export function DndInformationHub({
           credentials: "same-origin",
           headers: { Accept: "application/json" },
         });
-        nextEnvelope = await response.json();
         if (!response.ok) {
+          if (response.status === 408 || response.status === 425 || response.status === 429 ||
+              response.status >= 500)
+            throw new ViewReadError("transport", "The perspective response was temporarily unavailable.");
           throw new Error("The perspective response was unavailable.");
         }
+        nextEnvelope = await response.json();
       }
-      if (requestId !== hubRequestSequence.current) return false;
+      if (requestId !== hubRequestSequence.current) return { refreshed: false, retryable: false };
       if (!isReadyHubEnvelope(nextEnvelope)) {
         throw new Error("The perspective response was unavailable.");
       }
@@ -449,15 +783,12 @@ export function DndInformationHub({
       const campaignChanged = loadedEnvelope.contextSelection?.selectedCampaignId !==
         contextSelection.selectedCampaignId;
       const perspectiveChanged = loadedEnvelope.audience.perspective !== perspective;
-      const readyEnvelope = campaignChanged || perspectiveChanged
-        ? loadedEnvelope
-        : preserveLastGoodPartyData(envelope, loadedEnvelope);
-      setEnvelope(readyEnvelope);
-      setCampaignDetails((current) => !loadCampaignDetails
-        ? { status: "ready", data: readyEnvelope.campaign, error: "" }
-        : campaignChanged || perspectiveChanged
-          ? { status: "unloaded", data: null, error: "" }
-          : { status: "unloaded", data: current.data, error: "" });
+      const readyEnvelope = loadedEnvelope;
+      dispatch(tableActions.bootstrapCommitted({ scope: tableScope(readyEnvelope), envelope: readyEnvelope }));
+      dispatch(hubActions.bootstrapCommitted({ scope: characterScope(readyEnvelope), party: readyEnvelope.party }));
+      setCampaignDetails(() => !loadCampaignDetails
+        ? { status: "ready", error: "" }
+        : { status: "unloaded", error: "" });
       setDeferredStates({});
       setDeferredErrors({});
       loadedWorldScopes.current.clear();
@@ -472,7 +803,13 @@ export function DndInformationHub({
         });
         sectionAbort.current?.abort();
       }
-      if (changeSequence.current === observedChange) setPendingChange(null);
+      if (changeSequence.current === observedChange) {
+        acknowledgedChangeSequence.current = observedChange;
+        setPendingChange(null);
+        // A manual/post-write bootstrap may have already covered a queued stream
+        // notice. Do not issue a redundant competing recovery for that notice.
+        streamRecovery.current.queued = false;
+      }
       setLocationSection(
         normalizeLocationSection(
           locationSection,
@@ -512,19 +849,121 @@ export function DndInformationHub({
           ? `${readyEnvelope.campaign.title} opened in ${readyEnvelope.world.name}`
           : `${readyEnvelope.audience.perspective === "dm" ? "DM" : "Player"} perspective active`);
       }
-      return true;
+      return { refreshed: true, retryable: false };
     } catch (error) {
-      if (requestId !== hubRequestSequence.current ||
-          (error instanceof ViewReadError && error.category === "cancelled")) return false;
-      setHubError(error instanceof ViewReadError && error.category === "transport"
+      const category = error && typeof error === "object" && "category" in error
+        ? String(error.category) : "";
+      if (requestId !== hubRequestSequence.current)
+        return { refreshed: false, retryable: false };
+      if (category === "cancelled") {
+        // Main invalidates the Table ResourceStore before it publishes the
+        // matching same-scope change event. That cancellation owns a bounded
+        // retry only when a newer authoritative notice is now queued.
+        const invalidatedDuringRead = streamRecovery.current.scope === currentCharacterScope &&
+          changeSequence.current > observedChange;
+        return { refreshed: false, retryable: invalidatedDuringRead, invalidatedDuringRead };
+      }
+      setHubError(category === "transport" && error instanceof Error
         ? error.message
         : "The view could not be changed. Your current information is still available.");
       setAnnouncement("World or campaign change unavailable");
-      return false;
+      return { refreshed: false, retryable: error instanceof TypeError || category === "transport" };
     } finally {
       if (requestId === hubRequestSequence.current) setHubBusy(false);
     }
   }
+
+  async function requestHub(
+    nextPerspective: Perspective,
+    nextCampaignId: string,
+    announce = true,
+    force = false,
+  ) {
+    return (await requestHubOutcome(nextPerspective, nextCampaignId, announce, force)).refreshed;
+  }
+
+  useEffect(() => {
+    if (streamRecovery.current.scope !== currentCharacterScope || hubBusy || campaignWritePending.current) return;
+    const recovery = streamRecovery.current;
+    if (!recovery.queued || recovery.running) return;
+    recovery.queued = false;
+    recovery.running = true;
+    recovery.attempts += 1;
+    const cycle = recovery.cycle;
+    const run = (attempt: number): Promise<void> => {
+      const request = requestHubOutcome(perspective, contextSelection.selectedCampaignId, false, true);
+      const startedSequence = hubRequestSequence.current;
+      return request.then((outcome) => {
+      const current = streamRecovery.current;
+      if (current.scope !== currentCharacterScope || current.cycle !== cycle) return;
+      current.running = false;
+      if (!outcome.refreshed && hubRequestSequence.current !== startedSequence) {
+        // A navigation/manual request superseded this read. Its stale completion
+        // has no authority to consume a notice queued during the overlap.
+        if (current.queued) setStreamRefreshRevision((revision) => revision + 1);
+        return;
+      }
+      if (outcome.refreshed) {
+        current.attempts = 0;
+        current.refreshed += 1;
+        // Continuous writes must not create an unbounded bootstrap loop. Keep the
+        // pending notice truthful if this cycle cannot catch up. After four
+        // immediate reads, one delayed trailing read coalesces the remaining
+        // finite burst; continuing changes through that read never start a sixth.
+        if (current.refreshed >= 4 && current.queued) {
+          current.queued = false;
+          if (!current.trailingUsed && current.timer === null) {
+            current.trailingUsed = true;
+            const timer = setTimeout(() => {
+              const latest = streamRecovery.current;
+              if (latest.timer !== timer || latest.scope !== currentCharacterScope || latest.cycle !== cycle) return;
+              latest.timer = null;
+              if (acknowledgedChangeSequence.current >= changeSequence.current) return;
+              latest.queued = true;
+              setStreamRefreshRevision((revision) => revision + 1);
+            }, recoveryTrailingDelayMs);
+            current.timer = timer;
+          }
+        }
+        if (current.refreshed >= 5) current.queued = false;
+        if (current.queued) setStreamRefreshRevision((revision) => revision + 1);
+        return;
+      }
+      if (!outcome.retryable || attempt > recoveryRetryDelaysMs.length) {
+        current.queued = false;
+        current.attempts = 0;
+        return;
+      }
+      // The one trailing catch-up is the final automatic request in this
+      // recovery cycle, including when its transport fails.
+      if (current.trailingUsed && current.refreshed >= 4) {
+        current.queued = false;
+        current.attempts = 0;
+        return;
+      }
+      current.queued = false;
+      const delay = recoveryRetryDelaysMs[attempt - 1];
+      const timer = setTimeout(() => {
+        const latest = streamRecovery.current;
+        if (latest.timer !== timer || latest.scope !== currentCharacterScope || latest.cycle !== cycle) return;
+        latest.timer = null;
+        if (acknowledgedChangeSequence.current >= changeSequence.current) return;
+        // Re-enter through the effect so a user request or pending write keeps
+        // ownership. The completed user request may clear this queue if it
+        // covered the same change sequence; otherwise the bounded retry resumes.
+        latest.queued = true;
+        latest.attempts = attempt;
+        setStreamRefreshRevision((revision) => revision + 1);
+      }, delay);
+      current.timer = timer;
+      });
+    };
+    void run(recovery.attempts);
+    // The request is intentionally started once per queued stream recovery. The
+    // scheduler and requestHub itself fence changing selection/scope state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [streamRefreshRevision, currentCharacterScope, hubBusy, perspective, contextSelection.selectedCampaignId,
+    recoveryTrailingDelayMs]);
 
   async function requestPerspective(nextPerspective: Perspective, announce = true) {
     if ((itemRoute.kind === "item" || itemRoute.kind === "inventory" || itemRoute.kind === "registry-item"
@@ -592,32 +1031,132 @@ export function DndInformationHub({
   }
 
   async function requestDeferred(section: DeferredHubSection, force = false) {
-    if (!loadDeferredSection || (!force && deferredStates[section] === "ready")) return;
+    const existing = deferredStates[section] ?? "unloaded";
     const owner = section === "context" ? contextAbort : deferredAbort;
+    if (!loadDeferredSection || (!force && (existing === "ready" || existing === "error" ||
+        existing === "loading" && !owner.current?.signal.aborted))) return;
+    const requestScope = tableScope(envelope);
+    const tableKey = `deferred:${section}`;
+    const maximumAgeMs = section === "context" ? RESOURCE_FRESHNESS_MS.campaignContext
+      : section === "locations" ? RESOURCE_FRESHNESS_MS.worldLocationScope
+        : RESOURCE_FRESHNESS_MS.worldInformation;
+    if (section !== "current" && !force &&
+        tableFacetFresh(confirmedStore.getState().table, requestScope, tableKey, maximumAgeMs)) {
+      if (section === "locations") loadedWorldScopes.current.add(
+        envelope.contextSelection?.selectedWorldId ?? envelope.world.id,
+      );
+      setDeferredStates((states) => ({ ...states, [section]: "ready" }));
+      setDeferredErrors((errors) => ({ ...errors, [section]: "" }));
+      return;
+    }
     owner.current?.abort();
     const controller = new AbortController();
     owner.current = controller;
+    const currentBootstrap = section === "current" ? (() => {
+      const snapshot = confirmedStore.getState().current;
+      return {
+        generation: snapshot.scope === currentCharacterScope ? snapshot.generation : snapshot.generation + 1,
+        requestToken: allocateCurrentRequestToken(),
+      };
+    })() : null;
+    const tableRequest = section === "current" ? null : {
+      key: tableKey,
+      requestToken: allocateTableRequestToken(),
+      generation: confirmedStore.getState().table.generation,
+      scope: requestScope,
+    };
+    if (tableRequest) dispatch(tableActions.requestStarted({
+      scope: tableRequest.scope, key: tableRequest.key, requestToken: tableRequest.requestToken,
+    }));
     setDeferredStates((states) => ({ ...states, [section]: "loading" }));
     setDeferredErrors((errors) => ({ ...errors, [section]: "" }));
+    let progressCommitted = false;
+    const commitDeferredProgress = async (loaded: DeferredHubUpdate) => {
+      if (controller.signal.aborted || !tableRequest) return;
+      dispatch(commitDeferredTable({
+        scope: tableRequest.scope, key: tableRequest.key, value: loaded,
+      }, {
+        generation: tableRequest.generation, requestToken: tableRequest.requestToken,
+        bytes: confirmedBytes(loaded), confirmedAt: Date.now(),
+      }));
+      const confirmed = confirmedStore.getState().table;
+      if (confirmed.scope !== tableRequest.scope || confirmed.generation !== tableRequest.generation ||
+          confirmed.facets[tableRequest.key]?.requestToken !== tableRequest.requestToken)
+        throw new ViewReadError("incompatible-data", "The view could not be retained safely. Retry to read its current data.");
+      progressCommitted = true;
+      setDeferredStates((states) => ({ ...states, [section]: "ready" }));
+      setDeferredErrors((errors) => ({ ...errors, [section]: "" }));
+    };
     try {
-      const loaded = await loadDeferredSection(envelope, section, controller.signal);
+      const loaded = await loadDeferredSection(envelope, section, controller.signal, !force,
+        section === "current" ? undefined : commitDeferredProgress);
       if (controller.signal.aborted) return;
-      setEnvelope((current) => applyDeferredHubUpdate(current, loaded));
+      // Current commits its selected scene directly to Redux. Production
+      // loaders already return CurrentDisplay; the narrow legacy branch keeps
+      // injected test/read loaders compatible without retaining raw data here.
+      if (section === "current") {
+        if ("section" in loaded) {
+          const [projection, owner] = await Promise.all([
+            import("../data/current-deferred-projection.js"), import("../data/current-resource-owner.js"),
+          ]);
+          const update = await projection.normalizeCurrentViewUpdate(loaded);
+          if (!controller.signal.aborted && storedCurrentScope !== currentCharacterScope)
+            dispatch(currentActions.scopeReplaced({ scope: currentCharacterScope }));
+          if (!controller.signal.aborted && update) {
+            const value = owner.currentDisplayFromUpdate(update);
+            dispatch(commitCurrentBootstrap({ scope: currentCharacterScope, value }, {
+              generation: currentBootstrap!.generation, requestToken: currentBootstrap!.requestToken,
+              bytes: confirmedBytes(value), confirmedAt: Date.now(),
+            }));
+          }
+        }
+      } else {
+        dispatch(commitDeferredTable({
+          scope: tableRequest!.scope, key: tableRequest!.key, value: loaded as DeferredHubUpdate,
+        }, {
+          generation: tableRequest!.generation, requestToken: tableRequest!.requestToken,
+          bytes: confirmedBytes(loaded), confirmedAt: Date.now(),
+        }));
+        const confirmed = confirmedStore.getState().table;
+        if (confirmed.scope !== tableRequest!.scope || confirmed.generation !== tableRequest!.generation) return;
+        if (confirmed.facets[tableRequest!.key]?.requestToken !== tableRequest!.requestToken)
+          throw new ViewReadError("incompatible-data", "The view could not be retained safely. Retry to read its current data.");
+      }
       if (section === "locations") loadedWorldScopes.current.add(
         envelope.contextSelection?.selectedWorldId ?? envelope.world.id,
       );
       setDeferredStates((states) => ({ ...states, [section]: "ready" }));
     } catch (error) {
       if (controller.signal.aborted) return;
-      setDeferredStates((states) => ({ ...states, [section]: "error" }));
-      setDeferredErrors((errors) => ({ ...errors,
-        [section]: error instanceof Error ? error.message : "The view is unavailable." }));
+      if (tableRequest) dispatch(tableActions.requestFinished({
+        scope: tableRequest.scope, key: tableRequest.key, requestToken: tableRequest.requestToken,
+      }));
+      if (progressCommitted) {
+        // A continuation can fail after an independently source-fenced prefix was committed.
+        // Keep that prefix visibly partial; never replace it with a fabricated complete/empty view.
+        setDeferredStates((states) => ({ ...states, [section]: "ready" }));
+        setDeferredErrors((errors) => ({ ...errors,
+          [section]: error instanceof Error ? error.message : "The remaining information is unavailable." }));
+      } else {
+        setDeferredStates((states) => ({ ...states, [section]: "error" }));
+        setDeferredErrors((errors) => ({ ...errors,
+          [section]: error instanceof Error ? error.message : "The view is unavailable." }));
+      }
     }
   }
 
   async function requestWorldScope(scopeId: string, cursor: string | null = null, force = false) {
     if (!loadWorldScope || cursor === null && !force && loadedWorldScopes.current.has(scopeId)) return true;
     if (loadingWorldScopes.current.has(scopeId)) return true;
+    const key = `world-scope:${scopeId}:${cursor ?? "first"}`;
+    const requestScope = tableScope(envelope);
+    if (!force && tableFacetFresh(confirmedStore.getState().table, requestScope, key,
+      RESOURCE_FRESHNESS_MS.worldLocationScope)) {
+      loadedWorldScopes.current.add(scopeId);
+      failedWorldScopes.current.delete(scopeId);
+      setLocationScopeError("");
+      return true;
+    }
     if (force) failedWorldScopes.current.delete(scopeId);
     worldScopeAbort.current?.abort();
     const controller = new AbortController();
@@ -625,15 +1164,21 @@ export function DndInformationHub({
     loadingWorldScopes.current.add(scopeId);
     setLocationScopeBusy(true);
     setLocationScopeError("");
+    const requestToken = allocateTableRequestToken();
+    const generation = confirmedStore.getState().table.generation;
+    dispatch(tableActions.requestStarted({ scope: requestScope, key, requestToken }));
     try {
       const loaded = await loadWorldScope(envelope, scopeId, cursor, controller.signal);
       if (controller.signal.aborted) return false;
       loadedWorldScopes.current.add(scopeId);
       failedWorldScopes.current.delete(scopeId);
-      setEnvelope((current) => applyDeferredHubUpdate(current, loaded));
+      dispatch(commitDeferredTable({ scope: requestScope, key, value: loaded }, {
+        generation, requestToken, bytes: confirmedBytes(loaded), confirmedAt: Date.now(),
+      }));
       return true;
     } catch (error) {
       if (controller.signal.aborted) return false;
+      dispatch(tableActions.requestFinished({ scope: requestScope, key, requestToken }));
       failedWorldScopes.current.add(scopeId);
       setLocationScopeError(error instanceof Error ? error.message : "This location level is unavailable.");
       return false;
@@ -644,11 +1189,10 @@ export function DndInformationHub({
   }
 
   const deferredSection: DeferredHubSection | null = activeTab === "current" ? "current"
+    : activeTab === "campaign" && campaignSection === "clues" ? "lore"
     : activeTab === "world" && worldSection === "factions" && perspective !== "dm" ? "lore"
     : activeTab === "world" && ["locations", "history", "lore", "people"].includes(worldSection)
       ? worldSection as DeferredHubSection : null;
-  const deferredRestricted = Boolean(loadDeferredSection && playerPreview &&
-    (deferredSection === "lore" || deferredSection === "people"));
   const deferredState = deferredSection && loadDeferredSection
     ? deferredStates[deferredSection] ?? "unloaded" : "ready";
   useEffect(() => {
@@ -657,12 +1201,14 @@ export function DndInformationHub({
     if (deferredState === "ready" && campaignReady && mapReady && !hubBusy) markActiveViewReady(activeTab);
   }, [activeTab, campaignDetails.status, deferredState, hubBusy, mapScopeState, worldSection]);
   useEffect(() => {
-    if (deferredSection && !hubBusy && !deferredRestricted) void requestDeferred(deferredSection);
-    return () => { deferredAbort.current?.abort(); };
+    if (deferredSection && !hubBusy) void requestDeferred(deferredSection);
     // Loads belong to the selected view and the newly authorized bootstrap, not to every
     // incremental envelope merge. Errors retry only through the explicit retry button.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deferredSection, perspective, contextSelection.selectedCampaignId, hubBusy, loadDeferredSection, deferredRestricted]);
+  }, [deferredSection, perspective, contextSelection.selectedCampaignId, hubBusy, loadDeferredSection, deferredState]);
+  useEffect(() => () => { deferredAbort.current?.abort(); }, [
+    deferredSection, perspective, contextSelection.selectedCampaignId, loadDeferredSection,
+  ]);
   useEffect(() => {
     if (activeTab !== "world" || worldSection !== "map" || deferredState !== "ready" ||
         mapScopeState !== "loading" || !activeMapScopeId ||
@@ -687,65 +1233,84 @@ export function DndInformationHub({
     worldScopeAbort.current?.abort(); campaignWriteAbort.current?.abort();
   }, []);
 
-  const deferredNotice = deferredRestricted ? <ObserverPreviewUnavailable /> : deferredState !== "ready" ? (
+  const deferredNotice = deferredState !== "ready" ? (
     <section aria-busy={deferredState === "loading" || deferredState === "unloaded"}
       className="view-loading" role={deferredState === "error" ? "alert" : "status"}>
       <h1 id="main-view-heading" tabIndex={-1}>
         {deferredState === "error" ? "View unavailable" : `Opening ${deferredSection}`}
       </h1>
       <p>{deferredState === "error" && deferredSection
-        ? deferredErrors[deferredSection] : "Loading the complete authorized view."}</p>
+        ? deferredErrors[deferredSection]
+          : deferredSection === "locations" ? "Loading the first authorized location level."
+            : "Loading the complete authorized view."}</p>
       {deferredState === "error" && deferredSection
         ? <button type="button" onClick={() => void requestDeferred(deferredSection, true)}>Retry view</button> : null}
     </section>
   ) : null;
 
-  async function requestFactionPage(cursor: string | null) {
+  async function requestFactionPage(cursor: string | null, force = false) {
     if (!loadFactionPage || perspective !== "dm" || hubBusy) return;
+    const key = `factions:${cursor ?? "first"}`;
+    const requestScope = tableScope(envelope);
+    if (!force && tableFacetFresh(confirmedStore.getState().table, requestScope, key,
+      RESOURCE_FRESHNESS_MS.factionDirectoryPage)) return;
     sectionAbort.current?.abort();
     const controller = new AbortController();
     const observedChange = changeSequence.current;
     sectionAbort.current = controller;
     setHubBusy(true);
     setHubError("");
+    const requestToken = allocateTableRequestToken();
+    const generation = confirmedStore.getState().table.generation;
+    dispatch(tableActions.requestStarted({ scope: requestScope, key, requestToken }));
     try {
       const page = await loadFactionPage(envelope, cursor, controller.signal);
       if (controller.signal.aborted) return;
-      setEnvelope((current) => {
-        const merged = cursor === null ? page.factions : [
-          ...current.world.factions,
-          ...page.factions.filter((item) => !current.world.factions.some((value) => value.id === item.id)),
-        ];
-        return { ...current, world: { ...current.world, factions: merged, factionDirectory: {
-          totalCount: page.totalCount,
-          complete: page.complete,
-          nextCursor: page.nextCursor,
-          sourceRevisionFingerprint: page.sourceRevisionFingerprint,
-        } } };
-      });
+      dispatch(commitFactionPage({ scope: requestScope, key, cursor, value: page }, {
+        generation, requestToken, bytes: confirmedBytes(page), confirmedAt: Date.now(),
+      }));
       if (!selectedFactionId) {
         dispatchObjectUi({ type: "faction-selected", factionId: page.factions[0]?.id ?? "" });
       }
       if (cursor === null && changeSequence.current === observedChange)
         setPendingChange((current) => current === FACTION_DIRECTORY_OBJECT_ID ? null : current);
     } catch (error) {
-      if (!controller.signal.aborted) setHubError(error instanceof Error ? error.message : "The faction directory is unavailable.");
+      if (!controller.signal.aborted) {
+        dispatch(tableActions.requestFinished({ scope: requestScope, key, requestToken }));
+        setHubError(error instanceof Error ? error.message : "The faction directory is unavailable.");
+      }
     } finally {
       if (!controller.signal.aborted) setHubBusy(false);
     }
   }
 
-  async function requestCampaignDetails() {
+  async function requestCampaignDetails(force = false) {
     if (!loadCampaignDetails) return;
+    const key = "campaign-details";
+    const requestScope = tableScope(envelope);
+    if (!force && tableFacetFresh(confirmedStore.getState().table, requestScope, key,
+      RESOURCE_FRESHNESS_MS.campaignDetails)) {
+      setCampaignDetails({ status: "ready", error: "" });
+      return;
+    }
     campaignDetailsAbort.current?.abort();
     const controller = new AbortController();
     campaignDetailsAbort.current = controller;
-    setCampaignDetails((current) => ({ status: "loading", data: current.data, error: "" }));
+    const requestToken = allocateTableRequestToken();
+    const generation = confirmedStore.getState().table.generation;
+    dispatch(tableActions.requestStarted({ scope: requestScope, key, requestToken }));
+    setCampaignDetails({ status: "loading", error: "" });
     try {
       const campaign = await loadCampaignDetails(envelope, controller.signal);
       if (controller.signal.aborted) return;
-      setEnvelope((current) => ({ ...current, campaign }));
-      setCampaignDetails({ status: "ready", data: campaign, error: "" });
+      dispatch(commitCampaignDetails({ scope: requestScope, key, value: campaign }, {
+        generation, requestToken, bytes: confirmedBytes(campaign), confirmedAt: Date.now(),
+      }));
+      const confirmed = confirmedStore.getState().table;
+      if (confirmed.scope !== requestScope || confirmed.generation !== generation) return;
+      if (confirmed.facets[key]?.requestToken !== requestToken)
+        throw new ViewReadError("incompatible-data", "The campaign details could not be retained safely. Retry the current view.");
+      setCampaignDetails({ status: "ready", error: "" });
     } catch (error) {
       if (controller.signal.aborted) return;
       const interrupted = (error instanceof ViewReadError && error.category === "cancelled") ||
@@ -753,7 +1318,8 @@ export function DndInformationHub({
       const message = interrupted
         ? "Campaign details changed while they were loading. Retry to read the current version."
         : error instanceof Error ? error.message : "The campaign details are unavailable.";
-      setCampaignDetails((current) => ({ status: "error", data: current.data, error: message }));
+      dispatch(tableActions.requestFinished({ scope: requestScope, key, requestToken }));
+      setCampaignDetails({ status: "error", error: message });
     } finally {
       if (campaignDetailsAbort.current === controller) campaignDetailsAbort.current = null;
     }
@@ -929,23 +1495,21 @@ export function DndInformationHub({
       if (controller.signal.aborted) return;
       campaignWriteAbort.current = null;
       campaignDetailsAbort.current?.abort();
-      setEnvelope((current) => ({
-        ...current,
-        campaign: { ...current.campaign, premise: result.premise },
-        objectQueries: {},
+      dispatch(tableActions.bootstrapCommitted({
+        scope: activeTableScope,
+        envelope: { ...envelope, campaign: { ...envelope.campaign, premise: result.premise } },
       }));
-      setCampaignDetails((current) => current.data
-        ? { ...current, data: { ...current.data, premise: result.premise } }
-        : current);
       dispatchObjectUi({ type: "write-confirmed", objectId: CAMPAIGN_SUMMARY_OBJECT_ID });
       setAnnouncement(result.replayed
         ? "Campaign premise confirmed after retry"
         : result.noOp ? "Campaign premise already matched the saved campaign" : "Campaign premise saved");
+      const observedStreamChange = streamChangeSequence.current;
       const refreshed = await requestHub(perspective, contextSelection.selectedCampaignId, false, true);
-      if (refreshed) {
+      if (refreshed && streamChangeSequence.current === observedStreamChange) {
         // The authoritative refresh covers a Campaign notice delivered while this write was
         // completing. A later independent notice remains queued by the event listener.
         setPendingChange((current) => current === CAMPAIGN_SUMMARY_OBJECT_ID ? null : current);
+        streamAfterWrite.current = false;
       }
     } catch (error) {
       if (controller.signal.aborted) return;
@@ -959,6 +1523,8 @@ export function DndInformationHub({
     } finally {
       if (campaignWriteAbort.current === controller) campaignWriteAbort.current = null;
       campaignWritePending.current = false;
+      if (streamAfterWrite.current || streamRecovery.current.queued)
+        setStreamRefreshRevision((revision) => revision + 1);
     }
   }
 
@@ -988,14 +1554,7 @@ export function DndInformationHub({
     focusWorldEntityCard("faction", factionId);
   }
 
-  const visibleCampaign = campaignDetails.data ? {
-    ...campaignDetails.data,
-    title: envelope.campaign.title,
-    subtitle: envelope.campaign.subtitle,
-    status: envelope.campaign.status,
-    premise: envelope.campaign.premise,
-    objective: envelope.campaign.objective,
-  } : envelope.campaign;
+  const visibleCampaign = envelope.campaign;
 
   function renderActiveView() {
     if (activeTab === "rules" && (itemRoute.kind === "registry-item" || itemRoute.kind === "registry-recipe")) {
@@ -1016,12 +1575,13 @@ export function DndInformationHub({
     }
     switch (activeTab) {
       case "campaign":
+        if (campaignSection === "clues" && deferredNotice) return deferredNotice;
         return (
           <CampaignView
             campaign={visibleCampaign}
             detailsError={campaignDetails.error}
             detailsStatus={campaignDetails.status}
-            hasValidatedDetails={campaignDetails.data !== null}
+            hasValidatedDetails={campaignDetailsLoaded}
             premiseEdit={objectUi.edits[CAMPAIGN_SUMMARY_OBJECT_ID]}
             onOpenFaction={openCampaignFaction}
             onOpenLocation={openCampaignLocation}
@@ -1049,8 +1609,12 @@ export function DndInformationHub({
             || itemRoute.kind === "none" && partySection === "registry") {
           const compatibleRegistryRoute = itemRoute.kind !== "registry-item" && itemRoute.kind !== "registry-recipe" ||
             itemRoute.campaignId === contextSelection.selectedCampaignId && itemRoute.perspective === perspective;
-          return compatibleRegistryRoute && loadItemRegistryPage && loadItemDefinition ? <ItemRegistryWorkspace
+          const selectedMember = confirmedCharacterParty.find((member) => member.id === selectedPartyCharacterId);
+          const Heading = selectedMember ? "h2" : "h1";
+          const registry = compatibleRegistryRoute && loadItemRegistryPage && loadItemDefinition ? <ItemRegistryWorkspace
             key={`${envelope.applicationId}:${contextSelection.selectedCampaignId}:${perspective}:registry`}
+            embedded={Boolean(selectedMember)}
+            onNavigateParty={selectedMember ? (section, replace) => selectPartySection(selectedMember.id, section, replace) : undefined}
             route={itemRoute}
             campaignId={contextSelection.selectedCampaignId}
             perspective={perspective}
@@ -1058,9 +1622,14 @@ export function DndInformationHub({
             loadDefinition={loadItemDefinition}
             loadRecipePage={loadRecipeRegistryPage}
             loadRecipeDefinition={loadRecipeDefinition}
-          /> : <section className="view-unavailable" role="alert"><h1 id="main-view-heading">Registry unavailable</h1>
+          /> : <section className="view-unavailable" role="alert"><Heading id={selectedMember ? undefined : "main-view-heading"}>Registry unavailable</Heading>
             <p>{!compatibleRegistryRoute ? "This link belongs to a different campaign or perspective."
               : "The item registry is not connected to this build."}</p></section>;
+          return selectedMember ? <CharacterShell party={confirmedCharacterParty} selectedMember={selectedMember}
+            section="registry" onSelectSection={(section) => selectPartySection(selectedMember.id, section)}
+            onSelectMember={(id) => selectPartySection(id, "registry")}>
+            {registry}
+          </CharacterShell> : registry;
         }
         if (Boolean(loadDeferredSection && playerPreview) || itemRoute.kind === "none" || itemRoute.kind === "inventory" &&
             itemRoute.campaignId === contextSelection.selectedCampaignId &&
@@ -1096,25 +1665,33 @@ export function DndInformationHub({
               navigateItemRoute(inventory, true, context);
               navigateItemRoute({ ...inventory, kind: "item", itemId, tab: "details" }, false, context);
             }}
-            party={envelope.party}
+            party={confirmedCharacterParty}
+            confirmedOwner
             summaryOnly={summaryOnly}
           />;
         }
         return <ItemWorkspace
           key={`${envelope.applicationId}:${envelope.stateSpaceId}:${contextSelection.selectedCampaignId}:${envelope.audience.seat}:${perspective}`}
           route={itemRoute}
+          onNavigationChange={selectPartySection}
           context={envelope}
           campaignId={contextSelection.selectedCampaignId}
           perspective={perspective}
-          itemClient={itemClientCache.current?.scope === itemClientScope ? itemClientCache.current.client : undefined}
-          retainItemClient={retainItemClient}
+          itemScope={currentItemScope}
+          loadItemDetails={loadItemDetails ? (request, signal, preferCached) =>
+            loadItemDetails(envelope, request, signal, preferCached) : undefined}
+          loadItemUses={loadItemUses ? (request, signal, preferCached) =>
+            loadItemUses(envelope, request, signal, preferCached) : undefined}
+          loadItemRecipes={loadItemRecipes ? (request, signal, preferCached) =>
+            loadItemRecipes(envelope, request, signal, preferCached) : undefined}
           loadCharacterSheet={loadCharacterSheet ? readCharacterSheet : undefined}
           loadCharacterDetails={loadCharacterDetails ? readCharacterDetails : undefined}
           loadCharacterInventory={loadCharacterInventory ? readCharacterInventory : undefined}
           loadInventoryContainer={loadInventoryContainer ? readInventoryContainer : undefined}
           loading={hubBusy}
           onRetry={() => void requestHub(perspective, contextSelection.selectedCampaignId, false, true)}
-          party={envelope.party}
+          party={confirmedCharacterParty}
+          confirmedOwner
         />;
       case "current":
         if (deferredNotice && currentSituation.status !== "ready") return deferredNotice;
@@ -1143,18 +1720,15 @@ export function DndInformationHub({
               location={currentSceneLocation}
               situation={currentSituation}
               perspective={perspective}
-              draftScope={envelope.audience.seat === "dm" && perspective === "dm" ? {
-                applicationId: envelope.applicationId, stateSpaceId: envelope.stateSpaceId, campaignId: contextSelection.selectedCampaignId,
-              } : undefined}
-              onBoardAccepted={() => void requestHub(perspective, contextSelection.selectedCampaignId, false, true)}
             />
           </div>
         );
       case "rules":
         return <RulesView campaignId={contextSelection.selectedCampaignId} perspective={perspective}
-          loadRules={loadRules} rules={envelope.rules} />;
+          loadRules={loadRules ? readReferenceRules : undefined} rules={loadRules ? [] : initialEnvelope.rules}
+          rulesScope={loadRules ? currentCharacterScope : undefined} />;
       case "content":
-        return <InstalledContentView loadContent={loadContent}
+        return <InstalledContentView loadContent={readReferenceContent} contentScope={currentCharacterScope}
           resolutionFingerprint={envelope.objectQueries?.campaignSummary?.resolutionFingerprint ?? null} />;
       case "world":
       default:
@@ -1165,7 +1739,6 @@ export function DndInformationHub({
             campaign={envelope.campaign}
             currentLocation={currentLocation}
             filteredLocations={visibleLocations}
-            allFilteredLocations={allVisibleLocations}
             locationScope={activeLocationScope}
             locationScopeBusy={locationScopeBusy}
             locationScopeError={locationScopeError}
@@ -1275,9 +1848,11 @@ export function DndInformationHub({
       <div className="information-hub__body">
         <MainNavigation
           activeTab={activeTab}
-          chapter={campaignDetails.data?.chapter ?? (loadCampaignDetails
-            ? campaignDetails.status === "error" ? "Campaign details unavailable" : "Campaign details loading"
-            : envelope.campaign.chapter)}
+          chapter={envelope.campaign.chapter || (loadCampaignDetails
+            ? campaignDetails.status === "loading" || campaignDetails.status === "unloaded"
+              ? "Campaign details loading"
+              : campaignDetails.status === "error" ? "Campaign details unavailable" : "Campaign overview"
+            : "Campaign overview")}
           onSelect={selectTab}
         />
         <main className="information-content" id="information-content">
@@ -1291,4 +1866,8 @@ export function DndInformationHub({
       <div aria-atomic="true" aria-live="polite" className="sr-only">{announcement}</div>
     </div>
   );
+}
+
+export function DndInformationHub(props: DndInformationHubProps) {
+  return <HubStoreProvider store={props.store}><DndInformationHubContent {...props} /></HubStoreProvider>;
 }

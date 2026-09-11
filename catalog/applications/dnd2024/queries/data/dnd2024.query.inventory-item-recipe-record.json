@@ -1,0 +1,22 @@
+{
+  "id": "dnd2024.query.inventory-item-recipe-record",
+  "category": "item.structural-object",
+  "name": "Inventory item recipe record object",
+  "description": "Reads one exact registered item recipe structural record.",
+  "matches": ["read item recipe record object", "inspect item recipe sources"],
+  "roles": {
+    "record": "The exact recipe record to inspect."
+  },
+  "roleBindings": {
+    "record": { "source": "route-entity" }
+  },
+  "executor": "object-projection",
+  "object": {
+    "qualifiedId": "dnd2024.object.inventory-item-recipe-record",
+    "version": 2,
+    "contentFingerprint": "D7F2A4003A65C9E122C1A90EB06E7C97D415D3C060E8C011FF3C4B2A092B3C50"
+  },
+  "exposure": "model-visible",
+  "status": "active",
+  "profile": "application-object/v2"
+}

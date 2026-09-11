@@ -119,7 +119,8 @@ export function filterWorldHistory(
   const direction = order === "oldest" ? 1 : -1;
   return [...filtered].sort(
     (left, right) =>
-      (left.sortOrder - right.sortOrder) * direction || left.title.localeCompare(right.title),
+      (left.sortOrder === null ? right.sortOrder === null ? 0 : 1 : right.sortOrder === null ? -1
+        : (left.sortOrder - right.sortOrder) * direction) || left.title.localeCompare(right.title),
   );
 }
 
@@ -676,7 +677,9 @@ function isHistoryLocationLink(value) {
 function isHistoryPersonLink(value) {
   return (
     isHistoryLocationLink(value) &&
-    (value.kind === "NPC" || value.kind === "Creature")
+    typeof value.kind === "string" &&
+    value.kind.length > 0 &&
+    value.kind.length <= 200
   );
 }
 
@@ -686,13 +689,16 @@ function isLocationPerson(value) {
     typeof value.id === "string" &&
     typeof value.initials === "string" &&
     typeof value.name === "string" &&
-    (value.kind === "NPC" || value.kind === "Creature") &&
+    typeof value.kind === "string" &&
     typeof value.role === "string" &&
     typeof value.summary === "string" &&
     typeof value.background === "string" &&
     typeof value.disposition === "string" &&
     (value.motive === undefined || typeof value.motive === "string") &&
-    (value.dmSecret === undefined || typeof value.dmSecret === "string")
+    (value.dmSecret === undefined || typeof value.dmSecret === "string") &&
+    (value.unavailableFields === undefined ||
+      (Array.isArray(value.unavailableFields) &&
+        value.unavailableFields.every((field) => typeof field === "string" && field.length > 0 && field.length <= 200)))
   );
 }
 
@@ -729,7 +735,10 @@ function isWorldFaction(value) {
         isHistoryLocationLink(relationship) && typeof relationship.stance === "string",
     ) &&
     (value.dmAgenda === undefined || typeof value.dmAgenda === "string") &&
-    (value.dmSecret === undefined || typeof value.dmSecret === "string")
+    (value.dmSecret === undefined || typeof value.dmSecret === "string") &&
+    (value.unavailableFields === undefined ||
+      (Array.isArray(value.unavailableFields) &&
+        value.unavailableFields.every((field) => typeof field === "string" && field.length > 0 && field.length <= 200)))
   );
 }
 
@@ -765,7 +774,7 @@ function isWorldHistoryEvent(event) {
   return (
     event &&
     typeof event.id === "string" &&
-    Number.isFinite(event.sortOrder) &&
+    (event.sortOrder === null || Number.isFinite(event.sortOrder)) &&
     typeof event.date === "string" &&
     typeof event.era === "string" &&
     typeof event.title === "string" &&
@@ -945,7 +954,7 @@ export function isCampaignReadModel(value) {
   );
 }
 
-function isVisualMedia(value) {
+export function isVisualMedia(value) {
   return value &&
     typeof value.imageUrl === "string" &&
     typeof value.alt === "string" &&
@@ -1100,7 +1109,7 @@ function boundedBoardInteger(value, minimum, maximum) {
   return Number.isInteger(value) && value >= minimum && value <= maximum;
 }
 
-function validTacticalBoard(value) {
+export function validTacticalBoard(value) {
   if (!value || !hasExactBoardKeys(value, ["revision", "columns", "rows", "feetPerSquare", "terrain", "obstacles", "participants", ...(value.turn === undefined ? [] : ["turn"]), ...(value.backgroundMediaOrder === undefined ? [] : ["backgroundMediaOrder"])]) ||
       value.backgroundMediaOrder != null && !boundedBoardInteger(value.backgroundMediaOrder, 0, 10000) ||
       !boundedBoardInteger(value.revision, 1, 2147483647) || !boundedBoardInteger(value.columns, 1, 64) ||
@@ -1139,69 +1148,6 @@ function validTacticalBoard(value) {
     (value.turn.actorId === undefined || typeof value.turn.actorId === "string") && typeof value.turn.actorName === "string" &&
     boundedBoardInteger(value.turn.ordinal, 0, 99)
   );
-}
-
-function isCurrentSituation(value, locations) {
-  if (!value || typeof value !== "object" || !["ready", "unavailable"].includes(value.status)) return false;
-  if (value.status === "unavailable") {
-    return typeof value.message === "string" &&
-      (value.locationId === undefined || typeof value.locationId === "string");
-  }
-  if (value.kind === "recorded") {
-    if (value.locationId !== undefined && typeof value.locationId !== "string") return false;
-    const recorded = value.recorded;
-    const knownKinds = ["out-of-character", "conversation", "combat", "exploration", "investigation",
-      "travel", "rest", "downtime", "other"];
-    return recorded && typeof recorded.id === "string" && recorded.id.length > 0 &&
-      knownKinds.includes(recorded.kind) && typeof recorded.summary === "string" && recorded.summary.length > 0 &&
-      Array.isArray(recorded.participants) && recorded.participants.length <= 32 &&
-      recorded.participants.every((participant) => participant && typeof participant.id === "string" &&
-        typeof participant.name === "string" &&
-        (participant.entityId === undefined || typeof participant.entityId === "string")) &&
-      Array.isArray(recorded.interactions) && recorded.interactions.length <= 12 &&
-      recorded.interactions.every((message) => message && typeof message.id === "string" &&
-        Number.isInteger(message.ordinal) && message.ordinal > 0 && ["player", "assistant"].includes(message.role) &&
-        typeof message.text === "string" && message.text.length > 0) &&
-      (recorded.location === undefined || (recorded.location && typeof recorded.location.name === "string" &&
-        (recorded.location.id === undefined || recorded.location.id === value.locationId)));
-  }
-  if (typeof value.locationId !== "string" ||
-      !["exploration", "conversation", "combat"].includes(value.kind)) return false;
-  if (value.affordances !== undefined) {
-    if (!Array.isArray(value.affordances) || value.affordances.length > 24) return false;
-    const keys = new Set();
-    for (const item of value.affordances) {
-      if (!item || typeof item !== "object" || typeof item.key !== "string" ||
-          !/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/u.test(item.key) || item.key.length > 64 ||
-          typeof item.label !== "string" || !/\S/u.test(item.label) || item.label.length > 120 ||
-          typeof item.summary !== "string" || !/\S/u.test(item.summary) || item.summary.length > 500 ||
-          keys.has(item.key)) return false;
-      keys.add(item.key);
-    }
-  }
-  if (value.kind === "exploration") return true;
-  if (value.kind === "conversation") {
-    return value.conversation && typeof value.conversation.id === "string" &&
-      typeof value.conversation.name === "string" &&
-      (value.conversation.summary === undefined || typeof value.conversation.summary === "string") &&
-      Array.isArray(value.conversation.participants) &&
-      value.conversation.participants.every((participant) =>
-        participant && typeof participant.id === "string" && typeof participant.name === "string");
-  }
-  return value.combat && typeof value.combat.id === "string" && typeof value.combat.name === "string" &&
-    Array.isArray(value.combat.participants) && value.combat.participants.every((participant) =>
-      participant && typeof participant.id === "string" && typeof participant.name === "string" &&
-      Number.isInteger(participant.initiative) && typeof participant.active === "boolean") &&
-    (value.combat.round === undefined || (typeof value.combat.round.id === "string" &&
-      Number.isInteger(value.combat.round.number) && value.combat.round.number > 0)) &&
-    (value.combat.turn === undefined || (typeof value.combat.turn.id === "string" &&
-      typeof value.combat.turn.participationId === "string" && typeof value.combat.turn.actorId === "string" &&
-      typeof value.combat.turn.actorName === "string" && Number.isInteger(value.combat.turn.ordinal) &&
-      value.combat.turn.ordinal >= 0 && (value.combat.turn.budget === undefined ||
-        (value.combat.turn.budget && ["actions", "bonusActions", "reactions"].every((key) =>
-          Number.isInteger(value.combat.turn.budget[key]) && value.combat.turn.budget[key] >= 0))))) &&
-    (value.combat.board === undefined || validTacticalBoard(value.combat.board)) &&
-    (value.combat.background === undefined || isVisualMedia(value.combat.background));
 }
 
 export function isReadyHubEnvelope(value) {
@@ -1264,13 +1210,13 @@ export function isReadyHubEnvelope(value) {
         Array.isArray(location.people) &&
         location.people.every(isLocationPerson) &&
         (location.holdings === undefined || Array.isArray(location.holdings)) &&
-        location.mapAnchor &&
+        (location.mapAnchor === null || location.mapAnchor &&
         Number.isFinite(location.mapAnchor.x) &&
         Number.isFinite(location.mapAnchor.y) &&
         location.mapAnchor.x >= 0 &&
         location.mapAnchor.x <= 100 &&
         location.mapAnchor.y >= 0 &&
-        location.mapAnchor.y <= 100,
+        location.mapAnchor.y <= 100),
     ) &&
     Array.isArray(world.locationScopes) &&
     world.locationScopes.length <= 1_001 &&
@@ -1281,6 +1227,7 @@ export function isReadyHubEnvelope(value) {
       scope.childIds.every((id) => world.locations.some((location) => location.id === id)) &&
       Number.isInteger(scope.totalCount) && scope.totalCount >= scope.childIds.length && scope.totalCount <= 200 &&
       typeof scope.complete === "boolean" && (scope.nextCursor === null || scope.nextCursor === "100") &&
+      (scope.coverage === undefined || ["complete", "partial"].includes(scope.coverage)) &&
       scope.complete === (scope.nextCursor === null) &&
       (scope.sourceRevisionFingerprint === null || /^[0-9A-F]{64}$/u.test(scope.sourceRevisionFingerprint))) &&
     typeof world.rootMapId === "string" &&
@@ -1294,6 +1241,8 @@ export function isReadyHubEnvelope(value) {
     party.every(isPartyMember) &&
     Array.isArray(rules) &&
     rules.every(isRuleReference) &&
-    (value.currentSituation === undefined || isCurrentSituation(value.currentSituation, world.locations))
+    // Current is an optional display facet.  Its normalizer turns an unusable discriminant
+    // into the honest Current-unavailable state without invalidating this authorized shell.
+    true
   );
 }

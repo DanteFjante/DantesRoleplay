@@ -6,6 +6,7 @@ import React, { act, type ReactNode } from "react";
 
 import { DndInformationHub } from "../../src/components/DndInformationHub";
 import { ScopedMapWorkspace } from "../../src/components/ScopedMapWorkspace";
+import { LocationBrowser } from "../../src/components/LocationBrowser";
 import { hubRouteHash } from "../../src/data/hub-route";
 import type {
   DeferredHubUpdate,
@@ -98,6 +99,27 @@ function initialEnvelope() {
     },
   } satisfies ReadyHubEnvelope;
 }
+
+test("location browser distinguishes partial or unloaded coverage from confirmed empty", async () => {
+  for (const coverage of ["partial", "unloaded", "complete"] as const) {
+    const locationScope = coverage === "unloaded" ? null : {
+      ...scope("scope", "A location", null, []), coverage,
+    };
+    const view = await mount("", <LocationBrowser allLocations={[]} locations={[]} locationScopes={[]}
+      locationScope={locationScope} busy={false} error="" query="" selectedLocationId="" currentLocationId=""
+      onBack={() => {}} onLoadMore={() => {}} onQueryChange={() => {}} onRetry={() => {}}
+      onSelect={() => {}} onBrowse={() => {}} />);
+    try {
+      const content = view.container.textContent ?? "";
+      if (coverage === "complete") assert.match(content, /No child locations/);
+      else {
+        assert.match(content, /Locations unavailable/);
+        assert.doesNotMatch(content, /No child locations|has no recorded locations/);
+      }
+      if (coverage === "partial") assert.match(content, /Some location information is unavailable/);
+    } finally { await view.cleanup(); }
+  }
+});
 
 function location(template: WorldLocation, id: string, name: string, region: string, kind: string): WorldLocation {
   return {
@@ -362,16 +384,22 @@ test("deep links authorize each scope in order and page 101 siblings without a f
   const calls: Array<[string, string | null]> = [];
   const loader = async (source: ReadyHubEnvelope, scopeId: string, cursor: string | null) => {
     calls.push([scopeId, cursor]);
-    if (scopeId === atlas.id) return locationUpdate(source, [atlas, eredane, solasca], [
-      source.world.locationScopes[0]!, scope(atlas.id, atlas.name, "world.caldris", [eredane.id, solasca.id]),
-    ]);
+    if (scopeId === atlas.id) return {
+      ...locationUpdate(source, [atlas, eredane, solasca], [
+        source.world.locationScopes[0]!, scope(atlas.id, atlas.name, "world.caldris", [eredane.id, solasca.id]),
+      ]),
+      scopePage: { id: atlas.id },
+    };
     assert.equal(scopeId, solasca.id);
     const shown = cursor === null ? places.slice(0, 100) : places;
     const retained = source.world.locations.filter((entry) => !entry.id.startsWith("site.solasca."));
-    return locationUpdate(source, [...retained, ...shown], [
-      ...source.world.locationScopes.filter((entry) => entry.id !== solasca.id),
-      scope(solasca.id, solasca.name, atlas.id, shown.map((entry) => entry.id), cursor === null ? "100" : null),
-    ]);
+    return {
+      ...locationUpdate(source, [...retained, ...shown], [
+        ...source.world.locationScopes.filter((entry) => entry.id !== solasca.id),
+        scope(solasca.id, solasca.name, atlas.id, shown.map((entry) => entry.id), cursor === null ? "100" : null),
+      ]),
+      scopePage: { id: solasca.id },
+    };
   };
   const hash = hubRouteHash("world", "overview", {
     worldSection: "locations", locationScopePath: [atlas.id, solasca.id], locationId: solasca.id,
@@ -389,5 +417,46 @@ test("deep links authorize each scope in order and page 101 siblings without a f
     assert.match(mounted.container.textContent!, /Solasca Place 100/);
     assert.match(mounted.container.textContent!, /101 of 101/);
     assert.match(mounted.container.textContent!, /Only the direct locations inside this area are shown/);
+  } finally { await mounted.cleanup(); }
+});
+
+test("Locations opens one root page, presents hierarchy truthfully, and keeps its continuation reachable", async () => {
+  const initial = initialEnvelope();
+  const template = initial.world.locations[0]!;
+  const places = Array.from({ length: 101 }, (_, index) => location(template,
+    `site.root.${String(index).padStart(3, "0")}`, `Root Place ${String(index).padStart(3, "0")}`,
+    "Caldris", "site"));
+  initial.world = { ...initial.world, locations: [], locationScopes: [] };
+  let rootReads = 0;
+  const continuations: Array<[string, string | null]> = [];
+  const page = (shown: WorldLocation[], cursor: string | null): Extract<DeferredHubUpdate, { section: "locations" }> => ({
+    ...locationUpdate(initial, shown, [scope("world.caldris", "Caldris", null,
+      shown.map((entry) => entry.id), cursor)]),
+    scopePage: { id: "world.caldris" },
+  });
+  const mounted = await mount(hubRouteHash("world", "overview", { worldSection: "locations" }),
+    <DndInformationHub initialEnvelope={initial}
+      loadDeferredSection={async (_source, section) => {
+        assert.equal(section, "locations");
+        rootReads += 1;
+        return page(places.slice(0, 100), "100");
+      }}
+      loadWorldScope={async (_source, scopeId, cursor) => {
+        continuations.push([scopeId, cursor]);
+        return page(places, null);
+      }} />);
+  try {
+    await act(async () => { await tick(); await tick(); });
+    assert.equal(rootReads, 1, "opening Locations reads only the first root page");
+    assert.match(mounted.container.textContent!, /This location level/);
+    assert.match(mounted.container.textContent!, /100 of 101/);
+    assert.doesNotMatch(mounted.container.textContent!, /Complete directory|All places|All known locations/);
+    const more = [...mounted.container.querySelectorAll<HTMLButtonElement>("button")]
+      .find((button) => button.textContent?.includes("Load more locations"));
+    assert.ok(more);
+    await click(more);
+    assert.deepEqual(continuations, [["world.caldris", "100"]]);
+    assert.match(mounted.container.textContent!, /Root Place 100/);
+    assert.match(mounted.container.textContent!, /101 of 101/);
   } finally { await mounted.cleanup(); }
 });

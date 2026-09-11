@@ -1,5 +1,6 @@
 import type { WorldHistoryEvent } from "../data/hub-types";
 import { Icon } from "./Icon";
+import { KnowledgeAdmissions } from "./KnowledgeAdmissions";
 
 function HistoryEventCard({
   event,
@@ -27,6 +28,7 @@ function HistoryEventCard({
         </header>
         <h2 id={`${event.id}-heading`}>{event.title}</h2>
         <p className="history-event__summary">{event.summary}</p>
+        <KnowledgeAdmissions admissions={event.admissions} />
 
         {event.consequence ? (
           <section className="history-event__consequence">

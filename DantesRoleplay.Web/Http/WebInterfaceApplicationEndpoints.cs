@@ -54,9 +54,11 @@ public static partial class WebInterfaceEndpoints
                 "/api/applications/{applicationId}/state-spaces/{stateSpaceId}/mechanics/{qualifiedMechanicId}/execute",
                 ExecuteApplicationMechanicAsync)
             .RequireDantesRoleplayUploadAccess();
-        endpoints.MapGet("/api/applications/{applicationId}/state-spaces", GetApplicationStateSpaces)
+        endpoints.MapGet(
+                "/api/applications/{applicationId}/state-spaces/{stateSpaceId}/recoveries/{idempotencyKey}",
+                GetApplicationInterruptedRequestAsync)
             .RequireDantesRoleplayReadAccess();
-        endpoints.MapGet("/api/applications/{applicationId}/campaigns/{campaignId}/knowledge", GetAuthorizedKnowledgeAsync)
+        endpoints.MapGet("/api/applications/{applicationId}/state-spaces", GetApplicationStateSpaces)
             .RequireDantesRoleplayReadAccess();
         endpoints.MapGet(
                 "/api/applications/{applicationId}/state-spaces/{stateSpaceId}/containments",
@@ -295,6 +297,35 @@ public static partial class WebInterfaceEndpoints
             stateSpaceId, qualifiedMechanicId,
             await ReadApplicationMechanicBodyAsync<ApplicationMechanicExecuteRequest>(context, cancellationToken),
             cancellationToken));
+
+    private static async Task<IResult> GetApplicationInterruptedRequestAsync(
+        string applicationId, string stateSpaceId, string idempotencyKey,
+        HttpContext context, [FromServices] IInteractionGateway interactions,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var receipt = await interactions.FindReceiptByIdempotencyKeyAsync(
+                InteractionPrincipal(context), ApplicationIdentifier.Parse(applicationId), stateSpaceId,
+                idempotencyKey, context.Request.Query["resolutionReceiptId"].FirstOrDefault(), cancellationToken);
+            return receipt is null ? Results.NotFound() : Results.Json(new
+            {
+                receipt.Id, receipt.Kind, receipt.Status, receipt.Code, receipt.SafeSummary,
+                receipt.ProposalFingerprint, receipt.ResolutionReceiptId, receipt.IdempotencyKey,
+                ApplicationId = receipt.ApplicationId.Value, receipt.StateSpaceId
+            });
+        }
+        catch (InteractionContractException exception)
+        {
+            return Results.Json(new { error = exception.Code, message = exception.Message },
+                statusCode: StatusCodes.Status400BadRequest);
+        }
+        catch (ArgumentException exception)
+        {
+            return Results.Json(new { error = "INTERACTION_REQUEST_INVALID", message = exception.Message },
+                statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
 
     private static DantesRoleplay.Authorization.TrustedPrincipalContext InteractionPrincipal(HttpContext context)
         => WebTrustedPrincipalContextFactory.FromPrincipal(context.User);

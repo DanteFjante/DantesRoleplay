@@ -28,7 +28,13 @@ public sealed record ProposedEvent(
     /// Carried on the proposal rather than passed alongside it, so nothing has to thread an extra
     /// argument through the guard and ledger signatures that every other caller would ignore.
     /// </summary>
-    string ProducerExecutionId = "");
+    string ProducerExecutionId = "",
+
+    /// <summary>
+    /// Host-captured evidence for a structural component transition. Only an application effect
+    /// transaction may supply it; catalog rules continue to declare payloads only.
+    /// </summary>
+    EventComponentSnapshotDetail? ComponentSnapshot = null);
 
 /// <summary>Explanation of one deterministic guard evaluation; not a durable execution record.</summary>
 public sealed record GuardEvaluation(

@@ -1,4 +1,10 @@
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using DantesRoleplay.Applications;
+using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.DataAccess;
+using DantesRoleplay.DataAccess.Catalog;
 using DantesRoleplay.Events;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.World;
@@ -14,6 +20,44 @@ public sealed class SubscriptionStoreTests : IDisposable
     private readonly SqliteFixture _fixture = new();
 
     public void Dispose() => _fixture.Dispose();
+
+    [Fact]
+    public async Task Scoped_subscription_catalog_round_trip_preserves_source_and_fingerprint()
+    {
+        await using var db = _fixture.CreateContext();
+        await SeedEventMechanicAsync(db, EventMechanicMode.Reaction);
+        var catalogs = SourceCatalog();
+        var original = await new SubscriptionStore(db, catalogs).WriteAsync(Request() with
+        {
+            Id = "subscription.reaction.catalog-source", Mode = SubscriptionMode.Reaction,
+            EventMechanicId = "fixture.mechanic.test-event", Source = new("fixture", "space.1")
+        });
+        var directory = Path.Combine(Path.GetTempPath(), $"subscription-source-roundtrip-{Guid.NewGuid():n}");
+        try
+        {
+            await new CatalogExporter(db).ExportAsync(directory);
+            var path = CatalogLayout.ToFileSystemPath(directory, CatalogLayout.Subscription(original.Subscription.Id));
+            var exported = SubscriptionFile.Parse(await File.ReadAllTextAsync(path), path);
+            Assert.Equal(original.Subscription.Source, exported.Source);
+            Assert.Equal(original.Subscription.SourceHash, exported.ContentHash);
+            Assert.NotEqual(exported.ContentHash, (exported with { Source = null }).ContentHash);
+            Assert.NotEqual(exported.ContentHash, (exported with { Source = new("fixture", "space.2") }).ContentHash);
+            using var target = new SqliteFixture();
+            await using var destination = target.CreateContext();
+            var imported = await new CatalogImporter(destination, new MechanicStore(destination),
+                new ProcedureStore(destination), new WorldStore(destination), new EventTypeStore(destination),
+                new SubscriptionStore(destination, catalogs)).ApplyAsync(directory, new CatalogImportOptions());
+            Assert.False(imported.Aborted);
+            var actual = await new SubscriptionStore(destination, catalogs).GetAsync(original.Subscription.Id);
+            Assert.NotNull(actual);
+            Assert.Equal(original.Subscription.Source, actual.Source);
+            Assert.Equal(original.Subscription.SourceHash, actual.SourceHash);
+        }
+        finally
+        {
+            if (Directory.Exists(directory)) Directory.Delete(directory, recursive: true);
+        }
+    }
 
     [Fact]
     public async Task A_subscription_is_versioned_and_canonicalises_its_filters()
@@ -160,6 +204,43 @@ public sealed class SubscriptionStoreTests : IDisposable
         Assert.False(Assert.Single(malformed, check => check.Name == "fanoutSelector").Passed);
     }
 
+    [Fact]
+    public async Task An_application_subscription_round_trips_its_exact_source_scope()
+    {
+        await using var db = _fixture.CreateContext();
+        await SeedEventMechanicAsync(db, EventMechanicMode.Reaction);
+        var source = new EventSourceContext("fixture", "space.1");
+        var store = new SubscriptionStore(db, SourceCatalog());
+
+        var sourceRequest = Request() with { Id = "subscription.reaction.source", EventMechanicId = "fixture.mechanic.test-event", Mode = SubscriptionMode.Reaction, Source = source };
+        var written = await store.WriteAsync(sourceRequest);
+        var detail = await store.GetAsync(sourceRequest.Id);
+
+        Assert.Equal(source, written.Subscription.Source);
+        Assert.Equal(source, detail!.Source);
+        Assert.True(written.Subscription.DependenciesHealthy);
+        Assert.True(detail.DependenciesHealthy);
+        Assert.True(Assert.Single(await store.FindAsync(), item => item.Id == sourceRequest.Id).DependenciesHealthy);
+        Assert.False((await new SubscriptionStore(db).GetAsync(sourceRequest.Id))!.DependenciesHealthy);
+        Assert.NotEqual((await store.WriteAsync(Request() with { Mode = SubscriptionMode.Reaction })).Subscription.Source,
+            detail.Source);
+    }
+
+    [Fact]
+    public async Task A_subscription_source_requires_both_bounded_ids()
+    {
+        await using var db = _fixture.CreateContext();
+        await SeedEventMechanicAsync(db, EventMechanicMode.Reaction);
+        var checks = await new SubscriptionStore(db).CheckAsync(Request() with
+        {
+            Mode = SubscriptionMode.Reaction,
+            Source = new EventSourceContext("fixture", "")
+        });
+
+        var source = Assert.Single(checks, check => check.Name == "source-context");
+        Assert.False(source.Passed);
+    }
+
     private static WriteSubscriptionRequest Request() => new()
     {
         Id = "subscription.guard.test",
@@ -196,6 +277,22 @@ public sealed class SubscriptionStoreTests : IDisposable
             Requirements = $"{{\"roles\":{rolesJson},\"event\":{{\"mode\":\"{mode.ToString().ToLowerInvariant()}\",\"types\":[\"test.changed\"]}}}}",
             Source = "return { narration: 'test', effects: [] };",
             Status = MechanicStatus.Active
+        });
+    }
+
+    private static IPublicApplicationCatalogProvider SourceCatalog()
+    {
+        var app = ApplicationIdentifier.Parse("fixture");
+        var content = JsonSerializer.Serialize(new { requirements = "{\"event\":{\"mode\":\"reaction\",\"types\":[\"test.changed\"]}}", source = "return { narration: 'test' };" });
+        var record = new CatalogRecordDefinition(app.Value, "mechanic", "fixture.mechanic.test-event", "Test event", "A test catalog event mechanic.", [], [], "mechanics", "active", 1, content,
+            Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(content))), "test", "mechanics/test-event.md");
+        var manifest = CatalogNavigationManifest.Create(app, new string('A', 64), "catalog-lexical-v1",
+            [new(app.Value, "Fixture", "Fixture catalog.")],
+            [new(app.Value, "", "Fixture", "Fixture catalog.", CatalogDescriptionStatus.Authored), new(app.Value, "mechanics", "Mechanics", "Fixture mechanics.", CatalogDescriptionStatus.Authored)],
+            [record]);
+        return new InMemoryPublicApplicationCatalogProvider(new Dictionary<ApplicationIdentifier, ICatalogNavigator>
+        {
+            [app] = new InMemoryCatalogNavigator(manifest, new CatalogCursorCodec(Encoding.UTF8.GetBytes("fixture-subscription-catalog-key-32")))
         });
     }
 }

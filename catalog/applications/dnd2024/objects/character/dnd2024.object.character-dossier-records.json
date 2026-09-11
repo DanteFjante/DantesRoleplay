@@ -1,16 +1,6 @@
 {
   "id": "dnd2024.object.character-dossier-records",
-  "version": 1,
-  "schema": {
-    "type": "object",
-    "additionalProperties": false,
-    "required": ["creation", "origin", "features"],
-    "properties": {
-      "creation": { "type": "object" },
-      "origin": { "type": "object" },
-      "features": { "type": "object" }
-    }
-  },
+  "version": 2,
   "roles": { "subject": { "required": true } },
   "sources": [
     { "id": "creation", "role": "subject", "component": { "qualifiedId": "dnd2024.character-creation-record", "version": 3, "schemaHash": "9986B4B84B79DAA9C298A04D2432329253ADA175FE25209A4D81259A40D44D22" }, "required": true },
@@ -26,5 +16,6 @@
   ],
   "collections": [],
   "limits": { "traversalDepth": 1, "itemCount": 1, "outputBytes": 65536, "sqlQueries": 3 },
-  "access": { "read": ["player", "dm"], "write": [] }
+  "access": { "read": ["player", "dm"], "write": [] },
+  "profile": "application-object/v2"
 }

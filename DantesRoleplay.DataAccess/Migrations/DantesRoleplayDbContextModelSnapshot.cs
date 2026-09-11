@@ -1537,6 +1537,10 @@ namespace DantesRoleplay.DataAccess.Migrations
                         .HasMaxLength(40)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("ApplicationId")
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("CorrelationId")
                         .IsRequired()
                         .HasMaxLength(40)
@@ -1562,6 +1566,10 @@ namespace DantesRoleplay.DataAccess.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("StateSpaceId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("Sequence")
                         .HasColumnType("INTEGER");
 
@@ -1584,7 +1592,50 @@ namespace DantesRoleplay.DataAccess.Migrations
 
                     b.HasIndex("TypeId", "Timestamp");
 
-                    b.ToTable("event", (string)null);
+                    b.HasIndex("ApplicationId", "StateSpaceId", "TypeId", "Timestamp");
+
+                    b.ToTable("event", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_event_application_source_pair", "(\"ApplicationId\" IS NULL AND \"StateSpaceId\" IS NULL) OR (\"ApplicationId\" IS NOT NULL AND \"StateSpaceId\" IS NOT NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Events.EventComponentSnapshot", b =>
+                {
+                    b.Property<string>("EventId")
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AfterJson")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("AfterRevision")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("BeforeJson")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("BeforeRevision")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("EntityId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("QualifiedTypeId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TypeVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("EventId");
+
+                    b.HasIndex("EntityId", "QualifiedTypeId");
+
+                    b.ToTable("event_component_snapshot", (string)null);
                 });
 
             modelBuilder.Entity("DantesRoleplay.Events.EventType", b =>
@@ -1727,6 +1778,10 @@ namespace DantesRoleplay.DataAccess.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("ApplicationId")
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("ChangeNote")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -1790,6 +1845,10 @@ namespace DantesRoleplay.DataAccess.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("StateSpaceId")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("TrackedEntityIdsJson")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -1805,10 +1864,15 @@ namespace DantesRoleplay.DataAccess.Migrations
 
                     b.HasIndex("Mode", "Order");
 
+                    b.HasIndex("ApplicationId", "StateSpaceId");
+
                     b.HasIndex("SubscriptionId", "Version")
                         .IsUnique();
 
-                    b.ToTable("subscription_version", (string)null);
+                    b.ToTable("subscription_version", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_subscription_version_application_source_pair", "(\"ApplicationId\" IS NULL AND \"StateSpaceId\" IS NULL) OR (\"ApplicationId\" IS NOT NULL AND \"StateSpaceId\" IS NOT NULL)");
+                        });
                 });
 
             modelBuilder.Entity("DantesRoleplay.HostSettings.HostSettingOverride", b =>
@@ -7617,6 +7681,17 @@ namespace DantesRoleplay.DataAccess.Migrations
                     b.Navigation("Event");
                 });
 
+            modelBuilder.Entity("DantesRoleplay.Events.EventComponentSnapshot", b =>
+                {
+                    b.HasOne("DantesRoleplay.Events.EventRecord", "Event")
+                        .WithOne("ComponentSnapshot")
+                        .HasForeignKey("DantesRoleplay.Events.EventComponentSnapshot", "EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Event");
+                });
+
             modelBuilder.Entity("DantesRoleplay.Events.EventExecution", b =>
                 {
                     b.HasOne("DantesRoleplay.Events.EventRecord", "Event")
@@ -8705,6 +8780,8 @@ namespace DantesRoleplay.DataAccess.Migrations
 
             modelBuilder.Entity("DantesRoleplay.Events.EventRecord", b =>
                 {
+                    b.Navigation("ComponentSnapshot");
+
                     b.Navigation("Entities");
                 });
 

@@ -21,6 +21,7 @@ reads anything, `commit` changes anything. Nothing else exists.
    `entities`, `graph`, `mechanics`, `event-types`, `events`, `subscriptions`, `notifications`,
    `feedback`, `information-answer`, `information-actions`, `system.audience-context`,
    `system.applications`, `system.sources`, `system.application-preview`, `system.application-readiness`,
+   `system.application-object`,
    `system.dependencies`,
    `system.catalogs`, `system.catalog.browse`, `system.catalog.search`, `system.catalog.record`,
    `system.feature-search`, `system.interaction-plan`, `system.interaction-receipt`,
@@ -101,7 +102,7 @@ reads anything, `commit` changes anything. Nothing else exists.
    say what you are doing in `intent`, in your own words. The audit records both, and records
    separately which contracts you actually opened.
 5. Change with a currently registered typed capability. MCP commit kinds include
-   `application.action.execute`, `system.application.register`,
+   `application.action.execute`, `system.application-object.submit`, `system.application.register`,
    `system.component-type.register`,
    `system.source.register`, `system.extension.register`, and
    `system.application.activate`, `system.state-space.create`, `system.state-space.upgrade`,

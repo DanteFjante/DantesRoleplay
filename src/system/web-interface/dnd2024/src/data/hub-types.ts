@@ -47,7 +47,7 @@ export type LocationPerson = {
   id: string;
   initials: string;
   name: string;
-  kind: "NPC" | "Creature";
+  kind: string;
   role: string;
   summary: string;
   background: string;
@@ -55,6 +55,7 @@ export type LocationPerson = {
   portrait?: VisualMedia;
   motive?: string;
   dmSecret?: string;
+  unavailableFields?: string[];
 };
 
 export type LocationHolding = {
@@ -80,7 +81,8 @@ export type WorldLocation = {
   landmarks: string[];
   observations: string[];
   routes: Array<{ destination: string; detail: string }>;
-  mapAnchor: { x: number; y: number };
+  mapAnchor: { x: number; y: number } | null;
+  unavailableFields?: string[];
   people: LocationPerson[];
   media?: EntityVisualMedia;
   holdings?: LocationHolding[];
@@ -94,13 +96,15 @@ export type WorldLocationScope = {
   childIds: string[];
   totalCount: number;
   complete: boolean;
+  /** Display coverage is independent of whether the last transport page was read. */
+  coverage?: "complete" | "partial";
   nextCursor: string | null;
   sourceRevisionFingerprint: string | null;
 };
 
 export type WorldHistoryEvent = {
   id: string;
-  sortOrder: number;
+  sortOrder: number | null;
   date: string;
   era: string;
   title: string;
@@ -110,9 +114,10 @@ export type WorldHistoryEvent = {
   summary: string;
   consequence?: string;
   linkedLocations: Array<{ id: string; name: string }>;
-  linkedPeople: Array<{ id: string; name: string; kind: "NPC" | "Creature" }>;
+  linkedPeople: Array<{ id: string; name: string; kind: string }>;
   dmTruth?: string;
   dmConsequence?: string;
+  admissions?: KnowledgeAdmission[];
 };
 
 export type WorldPersonDirectoryEntry = LocationPerson & {
@@ -130,11 +135,12 @@ export type WorldFaction = {
   goals: string[];
   methods: string[];
   assets?: string[];
-  members: Array<{ id: string; name: string; kind: "NPC" | "Creature" }>;
+  members: Array<{ id: string; name: string; kind: string }>;
   territories: Array<{ id: string; name: string; region: string }>;
   relationships: Array<{ id: string; name: string; stance: string }>;
   dmAgenda?: string;
   dmSecret?: string;
+  unavailableFields?: string[];
 };
 
 export type WorldLoreEntry = {
@@ -145,11 +151,12 @@ export type WorldLoreEntry = {
   summary: string;
   body: string;
   linkedLocations: Array<{ id: string; name: string }>;
-  linkedPeople: Array<{ id: string; name: string; kind: "NPC" | "Creature" }>;
+  linkedPeople: Array<{ id: string; name: string; kind: string }>;
   linkedFactions: Array<{ id: string; name: string }>;
   linkedHistory: Array<{ id: string; title: string; date: string }>;
   dmTruth?: string;
   dmNote?: string;
+  admissions?: KnowledgeAdmission[];
 };
 
 export type MapScope = "world" | "region" | "city" | "location";
@@ -259,27 +266,31 @@ export type WorldReadModel = {
   regions: Array<{ name: string; detail: string; count: number }>;
   facts: Array<{ label: string; value: string; detail: string }>;
   history: WorldHistoryEvent[];
+  historyCoverage?: "complete" | "partial";
   locations: WorldLocation[];
   locationScopes: WorldLocationScope[];
   people: WorldPersonDirectoryEntry[];
   peopleDirectory?: {
     totalCount: number;
     hierarchyComplete: boolean;
+    coverage?: "complete" | "partial";
     sourceRevisionFingerprint: string | null;
   };
   factions: WorldFaction[];
   factionDirectory?: {
     totalCount: number;
     complete: boolean;
+    coverage?: "complete" | "partial";
     nextCursor: string | null;
     sourceRevisionFingerprint: string | null;
   };
   lore: WorldLoreEntry[];
+  loreCoverage?: "complete" | "partial";
 };
 
 export type CampaignEntityLinks = {
   locations: Array<{ id: string; name: string }>;
-  people: Array<{ id: string; name: string; kind: "NPC" | "Creature" }>;
+  people: Array<{ id: string; name: string; kind: string }>;
   factions: Array<{ id: string; name: string }>;
 };
 
@@ -366,6 +377,7 @@ export type CampaignClue = {
   handout?: VisualMedia;
   dmTruth?: string;
   dmConnection?: string;
+  admissions?: KnowledgeAdmission[];
 };
 
 export type CampaignReadModel = {
@@ -387,7 +399,22 @@ export type CampaignReadModel = {
   quests: CampaignQuest[];
   threads: CampaignThread[];
   clues: CampaignClue[];
+  cluesCoverage?: "complete" | "partial" | "unavailable";
+  knowledgeAudience?: "party" | "dm";
+  /** Field-local Campaign Summary evidence; unavailable never means an empty campaign field. */
+  descriptiveFields?: CampaignDescriptiveFields;
+  /** Coverage for deferred Campaign collections; absent/partial/invalid are not confirmed empty. */
+  detailFields?: CampaignDetailFields;
   dmContext?: string;
+};
+
+export type CampaignDescriptiveFieldStatus = "ready" | "partial" | "empty" | "absent" | "invalid";
+
+export type CampaignDescriptiveFields = {
+  title: CampaignDescriptiveFieldStatus;
+  premise: CampaignDescriptiveFieldStatus;
+  partyGoals: CampaignDescriptiveFieldStatus;
+  toneAndBoundaries: CampaignDescriptiveFieldStatus;
 };
 
 export type PartyDossierEntry = {
@@ -403,6 +430,27 @@ export type PartyKnowledgeEntry = {
   stance: string;
   kind: string;
   text: string;
+};
+
+/** Per-member evidence for a shared knowledge entry, not a collective conclusion. */
+export type KnowledgeAdmission = {
+  actorId: string;
+  actorName: string;
+  stance: string;
+  source: "explicit" | "baseline";
+  scopeId?: string;
+};
+
+export type ConnectedKnowledgeEntry = {
+  text: string;
+  stance: string;
+  presentationKind: string;
+  knowledgeId?: string;
+  recognitionKey?: string;
+  documentRevision?: string;
+  admissions?: KnowledgeAdmission[];
+  subject?: { id: string; name: string };
+  media?: EntityVisualMedia;
 };
 
 export type SectionFailureCategory = "authorization" | "stale-data" | "transport" | "http" | "incompatible-data" | "unknown";
@@ -504,8 +552,13 @@ export type InventoryContainerPageItem = Omit<CharacterInventoryItemV2,
   "definition" | "quantity" | "parentItemId" | "depth" | "childCount" | "deeperContentsOmitted" | "media"> & {
   definition: NamedCharacterReference | null;
   quantity: number | null;
-  classification: "item" | "unclassified";
-  isContainer: boolean;
+  quantityState: "value" | "null" | "absent" | "invalid";
+  classification: "item" | "unclassified" | "unknown";
+  /** null means this response did not disclose whether child contents may be requested. */
+  isContainer: boolean | null;
+  containerState: "value" | "absent" | "invalid";
+  equipmentSlotsKnown: boolean;
+  unavailableFields: Array<"name" | "definition" | "quantity" | "slot" | "order" | "equipment" | "container">;
 };
 
 export type InventoryContainerItem = InventoryContainerPageItem & {
@@ -517,21 +570,30 @@ export type InventoryContainerItem = InventoryContainerPageItem & {
 };
 
 export type InventoryContainerProjection = {
-  version: 2;
   container: NamedCharacterReference;
   state: "ready" | "partial";
   reasons: Array<"unclassified-content">;
+  notices: Array<"source-incomplete" | "item-bound" | "invalid-item-identity" | "duplicate-item-identity" | "item-fields-unavailable">;
   items: InventoryContainerPageItem[];
-  limits: { contentsDepth: 1; itemCount: 200; directComplete: true; recursiveComplete: false };
+  limits: { contentsDepth: number | null; directComplete: true | null; recursiveComplete: boolean | null };
+};
+
+/** A bounded wallet read can expose some totals while explicitly withholding malformed ones. */
+export type InventoryWalletSummary = {
+  coinCount: number | null;
+  copperValue: number | null;
+  gpCount: number | null;
+  denominations: Array<{
+    denomination: NamedCharacterReference;
+    code: "cp" | "sp" | "ep" | "gp" | "pp";
+    count: number;
+  }>;
 };
 
 export type InventoryWalletProjection = {
-  version: 1;
-  owner: NamedCharacterReference;
-  state: "ready" | "partial";
-  reasons: Array<"depth-limit">;
-  wallet: CharacterWalletV2;
-  limits: { contentsDepth: 4; complete: boolean };
+  wallet: InventoryWalletSummary;
+  complete: boolean;
+  notices: Array<"totals" | "denominations">;
 };
 
 export type InventoryContainerPageData = InventoryContainerProjection & {
@@ -545,8 +607,13 @@ export type InventoryContainerPageData = InventoryContainerProjection & {
 
 export type InventoryContainerData = Omit<InventoryContainerPageData, "items"> & {
   items: InventoryContainerItem[];
-  wallet: CharacterWalletV2 | null;
-  walletState: { status: "complete" | "partial" | "unavailable"; reason: "depth-limit" | "read-failed" | null };
+  wallet: InventoryWalletSummary | null;
+  walletState: InventoryWalletState;
+};
+
+export type InventoryWalletState = {
+  status: "complete" | "partial" | "unavailable" | "forbidden";
+  reason: "depth-limit" | "field-unavailable" | "read-failed" | "authorization" | null;
 };
 
 export type InventoryContainerPageResult =
@@ -563,6 +630,8 @@ export type InventoryContainerResult =
       diagnosticId: string;
       errorCode?: string;
       httpStatus?: number;
+      wallet?: InventoryWalletSummary | null;
+      walletState?: InventoryWalletState;
     }
   | {
       status: "forbidden";
@@ -571,6 +640,8 @@ export type InventoryContainerResult =
       diagnosticId: string;
       errorCode?: string;
       httpStatus?: number;
+      wallet?: InventoryWalletSummary | null;
+      walletState?: InventoryWalletState;
     };
 
 export type CharacterSheetProjectionV2 = {
@@ -632,12 +703,14 @@ export type CharacterSheetProjectionV2 = {
     availableSpells: NamedCharacterReference[];
   }>;
   actions?: Array<{ id: string; name: string; activities: NamedCharacterReference[] }>;
-  inventory: {
+  /** Canonical inventory is an independently consumable section. */
+  inventory?: {
     items: CharacterInventoryItemV2[];
     contentsDepth: 4;
     mayOmitDeeperContents: true;
   };
-  wallet: CharacterWalletV2;
+  /** Wallet is optional when the character sheet read could not disclose it. */
+  wallet?: CharacterWalletV2;
 };
 
 export type CharacterDossierSource = { sourceId: string; locator: string };
@@ -645,52 +718,59 @@ export type CharacterDossierSource = { sourceId: string; locator: string };
 export type CharacterDossierDefinition = {
   id: string;
   label: string;
-  canonicalName: string;
-  kind: string;
-  status: "active" | "identity-only";
-  summary: string | null;
-  source: CharacterDossierSource | null;
+  canonicalName?: string;
+  kind?: string;
+  status?: "active" | "identity-only";
+  summary?: string | null;
+  source?: CharacterDossierSource | null;
+  unavailableFields?: string[];
 };
 
 export type CharacterDossierMetadata = {
-  origin: {
-    species: CharacterDossierDefinition;
-    background: CharacterDossierDefinition;
-    traits: Array<{
+  /** A dossier is a set of independently consumed display facets. */
+  coverage?: "complete" | "partial";
+  unavailableSections?: string[];
+  origin?: {
+    species?: CharacterDossierDefinition;
+    background?: CharacterDossierDefinition;
+    traits?: Array<{
       key: string;
       label: string;
-      status: "active" | "pending";
-      reason: string | null;
-      mechanicId: string | null;
-      source: CharacterDossierSource | null;
+      status?: "active" | "pending";
+      reason?: string | null;
+      mechanicId?: string | null;
+      source?: CharacterDossierSource | null;
+      unavailableFields?: string[];
     }>;
   };
-  classes: Array<{
+  classes?: Array<{
     id: string;
     name: string;
-    definition: CharacterDossierDefinition;
+    definition?: CharacterDossierDefinition;
     level: number;
-    subclass: NamedCharacterReference | null;
+    subclass?: NamedCharacterReference | null;
+    unavailableFields?: string[];
   }>;
-  features: Array<{
+  features?: Array<{
     definition: CharacterDossierDefinition;
     grantedBy: CharacterDossierDefinition;
-    grantKind: string;
-    classLevel: number | null;
-    configurationKey: string | null;
-    implementation: {
+    grantKind?: string;
+    classLevel?: number | null;
+    configurationKey?: string | null;
+    implementation?: {
       status: "recorded" | "executable" | "pending";
       reason: string | null;
       entitlementKey: string | null;
       nextCapabilityId: string | null;
     };
+    unavailableFields?: string[];
   }>;
-  inventory: {
+  inventory?: {
     definitions: CharacterDossierDefinition[];
     contentsDepth: 4;
     mayOmitDeeperContents: true;
   };
-  levelOneRules: {
+  levelOneRules?: {
     test: "character-level-one-rules-project";
     subjectId: string;
     armorClass: Record<string, unknown>;
@@ -711,8 +791,8 @@ export type CharacterDossierMetadata = {
       source: CharacterDossierSource;
     }>;
   };
-  definitions: CharacterDossierDefinition[];
-  provenance: {
+  definitions?: CharacterDossierDefinition[];
+  provenance?: {
     sheetQueryId: "dnd2024.query.character-sheet-v2";
     sheetProjectionId: "dnd2024.mechanic.character-sheet-v2.project";
     dossierProjectionId: "dnd2024.mechanic.character-dossier-v1.project";
@@ -732,7 +812,7 @@ export type CharacterSheetData = CharacterSheetProjectionV2 & {
 };
 
 export type CanonicalCharacterResult =
-  | { status: "ready"; data: CanonicalCharacterData; failureCategory: null; diagnosticId: string }
+  | { status: "ready"; data: CanonicalCharacterData; media?: EntityVisualMedia | null; failureCategory: null; diagnosticId: string }
   | {
       status: "error";
       data: null;
@@ -740,6 +820,7 @@ export type CanonicalCharacterResult =
       diagnosticId: string;
       errorCode?: string;
       httpStatus?: number;
+      media?: EntityVisualMedia | null;
     }
   | {
       status: "forbidden";
@@ -748,6 +829,7 @@ export type CanonicalCharacterResult =
       diagnosticId: string;
       errorCode?: string;
       httpStatus?: number;
+      media?: EntityVisualMedia | null;
     };
 
 export type PartyMemberReadModel = {
@@ -758,11 +840,15 @@ export type PartyMemberReadModel = {
   status: string;
   isCurrent: boolean;
   portrait?: VisualMedia;
+  /** Tri-state media evidence: unavailable preserves prior display, confirmed null clears it, denied clears authorization. */
+  portraitCoverage?: "unavailable" | "confirmed" | "denied";
   recordStatus: string;
   sheetStatus: "canonical" | "provisional" | "unavailable" | "empty";
   inventoryStatus: "canonical" | "provisional" | "unavailable" | "empty";
   sheetState: SectionState<PartyDossierEntry[]>;
   inventoryState: SectionState<PartyDossierEntry[]>;
+  /** Confirmed character-inventory query result, owned by the scoped hub store when loaded. */
+  inventoryResource?: InventoryContainerResult;
   sheet: PartyDossierEntry[];
   knowledge: PartyKnowledgeEntry[];
   backstory: PartyDossierEntry[];
@@ -776,11 +862,13 @@ export type RuleReadModel = {
   resolutionKey: string;
   title: string;
   summary: string;
-  order: number;
+  /** Display ordering is optional; absent order falls back to stable identifiers. */
+  order: number | null;
   section: {
     id: string;
     label: string;
-    order: number;
+    /** Display ordering is optional; absent order falls back to stable identifiers. */
+    order: number | null;
   };
   blocks: Array<{
     kind: "paragraph" | "steps" | "list" | "callout";
@@ -813,8 +901,10 @@ export type RuleReadModel = {
   source: {
     ownerId: string;
     label: string;
-    classification: "core" | "homebrew" | "compatibility" | "third-party";
+    classification: "core" | "homebrew" | "compatibility" | "third-party" | "unknown";
   };
+  /** Display-only field evidence. Identity, audience and safe navigation remain strict. */
+  fieldStatus?: Partial<Record<"title" | "order" | "sectionLabel" | "sectionOrder" | "summary" | "blocks" | "examples" | "relatedRules" | "relatedContent" | "citations" | "authority" | "sourceLabel" | "sourceClassification", "ready" | "partial" | "unavailable">>;
 };
 
 export type HubAudience = {
@@ -826,6 +916,7 @@ export type HubAudience = {
 export type HubContextSelection = {
   selectedWorldId: string;
   selectedCampaignId: string;
+  coverage?: "complete" | "partial";
   worlds: Array<{
     id: string;
     name: string;
@@ -836,11 +927,14 @@ export type HubContextSelection = {
 export type CurrentSceneAffordance = {
   key: string;
   label: string;
-  summary: string;
+  summary?: string;
 };
 
 export type TacticalEncounterBoard = {
   revision: number;
+  /** Display coverage from the authorized board read; partial never means empty/clear. */
+  coverage?: "complete" | "partial";
+  notices?: string[];
   backgroundMediaOrder?: number | null;
   columns: number;
   rows: number;
@@ -871,18 +965,22 @@ export type CurrentSituationReadModel =
       status: "unavailable";
       locationId?: string;
       message: string;
+      coverage?: "partial";
+      unavailableFields?: string[];
     }
   | {
       status: "ready";
       kind: "recorded";
       locationId?: string;
+      coverage?: "complete" | "partial";
+      unavailableFields?: string[];
       recorded: {
         id: string;
         kind: "out-of-character" | "conversation" | "combat" | "exploration" | "investigation" |
           "travel" | "rest" | "downtime" | "other";
-        summary: string;
-        participants: Array<{ id: string; name: string; entityId?: string }>;
-        interactions: Array<{ id: string; ordinal: number; role: "player" | "assistant"; text: string }>;
+        summary?: string;
+        participants?: Array<{ id: string; name: string; entityId?: string }>;
+        interactions?: Array<{ id: string; ordinal?: number; role: "player" | "assistant"; text: string }>;
         location?: { id?: string; name: string };
       };
     }
@@ -892,6 +990,9 @@ export type CurrentSituationReadModel =
       locationId: string;
       scene?: VisualMedia;
       affordances?: CurrentSceneAffordance[];
+      routesCoverage?: "complete" | "partial" | "unavailable";
+      coverage?: "complete" | "partial";
+      unavailableFields?: string[];
     }
   | {
       status: "ready";
@@ -899,6 +1000,8 @@ export type CurrentSituationReadModel =
       locationId: string;
       scene?: VisualMedia;
       affordances?: CurrentSceneAffordance[];
+      coverage?: "complete" | "partial";
+      unavailableFields?: string[];
       conversation: {
         id: string;
         name: string;
@@ -912,6 +1015,8 @@ export type CurrentSituationReadModel =
       locationId: string;
       scene?: VisualMedia;
       affordances?: CurrentSceneAffordance[];
+      coverage?: "complete" | "partial";
+      unavailableFields?: string[];
       combat: {
         id: string;
         name: string;
@@ -941,7 +1046,8 @@ export type KnownRouteReadModel = {
   originId: string;
   destinationId: string;
   destinationName: string;
-  detail: string;
+  detail?: string;
+  unavailableFields?: Array<"detail">;
   mode: "on-foot";
   durationMinutes: number;
 };
@@ -951,14 +1057,16 @@ export type DeferredViewState = "unloaded" | "loading" | "ready" | "error";
 
 export type DeferredHubUpdate =
   | { section: "context"; contextSelection: HubContextSelection }
-  | { section: "history"; world: Pick<WorldReadModel, "history"> }
+  | { section: "history"; world: Pick<WorldReadModel, "history" | "historyCoverage"> }
   | {
       section: "lore";
-      world: Pick<WorldReadModel, "lore">;
-      campaign: Pick<CampaignReadModel, "quests" | "clues" | "mapOverlays">;
+      world: Pick<WorldReadModel, "lore" | "loreCoverage">;
+      campaign: Pick<CampaignReadModel, "quests" | "clues" | "cluesCoverage" | "knowledgeAudience" | "mapOverlays">;
     }
   | {
       section: "locations";
+      /** Present for a bounded location-scope page that must merge into the loaded hierarchy. */
+      scopePage?: { id: string };
       world: Pick<WorldReadModel,
         "currentLocationId" | "map" | "mapOwnerId" | "rootMapId" | "maps" | "regions" | "facts" | "locations" | "locationScopes">;
       campaign: Pick<CampaignReadModel, "mapOverlays">;
@@ -967,8 +1075,11 @@ export type DeferredHubUpdate =
   | {
       section: "current";
       currentSituation: CurrentSituationReadModel;
-      world: Pick<WorldReadModel, "currentLocationId" | "locations">;
-      campaign: Pick<CampaignReadModel, "mapOverlays">;
+      projection?: CurrentPlayReadEvidence;
+      /** Current selects detail only from the scene's explicit location binding. */
+      world: Pick<WorldReadModel, "locations"> & { currentLocationId?: string };
+      /** Kept only for compatible transport readers; Current never owns overlays. */
+      campaign?: Pick<CampaignReadModel, "mapOverlays">;
     };
 
 export type ReadyHubEnvelope = {
@@ -986,6 +1097,7 @@ export type ReadyHubEnvelope = {
   currentSituation?: CurrentSituationReadModel;
   objectQueries?: {
     campaignSummary?: ObjectReadEvidence;
+    currentPlay?: CurrentPlayReadEvidence;
   };
 };
 
@@ -994,16 +1106,20 @@ export type RulesReferencePublication = {
   resolutionFingerprint: string;
   rulesFingerprint: string;
   audience: "public" | "dm";
-  articleCount: number;
+  articleCount: number | null;
   rules: RuleReadModel[];
+  /** A usable publication can be partial when an unrelated optional display field is malformed. */
+  coverage?: "ready" | "partial";
+  notices?: string[];
 };
 
 export type CanonicalCharacterData = CharacterSheetData & {
-  dossier: CharacterDossierMetadata;
+  /** Dossier enrichment is optional; the canonical sheet remains useful without it. */
+  dossier?: CharacterDossierMetadata;
 };
 
 export type CharacterSheetResult =
-  | { status: "ready"; data: CharacterSheetData; failureCategory: null; diagnosticId: string }
+  | { status: "ready"; data: CharacterSheetData; media?: EntityVisualMedia | null; failureCategory: null; diagnosticId: string }
   | {
       status: "error";
       data: null;
@@ -1011,6 +1127,7 @@ export type CharacterSheetResult =
       diagnosticId: string;
       errorCode?: string;
       httpStatus?: number;
+      media?: EntityVisualMedia | null;
     }
   | {
       status: "forbidden";
@@ -1019,6 +1136,7 @@ export type CharacterSheetResult =
       diagnosticId: string;
       errorCode?: string;
       httpStatus?: number;
+      media?: EntityVisualMedia | null;
     };
 
 export type ObjectReadEvidence = {
@@ -1029,6 +1147,9 @@ export type ObjectReadEvidence = {
   resultFingerprint: string;
   sourceRevisionFingerprint: string;
 };
+
+/** Actual observations of the two registered Current reads, never a browser schema pin. */
+export type CurrentPlayReadEvidence = { resume: ObjectReadEvidence; scene?: ObjectReadEvidence };
 
 export type DeniedHubEnvelope = {
   version: 1;
@@ -1043,6 +1164,7 @@ export type ConnectedCampaignEnvelope = {
   stateSpaceId: string;
   currentLocationId?: string;
   currentSituation?: CurrentSituationReadModel;
+  currentPlayProjection?: CurrentPlayReadEvidence;
   knownRoutes?: KnownRouteReadModel[];
   audience: {
     seat: Perspective;
@@ -1057,12 +1179,15 @@ export type ConnectedCampaignEnvelope = {
     premise: string | null;
     partyGoals: string[];
     toneAndBoundaries: string[];
+    /** Explicit field-local status from the Campaign Summary bootstrap when available. */
+    descriptiveFields?: CampaignDescriptiveFields;
     projection?: ObjectReadEvidence;
     chapters: Array<{
       id: string;
-      status: "active" | "closed";
-      title: string;
-      partyQuestion: string;
+      status?: "active" | "closed";
+      title?: string;
+      partyQuestion?: string;
+      unavailableFields?: string[];
       createdAtUtc?: string | null;
       updatedAtUtc?: string | null;
       closingSummary?: string;
@@ -1071,9 +1196,10 @@ export type ConnectedCampaignEnvelope = {
     }>;
     arcs: Array<{
       id: string;
-      status: "active" | "resolved" | "abandoned";
-      title: string;
-      partyStake: string;
+      status?: "active" | "resolved" | "abandoned";
+      title?: string;
+      partyStake?: string;
+      unavailableFields?: string[];
       createdAtUtc?: string | null;
       updatedAtUtc?: string | null;
       closingSummary?: string;
@@ -1082,13 +1208,14 @@ export type ConnectedCampaignEnvelope = {
     }>;
     sessions: Array<{
       id: string;
-      status: "active" | "ended";
+      status?: "active" | "ended";
       ordinal: number;
+      unavailableFields?: string[];
       updatedAtUtc?: string | null;
       worldEntityIds?: string[];
       recap?: {
-        chapter: { id: string; status: "active"; title: string; partyQuestion: string };
-        arc: { id: string; status: "active"; title: string; partyStake: string };
+        chapter: { id: string; status?: "active"; title?: string; partyQuestion?: string; unavailableFields?: string[] };
+        arc: { id: string; status?: "active"; title?: string; partyStake?: string; unavailableFields?: string[] };
         milestones: Array<{
           chapterId: string;
           title: string;
@@ -1096,6 +1223,7 @@ export type ConnectedCampaignEnvelope = {
           timestamp: string;
           sequence: number;
         }>;
+        unavailableFields?: string[];
       };
     }>;
     visits: Array<{
@@ -1104,11 +1232,13 @@ export type ConnectedCampaignEnvelope = {
       firstVisitedMinute: number;
       lastVisitedMinute: number;
       visitCount: number;
-      status: "current" | "departed";
-      summary: string;
-      memory: string;
+      status?: "current" | "departed";
+      summary?: string;
+      memory?: string;
       gmContext?: string;
+      unavailableFields?: string[];
     }>;
+    detailFields?: CampaignDetailFields;
   };
   actor: {
     id: string;
@@ -1127,31 +1257,24 @@ export type ConnectedCampaignEnvelope = {
   }>;
   knowledge: {
     status: "ready" | "empty" | "unavailable";
-    entries: Array<{
-      text: string;
-      stance: string;
-      presentationKind: string;
-      subject?: { id: string; name: string };
-      media?: EntityVisualMedia;
-    }>;
+    coverage?: "complete" | "partial";
+    audience?: "party" | "dm";
+    entries: ConnectedKnowledgeEntry[];
     locations: Array<{
       name: string;
-      entries: Array<{
-        text: string;
-        stance: string;
-        presentationKind: string;
-        subject?: { id: string; name: string };
-      }>;
+      entries: ConnectedKnowledgeEntry[];
     }>;
   };
   chronology: {
     status: "ready" | "empty" | "unavailable";
+    coverage?: "complete" | "partial";
+    projection?: ObjectReadEvidence;
     perspective: Perspective;
     entries: Array<{
       id: string;
-      occurredAtMinute: number;
+      occurredAtMinute: number | null;
       dateLabel: string;
-      precision: "exact" | "approximate" | "era";
+      precision: "exact" | "approximate" | "era" | "unavailable";
       title: string;
       summary: string;
       subjects?: Array<{ id: string; name: string }>;
@@ -1167,12 +1290,14 @@ export type ConnectedCampaignEnvelope = {
     childIds: string[];
     totalCount: number;
     complete: boolean;
+    coverage?: "complete" | "partial";
     nextCursor: string | null;
     sourceRevisionFingerprint: string | null;
   }>;
   locationDirectory?: Array<{
     id: string;
     name: string;
+    unavailableFields?: string[];
     isWorldRoot?: boolean;
     kind?: string;
     summary?: string;
@@ -1185,15 +1310,17 @@ export type ConnectedCampaignEnvelope = {
   }>;
   worldDirectory?: {
     peopleHierarchyComplete?: boolean;
+    peopleCoverage?: "complete" | "partial";
     directoryRecordCount?: number;
     peopleSourceRevisionFingerprint?: string | null;
     people: Array<{
       id: string;
       name: string;
-      kind: "NPC" | "Creature";
+      kind: string;
       locationId: string;
       media?: EntityVisualMedia;
       motive?: { status: string; visibility: string; summary: string };
+      unavailableFields?: string[];
     }>;
     factions: Array<{
       id: string;
@@ -1213,6 +1340,7 @@ export type ConnectedCampaignEnvelope = {
       territoryReferences?: Array<{ id: string; name: string }>;
       alliedReferences?: Array<{ id: string; name: string }>;
       opposedReferences?: Array<{ id: string; name: string }>;
+      unavailableFields?: string[];
     }>;
     holdings: Array<{
       id: string;
@@ -1227,8 +1355,20 @@ export type ConnectedCampaignEnvelope = {
 /** The registered Campaign-detail transport after its audience-safe parser has accepted it. */
 export type ConnectedCampaignDetails = Pick<
   ConnectedCampaignEnvelope["campaign"],
-  "chapters" | "arcs" | "sessions" | "visits"
->;
+  "chapters" | "arcs" | "sessions" | "visits" | "projection"
+> & {
+  /** Runtime JavaScript parsers validate these values before merge; keep the boundary readable to TS callers. */
+  detailFields?: { [K in keyof CampaignDetailFields]: CampaignDetailFields[K] | string };
+};
+
+export type CampaignDetailFieldStatus = "ready" | "partial" | "empty" | "absent" | "invalid";
+
+export type CampaignDetailFields = {
+  chapters: CampaignDetailFieldStatus;
+  arcs: CampaignDetailFieldStatus;
+  sessions: CampaignDetailFieldStatus;
+  visits: CampaignDetailFieldStatus;
+};
 
 export type CharacterCreationRequiredEnvelope = {
   version: 1;

@@ -22,9 +22,15 @@ internal sealed class ApplicationReadModelService(
     IBoundedJsonSchemaValidator schemas,
     ObjectProjectionInteractionQueryExecutor? objectQueries = null) : IApplicationReadModelService
 {
-    public async Task<ApplicationReadModelResult> ReadAsync(
+    public Task<ApplicationReadModelResult> ReadAsync(
         ApplicationReadModelRequest request,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) =>
+        ReadInternalAsync(request, new HashSet<string>(StringComparer.Ordinal), cancellationToken);
+
+    private async Task<ApplicationReadModelResult> ReadInternalAsync(
+        ApplicationReadModelRequest request,
+        IReadOnlySet<string> selectionPath,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(request.ApplicationId);
@@ -72,6 +78,12 @@ internal sealed class ApplicationReadModelService(
             throw Failure("READ_MODEL_CONTRACT_INVALID",
                 "The requested read-model contract is invalid.", exception);
         }
+        if (contract.CampaignSelection is not null)
+            throw Failure("READ_MODEL_FORBIDDEN", "The requested read-model contract is unavailable.");
+        if (contract.Id != request.QualifiedQueryId
+            || request.ExpectedContract is { } expectedContract && !SameContract(contract, expectedContract))
+            throw Failure("READ_MODEL_SOURCE_STALE",
+                "The read-model query no longer matches its verified contract.");
         if (!contract.Roles.Keys.Order(StringComparer.Ordinal)
             .SequenceEqual(request.RoleBindings.Keys.Order(StringComparer.Ordinal), StringComparer.Ordinal))
             throw Failure("READ_MODEL_ROLES_INVALID",
@@ -91,6 +103,10 @@ internal sealed class ApplicationReadModelService(
                 throw Failure("READ_MODEL_INPUT_INVALID", "The request is invalid.");
         }
 
+        var declaredSelection = contract.Selection is null
+            ? null
+            : await ReadDeclaredSelectionAsync(contract.Selection, request, catalog, selectionPath, cancellationToken);
+
         if (contract.Executor == ApplicationQueryContract.ObjectProjectionExecutor)
         {
             if (objectQueries is null)
@@ -101,7 +117,7 @@ internal sealed class ApplicationReadModelService(
             InteractionQueryExecutionResult projection;
             try
             {
-                projection = await objectQueries.ExecuteAsync(new(
+                var objectRequest = new InteractionQueryExecutionRequest(
                     request.StateSpaceId,
                     request.ApplicationId,
                     request.QualifiedQueryId,
@@ -118,11 +134,19 @@ internal sealed class ApplicationReadModelService(
                     request.RoleBindings,
                     request.Audience,
                     request.Cursor,
-                    request.PageSize), cancellationToken);
+                    request.PageSize);
+                projection = request.ExactObjectRead
+                    ? await objectQueries.ExecuteAsync(objectRequest, cancellationToken)
+                    : await objectQueries.ExecuteReadAsync(objectRequest,
+                        contract.IsFieldBasedObject, request.IncludeObjectReadEvidence, cancellationToken);
             }
             catch (UnauthorizedAccessException exception)
             {
                 throw Failure("READ_MODEL_FORBIDDEN", "The requested view is unavailable.", exception);
+            }
+            catch (InteractionContractException exception)
+            {
+                throw Failure("READ_MODEL_CONTRACT_INVALID", "The registered object query is unavailable.", exception);
             }
             catch (InvalidOperationException exception) when (exception.Message.Contains("CURSOR", StringComparison.Ordinal))
             {
@@ -131,9 +155,11 @@ internal sealed class ApplicationReadModelService(
             if (schemas.Validate(outputSchema.ProfileId, outputSchema.NormalizedSchema,
                     projection.OutputJson).Status != SchemaValueStatus.Valid)
                 throw Failure("READ_MODEL_OUTPUT_INVALID", "The registered object returned data outside its query schema.");
-            return new(request.ApplicationId.Value, request.StateSpaceId, request.QualifiedQueryId,
+            var result = new ApplicationReadModelResult(request.ApplicationId.Value, request.StateSpaceId, request.QualifiedQueryId,
                 stateSpace.ManifestFingerprint, stateSpace.ResolutionFingerprint, outputSchema.SchemaHash,
-                projection.ResultFingerprint, projection.SourceRevisionFingerprint, projection.OutputJson);
+                projection.ResultFingerprint, projection.SourceRevisionFingerprint, projection.OutputJson)
+            { ObjectReadEvidence = projection.ObjectReadEvidence };
+            return await RecheckDeclaredSelectionAsync(declaredSelection, result, cancellationToken);
         }
         if (contract.Executor != ApplicationQueryContract.MechanicProjectionExecutor)
             throw Failure("READ_MODEL_EXECUTOR_UNSUPPORTED",
@@ -251,16 +277,164 @@ internal sealed class ApplicationReadModelService(
             && expected.ValueKind != JsonValueKind.Null && expected.GetString() != sourceFingerprint)
             throw Failure("READ_MODEL_SOURCE_STALE", "The view changed. Refresh to continue.");
 
-        return new(request.ApplicationId.Value, request.StateSpaceId, request.QualifiedQueryId,
+        var readResult = new ApplicationReadModelResult(request.ApplicationId.Value, request.StateSpaceId,
+            request.QualifiedQueryId,
             stateSpace.ManifestFingerprint, stateSpace.ResolutionFingerprint,
             contract.OutputSchemaHash, resultFingerprint, sourceFingerprint, data);
+        return await RecheckDeclaredSelectionAsync(declaredSelection, readResult, cancellationToken);
     }
+
+    private async Task<DeclaredSelectionRead> ReadDeclaredSelectionAsync(
+        ApplicationQuerySelection selection,
+        ApplicationReadModelRequest parentRequest,
+        ICatalogNavigator catalog,
+        IReadOnlySet<string> selectionPath,
+        CancellationToken cancellationToken)
+    {
+        ApplicationQueryContract selector;
+        try
+        {
+            var record = catalog.Inspect(new(parentRequest.ApplicationId, parentRequest.ApplicationId.Value,
+                selection.QueryId));
+            if (record.Summary.Kind != ApplicationQueryContract.CatalogKind || record.Summary.Status != "active")
+                throw new KeyNotFoundException();
+            selector = ApplicationQueryContract.Parse(record.ContentJson, parentRequest.ApplicationId);
+        }
+        catch (Exception exception) when (exception is ArgumentException or KeyNotFoundException or JsonException)
+        {
+            throw Failure("READ_MODEL_FORBIDDEN", "The declared selection is unavailable.", exception);
+        }
+        if (selector.CampaignSelection is not null || selector.InputSchemaJson is not null || selector.RoleBindings is null
+            || !selection.RoleBindings.Keys.ToHashSet(StringComparer.Ordinal).SetEquals(selector.Roles.Keys)
+            || !parentRequest.RoleBindings.TryGetValue(selection.TargetRole, out var selectedEntityId)
+            || selectionPath.Contains(selection.QueryId)
+            || selectionPath.Count >= ApplicationQueryContract.MaximumDeclaredSelectionLinks)
+            throw Failure("READ_MODEL_FORBIDDEN", "The declared selection is unavailable.");
+
+        var selectorRoles = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var (selectorRole, parentRole) in selection.RoleBindings)
+        {
+            if (!parentRequest.RoleBindings.TryGetValue(parentRole, out var entityId))
+                throw Failure("READ_MODEL_FORBIDDEN", "The declared selection is unavailable.");
+            selectorRoles.Add(selectorRole, entityId);
+        }
+        var selectorRequest = new ApplicationReadModelRequest(parentRequest.StateSpaceId,
+            parentRequest.ApplicationId, selection.QueryId, selectorRoles, parentRequest.Audience);
+        var selectorPath = new HashSet<string>(selectionPath, StringComparer.Ordinal)
+        {
+            parentRequest.QualifiedQueryId
+        };
+        var result = await ReadInternalAsync(selectorRequest, selectorPath, cancellationToken);
+        if (!SelectionMatches(result, selection.ResultPointer, selectedEntityId))
+            throw Failure("READ_MODEL_FORBIDDEN", "The declared selection is unavailable.");
+        return new(selection.ResultPointer, selectedEntityId, selectorRequest, result, selectorPath);
+    }
+
+    private async Task<ApplicationReadModelResult> RecheckDeclaredSelectionAsync(
+        DeclaredSelectionRead? selection,
+        ApplicationReadModelResult result,
+        CancellationToken cancellationToken)
+    {
+        if (selection is null) return result;
+        if (!SameSelectionScope(selection.Result, result))
+            throw Failure("READ_MODEL_SOURCE_STALE", "The selected view changed. Refresh to continue.");
+        var current = await ReadInternalAsync(selection.Request, selection.ParentPath, cancellationToken);
+        if (!SameSelectionEvidence(selection.Result, current)
+            || !SelectionMatches(current, selection.ResultPointer, selection.SelectedEntityId))
+            throw Failure("READ_MODEL_SOURCE_STALE", "The selected view changed. Refresh to continue.");
+        return result;
+    }
+
+    private static bool SelectionMatches(
+        ApplicationReadModelResult result,
+        string pointer,
+        string entityId)
+    {
+        using var data = JsonDocument.Parse(result.DataJson);
+        var current = data.RootElement;
+        foreach (var token in pointer.Split('/').Skip(1)
+                     .Select(value => value.Replace("~1", "/").Replace("~0", "~")))
+        {
+            if (current.ValueKind == JsonValueKind.Object)
+            {
+                var matches = current.EnumerateObject().Where(value => value.Name == token).Take(2).ToArray();
+                if (matches.Length != 1) return false;
+                current = matches[0].Value;
+                continue;
+            }
+            if (current.ValueKind == JsonValueKind.Array
+                && ApplicationQueryRoleBindingResolver.TryParseArrayIndex(token, out var index)
+                && index >= 0 && index < current.GetArrayLength())
+            {
+                current = current[index];
+                continue;
+            }
+            return false;
+        }
+        return current.ValueKind == JsonValueKind.String && current.GetString() == entityId;
+    }
+
+    private static bool SameSelectionEvidence(
+        ApplicationReadModelResult first,
+        ApplicationReadModelResult second) =>
+        first.ApplicationId == second.ApplicationId
+        && first.StateSpaceId == second.StateSpaceId
+        && first.QualifiedQueryId == second.QualifiedQueryId
+        && first.StateSpaceFingerprint == second.StateSpaceFingerprint
+        && first.ResolutionFingerprint == second.ResolutionFingerprint
+        && first.OutputSchemaHash == second.OutputSchemaHash
+        && first.ResultFingerprint == second.ResultFingerprint
+        && first.SourceRevisionFingerprint == second.SourceRevisionFingerprint;
+
+    private static bool SameSelectionScope(
+        ApplicationReadModelResult selection,
+        ApplicationReadModelResult selected) =>
+        selection.ApplicationId == selected.ApplicationId
+        && selection.StateSpaceId == selected.StateSpaceId
+        && selection.StateSpaceFingerprint == selected.StateSpaceFingerprint
+        && selection.ResolutionFingerprint == selected.ResolutionFingerprint;
+
+    private static bool SameContract(
+        ApplicationQueryContract current,
+        InteractionQueryContractReference expected) =>
+        current.Executor == expected.Executor
+        && current.ProjectionQualifiedId == expected.ProjectionQualifiedId
+        && current.ProjectionVersion == expected.ProjectionVersion
+        && current.ProjectionContentHash == expected.ProjectionContentHash
+        && current.OutputSchemaHash == expected.OutputSchemaHash
+        && current.ObjectCollectionId == expected.CollectionId
+        && current.Exposure == expected.Exposure
+        && current.Roles.Keys.Order(StringComparer.Ordinal)
+            .SequenceEqual(expected.Roles.Order(StringComparer.Ordinal), StringComparer.Ordinal)
+        && InteractionCanonicalJson.CanonicalizeObject(current.OutputSchemaJson)
+            == expected.OutputSchemaJson;
+
+    private sealed record DeclaredSelectionRead(
+        string ResultPointer,
+        string SelectedEntityId,
+        ApplicationReadModelRequest Request,
+        ApplicationReadModelResult Result,
+        IReadOnlySet<string> ParentPath);
 
     private static bool Token(string? value) => value is { Length: >= 1 and <= 200 }
         && value == value.Trim() && !value.Any(char.IsControl);
 
     internal static string FingerprintSourceRevisions(MechanicProjection projection)
     {
+        if (projection.GraphSnapshots.Count > 0)
+        {
+            // Keep every legacy query fingerprint unchanged. A graph-aware query additionally
+            // binds its exact graph snapshots, including entity names, relationship collections
+            // (also empty ones), selected components, and containment paths.
+            var legacy = FingerprintSourceRevisions(projection with { GraphSnapshots = [] });
+            return InteractionCanonicalJson.Fingerprint("application-read-model-graph-revisions-v1",
+                InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
+                {
+                    legacy,
+                    graphs = projection.GraphSnapshots.OrderBy(value => value.Key, StringComparer.Ordinal)
+                        .Select(value => new { name = value.Key, value.Value.SourceRevisionFingerprint })
+                })));
+        }
         var sourceRevisionJson = JsonSerializer.Serialize(new
         {
             components = projection.ComponentRevisions

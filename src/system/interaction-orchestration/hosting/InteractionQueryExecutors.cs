@@ -116,11 +116,54 @@ internal sealed class MechanicProjectionInteractionQueryExecutor(IApplicationRea
             request.ApplicationId,
             request.QualifiedQueryId,
             request.RoleBindings,
-            request.Audience), cancellationToken);
+            request.Audience)
+        { ExpectedContract = request.Contract }, cancellationToken);
         if (result.QualifiedQueryId != request.QualifiedQueryId
             || result.OutputSchemaHash != request.Contract.OutputSchemaHash)
             throw new InteractionContractException("QUERY_READ_MODEL_STALE",
                 "The query read model returned a different contract authority.");
+
+        return new(result.DataJson, result.OutputSchemaHash,
+            result.ResultFingerprint, result.SourceRevisionFingerprint);
+    }
+}
+
+/// <summary>
+/// Planned object-query adapter. The shared read-model service owns catalog selection proofs;
+/// the prepared object executor remains the non-recursive exact materialization core.
+/// </summary>
+internal sealed class RegisteredObjectProjectionInteractionQueryExecutor(IApplicationReadModelService readModels)
+    : IInteractionQueryExecutor
+{
+    public string Kind => ApplicationQueryContract.ObjectProjectionExecutor;
+
+    public async Task<InteractionQueryExecutionResult> ExecuteAsync(
+        InteractionQueryExecutionRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(request.ApplicationId);
+        ArgumentNullException.ThrowIfNull(request.Contract);
+        if (request.Contract.Executor != Kind
+            || !request.QualifiedQueryId.StartsWith(request.ApplicationId.Value + ".", StringComparison.Ordinal)
+            || !request.Contract.Roles.Order(StringComparer.Ordinal)
+                .SequenceEqual(request.RoleBindings.Keys.Order(StringComparer.Ordinal), StringComparer.Ordinal))
+            throw new InteractionContractException("QUERY_EXECUTION_SCOPE_INVALID",
+                "The object query request does not match its application, executor, or exact roles.");
+
+        var result = await readModels.ReadAsync(new(
+            request.StateSpaceId,
+            request.ApplicationId,
+            request.QualifiedQueryId,
+            request.RoleBindings,
+            request.Audience,
+            Cursor: request.Cursor,
+            PageSize: request.PageSize)
+        { ExactObjectRead = true, ExpectedContract = request.Contract }, cancellationToken);
+        if (result.QualifiedQueryId != request.QualifiedQueryId
+            || result.OutputSchemaHash != request.Contract.OutputSchemaHash)
+            throw new InteractionContractException("QUERY_READ_MODEL_STALE",
+                "The object query read model returned a different contract authority.");
 
         return new(result.DataJson, result.OutputSchemaHash,
             result.ResultFingerprint, result.SourceRevisionFingerprint);

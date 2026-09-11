@@ -3,10 +3,13 @@ using System.Text;
 using System.Text.Json;
 using DantesRoleplay.Applications;
 using DantesRoleplay.Authorization;
+using DantesRoleplay.Capabilities;
 using DantesRoleplay.CatalogNavigation;
+using DantesRoleplay.Ecs;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Knowledge;
 using DantesRoleplay.Play;
+using DantesRoleplay.Projections;
 using DantesRoleplay.Sources;
 
 namespace DantesRoleplay.Tests;
@@ -80,6 +83,115 @@ public sealed class InteractionTaskContextTests
 
         Assert.Equal("TASK_CONTEXT_NOT_AUTHORIZED", exception.Code);
         Assert.Equal(0, retriever.Calls);
+    }
+
+    [Fact]
+    public async Task Field_based_capability_uses_only_exact_registry_discovery_after_authorization()
+    {
+        var query = FieldQuery("sample-app.query.member");
+        var snapshot = Snapshot([query]);
+        var policy = new RecordingAuthorization();
+        var registry = new RecordingProjectionRegistry(Discovery());
+        var materializer = new InteractionTaskContextMaterializer(policy,
+            new RecordingRetriever(policy, snapshot, [query]), new FixedSnapshots(snapshot),
+            new ReadModels(), projections: registry);
+        var (envelope, request) = Envelope();
+
+        var pack = await materializer.MaterializeAsync(envelope, request);
+
+        Assert.Equal(1, registry.Calls);
+        Assert.Equal(Discovery().Object, registry.Reference);
+        using var document = JsonDocument.Parse(pack.Json);
+        var capability = Assert.Single(document.RootElement.GetProperty("capabilities").EnumerateArray());
+        var value = capability.GetProperty("Value");
+        Assert.Equal("sample-app.identity", value.GetProperty("ObjectDiscovery")
+            .GetProperty("Sources")[0].GetProperty("QualifiedComponentId").GetString());
+        var readView = Assert.Single(document.RootElement.GetProperty("readViews").EnumerateArray());
+        Assert.Equal("available", readView.GetProperty("Value").GetProperty("objectReadEvidence")
+            .GetProperty("Availability").GetString());
+        Assert.DoesNotContain(document.RootElement.GetProperty("limitations").EnumerateArray(),
+            item => item.GetString()?.StartsWith("TASK_CONTEXT_OBJECT_DISCOVERY_", StringComparison.Ordinal) == true);
+        Assert.DoesNotContain(document.RootElement.GetProperty("limitations").EnumerateArray(),
+            item => item.GetString()?.StartsWith("TASK_CONTEXT_OBJECT_READ_EVIDENCE_", StringComparison.Ordinal) == true);
+    }
+
+    [Fact]
+    public async Task Field_based_read_evidence_is_host_opted_and_missing_evidence_is_explicit()
+    {
+        var query = FieldQuery("sample-app.query.member");
+        var snapshot = Snapshot([query]);
+        var policy = new RecordingAuthorization();
+        var reads = new ReadModels(includeEvidence: false);
+        var materializer = new InteractionTaskContextMaterializer(policy,
+            new RecordingRetriever(policy, snapshot, [query]), new FixedSnapshots(snapshot), reads,
+            projections: new RecordingProjectionRegistry(Discovery()));
+        var (envelope, request) = Envelope();
+
+        var pack = await materializer.MaterializeAsync(envelope, request);
+
+        Assert.True(reads.LastRequest!.IncludeObjectReadEvidence);
+        using var document = JsonDocument.Parse(pack.Json);
+        Assert.Contains(document.RootElement.GetProperty("limitations").EnumerateArray(),
+            value => value.GetString() == "TASK_CONTEXT_OBJECT_READ_EVIDENCE_UNAVAILABLE");
+        Assert.False(Assert.Single(document.RootElement.GetProperty("readViews").EnumerateArray())
+            .GetProperty("Value").TryGetProperty("objectReadEvidence", out _));
+
+        var budgetPolicy = new RecordingAuthorization();
+        var budgeted = await new InteractionTaskContextMaterializer(budgetPolicy,
+            new RecordingRetriever(budgetPolicy, snapshot, [query]), new FixedSnapshots(snapshot),
+            new ReadModels(budgetExceeded: true),
+            projections: new RecordingProjectionRegistry(Discovery())).MaterializeAsync(envelope, request);
+        using var budgetDocument = JsonDocument.Parse(budgeted.Json);
+        Assert.Contains(budgetDocument.RootElement.GetProperty("limitations").EnumerateArray(),
+            value => value.GetString() == "TASK_CONTEXT_OBJECT_READ_EVIDENCE_BUDGET_EXCEEDED");
+    }
+
+    [Fact]
+    public async Task Missing_or_oversized_field_discovery_is_explicit_and_never_breaks_the_pack_bound()
+    {
+        var query = FieldQuery("sample-app.query.member");
+        var snapshot = Snapshot([query]);
+        var (envelope, request) = Envelope();
+
+        var missingPolicy = new RecordingAuthorization();
+        var missing = await new InteractionTaskContextMaterializer(missingPolicy,
+            new RecordingRetriever(missingPolicy, snapshot, [query]), new FixedSnapshots(snapshot),
+            new ReadModels(), projections: new RecordingProjectionRegistry(null))
+            .MaterializeAsync(envelope, request);
+        using (var document = JsonDocument.Parse(missing.Json))
+            Assert.Contains(document.RootElement.GetProperty("limitations").EnumerateArray(),
+                item => item.GetString() == "TASK_CONTEXT_OBJECT_DISCOVERY_UNAVAILABLE");
+
+        var largePolicy = new RecordingAuthorization();
+        var oversized = Discovery("{\"type\":\"object\",\"description\":\"" + new string('x', 20_000) + "\"}");
+        var bounded = await new InteractionTaskContextMaterializer(largePolicy,
+            new RecordingRetriever(largePolicy, snapshot, [query]), new FixedSnapshots(snapshot),
+            new ReadModels(), projections: new RecordingProjectionRegistry(oversized))
+            .MaterializeAsync(envelope, request);
+        Assert.True(Encoding.UTF8.GetByteCount(bounded.Json) <= InteractionTaskContextMaterializer.MaximumPackBytes);
+        using var boundedDocument = JsonDocument.Parse(bounded.Json);
+        Assert.Contains(boundedDocument.RootElement.GetProperty("limitations").EnumerateArray(),
+            item => item.GetString() == "TASK_CONTEXT_OBJECT_DISCOVERY_BUDGET_EXCEEDED");
+        Assert.False(Assert.Single(boundedDocument.RootElement.GetProperty("capabilities").EnumerateArray())
+            .GetProperty("Value").TryGetProperty("ObjectDiscovery", out _));
+    }
+
+    [Fact]
+    public async Task Authorization_denial_prevents_field_discovery_lookup()
+    {
+        var query = FieldQuery("sample-app.query.member");
+        var snapshot = Snapshot([query]);
+        var policy = new RecordingAuthorization(allowed: false);
+        var registry = new RecordingProjectionRegistry(Discovery());
+        var materializer = new InteractionTaskContextMaterializer(policy,
+            new RecordingRetriever(policy, snapshot, [query]), new FixedSnapshots(snapshot),
+            new ReadModels(), projections: registry);
+        var (envelope, request) = Envelope();
+
+        await Assert.ThrowsAsync<InteractionTaskContextException>(() =>
+            materializer.MaterializeAsync(envelope, request));
+
+        Assert.Equal(0, registry.Calls);
     }
 
     [Theory]
@@ -244,6 +356,54 @@ public sealed class InteractionTaskContextTests
         return Record(ApplicationQueryContract.CatalogKind, id, name, description, content);
     }
 
+    private static CatalogRecordDefinition FieldQuery(string id)
+    {
+        var content = JsonSerializer.Serialize(new
+        {
+            id,
+            category = "world.member",
+            name = "Member",
+            description = "Reads one member.",
+            matches = new[] { "read member" },
+            roles = new Dictionary<string, string> { ["subject"] = "The current actor." },
+            executor = ApplicationQueryContract.ObjectProjectionExecutor,
+            profile = RegisteredApplicationObjectContract.FieldBasedContractProfileId,
+            @object = new
+            {
+                qualifiedId = "sample-app.object.member",
+                version = 1,
+                contentFingerprint = Hash("object")
+            },
+            collection = "members",
+            exposure = "model-visible",
+            status = "active"
+        });
+        return Record(ApplicationQueryContract.CatalogKind, id, "Member", "Reads one member.", content);
+    }
+
+    private static ApplicationObjectDiscovery Discovery(string? schema = null)
+    {
+        schema ??= "{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\"}}}";
+        var component = new EcsComponentReference("sample-app.identity", 1,
+            CapabilityContractBuilder.SchemaHash(schema));
+        var field = new ApplicationObjectFieldProvenance("/name", ["identity"], "subject",
+            component, "/name", true);
+        return new(new("sample-app.object.member", 1, Hash("object")),
+            RegisteredApplicationObjectContract.FieldBasedContractProfileId,
+            [new("source-1", ["identity"], "subject", true, component,
+                CapabilityContractBuilder.JsonSchemaProfile, schema)], [field], []);
+    }
+
+    private static ApplicationObjectReadEvidence ReadEvidence()
+    {
+        var discovery = Discovery();
+        var source = Assert.Single(discovery.Sources);
+        return new(discovery.Object, discovery.ProfileId, "available",
+            [new(source.SourceId, source.InputPath, source.EntityRole, source.Required, source.Component,
+                "available", [new(source.Component, source.SchemaProfileId, source.SchemaJson)])],
+            [new("/name", source.SourceId, "/name", ["value"])]);
+    }
+
     private static CatalogRecordDefinition Record(
         string kind, string id, string name, string description, string content) =>
         new("sample", kind, id, name, description, [], [], "", "active", 1, content,
@@ -310,14 +470,24 @@ public sealed class InteractionTaskContextTests
         }
     }
 
-    private sealed class ReadModels : IApplicationReadModelService
+    private sealed class ReadModels(bool includeEvidence = true, bool budgetExceeded = false) : IApplicationReadModelService
     {
+        public ApplicationReadModelRequest? LastRequest { get; private set; }
         public Task<ApplicationReadModelResult> ReadAsync(
             ApplicationReadModelRequest request,
-            CancellationToken cancellationToken = default) => Task.FromResult(new ApplicationReadModelResult(
-            App.Value, request.StateSpaceId, request.QualifiedQueryId, CatalogFingerprint,
-            CatalogFingerprint, Hash("schema"), Hash("result"), Hash("source-revision"),
-            "{\"summary\":\"Current situation\"}"));
+            CancellationToken cancellationToken = default)
+        {
+            LastRequest = request;
+            var result = new ApplicationReadModelResult(
+                App.Value, request.StateSpaceId, request.QualifiedQueryId, CatalogFingerprint,
+                CatalogFingerprint, Hash("schema"), Hash("result"), Hash("source-revision"),
+                "{\"summary\":\"Current situation\"}");
+            if (includeEvidence && request.IncludeObjectReadEvidence)
+                result = result with { ObjectReadEvidence = budgetExceeded
+                    ? ReadEvidence() with { Availability = "budget-exceeded", Sources = [], Fields = [] }
+                    : ReadEvidence() };
+            return Task.FromResult(result);
+        }
     }
 
     private sealed class Knowledge : IAuthorizedKnowledgeCandidateResolver
@@ -366,5 +536,24 @@ public sealed class InteractionTaskContextTests
                     CatalogFingerprint, "authorization.current", receipt)
             ]);
         }
+    }
+
+    private sealed class RecordingProjectionRegistry(ApplicationObjectDiscovery? discovery)
+        : IProjectionDefinitionRegistry
+    {
+        public int Calls { get; private set; }
+        public ProjectionReference? Reference { get; private set; }
+        public ApplicationObjectDiscovery? Discover(ProjectionReference reference)
+        {
+            Calls++;
+            Reference = reference;
+            return discovery is not null && discovery.Object == reference ? discovery : null;
+        }
+        public RegisteredProjectionDefinition Define(ProjectionDefinitionRequest definition) =>
+            throw new NotSupportedException();
+        public RegisteredProjectionDefinition? Get(string qualifiedId, int version) => null;
+        public ProjectionImpactGraph GetImpactGraph(ApplicationIdentifier owner) =>
+            new(new Dictionary<string, IReadOnlyList<string>>(),
+                new Dictionary<string, IReadOnlyList<string>>());
     }
 }

@@ -46,6 +46,20 @@ test("rate limiting stops queued work and prevents a partial view from being acc
   assert.match(result.message, /server is busy/u);
 });
 
+test("queue budget evidence stays hard after an in-flight hierarchy failure", async () => {
+  let calls = 0;
+  const scope = createHubReadScope(async () => {
+    const call = ++calls;
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    return Response.json({}, { status: call === 1 ? 500 : 200 });
+  });
+  await Promise.allSettled(Array.from({ length: 2_100 }, (_, index) =>
+    scope.fetch(`${listing}/${index}`)));
+  assert.match(scope.budgetFailure, /too large to load safely/u);
+  assert.match(scope.failure, /world information/u,
+    "The late hierarchy failure must actually replace the ordinary message while the hard budget remains sticky.");
+});
+
 test("a superseded view never dispatches its queued requests", async () => {
   const controller = new AbortController();
   let calls = 0;

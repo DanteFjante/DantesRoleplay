@@ -116,15 +116,14 @@ internal sealed class InteractionProposalVerifier(
                         return Unsupported("QUERY_EXECUTOR_UNAVAILABLE", "The query object executor is unavailable.");
                     if (projection.Owner != envelope.Host.ApplicationRevision.ApplicationId
                         || projection.ContentHash != query.ProjectionContentHash
+                        || projection.ObjectContract.IsFieldBased != query.IsFieldBasedObject
                         || !JsonNode.DeepEquals(JsonNode.Parse(projection.OutputSchemaJson), JsonNode.Parse(query.OutputSchemaJson))
-                        || !projection.EntityRoles.Order(StringComparer.Ordinal)
-                            .SequenceEqual(query.Roles.Keys.Order(StringComparer.Ordinal), StringComparer.Ordinal)
-                        || query.ObjectCollectionId is null
-                        || !projection.ObjectContract.Collections.Any(value => value.CollectionId == query.ObjectCollectionId))
+                        || !ValidObjectCollection(projection.ObjectContract, query.ObjectCollectionId)
+                        || !ValidObjectRoles(projection.ObjectContract, query.ObjectCollectionId, query.Roles.Keys))
                         return Stale("QUERY_PROJECTION_STALE", "The query contract does not match its exact registered object.");
                     effectiveOutputSchemaHash = projection.OutputSchemaHash;
-                    objectRequiredRoles = projection.ObjectContract.Roles.Where(value => value.Required)
-                        .Select(value => value.RoleId).ToHashSet(StringComparer.Ordinal);
+                    objectRequiredRoles = RequiredObjectRoles(
+                        projection.ObjectContract, query.ObjectCollectionId);
                 }
                 else if (query.Executor == ApplicationQueryContract.MechanicProjectionExecutor)
                 {
@@ -137,9 +136,11 @@ internal sealed class InteractionProposalVerifier(
                     {
                         using var document = JsonDocument.Parse(mechanic.ContentJson);
                         var requirements = MechanicRequirements.Parse(document.RootElement.GetProperty("requirements").GetString()!);
+                        var declaredReadRoles = requirements.Roles.Keys.Concat(requirements.GraphSnapshots.Values
+                            .Select(value => value.RootRole)).Distinct(StringComparer.Ordinal);
                         if (requirements.Event is not null || requirements.ProjectionProblems().Count > 0
                             || requirements.CompositionProblems().Count > 0 || requirements.Roles is null
-                            || !requirements.Roles.Keys.Order(StringComparer.Ordinal)
+                            || !declaredReadRoles.Order(StringComparer.Ordinal)
                                 .SequenceEqual(query.Roles.Keys.Order(StringComparer.Ordinal), StringComparer.Ordinal))
                             return Unsafe("QUERY_PROJECTION_INVALID", "The mechanic projection requirements do not match the query.");
                     }
@@ -256,6 +257,39 @@ internal sealed class InteractionProposalVerifier(
                 ? Stale(exception.Code, "The proposed plan no longer matches current authority.")
                 : Unsafe(exception.Code, "The proposed plan violates the closed interaction contract.");
         }
+    }
+
+    private static bool ValidObjectCollection(
+        RegisteredApplicationObjectContract contract,
+        string? collectionId) => collectionId is null
+        ? contract.Collections.Count == 0
+        : contract.Collections.Any(value => value.CollectionId == collectionId);
+
+    private static bool ValidObjectRoles(
+        RegisteredApplicationObjectContract contract,
+        string? collectionId,
+        IEnumerable<string> queryRoles)
+    {
+        var declared = contract.Roles.Select(value => value.RoleId).ToHashSet(StringComparer.Ordinal);
+        var bound = queryRoles.ToHashSet(StringComparer.Ordinal);
+        if (!bound.IsSubsetOf(declared)) return false;
+        var required = RequiredObjectRoles(contract, collectionId);
+        return required.IsSubsetOf(bound);
+    }
+
+    private static HashSet<string> RequiredObjectRoles(
+        RegisteredApplicationObjectContract contract,
+        string? collectionId)
+    {
+        var required = contract.Roles.Where(value => value.Required)
+            .Select(value => value.RoleId).ToHashSet(StringComparer.Ordinal);
+        if (collectionId is not null)
+        {
+            var collection = contract.Collections.Single(value => value.CollectionId == collectionId);
+            var relationship = contract.Relationships.Single(value => value.RelationshipId == collection.SourceId);
+            required.Remove(relationship.Direction == "incoming" ? relationship.FromRole : relationship.ToRole);
+        }
+        return required;
     }
 
     private static InteractionResolutionResult? ValidateRoleHints(

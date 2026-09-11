@@ -2,7 +2,12 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using DantesRoleplay.Applications;
+using DantesRoleplay.Capabilities;
 using DantesRoleplay.CatalogNavigation;
+using DantesRoleplay.Ecs;
+using DantesRoleplay.Projections;
+using DantesRoleplay.SchemaValidation;
+using DantesRoleplay.SystemCapabilities;
 
 namespace DantesRoleplay.Tests;
 
@@ -105,6 +110,262 @@ public sealed class ApplicationCapabilityContractTests
         using var example = JsonDocument.Parse(contract.Examples.Single(value => value.ExpectedValid).InputJson);
         Assert.Equal(["locationId", "summary"], example.RootElement.EnumerateObject()
             .Select(value => value.Name).ToArray());
+    }
+
+    [Fact]
+    public void Field_based_object_queries_expose_the_host_transport_as_generated_not_authored()
+    {
+        var content = JsonSerializer.Serialize(new
+        {
+            id = "fixture.query.members",
+            category = "world.members",
+            name = "Members",
+            description = "Lists authorized members.",
+            matches = new[] { "list members" },
+            roles = new Dictionary<string, string>
+            {
+                ["campaign"] = "The owning campaign.",
+                ["member"] = "A listed member."
+            },
+            executor = "object-projection",
+            profile = "application-object/v2",
+            @object = new
+            {
+                qualifiedId = "fixture.object.members",
+                version = 1,
+                contentFingerprint = new string('A', 64)
+            },
+            collection = "members",
+            exposure = "model-visible",
+            status = "active"
+        });
+
+        var contract = ApplicationCapabilityContractAdapter.Create(ApplicationId,
+            Record("query", "fixture.query.members", content), "space.1");
+
+        Assert.Equal("generated", contract.Output.Status);
+        Assert.Equal("{\"type\":\"object\"}", contract.Output.SchemaJson);
+        Assert.Empty(CapabilityContractConformanceValidator.FindProblems(
+            contract, new BoundedJsonSchemaValidator()));
+        Assert.Contains("The output schema must reject unknown top-level properties.",
+            CapabilityContractConformanceValidator.FindProblems(contract with
+            {
+                Output = contract.Output with { Status = CapabilityContractSchemaStatus.Authored }
+            }, new BoundedJsonSchemaValidator()));
+    }
+
+    [Fact]
+    public void Field_based_query_discovery_exposes_exact_component_field_and_write_provenance()
+    {
+        const string componentSchema = "{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\"}}}";
+        var component = new EcsComponentReference("fixture.identity", 3,
+            CapabilityContractBuilder.SchemaHash(componentSchema));
+        var objectReference = new ProjectionReference("fixture.object.member", 2, new string('A', 64));
+        var field = new ApplicationObjectFieldProvenance("/name", ["identity"], "member",
+            component, "/name", true);
+        var discovery = new ApplicationObjectDiscovery(objectReference,
+            RegisteredApplicationObjectContract.FieldBasedContractProfileId,
+            [new("source-1", ["identity"], "member", true, component,
+                CapabilityContractBuilder.JsonSchemaProfile, componentSchema)],
+            [field], [new("/name", "set", "identity", "/name", null)]);
+        var content = JsonSerializer.Serialize(new
+        {
+            id = "fixture.query.member",
+            category = "world.member",
+            name = "Member",
+            description = "Reads one member.",
+            matches = new[] { "read member" },
+            roles = new Dictionary<string, string> { ["member"] = "Selected member." },
+            executor = "object-projection",
+            profile = "application-object/v2",
+            @object = new
+            {
+                qualifiedId = objectReference.QualifiedId,
+                version = objectReference.Version,
+                contentFingerprint = objectReference.ContentHash
+            },
+            collection = "members",
+            exposure = "model-visible",
+            status = "active"
+        });
+        var record = Record("query", "fixture.query.member", content);
+
+        var legacyDescriptor = ApplicationCapabilityContractAdapter.Create(ApplicationId, record, "space.1");
+        var contract = ApplicationCapabilityContractAdapter.Create(ApplicationId, record, "space.1", discovery);
+
+        var objectContract = Assert.IsType<CapabilityObjectDiscoveryContract>(contract.ObjectDiscovery);
+        Assert.Equal(objectReference.ContentHash, objectContract.ContentFingerprint);
+        var source = Assert.Single(objectContract.Sources);
+        Assert.Equal(component.SchemaHash, source.Schema.SchemaHash);
+        Assert.Equal("fixture.identity", Assert.Single(contract.Roles).RequiredComponentIds.Single());
+        Assert.Equal("/name", Assert.Single(objectContract.Fields).SourcePath);
+        var write = Assert.Single(objectContract.Writes);
+        Assert.Equal("source-1", write.SourceReference);
+        Assert.Equal(["set"], write.Operations);
+        Assert.NotEqual(legacyDescriptor.Fingerprint, contract.Fingerprint);
+        Assert.DoesNotContain("ObjectDiscovery", JsonSerializer.Serialize(legacyDescriptor), StringComparison.Ordinal);
+        Assert.Throws<ArgumentException>(() => ApplicationCapabilityContractAdapter.Create(
+            ApplicationId, record, "space.1", discovery with
+            { Object = objectReference with { ContentHash = new string('B', 64) } }));
+    }
+
+    [Fact]
+    public void Field_based_query_discovery_surfaces_parameter_and_write_provenance()
+    {
+        const string schema = "{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\"}}}";
+        var component = new EcsComponentReference("fixture.identity", 1,
+            CapabilityContractBuilder.SchemaHash(schema));
+        var objectReference = new ProjectionReference("fixture.object.member", 3, new string('A', 64));
+        var discovery = new ApplicationObjectDiscovery(objectReference,
+            RegisteredApplicationObjectContract.FieldBasedContractProfileId,
+            [new("source-1", ["member"], "member", true, component,
+                CapabilityContractBuilder.JsonSchemaProfile, schema)],
+            [new("/name", ["member"], "member", component, "/name", true)],
+            [new("/name", "set", "member", "/name", null)]);
+        var content = JsonSerializer.Serialize(new
+        {
+            id = "fixture.query.member",
+            category = "member.read",
+            name = "Member",
+            description = "Reads a parameterized member.",
+            matches = new[] { "read member" },
+            roles = new Dictionary<string, string>
+            {
+                ["member"] = "Route member.",
+                ["viewer"] = "Trusted viewer."
+            },
+            roleBindings = new Dictionary<string, object>
+            {
+                ["member"] = new { source = "route-entity" },
+                ["viewer"] = new { source = "authorized-context", key = "seat.viewer" }
+            },
+            executor = "object-projection",
+            profile = RegisteredApplicationObjectContract.FieldBasedContractProfileId,
+            @object = new
+            {
+                qualifiedId = objectReference.QualifiedId,
+                version = objectReference.Version,
+                contentFingerprint = objectReference.ContentHash
+            },
+            collection = "members",
+            exposure = "model-visible",
+            status = "active"
+        });
+
+        var contract = ApplicationCapabilityContractAdapter.Create(
+            ApplicationId, Record("query", "fixture.query.member", content), "space.1", discovery);
+
+        var bindings = contract.ObjectDiscovery!.RoleBindings!;
+        Assert.Contains(bindings, value => value is
+            { Role: "member", Source: "route-entity", Pointer: null, Key: null });
+        Assert.Contains(bindings, value => value is
+            { Role: "viewer", Source: "authorized-context", Pointer: null, Key: "seat.viewer" });
+        var write = Assert.Single(contract.ObjectDiscovery.Writes);
+        Assert.Equal("source-1", write.SourceReference);
+        Assert.Equal("/name", write.SourcePath);
+    }
+
+    [Fact]
+    public void Field_based_query_discovery_accepts_relationship_resolved_collection_source_roles()
+    {
+        const string rootSchema = "{\"type\":\"object\",\"properties\":{\"title\":{\"type\":\"string\"}}}";
+        const string rowSchema = "{\"type\":\"object\",\"properties\":{\"status\":{\"type\":\"string\"}}}";
+        var root = new EcsComponentReference("fixture.campaign", 1,
+            CapabilityContractBuilder.SchemaHash(rootSchema));
+        var row = new EcsComponentReference("fixture.participation", 1,
+            CapabilityContractBuilder.SchemaHash(rowSchema));
+        var objectReference = new ProjectionReference("fixture.object.campaign", 4, new string('A', 64));
+        var discovery = new ApplicationObjectDiscovery(objectReference,
+            RegisteredApplicationObjectContract.FieldBasedContractProfileId,
+            [
+                new("source-1", ["campaign"], "campaign", true, root,
+                    CapabilityContractBuilder.JsonSchemaProfile, rootSchema),
+                new("source-2", ["collection", "party", "party", "to"], "participation", false, row,
+                    CapabilityContractBuilder.JsonSchemaProfile, rowSchema)
+            ],
+            [
+                new("/title", ["campaign"], "campaign", root, "/title", true),
+                new("/party/*/status", ["collection", "party", "party", "to"],
+                    "participation", row, "/status", false)
+            ], []);
+        var content = JsonSerializer.Serialize(new
+        {
+            id = "fixture.query.campaign",
+            category = "campaign.summary",
+            name = "Campaign",
+            description = "Reads one campaign and its resolved party rows.",
+            matches = new[] { "read campaign" },
+            roles = new Dictionary<string, string> { ["campaign"] = "Selected campaign." },
+            executor = "object-projection",
+            profile = RegisteredApplicationObjectContract.FieldBasedContractProfileId,
+            @object = new
+            {
+                qualifiedId = objectReference.QualifiedId,
+                version = objectReference.Version,
+                contentFingerprint = objectReference.ContentHash
+            },
+            collection = "party",
+            exposure = "model-visible",
+            status = "active"
+        });
+        var record = Record("query", "fixture.query.campaign", content);
+
+        var contract = ApplicationCapabilityContractAdapter.Create(
+            ApplicationId, record, "space.1", discovery);
+
+        Assert.Equal(["campaign"], contract.Roles.Select(role => role.Name));
+        Assert.Contains(contract.ObjectDiscovery!.Sources, source =>
+            source.Role == "participation" && source.InputPath.SequenceEqual(
+                ["collection", "party", "party", "to"]));
+        Assert.Throws<ArgumentException>(() => ApplicationCapabilityContractAdapter.Create(
+            ApplicationId, record, "space.1", discovery with
+            {
+                Sources = [discovery.Sources[0], discovery.Sources[1] with { InputPath = ["participation"] }]
+            }));
+    }
+
+    [Fact]
+    public void Collectionless_query_discovery_accepts_registered_reference_sources_without_binding_optional_roles()
+    {
+        const string schema = "{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\"}}}";
+        var component = new EcsComponentReference("fixture.definition", 1,
+            CapabilityContractBuilder.SchemaHash(schema));
+        var objectReference = new ProjectionReference("fixture.object.item", 3, new string('A', 64));
+        var discovery = new ApplicationObjectDiscovery(objectReference,
+            RegisteredApplicationObjectContract.FieldBasedContractProfileId,
+            [new("source-1", ["definition", "definition"], "definition", false,
+                component, CapabilityContractBuilder.JsonSchemaProfile, schema)],
+            [new("/definition/name", ["definition", "definition"], "definition",
+                component, "/name", false)], []);
+        var content = JsonSerializer.Serialize(new
+        {
+            id = "fixture.query.item",
+            category = "item.read",
+            name = "Item",
+            description = "Reads one item and its declared reference.",
+            matches = new[] { "read item" },
+            roles = new Dictionary<string, string> { ["item"] = "Route item." },
+            roleBindings = new Dictionary<string, object>
+                { ["item"] = new { source = "route-entity" } },
+            executor = "object-projection",
+            profile = RegisteredApplicationObjectContract.FieldBasedContractProfileId,
+            @object = new
+            {
+                qualifiedId = objectReference.QualifiedId,
+                version = objectReference.Version,
+                contentFingerprint = objectReference.ContentHash
+            },
+            exposure = "model-visible",
+            status = "active"
+        });
+
+        var contract = ApplicationCapabilityContractAdapter.Create(
+            ApplicationId, Record("query", "fixture.query.item", content), "space.1", discovery);
+
+        Assert.Null(ApplicationQueryContract.Parse(content, ApplicationId).ObjectCollectionId);
+        Assert.Contains(contract.ObjectDiscovery!.Sources, source =>
+            source.Role == "definition" && source.InputPath.SequenceEqual(["definition", "definition"]));
+        Assert.Equal("item", Assert.Single(contract.ObjectDiscovery.RoleBindings!).Role);
     }
 
     private static CatalogRecordDefinition Record(string kind, string id, string content) =>

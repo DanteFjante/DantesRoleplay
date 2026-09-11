@@ -1,9 +1,31 @@
 using DantesRoleplay.Assistants;
 using DantesRoleplay.Authorization;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace DantesRoleplay.SystemConversations;
 
 public sealed record SystemConversationCreate(string Message, string IdempotencyKey);
+
+/**
+ * The durable identity recipe for a read-only system turn. Keeping it here
+ * lets the persistence compatibility check recognize only historic system
+ * requests, without treating an omitted context as permission to replay a
+ * separately captured request.
+ */
+public static class SystemConversationRequestIdentity
+{
+    public const string Provider = "local";
+
+    public static string Hash(string normalizedMessage) => Convert.ToHexString(
+        SHA256.HashData(Encoding.UTF8.GetBytes(
+            AssistantConversationScopes.System + "\0" + Provider + "\0" + normalizedMessage)));
+
+    public static bool IsMaterializedReference(string? value) => value is not null &&
+        (value.StartsWith("capability:", StringComparison.Ordinal) ||
+         value.StartsWith("procedure:", StringComparison.Ordinal) ||
+         value.StartsWith("application:", StringComparison.Ordinal));
+}
 
 public sealed record SystemConversationPage(
     IReadOnlyList<AssistantConversationSummary> Items,
@@ -76,6 +98,10 @@ public interface ISystemConversationService
         string? beforeId,
         int limit,
         CancellationToken cancellationToken = default);
+
+    Task<AssistantTurnRecovery?> RecoverAsync(
+        SystemConversationRequestContext context, string idempotencyKey,
+        CancellationToken cancellationToken = default) => Task.FromResult<AssistantTurnRecovery?>(null);
 }
 
 public sealed class SystemConversationException(string code, string message) : Exception(message)

@@ -1,51 +1,6 @@
 {
   "id": "dnd2024.object.inventory-item-activity-record",
-  "version": 1,
-  "schema": {
-    "type": "object",
-    "additionalProperties": false,
-    "properties": {
-      "dnd2024.activity.activation": {
-        "type": "object"
-      },
-      "dnd2024.activity.applied-effects": {
-        "type": "object"
-      },
-      "dnd2024.activity.attack": {
-        "type": "object"
-      },
-      "dnd2024.activity.check": {
-        "type": "object"
-      },
-      "dnd2024.activity.cost": {
-        "type": "object"
-      },
-      "dnd2024.activity.damage": {
-        "type": "object"
-      },
-      "dnd2024.activity.duration": {
-        "type": "object"
-      },
-      "dnd2024.activity.healing": {
-        "type": "object"
-      },
-      "dnd2024.activity.range": {
-        "type": "object"
-      },
-      "dnd2024.activity.save": {
-        "type": "object"
-      },
-      "dnd2024.activity.sequence": {
-        "type": "object"
-      },
-      "dnd2024.activity.targeting": {
-        "type": "object"
-      },
-      "dnd2024.core.presentation": {
-        "type": "object"
-      }
-    }
-  },
+  "version": 2,
   "roles": {
     "record": {
       "required": true
@@ -265,5 +220,6 @@
       "dm"
     ],
     "write": []
-  }
+  },
+  "profile": "application-object/v2"
 }

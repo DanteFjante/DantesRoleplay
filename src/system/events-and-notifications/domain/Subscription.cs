@@ -34,6 +34,9 @@ public sealed class SubscriptionVersion
     public string ChangeNote { get; set; } = string.Empty;
     public string CreatedBy { get; set; } = "llm";
     public string SourceHash { get; set; } = string.Empty;
+    /// <summary>Optional exact application origin. Null in both fields is the legacy subscription surface.</summary>
+    public string? ApplicationId { get; set; }
+    public string? StateSpaceId { get; set; }
     public DateTime CreatedAt { get; set; }
     public Subscription? Subscription { get; set; }
 }

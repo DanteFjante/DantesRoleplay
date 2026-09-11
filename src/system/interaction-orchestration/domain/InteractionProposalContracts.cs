@@ -89,10 +89,8 @@ public sealed record InteractionQueryContractReference
             "INVALID_QUERY_ROLES", sort: true);
         if (executor == ApplicationQueryContract.ObjectProjectionExecutor)
         {
-            if (string.IsNullOrWhiteSpace(collectionId))
-                throw new InteractionContractException("INVALID_QUERY_COLLECTION",
-                    "An object-projection query requires a collection identity.");
-            CollectionId = InteractionGuard.Identifier(collectionId, nameof(collectionId));
+            CollectionId = collectionId is null ? null
+                : InteractionGuard.Identifier(collectionId, nameof(collectionId));
         }
         else if (collectionId is not null)
             throw new InteractionContractException("INVALID_QUERY_COLLECTION",

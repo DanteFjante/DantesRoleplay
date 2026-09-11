@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Text.Json;
 using System.Text;
 using DantesRoleplay.Applications;
+using DantesRoleplay.Projections;
 
 namespace DantesRoleplay.CatalogNavigation;
 
@@ -13,6 +14,22 @@ public enum ApplicationQueryExposure
 
 /// <summary>A catalog-owned selection from the currently authorized campaign, not a caller-supplied role.</summary>
 public sealed record ApplicationQueryCampaignSelection(string QueryId, string EntityIdField);
+
+/// <summary>
+/// A catalog-declared, application-neutral selection proof. Selector roles are mapped only from
+/// roles already resolved and authorized for the parent query.
+/// </summary>
+public sealed record ApplicationQuerySelection(
+    string QueryId,
+    string TargetRole,
+    string ResultPointer,
+    IReadOnlyDictionary<string, string> RoleBindings);
+
+/// <summary>
+/// One catalog-declared role source. Role and context keys are application-owned opaque names;
+/// this generic contract never assigns meaning to them.
+/// </summary>
+public sealed record ApplicationQueryRoleBinding(string Source, string? Pointer = null, string? Key = null);
 
 /// <summary>
 /// Strict application-authored metadata for one host-executed read-only query. The executable
@@ -38,11 +55,22 @@ public sealed record ApplicationQueryContract(
     ApplicationQueryCampaignSelection? CampaignSelection = null)
 {
     public const string CatalogKind = "query";
+    /// <summary>
+    /// The maximum number of catalog-declared selector links a read may traverse.
+    /// This is shared by catalog admission and execution so an admitted contract
+    /// cannot exceed the host's bounded selection work.
+    /// </summary>
+    public const int MaximumDeclaredSelectionLinks = 4;
     public const string ProjectionExecutor = "projection";
     public const string MechanicProjectionExecutor = "mechanic-projection";
     public const string ObjectProjectionExecutor = "object-projection";
     public string? ObjectCollectionId { get; init; }
+    public string ObjectProfileId { get; init; } = RegisteredApplicationObjectContract.ContractProfileId;
+    public IReadOnlyDictionary<string, ApplicationQueryRoleBinding>? RoleBindings { get; init; }
+    public ApplicationQuerySelection? Selection { get; init; }
     public bool IsObjectProjection => Executor == ObjectProjectionExecutor;
+    public bool IsFieldBasedObject => IsObjectProjection
+        && ObjectProfileId == RegisteredApplicationObjectContract.FieldBasedContractProfileId;
 
     public static ApplicationQueryContract Parse(string json, ApplicationIdentifier owner)
     {
@@ -62,19 +90,36 @@ public sealed record ApplicationQueryContract(
         var executor = String(root, "executor", 63);
         if (executor is not (ProjectionExecutor or MechanicProjectionExecutor or ObjectProjectionExecutor))
             throw Invalid("The query executor kind is not supported.");
+        var hasProfile = root.TryGetProperty("profile", out _);
+        var fieldBasedObject = executor == ObjectProjectionExecutor && hasProfile
+            && String(root, "profile", 64) == RegisteredApplicationObjectContract.FieldBasedContractProfileId;
+        if (hasProfile && !fieldBasedObject)
+            throw Invalid("Only a field-based object query may declare the application-object/v2 profile.");
         var referenceName = executor == ObjectProjectionExecutor ? "object" : "projection";
         var fields = new[] { "id", "category", "name", "description", "matches", "roles", "executor",
-            referenceName, "outputSchema", "exposure", "status" };
+            referenceName, fieldBasedObject ? "profile" : "outputSchema", "exposure", "status" };
         var hasInput = root.TryGetProperty("inputSchema", out var inputSchema);
-        var hasSelection = root.TryGetProperty("campaignSelection", out var selection);
+        var hasCampaignSelection = root.TryGetProperty("campaignSelection", out var campaignSelectionElement);
+        var hasSelection = root.TryGetProperty("selection", out var selectionElement);
         var hasCollection = root.TryGetProperty("collection", out var collection);
+        var hasRoleBindings = root.TryGetProperty("roleBindings", out var roleBindingsElement);
         Exact(root, [.. fields, .. (hasInput ? new[] { "inputSchema" } : []),
-            .. (hasSelection ? new[] { "campaignSelection" } : []),
-            .. (hasCollection ? new[] { "collection" } : [])]);
-        if (executor == ObjectProjectionExecutor != hasCollection)
-            throw Invalid("An object-projection query requires exactly one collection declaration.");
-        if (executor == ObjectProjectionExecutor && hasInput)
-            throw Invalid("Object-projection queries use their registered collection contract and do not accept a separate input schema.");
+            .. (hasCampaignSelection ? new[] { "campaignSelection" } : []),
+            .. (hasSelection ? new[] { "selection" } : []),
+            .. (hasCollection ? new[] { "collection" } : []),
+            .. (hasRoleBindings ? new[] { "roleBindings" } : [])]);
+        if (executor != ObjectProjectionExecutor && hasCollection)
+            throw Invalid("Only an object-projection query may declare a collection.");
+        if (hasRoleBindings && executor is not (ObjectProjectionExecutor or MechanicProjectionExecutor))
+            throw Invalid("Only an object or mechanic projection query may declare role bindings.");
+        if (hasRoleBindings && hasCampaignSelection)
+            throw Invalid("Explicit role bindings cannot be combined with legacy campaign selection.");
+        if (hasSelection && hasCampaignSelection)
+            throw Invalid("A query cannot combine declared selection with legacy campaign selection.");
+        if (hasSelection && !hasRoleBindings)
+            throw Invalid("A declared selection requires explicit role bindings.");
+        if (executor == ObjectProjectionExecutor && hasInput && !hasRoleBindings)
+            throw Invalid("An object-projection input schema requires explicit role bindings.");
         if (inputSchema.ValueKind != JsonValueKind.Undefined &&
             (inputSchema.ValueKind != JsonValueKind.Object
              || Encoding.UTF8.GetByteCount(inputSchema.GetRawText()) > 65_536
@@ -93,20 +138,75 @@ public sealed record ApplicationQueryContract(
         var description = Text(root, "description", CatalogNavigationLimits.MaximumTextLength);
         var matches = Strings(root, "matches", CatalogNavigationLimits.MaximumAliasesPerRecord, 200);
         var roles = StringMap(root, "roles", 32, 1_000);
-        ApplicationQueryCampaignSelection? campaignSelection = null;
-        if (hasSelection)
+        IReadOnlyDictionary<string, ApplicationQueryRoleBinding>? roleBindings = null;
+        if (hasRoleBindings)
         {
-            if (selection.ValueKind != JsonValueKind.Object ||
+            if (roleBindingsElement.ValueKind != JsonValueKind.Object)
+                throw Invalid("Query role bindings must be an object.");
+            var parsedBindings = new Dictionary<string, ApplicationQueryRoleBinding>(StringComparer.Ordinal);
+            foreach (var property in roleBindingsElement.EnumerateObject())
+            {
+                if (!roles.ContainsKey(property.Name) || !parsedBindings.TryAdd(property.Name,
+                        ParseRoleBinding(property.Value, hasInput)))
+                    throw Invalid("Query role bindings contain an unknown or duplicate role.");
+            }
+            if (!parsedBindings.Keys.Order(StringComparer.Ordinal)
+                    .SequenceEqual(roles.Keys.Order(StringComparer.Ordinal), StringComparer.Ordinal))
+                throw Invalid("Query role bindings must cover every declared role exactly once.");
+            if (!parsedBindings.Values.Any(value => value.Source == "route-entity"))
+                throw Invalid("Explicit role bindings must bind one declared role from the route entity.");
+            if (hasInput && executor == ObjectProjectionExecutor
+                && !parsedBindings.Values.Any(value => value.Source == "input"))
+                throw Invalid("An object-projection input schema must bind at least one role from input.");
+            roleBindings = new ReadOnlyDictionary<string, ApplicationQueryRoleBinding>(parsedBindings);
+        }
+        ApplicationQueryCampaignSelection? campaignSelection = null;
+        if (hasCampaignSelection)
+        {
+            if (campaignSelectionElement.ValueKind != JsonValueKind.Object ||
                 !(roles.Count == 1 || roles.Count == 2 && roles.ContainsKey("campaign")))
                 throw Invalid("A campaign-selected query must declare exactly one target role.");
-            Exact(selection, "queryId", "entityIdField");
-            var selectionQuery = String(selection, "queryId", 200);
-            var field = String(selection, "entityIdField", 100);
+            Exact(campaignSelectionElement, "queryId", "entityIdField");
+            var selectionQuery = String(campaignSelectionElement, "queryId", 200);
+            var field = String(campaignSelectionElement, "entityIdField", 100);
             if (!selectionQuery.StartsWith(owner.Value + ".", StringComparison.Ordinal)
                 || !Segments(selectionQuery[(owner.Value.Length + 1)..], '.') || selectionQuery == id
                 || !char.IsAsciiLetter(field[0]) || !field.All(character => char.IsAsciiLetterOrDigit(character) || character == '_'))
                 throw Invalid("Campaign selection must name another query of this application and one top-level field.");
             campaignSelection = new(selectionQuery, field);
+        }
+        ApplicationQuerySelection? declaredSelection = null;
+        if (hasSelection)
+        {
+            if (selectionElement.ValueKind != JsonValueKind.Object)
+                throw Invalid("A declared selection must be an object.");
+            Exact(selectionElement, "queryId", "targetRole", "resultPointer", "roleBindings");
+            var selectionQuery = String(selectionElement, "queryId", 200);
+            var targetRole = String(selectionElement, "targetRole", 200);
+            var resultPointer = String(selectionElement, "resultPointer", 1_000);
+            if (!selectionQuery.StartsWith(owner.Value + ".", StringComparison.Ordinal)
+                || !Segments(selectionQuery[(owner.Value.Length + 1)..], '.') || selectionQuery == id)
+                throw Invalid("A declared selection must name another query of this application.");
+            if (!roles.ContainsKey(targetRole))
+                throw Invalid("A declared selection target must be a parent query role.");
+            if (!Pointer(resultPointer))
+                throw Invalid("A declared selection result pointer must be a valid JSON pointer.");
+            if (!selectionElement.TryGetProperty("roleBindings", out var selectionBindings)
+                || selectionBindings.ValueKind != JsonValueKind.Object)
+                throw Invalid("Declared selection role bindings must be an object.");
+            var parsedSelectionBindings = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (var property in selectionBindings.EnumerateObject())
+            {
+                if (!Segments(property.Name, '.') || property.Value.ValueKind != JsonValueKind.String
+                    || !parsedSelectionBindings.TryAdd(property.Name, property.Value.GetString()!))
+                    throw Invalid("Declared selection role bindings contain an invalid or duplicate selector role.");
+                if (!roles.ContainsKey(property.Value.GetString()!))
+                    throw Invalid("Declared selection role bindings must map to parent query roles.");
+            }
+            if (parsedSelectionBindings.Count is < 1 or > 32)
+                throw Invalid("Declared selection role bindings must be bounded and nonempty.");
+            declaredSelection = new(selectionQuery, targetRole, resultPointer,
+                new ReadOnlyDictionary<string, string>(parsedSelectionBindings));
         }
         if (!root.TryGetProperty(referenceName, out var projection) || projection.ValueKind != JsonValueKind.Object)
             throw Invalid("A query requires an exact registered reference.");
@@ -123,10 +223,15 @@ public sealed record ApplicationQueryContract(
         var contentHash = Hash(String(projection,
             executor == ObjectProjectionExecutor ? "contentFingerprint" : "contentHash", 64));
         var schemaHash = executor == ObjectProjectionExecutor ? "" : Hash(String(projection, "outputSchemaHash", 64));
-        if (!root.TryGetProperty("outputSchema", out var schema) || schema.ValueKind != JsonValueKind.Object)
-            throw Invalid("A query output schema must be a JSON object.");
-        if (Encoding.UTF8.GetByteCount(schema.GetRawText()) > 65_536)
-            throw Invalid("A query output schema exceeds the closed interaction bound.");
+        var schemaJson = RegisteredApplicationObjectContract.TransportSchemaJson;
+        if (!fieldBasedObject)
+        {
+            if (!root.TryGetProperty("outputSchema", out var schema) || schema.ValueKind != JsonValueKind.Object)
+                throw Invalid("A query output schema must be a JSON object.");
+            if (Encoding.UTF8.GetByteCount(schema.GetRawText()) > 65_536)
+                throw Invalid("A query output schema exceeds the closed interaction bound.");
+            schemaJson = schema.GetRawText();
+        }
 
         var exposure = String(root, "exposure", 32) switch
         {
@@ -139,11 +244,46 @@ public sealed record ApplicationQueryContract(
             throw Invalid("A query status is not supported.");
 
         return new(id, category, name, description, matches, roles, executor, projectionId, version,
-            contentHash, schemaHash, schema.GetRawText(), exposure, status,
+            contentHash, fieldBasedObject ? RegisteredApplicationObjectContract.TransportSchemaHash : schemaHash,
+            schemaJson, exposure, status,
             inputSchema.ValueKind == JsonValueKind.Undefined ? null : inputSchema.GetRawText(), campaignSelection)
         {
-            ObjectCollectionId = hasCollection ? String(root, "collection", 200) : null
+            ObjectCollectionId = hasCollection ? String(root, "collection", 200) : null,
+            ObjectProfileId = fieldBasedObject
+                ? RegisteredApplicationObjectContract.FieldBasedContractProfileId
+                : RegisteredApplicationObjectContract.ContractProfileId,
+            RoleBindings = roleBindings,
+            Selection = declaredSelection
         };
+    }
+
+    private static ApplicationQueryRoleBinding ParseRoleBinding(JsonElement value, bool hasInput)
+    {
+        if (value.ValueKind != JsonValueKind.Object)
+            throw Invalid("A query role binding must be an object.");
+        var source = String(value, "source", 32);
+        if (source == "route-entity")
+        {
+            Exact(value, "source");
+            return new(source);
+        }
+        if (source == "input")
+        {
+            Exact(value, "source", "pointer");
+            var pointer = String(value, "pointer", 1_000);
+            if (!hasInput || !Pointer(pointer))
+                throw Invalid("An input role binding requires a valid pointer and query input schema.");
+            return new(source, Pointer: pointer);
+        }
+        if (source == "authorized-context")
+        {
+            Exact(value, "source", "key");
+            var key = String(value, "key", 200);
+            if (!Segments(key, '.'))
+                throw Invalid("An authorized-context role binding requires a bounded opaque key.");
+            return new(source, Key: key);
+        }
+        throw Invalid("A query role binding source is not supported.");
     }
 
     private static void Exact(JsonElement value, params string[] names)
@@ -205,6 +345,18 @@ public sealed record ApplicationQueryContract(
             && char.IsAsciiLetterLower(segment[0])
             && segment.All(character => char.IsAsciiLetterLower(character)
                 || char.IsAsciiDigit(character) || character == '-'));
+
+    private static bool Pointer(string value)
+    {
+        if (!value.StartsWith("/", StringComparison.Ordinal)) return false;
+        for (var index = 0; index < value.Length; index++)
+        {
+            if (char.IsControl(value[index])) return false;
+            if (value[index] != '~') continue;
+            if (++index >= value.Length || value[index] is not ('0' or '1')) return false;
+        }
+        return true;
+    }
 
     private static string Hash(string value) => value.Length == 64
         && value.All(character => char.IsAsciiDigit(character) || character is >= 'A' and <= 'F')

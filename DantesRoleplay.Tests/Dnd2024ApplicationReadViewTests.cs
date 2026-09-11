@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using DantesRoleplay.Applications;
 using DantesRoleplay.CatalogNavigation;
+using DantesRoleplay.DataAccess;
 using DantesRoleplay.DataAccess.Bootstrap;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.SchemaValidation;
@@ -79,6 +80,246 @@ public sealed class Dnd2024ApplicationReadViewTests
     }
 
     [Fact]
+    public async Task Field_based_snapshot_mechanics_append_store_history_while_catalog_selection_stays_version_one()
+    {
+        var cases = new[]
+        {
+            new
+            {
+                Path = "data/dnd2024.mechanic.carrying-capacity.read",
+                OldSourceHash = "9E19639040B651E9346EB36CC40C73EA31B0D44BCB4D6F71096A25CD6975F4E5",
+                NewSourceHash = "5BA150D95DF5B7AFA89D9548560AA7DCDD79DD4B5C723D2EB59634EFF856B37B",
+                OldCompiled = "1F203A3F9E30143508116FE06B2C4E6C4D509374B3EA887CA296931A0F226818",
+                NewCompiled = "10465E167EF561EFAEBAD7E169806D9DA7EE6EF7739224BD6046CA6039F19ECA",
+                LatestSourceHash = (string?)null,
+                LatestCompiled = (string?)null
+            },
+            new
+            {
+                Path = "data/dnd2024.mechanic.character-dossier-v1.project",
+                OldSourceHash = "A34D0C948345382371F6F3E3B92DF3D5566F0C5AD6F7D6BD9734D45B2AF9CA2E",
+                NewSourceHash = "69C4CC4444024FE984ECAA8F5FAC0307E91DA8B824D40EF8B46892309D929606",
+                OldCompiled = "AB3DD31CF0402D14B51504696F53A3C558D8F879328E2DF0817F8B167FB87419",
+                NewCompiled = "A1761C8613D5F412E36EB4B2695692D21D5EE4B8BB1C8E6B994971DD8EF45157",
+                LatestSourceHash = (string?)null,
+                LatestCompiled = (string?)null
+            },
+            new
+            {
+                Path = "data/dnd2024.mechanic.inventory-item-details.project",
+                OldSourceHash = "26F04BDFC1FCD37B3616F39869D31141A541FD559F387DAA537FF21EC68C2D50",
+                NewSourceHash = "78E85F0A9E754A5E76CC5A1635B254FDC40F3E775A883C7729109DF5CEA3A874",
+                OldCompiled = "B66A9A163481F2EE8E752A48479BE5ADF5D50A60D164D2FD3EAA29FC03E7C2D8",
+                NewCompiled = "10B5601B07F77231E586BC1E23EAEF1066E64E0BBB578A11FAF5CEEE2220E0BD",
+                LatestSourceHash = (string?)"990ADFC84F7658FCBDB05E2B0F3AFD55ACE024938E0D1B09EF1DD100807A71D4",
+                LatestCompiled = (string?)"28282A0035AC622752C7D2FB31DB22D6E531FCAF91C57042A8BB19B845A32034"
+            },
+            new
+            {
+                Path = "data/dnd2024.mechanic.inventory-item-uses.project",
+                OldSourceHash = "E66AE2492862665AC3CECC97CD5E76514C44EC23AE3465196A9CDEF0C82EDB57",
+                NewSourceHash = "C4CEFC027C383F987094562E8CCA82DD0759A7BD7ABDFD141FD6D9CB6CDAA556",
+                OldCompiled = "E4CEA1D75B4408BD03AF87BB4DD702865C0E26E7E3F7FC66A87EA688536A54D9",
+                NewCompiled = "11881990FC2C00774D379B4388950AE9B11F1419FEA796F7B65B8386A037F2FE",
+                LatestSourceHash = (string?)"1A57DDB2FB0C00253CF6E829BD4D963948CB19F9EB1D7A4F2CDC68C962E46E7A",
+                LatestCompiled = (string?)"E110F803EE839B4DB5AC48AC1B2087746D549AAA445382D9466184FF7AD50F1C"
+            },
+            new
+            {
+                Path = "data/dnd2024.mechanic.inventory-item-recipes.project",
+                OldSourceHash = "95A9BE9CA7AD1DE1751A13804432415C687A71F9142EAEE83B14E0BBF977DF93",
+                NewSourceHash = "24233A485B7FF6C316FE65A040023D2D49E26EDED39A78CFA7AB7142ABF60DD5",
+                OldCompiled = "863A4DA2F3F55A9C175D807A904309469B8C7D47BC0D8C18E60C9BE81362CEDC",
+                NewCompiled = "F6EC98D9F940056618019F5C05590B122919DC8E217122ACFBD626B982708049",
+                LatestSourceHash = (string?)"80E339A1381B6301328C51F591536AE684539D933AF272D044A0444F633CBAF2",
+                LatestCompiled = (string?)"4B079E69F47E1650117E7588BD46DB7400146F2ED027D0A4249DF41ECE71B410"
+            },
+            new
+            {
+                Path = "data/dnd2024.mechanic.rest.begin",
+                OldSourceHash = "666C9EB5AF9CF2104F2CF697C199A147E358A5B7032A09C9C9239AFFE57339EE",
+                NewSourceHash = "7553AF52D541BE8C440822D5D30888921A429D909A9DBE8BF2F4B1C4E2DF0995",
+                OldCompiled = "1681C1BFF14C77342C72A622BCD1F9726DAC835DC1842EC778B0FD35D1634646",
+                NewCompiled = "BE679187431DE597491697C5575214E9F2B88667E893F890199688D851686BD8",
+                LatestSourceHash = (string?)null,
+                LatestCompiled = (string?)null
+            }
+        };
+        using var database = new SqliteFixture();
+        await using var db = database.CreateContext();
+        var store = new MechanicStore(db);
+
+        foreach (var evidence in cases)
+        {
+            var current = ReadMechanic(evidence.Path);
+            var previous = BeforeNeutralSelectionInput(current);
+            var retained = Retained(previous);
+            Assert.Equal(evidence.OldSourceHash, retained.ContentHash);
+            Assert.Equal(evidence.NewSourceHash, previous.ContentHash);
+            Assert.Equal(evidence.OldCompiled, Compiled(retained));
+            Assert.Equal(evidence.NewCompiled, Compiled(previous));
+            Assert.Equal(evidence.LatestSourceHash ?? evidence.NewSourceHash, current.ContentHash);
+            Assert.Equal(evidence.LatestCompiled ?? evidence.NewCompiled, Compiled(current));
+
+            var first = await store.WriteAsync(Write(retained, "Retained exact field-based migration baseline."));
+            var second = await store.WriteAsync(Write(previous, "Pins the additive application-object/v2 definition."));
+            Assert.True(first.Created);
+            Assert.False(second.Created);
+            Assert.Equal(1, first.Mechanic.Version);
+            Assert.Equal(2, second.Mechanic.Version);
+
+            WriteMechanicResult? third = null;
+            if (evidence.LatestSourceHash is not null)
+            {
+                third = await store.WriteAsync(Write(current, "Adds the optional neutral selection input."));
+                Assert.False(third.Created);
+                Assert.Equal(3, third.Mechanic.Version);
+            }
+
+            var versionOne = Assert.IsType<MechanicDetail>(await store.GetAsync(current.Id, 1));
+            var versionTwo = Assert.IsType<MechanicDetail>(await store.GetAsync(current.Id, 2));
+            Assert.Equal(evidence.OldSourceHash, versionOne.SourceHash);
+            Assert.Equal(evidence.NewSourceHash, versionTwo.SourceHash);
+            Assert.Equal(evidence.OldCompiled, Compiled(FromStored(versionOne)));
+            Assert.Equal(evidence.NewCompiled, Compiled(FromStored(versionTwo)));
+            if (third is not null)
+            {
+                var versionThree = Assert.IsType<MechanicDetail>(await store.GetAsync(current.Id, 3));
+                Assert.Equal(evidence.LatestSourceHash, versionThree.SourceHash);
+                Assert.Equal(evidence.LatestCompiled, Compiled(FromStored(versionThree)));
+            }
+        }
+
+        var query = ApplicationQueryContract.Parse(File.ReadAllText(Query(
+            "character/dnd2024.query.character-dossier-v1.json")), Application);
+        Assert.Equal(1, query.ProjectionVersion);
+        Assert.Equal(cases[1].NewCompiled, query.ProjectionContentHash);
+        foreach (var (path, compiled) in new[]
+        {
+            ("data/dnd2024.query.inventory-item-details.json", cases[2].LatestCompiled!),
+            ("data/dnd2024.query.inventory-item-uses.json", cases[3].LatestCompiled!),
+            ("data/dnd2024.query.inventory-item-recipes.json", cases[4].LatestCompiled!)
+        })
+        {
+            var inventoryQuery = ApplicationQueryContract.Parse(File.ReadAllText(Query(path)), Application);
+            Assert.Equal(1, inventoryQuery.ProjectionVersion);
+            Assert.Equal(compiled, inventoryQuery.ProjectionContentHash);
+        }
+
+        static MechanicFile BeforeNeutralSelectionInput(MechanicFile current)
+        {
+            const string optionalSelection = ",\"selectionId\":{\"type\":\"string\",\"minLength\":1,\"maxLength\":200}";
+            var source = current.Id switch
+            {
+                "dnd2024.mechanic.inventory-item-details.project" => current.Source.Replace(
+                    "    !object(ctx.input)) fail();\n" +
+                    "var inputKeys = Object.keys(ctx.input).sort().join(',');\n" +
+                    "if (inputKeys !== 'itemId' && inputKeys !== 'itemId,selectionId' ||\n" +
+                    "    Object.prototype.hasOwnProperty.call(ctx.input, 'selectionId') && text(ctx.input.selectionId, 200) !== campaign.id) fail();",
+                    "    !object(ctx.input) || Object.keys(ctx.input).join(',') !== 'itemId') fail();",
+                    StringComparison.Ordinal),
+                "dnd2024.mechanic.inventory-item-uses.project" => current.Source.Replace(
+                    "var inputKeys=Object.keys(ctx.input).sort().join(',');\n" +
+                    "if(inputKeys!=='expectedSourceRevision,itemId,offset'&&inputKeys!=='expectedSourceRevision,itemId,offset,selectionId'||\n" +
+                    "  Object.prototype.hasOwnProperty.call(ctx.input,'selectionId')&&text(ctx.input.selectionId,200)!==campaign.id) fail();",
+                    "if(Object.keys(ctx.input).sort().join(',')!=='expectedSourceRevision,itemId,offset') fail();",
+                    StringComparison.Ordinal),
+                "dnd2024.mechanic.inventory-item-recipes.project" => current.Source.Replace(
+                    "var inputKeys = Object.keys(ctx.input).sort().join(',');\n" +
+                    "if (inputKeys !== 'expectedSourceRevision,itemId,makesOffset,usesOffset' &&\n" +
+                    "    inputKeys !== 'expectedSourceRevision,itemId,makesOffset,selectionId,usesOffset' ||\n" +
+                    "    Object.prototype.hasOwnProperty.call(ctx.input, 'selectionId') && text(ctx.input.selectionId, 200) !== campaign.id) fail();",
+                    "if (Object.keys(ctx.input).sort().join(',') !== 'expectedSourceRevision,itemId,makesOffset,usesOffset') fail();",
+                    StringComparison.Ordinal),
+                _ => current.Source
+            };
+            if (source == current.Source) return current;
+
+            var previous = current with
+            {
+                Requirements = current.Requirements.Replace(optionalSelection, string.Empty, StringComparison.Ordinal),
+                Source = source
+            };
+            Assert.DoesNotContain("selectionId", previous.Requirements, StringComparison.Ordinal);
+            Assert.DoesNotContain("selectionId", previous.Source, StringComparison.Ordinal);
+            return previous;
+        }
+
+        static MechanicFile Retained(MechanicFile current)
+        {
+            const string carryingV1 = "\"qualifiedId\":\"dnd2024.object.carrying-capacity-creature\",\"version\":1,\"contentFingerprint\":\"234CF49317F99A4468828E77E06A954DCEED4640BEF4307A397CB8BFEE7529AF\"";
+            const string carryingV2 = "\"qualifiedId\":\"dnd2024.object.carrying-capacity-creature\",\"version\":2,\"contentFingerprint\":\"828BC5D694102E129C870CA49291424ABFB79F8BDE17A169037CA26B9D5A3DC1\"";
+            const string dossierV1 = "\"qualifiedId\":\"dnd2024.object.character-dossier-records\",\"version\":1,\"contentFingerprint\":\"115D425F1C8260EDCDE0C5FB8D12F798D82CA435120D1E77A9BA647A88ED9030\"";
+            const string dossierV2 = "\"qualifiedId\":\"dnd2024.object.character-dossier-records\",\"version\":2,\"contentFingerprint\":\"35A8A12BD202792DA4E7025788FE1D80CD983583EE5E5D919F71F7C9B3A8F2EB\"";
+            const string itemV2 = "\"qualifiedId\":\"dnd2024.object.inventory-item-instance-records\",\"version\":2,\"contentFingerprint\":\"8F52017FA6BA33FB9699FB6755A1577B422B414AC55BF19401C27A803F4F15CC\"";
+            const string itemV3 = "\"qualifiedId\":\"dnd2024.object.inventory-item-instance-records\",\"version\":3,\"contentFingerprint\":\"74F012F1136D31415673D52666E85D7400C8E570A2A1B64AA0BA83ED5D8D348D\"";
+            const string activityV1 = "\"qualifiedId\":\"dnd2024.object.inventory-item-activity-record\",\"version\":1,\"contentFingerprint\":\"523F276015DE95BB16508C202685101DDC3D9F5F11B99C0EC0A48588B6669D19\"";
+            const string activityV2 = "\"qualifiedId\":\"dnd2024.object.inventory-item-activity-record\",\"version\":2,\"contentFingerprint\":\"534018C4A8C2D1A06F9307C89C8F32BCBE08B0FCA7B0CC9809EB5BA51B39DC4F\"";
+            const string recipeV1 = "\"qualifiedId\":\"dnd2024.object.inventory-item-recipe-record\",\"version\":1,\"contentFingerprint\":\"530A2622F6C88B5E283F92ED2CB431CC7C6C96AB76E63E6AF895797DB8415127\"";
+            const string recipeV2 = "\"qualifiedId\":\"dnd2024.object.inventory-item-recipe-record\",\"version\":2,\"contentFingerprint\":\"D7F2A4003A65C9E122C1A90EB06E7C97D415D3C060E8C011FF3C4B2A092B3C50\"";
+            const string restCreatureV1 = "\"qualifiedId\":\"dnd2024.object.rest-begin-creature\",\"version\":1,\"contentFingerprint\":\"858D347ED0CB9ADD8F937647703CD89F08F3AE313379037CFDD71B641F670F0C\"";
+            const string restCreatureV2 = "\"qualifiedId\":\"dnd2024.object.rest-begin-creature\",\"version\":2,\"contentFingerprint\":\"AB0EC68C477CA95FB635A4E14A758F2922B16B08393C999C122A4E17E4CA4327\"";
+            const string restWorldV1 = "\"qualifiedId\":\"dnd2024.object.rest-begin-world\",\"version\":1,\"contentFingerprint\":\"6D22CE1103C1E66FC163C8AEF2DF8FAB0C106D21C3EDA0D6A95D0984210B83A9\"";
+            const string restWorldV2 = "\"qualifiedId\":\"dnd2024.object.rest-begin-world\",\"version\":2,\"contentFingerprint\":\"F96FA03D1F68002295444132534946C91A60DB1F1CD182D4972D5A744AA88F7E\"";
+            const string restPolicyV1 = "\"qualifiedId\":\"dnd2024.object.rest-begin-policy\",\"version\":1,\"contentFingerprint\":\"4B1B67101E0CE06088AD997A3B8DAFED335EFEB3040851226E08D593A3EE19AD\"";
+            const string restPolicyV2 = "\"qualifiedId\":\"dnd2024.object.rest-begin-policy\",\"version\":2,\"contentFingerprint\":\"0939F59817A4CED231A9F82E6F84986FFCB2FA20D7B780B23AE3DE2DFCBE0162\"";
+            if (current.Id == "dnd2024.mechanic.carrying-capacity.read")
+                return current with
+                {
+                    Requirements = current.Requirements.Replace(carryingV2, carryingV1, StringComparison.Ordinal),
+                    Source = current.Source
+                        .Replace("OBJECT_HASH='828BC5D694102E129C870CA49291424ABFB79F8BDE17A169037CA26B9D5A3DC1'",
+                            "OBJECT_HASH='234CF49317F99A4468828E77E06A954DCEED4640BEF4307A397CB8BFEE7529AF'",
+                            StringComparison.Ordinal)
+                        .Replace("v.version!==2", "v.version!==1", StringComparison.Ordinal)
+                };
+            if (current.Id == "dnd2024.mechanic.character-dossier-v1.project") return current with
+            {
+                Requirements = current.Requirements.Replace(dossierV2, dossierV1, StringComparison.Ordinal)
+            };
+            if (current.Id == "dnd2024.mechanic.rest.begin") return current with
+            {
+                Requirements = current.Requirements.Replace(restCreatureV2, restCreatureV1, StringComparison.Ordinal)
+                    .Replace(restWorldV2, restWorldV1, StringComparison.Ordinal)
+                    .Replace(restPolicyV2, restPolicyV1, StringComparison.Ordinal),
+                Source = current.Source.Replace("v.version !== 2", "v.version !== 1", StringComparison.Ordinal)
+                    .Replace("AB0EC68C477CA95FB635A4E14A758F2922B16B08393C999C122A4E17E4CA4327",
+                        "858D347ED0CB9ADD8F937647703CD89F08F3AE313379037CFDD71B641F670F0C", StringComparison.Ordinal)
+                    .Replace("F96FA03D1F68002295444132534946C91A60DB1F1CD182D4972D5A744AA88F7E",
+                        "6D22CE1103C1E66FC163C8AEF2DF8FAB0C106D21C3EDA0D6A95D0984210B83A9", StringComparison.Ordinal)
+                    .Replace("0939F59817A4CED231A9F82E6F84986FFCB2FA20D7B780B23AE3DE2DFCBE0162",
+                        "4B1B67101E0CE06088AD997A3B8DAFED335EFEB3040851226E08D593A3EE19AD", StringComparison.Ordinal)
+            };
+            return current with
+            {
+                Requirements = current.Requirements.Replace(itemV3, itemV2, StringComparison.Ordinal)
+                    .Replace(activityV2, activityV1, StringComparison.Ordinal)
+                    .Replace(recipeV2, recipeV1, StringComparison.Ordinal)
+            };
+        }
+
+        static WriteMechanicRequest Write(MechanicFile value, string note) => new()
+        {
+            Id = value.Id,
+            Category = value.Category,
+            Name = value.Name,
+            Description = value.Description,
+            Matches = value.Matches,
+            Requirements = value.Requirements,
+            Source = value.Source,
+            Scope = value.Scope,
+            Status = value.Status,
+            CreatedBy = "catalog-test",
+            ChangeNote = note
+        };
+
+        static MechanicFile FromStored(MechanicDetail value) => new(value.Id, value.Category, value.Name,
+            value.Description, value.Matches, value.Requirements, value.Source, value.Scope, value.Status);
+        static string Compiled(MechanicFile value) => ApplicationCatalogRecordContent.Fingerprint(
+            ApplicationCatalogRecordContent.MechanicJson(value));
+    }
+
+    [Fact]
     public void Every_active_mechanic_projection_query_pins_its_compiled_output_schema()
     {
         var files = Directory.GetFiles(Queries(), "*.json", SearchOption.AllDirectories);
@@ -98,7 +339,7 @@ public sealed class Dnd2024ApplicationReadViewTests
             verified++;
         }
 
-        Assert.Equal(27, verified);
+        Assert.Equal(29, verified);
     }
 
     [Fact]

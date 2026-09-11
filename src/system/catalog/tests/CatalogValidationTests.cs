@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using DantesRoleplay.DataAccess.Bootstrap;
 using DantesRoleplay.DataAccess.Catalog;
 using DantesRoleplay.Mechanics;
@@ -35,8 +36,8 @@ public sealed class CatalogValidationTests
         var queryPaths = Directory.EnumerateFiles(queryRoot, "*.json", SearchOption.AllDirectories)
             .Order(StringComparer.Ordinal).ToArray();
 
-        Assert.Equal(162, mechanicPaths.Length);
-        Assert.Equal(31, queryPaths.Length);
+        Assert.Equal(164, mechanicPaths.Length);
+        Assert.Equal(42, queryPaths.Length);
         foreach (var path in mechanicPaths)
         {
             var file = MechanicFile.Parse(File.ReadAllText(path), path,
@@ -55,6 +56,134 @@ public sealed class CatalogValidationTests
             .ToArray();
         Assert.Empty(errors);
     }
+
+    [Fact]
+    public void Field_based_query_cannot_target_a_legacy_object_profile()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "dantes-field-profile-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var application = Path.Combine(root, "applications", "fixture");
+            var objects = Path.Combine(application, "objects");
+            var queries = Path.Combine(application, "queries");
+            Directory.CreateDirectory(objects);
+            Directory.CreateDirectory(queries);
+            File.WriteAllText(Path.Combine(objects, "members.json"), """
+                {"id":"fixture.object.members","version":1,
+                 "schema":{"type":"object","properties":{"members":{"type":"array"},"totalCount":{"type":"integer"},"complete":{"type":"boolean"},"nextCursor":{"type":["string","null"]}}},
+                 "roles":{"campaign":{"required":true},"member":{"required":false}},"sources":[],
+                 "relationships":[{"id":"members","qualifiedKind":"fixture.relationship.member","fromRole":"campaign","toRole":"member","cardinality":"many","targetPointer":"/members","requiredEndpointComponents":[],"optionalEndpointComponents":[]}],
+                 "references":[],"mappings":[{"inputId":"missing","sourcePointer":"","targetPointer":"/unused"}],
+                 "collections":[{"id":"members","sourceId":"members","pageSize":10,"maximumPageSize":10,"order":[{"path":"/id","direction":"asc"}],"cursor":"source-revision-bound"}],
+                 "limits":{"traversalDepth":1,"itemCount":10,"outputBytes":4096,"sqlQueries":2},
+                 "access":{"read":["player"],"write":[]}}
+                """);
+            File.WriteAllText(Path.Combine(queries, "members.json"), """
+                {"id":"fixture.query.members","category":"world.members","name":"Members","description":"Lists members.","matches":["list members"],
+                 "roles":{"campaign":"The owning campaign.","member":"A listed member."},"executor":"object-projection","profile":"application-object/v2",
+                 "object":{"qualifiedId":"fixture.object.members","version":1,"contentFingerprint":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"},
+                 "collection":"members","exposure":"model-visible","status":"active"}
+                """);
+
+            var issues = ApplicationCapabilityCatalogValidator.Validate(root);
+
+            Assert.Contains(issues, issue => issue.Check == "capability-object-profile"
+                && issue.Id == "fixture.query.members");
+        }
+        finally
+        {
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Declared_selection_requires_an_existing_bounded_acyclic_selector_chain_with_exact_roles()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "dantes-selection-contract-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var source = Path.Combine(RepositoryCatalog(), "applications", "dnd2024");
+            var application = Path.Combine(root, "applications", "dnd2024");
+            var mechanics = Path.Combine(application, "mechanics");
+            var queries = Path.Combine(application, "queries");
+            Directory.CreateDirectory(mechanics);
+            Directory.CreateDirectory(queries);
+            foreach (var name in new[] { "campaign.resume.project", "campaign.recent-consequences.project" })
+            foreach (var extension in new[] { ".md", ".js" })
+                File.Copy(Path.Combine(source, "mechanics", "campaign", $"dnd2024.mechanic.{name}{extension}"),
+                    Path.Combine(mechanics, $"dnd2024.mechanic.{name}{extension}"));
+            var parentPath = Path.Combine(queries, "resume.json");
+            var selectorPath = Path.Combine(queries, "recent.json");
+            File.Copy(Path.Combine(source, "queries", "campaign", "dnd2024.query.campaign-resume.json"), parentPath);
+            File.Copy(Path.Combine(source, "queries", "campaign", "dnd2024.query.recent-consequences.json"), selectorPath);
+            var parent = JsonNode.Parse(File.ReadAllText(parentPath))!.AsObject();
+            var selector = JsonNode.Parse(File.ReadAllText(selectorPath))!.AsObject();
+
+            parent["selection"]!["queryId"] = "dnd2024.query.missing-proof";
+            File.WriteAllText(parentPath, parent.ToJsonString());
+            Assert.Contains(ApplicationCapabilityCatalogValidator.Validate(root), issue =>
+                issue.Id == "dnd2024.query.campaign-resume" && issue.Check == "capability-selection-missing");
+
+            parent = JsonNode.Parse(File.ReadAllText(Path.Combine(source, "queries", "campaign",
+                "dnd2024.query.campaign-resume.json")))!.AsObject();
+            selector = JsonNode.Parse(File.ReadAllText(Path.Combine(source, "queries", "campaign",
+                "dnd2024.query.recent-consequences.json")))!.AsObject();
+            var leaf = selector.DeepClone().AsObject();
+            leaf["id"] = "dnd2024.query.selection-leaf";
+            File.WriteAllText(Path.Combine(queries, "leaf.json"), leaf.ToJsonString());
+            selector["selection"] = Selection("dnd2024.query.selection-leaf");
+            File.WriteAllText(parentPath, parent.ToJsonString());
+            File.WriteAllText(selectorPath, selector.ToJsonString());
+            Assert.DoesNotContain(ApplicationCapabilityCatalogValidator.Validate(root), issue =>
+                issue.Check.StartsWith("capability-selection-", StringComparison.Ordinal));
+
+            selector["selection"] = Selection("dnd2024.query.campaign-resume");
+            File.WriteAllText(selectorPath, selector.ToJsonString());
+            Assert.Contains(ApplicationCapabilityCatalogValidator.Validate(root), issue =>
+                issue.Id == "dnd2024.query.recent-consequences" && issue.Check == "capability-selection-recursive");
+
+            selector = JsonNode.Parse(File.ReadAllText(Path.Combine(source, "queries", "campaign",
+                "dnd2024.query.recent-consequences.json")))!.AsObject();
+            var chainNames = new[] { "one", "two", "three", "four", "five" };
+            var chain = chainNames.Select(_ => selector.DeepClone().AsObject()).ToArray();
+            for (var index = 0; index < chain.Length; index++)
+            {
+                chain[index]["id"] = $"dnd2024.query.selection-{chainNames[index]}";
+                if (index < chain.Length - 1)
+                    chain[index]["selection"] = Selection($"dnd2024.query.selection-{chainNames[index + 1]}");
+                File.WriteAllText(Path.Combine(queries, $"selection-{index}.json"), chain[index].ToJsonString());
+            }
+            parent["selection"]!["queryId"] = "dnd2024.query.selection-one";
+            File.WriteAllText(parentPath, parent.ToJsonString());
+            File.Delete(selectorPath);
+            Assert.Contains(ApplicationCapabilityCatalogValidator.Validate(root), issue =>
+                issue.Id == "dnd2024.query.selection-four" && issue.Check == "capability-selection-depth");
+
+            foreach (var path in Directory.EnumerateFiles(queries, "selection-*.json")) File.Delete(path);
+            File.Delete(Path.Combine(queries, "leaf.json"));
+            File.Copy(Path.Combine(source, "queries", "campaign", "dnd2024.query.recent-consequences.json"),
+                selectorPath, overwrite: true);
+            parent = JsonNode.Parse(File.ReadAllText(Path.Combine(source, "queries", "campaign",
+                "dnd2024.query.campaign-resume.json")))!.AsObject();
+            File.WriteAllText(parentPath, parent.ToJsonString());
+            parent["selection"]!["roleBindings"] = new JsonObject { ["other-proof-role"] = "campaign" };
+            File.WriteAllText(parentPath, parent.ToJsonString());
+            Assert.Contains(ApplicationCapabilityCatalogValidator.Validate(root), issue =>
+                issue.Id == "dnd2024.query.campaign-resume" && issue.Check == "capability-selection-roles");
+        }
+        finally
+        {
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    private static JsonObject Selection(string queryId) => new()
+    {
+        ["queryId"] = queryId,
+        ["targetRole"] = "campaign",
+        ["resultPointer"] = "/campaignId",
+        ["roleBindings"] = new JsonObject { ["campaign"] = "campaign" }
+    };
 
     [Fact]
     public async Task Every_repository_identity_has_a_reviewed_conforming_namespace()

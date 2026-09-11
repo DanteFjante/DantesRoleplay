@@ -14,7 +14,8 @@ public sealed class ProjectionMaterializer(
     IStateSpaceRegistry stateSpaces,
     IBoundedJsonSchemaValidator validator,
     ProjectionPlanCache? planCache = null,
-    IProjectionSourceSnapshotReader? snapshots = null) : IProjectionMaterializer
+    IProjectionSourceSnapshotReader? snapshots = null,
+    IApplicationComponentTypeRegistry? componentTypes = null) : IProjectionMaterializer
 {
     private readonly ProjectionPlanCache plans = planCache ?? new ProjectionPlanCache();
 
@@ -23,6 +24,8 @@ public sealed class ProjectionMaterializer(
         IReadOnlyList<EcsComponentView> authorizedComponents, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(authorizedComponents);
+        if (request.Purpose != ProjectionReadPurpose.Exact)
+            throw new InvalidOperationException("Executable snapshots cannot use display materialization.");
         return MaterializeCoreAsync(request, null, cancellationToken, owner, authorizedComponents);
     }
 
@@ -48,6 +51,8 @@ public sealed class ProjectionMaterializer(
         IReadOnlyList<EcsComponentView>? authorizedComponents = null)
     {
         ArgumentNullException.ThrowIfNull(request);
+        if (!Enum.IsDefined(request.Purpose))
+            throw new ArgumentException("The projection read purpose is invalid.");
         request.Projection.Validate();
         if (string.IsNullOrWhiteSpace(request.StateSpaceId) || request.RoleEntityIds is null
             || request.RoleEntityIds.Count > 64 || request.RoleEntityIds.Values.Any(string.IsNullOrWhiteSpace))
@@ -94,11 +99,23 @@ public sealed class ProjectionMaterializer(
                         values.TryGetValue((entity, input.Type.QualifiedTypeId), out var value) && value.Type != input.Type)
                         throw new InvalidOperationException("A supplied projection component has a stale exact type.");
         var evaluated = new Dictionary<int, string>();
+        var fields = new List<ProjectionMappedFieldEvidence>();
+        var compatibility = new ProjectionSourceCompatibility(componentTypes);
+        if (request.Purpose == ProjectionReadPurpose.Display)
+            compatibility.Prepare(active.Select(index => plan.Nodes[index])
+                .Where(node => node.Definition.ObjectContract?.IsFieldBased == true)
+                .SelectMany(node => node.Definition.ComponentInputs.Select(input =>
+                {
+                    var entityId = request.RoleEntityIds.GetValueOrDefault(node.RootRoles[input.EntityRole]);
+                    return (Declared: input.Type, Actual: entityId is not null &&
+                        values.TryGetValue((entityId, input.Type.QualifiedTypeId), out var value) ? value.Type : input.Type);
+                })));
         for (var index = 0; index < plan.Nodes.Count; index++)
         {
             if (!active.Contains(index)) continue;
             evaluated[index] = Evaluate(plan.Nodes[index], request.RoleEntityIds, values, evaluated, active,
-                validateOutput: completeRoot is null || index != plan.Nodes.Count - 1);
+                validateOutput: completeRoot is null || index != plan.Nodes.Count - 1,
+                request.Purpose, fields, compatibility);
             if (authorizedComponents is not null && plan.Nodes[index].Definition.ObjectContract is { } contract &&
                 Encoding.UTF8.GetByteCount(evaluated[index]) > contract.Limits.OutputBytes)
                 throw new InvalidOperationException("A supplied snapshot object exceeds its declared byte bound.");
@@ -120,7 +137,13 @@ public sealed class ProjectionMaterializer(
         }
         var result = new ProjectionMaterializationResult(plan.Root.Reference, output, Array.AsReadOnly(observed.Values
             .OrderBy(value => value.EntityId, StringComparer.Ordinal)
-            .ThenBy(value => value.Type.QualifiedTypeId, StringComparer.Ordinal).ToArray()));
+            .ThenBy(value => value.Type.QualifiedTypeId, StringComparer.Ordinal).ToArray()))
+        {
+            Fields = fields.AsReadOnly(),
+            ObservedSources = request.Purpose == ProjectionReadPurpose.Display
+                ? ObservedSources(plan.Root, request.RoleEntityIds, observed)
+                : []
+        };
         if (completeRoot is not null)
         {
             var expanded = await completeRoot(result, cancellationToken);
@@ -128,6 +151,37 @@ public sealed class ProjectionMaterializer(
             result = result with { OutputJson = expanded };
         }
         return result;
+    }
+
+    private static IReadOnlyList<ProjectionObservedSource> ObservedSources(
+        RegisteredProjectionDefinition definition,
+        IReadOnlyDictionary<string, string> roles,
+        IReadOnlyDictionary<(string, string), ProjectionSourceRevision> observed)
+    {
+        if (definition.ObjectContract is not { IsFieldBased: true, FieldProvenance: { } provenance }) return [];
+        var sources = provenance.Select(value => new
+            {
+                Path = string.Join("\u001F", value.InputPath),
+                value.InputPath,
+                value.EntityRole,
+                value.Required,
+                value.Component
+            })
+            .DistinctBy(value => (value.Path, value.EntityRole, value.Required, value.Component))
+            .OrderBy(value => value.Path, StringComparer.Ordinal)
+            .ThenBy(value => value.EntityRole, StringComparer.Ordinal)
+            .ThenBy(value => value.Component.QualifiedTypeId, StringComparer.Ordinal)
+            .ThenBy(value => value.Component.TypeVersion)
+            .Select(value =>
+            {
+                ProjectionSourceRevision? revision = null;
+                if (roles.TryGetValue(value.EntityRole, out var entityId))
+                    observed.TryGetValue((entityId, value.Component.QualifiedTypeId), out revision);
+                return new ProjectionObservedSource(value.InputPath, value.EntityRole, value.Required,
+                    value.Component, revision is { Revision: > 0 } ? revision.Type : null,
+                    revision is { Revision: > 0 } ? "available" : "absent-source");
+            }).ToArray();
+        return Array.AsReadOnly(sources);
     }
 
     private static void ValidateRootRoles(
@@ -202,8 +256,13 @@ public sealed class ProjectionMaterializer(
         IReadOnlyDictionary<(string, string), EcsComponentView> values,
         IReadOnlyDictionary<int, string> evaluated,
         IReadOnlySet<int> active,
-        bool validateOutput)
+        bool validateOutput,
+        ProjectionReadPurpose purpose,
+        List<ProjectionMappedFieldEvidence> fields,
+        ProjectionSourceCompatibility compatibility)
     {
+        var display = purpose == ProjectionReadPurpose.Display &&
+            node.Definition.ObjectContract?.IsFieldBased == true;
         var sources = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var input in node.Definition.ComponentInputs)
         {
@@ -214,7 +273,7 @@ public sealed class ProjectionMaterializer(
                 throw new InvalidOperationException("A required projection component role is unbound.");
             }
             if (!values.TryGetValue((entity, input.Type.QualifiedTypeId), out var value)
-                || value.Type != input.Type)
+                || !compatibility.Matches(input.Type, value.Type, display))
             {
                 if (node.OptionalComponentInputs.Contains(input.InputId)) continue;
                 throw new InvalidOperationException("A declared projection component is missing or stale.");
@@ -235,30 +294,66 @@ public sealed class ProjectionMaterializer(
         string result;
         if (node.Definition.Mappings[0].TargetPointer == "")
         {
-            if (!sources.TryGetValue(node.Definition.Mappings[0].InputId, out var source))
-                throw new InvalidOperationException("A root projection mapping source is unavailable.");
-            result = Select(source, node.Definition.Mappings[0].SourcePointer).GetRawText();
+            var mapping = node.Definition.Mappings[0];
+            if (!sources.TryGetValue(mapping.InputId, out var source))
+            {
+                if (!display) throw new InvalidOperationException("A root projection mapping source is unavailable.");
+                result = "{}";
+                fields.Add(Evidence(node.Definition, mapping, "absent-source"));
+            }
+            else if (!TrySelect(source, mapping.SourcePointer, out var selected))
+            {
+                if (!display) throw new InvalidOperationException("A declared source path is absent from its value.");
+                result = "{}";
+                fields.Add(Evidence(node.Definition, mapping, "absent-path"));
+            }
+            else
+            {
+                result = selected.GetRawText();
+                if (node.Definition.ObjectContract?.IsFieldBased == true)
+                    fields.Add(Evidence(node.Definition, mapping, selected.ValueKind == JsonValueKind.Null ? "null" : "value"));
+            }
         }
         else
         {
             var output = new JsonObject();
             foreach (var mapping in node.Definition.Mappings)
             {
-                if (!sources.TryGetValue(mapping.InputId, out var source)) continue;
-                Set(output, mapping.TargetPointer,
-                    JsonNode.Parse(Select(source, mapping.SourcePointer).GetRawText()));
+                if (!sources.TryGetValue(mapping.InputId, out var source))
+                {
+                    if (node.Definition.ObjectContract?.IsFieldBased == true)
+                        fields.Add(Evidence(node.Definition, mapping, "absent-source"));
+                    continue;
+                }
+                if (!TrySelect(source, mapping.SourcePointer, out var selected))
+                {
+                    if (!display) throw new InvalidOperationException("A declared source path is absent from its value.");
+                    fields.Add(Evidence(node.Definition, mapping, "absent-path"));
+                    continue;
+                }
+                Set(output, mapping.TargetPointer, JsonNode.Parse(selected.GetRawText()));
+                if (node.Definition.ObjectContract?.IsFieldBased == true)
+                    fields.Add(Evidence(node.Definition, mapping, selected.ValueKind == JsonValueKind.Null ? "null" : "value"));
             }
             result = output.ToJsonString();
         }
-        if (Encoding.UTF8.GetByteCount(result) > SystemJsonSchemaProfile.MaximumValueBytes)
+        if (Encoding.UTF8.GetByteCount(result) > (node.Definition.ObjectContract?.Limits.OutputBytes
+                ?? SystemJsonSchemaProfile.MaximumValueBytes))
             throw new InvalidOperationException("Structural projection output exceeds its byte bound.");
         if (validateOutput) ValidateOutput(node.Definition, result);
         return result;
     }
 
+    private static ProjectionMappedFieldEvidence Evidence(RegisteredProjectionDefinition definition,
+        StructuralProjectionMapping mapping, string availability) =>
+        new(definition.Reference, mapping.InputId, mapping.SourcePointer, mapping.TargetPointer, availability);
+
     private void ValidateOutput(RegisteredProjectionDefinition definition, string output)
     {
-        if (Encoding.UTF8.GetByteCount(output) > SystemJsonSchemaProfile.MaximumValueBytes
+        // V2's host-owned transport schema enforces only JSON object/depth/node/byte safety;
+        // it is deliberately not another authored schema for the assembled domain value.
+        if (Encoding.UTF8.GetByteCount(output) > (definition.ObjectContract?.Limits.OutputBytes
+                ?? SystemJsonSchemaProfile.MaximumValueBytes)
             || validator.Validate(definition.ProfileId, definition.OutputSchemaJson, output).Status != SchemaValueStatus.Valid)
             throw new InvalidOperationException("Structural projection output fails its exact schema.");
     }
@@ -271,7 +366,7 @@ public sealed class ProjectionMaterializer(
             : result;
     }
 
-    private static JsonElement Select(string json, string pointer)
+    private static bool TrySelect(string json, string pointer, out JsonElement result)
     {
         using var document = JsonDocument.Parse(json);
         var current = document.RootElement;
@@ -282,10 +377,11 @@ public sealed class ProjectionMaterializer(
             else if (current.ValueKind == JsonValueKind.Array && int.TryParse(token, out var index)
                      && index >= 0 && index < current.GetArrayLength())
                 current = current[index];
-            else throw new InvalidOperationException("A declared source path is absent from its value.");
+            else { result = default; return false; }
         }
         using var stable = JsonDocument.Parse(current.GetRawText());
-        return stable.RootElement.Clone();
+        result = stable.RootElement.Clone();
+        return true;
     }
 
     private static void Set(JsonObject root, string pointer, JsonNode? value)

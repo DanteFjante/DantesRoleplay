@@ -18,10 +18,13 @@ export function CampaignPlacesVisited({
   const [region, setRegion] = useState("all");
   const regions = useMemo(() => [...new Set(campaign.placesVisited.map((place) => place.location.region))].sort(), [campaign.placesVisited]);
   const places = useMemo(() => filterCampaignPlaces(campaign.placesVisited, { query, region }), [campaign.placesVisited, query, region]);
+  const visitsUnavailable = campaign.detailFields
+    ? campaign.detailFields.visits !== "ready" && campaign.detailFields.visits !== "empty"
+    : false;
 
   return (
     <div className="campaign-section-view">
-      <header className="atlas-heading"><div><span className="eyebrow">The party's path</span><h1 id="main-view-heading" tabIndex={-1}>Places visited</h1></div><p>{places.length} of {campaign.placesVisited.length} places</p></header>
+      <header className="atlas-heading"><div><span className="eyebrow">The party's path</span><h1 id="main-view-heading" tabIndex={-1}>Places visited</h1></div><p>{visitsUnavailable ? "Coverage unavailable" : `${places.length} of ${campaign.placesVisited.length} places`}</p></header>
       <p className="campaign-section-introduction">Campaign memories linked back to the persistent World. Opening a card never records travel or movement.</p>
       {campaign.placesVisited.length ? <div className="campaign-controls campaign-controls--two">
         <label className="campaign-search"><Icon name="Search" size={16} /><span className="sr-only">Search visited places</span><input onChange={(event) => setQuery(event.target.value.slice(0, 80))} placeholder="Search places and memories…" type="search" value={query} /></label>
@@ -41,11 +44,13 @@ export function CampaignPlacesVisited({
           ))}
         </section>
       ) : <CampaignEmptyState
-        description={campaign.placesVisited.length
+        description={visitsUnavailable
+          ? "Recorded visit coverage is unavailable for this read; omitted visits are not confirmed absent."
+          : campaign.placesVisited.length
           ? "Clear the filters to see the whole campaign trail."
           : "This page waits for explicit campaign visit records; it never guesses visits from the current location or the map."}
         icon="MapPin"
-        title={campaign.placesVisited.length ? "No visited places match" : "No campaign visits recorded yet"}
+        title={visitsUnavailable ? "Campaign visits unavailable" : campaign.placesVisited.length ? "No visited places match" : "No campaign visits recorded yet"}
       />}
     </div>
   );

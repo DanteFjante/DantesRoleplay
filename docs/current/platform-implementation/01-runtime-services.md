@@ -1,0 +1,45 @@
+# 01 — Runtime services and JavaScript execution
+
+This proposed workstream turns existing JavaScript evaluation and typed actions into a reusable service runtime for the website and Codex integration. It implements no device or provider bridges. Other APIs remain future extension points. Names below describe contracts; this plan allocates no runtime identifiers. [Platform requirements](../PLATFORM-REQUIREMENTS.md) remains the current-state baseline.
+
+Prerequisite: implement [00 — Shared foundation](00-shared-foundation.md) first and have the coordinator supply its accepted foundation revision and contract baseline. This workstream consumes those shared contracts and does not redefine them independently.
+
+## Existing owners to retain
+
+- [JintMechanicEngine](../../../DantesRoleplay.DataAccess/Mechanics/JintMechanicEngine.cs) creates a constrained engine for each invocation. It caches its trusted harness, but the harness constructs the mechanic with `new Function` each time. Current inputs and outputs are JSON; logging is buffered.
+- [ApplicationMechanicEvaluator](../../../src/system/application-execution/persistence/ApplicationMechanicEvaluator.cs) resolves exact definitions, materializes projections and evaluates bounded child composition. Its authorized/object/graph snapshot paths currently reject mutation proposals.
+- [ApplicationActionRunner](../../../src/system/application-execution/persistence/ApplicationActionRunner.cs) and [ApplicationEcsEffectBatchBuilder](../../../src/system/application-execution/persistence/ApplicationEcsEffectBatchBuilder.cs) connect exact mechanic evaluation to checked typed effects.
+- [ApplicationEcsEffectApplier](../../../DantesRoleplay.DataAccess/Ecs/ApplicationEcsEffectApplier.cs) owns operation replay, optimistic expectations, atomic effects, reactions and audit. It requires its own writer transaction.
+- [SqliteApplicationScopedEcsStore](../../../DantesRoleplay.DataAccess/Ecs/SqliteApplicationScopedEcsStore.cs) and [SqliteComponentTypeRegistry](../../../DantesRoleplay.DataAccess/Ecs/SqliteComponentTypeRegistry.cs) retain scoped persistence, schema versions and validation. [PrivateOperatorAuthorization](../../../src/system/authorization/domain/PrivateOperatorAuthorization.cs) supplies existing trusted-principal and authorization contracts.
+
+## Proposed execution contract
+
+A service definition declares an immutable definition revision, input/output shape, permitted data reads, callable actions and dependency revisions. The host constructs an invocation envelope containing invocation principal/scope/grant ref, definition revision, operation/parent identity, budgets and cancellation. Script input cannot manufacture authority. The same contract serves website, Codex and inner-AI callers; adapters establish identity and presentation.
+
+The canonical result contains outcome, data, committed-operation evidence and an optional task handle. Evidence distinguishes proposed work, committed work, replay and pending work. An orchestration failure after a successful child action must preserve that child's receipt; it cannot imply everything rolled back. Errors expose bounded safe details with a correlation identity.
+
+Provide three explicit execution boundaries:
+
+1. **Data:** declared, authorized projections with bounded input/output and freshness evidence. Reads do not expose a database context, live entity object or general CLR access. Existing read-only snapshot evaluation remains read-only until an explicit writable contract preserves its observations and constraints.
+2. **Atomic action:** bounded computation produces one typed proposal, which the existing action/effect owners validate and commit. Computation occurs outside the writer transaction; observations and authority are checked before commit. Short existing transactional reactions retain their bounded contract. An action cannot await AI, user input or network work inside its transaction.
+3. **Service orchestration:** JavaScript may request authorized data, invoke separately atomic actions or hand work to workstream 04. Budgets cover child calls, data volume, output and computation as well as individual engine limits. Host-supplied callbacks are narrow capabilities, not unrestricted storage access.
+
+Process-local progress and asynchronous replies can use bounded host channels and serialized engine execution. C# event producers enqueue messages or complete awaited host operations; they never invoke an executing engine concurrently. Busy JavaScript must yield or be cancelled. Jint's [Task/Promise interop](https://github.com/sebastienros/jint/blob/v4.15.0/README.md#taskvaluetask-to-promise-interop-experimental) is opt-in and experimental; ordinary `await` provides no restart durability.
+
+Durable handoff persists a step/checkpoint and a correlated completion handler through 04, then returns a task handle. It does not persist the JavaScript stack. AI calls and waits complete through that boundary. A host-call journal may retain idempotent request/result evidence; arbitrary script replay requires capturing all relevant nondeterminism and calls and is outside the initial slice.
+
+## Numbered deliverable slices
+
+1. **Agree contracts and ownership.** With 02, specify revision/dependency and activation inputs; with 04, specify checkpoint, completion and task-handle semantics; with 05, specify AI call/result envelopes. The coordinator owns shared registrations, wiring and migrations. Acceptance: both website and Codex adapters can express identical authorized invocations and canonical results; missing authority or unsupported modes fail explicitly. Recovery: retain existing action routes until their adapter is accepted.
+
+2. **Prepare immutable programs.** Extend the mechanic-engine owner with a bounded prepared-program cache keyed by exact source content, wrapper semantics and parser/runtime configuration. Cache the executable wrapper rather than leaving mechanic parsing inside `new Function`. Separately pin resolved dependencies. Preserve fresh engines, limits, random state and inputs per call. Jint [prepared scripts](https://github.com/sebastienros/jint/blob/v4.15.0/README.md#embedding-performance) reuse parsing/static analysis, not native JIT output. Acceptance: repeated calls reuse preparation while concurrent calls and hostile global mutations remain isolated; measure preparation, context construction and execution separately. Recovery: disable the cache and use fresh preparation.
+
+3. **Expose bounded services.** Add the host-controlled data, action and progress interfaces around existing evaluators and runners. Define cancellation, backpressure and output limits before adding process-local asynchronous callbacks. Acceptance: denied reads produce no data; writes still pass schema, scope and stale-state checks; progress is observable without becoming a success receipt. Recovery: gate the service adapter and preserve the existing pure evaluation path.
+
+4. **Join durable execution.** Integrate 04's dispatch/checkpoint contract and 05's AI operation boundary. Preserve operation/parent identity and commit evidence across retries; recheck current grants at consequential boundaries. Acceptance: uncertain commits replay safely, restarts resume explicit persisted steps, revocation prevents subsequent unauthorized work, and earlier successful child commits remain visible after later failure. Recovery: stop dispatch and retain durable records for controlled continuation.
+
+5. **Activate and roll back generations.** Prepare and validate candidate definitions during 02's pre-publication validation. After its authoritative activation commits, switch the process-local generation consistently to those exact retained definitions. A cache miss resolves/prepares that exact revision; it must not substitute an old revision or mix dependencies. New calls use the activated generation; in-flight calls remain revision-pinned and encounter normal commit freshness checks. Bound old-generation retention. Acceptance: invalid candidate preparation leaves the prior generation active; a restart rebuilds the selected generation from retained content. Rollback changes future selection without rewriting state or claiming to reverse completed operations. Recovery: select a validated prior compatible generation; schema rollback remains coordinator-owned.
+
+## Reuse decision
+
+The runtime/storage gap is integration: service capabilities, preparation caching, durable coordination and standing-grant propagation. Existing isolation, versioned schemas, scoped reads, typed commits and replay are reusable foundations; no inspected requirement inherently demands a new project. A parallel replacement would also need persistence compatibility and cutover work. Prefer incremental integration, extracting an assembly only where a demonstrated dependency boundary helps. Timing requires measurements and slice estimates, not a presumed rewrite advantage.

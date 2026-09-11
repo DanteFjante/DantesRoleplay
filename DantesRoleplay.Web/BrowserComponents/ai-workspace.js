@@ -1,4 +1,4 @@
-import {SystemClientError, SystemRequestScope, systemWebClient} from '/components/system-client.js';
+import {SystemClientError, SystemRequestScope, systemWebClient, interruptedRequestStore} from '/components/system-client.js';
 import '/components/system-publication.js';
 
 const OPERATIONS = [
@@ -22,6 +22,46 @@ function option(value, label) {
   return item;
 }
 
+function own(value, key) {
+  return value && typeof value === 'object' && !Array.isArray(value) && Object.hasOwn(value, key)
+    ? value[key] : undefined;
+}
+
+function validId(value, maximum = 200) {
+  return typeof value === 'string' && value.length > 0 && value.length <= maximum &&
+    value.trim() === value && !/[\u0000-\u001f\u007f/\\]/.test(value);
+}
+
+function displayText(value, fallback = '', maximum = 4000) {
+  return typeof value === 'string' && value.length <= maximum ? value : fallback;
+}
+
+function providerRow(value) {
+  return value && typeof value === 'object' && !Array.isArray(value) && validId(value.id, 120) &&
+    typeof value.displayName === 'string' && value.displayName.length <= 200
+    ? {id: value.id, displayName: value.displayName} : null;
+}
+
+// The public provider selector intentionally differs from the durable
+// conversation lane for Ollama. Keep that translation at the browser/API
+// boundary, never infer it from a returned conversation.
+function durableConversationProvider(provider) {
+  return provider === 'ollama' ? 'local' : provider;
+}
+
+function modelRow(value) {
+  return value && typeof value === 'object' && !Array.isArray(value) && validId(value.id, 160) &&
+    typeof value.displayName === 'string' && value.displayName.length <= 200
+    ? {...value, displayName: value.displayName} : null;
+}
+
+function conversationRow(value) {
+  return value && typeof value === 'object' && !Array.isArray(value) && validId(value.id, 200) &&
+    typeof value.title === 'string' && value.title.length <= 200 &&
+    typeof value.status === 'string' && value.status.length <= 80
+    ? value : null;
+}
+
 function randomKey(prefix) {
   if (typeof crypto.randomUUID === 'function') return `${prefix}.${crypto.randomUUID()}`;
   const values = new Uint32Array(4);
@@ -43,8 +83,13 @@ class AiWorkspace extends HTMLElement {
     };
     this._connected = false;
     this._applications = [];
+    this._stateSpaceBindings = new Map();
     this._models = [];
     this._conversation = null;
+    this._pendingSubmission = null;
+    this._interruptedRecovery = null;
+    this._recoveryBlocked = false;
+    this._setupPartial = false;
     this.attachShadow({mode: 'open'});
     this._renderShell();
   }
@@ -54,7 +99,8 @@ class AiWorkspace extends HTMLElement {
     this._connected = true;
     if (!this.hasAttribute('surface')) this.setAttribute('surface', 'inner');
     this._configureSurface();
-    this._loadSetup();
+    this._setupPromise = this._loadSetup();
+    this._recoverInterruptedRequest();
   }
 
   disconnectedCallback() {
@@ -64,11 +110,11 @@ class AiWorkspace extends HTMLElement {
 
   attributeChangedCallback(name) {
     if (!this._connected) return;
+    this._scopes.execution.cancel();
+    this._scopes.conversation.cancel();
     if (name === 'application-id') {
-      this._scopes.execution.cancel();
       this._selectDeclaredApplication();
     } else if (name === 'state-space-id') {
-      this._scopes.execution.cancel();
       this._selectDeclaredStateSpace();
     } else if (name === 'surface') {
       this._resetConversation();
@@ -82,7 +128,7 @@ class AiWorkspace extends HTMLElement {
         typeof value.discoverAllApplications !== 'function') throw new TypeError(
       'ai-workspace requires the shared system browser client.');
     this._client = value;
-    if (this._connected) this._loadSetup();
+    if (this._connected) this._setupPromise = this._loadSetup();
   }
 
   get client() { return this._client; }
@@ -189,6 +235,7 @@ class AiWorkspace extends HTMLElement {
 
   async _loadSetup() {
     const request = this._scopes.setup.begin();
+    this._setupPartial = false;
     this._showProgress('Discovering AI providers and applications…');
     try {
       const [providers, applications] = await Promise.all([
@@ -196,41 +243,56 @@ class AiWorkspace extends HTMLElement {
         this._client.discoverAllApplications({signal: request.signal})
       ]);
       if (!request.isCurrent()) return;
-      if (!providers || !Array.isArray(providers.providers)) throw new SystemClientError(
+      if (!providers || !Array.isArray(providers.providers) || providers.providers.length > 100) throw new SystemClientError(
         'AI_PROVIDER_RESPONSE_INVALID', 'The AI provider response is invalid.');
-      this._provider.control.replaceChildren(...providers.providers.map(value => option(value.id, value.displayName)));
-      this._applications = applications.applications;
+      const providerRows = providers.providers.map(providerRow);
+      const applicationRows = Array.isArray(applications?.applications)
+        ? applications.applications.filter(value => validId(value?.applicationId, 63) &&
+          typeof value.displayName === 'string' && value.displayName.length <= 200) : [];
+      this._setupPartial = providerRows.some(value => value === null) || providerRows.length !== providers.providers.length ||
+        applicationRows.length !== (applications?.applications?.length ?? 0);
+      this._provider.control.replaceChildren(...providerRows.filter(Boolean).map(value => option(value.id, value.displayName)));
+      this._applications = applicationRows;
       this._application.control.replaceChildren(option('', 'System only'),
         ...this._applications.map(value => option(value.applicationId, value.displayName)));
       const declared = this.getAttribute('application-id') || '';
       if (Array.from(this._application.control.options).some(value => value.value === declared))
         this._application.control.value = declared;
       await Promise.all([this._loadModels(), this._loadStateSpaces()]);
-      if (request.isCurrent()) this._showProgress('AI workspace ready.', 'ready');
+      if (request.isCurrent()) this._showProgress(this._setupPartial
+        ? 'AI workspace ready; some optional entries are unavailable.' : 'AI workspace ready.', 'ready');
     } catch (error) { if (error?.name !== 'AbortError') this._showError(error, () => this._loadSetup()); }
   }
 
   async _loadModels() {
     const provider = this._provider.control.value;
-    if (!provider) { this._models = []; this._model.control.replaceChildren(); return; }
+    if (!provider) { this._models = []; this._model.control.replaceChildren(); return false; }
     const request = this._scopes.models.begin();
     try {
       const value = await this._client.requestJson(
         `/api/control/ai/providers/${encodeURIComponent(provider)}/models`, {signal: request.signal});
-      if (!request.isCurrent() || !value || !Array.isArray(value.models)) return;
-      this._models = value.models;
-      this._model.control.replaceChildren(...value.models.map(model =>
-        option(model.id, model.displayName + (model.isDefault ? ' (default)' : ''))));
-      const preferred = value.models.find(model => model.isDefault);
+      if (!request.isCurrent() || !value || !Array.isArray(value.models)) return false;
+      if (value.models.length > 100) throw new SystemClientError('AI_MODEL_RESPONSE_INVALID', 'The AI model list is too large.');
+      const models = value.models.map(modelRow);
+      this._models = models.filter(Boolean);
+      this._setupPartial = this._setupPartial || models.some(model => model === null);
+      this._model.control.replaceChildren(...this._models.map(model =>
+        option(model.id, model.displayName + (model.isDefault === true ? ' (default)' : ''))));
+      const preferred = this._models.find(model => model.isDefault === true);
       if (preferred) this._model.control.value = preferred.id;
       this._updateReasoning();
-      await this._loadHistory();
-    } catch (error) { if (error?.name !== 'AbortError') this._showError(error, () => this._loadModels()); }
+      return await this._loadHistory();
+    } catch (error) {
+      if (error?.name !== 'AbortError') this._showError(error, () => this._loadModels());
+      return false;
+    }
   }
 
   _updateReasoning() {
     const model = this._models.find(value => value.id === this._model.control.value);
-    const efforts = Array.isArray(model?.reasoningEfforts) ? model.reasoningEfforts : ['none'];
+    const efforts = Array.isArray(model?.reasoningEfforts)
+      ? model.reasoningEfforts.filter(value => typeof value === 'string' && value.length > 0 && value.length <= 40)
+      : ['none'];
     this._reasoning.control.replaceChildren(...efforts.map(value => option(value, value)));
     const supported = Array.isArray(model?.capabilities) && model.capabilities.includes('reasoning') &&
       efforts.some(value => value !== 'none');
@@ -262,7 +324,9 @@ class AiWorkspace extends HTMLElement {
         `/api/control/structure/applications/${encodeURIComponent(applicationId)}/state-spaces`,
         {signal: request.signal});
       if (!request.isCurrent() || !value || !Array.isArray(value.items)) return;
-      const runtime = value.items.filter(item => item.scope === 'runtime' && item.isCurrent === true);
+      const runtime = value.items.filter(item => item && item.scope === 'runtime' && item.isCurrent === true &&
+        validId(item.stateSpaceId, 120) && typeof item.resolutionFingerprint === 'string' && /^[0-9A-F]{64}$/.test(item.resolutionFingerprint));
+      this._stateSpaceBindings = new Map(runtime.map(item => [item.stateSpaceId, item.resolutionFingerprint]));
       this._stateSpace.control.append(...runtime.map(item => option(item.stateSpaceId, item.stateSpaceId)));
       this._selectDeclaredStateSpace();
     } catch (error) { if (error?.name !== 'AbortError') this._showError(error, () => this._loadStateSpaces()); }
@@ -276,31 +340,67 @@ class AiWorkspace extends HTMLElement {
 
   async _loadHistory() {
     const provider = this._provider.control.value;
-    if (!provider) return;
+    if (!provider) return false;
     const request = this._scopes.history.begin();
     try {
       const value = await this._client.requestJson(
         `/api/control/ai/conversations?provider=${encodeURIComponent(provider)}` +
         `&surface=${encodeURIComponent(this.getAttribute('surface') || 'inner')}`, {signal: request.signal});
-      if (!request.isCurrent() || !value || !Array.isArray(value.items)) return;
-      this._history.replaceChildren(option('', 'Past conversations'), ...value.items.map(item =>
+      if (!request.isCurrent() || !value || !Array.isArray(value.items) || value.items.length > 100) return false;
+      const rows = value.items.map(conversationRow);
+      this._setupPartial = this._setupPartial || rows.some(item => item === null);
+      this._history.replaceChildren(option('', 'Past conversations'), ...rows.filter(Boolean).map(item =>
         option(item.id, `${item.title} · ${item.status}`)));
-    } catch (error) { if (error?.name !== 'AbortError') this._showError(error, () => this._loadHistory()); }
+      return true;
+    } catch (error) {
+      if (error?.name !== 'AbortError') this._showError(error, () => this._loadHistory());
+      return false;
+    }
   }
 
-  async _loadConversation(id, render = true) {
+  _submissionSnapshot() {
+    return JSON.stringify({
+      surface: this.getAttribute('surface') || 'inner',
+      provider: this._provider.control.value,
+      model: this._model.control.value,
+      operation: this._conversation ? 'continued-subtask' : this._operation.control.value,
+      input: this._input.value,
+      applicationId: this._application.control.value || null,
+      stateSpaceId: this._stateSpace.control.value || null,
+      reasoning: this._reasoning.control.value || 'none',
+      structuredInput: this._structuredInput.value,
+      responseSchema: this._schema.value,
+      conversationId: this._conversation?.summary?.id || null,
+      expectedRevision: this._conversation?.summary?.revision || null
+    });
+  }
+
+  async _loadConversation(id, render = true, options = {}) {
     if (!id) return;
+    if (this._pendingSubmission && options.allowDuringRecovery !== true) {
+      this._showError(new SystemClientError('AI_REQUEST_RECOVERY_REQUIRED',
+        'The previous AI request may have been saved. Retry it before loading another conversation.'));
+      return false;
+    }
     const request = this._scopes.conversation.begin();
     this._showProgress('Loading conversation…');
     try {
       const value = await this._client.requestJson(
         `/api/control/ai/conversations/${encodeURIComponent(id)}`, {signal: request.signal});
-      if (!request.isCurrent()) return;
+      if (!request.isCurrent() || !this._connected) return false;
+      if (options.expectedProvider && (!value?.summary || value.summary.id !== id ||
+          value.summary.provider !== options.expectedProvider)) throw new SystemClientError(
+        'AI_CONVERSATION_BINDING_INVALID', 'The recovered conversation did not match its original provider.');
       this._conversation = value;
       this._remove.disabled = false;
       if (render) this._renderConversation(value);
       this._showProgress('Conversation ready.', 'ready');
-    } catch (error) { if (error?.name !== 'AbortError') this._showError(error, () => this._loadConversation(id)); }
+      return true;
+    } catch (error) {
+      if (error?.name !== 'AbortError' && request.isCurrent() && this._connected)
+        this._showError(error, () => this._loadConversation(id, render, options));
+      return false;
+    }
   }
 
   async _deleteConversation() {
@@ -325,6 +425,11 @@ class AiWorkspace extends HTMLElement {
   }
 
   _resetConversation() {
+    if (this._pendingSubmission) {
+      this._showError(new SystemClientError('AI_REQUEST_RECOVERY_REQUIRED',
+        'The previous AI request may have been saved. Retry it before starting another conversation.'));
+      return;
+    }
     this._conversation = null;
     this._history.value = '';
     this._remove.disabled = true;
@@ -332,7 +437,56 @@ class AiWorkspace extends HTMLElement {
   }
 
   async _submit() {
+    if (this._submitButton.disabled) return;
+    if (this._recoveryBlocked && !this._pendingSubmission) {
+      this._showError(new SystemClientError('AI_RECOVERY_REQUIRED',
+        'An earlier request remains uncertain. Recheck it or reload; no new request was sent.'),
+      () => this._recoverInterruptedRequest());
+      return;
+    }
+    if (this._pendingSubmission) {
+      const pending = this._pendingSubmission;
+      if (pending.snapshot !== this._submissionSnapshot()) {
+        this._showError(new SystemClientError('AI_REQUEST_RECOVERY_REQUIRED',
+          'The previous AI request may have been saved. Restore its inputs to retry the exact request, or confirm its result before starting a new one.'),
+        () => this._submit());
+        return;
+      }
+      const request = this._scopes.execution.begin();
+      if (!this._rememberInterruptedRequest(pending.body, this._interruptedRecovery)) {
+        this._setBusy(false);
+        this._showError(new SystemClientError('AI_RECOVERY_UNAVAILABLE',
+          'The request cannot be safely sent because interrupted-request recovery is unavailable.'));
+        return;
+      }
+      this._setBusy(true);
+      this._showProgress('Retrying the same AI request…');
+      try {
+        const result = await this._client.requestJson('/api/control/ai/requests', {
+          method: 'POST', body: pending.body, signal: request.signal
+        });
+        if (!request.isCurrent()) return;
+        this._pendingSubmission = null; this._clearInterruptedRequest();
+        this._input.value = '';
+        const refreshed = await this._loadConversation(result.conversationId, false);
+        if (!request.isCurrent() || !this._connected) return;
+        this._renderResult(result);
+        if (refreshed === false) this._showError(new SystemClientError('AI_CONVERSATION_REFRESH_FAILED',
+          'The AI request was saved, but the conversation could not be refreshed.'),
+        () => this._loadConversation(result.conversationId, false));
+        emit(this, 'ai-result', result);
+      } catch (error) {
+        if (error?.name !== 'AbortError' && request.isCurrent() && this._connected) { this._rememberInterruptedRequest(pending.body); this._showError(new SystemClientError('AI_REQUEST_RECOVERY_REQUIRED',
+          'The AI request may have been saved. Retry the same request before changing its inputs.'),
+        () => this._submit()); }
+      } finally { if (request.isCurrent()) this._setBusy(false); }
+      return;
+    }
     if (!this._input.reportValidity()) return;
+    if (!validId(this._provider.control.value, 120) || !validId(this._model.control.value, 160)) {
+      this._showError(new SystemClientError('AI_REQUEST_INPUT_INVALID', 'Choose a current AI provider and model first.'));
+      return;
+    }
     let structuredInput = null;
     let responseSchema = null;
     try {
@@ -365,8 +519,31 @@ class AiWorkspace extends HTMLElement {
       maximumToolRounds: 4,
       maximumOutputTokens: 2048
     };
+    const snapshot = this._submissionSnapshot();
     const request = this._scopes.execution.begin();
     this._setBusy(true);
+    this._showProgress('Binding the current context for safe recovery…');
+    let recovery = null;
+    try { recovery = await this._trustedRecoveryContext(body); }
+    catch { /* A rejected browser digest cannot strand the send control or issue a POST. */ }
+    if (!request.isCurrent() || !this._connected || snapshot !== this._submissionSnapshot()) {
+      if (request.isCurrent()) this._setBusy(false);
+      return;
+    }
+    if (!recovery) {
+      this._setBusy(false);
+      this._showError(new SystemClientError('AI_RECOVERY_CONTEXT_UNAVAILABLE',
+        'The current context cannot be safely bound for interrupted-request recovery. Refresh and try again.'));
+      return;
+    }
+    this._pendingSubmission = {operation, conversationId: body.conversationId, body: {...body}, snapshot};
+    if (!this._rememberInterruptedRequest(body, recovery)) {
+      this._pendingSubmission = null;
+      this._setBusy(false);
+      this._showError(new SystemClientError('AI_RECOVERY_UNAVAILABLE',
+        'The request cannot be safely sent because interrupted-request recovery is unavailable.'));
+      return;
+    }
     this._showProgress('AI request running…');
     emit(this, 'ai-progress', {phase: 'running', operation, applicationId});
     try {
@@ -374,73 +551,251 @@ class AiWorkspace extends HTMLElement {
         method: 'POST', body, signal: request.signal
       });
       if (!request.isCurrent()) return;
+      this._pendingSubmission = null; this._clearInterruptedRequest();
       this._input.value = '';
-      await this._loadConversation(result.conversationId, false);
+      const refreshed = await this._loadConversation(result.conversationId, false);
+      if (!request.isCurrent() || !this._connected) return;
       this._renderResult(result);
+      if (refreshed === false) {
+        this._showError(new SystemClientError('AI_CONVERSATION_REFRESH_FAILED',
+          'The AI request was saved, but the conversation could not be refreshed.'),
+        () => this._loadConversation(result.conversationId, false));
+      }
       emit(this, 'ai-result', result);
     } catch (error) {
-      if (error?.name !== 'AbortError') {
-        this._showError(error, () => this._submit());
+      if (error?.name !== 'AbortError' && request.isCurrent() && this._connected) {
+        this._rememberInterruptedRequest(body);
+        this._showError(new SystemClientError('AI_REQUEST_RECOVERY_REQUIRED',
+          'The AI request may have been saved. Retry the same request before changing its inputs.'),
+        () => this._submit());
         emit(this, 'ai-error', {code: error.code, message: error.message});
       }
     } finally { if (request.isCurrent()) this._setBusy(false); }
   }
 
+  _recoverySlot() { return `ai-workspace-${this.getAttribute('surface') || 'inner'}`; }
+  _rememberInterruptedRequest(body, trusted = null) {
+    if (!body || !validId(body.idempotencyKey, 100) || !validId(body.provider, 120) ||
+        !validId(body.surface, 20) || (body.applicationId !== null && !validId(body.applicationId, 63)) ||
+        (body.stateSpaceId !== null && !validId(body.stateSpaceId, 120)) || !trusted ||
+        !(trusted.contextFingerprint === null || /^[0-9A-F]{64}$/.test(trusted.contextFingerprint)) ||
+        !Array.isArray(trusted.sourceReferences)) return false;
+    this._interruptedRecovery = {kind: 'ai', key: body.idempotencyKey, provider: body.provider,
+      surface: body.surface, applicationId: body.applicationId || null, stateSpaceId: body.stateSpaceId || null,
+      resolutionFingerprint: body.resolutionFingerprint || null, contextFingerprint: trusted.contextFingerprint,
+      sourceReferences: trusted.sourceReferences};
+    return interruptedRequestStore?.write(this._recoverySlot(), this._interruptedRecovery) === true;
+  }
+  async _trustedRecoveryContext(body) {
+    const surface = body?.surface;
+    if (surface !== 'inner' && surface !== 'outer') return null;
+    let sourceReferences; let seed;
+    if (!body.applicationId) {
+      if (body.stateSpaceId) return null;
+      sourceReferences = [`surface:${surface}`]; seed = `${surface}\0system-ai-context-v1`;
+    } else {
+      const application = this._applications.find(value => value.applicationId === body.applicationId);
+      if (!application || application.resolutionFingerprint !== body.resolutionFingerprint ||
+          !/^[0-9A-F]{64}$/.test(body.resolutionFingerprint || '')) return null;
+      const stateFingerprint = body.stateSpaceId ? this._stateSpaceBindings.get(body.stateSpaceId) : '';
+      if (body.stateSpaceId && !/^[0-9A-F]{64}$/.test(stateFingerprint || '')) return null;
+      sourceReferences = [`application:${body.applicationId}@${body.resolutionFingerprint}`, `surface:${surface}`];
+      if (body.stateSpaceId) sourceReferences.push(`state-space:${body.stateSpaceId}@${stateFingerprint}`);
+      sourceReferences.sort(); seed = `${surface}\0${body.applicationId}\0${body.resolutionFingerprint}\0${body.stateSpaceId || ''}\0${stateFingerprint}`;
+    }
+    // The exact, canonical references contain every binding input (surface,
+    // application revision and runtime revision). They can be compared on HTTP
+    // too. The server always computes and enforces the authoritative fingerprint;
+    // a client digest is an additional check, not a replacement for authorization.
+    if (!globalThis.crypto?.subtle) return {contextFingerprint: null, sourceReferences};
+    const bytes = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(seed));
+    return {contextFingerprint: Array.from(new Uint8Array(bytes), value => value.toString(16).padStart(2, '0')).join('').toUpperCase(), sourceReferences};
+  }
+  _clearInterruptedRequest() { this._interruptedRecovery = null; interruptedRequestStore?.remove(this._recoverySlot()); }
+  async _recoverInterruptedRequest() {
+    const pending = interruptedRequestStore?.read(this._recoverySlot());
+    if (pending?.malformed === true) {
+      this._recoveryBlocked = true;
+      this._showError(new SystemClientError('AI_RECOVERY_METADATA_INVALID',
+        'Saved interrupted-request metadata is invalid. Reload before starting another request.'));
+      return;
+    }
+    if (!pending) return;
+    // Claim recovery before any discovery/selector/digest await. A new Send or
+    // late setup response must not create a second operation during recovery.
+    this._recoveryBlocked = true;
+    const request = this._scopes.execution.begin();
+    this._setBusy(true);
+    this._showProgress('Checking an earlier AI request without sending it again…');
+    try {
+      if (this._setupPromise) await this._setupPromise;
+      if (!request.isCurrent() || !this._connected) return;
+      const sameScope = await this._restoreRecoverySelectors(pending,
+        () => request.isCurrent() && this._connected);
+      if (!request.isCurrent() || !this._connected) return;
+      if (!sameScope || !validId(pending.key, 100) || !validId(pending.provider, 120)) {
+        this._showError(new SystemClientError('AI_RECOVERY_METADATA_INVALID',
+          'Saved interrupted-request metadata is invalid. Reload before starting another request.')); return;
+      }
+      this._interruptedRecovery = pending;
+      const url = new URL(`/api/control/ai/recoveries/${encodeURIComponent(pending.key)}`, window.location.origin);
+      url.searchParams.set('provider', pending.provider); url.searchParams.set('surface', pending.surface);
+      if (pending.applicationId) url.searchParams.set('applicationId', pending.applicationId);
+      if (pending.resolutionFingerprint) url.searchParams.set('resolutionFingerprint', pending.resolutionFingerprint);
+      if (pending.stateSpaceId) url.searchParams.set('stateSpaceId', pending.stateSpaceId);
+      const recovered = await this._client.requestJson(url.pathname + url.search, {signal: request.signal});
+      if (!request.isCurrent() || !this._connected || this._interruptedRecovery !== pending) return;
+      if (!recovered || !validId(recovered.conversationId) || !validId(recovered.turnId) ||
+          typeof recovered.status !== 'string' || !['completed', 'failed', 'cancelled'].includes(recovered.status)) throw new SystemClientError(
+        'AI_RECOVERY_INVALID', 'The saved request recovery response is invalid.');
+      if (recovered.idempotencyKey !== pending.key || recovered.provider !== pending.provider || recovered.scope !== 'system' ||
+          !/^[0-9A-F]{64}$/.test(recovered.fingerprint || '') ||
+          (pending.contextFingerprint !== null && recovered.fingerprint !== pending.contextFingerprint) ||
+          !Array.isArray(recovered.sourceReferences) ||
+          recovered.sourceReferences.length !== pending.sourceReferences.length ||
+          recovered.sourceReferences.some((value, index) => value !== pending.sourceReferences[index])) throw new SystemClientError(
+        'AI_RECOVERY_BINDING_INVALID', 'The saved request recovery response did not match its original bound context.');
+      this._clearInterruptedRequest();
+      this._recoveryBlocked = false;
+      const loaded = await this._loadConversation(recovered.conversationId, true, {
+        allowDuringRecovery: true, expectedProvider: durableConversationProvider(pending.provider)
+      });
+      if (!request.isCurrent() || !this._connected) return;
+      if (!loaded) {
+        this._showError(new SystemClientError('AI_CONVERSATION_REFRESH_FAILED',
+          'The earlier AI request was recovered, but its conversation could not be refreshed.'),
+        () => this._loadConversation(recovered.conversationId, true, {
+          expectedProvider: durableConversationProvider(pending.provider)
+        }));
+        return;
+      }
+      this._showProgress('The earlier AI request was recovered.');
+    } catch (error) {
+      if (error?.name === 'AbortError' || !request.isCurrent() || !this._connected) return;
+      if (error?.status === 403) {
+        this._clearInterruptedRequest();
+        this._recoveryBlocked = true;
+        this._showError(new SystemClientError('AI_RECOVERY_DENIED',
+          'Authorization changed, so the earlier request was discarded without replaying it. Reload before starting a new request.'));
+      } else this._showError(new SystemClientError('AI_RECOVERY_UNCERTAIN',
+        'The earlier AI request is still uncertain. Check again later; no new request was sent.'),
+      () => this._recoverInterruptedRequest());
+    } finally { if (request.isCurrent()) this._setBusy(false); }
+  }
+
+  async _restoreRecoverySelectors(pending, isCurrent = () => true) {
+    if (pending.kind !== 'ai' || pending.surface !== (this.getAttribute('surface') || 'inner') ||
+        !(pending.contextFingerprint === null || /^[0-9A-F]{64}$/.test(pending.contextFingerprint || '')) ||
+        !Array.isArray(pending.sourceReferences) || !isCurrent() ||
+        (pending.resolutionFingerprint !== null && !/^[0-9A-F]{64}$/.test(pending.resolutionFingerprint))) return false;
+    const declaredApplication = this.getAttribute('application-id') || null;
+    const declaredState = this.getAttribute('state-space-id') || null;
+    if (declaredApplication && declaredApplication !== pending.applicationId || declaredState && declaredState !== pending.stateSpaceId) return false;
+    if (!Array.from(this._provider.control.options).some(value => value.value === pending.provider)) return false;
+    if (this._provider.control.value !== pending.provider) {
+      this._provider.control.value = pending.provider;
+      if (!await this._loadModels() || !isCurrent() || this._provider.control.value !== pending.provider) return false;
+    }
+    if (pending.applicationId === null) {
+      if (pending.stateSpaceId !== null) return false;
+      this._application.control.value = ''; this._stateSpace.control.value = '';
+    } else {
+      const application = this._applications.find(value => value.applicationId === pending.applicationId &&
+        value.resolutionFingerprint === pending.resolutionFingerprint);
+      if (!application) return false;
+      this._application.control.value = application.applicationId;
+      await this._loadStateSpaces();
+      if (!isCurrent()) return false;
+      if (pending.stateSpaceId) {
+        if (!this._stateSpaceBindings.has(pending.stateSpaceId)) return false;
+        this._stateSpace.control.value = pending.stateSpaceId;
+      } else this._stateSpace.control.value = '';
+    }
+    if (this._application.control.value !== (pending.applicationId || '') ||
+        this._stateSpace.control.value !== (pending.stateSpaceId || '')) return false;
+    const trusted = await this._trustedRecoveryContext({surface: pending.surface, provider: pending.provider,
+      applicationId: pending.applicationId, resolutionFingerprint: pending.resolutionFingerprint,
+      stateSpaceId: pending.stateSpaceId});
+    return isCurrent() && trusted !== null &&
+      (pending.contextFingerprint === null || trusted.contextFingerprint === null ||
+        trusted.contextFingerprint === pending.contextFingerprint) &&
+      trusted.sourceReferences.length === pending.sourceReferences.length &&
+      trusted.sourceReferences.every((value, index) => value === pending.sourceReferences[index]);
+  }
+
   _renderResult(result) {
     this._results.replaceChildren();
-    if (result.assistantMessage) this._results.append(this._section('Assistant', result.assistantMessage));
-    if (result.reasoningSummary) this._results.append(this._section('Reasoning summary', result.reasoningSummary));
-    this._renderMedia(result.mediaAttachments || []);
-    if (result.structuredDataValidated && result.structuredData !== null) {
+    const assistantMessage = displayText(own(result, 'assistantMessage'));
+    const reasoningSummary = displayText(own(result, 'reasoningSummary'));
+    if (assistantMessage) this._results.append(this._section('Assistant', assistantMessage));
+    if (reasoningSummary) this._results.append(this._section('Reasoning summary', reasoningSummary));
+    this._renderMedia(own(result, 'mediaAttachments'));
+    if (own(result, 'structuredDataValidated') === true && own(result, 'structuredData') !== null &&
+        own(result, 'structuredData') !== undefined) {
       const section = this._headingSection('Structured result');
       const view = document.createElement('system-data-view');
       view.value = result.structuredData;
       section.append(view);
       this._results.append(section);
     }
-    if (Array.isArray(result.toolCalls) && result.toolCalls.length) {
+    const toolCalls = Array.isArray(own(result, 'toolCalls')) ? own(result, 'toolCalls').slice(0, 64) : [];
+    if (toolCalls.length) {
       const section = this._headingSection('Direct tool calls', 'tools');
       const list = document.createElement('ul');
-      for (const call of result.toolCalls) {
+      for (const call of toolCalls) {
+        if (!call || typeof call !== 'object' || Array.isArray(call)) continue;
         const item = document.createElement('li');
-        item.textContent = `${call.name}: ${call.status}${call.inputValidated ? ' · input validated' : ''}${call.errorCode ? ` · ${call.errorCode}` : ''}`;
+        item.textContent = `${displayText(own(call, 'name'), 'Tool unavailable', 200)}: ${displayText(own(call, 'status'), 'Status unavailable', 80)}${own(call, 'inputValidated') === true ? ' · input validated' : ''}${displayText(own(call, 'errorCode'), '', 120) ? ` · ${call.errorCode}` : ''}`;
         list.append(item);
       }
       section.append(list); this._results.append(section);
     }
-    this._renderActivities(result.activities || []);
-    if (Array.isArray(result.requiredConfirmations) && result.requiredConfirmations.length) {
+    this._renderActivities(own(result, 'activities'));
+    const confirmations = Array.isArray(own(result, 'requiredConfirmations'))
+      ? own(result, 'requiredConfirmations').filter(value => typeof value === 'string' && value.length <= 200).slice(0, 24) : [];
+    if (confirmations.length) {
       const section = this._headingSection('Required confirmations', 'confirmations');
       const text = document.createElement('p');
-      text.textContent = `Review through the existing operator confirmation workflow: ${result.requiredConfirmations.join(', ')}.`;
+      text.textContent = `Review through the existing operator confirmation workflow: ${confirmations.join(', ')}.`;
       section.append(text); this._results.append(section);
     }
-    if (!result.ok) this._showError(new SystemClientError(result.errorCode, result.errorMessage));
-    else this._showProgress(`Completed with ${result.provider} · ${result.model}.`, 'ready');
+    if (own(result, 'ok') !== true) this._showError(new SystemClientError(own(result, 'errorCode'),
+      displayText(own(result, 'errorMessage'), 'The AI request did not complete.')));
+    else this._showProgress(`Completed with ${displayText(own(result, 'provider'), 'the provider', 120)} · ${displayText(own(result, 'model'), 'the model', 160)}.`, 'ready');
   }
 
   _renderConversation(value) {
     this._results.replaceChildren();
     if (!value) return;
     const transcript = this._headingSection('Conversation', 'transcript');
-    for (const message of value.messages || []) {
+    const messages = Array.isArray(own(value, 'messages')) ? own(value, 'messages').slice(0, 500) : [];
+    let partial = !Array.isArray(own(value, 'messages')) || own(value, 'messages').length > 500;
+    for (const message of messages) {
+      if (!message || typeof message !== 'object' || Array.isArray(message) ||
+          !['user', 'assistant'].includes(own(message, 'role'))) { partial = true; continue; }
       const row = document.createElement('p');
       row.className = 'message';
-      row.textContent = `${message.role === 'assistant' ? 'Assistant' : 'You'}: ${message.content}`;
+      const rawContent = own(message, 'content');
+      const content = displayText(rawContent, 'Message content unavailable.');
+      if (typeof rawContent !== 'string' || rawContent.length > 4000) partial = true;
+      row.textContent = `${message.role === 'assistant' ? 'Assistant' : 'You'}: ${content}`;
       transcript.append(row);
     }
+    if (partial) transcript.append(this._section('Notice', 'Some conversation messages are unavailable for this read.'));
     this._results.append(transcript);
-    this._renderActivities(value.activities || []);
+    this._renderActivities(own(value, 'activities'));
   }
 
   _renderActivities(activities) {
     if (!Array.isArray(activities) || activities.length === 0) return;
     const section = this._headingSection('Task and tool progress', 'activity');
     const list = document.createElement('ol');
-    for (const activity of activities) {
+    for (const activity of activities.slice(0, 100)) {
+      if (!activity || typeof activity !== 'object' || Array.isArray(activity)) continue;
       const item = document.createElement('li');
-      item.dataset.status = activity.status;
-      item.textContent = `${activity.kind}: ${activity.summary} (${activity.status})`;
+      const status = displayText(own(activity, 'status'), 'unavailable', 80);
+      item.dataset.status = status;
+      item.textContent = `${displayText(own(activity, 'kind'), 'Activity', 160)}: ${displayText(own(activity, 'summary'), 'Details unavailable.')} (${status})`;
       list.append(item);
     }
     section.append(list); this._results.append(section);
@@ -450,12 +805,12 @@ class AiWorkspace extends HTMLElement {
     if (!Array.isArray(attachments) || attachments.length === 0) return;
     const allowedRoles = new Set(['portrait', 'setting', 'map', 'illustration', 'icon', 'scene', 'handout']);
     const allowedTypes = new Set(['image/png', 'image/jpeg', 'image/webp']);
-    const valid = attachments.filter(value => value && typeof value.entityId === 'string' &&
-      typeof value.mediaId === 'string' && allowedRoles.has(value.role) && allowedTypes.has(value.mediaType) &&
+    const valid = attachments.slice(0, 64).filter(value => value && typeof value === 'object' &&
+      validId(value.entityId) && validId(value.mediaId) && allowedRoles.has(value.role) && allowedTypes.has(value.mediaType) &&
       Number.isInteger(value.width) && value.width > 0 && value.width <= 10000 &&
       Number.isInteger(value.height) && value.height > 0 && value.height <= 10000 &&
       typeof value.alt === 'string' && value.alt.length > 0 && value.alt.length <= 500 &&
-      typeof value.caption === 'string' && value.caption.length <= 1000 &&
+      (value.caption === undefined || (typeof value.caption === 'string' && value.caption.length <= 1000)) &&
       typeof value.contentUrl === 'string' && value.contentUrl.startsWith('/api/applications/') &&
       value.contentUrl.endsWith('/content'));
     if (valid.length === 0) return;
@@ -476,7 +831,7 @@ class AiWorkspace extends HTMLElement {
       role.className = 'media-role';
       role.textContent = attachment.role;
       const text = document.createElement('span');
-      text.textContent = attachment.caption || attachment.alt;
+      text.textContent = displayText(attachment.caption, '', 1000) || attachment.alt;
       caption.append(role, text);
       card.append(image, caption);
       gallery.append(card);

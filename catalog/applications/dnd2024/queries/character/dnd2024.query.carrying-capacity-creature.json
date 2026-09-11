@@ -1,0 +1,22 @@
+{
+  "id": "dnd2024.query.carrying-capacity-creature",
+  "category": "character.structural-object",
+  "name": "Carrying capacity creature object",
+  "description": "Reads the exact registered structural object used to derive one creature's carrying capacity.",
+  "matches": ["read carrying capacity creature object", "inspect carrying capacity sources"],
+  "roles": {
+    "creature": "The exact creature to inspect."
+  },
+  "roleBindings": {
+    "creature": { "source": "route-entity" }
+  },
+  "executor": "object-projection",
+  "object": {
+    "qualifiedId": "dnd2024.object.carrying-capacity-creature",
+    "version": 2,
+    "contentFingerprint": "828BC5D694102E129C870CA49291424ABFB79F8BDE17A169037CA26B9D5A3DC1"
+  },
+  "exposure": "model-visible",
+  "status": "active",
+  "profile": "application-object/v2"
+}

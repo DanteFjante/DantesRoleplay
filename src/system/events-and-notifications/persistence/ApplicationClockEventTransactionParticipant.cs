@@ -1,4 +1,7 @@
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
+using DantesRoleplay.Ecs;
 using DantesRoleplay.EcsEffects;
 using DantesRoleplay.Events;
 using DantesRoleplay.SchemaValidation;
@@ -12,20 +15,21 @@ namespace DantesRoleplay.DataAccess;
 public sealed class ApplicationClockEventTransactionParticipant(
     IEventTypeStore eventTypes,
     IEventLedger events,
-    IBoundedJsonSchemaValidator schemas) : IApplicationEcsTransactionParticipant
+    IStateSpaceRegistry stateSpaces,
+    IBoundedJsonSchemaValidator schemas) : IApplicationEcsEventSourceParticipant
 {
-    public async Task StageAsync(
+    public async Task<IReadOnlyList<EventDetail>> StageEventsAsync(
         ApplicationEcsEffectBatch batch,
         IReadOnlyList<ApplicationEcsEffectReceipt> receipts,
-        string operationId,
+        ApplicationEcsEventEmissionContext emission,
         CancellationToken cancellationToken = default)
     {
         var clock = batch.Effects
             .Select((effect, index) => new { Effect = effect, Index = index })
             .SingleOrDefault(value => value.Effect.Type == ApplicationEcsEffectType.ClockAdvance);
-        if (clock is null) return;
+        if (clock is null) return [];
 
-        var receipt = receipts.SingleOrDefault(value => value.Index == clock.Index)
+        var receipt = receipts.SingleOrDefault(value => value.BatchEffectIndex == clock.Index)
             ?? throw new ApplicationEcsTransactionParticipantException(
                 "The authoritative clock effect has no operation receipt.");
         var registered = await eventTypes.GetAsync(clock.Effect.EventTypeId,
@@ -47,8 +51,8 @@ public sealed class ApplicationClockEventTransactionParticipant(
             causeCapabilityId = batch.MechanicId,
             subjectEntityId = clock.Effect.SubjectEntityId,
             activityId = clock.Effect.ActivityId,
-            idempotencyKey = batch.ExecutionIdentity!.RequestFingerprint,
-            operationReceipt = operationId
+            idempotencyKey = IdempotencyKey(batch, emission, clock.Index),
+            operationReceipt = emission.RootOperationId
         });
         var validation = schemas.Validate(
             EventPayloadRoleMetadata.WithoutExtension(registered.PayloadSchema), payload);
@@ -56,12 +60,28 @@ public sealed class ApplicationClockEventTransactionParticipant(
             throw new ApplicationEcsTransactionParticipantException(
                 "The authoritative clock event does not satisfy its registered payload contract.");
 
-        await events.WriteAcceptedAsync(
+        return await events.WriteAcceptedAsync(
             [new ProposedEvent(clock.Effect.EventTypeId, payload,
                 new[] { clock.Effect.EntityId, clock.Effect.SubjectEntityId }
                     .Distinct(StringComparer.Ordinal).ToArray(),
-                clock.Effect.EntityId, clock.Index)],
-            operationId,
-            cancellationToken);
+                clock.Effect.EntityId, clock.Index, emission.Depth, emission.RootOperationId,
+                emission.CausationEventId, emission.ProducerExecutionId)],
+            emission.RootOperationId,
+            cancellationToken,
+            ApplicationEventSourceContext.Require(stateSpaces, batch));
+    }
+
+    private static string IdempotencyKey(
+        ApplicationEcsEffectBatch batch,
+        ApplicationEcsEventEmissionContext emission,
+        int effectIndex)
+    {
+        // Root actions retain their caller-supplied idempotency fingerprint. Reaction batches have
+        // no execution identity by construction, so derive the same fixed-width fingerprint from
+        // immutable, applier-validated provenance rather than dereferencing an absent caller value.
+        if (batch.ExecutionIdentity is { } identity) return identity.RequestFingerprint;
+        var source = string.Join("\u001f", emission.RootOperationId, emission.CausationEventId,
+            emission.ProducerExecutionId, batch.StateSpaceId, effectIndex);
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(source)));
     }
 }

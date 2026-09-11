@@ -1,6 +1,18 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+test("Current board coverage metadata degrades locally without implying complete board knowledge", () => {
+  for (const metadata of [{ notices: null }, { notices: {} }, { notices: [null] },
+    { notices: Array.from({ length: 9 }, () => "notice") }, { coverage: "future" }]) {
+    const result = normalizeCurrentSituation({ status: "ready", kind: "combat", locationId: "location.fixture",
+      affordances: [], combat: { id: "encounter.fixture", name: "Known encounter", participants: [],
+        board: { revision: 1, columns: 10, rows: 10, feetPerSquare: 5, terrain: [], obstacles: [], participants: [], ...metadata } } });
+    assert.equal(result.combat.board.columns, 10);
+    assert.equal(result.combat.board.coverage, "partial");
+    assert.match(result.combat.board.notices.join(" "), /coverage information is unavailable/);
+  }
+});
+
 import {
   CAMPAIGN_SECTIONS,
   LOCATION_SECTIONS,
@@ -37,6 +49,7 @@ import {
   normalizeWorldSection,
   resolveSelectedLocation,
 } from "../src/state.js";
+import { normalizeCurrentSituation } from "../src/data/current-situation.js";
 
 const locations = [
   { id: "archive", name: "Sunken Archive", region: "Ash March", kind: "ruin", summary: "A flooded vault." },
@@ -88,6 +101,140 @@ const history = [
     linkedPeople: [],
   },
 ];
+
+test("Current projects descriptive fields and malformed rows locally", () => {
+  const recorded = normalizeCurrentSituation({
+    status: "ready",
+    kind: "recorded",
+    locationId: "archive",
+    recorded: {
+      id: "play-situation.sparse",
+      kind: "conversation",
+      participants: [
+        { id: "actor.one", name: "One" },
+        { id: "actor.one", name: "Duplicate" },
+        { id: "actor.two", name: 42 },
+        { name: "No identity" },
+      ],
+      interactions: [
+        { id: "message.one", role: "player", ordinal: 1, text: "Still useful." },
+        { id: "message.two", role: "assistant", ordinal: "second", text: 42 },
+        { id: "message.one", role: "player", ordinal: 3, text: "Duplicate." },
+      ],
+      location: { id: "wrong-location", name: "Wrong association" },
+    },
+  });
+  assert.equal(recorded?.status, "ready");
+  assert.equal(recorded?.kind, "recorded");
+  if (recorded?.status === "ready" && recorded.kind === "recorded") {
+    assert.equal(recorded.recorded.id, "play-situation.sparse");
+    assert.equal(recorded.recorded.summary, undefined);
+    assert.deepEqual(recorded.recorded.participants?.map((entry) => entry.id), ["actor.two"]);
+    assert.equal(recorded.recorded.participants?.[0]?.name, "Unnamed participant");
+    assert.deepEqual(recorded.recorded.interactions?.map((entry) => entry.id), ["message.two"]);
+    assert.equal(recorded.recorded.interactions?.[0]?.text, "Message text unavailable.");
+    assert.equal(recorded.recorded.interactions?.[0]?.ordinal, undefined);
+    assert.equal(recorded.recorded.location, undefined);
+    assert.ok(recorded.unavailableFields?.includes("summary"));
+    assert.ok(recorded.unavailableFields?.includes("participants"));
+    assert.ok(recorded.unavailableFields?.includes("interactions"));
+    assert.ok(recorded.unavailableFields?.includes("location"));
+  }
+
+  const conversation = normalizeCurrentSituation({
+    status: "ready", kind: "conversation", locationId: "archive",
+    affordances: [
+      { key: "look", label: "Look", summary: 42 },
+      { key: "look", label: "Duplicate", summary: "No" },
+      { key: "listen", label: "Listen", summary: "Hear the room." },
+    ],
+    conversation: { id: "conversation.sparse", participants: [{ id: "actor.one", name: 42 }, { id: "", name: "Bad" }] },
+  });
+  assert.equal(conversation?.status, "ready");
+  if (conversation?.status === "ready" && conversation.kind === "conversation") {
+    assert.equal(conversation.conversation.name, "Unnamed conversation");
+    assert.deepEqual(conversation.conversation.participants.map((entry) => entry.id), ["actor.one"]);
+    assert.deepEqual(conversation.affordances?.map((entry) => entry.key), ["listen"]);
+    assert.ok(conversation.unavailableFields?.includes("affordances"));
+  }
+
+  const combat = normalizeCurrentSituation({
+    status: "ready", kind: "combat", locationId: "archive",
+    combat: { id: "encounter.sparse", participants: [], board: { columns: -1 } },
+  });
+  assert.equal(combat?.status, "ready");
+  if (combat?.status === "ready" && combat.kind === "combat") {
+    assert.equal(combat.combat.name, "Unnamed encounter");
+    assert.equal(combat.combat.board, undefined, "unsafe board geometry is withheld");
+    assert.ok(combat.unavailableFields?.includes("combat.board"));
+  }
+  const partialBoard = normalizeCurrentSituation({
+    status: "ready", kind: "combat", locationId: "archive", affordances: [],
+    combat: {
+      id: "encounter.coverage", participants: [],
+      board: { revision: 1, columns: 2, rows: 2, feetPerSquare: 5, terrain: [], obstacles: [], participants: [],
+        coverage: "partial", notices: ["Terrain data is incomplete."] },
+      turn: { id: "turn.sparse", participationId: "participant.one", actorName: "Actor", ordinal: 0,
+        budget: { actions: "unknown", bonusActions: 1, reactions: 1 } },
+    },
+  });
+  if (partialBoard?.status === "ready" && partialBoard.kind === "combat") {
+    assert.equal(partialBoard.combat.board?.coverage, "partial");
+    assert.deepEqual(partialBoard.combat.board?.notices, ["Terrain data is incomplete."]);
+    assert.equal(partialBoard.combat.turn?.id, "turn.sparse");
+    assert.equal(partialBoard.combat.turn?.budget, undefined);
+    assert.ok(partialBoard.unavailableFields?.includes("combat.turn.budget"));
+  }
+  assert.equal(normalizeCurrentSituation(null)?.status, "unavailable");
+});
+
+test("Current withholds over-bound rows and untrusted media without inventing route coverage", () => {
+  const inheritedPortrait = Object.create({ portrait: {
+    imageUrl: "/api/applications/dnd2024/state-spaces/test/entities/actor.one/media/portrait/content",
+    alt: "Inherited", width: 48, height: 48,
+  } });
+  inheritedPortrait.id = "actor.inherited";
+  inheritedPortrait.name = "Inherited portrait";
+  const conversation = normalizeCurrentSituation({
+    status: "ready", kind: "conversation", locationId: "location.one", affordances: [],
+    conversation: {
+      id: "conversation.over-bound",
+      participants: Array.from({ length: 33 }, (_, index) => ({ id: `actor.${index}`, name: `Actor ${index}` }))
+        .concat([inheritedPortrait, { id: "actor.bad-media", name: "Bad media", portrait: {
+          imageUrl: "javascript:alert(1)", alt: "Bad", width: 48, height: 48,
+        } }]),
+    },
+  });
+  assert.equal(conversation?.status, "ready");
+  if (conversation?.status === "ready" && conversation.kind === "conversation") {
+    assert.deepEqual(conversation.conversation.participants, [], "an over-bound collection is withheld as a whole");
+    assert.ok(conversation.unavailableFields?.includes("conversation.participants"));
+  }
+
+  const sparseMedia = normalizeCurrentSituation({
+    status: "ready", kind: "conversation", locationId: "location.one", affordances: [],
+    conversation: { id: "conversation.media", participants: [inheritedPortrait, {
+      id: "actor.bad-media", name: "Bad media", portrait: {
+        imageUrl: "javascript:alert(1)", alt: "Bad", width: 48, height: 48,
+      },
+    }] },
+  });
+  if (sparseMedia?.status === "ready" && sparseMedia.kind === "conversation") {
+    assert.equal(sparseMedia.conversation.participants.length, 2);
+    assert.equal(sparseMedia.conversation.participants[0].portrait, undefined);
+    assert.equal(sparseMedia.conversation.participants[1].portrait, undefined);
+    assert.ok(sparseMedia.unavailableFields?.includes("conversation.participants.portrait"));
+  }
+
+  const exploration = normalizeCurrentSituation({
+    status: "ready", kind: "exploration", locationId: "location.one", affordances: [],
+  });
+  assert.equal(exploration?.status, "ready");
+  if (exploration?.status === "ready" && exploration.kind === "exploration") {
+    assert.equal(exploration.routesCoverage, "unavailable");
+    assert.ok(exploration.unavailableFields?.includes("routes"));
+  }
+});
 
 const people = [
   {
@@ -666,7 +813,10 @@ test("client envelope validation accepts only the closed ready shape", () => {
   }), true);
   assert.equal(isReadyHubEnvelope({
     ...ready,
-    currentSituation: { status: "ready", kind: "exploration", locationId: "archive" },
+    currentSituation: {
+      status: "ready", kind: "exploration", locationId: "archive",
+      coverage: "partial", unavailableFields: ["affordances"],
+    },
   }), true);
   assert.equal(isReadyHubEnvelope({
     ...ready,
@@ -688,10 +838,32 @@ test("client envelope validation accepts only the closed ready shape", () => {
         { key: "inspect-door", label: "Inspect it again", summary: "Duplicate the key." },
       ],
     },
-  }), false);
+  }), true, "a duplicate display affordance is withheld without rejecting its safe sibling");
+  assert.equal(isReadyHubEnvelope({ ...ready, currentSituation: null }), true,
+    "an explicitly absent scene is an honest unavailable Current section");
   assert.equal(isReadyHubEnvelope({
     ...ready,
-    currentSituation: { status: "ready", kind: "exploration", locationId: "hidden" },
+    currentSituation: { status: "ready", kind: "future-scene", locationId: "archive" },
+  }), true, "an unusable optional Current facet must not reject the authorized Party and World shell");
+  assert.equal(normalizeCurrentSituation({ status: "ready", kind: "future-scene", locationId: "archive" }), null,
+    "an unknown scene discriminator never becomes an actionable Current scene");
+  assert.equal(isReadyHubEnvelope({
+    ...ready,
+    currentSituation: {
+      status: "ready",
+      kind: "recorded",
+      coverage: "partial",
+      unavailableFields: ["summary", "participants", "interactions"],
+      recorded: { id: "play-situation.partial", kind: "conversation" },
+      unrelatedFutureField: { inert: true },
+    },
+  }), true, "recorded identity survives absent summary and optional collections");
+  assert.equal(isReadyHubEnvelope({
+    ...ready,
+    currentSituation: {
+      status: "ready", kind: "exploration", locationId: "hidden",
+      coverage: "partial", unavailableFields: ["affordances"],
+    },
   }), true);
   assert.equal(isReadyHubEnvelope({
     ...ready,
@@ -755,7 +927,7 @@ test("client envelope validation accepts only the closed ready shape", () => {
         },
       },
     },
-  }), false);
+  }), true, "invalid board geometry is withheld without suppressing the authoritative encounter shell");
   assert.equal(isReadyHubEnvelope({
     ...ready,
     currentSituation: {
@@ -776,7 +948,7 @@ test("client envelope validation accepts only the closed ready shape", () => {
         },
       },
     },
-  }), false);
+  }), true, "an invalid turn budget is withheld without suppressing the authoritative encounter shell");
   assert.equal(isReadyHubEnvelope({ ...ready, status: "denied" }), false);
   assert.equal(isReadyHubEnvelope({ ...ready, audience: { ...ready.audience, seat: "admin" } }), false);
   assert.equal(isReadyHubEnvelope({ ...ready, world: { ...ready.world, locations: [] } }), false);
@@ -789,10 +961,20 @@ test("client envelope validation accepts only the closed ready shape", () => {
       ...ready,
       world: {
         ...ready.world,
-        history: [{ ...history[0], linkedPeople: [{ id: "unknown", name: "Unknown", kind: "Secret" }] }],
+        history: [{ ...history[0], linkedPeople: [{ id: "unknown", name: "Unknown", kind: "" }] }],
       },
     }),
     false,
+  );
+  assert.equal(
+    isReadyHubEnvelope({
+      ...ready,
+      world: {
+        ...ready.world,
+        history: [{ ...history[0], linkedPeople: [{ id: "unknown", name: "Unknown", kind: "Unfamiliar kind" }] }],
+      },
+    }),
+    true,
   );
   assert.equal(
     isReadyHubEnvelope({ ...ready, world: { ...ready.world, factions: [{ id: "broken" }] } }),

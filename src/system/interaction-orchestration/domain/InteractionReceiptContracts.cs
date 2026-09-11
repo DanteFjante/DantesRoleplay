@@ -210,6 +210,13 @@ public interface IInteractionReceiptStore
         CancellationToken cancellationToken = default) =>
         Task.FromResult<InteractionReceiptWriteResult?>(null);
     Task<InteractionReceiptProjection?> GetAsync(InteractionAuthorizationRequest authorizationRequest, string receiptId, CancellationToken cancellationToken = default);
+    /// <summary>Returns one already-authorized receipt for a client-held idempotency key; never reconstructs a request.</summary>
+    Task<InteractionReceiptProjection?> FindByIdempotencyKeyAsync(
+        InteractionAuthorizationRequest authorizationRequest,
+        string idempotencyKey,
+        string? resolutionReceiptId = null,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<InteractionReceiptProjection?>(null);
 }
 
 public sealed record InteractionResolutionExecutionAuthority(

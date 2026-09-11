@@ -285,7 +285,9 @@ public sealed class ApplicationReadinessTests : IDisposable
             return new(owner, qualifiedId, version, "projection/v1", "{}", Hash('3'), Hash('2'), [], [], [],
                 DateTime.UtcNow, new(
                     RegisteredApplicationObjectContract.ContractProfileId,
-                    [], [], [], [], [],
+                    [new("subject", true), new("item", true)], [],
+                    [new("items", "fixture-app.items", "subject", "item", "many", "/items", [], [])], [],
+                    [new("items", "items", 10, 10, [], "id")],
                     new(1, 1, 1, 1),
                     new([], []),
                     null,

@@ -31,6 +31,31 @@ public static class ApplicationCatalogRecordContent
     public static string QueryJson(ApplicationQueryContract query)
     {
         ArgumentNullException.ThrowIfNull(query);
+        if (query.IsFieldBasedObject)
+        {
+            var fieldBasedContent = JsonSerializer.Serialize(new
+            {
+                id = query.Id,
+                category = query.Category,
+                name = query.Name,
+                description = query.Description,
+                matches = query.Matches,
+                roles = query.Roles,
+                executor = query.Executor,
+                profile = query.ObjectProfileId,
+                @object = new
+                {
+                    qualifiedId = query.ProjectionQualifiedId,
+                    version = query.ProjectionVersion,
+                    contentFingerprint = query.ProjectionContentHash
+                },
+                collection = query.ObjectCollectionId,
+                exposure = query.Exposure == ApplicationQueryExposure.ModelVisible
+                    ? "model-visible" : "binding-only",
+                status = query.Status
+            });
+            return WithOptionalQueryMetadata(WithoutNullCollection(fieldBasedContent, query), query);
+        }
         using var schema = JsonDocument.Parse(query.OutputSchemaJson);
         if (query.IsObjectProjection)
         {
@@ -55,7 +80,7 @@ public static class ApplicationCatalogRecordContent
                     ? "model-visible" : "binding-only",
                 status = query.Status
             });
-            return WithOptionalQueryMetadata(objectContent, query);
+            return WithOptionalQueryMetadata(WithoutNullCollection(objectContent, query), query);
         }
         var content = JsonSerializer.Serialize(new
         {
@@ -85,7 +110,8 @@ public static class ApplicationCatalogRecordContent
     {
         // Preserve legacy fingerprints byte-for-byte while retaining opt-in query metadata in
         // the canonical catalog used by discovery and the web authorization boundary.
-        if (query.InputSchemaJson is null && query.CampaignSelection is null) return content;
+        if (query.InputSchemaJson is null && query.CampaignSelection is null
+            && query.RoleBindings is null && query.Selection is null) return content;
         var document = JsonNode.Parse(content)!.AsObject();
         if (query.InputSchemaJson is not null)
             document["inputSchema"] = JsonNode.Parse(query.InputSchemaJson);
@@ -95,6 +121,34 @@ public static class ApplicationCatalogRecordContent
                 queryId = query.CampaignSelection.QueryId,
                 entityIdField = query.CampaignSelection.EntityIdField
             });
+        if (query.Selection is not null)
+            document["selection"] = JsonSerializer.SerializeToNode(new
+            {
+                queryId = query.Selection.QueryId,
+                targetRole = query.Selection.TargetRole,
+                resultPointer = query.Selection.ResultPointer,
+                roleBindings = query.Selection.RoleBindings
+            });
+        if (query.RoleBindings is not null)
+        {
+            var bindings = new JsonObject();
+            foreach (var value in query.RoleBindings.OrderBy(value => value.Key, StringComparer.Ordinal))
+            {
+                var binding = new JsonObject { ["source"] = value.Value.Source };
+                if (value.Value.Pointer is not null) binding["pointer"] = value.Value.Pointer;
+                if (value.Value.Key is not null) binding["key"] = value.Value.Key;
+                bindings[value.Key] = binding;
+            }
+            document["roleBindings"] = bindings;
+        }
+        return document.ToJsonString();
+    }
+
+    private static string WithoutNullCollection(string content, ApplicationQueryContract query)
+    {
+        if (query.ObjectCollectionId is not null) return content;
+        var document = JsonNode.Parse(content)!.AsObject();
+        document.Remove("collection");
         return document.ToJsonString();
     }
 

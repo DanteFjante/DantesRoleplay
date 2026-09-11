@@ -22,6 +22,12 @@ const map: MapDocument = {
   }],
   scopeLinks: [],
 };
+const mapShapes = {
+  Landscape: [1600, 900],
+  Portrait: [900, 1600],
+  Square: [1000, 1000],
+  Wide: [2000, 500],
+} as const;
 const board: TacticalEncounterBoard = {
   revision: 1, columns: 12, rows: 8, feetPerSquare: 5,
   terrain: [{ id: "terrain.test", label: "Rubble", area: { x: 1, y: 1, width: 2, height: 2 }, movementCost: 2 }],
@@ -35,14 +41,27 @@ const board: TacticalEncounterBoard = {
 
 function Fixture() {
   const [viewport, setViewport] = useState(DEFAULT_MAP_VIEWPORT);
-  const [selected, setSelected] = useState("feature.keep");
+  const [selected, setSelected] = useState(new URLSearchParams(location.search).get("selection") === "none" ? "" : "feature.keep");
+  const [shape, setShape] = useState<keyof typeof mapShapes>("Landscape");
+  const [narrow, setNarrow] = useState(false);
   const tactical = new URLSearchParams(location.search).get("surface") === "board";
-  return <main style={{ width: "min(900px, calc(100% - 32px))", margin: "0 auto", paddingTop: 750, paddingBottom: 1600 }}>
+  const [width, height] = mapShapes[shape];
+  const shownMap: MapDocument = { ...map, id: `map.test.${shape}`, base: {
+    // No width/height metadata: the decoded image must still size its own frame.
+    imageUrl: "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="${width}" height="${height}" fill="#354d36"/></svg>`),
+    alt: "Synthetic map background",
+  } };
+  return <main style={{ width: `min(${narrow ? 430 : 900}px, calc(100% - 32px))`, margin: "0 auto", paddingTop: 750, paddingBottom: 1600 }}>
     <h1>Isolated map interaction test</h1>
     <p>Maintained components and styles, synthetic data; not a live campaign.</p>
     {tactical ? <TacticalBoard board={board} /> : <>
+      <label>Test map shape <select value={shape} onChange={(event) => setShape(event.target.value as keyof typeof mapShapes)}>
+        {Object.keys(mapShapes).map((name) => <option key={name}>{name}</option>)}
+      </select></label>
+      <button type="button" onClick={() => setNarrow((value) => !value)}>Toggle narrower map frame</button>
+      <button type="button" onClick={() => setSelected("")}>Clear selected place</button>
       <MapCanvas
-        map={map} viewport={viewport} onViewportChange={setViewport}
+        map={shownMap} viewport={viewport} onViewportChange={setViewport}
         selectedFeatureId={selected} onFeatureSelect={setSelected} currentLocationId=""
         annotatedFeatureIds={new Set()} influencedFeatureIds={new Set()} scopeLinkFeatureIds={new Map()}
         onOpenScope={() => {}}

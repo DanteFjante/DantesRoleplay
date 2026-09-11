@@ -43,7 +43,11 @@ export function CharacterOverview({
         <div>
           <strong>{member.recordStatus}</strong>
           <p>Only information authorized for this perspective appears in the dossier.</p>
-          {dossier ? <p>Canonical dossier · {dossier.definitions.length} referenced definitions · inventory depth {dossier.provenance.inventoryDepth}</p> : null}
+          {dossier ? <p>Canonical dossier
+            {dossier.definitions ? ` · ${dossier.definitions.length} referenced definitions` : ""}
+            {dossier.provenance?.inventoryDepth === undefined ? "" : ` · inventory depth ${dossier.provenance.inventoryDepth}`}
+            {dossier.coverage === "partial" ? " · some sections unavailable" : ""}
+          </p> : null}
         </div>
       </section>
     </div>

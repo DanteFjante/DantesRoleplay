@@ -117,6 +117,7 @@ export function CharacterWorkspace({
   inventoryReturn,
   onOpenItem,
   summaryOnly = false,
+  confirmedOwner = false,
 }: {
   loading?: boolean;
   onRetry?: () => void;
@@ -131,6 +132,8 @@ export function CharacterWorkspace({
   inventoryReturn?: InventoryReturnContext | null;
   onOpenItem?: (characterId: string, itemId: string, context: InventoryReturnContext) => void;
   summaryOnly?: boolean;
+  /** Standalone fixture compatibility only; the connected hub passes true and owns values in Redux. */
+  confirmedOwner?: boolean;
 }) {
   const requestedMemberId = navigationCharacterId && party.some((member) => member.id === navigationCharacterId)
     ? navigationCharacterId
@@ -138,26 +141,61 @@ export function CharacterWorkspace({
   const [localSelectedMemberId, setLocalSelectedMemberId] = useState(requestedMemberId);
   const [localSection, setLocalSection] = useState<PartySectionId>(navigationSection ?? "overview");
   const selectedMemberId = onNavigationChange ? requestedMemberId : localSelectedMemberId;
+  const selectedActorPresent = party.some((member) => member.id === selectedMemberId);
   const section = summaryOnly ? "overview" : onNavigationChange ? navigationSection ?? "overview" : localSection;
   const [expandedIds, setExpandedIds] = useState<string[]>(inventoryReturn?.expandedIds ?? []);
   const [query, setQuery] = useState(inventoryReturn?.query ?? "");
-  const [detail, setDetail] = useState<PartyMemberReadModel | null>(null);
   const [detailKind, setDetailKind] = useState<"sheet" | "details" | null>(null);
+  const [fallbackDetail, setFallbackDetail] = useState<PartyMemberReadModel | null>(null);
   const [detailBusy, setDetailBusy] = useState(false);
   const [detailErrorKind, setDetailErrorKind] = useState<"sheet" | "details" | null>(null);
-  const [inventoryResult, setInventoryResult] = useState<InventoryContainerResult | null>(null);
+  const [inventoryRequested, setInventoryRequested] = useState(false);
+  // A failed read is an attempt for this particular owner, but not a confirmed
+  // inventory. Keep that distinction so it neither loops nor blocks a new
+  // scope/generation from trying again.
+  const [inventoryAttempted, setInventoryAttempted] = useState(false);
+  const [fallbackInventory, setFallbackInventory] = useState<InventoryContainerResult | null>(null);
   const [inventoryBusy, setInventoryBusy] = useState(false);
   const [inventoryError, setInventoryError] = useState(false);
   const [retry, setRetry] = useState(0);
+  const previousDetailLoaders = useRef({ sheet: loadCharacterSheet, details: loadCharacterDetails });
+  const previousInventoryLoader = useRef(loadCharacterInventory);
+  const detailRequest = useRef(0);
+  const inventoryRequest = useRef(0);
   const previousRoute = useRef(`${selectedMemberId}:${section}`);
   const requiredDetailKind: "sheet" | "details" | null = !summaryOnly &&
     (section === "overview" || section === "sheet") ? "sheet"
     : !summaryOnly && section !== "inventory" ? "details" : null;
   useEffect(() => {
+    setDetailKind(null);
+    setFallbackDetail(null);
+    setDetailErrorKind(null);
+  }, [selectedMemberId]);
+  useEffect(() => {
+    const previous = previousDetailLoaders.current;
+    previousDetailLoaders.current = { sheet: loadCharacterSheet, details: loadCharacterDetails };
+    if (previous.sheet === loadCharacterSheet && previous.details === loadCharacterDetails) return;
+    // A changed callback is an owner generation/scope boundary. Do not let an
+    // earlier success or failure suppress the active character's new owner.
+    setDetailKind(null);
+    setFallbackDetail(null);
+    setDetailErrorKind(null);
+  }, [loadCharacterDetails, loadCharacterSheet]);
+  useEffect(() => {
+    if (previousInventoryLoader.current === loadCharacterInventory) return;
+    previousInventoryLoader.current = loadCharacterInventory;
+    setInventoryRequested(false);
+    setInventoryAttempted(false);
+    setFallbackInventory(null);
+    setInventoryError(false);
+  }, [loadCharacterInventory]);
+  useEffect(() => {
     const invalidate = () => {
-      setDetail(null);
       setDetailKind(null);
-      setInventoryResult(null);
+      setFallbackDetail(null);
+      setInventoryRequested(false);
+      setInventoryAttempted(false);
+      setFallbackInventory(null);
       setRetry((value) => value + 1);
     };
     const changed = (event: Event) => {
@@ -174,52 +212,79 @@ export function CharacterWorkspace({
     const loader = requiredDetailKind === "sheet" ? loadCharacterSheet
       : requiredDetailKind === "details" ? loadCharacterDetails : null;
     if (!requiredDetailKind || !loader || !selectedMemberId ||
-        !party.some((member) => member.id === selectedMemberId) ||
-        detail?.id === selectedMemberId && (detailKind === "details" || detailKind === requiredDetailKind)) return;
+        !selectedActorPresent ||
+        detailKind === "details" || detailKind === requiredDetailKind) return;
     const controller = new AbortController();
-    setDetail(null);
+    const request = ++detailRequest.current;
     setDetailKind(null);
     setDetailErrorKind(null);
     setDetailBusy(true);
     void loader(selectedMemberId, controller.signal).then((value) => {
-      if (!controller.signal.aborted && value.id === selectedMemberId) {
-        setDetail(value);
-        setDetailKind(requiredDetailKind);
-      } else if (!controller.signal.aborted) {
+      if (controller.signal.aborted) return;
+      if (value.id !== selectedMemberId) {
         setDetailErrorKind(requiredDetailKind);
+        return;
       }
+      // Standalone fixtures have no Redux facet. Retain the returned result,
+      // including a denial, so its precise authority and media outcome remain
+      // visible instead of falling back to an older roster projection.
+      if (!confirmedOwner) setFallbackDetail(value);
+      if (value.sheetState.status === "ready" || value.sheetState.status === "empty") {
+        setDetailKind(requiredDetailKind);
+      } else setDetailErrorKind(requiredDetailKind);
     }).catch(() => {
       if (!controller.signal.aborted) setDetailErrorKind(requiredDetailKind);
     }).finally(() => {
-      if (!controller.signal.aborted) setDetailBusy(false);
+      if (detailRequest.current === request) setDetailBusy(false);
     });
-    return () => controller.abort();
-  }, [loadCharacterDetails, loadCharacterSheet, selectedMemberId, requiredDetailKind, retry, detail, detailKind, party]);
+    return () => {
+      controller.abort();
+      if (detailRequest.current === request) setDetailBusy(false);
+    };
+  }, [confirmedOwner, loadCharacterDetails, loadCharacterSheet, selectedMemberId, selectedActorPresent, requiredDetailKind, retry, detailKind]);
 
   useEffect(() => {
     if (section !== "inventory" || !loadCharacterInventory || !selectedMemberId ||
-        !party.some((member) => member.id === selectedMemberId) ||
-        inventoryResult) return;
+        !selectedActorPresent ||
+        inventoryRequested || inventoryAttempted) return;
     const controller = new AbortController();
-    setInventoryResult(null);
+    const request = ++inventoryRequest.current;
     setInventoryError(false);
     setInventoryBusy(true);
     void loadCharacterInventory(selectedMemberId, controller.signal).then((value) => {
-      if (!controller.signal.aborted && (value.status !== "ready" || value.data.container.id === selectedMemberId)) {
-        setInventoryResult(value);
+      if (controller.signal.aborted) return;
+      if (value.status === "ready" && value.data.container.id !== selectedMemberId) {
+        setInventoryError(true);
+        setInventoryAttempted(true);
+        return;
       }
+      // A returned error/forbidden response carries useful, precise wallet and
+      // authorization evidence. It is not a confirmed completion, but it is an
+      // attempt for this loader until an invalidation or new owner arrives.
+      if (!confirmedOwner) setFallbackInventory(value);
+      setInventoryAttempted(true);
+      if (value.status === "ready") setInventoryRequested(true);
     }).catch(() => {
-      if (!controller.signal.aborted) setInventoryError(true);
+      if (!controller.signal.aborted) {
+        setInventoryError(true);
+        setInventoryAttempted(true);
+      }
     }).finally(() => {
-      if (!controller.signal.aborted) setInventoryBusy(false);
+      if (inventoryRequest.current === request) setInventoryBusy(false);
     });
-    return () => controller.abort();
-  }, [inventoryResult, loadCharacterInventory, party, retry, section, selectedMemberId]);
+    return () => {
+      controller.abort();
+      if (inventoryRequest.current === request) setInventoryBusy(false);
+    };
+  }, [confirmedOwner, inventoryAttempted, inventoryRequested, loadCharacterInventory, selectedActorPresent, retry, section, selectedMemberId]);
 
   useEffect(() => {
     if (!onNavigationChange && !party.some((member) => member.id === selectedMemberId)) {
       setLocalSelectedMemberId(party[0]?.id ?? "");
-      setInventoryResult(null);
+      setInventoryRequested(false);
+      setInventoryAttempted(false);
+      setFallbackInventory(null);
+      setInventoryError(false);
       setLocalSection("overview");
       setQuery("");
     }
@@ -233,7 +298,9 @@ export function CharacterWorkspace({
 
   useEffect(() => {
     setExpandedIds(inventoryReturn?.characterId === selectedMemberId ? inventoryReturn.expandedIds : []);
-    setInventoryResult(null);
+    setInventoryRequested(false);
+    setInventoryAttempted(false);
+    setFallbackInventory(null);
     setInventoryError(false);
     setQuery(inventoryReturn?.characterId === selectedMemberId ? inventoryReturn.query : "");
   }, [inventoryReturn, selectedMemberId]);
@@ -247,23 +314,29 @@ export function CharacterWorkspace({
       ?.focus({ preventScroll: true });
   }, [onNavigationChange, section, selectedMemberId]);
 
-  const selectedMember = detail?.id === selectedMemberId ? detail
-    : party.find((member) => member.id === selectedMemberId);
+  const selectedMember = !confirmedOwner && fallbackDetail?.id === selectedMemberId
+    ? fallbackDetail : party.find((member) => member.id === selectedMemberId);
   const displayedParty = useMemo(() => party.map((member) => member.id === selectedMemberId && selectedMember
     ? selectedMember
     : member), [party, selectedMember, selectedMemberId]);
   const retryCharacter = () => {
-    setDetail(null);
     setDetailKind(null);
+    setFallbackDetail(null);
     setDetailErrorKind(null);
     setRetry((value) => value + 1);
   };
   const retryInventory = () => {
-    setInventoryResult(null);
+    setInventoryRequested(false);
+    setInventoryAttempted(false);
+    setFallbackInventory(null);
     setInventoryError(false);
     setRetry((value) => value + 1);
   };
+  const inventoryResult = confirmedOwner ? selectedMember?.inventoryResource ?? null : fallbackInventory;
   const inventoryData = inventoryResult?.status === "ready" ? inventoryResult.data : null;
+  const failedInventoryWallet = inventoryResult && inventoryResult.status !== "ready"
+    ? { wallet: inventoryResult.wallet ?? null, state: inventoryResult.walletState } : null;
+  const walletOnly = Boolean(failedInventoryWallet?.state);
   useEffect(() => {
     if (!loading && selectedMember?.sheetState.status === "ready" && selectedMember.sheetState.source === "canonical") {
       markCharacterReady(selectedMember.id);
@@ -272,23 +345,24 @@ export function CharacterWorkspace({
 
   const entries = selectedMember ? sectionEntries(selectedMember, section) : [];
   const sectionCount = section === "inventory"
-    ? inventoryData?.items.length ?? selectedMember?.characterSheet?.inventory.items.length ?? 0
+    ? inventoryData?.items.length ?? selectedMember?.characterSheet?.inventory?.items.length ?? 0
     : entries.length;
   const inventoryState = loadCharacterInventory
     ? inventoryBusy ? { status: "loading" as const, data: null }
       : inventoryError ? { status: "error" as const, data: null, failureCategory: "transport" as const,
         diagnosticId: `inventory-${selectedMemberId}-transport` }
       : inventoryResult?.status === "ready"
-        ? { status: inventoryResult.data.items.length || inventoryResult.data.wallet?.coinCount ? "ready" as const : "empty" as const,
-          data: [], source: "canonical" as const }
+        // The inventory tree owns its empty/partial message; the independently read wallet
+        // must remain visible even when the item collection is confirmed empty.
+        ? { status: "ready" as const, data: [], source: "canonical" as const }
         : inventoryResult ?? { status: "idle" as const, data: null }
     : selectedMember?.inventoryState ?? null;
   const state = selectedMember && (section === "sheet" || section === "inventory")
     ? (section === "sheet" ? selectedMember.sheetState : inventoryState)
     : null;
-  const stateBlocksContent = state?.status === "empty" || state?.status === "error" ||
+  const stateBlocksContent = !walletOnly && (state?.status === "empty" || state?.status === "error" ||
     state?.status === "forbidden" || state?.status === "idle" ||
-    state?.status === "loading" && state.data === null;
+    state?.status === "loading" && state.data === null);
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const filteredEntries = useMemo(() => entries.filter((entry) => {
     if (!normalizedQuery) return true;
@@ -297,7 +371,7 @@ export function CharacterWorkspace({
   }), [entries, normalizedQuery]);
   const detailFailed = requiredDetailKind !== null && detailErrorKind === requiredDetailKind;
   const overviewPending = section === "overview" && !summaryOnly && Boolean(loadCharacterSheet) && !detailFailed &&
-    !(detail?.id === selectedMemberId && (detailKind === "sheet" || detailKind === "details"));
+    detailKind !== "sheet" && detailKind !== "details";
 
   if (!selectedMember) {
     return (
@@ -323,7 +397,10 @@ export function CharacterWorkspace({
           setLocalSection("overview");
         }
         setExpandedIds([]);
-        setInventoryResult(null);
+        setInventoryRequested(false);
+        setInventoryAttempted(false);
+        setFallbackInventory(null);
+        setInventoryError(false);
         setQuery("");
       }}
       onSelectSection={selectSection}
@@ -351,7 +428,10 @@ export function CharacterWorkspace({
           <SectionHeader count={sectionCount} member={selectedMember} section={section} sectionState={state} />
           {state ? <CharacterSectionState
             label={section === "sheet" ? "character sheet" : "inventory"}
-            loading={loading || detailBusy}
+            // Inventory is independently confirmed. A slow header/sheet read
+            // must not replace its already-authorized rows or wallet with a
+            // generic character loading skeleton.
+            loading={section === "inventory" ? inventoryBusy : loading || detailBusy}
             onRetry={section === "inventory" && loadCharacterInventory ? retryInventory
               : loadCharacterSheet || loadCharacterDetails ? retryCharacter : onRetry}
             state={state}
@@ -364,10 +444,12 @@ export function CharacterWorkspace({
           ) : null}
           {stateBlocksContent ? null : section === "sheet" && selectedMember.characterSheet ? (
             <CharacterSheet sheet={selectedMember.characterSheet} />
-          ) : stateBlocksContent ? null : section === "inventory" && (inventoryData || selectedMember.characterSheet) ? (
+          ) : stateBlocksContent ? null : section === "inventory" && (inventoryData || selectedMember.characterSheet || walletOnly) ? (
             <div className="character-inventory-layout">
-              <InventoryTree
+              {inventoryData || selectedMember.characterSheet ? <InventoryTree
                 key={selectedMember.id}
+                subjectId={selectedMember.id}
+                sourceRevision={inventoryData?.projection?.sourceRevisionFingerprint ?? selectedMember.characterSheet?.projection?.sourceRevisionFingerprint}
                 expandedIds={expandedIds}
                 onExpandedChange={(id, expanded) => setExpandedIds((previous) => expanded
                   ? previous.includes(id) ? previous : [...previous, id] : previous.filter((value) => value !== id))}
@@ -375,16 +457,19 @@ export function CharacterWorkspace({
                   kind: "inventory", characterId: selectedMember.id, expandedIds, query,
                   focusItemId: itemId, scrollY: window.scrollY,
                 }) : undefined}
-                items={inventoryData?.items ?? selectedMember.characterSheet?.inventory.items ?? []}
+                items={inventoryData?.items ?? selectedMember.characterSheet?.inventory?.items ?? []}
                 reasons={inventoryData?.reasons ?? []}
+                notices={inventoryData?.notices ?? []}
                 query={query}
                 onQueryChange={setQuery}
                 restore={inventoryReturn?.characterId === selectedMember.id ? inventoryReturn : null}
                 loadContainer={loadInventoryContainer ? (containerId, signal) =>
                   loadInventoryContainer(selectedMember.id, containerId, signal) : undefined}
-              />
-              <WalletSummary status={inventoryData?.walletState.status ?? "complete"}
-                wallet={inventoryData ? inventoryData.wallet : selectedMember.characterSheet!.wallet} />
+              /> : null}
+              <WalletSummary status={inventoryData?.walletState.status ?? failedInventoryWallet?.state?.status ?? "complete"}
+                reason={inventoryData?.walletState.reason ?? failedInventoryWallet?.state?.reason}
+                wallet={inventoryData ? inventoryData.wallet : failedInventoryWallet
+                  ? failedInventoryWallet.wallet : selectedMember.characterSheet?.wallet ?? null} />
             </div>
           ) : filteredEntries.length ? (
             section === "knowledge"

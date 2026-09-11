@@ -40,10 +40,6 @@ internal static class HostWebEndpointRegistration
                 "/api/applications/{applicationId}/state-spaces/{stateSpaceId}/entities/{entityId}/read-models/{qualifiedQueryId}",
                 ApplicationReadModelWebEndpoint.WriteAsync)
             .RequireDantesRoleplayUploadAccess();
-        endpoints.MapGet(
-                "/api/applications/{applicationId}/campaigns/{campaignId}/chronology",
-                WorldChronologyWebEndpoint.ReadAsync)
-            .RequireDantesRoleplayReadAccess();
         return endpoints;
     }
 }

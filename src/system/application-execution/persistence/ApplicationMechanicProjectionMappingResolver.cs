@@ -97,9 +97,16 @@ public sealed class ApplicationMechanicProjectionMappingResolver(
                              .Concat((value.RelationshipComponents ?? []).SelectMany(reference =>
                                  reference.TargetComponentIds.Concat(reference.OptionalTargetComponentIds ?? [])))))
                 localIds.Add(localId);
+            foreach (var graph in declared.GraphSnapshots.Values)
+                foreach (var localId in graph.ComponentIds.Concat(graph.Steps.SelectMany(step => step.ComponentIds)))
+                    localIds.Add(localId);
             foreach (var kind in declared.Roles.Values
                          .SelectMany(value => value.RelationshipComponents ?? [])
                          .Select(value => value.Kind))
+                localRelationshipKinds.Add(kind);
+            foreach (var kind in declared.GraphSnapshots.Values
+                         .SelectMany(value => value.Steps)
+                         .SelectMany(value => value.RelationshipKinds))
                 localRelationshipKinds.Add(kind);
 
             if (declared.Children.Count == 0) return null;

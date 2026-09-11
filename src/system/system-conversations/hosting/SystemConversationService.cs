@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -16,7 +15,7 @@ public sealed partial class SystemConversationService : ISystemConversationServi
     public const int MaximumIdempotencyKeyLength = 100;
     private const int MaximumTranscriptCharacters = 20_000;
     private const int MaximumTranscriptMessages = 20;
-    private const string Provider = "local";
+    private const string Provider = SystemConversationRequestIdentity.Provider;
     private const string SystemPrompt = """
         You are the read-only system assistant for the private operator of DantesRoleplay. You have
         no tools and cannot change applications, game state, settings, files, pages, the database,
@@ -122,6 +121,16 @@ public sealed partial class SystemConversationService : ISystemConversationServi
             cancellationToken, AssistantConversationScopes.System);
     }
 
+    public async Task<AssistantTurnRecovery?> RecoverAsync(
+        SystemConversationRequestContext context, string idempotencyKey,
+        CancellationToken cancellationToken = default)
+    {
+        Authorize(context, PrivateOperatorCapability.ControlRead);
+        ValidateIdempotencyKey(idempotencyKey);
+        return await _store.FindByIdempotencyKeyAsync(context.Principal.PrincipalId, Provider,
+            idempotencyKey, AssistantConversationScopes.System, cancellationToken);
+    }
+
     private async Task<AssistantConversationDocument> ExecuteAsync(
         SystemConversationRequestContext context,
         string? conversationId,
@@ -135,8 +144,7 @@ public sealed partial class SystemConversationService : ISystemConversationServi
         ValidateIdempotencyKey(idempotencyKey);
         if (expectedRevision is < 1)
             throw Error("ASSISTANT_REVISION_INVALID", "expectedRevision must be positive.");
-        var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
-            AssistantConversationScopes.System + "\0" + Provider + "\0" + message)));
+        var hash = SystemConversationRequestIdentity.Hash(message);
         var begin = await _store.BeginTurnAsync(new(
             context.Principal.PrincipalId, Provider, conversationId, expectedRevision,
             message, idempotencyKey, hash, AssistantConversationScopes.System), cancellationToken);

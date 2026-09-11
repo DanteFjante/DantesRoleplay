@@ -8,6 +8,7 @@ using DantesRoleplay.Capabilities;
 using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Operations;
+using DantesRoleplay.Projections;
 
 namespace DantesRoleplay.MCPServer.Mcp;
 
@@ -22,7 +23,8 @@ internal sealed class SystemInteractionHandler
         string? qualifiedId,
         int? limit,
         string? namespaceId,
-        CancellationToken cancellationToken) =>
+        CancellationToken cancellationToken,
+        IProjectionDefinitionRegistry? projectionDefinitions = null) =>
         RunAsync(log, "system.feature-search", PrivateOperatorCapability.Read, privateOperator,
             async _ =>
             {
@@ -30,8 +32,15 @@ internal sealed class SystemInteractionHandler
                 var application = ApplicationIdentifier.Parse(applicationId ?? string.Empty);
                 var result = await gateway.SearchFeaturesAsync(application,
                     query, qualifiedId, limit ?? 10, namespaceId, cancellationToken);
-                var capabilities = result.Hits.Select(value => Capability(application, value))
-                    .Where(value => value is not null).Cast<CapabilityContractDescriptor>().ToArray();
+                var capabilities = new List<CapabilityContractDescriptor>();
+                var discoveryDiagnostics = new List<object>();
+                var remainingDiscoveryBytes = 65_536;
+                foreach (var hit in result.Hits)
+                {
+                    var capability = Capability(application, hit, projectionDefinitions,
+                        ref remainingDiscoveryBytes, discoveryDiagnostics);
+                    if (capability is not null) capabilities.Add(capability);
+                }
                 var data = new
                 {
                     result.Mode,
@@ -39,7 +48,8 @@ internal sealed class SystemInteractionHandler
                     result.AvailabilityCode,
                     result.AvailabilityMessage,
                     result.ResolutionDiagnostics,
-                    Capabilities = capabilities
+                    Capabilities = capabilities,
+                    ObjectDiscoveryDiagnostics = discoveryDiagnostics
                 };
                 if (result.Hits.Count > 0)
                     return ToolOutcome.Ok(data, "Returned application-scoped interaction features.");
@@ -313,17 +323,38 @@ internal sealed class SystemInteractionHandler
 
     private static CapabilityContractDescriptor? Capability(
         ApplicationIdentifier application,
-        InteractionFeatureHit hit)
+        InteractionFeatureHit hit,
+        IProjectionDefinitionRegistry? projectionDefinitions,
+        ref int remainingDiscoveryBytes,
+        List<object> diagnostics)
     {
         if (hit.Reference.Kind == "mechanic")
             return ApplicationCapabilityContractAdapter.CreateMechanic(
                 application, hit.Reference.QualifiedId, hit.Name, hit.Description,
                 hit.Reference.Version, hit.Reference.ContentFingerprint, "active", hit.ContractJson);
         if (hit.Reference.Kind != ApplicationQueryContract.CatalogKind) return null;
+        // The gateway has selected a trusted active application capability after private-host
+        // authorization. Registry provenance is resolved only for that exact query reference;
+        // it does not enumerate newer objects or make them executable.
+        var query = ApplicationQueryContract.Parse(hit.ContractJson, application);
+        var discovery = query.IsFieldBasedObject ? projectionDefinitions?.Discover(new(
+            query.ProjectionQualifiedId, query.ProjectionVersion, query.ProjectionContentHash)) : null;
+        if (query.IsFieldBasedObject && discovery is null)
+            diagnostics.Add(new { QualifiedQueryId = query.Id, Code = "OBJECT_DISCOVERY_UNAVAILABLE" });
+        if (discovery is not null)
+        {
+            var size = Encoding.UTF8.GetByteCount(JsonSerializer.Serialize(discovery));
+            if (size > 16_384 || size > remainingDiscoveryBytes)
+            {
+                diagnostics.Add(new { QualifiedQueryId = query.Id, Code = "OBJECT_DISCOVERY_BUDGET_EXCEEDED" });
+                discovery = null;
+            }
+            else remainingDiscoveryBytes -= size;
+        }
         return ApplicationCapabilityContractAdapter.Create(application, new(
             application.Value, hit.Reference.Kind, hit.Reference.QualifiedId,
             hit.Name, hit.Description, [], [], "", "active", hit.Reference.Version,
-            hit.ContractJson, hit.Reference.ContentFingerprint, "active-catalog", "discovery"));
+            hit.ContractJson, hit.Reference.ContentFingerprint, "active-catalog", "discovery"), null, discovery);
     }
 
     private static string Bound(string value, int maximum)

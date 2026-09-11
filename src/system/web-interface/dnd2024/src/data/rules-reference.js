@@ -7,7 +7,8 @@
 export function ruleSectionOptions(rules) {
   const sections = new Map();
   for (const rule of rules) sections.set(rule.section.id, rule.section);
-  return [...sections.values()].sort((left, right) => left.order - right.order
+  const compareOrder = (left, right) => left === null ? right === null ? 0 : 1 : right === null ? -1 : left - right;
+  return [...sections.values()].sort((left, right) => compareOrder(left.order, right.order)
     || left.label.localeCompare(right.label)
     || left.id.localeCompare(right.id));
 }

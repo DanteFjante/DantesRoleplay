@@ -61,7 +61,18 @@ public sealed class EventRecord
     /// </summary>
     public string ProducerExecutionId { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Null for retained legacy-world events. Application-state events always carry this paired
+    /// immutable origin; it is intentionally distinct from <see cref="Scope"/>, whose empty
+    /// legacy value has wildcard meaning to older subscription records.
+    /// </summary>
+    public string? ApplicationId { get; set; }
+
+    public string? StateSpaceId { get; set; }
+
     public ICollection<EventEntity> Entities { get; set; } = new List<EventEntity>();
+
+    public EventComponentSnapshot? ComponentSnapshot { get; set; }
 }
 
 /// <summary>
@@ -83,6 +94,42 @@ public sealed class EventEntity
     public EventRecord? Event { get; set; }
 }
 
+/// <summary>
+/// Immutable application-state origin for an accepted event. Both values are present together or
+/// both absent; the latter is the retained legacy event surface.
+/// </summary>
+public sealed record EventSourceContext(string ApplicationId, string StateSpaceId)
+{
+    public bool IsValid => !string.IsNullOrWhiteSpace(ApplicationId) && ApplicationId.Length <= 63
+        && !string.IsNullOrWhiteSpace(StateSpaceId) && StateSpaceId.Length <= 200;
+}
+
+/// <summary>
+/// The authoritative component transition captured before the write and persisted with its event.
+/// Values are nullable only to represent component creation/removal, never an omitted read.
+/// </summary>
+public sealed class EventComponentSnapshot
+{
+    public required string EventId { get; set; }
+    public required string EntityId { get; set; }
+    public required string QualifiedTypeId { get; set; }
+    public int TypeVersion { get; set; }
+    public string? BeforeJson { get; set; }
+    public int? BeforeRevision { get; set; }
+    public string? AfterJson { get; set; }
+    public int? AfterRevision { get; set; }
+    public EventRecord? Event { get; set; }
+}
+
+public sealed record EventComponentSnapshotDetail(
+    string EntityId,
+    string QualifiedTypeId,
+    int TypeVersion,
+    string? BeforeJson,
+    int? BeforeRevision,
+    string? AfterJson,
+    int? AfterRevision);
+
 /// <summary>What a listing shows. No payload — see <see cref="EventDetail"/> for that.</summary>
 public sealed record EventSummary(
     string Id,
@@ -95,7 +142,8 @@ public sealed record EventSummary(
     int Depth,
     int Sequence,
     string RootOperationId,
-    IReadOnlyList<string> EntityIds);
+    IReadOnlyList<string> EntityIds,
+    EventSourceContext? Source = null);
 
 /// <summary>One event in full, payload included. Returned when a caller asks for a specific id.</summary>
 public sealed record EventDetail(
@@ -113,7 +161,9 @@ public sealed record EventDetail(
     IReadOnlyList<string> EntityIds,
 
     /// <summary>Empty unless a rule declared this event; then, the execution that did.</summary>
-    string ProducerExecutionId = "");
+    string ProducerExecutionId = "",
+    EventSourceContext? Source = null,
+    EventComponentSnapshotDetail? ComponentSnapshot = null);
 
 /// <summary>The complete key of one newest-first event-history page boundary.</summary>
 public sealed record EventHistoryCursor(DateTime Timestamp, int Sequence, string Id);
@@ -182,5 +232,6 @@ public interface IEventLedger
     Task<IReadOnlyList<EventDetail>> WriteAcceptedAsync(
         IReadOnlyList<ProposedEvent> proposals,
         string rootOperationId,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        EventSourceContext? source = null);
 }

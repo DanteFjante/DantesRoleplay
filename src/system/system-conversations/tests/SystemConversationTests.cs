@@ -38,10 +38,13 @@ public sealed class SystemConversationTests
 
         var first = await service.CreateAsync(RequestContext(), request);
         var replay = await service.CreateAsync(RequestContext(), request);
+        var recovered = await service.RecoverAsync(RequestContext(), request.IdempotencyKey);
         var advisoryRead = await store.GetAsync(
             Operator, first.Summary.Id, scope: AssistantConversationScopes.Advisory);
 
         Assert.Equal(first.Summary.Id, replay.Summary.Id);
+        Assert.NotNull(recovered);
+        Assert.Equal(Assert.Single(first.Turns).Id, recovered!.TurnId);
         Assert.Equal(AssistantConversationScopes.System, first.Summary.Scope);
         Assert.Null(advisoryRead);
         Assert.Equal(["user", "assistant"], first.Messages.Select(value => value.Role));

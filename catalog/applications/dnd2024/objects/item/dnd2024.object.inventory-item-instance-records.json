@@ -1,17 +1,6 @@
 {
   "id": "dnd2024.object.inventory-item-instance-records",
-  "version": 2,
-  "schema": {
-    "type": "object",
-    "additionalProperties": false,
-    "required": [],
-    "properties": {
-      "definitionLink": { "type": "object" },
-      "quantity": { "type": "object" },
-      "equipment": { "type": "object" },
-      "definition": { "type": "object" }
-    }
-  },
+  "version": 3,
   "roles": {
     "item": { "required": true },
     "definition": { "required": false }
@@ -27,8 +16,8 @@
       "id": "definition",
       "object": {
         "qualifiedId": "dnd2024.object.inventory-item-definition-records",
-        "version": 2,
-        "contentFingerprint": "4A8578B1A7010EB60AC64ABA7D64DD016106F19FF30A4D023A00CA35BF412476"
+        "version": 3,
+        "contentFingerprint": "9065B2C7FF9B616996FE782B8EACC170326D47779A33C1943F5DAC71E612BEC1"
       },
       "roles": {
         "definition": "definition"
@@ -55,5 +44,6 @@
       "dm"
     ],
     "write": []
-  }
+  },
+  "profile": "application-object/v2"
 }

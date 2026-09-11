@@ -30,6 +30,14 @@ function WorldPersonDetail({ person, onOpenLocation }: {
         <strong>Background</strong>
         <p>{person.background}</p>
       </div>
+      {person.unavailableFields?.includes("motive") && !person.motive ? (
+        <p><strong>Motive</strong> Unavailable for this read.</p>
+      ) : null}
+      {person.unavailableFields?.length ? (
+        <p className="directory-completeness-notice" role="status">
+          Some details for this record are unavailable: {person.unavailableFields.join(", ")}.
+        </p>
+      ) : null}
       <button className="directory-link-button" onClick={() => onOpenLocation(person.location.id)} type="button">
         <Icon name="MapPin" size={14} />
         <span>{person.location.name}<small>{person.location.region}</small></span>
@@ -72,11 +80,18 @@ export function WorldPeopleDirectory({ world, selectedPersonId, onPersonSelect, 
           <span className="eyebrow">Faces across the world</span>
           <h1 id="main-view-heading" tabIndex={-1}>People &amp; creatures</h1>
         </div>
-        <p>{people.length} of {world.people.length} visible</p>
+        <p>{world.peopleDirectory?.coverage === "partial"
+          ? "Coverage unavailable"
+          : `${people.length} of ${world.people.length} visible`}</p>
       </header>
       <p className="world-directory-introduction">
         Known people and observed creatures, gathered from the locations available in this view.
       </p>
+      {world.peopleDirectory?.coverage === "partial" ? (
+        <p className="directory-completeness-notice" role="status">
+          Some people records are unavailable for this read. Omitted people are not confirmed absent.
+        </p>
+      ) : null}
       {world.peopleDirectory?.hierarchyComplete === false ? (
         <p className="directory-completeness-notice" role="status">
           This directory reached the world hierarchy safety limit. The records shown are complete
@@ -118,8 +133,12 @@ export function WorldPeopleDirectory({ world, selectedPersonId, onPersonSelect, 
       ) : (
         <div className="directory-empty">
           <Icon name="UsersRound" size={26} />
-          <strong>No people or creatures match</strong>
-          <p>Try another name, kind, or region.</p>
+          <strong>{world.peopleDirectory?.coverage === "partial"
+            ? "People records unavailable"
+            : "No people or creatures match"}</strong>
+          <p>{world.peopleDirectory?.coverage === "partial"
+            ? "Try again after the directory read recovers."
+            : "Try another name, kind, or region."}</p>
         </div>
       )}
     </div>

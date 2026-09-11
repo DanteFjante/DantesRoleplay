@@ -25,8 +25,10 @@ test("draft responses bind exact query, campaign, fingerprints and image alignme
     (value: ReturnType<typeof projection>) => { value.data.campaignId = "campaign.foreign"; },
     (value: ReturnType<typeof projection>) => { value.sourceRevisionFingerprint = "invalid"; },
     (value: ReturnType<typeof projection>) => { value.data.backgroundRequest.width = 500; },
-    (value: ReturnType<typeof projection>) => { Object.assign(value, { private: true }); },
   ]) { const value = projection(); change(value); assert.equal(validateDraftProjection(value, scope), false); }
+  const additive = projection();
+  Object.assign(additive, { private: true, producerMetadata: { version: 2 } });
+  assert.equal(validateDraftProjection(additive, scope), true);
 });
 
 test("draft generation shares bounded status, envelope and cancellation handling", async () => {
@@ -41,6 +43,13 @@ test("draft generation shares bounded status, envelope and cancellation handling
     await assert.rejects(generateBoardDraft(scope, input, new AbortController().signal), /authorized contract/u);
     globalThis.fetch = async () => { throw new DOMException("Replaced", "AbortError"); };
     await assert.rejects(generateBoardDraft(scope, input, new AbortController().signal), { name: "AbortError" });
+    let resource = "";
+    globalThis.fetch = async (url) => { resource = String(url); return Response.json(projection()); };
+    await generateBoardDraft(scope, input, new AbortController().signal);
+    const url = new URL(resource, "https://table.test");
+    assert.equal(url.searchParams.get("campaignId"), null);
+    assert.equal(url.searchParams.get("perspective"), "dm");
+    assert.deepEqual(JSON.parse(url.searchParams.get("input")!), { ...input, selectionId: scope.campaignId });
   } finally {
     globalThis.fetch = previous;
   }

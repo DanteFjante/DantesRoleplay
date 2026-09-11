@@ -5,6 +5,7 @@ export function createHubReadScope(fetchImpl) {
   let active = 0;
   let cachedBytes = 0;
   let failure = null;
+  let budgetFailure = null;
 
   function drain() {
     while (active < 8 && queue.length > 0) {
@@ -30,6 +31,7 @@ export function createHubReadScope(fetchImpl) {
     }
     if (queue.length >= 2_048) {
       failure = "The world view is too large to load safely. Your current view has been kept.";
+      budgetFailure = failure;
       throw new Error(failure);
     }
     const response = new Promise((resolve, reject) => {
@@ -66,5 +68,9 @@ export function createHubReadScope(fetchImpl) {
     return typeof result.clone === "function" ? result.clone() : result;
   }
 
-  return { fetch: read, get failure() { return failure; } };
+  return {
+    fetch: read,
+    get failure() { return failure; },
+    get budgetFailure() { return budgetFailure; },
+  };
 }

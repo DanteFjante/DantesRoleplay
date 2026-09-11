@@ -228,7 +228,9 @@ public sealed class ApplicationReadinessService(
                 {
                     var objectDefinition = projections?.Get(query.ProjectionQualifiedId, query.ProjectionVersion);
                     if (query.Status != "active" || objectDefinition is null || objectDefinition.Owner != application ||
-                        objectDefinition.ContentHash != query.ProjectionContentHash || objectDefinition.ObjectContract is null)
+                        objectDefinition.ContentHash != query.ProjectionContentHash || objectDefinition.ObjectContract is null
+                        || !ValidObjectCollection(objectDefinition.ObjectContract, query.ObjectCollectionId)
+                        || !ValidObjectRoles(objectDefinition.ObjectContract, query.ObjectCollectionId, query.Roles.Keys))
                         return Failed("query-callability", "APPLICATION_QUERY_PROJECTION_STALE",
                             $"Query '{query.Id}' does not match its exact registered object projection.",
                             "repair-query", "Restore the declared object projection version and fingerprint, then reactivate the catalog.");
@@ -262,6 +264,27 @@ public sealed class ApplicationReadinessService(
                 $"{value.Record.QualifiedId}:{value.Record.Version}:{value.Record.ContentFingerprint}"));
             return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(
                 System.Text.Encoding.UTF8.GetBytes(canonical)));
+        }
+
+        static bool ValidObjectCollection(RegisteredApplicationObjectContract contract, string? collectionId) =>
+            collectionId is null ? contract.Collections.Count == 0
+                : contract.Collections.Any(value => value.CollectionId == collectionId);
+
+        static bool ValidObjectRoles(RegisteredApplicationObjectContract contract, string? collectionId,
+            IEnumerable<string> queryRoles)
+        {
+            var declared = contract.Roles.Select(value => value.RoleId).ToHashSet(StringComparer.Ordinal);
+            var bound = queryRoles.ToHashSet(StringComparer.Ordinal);
+            if (!bound.IsSubsetOf(declared)) return false;
+            var required = contract.Roles.Where(value => value.Required)
+                .Select(value => value.RoleId).ToHashSet(StringComparer.Ordinal);
+            if (collectionId is not null)
+            {
+                var collection = contract.Collections.Single(value => value.CollectionId == collectionId);
+                var relationship = contract.Relationships.Single(value => value.RelationshipId == collection.SourceId);
+                required.Remove(relationship.Direction == "incoming" ? relationship.FromRole : relationship.ToRole);
+            }
+            return required.IsSubsetOf(bound);
         }
     }
 

@@ -59,62 +59,159 @@ export class SystemRequestScope {
 
 export function normalizePublishedPage(value, origin = currentOrigin()) {
   if (!value || typeof value !== 'object' || Array.isArray(value) ||
-      !validSystemIdentifier(value.entityId) || !validSystemIdentifier(value.slug) ||
-      !boundedText(value.title, 200) || !boundedText(value.navigationLabel, 200) ||
-      !Number.isInteger(value.order) || typeof value.url !== 'string') return null;
+      !Object.hasOwn(value, 'entityId') || !Object.hasOwn(value, 'slug') || !Object.hasOwn(value, 'url') ||
+      !validSystemIdentifier(value.entityId) || !validSystemIdentifier(value.slug) || typeof value.url !== 'string') return null;
   let url;
   try { url = new URL(value.url, origin); }
   catch { return null; }
   if (url.origin !== origin || !url.pathname.startsWith('/ui/') || url.search || url.hash) return null;
+  const unavailableFields = Object.hasOwn(value, 'unavailableFields') && Array.isArray(value.unavailableFields)
+    ? value.unavailableFields.filter(field => typeof field === 'string' && field.length > 0 && field.length <= 120).slice(0, 32)
+    : [];
+  const title = Object.hasOwn(value, 'title') && boundedText(value.title, 200) ? value.title.trim() : null;
+  const navigationLabel = Object.hasOwn(value, 'navigationLabel') && boundedText(value.navigationLabel, 200) ? value.navigationLabel.trim() : null;
+  if (title === null) unavailableFields.push('title');
+  if (navigationLabel === null) unavailableFields.push('navigationLabel');
+  const displayTitle = title ?? navigationLabel ?? value.slug;
+  const displayNavigationLabel = navigationLabel ?? title ?? value.slug;
+  const order = Object.hasOwn(value, 'order') && Number.isInteger(value.order) ? value.order : null;
+  if (order === null) unavailableFields.push('order');
+  const visibility = Object.hasOwn(value, 'visibility') && (value.visibility === 'public' || value.visibility === 'hidden') ? value.visibility : null;
+  if (visibility === null) unavailableFields.push('visibility');
+  const enabled = Object.hasOwn(value, 'enabled') && (value.enabled === true || value.enabled === false) ? value.enabled : null;
+  if (enabled === null) unavailableFields.push('enabled');
+  const contentPageId = !Object.hasOwn(value, 'contentPageId') || value.contentPageId == null ? null : validSystemIdentifier(value.contentPageId) ? value.contentPageId : null;
+  if (Object.hasOwn(value, 'contentPageId') && value.contentPageId != null && contentPageId === null) unavailableFields.push('contentPageId');
+  const isIndexPage = Object.hasOwn(value, 'isIndexPage') && (value.isIndexPage === true || value.isIndexPage === false) ? value.isIndexPage : null;
+  if (isIndexPage === null) unavailableFields.push('isIndexPage');
   return Object.freeze({
     entityId: value.entityId,
     slug: value.slug,
-    title: value.title.trim(),
-    navigationLabel: value.navigationLabel.trim(),
-    order: value.order,
-    visibility: value.visibility === 'hidden' ? 'hidden' : 'public',
+    title: displayTitle,
+    navigationLabel: displayNavigationLabel,
+    order,
+    visibility,
     url: url.pathname,
-    contentPageId: typeof value.contentPageId === 'string' ? value.contentPageId : null,
-    isIndexPage: value.isIndexPage === true,
-    enabled: value.enabled !== false
+    contentPageId,
+    isIndexPage,
+    enabled,
+    ...(unavailableFields.length ? {unavailableFields: Object.freeze(unavailableFields)} : {})
   });
 }
 
 export function normalizePublishedApplication(value, origin = currentOrigin()) {
   if (!value || typeof value !== 'object' || Array.isArray(value) ||
-      !validSystemIdentifier(value.applicationId) || !boundedText(value.displayName, 200) ||
-      !Array.isArray(value.pages)) return null;
-  const indexPage = value.indexPage == null ? null : normalizePublishedPage(value.indexPage, origin);
-  if (value.indexPage != null && !indexPage) return null;
-  const pages = value.pages.map(page => normalizePublishedPage(page, origin));
-  if (pages.some(page => page === null)) return null;
-  const identities = new Set();
-  for (const page of pages) {
-    const identity = `${page.entityId}\n${page.slug}`;
-    if (identities.has(identity) || (indexPage &&
-        (page.entityId === indexPage.entityId || page.slug === indexPage.slug))) return null;
-    identities.add(identity);
+      !Object.hasOwn(value, 'applicationId') || !validSystemIdentifier(value.applicationId)) return null;
+  const unavailableFields = Object.hasOwn(value, 'unavailableFields') && Array.isArray(value.unavailableFields)
+    ? value.unavailableFields.filter(field => typeof field === 'string' && field.length > 0 && field.length <= 120).slice(0, 64)
+    : [];
+  let pageCoverage = Object.hasOwn(value, 'pageCoverage') && value.pageCoverage === 'partial';
+  if (Object.hasOwn(value, 'coverage') && value.coverage === 'partial' && unavailableFields.length === 0)
+    unavailableFields.push('publication');
+  const displayName = Object.hasOwn(value, 'displayName') && boundedText(value.displayName, 200) ? value.displayName.trim() : value.applicationId;
+  if (!Object.hasOwn(value, 'displayName') || !boundedText(value.displayName, 200)) unavailableFields.push('displayName');
+  const rawPages = Object.hasOwn(value, 'pages') && Array.isArray(value.pages) ? value.pages : [];
+  if (!Object.hasOwn(value, 'pages') || !Array.isArray(value.pages)) {
+    unavailableFields.push('pages');
+    pageCoverage = true;
   }
-  pages.sort((left, right) => left.order - right.order ||
+  const normalizedPages = rawPages.map(page => normalizePublishedPage(page, origin));
+  const pageCounts = new Map();
+  const entityCounts = new Map();
+  const slugCounts = new Map();
+  const rawEntityCounts = new Map();
+  const rawSlugCounts = new Map();
+  for (const page of rawPages) {
+    if (!page || typeof page !== 'object' || Array.isArray(page)) continue;
+    if (Object.hasOwn(page, 'entityId') && validSystemIdentifier(page.entityId))
+      rawEntityCounts.set(page.entityId, (rawEntityCounts.get(page.entityId) ?? 0) + 1);
+    if (Object.hasOwn(page, 'slug') && validSystemIdentifier(page.slug))
+      rawSlugCounts.set(page.slug, (rawSlugCounts.get(page.slug) ?? 0) + 1);
+  }
+  for (const page of normalizedPages) if (page) {
+    const identity = `${page.entityId}\n${page.slug}`;
+    pageCounts.set(identity, (pageCounts.get(identity) ?? 0) + 1);
+    entityCounts.set(page.entityId, (entityCounts.get(page.entityId) ?? 0) + 1);
+    slugCounts.set(page.slug, (slugCounts.get(page.slug) ?? 0) + 1);
+  }
+  const rawIndexPage = !Object.hasOwn(value, 'indexPage') || value.indexPage == null ? null : normalizePublishedPage(value.indexPage, origin);
+  const indexSource = Object.hasOwn(value, 'indexPage') && value.indexPage && typeof value.indexPage === 'object' && !Array.isArray(value.indexPage)
+    ? value.indexPage : null;
+  const indexEntityId = indexSource && Object.hasOwn(indexSource, 'entityId') && validSystemIdentifier(indexSource.entityId) ? indexSource.entityId : null;
+  const indexSlug = indexSource && Object.hasOwn(indexSource, 'slug') && validSystemIdentifier(indexSource.slug) ? indexSource.slug : null;
+  if (Object.hasOwn(value, 'indexPage') && value.indexPage != null && !rawIndexPage) unavailableFields.push('indexPage');
+  const indexIdentity = rawIndexPage ? `${rawIndexPage.entityId}\n${rawIndexPage.slug}` : null;
+  const rawIndexConflict = (indexEntityId !== null && rawEntityCounts.has(indexEntityId)) ||
+    (indexSlug !== null && rawSlugCounts.has(indexSlug));
+  const visiblePages = [];
+  for (const page of normalizedPages) {
+    if (!page) {
+      unavailableFields.push('pages');
+      pageCoverage = true;
+      continue;
+    }
+    const identity = `${page.entityId}\n${page.slug}`;
+    const duplicateIdentity = pageCounts.get(identity) !== 1 || entityCounts.get(page.entityId) !== 1 || slugCounts.get(page.slug) !== 1 ||
+      rawEntityCounts.get(page.entityId) !== 1 || rawSlugCounts.get(page.slug) !== 1;
+    const unknownAdmission = page.visibility === null || page.enabled === null;
+    const knownSuppressed = page.visibility === 'hidden' || page.enabled === false;
+    if (duplicateIdentity || page.isIndexPage !== false ||
+        page.entityId === indexEntityId || page.slug === indexSlug ||
+        page.visibility !== 'public' || page.enabled !== true) {
+      if (duplicateIdentity || page.isIndexPage !== false || page.entityId === indexEntityId || page.slug === indexSlug || unknownAdmission ||
+          (!knownSuppressed && page.unavailableFields?.length)) unavailableFields.push('pages');
+      if (duplicateIdentity || page.isIndexPage !== false || page.entityId === indexEntityId || page.slug === indexSlug || unknownAdmission ||
+          (!knownSuppressed && page.unavailableFields?.length)) pageCoverage = true;
+      continue;
+    }
+    visiblePages.push(page);
+    if (page.unavailableFields?.length) unavailableFields.push(...page.unavailableFields.map(field => `pages.${field}`));
+  }
+  const indexPage = rawIndexPage && rawIndexPage.isIndexPage === true && rawIndexPage.visibility === 'public' && rawIndexPage.enabled === true &&
+    (!indexIdentity || pageCounts.get(indexIdentity) === undefined) &&
+    !rawIndexConflict
+    ? rawIndexPage : null;
+  if (rawIndexPage && !indexPage) {
+    const knownSuppressedIndex = rawIndexPage.isIndexPage === true &&
+      (rawIndexPage.visibility === 'hidden' || rawIndexPage.visibility === 'public') &&
+      (rawIndexPage.enabled === false || rawIndexPage.enabled === true);
+    if (!knownSuppressedIndex || rawIndexConflict) {
+      unavailableFields.push('indexPage');
+      pageCoverage = true;
+    }
+  }
+  if (rawIndexPage?.unavailableFields?.length && rawIndexPage.visibility !== 'hidden' && rawIndexPage.enabled !== false)
+    unavailableFields.push(...rawIndexPage.unavailableFields.map(field => `indexPage.${field}`));
+  const pages = visiblePages;
+  pages.sort((left, right) => (left.order === null ? (right.order === null ? 0 : 1) : right.order === null ? -1 : left.order - right.order) ||
     left.navigationLabel.localeCompare(right.navigationLabel, undefined, {sensitivity: 'base'}) ||
     left.entityId.localeCompare(right.entityId));
-  const fingerprint = value.resolutionFingerprint == null ? null : value.resolutionFingerprint;
+  const fingerprint = !Object.hasOwn(value, 'resolutionFingerprint') || value.resolutionFingerprint == null ? null : value.resolutionFingerprint;
   if (fingerprint !== null && !/^[0-9A-Fa-f]{64}$/.test(fingerprint)) return null;
+  const publicationStatus = Object.hasOwn(value, 'publicationStatus') && boundedText(value.publicationStatus, 80) ? value.publicationStatus : 'invalid';
+  if (!Object.hasOwn(value, 'publicationStatus') || (publicationStatus === 'invalid' && value.publicationStatus !== 'invalid')) unavailableFields.push('publicationStatus');
+  const isPublishable = Object.hasOwn(value, 'isPublishable') && value.isPublishable === true;
+  if (!Object.hasOwn(value, 'isPublishable') || (value.isPublishable !== true && value.isPublishable !== false)) unavailableFields.push('isPublishable');
+  const isClickable = Object.hasOwn(value, 'isClickable') && value.isClickable === true && isPublishable === true && indexPage !== null;
+  if (!Object.hasOwn(value, 'isClickable') || (value.isClickable !== true && value.isClickable !== false)) unavailableFields.push('isClickable');
   return Object.freeze({
     applicationId: value.applicationId,
-    displayName: value.displayName.trim(),
-    publicationStatus: boundedText(value.publicationStatus, 80) ? value.publicationStatus : 'invalid',
-    isPublishable: value.isPublishable === true,
-    isClickable: value.isClickable === true && indexPage !== null,
-    hasAdditionalPages: value.hasAdditionalPages === true || pages.length > 0,
+    displayName,
+    publicationStatus,
+    isPublishable,
+    isClickable,
+    hasAdditionalPages: Object.hasOwn(value, 'hasAdditionalPages') && value.hasAdditionalPages === true || pages.length > 0,
     resolutionFingerprint: fingerprint,
     indexPage,
-    pages: Object.freeze(pages)
+    pages: Object.freeze(pages),
+    ...(pageCoverage ? {pageCoverage: 'partial'} : {}),
+    ...(unavailableFields.length ? {coverage: 'partial', unavailableFields: Object.freeze([...new Set(unavailableFields)])} : {})
   });
 }
 
 function normalizeSystemPage(value, origin) {
   if (!value || typeof value !== 'object' || Array.isArray(value) ||
+      !Object.hasOwn(value, 'pageId') || !Object.hasOwn(value, 'title') || !Object.hasOwn(value, 'url') ||
       !validSystemIdentifier(value.pageId) || !boundedText(value.title, 200) || typeof value.url !== 'string') return null;
   let url;
   try { url = new URL(value.url, origin); }
@@ -208,19 +305,26 @@ export class SystemWebClient {
       url.searchParams.set('cursor', options.cursor);
     }
     const value = await this.requestJson(url, {signal: options.signal});
-    if (!value || !Array.isArray(value.applications) || !Array.isArray(value.systemPages)) {
+    if (!value || typeof value !== 'object' || !Object.hasOwn(value, 'applications') || !Object.hasOwn(value, 'systemPages') ||
+        !Array.isArray(value.applications) || !Array.isArray(value.systemPages)) {
       throw new SystemClientError('WEB_PUBLICATION_RESPONSE_INVALID', 'The application publication response is invalid.');
     }
     const applications = value.applications.map(item => normalizePublishedApplication(item, this._origin));
     const systemPages = value.systemPages.map(item => normalizeSystemPage(item, this._origin));
-    if (applications.some(item => item === null) || systemPages.some(item => item === null)) {
-      throw new SystemClientError('WEB_PUBLICATION_RESPONSE_INVALID', 'The application publication response contains invalid entries.');
-    }
-    const nextCursor = value.nextCursor == null ? null : value.nextCursor;
+    const applicationsPartial = applications.some(item => item === null) ||
+      applications.some(item => item?.coverage === 'partial');
+    const systemPagesPartial = systemPages.some(item => item === null);
+    const partial = applicationsPartial || systemPagesPartial;
+    const nextCursor = !Object.hasOwn(value, 'nextCursor') || value.nextCursor == null ? null : value.nextCursor;
     if (nextCursor !== null && !boundedText(nextCursor, MAXIMUM_CURSOR_LENGTH)) {
       throw new SystemClientError('WEB_PUBLICATION_CURSOR_INVALID', 'The application publication response contains an invalid cursor.');
     }
-    return Object.freeze({applications: Object.freeze(applications), systemPages: Object.freeze(systemPages), nextCursor});
+    const unavailableFields = [
+      ...(applicationsPartial ? ['applications'] : []),
+      ...(systemPagesPartial ? ['systemPages'] : [])
+    ];
+    return Object.freeze({applications: Object.freeze(applications.filter(Boolean)), systemPages: Object.freeze(systemPages.filter(Boolean)), nextCursor,
+      ...(partial ? {coverage: 'partial', unavailableFields: Object.freeze(unavailableFields)} : {})});
   }
 
   async discoverAllApplications(options = {}) {
@@ -233,11 +337,15 @@ export class SystemWebClient {
     let systemPages = null;
     let cursor = null;
     let pageCount = 0;
+    let partialApplications = false;
+    let partialSystemPages = false;
     do {
       if (pageCount >= maximumPages) throw new SystemClientError(
         'WEB_PUBLICATION_PAGE_LIMIT', 'Application discovery exceeded its bounded page limit.');
       const page = await this.discoverApplications({cursor, limit: options.limit ?? DEFAULT_PAGE_SIZE, signal: options.signal});
       pageCount += 1;
+      partialApplications ||= page.unavailableFields?.includes('applications') === true;
+      partialSystemPages ||= page.unavailableFields?.includes('systemPages') === true;
       systemPages ??= page.systemPages;
       for (const application of page.applications) {
         if (applicationIds.has(application.applicationId)) throw new SystemClientError(
@@ -259,11 +367,16 @@ export class SystemWebClient {
     applications.sort((left, right) => left.displayName.localeCompare(right.displayName, undefined, {sensitivity: 'base'}) ||
       left.applicationId.localeCompare(right.applicationId));
     for (const [applicationId, fingerprint] of fingerprints) this._fingerprints.set(applicationId, fingerprint);
+    const unavailableFields = [
+      ...(partialApplications ? ['applications'] : []),
+      ...(partialSystemPages ? ['systemPages'] : [])
+    ];
     return Object.freeze({
       applications: Object.freeze(applications),
       systemPages: Object.freeze(systemPages ?? []),
       pageCount,
-      resolutionFingerprints: Object.freeze(Object.fromEntries(fingerprints))
+      resolutionFingerprints: Object.freeze(Object.fromEntries(fingerprints)),
+      ...(unavailableFields.length ? {coverage: 'partial', unavailableFields: Object.freeze(unavailableFields)} : {})
     });
   }
 
@@ -306,7 +419,7 @@ export class SystemWebClient {
       .find(candidate => candidate.entityId === page.entityId && candidate.slug === page.slug);
     if (!known) throw new SystemClientError('WEB_PAGE_NOT_PUBLISHED',
       'This page is not part of the current application publication.');
-    return Object.freeze({application: verifiedApplication, page,
+    return Object.freeze({application: verifiedApplication, page: known,
       resolutionFingerprint: verifiedApplication.resolutionFingerprint});
   }
 
@@ -336,3 +449,72 @@ export class SystemWebClient {
 }
 
 export const systemWebClient = new SystemWebClient();
+
+// Session-only correlation metadata for interrupted writes. Callers must never put request bodies,
+// prompts, structured input, or authorization material in this store.
+export class InterruptedRequestStore {
+  constructor(key = 'dantes.interrupted-requests.v1') { this._key = key; }
+
+  read(slot) {
+    if (!validSystemIdentifier(slot)) return null;
+    try {
+      const storage = globalThis.sessionStorage;
+      if (!storage) return {malformed: true};
+      const raw = storage.getItem(this._key);
+      if (!raw) return null;
+      if (raw.length > 8192) return {malformed: true};
+      const values = JSON.parse(raw);
+      if (!values || typeof values !== 'object' || Array.isArray(values)) return {malformed: true};
+      const value = values[slot];
+      return value === undefined ? null : validInterruptedMetadata(value) ? value : {malformed: true};
+    } catch { return {malformed: true}; }
+  }
+
+  write(slot, value) {
+    if (!validSystemIdentifier(slot) || !validInterruptedMetadata(value)) return false;
+    try {
+      const raw = globalThis.sessionStorage?.getItem(this._key);
+      const values = raw ? JSON.parse(raw) : {};
+      if (!values || typeof values !== 'object' || Array.isArray(values)) return false;
+      values[slot] = value;
+      const encoded = JSON.stringify(values);
+      if (new TextEncoder().encode(encoded).length > 8192) return false;
+      const storage = globalThis.sessionStorage;
+      if (!storage) return false;
+      storage.setItem(this._key, encoded);
+      return storage.getItem(this._key) === encoded;
+    } catch { return false; }
+  }
+
+  remove(slot) {
+    if (!validSystemIdentifier(slot)) return;
+    try {
+      const raw = globalThis.sessionStorage?.getItem(this._key);
+      const values = raw ? JSON.parse(raw) : null;
+      if (!values || typeof values !== 'object' || Array.isArray(values)) return;
+      delete values[slot];
+      globalThis.sessionStorage?.setItem(this._key, JSON.stringify(values));
+    } catch { }
+  }
+}
+
+function validInterruptedMetadata(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const own = Object.keys(value).sort();
+  const exact = expected => own.length === expected.length && own.every((key, index) => key === expected[index]);
+  const valid = candidate => validSystemIdentifier(candidate) && candidate.length <= 200;
+  if (value.kind === 'ai') return exact(['applicationId', 'contextFingerprint', 'key', 'kind', 'provider', 'resolutionFingerprint', 'sourceReferences', 'stateSpaceId', 'surface'])
+    && valid(value.key) && valid(value.provider) && valid(value.surface)
+    && (value.applicationId === null || valid(value.applicationId))
+    && (value.stateSpaceId === null || valid(value.stateSpaceId))
+    && (value.resolutionFingerprint === null || /^[0-9A-F]{64}$/.test(value.resolutionFingerprint))
+    && (value.contextFingerprint === null || /^[0-9A-F]{64}$/.test(value.contextFingerprint)) && Array.isArray(value.sourceReferences) &&
+    value.sourceReferences.length > 0 && value.sourceReferences.length <= 24 &&
+    value.sourceReferences.every(item => validSystemIdentifier(item, 320)) &&
+    value.sourceReferences.every((item, index) => index === 0 || value.sourceReferences[index - 1] < item);
+  if (value.kind === 'system-conversation') return exact(['key', 'kind']) && valid(value.key);
+  return value.kind === 'system-task' && exact(['key', 'kind', 'taskId'])
+    && valid(value.key) && (value.taskId === null || valid(value.taskId));
+}
+
+export const interruptedRequestStore = new InterruptedRequestStore();

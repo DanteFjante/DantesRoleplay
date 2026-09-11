@@ -4,6 +4,8 @@ using DantesRoleplay.Operations;
 using DantesRoleplay.SqliteInfrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace DantesRoleplay.EcsEffects;
 
@@ -15,7 +17,9 @@ public sealed class ApplicationEcsEffectApplier(
     IOperationLog operations,
     IStateSpaceEdgeStore? edges = null,
     IEnumerable<IApplicationEcsTransactionParticipant>? transactionParticipants = null,
-    IEcsRoleConstraintValidator? roleConstraints = null) : IApplicationEcsEffectApplier
+    IEcsRoleConstraintValidator? roleConstraints = null,
+    IEnumerable<IApplicationEcsEventSourceParticipant>? eventSources = null,
+    IApplicationEcsReactionRouter? reactionRouter = null) : IApplicationEcsEffectApplier
 {
     private const string AuditIdentity = ApplicationEcsExecutionIdentity.AuditTool;
 
@@ -51,22 +55,10 @@ public sealed class ApplicationEcsEffectApplier(
         {
             transaction = await SqliteEcsConstraintTransaction.BeginIfNeededAsync(db, cancellationToken)
                 ?? throw new InvalidOperationException("Application ECS effects require their own write transaction.");
-            await VerifyComponentsAsync(batch, cancellationToken);
-            await VerifyEntitiesAsync(batch, cancellationToken);
-            await VerifyRelationshipsAsync(batch, cancellationToken);
-            await VerifyContainmentsAsync(batch, cancellationToken);
             var recoveryBefore = await SqliteChangeRecovery.ReadAsync(db.Database.GetDbConnection(),
                 transaction.GetDbTransaction(), cancellationToken);
-            for (var index = 0; index < batch.Effects.Count; index++)
-            {
-                currentIndex = index;
-                receipts.Add(await ApplyOneAsync(batch.StateSpaceId, batch.Effects[index], index, cancellationToken));
-            }
-
-            var recoveryAfter = await SqliteChangeRecovery.ReadAsync(db.Database.GetDbConnection(),
-                transaction.GetDbTransaction(), cancellationToken);
-            if (roleConstraints is not null)
-                await roleConstraints.ValidateStateSpaceAsync(batch.StateSpaceId, cancellationToken);
+            var appliedBatches = new List<ApplicationEcsEffectBatch> { batch };
+            currentIndex = await ApplyBatchAsync(batch, receipts, currentIndex, cancellationToken);
 
             if (dryRun)
             {
@@ -78,10 +70,68 @@ public sealed class ApplicationEcsEffectApplier(
                 return new(false, true, operationId, receipts.AsReadOnly(), []);
             }
 
-            foreach (var participant in transactionParticipants ?? [])
-                await participant.StageAsync(batch, receipts.AsReadOnly(), operationId, cancellationToken);
+            var sources = (eventSources ?? []).ToArray();
+            var rootSource = Source(batch.StateSpaceId);
+            var budget = new Events.ChainBudget();
+            var accepted = await StageSourcesAsync(sources, batch, receipts, new(
+                operationId, 0, string.Empty, "application-action:" + operationId), cancellationToken);
+            CountEvents(budget, accepted.Count);
+            var queue = new Queue<Events.EventDetail>(accepted);
+            while (queue.Count > 0 && reactionRouter is not null)
+            {
+                var pending = queue.Dequeue();
+                if (pending.Source != rootSource)
+                    throw new ApplicationEcsTransactionParticipantException(
+                        "An application event source does not match the root state space.");
+                await foreach (var routed in reactionRouter.RouteAsync(new(rootSource, [pending], operationId,
+                    RootSeed(batch, operationId), budget), cancellationToken).WithCancellation(cancellationToken))
+                {
+                    if (!routed.Ok)
+                        throw new ApplicationEcsTransactionParticipantException(
+                            $"{routed.Code}: {routed.Reason}");
+                    if (routed.Batches.Count > 1)
+                        throw new ApplicationEcsTransactionParticipantException(
+                            "An application reaction route returned more than one batch.");
+                    foreach (var reaction in routed.Batches)
+                    {
+                    if (reaction.ParentEventId != pending.Id || reaction.Depth != pending.Depth + 1
+                        || reaction.Batch.StateSpaceId != batch.StateSpaceId
+                        || reaction.Batch.ExecutionIdentity is not null
+                        || string.IsNullOrWhiteSpace(reaction.ProducerExecutionId))
+                        throw new ApplicationEcsTransactionParticipantException(
+                            "A reaction batch did not preserve its accepted event and state-space provenance.");
+                    var depthCode = budget.CheckDepth(reaction.Depth);
+                    if (depthCode is not null)
+                        throw new ApplicationEcsTransactionParticipantException(Events.ChainBudget.Explain(depthCode));
+                    var reactionProblems = ApplicationEcsEffectValidation.Validate(reaction.Batch, trustedReaction: true);
+                    if (reactionProblems.Count > 0)
+                        throw new ApplicationEcsTransactionParticipantException(
+                            "A reaction batch has an invalid typed effect envelope.");
+                    var start = receipts.Count;
+                    currentIndex = await ApplyBatchAsync(reaction.Batch, receipts, currentIndex, cancellationToken,
+                        trustedReaction: true);
+                    appliedBatches.Add(reaction.Batch);
+                    var emitted = await StageSourcesAsync(sources, reaction.Batch,
+                        receipts.Skip(start).ToArray(), new(operationId, reaction.Depth, pending.Id,
+                            reaction.ProducerExecutionId), cancellationToken);
+                    CountEvents(budget, emitted.Count);
+                    foreach (var @event in emitted) queue.Enqueue(@event);
+                    }
+                }
+            }
 
-            await RecordAsync(batch, operationId, success: true, dryRun: false, receipts.Count, "", cancellationToken);
+            if (roleConstraints is not null)
+                await roleConstraints.ValidateStateSpaceAsync(batch.StateSpaceId, cancellationToken);
+
+            var committed = Aggregate(batch, appliedBatches);
+            // Cover the root and every typed reaction effect, but not arbitrary
+            // ECS writes by terminal audit/invalidation participants. Those
+            // untracked writes must retain the conservative recovery signal.
+            var recoveryAfter = await SqliteChangeRecovery.ReadAsync(db.Database.GetDbConnection(),
+                transaction.GetDbTransaction(), cancellationToken);
+            foreach (var participant in transactionParticipants ?? [])
+                await participant.StageAsync(committed, receipts.AsReadOnly(), operationId, cancellationToken);
+            await RecordAsync(committed, operationId, success: true, dryRun: false, receipts.Count, "", cancellationToken);
             await SqliteChangeRecovery.AcknowledgeAsync(db.Database.GetDbConnection(),
                 transaction.GetDbTransaction(), recoveryBefore, recoveryAfter, operationId, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
@@ -103,8 +153,14 @@ public sealed class ApplicationEcsEffectApplier(
                 var replay = await ReplayAsync(batch, dryRun, CancellationToken.None);
                 if (replay is not null) return replay;
             }
+            var problemException = exception is EffectApplicationException applied
+                ? applied.InnerException ?? applied
+                : exception;
+            var failureIndex = exception is EffectApplicationException failed
+                ? failed.Index
+                : receipts.Count > 0 ? receipts[^1].Index : currentIndex;
             return await FailedSafelyAsync(batch, dryRun, operationId,
-                [new(currentIndex, Code(exception), exception.Message)], CancellationToken.None);
+                [new(failureIndex, Code(problemException), problemException.Message)], CancellationToken.None);
         }
         catch
         {
@@ -118,10 +174,95 @@ public sealed class ApplicationEcsEffectApplier(
         }
     }
 
+    private async Task<int> ApplyBatchAsync(
+        ApplicationEcsEffectBatch batch,
+        List<ApplicationEcsEffectReceipt> receipts,
+        int currentIndex,
+        CancellationToken cancellationToken,
+        bool trustedReaction = false)
+    {
+        await VerifyComponentsAsync(batch, cancellationToken);
+        await VerifyEntitiesAsync(batch, cancellationToken);
+        await VerifyRelationshipsAsync(batch, cancellationToken);
+        await VerifyContainmentsAsync(batch, cancellationToken);
+        for (var localIndex = 0; localIndex < batch.Effects.Count; localIndex++)
+        {
+            currentIndex++;
+            try
+            {
+                receipts.Add(await ApplyOneAsync(batch.StateSpaceId, batch.Effects[localIndex], currentIndex,
+                    localIndex, cancellationToken));
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception exception)
+            {
+                throw new EffectApplicationException(currentIndex, exception);
+            }
+        }
+        if (roleConstraints is not null)
+            await roleConstraints.ValidateStateSpaceAsync(batch.StateSpaceId, cancellationToken);
+        return currentIndex;
+    }
+
+    private async Task<IReadOnlyList<Events.EventDetail>> StageSourcesAsync(
+        IReadOnlyList<IApplicationEcsEventSourceParticipant> sources,
+        ApplicationEcsEffectBatch batch,
+        IReadOnlyList<ApplicationEcsEffectReceipt> receipts,
+        ApplicationEcsEventEmissionContext emission,
+        CancellationToken cancellationToken)
+    {
+        if (sources.Count == 0) return [];
+        var source = Source(batch.StateSpaceId);
+        var written = new List<Events.EventDetail>();
+        foreach (var participant in sources)
+        {
+            var rows = await participant.StageEventsAsync(batch, receipts, emission, cancellationToken);
+            foreach (var row in rows)
+            {
+                if (row.Source != source || row.RootOperationId != emission.RootOperationId
+                    || row.Depth != emission.Depth || row.CausationId != emission.CausationEventId)
+                    throw new ApplicationEcsTransactionParticipantException(
+                        "An application event source returned rows outside the current transaction provenance.");
+                written.Add(row);
+            }
+        }
+        return written;
+    }
+
+    private Events.EventSourceContext Source(string stateSpaceId)
+    {
+        var stateSpace = stateSpaces.Get(stateSpaceId)
+            ?? throw new ApplicationEcsTransactionParticipantException(
+                "The application event state space is unknown.");
+        return new(stateSpace.ApplicationRevision.ApplicationId.Value, stateSpace.StateSpaceId);
+    }
+
+    private static void CountEvents(Events.ChainBudget budget, int count)
+    {
+        var code = budget.CountEvents(count);
+        if (code is not null)
+            throw new ApplicationEcsTransactionParticipantException(Events.ChainBudget.Explain(code));
+    }
+
+    private static long RootSeed(ApplicationEcsEffectBatch batch, string operationId)
+    {
+        if (batch.Seed is { } seed) return seed;
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(operationId));
+        return BitConverter.ToInt64(hash, 0);
+    }
+
+    private static ApplicationEcsEffectBatch Aggregate(
+        ApplicationEcsEffectBatch root,
+        IReadOnlyList<ApplicationEcsEffectBatch> batches) => root with
+    {
+        Effects = batches.SelectMany(value => value.Effects).ToArray()
+    };
+
     private async Task<ApplicationEcsEffectReceipt> ApplyOneAsync(
         string stateSpaceId,
         ApplicationEcsEffect effect,
         int index,
+        int batchEffectIndex,
         CancellationToken cancellationToken)
     {
         switch (effect.Type)
@@ -129,36 +270,56 @@ public sealed class ApplicationEcsEffectApplier(
             case ApplicationEcsEffectType.EntityCreate:
             {
                 var entity = await store.CreateEntityAsync(stateSpaceId, effect.EntityId, effect.Name, cancellationToken);
-                return new(index, effect.Type, entity.EntityId, "", entity.Revision);
+                return new(index, effect.Type, entity.EntityId, "", entity.Revision,
+                    BatchEffectIndex: batchEffectIndex);
             }
             case ApplicationEcsEffectType.EntityDelete:
                 if (!await store.DeleteEntityAsync(stateSpaceId, effect.EntityId, effect.ExpectedRevision, cancellationToken))
                     throw new InvalidOperationException("The entity is unknown or already deleted.");
-                return new(index, effect.Type, effect.EntityId, "", effect.ExpectedRevision + 1);
+                return new(index, effect.Type, effect.EntityId, "", effect.ExpectedRevision + 1,
+                    BatchEffectIndex: batchEffectIndex);
             case ApplicationEcsEffectType.ComponentAdd:
-                return Receipt(index, effect, await store.AddComponentAsync(Write(stateSpaceId, effect), cancellationToken));
+            {
+                var before = await ComponentBeforeAsync(stateSpaceId, effect, cancellationToken);
+                var after = await store.AddComponentAsync(Write(stateSpaceId, effect), cancellationToken);
+                return Receipt(index, batchEffectIndex, effect, before, after);
+            }
             case ApplicationEcsEffectType.ComponentSet:
-                return Receipt(index, effect, await store.SetComponentAsync(Write(stateSpaceId, effect), cancellationToken));
             case ApplicationEcsEffectType.ClockAdvance:
-                return Receipt(index, effect, await store.SetComponentAsync(Write(stateSpaceId, effect), cancellationToken));
+            {
+                var before = await ComponentBeforeAsync(stateSpaceId, effect, cancellationToken);
+                var after = await store.SetComponentAsync(Write(stateSpaceId, effect), cancellationToken);
+                return Receipt(index, batchEffectIndex, effect, before, after);
+            }
             case ApplicationEcsEffectType.ComponentMerge:
-                return Receipt(index, effect, await store.MergeComponentAsync(Write(stateSpaceId, effect), cancellationToken));
+            {
+                var before = await ComponentBeforeAsync(stateSpaceId, effect, cancellationToken);
+                var after = await store.MergeComponentAsync(Write(stateSpaceId, effect), cancellationToken);
+                return Receipt(index, batchEffectIndex, effect, before, after);
+            }
             case ApplicationEcsEffectType.ComponentRemove:
+            {
+                var before = await ComponentBeforeAsync(stateSpaceId, effect, cancellationToken);
                 if (!await store.RemoveComponentAsync(stateSpaceId, effect.EntityId, effect.ComponentType!, effect.ExpectedRevision, cancellationToken))
                     throw new InvalidOperationException("The component is absent.");
-                return new(index, effect.Type, effect.EntityId, effect.ComponentType!.QualifiedTypeId, null, effect.ExpectedRevision);
+                return new(index, effect.Type, effect.EntityId, effect.ComponentType!.QualifiedTypeId, null,
+                    effect.ExpectedRevision, BeforeJson: before?.ValueJson, BeforeRevision: before?.Revision,
+                    ComponentTypeVersion: before?.Type.TypeVersion ?? effect.ComponentType.TypeVersion,
+                    BatchEffectIndex: batchEffectIndex);
+            }
             case ApplicationEcsEffectType.ContainmentMove:
             {
                 var value = await RequireEdges().MoveContainmentAsync(stateSpaceId, effect.EntityId,
                     effect.TargetEntityId, effect.Slot, effect.ExpectedRevision, cancellationToken);
                 return new(index, effect.Type, effect.EntityId, "", value.Revision,
-                    TargetEntityId: value.ContainerEntityId);
+                    TargetEntityId: value.ContainerEntityId, BatchEffectIndex: batchEffectIndex);
             }
             case ApplicationEcsEffectType.ContainmentRemove:
                 if (!await RequireEdges().RemoveContainmentAsync(stateSpaceId, effect.EntityId,
                         effect.ExpectedRevision, cancellationToken))
                     throw new InvalidOperationException("The containment is absent.");
-                return new(index, effect.Type, effect.EntityId, "", null, effect.ExpectedRevision);
+                return new(index, effect.Type, effect.EntityId, "", null, effect.ExpectedRevision,
+                    BatchEffectIndex: batchEffectIndex);
             case ApplicationEcsEffectType.RelationshipSet:
             {
                 var value = await RequireEdges().SetRelationshipAsync(stateSpaceId, effect.EntityId,
@@ -166,7 +327,7 @@ public sealed class ApplicationEcsEffectApplier(
                     effect.ExpectedRevision, cancellationToken);
                 return new(index, effect.Type, effect.EntityId, "", value.Revision,
                     TargetEntityId: value.ToEntityId,
-                    QualifiedRelationshipKind: value.QualifiedKind);
+                    QualifiedRelationshipKind: value.QualifiedKind, BatchEffectIndex: batchEffectIndex);
             }
             case ApplicationEcsEffectType.RelationshipRemove:
                 if (!await RequireEdges().RemoveRelationshipAsync(stateSpaceId, effect.EntityId,
@@ -174,7 +335,8 @@ public sealed class ApplicationEcsEffectApplier(
                         effect.ExpectedRevision, cancellationToken))
                     throw new InvalidOperationException("The relationship is absent.");
                 return new(index, effect.Type, effect.EntityId, "", null, effect.ExpectedRevision,
-                    effect.TargetEntityId, effect.QualifiedRelationshipKind);
+                    effect.TargetEntityId, effect.QualifiedRelationshipKind,
+                    BatchEffectIndex: batchEffectIndex);
             default:
                 throw new InvalidOperationException("The effect type was not validated.");
         }
@@ -272,11 +434,35 @@ public sealed class ApplicationEcsEffectApplier(
     private static EcsComponentWrite Write(string stateSpaceId, ApplicationEcsEffect effect) =>
         new(stateSpaceId, effect.EntityId, effect.ComponentType!, effect.DataJson, effect.ExpectedRevision);
 
-    private static ApplicationEcsEffectReceipt Receipt(int index, ApplicationEcsEffect effect, EcsComponentView value) =>
-        new(index, effect.Type, effect.EntityId, value.Type.QualifiedTypeId, value.Revision);
+    private async Task<EcsComponentView?> ComponentBeforeAsync(
+        string stateSpaceId,
+        ApplicationEcsEffect effect,
+        CancellationToken cancellationToken) =>
+        await store.GetComponentAsync(stateSpaceId, effect.EntityId,
+            effect.ComponentType!.QualifiedTypeId, cancellationToken);
+
+    private static ApplicationEcsEffectReceipt Receipt(
+        int index,
+        int batchEffectIndex,
+        ApplicationEcsEffect effect,
+        EcsComponentView? before,
+        EcsComponentView after) =>
+        new(index, effect.Type, effect.EntityId, after.Type.QualifiedTypeId, after.Revision,
+            BeforeJson: before?.ValueJson,
+            BeforeRevision: before?.Revision,
+            AfterJson: after.ValueJson,
+            AfterRevision: after.Revision,
+            ComponentTypeVersion: after.Type.TypeVersion,
+            BatchEffectIndex: batchEffectIndex);
 
     private IStateSpaceEdgeStore RequireEdges() =>
         edges ?? throw new InvalidOperationException("The application state-space edge store is unavailable.");
+
+    private sealed class EffectApplicationException(int index, Exception innerException)
+        : InvalidOperationException(innerException.Message, innerException)
+    {
+        public int Index { get; } = index;
+    }
 
     private async Task<ApplicationEcsEffectResult> FailedAsync(
         ApplicationEcsEffectBatch? batch,

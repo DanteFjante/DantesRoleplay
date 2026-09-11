@@ -1,5 +1,6 @@
 using System.Text.Json;
 using DantesRoleplay.Categories;
+using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.Content;
 using DantesRoleplay.Events;
 using DantesRoleplay.Mechanics;
@@ -8,9 +9,10 @@ using Microsoft.EntityFrameworkCore;
 namespace DantesRoleplay.DataAccess;
 
 /// <summary>Append-only registration storage. It deliberately does not route or execute subscriptions.</summary>
-public sealed class SubscriptionStore(DantesRoleplayDbContext db) : ISubscriptionStore
+public sealed class SubscriptionStore(DantesRoleplayDbContext db, IPublicApplicationCatalogProvider? catalogs = null) : ISubscriptionStore
 {
     private readonly DantesRoleplayDbContext _db = db;
+    private readonly IPublicApplicationCatalogProvider? _catalogs = catalogs;
 
     public async Task<IReadOnlyList<SubscriptionSummary>> FindAsync(string? query = null, string? category = null, string? scope = null, bool includeInactive = false, int limit = 50, CancellationToken cancellationToken = default)
     {
@@ -43,6 +45,12 @@ public sealed class SubscriptionStore(DantesRoleplayDbContext db) : ISubscriptio
     public async Task<IReadOnlyList<SubscriptionCheck>> CheckAsync(WriteSubscriptionRequest request, CancellationToken cancellationToken = default)
     {
         var checks = new List<SubscriptionCheck>();
+        var sourceValid = request.Source is null || (request.Mode == SubscriptionMode.Reaction && request.Source.IsValid);
+        checks.Add(new("source-context", sourceValid,
+            sourceValid ? request.Source is null ? "Legacy subscription has no application source." : "Subscription is bound to one exact application state space."
+                : request.Source is not null && request.Mode == SubscriptionMode.Guard
+                    ? "Application-scoped guards are not enabled; register a legacy guard or an application reaction."
+                    : "An application source requires bounded application and state-space ids."));
         var idOk = !string.IsNullOrWhiteSpace(request.Id) && request.Id.Length is >= 3 and <= 200 && System.Text.RegularExpressions.Regex.IsMatch(request.Id, "^subscription(\\.[a-z][a-z0-9-]*)+$");
         checks.Add(new("id-format", idOk, idOk ? "Permanent subscription.* id." : "Id must be a permanent lowercase dotted id beginning subscription."));
         var categoryOk = CategoryPath.TryValidate(request.Category, out var categoryProblem);
@@ -67,25 +75,68 @@ public sealed class SubscriptionStore(DantesRoleplayDbContext db) : ISubscriptio
             : await _db.EventTypeVersions.AsNoTracking().FirstOrDefaultAsync(
                 x => x.EventTypeId == eventType.Id && x.Version == eventType.CurrentVersion,
                 cancellationToken);
-        var mechanic = await _db.Mechanics.AsNoTracking().FirstOrDefaultAsync(x => x.Id == request.EventMechanicId, cancellationToken);
+        var mechanic = request.Source is null
+            ? await _db.Mechanics.AsNoTracking().FirstOrDefaultAsync(x => x.Id == request.EventMechanicId, cancellationToken)
+            : null;
         var mechanicVersion = mechanic is null ? null : await _db.MechanicVersions.AsNoTracking().FirstOrDefaultAsync(x => x.MechanicId == mechanic.Id && x.Version == mechanic.CurrentVersion, cancellationToken);
-        var requirement = TryEventRequirement(mechanicVersion?.Requirements, out var problem);
-        var requirementOk = mechanic?.Status == MechanicStatus.Active
+        CatalogRecordView? catalogMechanic = null;
+        string? catalogRequirements = null;
+        string? catalogProblem = null;
+        if (request.Source is { } source)
+        {
+            try
+            {
+                var application = Applications.ApplicationIdentifier.Parse(source.ApplicationId);
+                if (_catalogs is null || !_catalogs.TryGet(application, out var catalog))
+                    catalogProblem = "The exact public application catalog is unavailable.";
+                else
+                {
+                    catalogMechanic = catalog.Inspect(new(application, application.Value, request.EventMechanicId));
+                    using var content = JsonDocument.Parse(catalogMechanic.ContentJson);
+                    catalogRequirements = content.RootElement.TryGetProperty("requirements", out var raw)
+                        && raw.ValueKind == JsonValueKind.String ? raw.GetString() : null;
+                }
+            }
+            catch (Exception exception) when (exception is ArgumentException or KeyNotFoundException or JsonException)
+            {
+                catalogProblem = "The exact application mechanic is unavailable or malformed.";
+            }
+        }
+        var legacyProblem = string.Empty;
+        var catalogRequirementProblem = string.Empty;
+        var requirement = request.Source is null
+            ? TryEventRequirement(mechanicVersion?.Requirements, out legacyProblem)
+            : TryEventRequirement(catalogRequirements, out catalogRequirementProblem);
+        var problem = request.Source is null ? legacyProblem : catalogRequirementProblem;
+        var active = request.Source is null
+            ? mechanic?.Status == MechanicStatus.Active
+            : catalogMechanic?.Summary.Kind == "mechanic" && catalogMechanic.Summary.Status == "active";
+        MechanicRequirements? effectiveRequirements = null;
+        try
+        {
+            var rawRequirements = request.Source is null ? mechanicVersion?.Requirements : catalogRequirements;
+            if (rawRequirements is not null) effectiveRequirements = MechanicRequirements.Parse(rawRequirements);
+        }
+        catch (JsonException) { }
+        var requirementOk = active == true
             && requirement is not null
             && requirement.Mode.ToString().Equals(request.Mode.ToString(), StringComparison.OrdinalIgnoreCase)
             && requirement.Types.Contains(request.EventTypeId, StringComparer.Ordinal)
-            && !MechanicRequirements.Parse(mechanicVersion!.Requirements).Children.Any();
-        var mechanicDetail = mechanic is null
-            ? $"Mechanic '{request.EventMechanicId}' does not exist."
-            : mechanic.Status != MechanicStatus.Active
-                ? $"Mechanic '{request.EventMechanicId}' is {mechanic.Status}."
+            && effectiveRequirements is not null && !effectiveRequirements.Children.Any()
+            && catalogProblem is null;
+        var mechanicDetail = request.Source is not null
+            ? catalogProblem ?? (catalogMechanic is null ? $"Mechanic '{request.EventMechanicId}' does not exist." : requirementOk ? "Application catalog mechanic declares the exact event type and mode." : "Application catalog mechanic does not declare the exact event type and mode.")
+            : mechanic is null
+                ? $"Mechanic '{request.EventMechanicId}' does not exist."
+                : mechanic.Status != MechanicStatus.Active
+                    ? $"Mechanic '{request.EventMechanicId}' is {mechanic.Status}."
                 : requirement is null
                     ? problem
                     : !requirement.Mode.ToString().Equals(request.Mode.ToString(), StringComparison.OrdinalIgnoreCase)
                         ? $"Mechanic declares {requirement.Mode}, not the requested {request.Mode} mode."
                         : !requirement.Types.Contains(request.EventTypeId, StringComparer.Ordinal)
                             ? $"Mechanic does not declare event type '{request.EventTypeId}'."
-                            : MechanicRequirements.Parse(mechanicVersion!.Requirements).Children.Any()
+                            : effectiveRequirements?.Children.Any() == true
                                 ? "An event mechanic cannot declare child mechanics."
                                 : "Mechanic declares the exact event type and mode.";
         checks.Add(new("event-mechanic", requirementOk, mechanicDetail, true));
@@ -95,9 +146,9 @@ public sealed class SubscriptionStore(DantesRoleplayDbContext db) : ISubscriptio
         var fanout = ParseFanoutSelector(request.FanoutSelectorJson, checks);
         var tracked = ParseIds(request.TrackedEntityIdsJson, "trackedEntityIds", checks);
         _ = ParseObject(request.PayloadEqualsJson, "payloadEquals", checks, scalarOnly: true, maxProperties: 32);
-        if (requirement is not null && mechanicVersion is not null && fixedRoles is not null)
+        if (requirement is not null && effectiveRequirements is not null && fixedRoles is not null)
         {
-            var all = MechanicRequirements.Parse(mechanicVersion.Requirements).Roles;
+            var all = effectiveRequirements.Roles;
             var payloadRoleOk = payloadRole is null
                 || (request.Mode == SubscriptionMode.Reaction
                     && all.ContainsKey(payloadRole.Value.Key)
@@ -115,7 +166,7 @@ public sealed class SubscriptionStore(DantesRoleplayDbContext db) : ISubscriptio
                 || (payloadRole is null
                     && request.Mode == SubscriptionMode.Reaction
                     && !string.IsNullOrWhiteSpace(request.Scope)
-                    && !MechanicRequirements.Parse(mechanicVersion.Requirements).Children.Any()
+                    && !effectiveRequirements.Children.Any()
                     && all.TryGetValue(fanout.Role, out var role)
                     && !role.Optional
                     && !fixedRoles.ContainsKey(fanout.Role)
@@ -143,8 +194,11 @@ public sealed class SubscriptionStore(DantesRoleplayDbContext db) : ISubscriptio
             ? Enumerable.Empty<string>()
             : fixedRoles.Values;
         var ids = roleEntityIds.Concat(tracked ?? []).Distinct(StringComparer.Ordinal).ToList();
-        if (ids.Count > 0) { var known = await _db.Entities.Where(x => x.DeletedAt == null && ids.Contains(x.Id)).Select(x => x.Id).ToListAsync(cancellationToken); checks.Add(new("entities-exist", known.Count == ids.Count, known.Count == ids.Count ? "Referenced entities exist." : $"Missing entities: {string.Join(", ", ids.Except(known, StringComparer.Ordinal))}.")); }
-        if (requirement is not null) { var wanted = requirement.Components.Distinct(StringComparer.Ordinal).ToList(); var known = await _db.ComponentDefinitions.Where(x => wanted.Contains(x.Id)).Select(x => x.Id).ToListAsync(cancellationToken); checks.Add(new("event-components-exist", known.Count == wanted.Count, known.Count == wanted.Count ? "Declared event components exist." : $"Missing event components: {string.Join(", ", wanted.Except(known, StringComparer.Ordinal))}.")); }
+        // Application-scoped role entities and event components live in the application state
+        // space, not the legacy world tables. Their exact existence and version are checked by
+        // the application mapping/projection boundary when the reaction is prepared.
+        if (request.Source is null && ids.Count > 0) { var known = await _db.Entities.Where(x => x.DeletedAt == null && ids.Contains(x.Id)).Select(x => x.Id).ToListAsync(cancellationToken); checks.Add(new("entities-exist", known.Count == ids.Count, known.Count == ids.Count ? "Referenced entities exist." : $"Missing entities: {string.Join(", ", ids.Except(known, StringComparer.Ordinal))}.")); }
+        if (request.Source is null && requirement is not null) { var wanted = requirement.Components.Distinct(StringComparer.Ordinal).ToList(); var known = await _db.ComponentDefinitions.Where(x => wanted.Contains(x.Id)).Select(x => x.Id).ToListAsync(cancellationToken); checks.Add(new("event-components-exist", known.Count == wanted.Count, known.Count == wanted.Count ? "Declared event components exist." : $"Missing event components: {string.Join(", ", wanted.Except(known, StringComparer.Ordinal))}.")); }
         return checks;
     }
 
@@ -156,13 +210,43 @@ public sealed class SubscriptionStore(DantesRoleplayDbContext db) : ISubscriptio
         if (subscription is null) { subscription = new Subscription { Id = request.Id, Category = request.Category, Scope = request.Scope, Status = request.Status ?? SubscriptionStatus.Draft, CreatedAt = now, UpdatedAt = now }; _db.Subscriptions.Add(subscription); }
         else { subscription.Category = request.Category; subscription.Scope = request.Scope; subscription.UpdatedAt = now; if (request.Status is { } status) subscription.Status = status; }
         var version = (await _db.SubscriptionVersions.Where(x => x.SubscriptionId == request.Id).MaxAsync(x => (int?)x.Version, cancellationToken) ?? 0) + 1;
-        var row = new SubscriptionVersion { SubscriptionId = subscription.Id, Version = version, EventTypeId = request.EventTypeId, EventMechanicId = request.EventMechanicId, Mode = request.Mode, Order = request.Order, FixedRoleEntityIdsJson = fixedRoles, RoleFromEventPayloadJson = payloadRole, FanoutSelectorJson = fanout, TrackedEntityIdsJson = tracked, PayloadEqualsJson = payload, MaxExecutionsPerChain = request.MaxExecutionsPerChain, ChangeNote = request.ChangeNote, CreatedBy = string.IsNullOrWhiteSpace(request.CreatedBy) ? "llm" : request.CreatedBy, SourceHash = ContentHash.Of(subscription.Category, request.EventTypeId, request.EventMechanicId, request.Mode.ToString(), request.Order.ToString(), fixedRoles, payloadRole, fanout, tracked, payload, request.MaxExecutionsPerChain.ToString(), subscription.Scope, (request.Status ?? subscription.Status).ToString()), CreatedAt = now };
+        var legacyFingerprint = ContentHash.Of(subscription.Category, request.EventTypeId, request.EventMechanicId,
+            request.Mode.ToString(), request.Order.ToString(), fixedRoles, payloadRole, fanout, tracked, payload,
+            request.MaxExecutionsPerChain.ToString(), subscription.Scope, (request.Status ?? subscription.Status).ToString());
+        var row = new SubscriptionVersion { SubscriptionId = subscription.Id, Version = version, EventTypeId = request.EventTypeId, EventMechanicId = request.EventMechanicId, Mode = request.Mode, Order = request.Order, FixedRoleEntityIdsJson = fixedRoles, RoleFromEventPayloadJson = payloadRole, FanoutSelectorJson = fanout, TrackedEntityIdsJson = tracked, PayloadEqualsJson = payload, MaxExecutionsPerChain = request.MaxExecutionsPerChain, ChangeNote = request.ChangeNote, CreatedBy = string.IsNullOrWhiteSpace(request.CreatedBy) ? "llm" : request.CreatedBy, ApplicationId = request.Source?.ApplicationId, StateSpaceId = request.Source?.StateSpaceId, SourceHash = SubscriptionCanonicalJson.ScopedFingerprint(legacyFingerprint, request.Source), CreatedAt = now };
         _db.SubscriptionVersions.Add(row); subscription.CurrentVersion = version; await _db.SaveChangesAsync(cancellationToken); return new(ToDetail(subscription, row, version, await HealthyAsync(row, cancellationToken)), created);
     }
 
-    private async Task<bool> HealthyAsync(SubscriptionVersion row, CancellationToken cancellationToken) =>
-        await _db.EventTypes.AnyAsync(x => x.Id == row.EventTypeId && x.Status == EventTypeStatus.Active, cancellationToken) &&
-        await _db.Mechanics.AnyAsync(x => x.Id == row.EventMechanicId && x.Status == MechanicStatus.Active, cancellationToken);
+    private async Task<bool> HealthyAsync(SubscriptionVersion row, CancellationToken cancellationToken)
+    {
+        if (!await _db.EventTypes.AnyAsync(x => x.Id == row.EventTypeId && x.Status == EventTypeStatus.Active, cancellationToken))
+            return false;
+        if (row.ApplicationId is null && row.StateSpaceId is null)
+            return await _db.Mechanics.AnyAsync(x => x.Id == row.EventMechanicId && x.Status == MechanicStatus.Active, cancellationToken);
+
+        // Scoped subscriptions use their exact application catalog, never a same-named
+        // legacy mechanic or a catalog belonging to another application.
+        if (row.Mode != SubscriptionMode.Reaction ||
+            !new EventSourceContext(row.ApplicationId!, row.StateSpaceId!).IsValid)
+            return false;
+        try
+        {
+            var application = Applications.ApplicationIdentifier.Parse(row.ApplicationId!);
+            if (_catalogs is null || !_catalogs.TryGet(application, out var catalog)) return false;
+            var mechanic = catalog.Inspect(new(application, application.Value, row.EventMechanicId));
+            if (mechanic.Summary.Kind != "mechanic" || mechanic.Summary.Status != "active") return false;
+            using var content = JsonDocument.Parse(mechanic.ContentJson);
+            if (!content.RootElement.TryGetProperty("requirements", out var raw) || raw.ValueKind != JsonValueKind.String)
+                return false;
+            var requirements = MechanicRequirements.Parse(raw.GetString()!);
+            return requirements.Event is { Mode: EventMechanicMode.Reaction } requirement &&
+                requirement.Types.Contains(row.EventTypeId, StringComparer.Ordinal) && !requirements.Children.Any();
+        }
+        catch (Exception exception) when (exception is ArgumentException or KeyNotFoundException or JsonException)
+        {
+            return false;
+        }
+    }
     private static EventMechanicRequirement? TryEventRequirement(string? json, out string problem) { problem = "Mechanic does not declare an event requirement."; try { var r = MechanicRequirements.Parse(json ?? "{}"); if (r.Event is null) return null; if (r.Event.Types.Count == 0) { problem = "Event requirement needs at least one type."; return null; } return r.Event; } catch (JsonException ex) { problem = $"Mechanic requirements are invalid: {ex.Message}"; return null; } }
     private static Dictionary<string, string>? ParseFixedRoleEntityIds(string json, List<SubscriptionCheck> checks)
     {
@@ -214,5 +298,5 @@ public sealed class SubscriptionStore(DantesRoleplayDbContext db) : ISubscriptio
 
     private static Dictionary<string, string>? ParseObject(string json, string name, List<SubscriptionCheck> checks, bool scalarOnly, int maxProperties = int.MaxValue) { try { using var d = JsonDocument.Parse(string.IsNullOrWhiteSpace(json) ? "{}" : json); if (d.RootElement.ValueKind != JsonValueKind.Object || d.RootElement.EnumerateObject().Count() > maxProperties) throw new JsonException(); var result = new Dictionary<string, string>(StringComparer.Ordinal); foreach (var p in d.RootElement.EnumerateObject()) { if (string.IsNullOrWhiteSpace(p.Name) || (scalarOnly && p.Value.ValueKind is JsonValueKind.Array or JsonValueKind.Object)) throw new JsonException(); result[p.Name] = p.Value.GetRawText(); } checks.Add(new(name, true, $"{name} is a closed object.")); return result; } catch (JsonException) { checks.Add(new(name, false, $"{name} must be a JSON object with at most {maxProperties} scalar values.")); return null; } }
     private static IReadOnlyList<string>? ParseIds(string json, string name, List<SubscriptionCheck> checks) { try { using var d = JsonDocument.Parse(string.IsNullOrWhiteSpace(json) ? "[]" : json); if (d.RootElement.ValueKind != JsonValueKind.Array) throw new JsonException(); var ids = d.RootElement.EnumerateArray().Select(x => x.ValueKind == JsonValueKind.String ? x.GetString()?.Trim() ?? "" : "").ToList(); if (ids.Count > 100 || ids.Any(string.IsNullOrWhiteSpace) || ids.Distinct(StringComparer.Ordinal).Count() != ids.Count) throw new JsonException(); checks.Add(new(name, true, $"{name} contains {ids.Count} id(s).")); return ids; } catch (JsonException) { checks.Add(new(name, false, $"{name} must be a distinct string array of at most 100 ids.")); return null; } }
-    private static SubscriptionDetail ToDetail(Subscription s, SubscriptionVersion v, int latest, bool healthy) => new(s.Id, s.Category, v.EventTypeId, v.EventMechanicId, v.Mode, v.Order, v.FixedRoleEntityIdsJson, v.RoleFromEventPayloadJson, v.FanoutSelectorJson, v.TrackedEntityIdsJson, v.PayloadEqualsJson, v.MaxExecutionsPerChain, s.Scope, s.Status, v.Version, latest, v.CreatedBy, v.ChangeNote, v.CreatedAt, healthy) { SourceHash = v.SourceHash };
+    private static SubscriptionDetail ToDetail(Subscription s, SubscriptionVersion v, int latest, bool healthy) => new(s.Id, s.Category, v.EventTypeId, v.EventMechanicId, v.Mode, v.Order, v.FixedRoleEntityIdsJson, v.RoleFromEventPayloadJson, v.FanoutSelectorJson, v.TrackedEntityIdsJson, v.PayloadEqualsJson, v.MaxExecutionsPerChain, s.Scope, s.Status, v.Version, latest, v.CreatedBy, v.ChangeNote, v.CreatedAt, healthy) { SourceHash = v.SourceHash, Source = v.ApplicationId is null && v.StateSpaceId is null ? null : new EventSourceContext(v.ApplicationId!, v.StateSpaceId!) };
 }

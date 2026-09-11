@@ -121,6 +121,7 @@ public static class ApplicationCapabilityCatalogValidator
 
         var queriesRoot = Path.Combine(applicationDirectory, "queries");
         if (!Directory.Exists(queriesRoot)) return;
+        var queries = new Dictionary<string, ApplicationQueryContract>(StringComparer.Ordinal);
         foreach (var path in Directory.EnumerateFiles(queriesRoot, "*.json", SearchOption.AllDirectories)
                      .Order(StringComparer.Ordinal))
         {
@@ -129,16 +130,26 @@ public static class ApplicationCapabilityCatalogValidator
                 var query = ApplicationQueryContract.Parse(File.ReadAllText(path), applicationId);
                 var content = ApplicationCatalogRecordContent.QueryJson(query);
                 var qualifiedId = Qualify(applicationId, query.Id);
+                if (!queries.TryAdd(qualifiedId, query))
+                    issues.Add(Issue("query", qualifiedId, "capability-duplicate",
+                        "The application contains more than one query with this identity."));
                 var projectionId = Qualify(applicationId, query.ProjectionQualifiedId);
                 if (query.Executor == ApplicationQueryContract.ObjectProjectionExecutor)
                 {
                     if (!objects.TryGetValue((projectionId, query.ProjectionVersion), out var definition))
                         issues.Add(Issue("query", qualifiedId, "capability-object-missing",
                             $"The query references unavailable object '{projectionId}' version {query.ProjectionVersion}."));
-                    else if (definition.ObjectContract?.Collections.All(value =>
-                                 value.CollectionId != query.ObjectCollectionId) != false)
+                    else if (query.IsFieldBasedObject !=
+                             (definition.ObjectContract?.ProfileId == RegisteredApplicationObjectContract.FieldBasedContractProfileId))
+                        issues.Add(Issue("query", qualifiedId, "capability-object-profile",
+                            "The query and referenced object must use the same application-object profile."));
+                    else if (!ValidObjectCollection(definition.ObjectContract!, query.ObjectCollectionId))
                         issues.Add(Issue("query", qualifiedId, "capability-object-collection",
                             $"The query references unavailable object collection '{query.ObjectCollectionId}'."));
+                    else if (!ValidObjectRoles(definition.ObjectContract!, query.ObjectCollectionId,
+                                 query.Roles.Keys))
+                        issues.Add(Issue("query", qualifiedId, "capability-object-roles",
+                            "The query roles do not match the object roles that callers must bind."));
                 }
                 else if (query.Executor == ApplicationQueryContract.MechanicProjectionExecutor)
                 {
@@ -149,6 +160,15 @@ public static class ApplicationCapabilityCatalogValidator
                                  projection.Fingerprint, StringComparison.Ordinal))
                         issues.Add(Issue("query", qualifiedId, "capability-projection-stale",
                             $"The query must pin projection version 1 and fingerprint {projection.Fingerprint}."));
+                    else
+                    {
+                        var requirements = MechanicRequirements.Parse(projection.File.Requirements);
+                        var declaredReadRoles = requirements.Roles.Keys.Concat(requirements.GraphSnapshots.Values
+                            .Select(value => value.RootRole)).Distinct(StringComparer.Ordinal).ToHashSet(StringComparer.Ordinal);
+                        if (!declaredReadRoles.SetEquals(query.Roles.Keys))
+                            issues.Add(Issue("query", qualifiedId, "capability-projection-roles",
+                                "The query roles must exactly match the mechanic roles and graph roots supplied by the caller."));
+                    }
                 }
                 var record = Record(applicationId, ApplicationQueryContract.CatalogKind, qualifiedId,
                     query.Name, query.Description, query.Status, content, path);
@@ -162,6 +182,77 @@ public static class ApplicationCapabilityCatalogValidator
                     "capability-contract", exception.Message));
             }
         }
+        foreach (var (qualifiedId, query) in queries.OrderBy(value => value.Key, StringComparer.Ordinal))
+            ValidateSelection(qualifiedId, query, queries, issues);
+    }
+
+    private static void ValidateSelection(
+        string qualifiedId,
+        ApplicationQueryContract query,
+        IReadOnlyDictionary<string, ApplicationQueryContract> queries,
+        List<CatalogValidationIssue> issues)
+    {
+        var path = new HashSet<string>(StringComparer.Ordinal) { qualifiedId };
+        var currentId = qualifiedId;
+        var current = query;
+        var links = 0;
+        while (current.Selection is { } selection)
+        {
+            if (!queries.TryGetValue(selection.QueryId, out var selector))
+            {
+                issues.Add(Issue("query", currentId, "capability-selection-missing",
+                    $"The query references unavailable selector '{selection.QueryId}'."));
+                return;
+            }
+            if (!path.Add(selection.QueryId))
+            {
+                issues.Add(Issue("query", currentId, "capability-selection-recursive",
+                    "A declared selector chain must be acyclic."));
+                return;
+            }
+            if (++links > ApplicationQueryContract.MaximumDeclaredSelectionLinks)
+            {
+                issues.Add(Issue("query", currentId, "capability-selection-depth",
+                    $"A declared selector chain cannot exceed {ApplicationQueryContract.MaximumDeclaredSelectionLinks} links."));
+                return;
+            }
+            if (selector.CampaignSelection is not null || selector.Status != "active"
+                || selector.InputSchemaJson is not null || selector.RoleBindings is null)
+                issues.Add(Issue("query", currentId, "capability-selection-contract",
+                    "A declared selector must be active, inputless, have explicit role bindings, and use no legacy selection."));
+            if (!selection.RoleBindings.Keys.ToHashSet(StringComparer.Ordinal)
+                    .SetEquals(selector.Roles.Keys))
+                issues.Add(Issue("query", currentId, "capability-selection-roles",
+                    "Declared selection bindings must cover every selector role exactly once."));
+
+            currentId = selection.QueryId;
+            current = selector;
+        }
+    }
+
+    private static bool ValidObjectCollection(
+        ApplicationObjectContractRequest contract,
+        string? collectionId) => collectionId is null
+        ? contract.Collections.Count == 0
+        : contract.Collections.Any(value => value.CollectionId == collectionId);
+
+    private static bool ValidObjectRoles(
+        ApplicationObjectContractRequest contract,
+        string? collectionId,
+        IEnumerable<string> queryRoles)
+    {
+        var declared = contract.Roles.Select(value => value.RoleId).ToHashSet(StringComparer.Ordinal);
+        var bound = queryRoles.ToHashSet(StringComparer.Ordinal);
+        if (!bound.IsSubsetOf(declared)) return false;
+        var required = contract.Roles.Where(value => value.Required)
+            .Select(value => value.RoleId).ToHashSet(StringComparer.Ordinal);
+        if (collectionId is not null)
+        {
+            var collection = contract.Collections.Single(value => value.CollectionId == collectionId);
+            var relationship = contract.Relationships.Single(value => value.RelationshipId == collection.SourceId);
+            required.Remove(relationship.Direction == "incoming" ? relationship.FromRole : relationship.ToRole);
+        }
+        return required.IsSubsetOf(bound);
     }
 
     private static void ValidateMechanic(

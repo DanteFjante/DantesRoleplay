@@ -5,8 +5,14 @@
   "description": "Returns complete bounded chapter, arc, and DM session structure for the selected campaign.",
   "matches": ["show campaign details", "show campaign chapters and arcs", "show campaign adventure history"],
   "roles": { "campaign": "The exact audience-authorized campaign." },
+  "roleBindings": { "campaign": { "source": "route-entity" } },
   "executor": "mechanic-projection",
-  "campaignSelection": { "queryId": "dnd2024.query.recent-consequences", "entityIdField": "campaignId" },
+  "selection": {
+    "queryId": "dnd2024.query.recent-consequences",
+    "targetRole": "campaign",
+    "resultPointer": "/campaignId",
+    "roleBindings": { "campaign": "campaign" }
+  },
   "projection": {
     "qualifiedId": "dnd2024.mechanic.campaign.details.project",
     "version": 1,

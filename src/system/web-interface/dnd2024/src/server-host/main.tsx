@@ -4,7 +4,6 @@ import { createRoot } from "react-dom/client";
 import { BootstrapShell } from "../components/BootstrapShell";
 import {
   CharacterResourceOwner,
-  CurrentViewResourceOwner,
   TableResourceOwner,
   WorldResourceOwner,
   type CampaignContextObjectRequest,
@@ -20,6 +19,8 @@ import {
   type WorldInformationRequest,
   type WorldInformationUpdate,
 } from "../data/object-resources";
+import type { ItemResourceOwner } from "../data/item-resource-owner";
+import { ConnectedSourceWorkspace, connectedSourceScope, projectedSourceScope } from "../data/connected-source-workspace";
 import { resolveHubSurface } from "../data/hub-availability.js";
 import type { CampaignReadModel, CanonicalCharacterResult, CharacterSheetResult, ConnectedCampaignDetails, ConnectedCampaignEnvelope, DeferredHubSection, DeferredHubUpdate, HubEnvelope, InventoryContainerPageResult, InventoryContainerResult, Perspective, ReadyHubEnvelope, RulesReferencePublication } from "../data/hub-types";
 import { ViewReadError } from "../data/view-read-client";
@@ -28,11 +29,11 @@ import { loadInitialHub } from "../data/hub-preferences";
 import { objectConsumers, subscribeScopedChanges } from "../data/scoped-change-stream";
 import { isReadyHubEnvelope } from "../state.js";
 import { markBootstrapResponse } from "../observability/performance.js";
-import type { CampaignPremiseWriteRequest, CampaignPremiseWriteResult } from "../server/campaign-premise-write";
-import type { InstalledContentClient, InstalledContentRequest } from "../server/effective-content";
+import type { CurrentDisplay, HubStore } from "../data/hub-store";
+import type { CurrentViewResourceOwner } from "../data/current-resource-owner";
+import type { InstalledContentRequest } from "../server/effective-content";
 import type { ItemDefinitionRequest, ItemRegistryClient, ItemRegistryRequest } from "../server/item-registry";
 import type { RecipeDefinitionRequest, RecipeRegistryClient, RecipeRegistryRequest } from "../server/recipe-registry";
-import type { RulesReferenceClient } from "../server/rules-reference";
 import {
   installDevelopmentRequestLedger,
   recordDevelopmentDiagnostic,
@@ -43,17 +44,7 @@ import "../styles.css";
 // Connected source workspaces are not response caches: deferred readers merge newly loaded
 // source sections here before projecting them. The exact authorized selection prevents one
 // campaign, world, seat, or perspective from borrowing another selection's mutable workspace.
-const connectedSources = new Map<string, ConnectedCampaignEnvelope>();
-const connectedSourceScope = (source: ConnectedCampaignEnvelope) => JSON.stringify([
-  source.applicationId, source.stateSpaceId, source.contextSelection.selectedWorldId, source.campaign.id,
-  source.audience.seat, source.audience.perspective ?? source.audience.seat,
-]);
-const projectedSourceScope = (envelope: ReadyHubEnvelope) => JSON.stringify([
-  envelope.applicationId, envelope.stateSpaceId,
-  envelope.contextSelection?.selectedWorldId ?? envelope.world.id,
-  envelope.contextSelection?.selectedCampaignId ?? envelope.revision,
-  envelope.audience.seat, envelope.audience.perspective,
-]);
+const connectedSources = new ConnectedSourceWorkspace();
 const connectedSourceFor = (envelope: ReadyHubEnvelope) => connectedSources.get(projectedSourceScope(envelope));
 
 function sameCampaignProjection(left: ConnectedCampaignEnvelope, right: ConnectedCampaignEnvelope) {
@@ -74,10 +65,14 @@ const ApplicationStartupError = lazy(() => import("../components/ApplicationStar
 
 if (process.env.NODE_ENV !== "production") installDevelopmentRequestLedger();
 
-let installedContentClient: Promise<InstalledContentClient> | null = null;
 let itemRegistryClient: Promise<ItemRegistryClient> | null = null;
 let recipeRegistryClient: Promise<RecipeRegistryClient> | null = null;
-let rulesReferenceClient: Promise<RulesReferenceClient> | null = null;
+// Loaded with the lazy hub rather than the bootstrap shell, so Redux does not consume the
+// initial connection/retry budget. It is still created before any character read can start.
+let hubStore: HubStore | null = null;
+let hubStoreApi: typeof import("../data/hub-store") | null = null;
+let itemResources: ItemResourceOwner | null = null;
+let currentViewResources: CurrentViewResourceOwner | null = null;
 
 function envelopeMessage(envelope: HubEnvelope): string {
   return "message" in envelope
@@ -126,15 +121,23 @@ async function readEnvelope(
   if (sourceEnvelope.status !== "connected") return sourceEnvelope;
   if (signal.aborted) throw new DOMException("View replaced", "AbortError");
   const scope = connectedSourceScope(sourceEnvelope);
-  connectedSources.delete(scope);
-  connectedSources.set(scope, sourceEnvelope);
-  if (connectedSources.size > 8) connectedSources.delete(connectedSources.keys().next().value!);
   const projected = connectedCampaignToHubEnvelope(
     { ...sourceEnvelope, rules: [] },
   );
+  // Character scope teardown revokes previous private inputs. It must happen
+  // before staging this response or an authority replacement would clear the
+  // newly authorized source rather than the retired one.
   characterResources.replaceScope(projected, true, "workspace-replaced");
+  itemResources?.replaceScope(projected, true);
   worldResources.replaceScope(projected, true, "workspace-replaced");
-  currentViewResources.replaceScope(projected, true, "workspace-replaced");
+  // A same-scope bootstrap retires Current flights and advances its generation,
+  // but keeps the last authorized scene visible as explicitly stale until the
+  // replacement query succeeds. A true authority/scope change still clears it.
+  const currentWasSameScope = hubStore?.getState().current.scope === hubStoreApi?.currentScope(projected);
+  if (currentWasSameScope) currentViewResources?.invalidateAll("workspace-replaced");
+  else currentViewResources?.replaceScope(projected, true, "workspace-replaced");
+  connectedSources.replace(scope, sourceEnvelope);
+  await currentViewResources?.seedBootstrap(projected);
   recordDevelopmentDiagnostic("party-read", {
     applicationId: projected.applicationId,
     stateSpaceId: projected.stateSpaceId,
@@ -173,14 +176,20 @@ const characterResources = new CharacterResourceOwner({
   readDetails: readCharacterDetailsResource,
   readInventory: readCharacterInventoryResource,
   readInventoryContainer: readInventoryContainerResource,
+  readConfirmed: (facet, request, maximumAgeMs) => hubStore && hubStoreApi
+    ? hubStoreApi.peekCharacterFacet(hubStore.getState(), hubStoreApi.characterScope(request.envelope),
+      request.actorId, facet, maximumAgeMs)
+    : null,
+  clearConfirmed: () => hubStore && hubStoreApi?.hubActions &&
+    hubStore.dispatch(hubStoreApi.hubActions.characterFacetsCleared(undefined)),
+  clearScope: () => hubStore && hubStoreApi?.hubActions &&
+    (connectedSources.clear(), hubStore.dispatch(hubStoreApi.hubActions.scopeCleared(undefined))),
 });
 
 const worldResources = new WorldResourceOwner({
   readScope: readWorldScopeObject,
   readInformation: readWorldInformationObject,
 });
-
-const currentViewResources = new CurrentViewResourceOwner({ readCurrent: readCurrentViewObject });
 
 function authorizedCharacter({ envelope, actorId }: CharacterResourceRequest) {
   const member = envelope.party.find((candidate) => candidate.id === actorId);
@@ -236,15 +245,15 @@ async function readInventoryContainerResource(request: InventoryContainerResourc
 }
 
 async function loadCharacterSheet(envelope: ReadyHubEnvelope, actorId: string, signal: AbortSignal) {
-  return characterResources.loadSheet({ envelope, actorId }, signal);
+  return characterResources.loadSheetOutcome({ envelope, actorId }, signal);
 }
 
 async function loadCharacterDetails(envelope: ReadyHubEnvelope, actorId: string, signal: AbortSignal) {
-  return characterResources.loadDetails({ envelope, actorId }, signal);
+  return characterResources.loadDetailsOutcome({ envelope, actorId }, signal);
 }
 
 async function loadCharacterInventory(envelope: ReadyHubEnvelope, actorId: string, signal: AbortSignal) {
-  return characterResources.loadInventory({ envelope, actorId }, signal);
+  return characterResources.loadInventoryOutcome({ envelope, actorId }, signal);
 }
 
 async function loadInventoryContainer(envelope: ReadyHubEnvelope, actorId: string,
@@ -252,50 +261,63 @@ async function loadInventoryContainer(envelope: ReadyHubEnvelope, actorId: strin
   return characterResources.loadInventoryContainer({ envelope, actorId, containerId }, signal);
 }
 
+async function loadItemDetails(envelope: ReadyHubEnvelope, request: import("../server/item-view-client").ItemDetailsRequest,
+  signal: AbortSignal, preferCached = true) {
+  if (!itemResources) throw new Error("Item resources are not initialized.");
+  return itemResources.loadDetails(envelope, request, signal, preferCached);
+}
+
+async function loadItemUses(envelope: ReadyHubEnvelope, request: import("../server/item-uses-client").ItemUsesRequest,
+  signal: AbortSignal, preferCached = true) {
+  if (!itemResources) throw new Error("Item resources are not initialized.");
+  return itemResources.loadUses(envelope, request, signal, preferCached);
+}
+
+async function loadItemRecipes(envelope: ReadyHubEnvelope, request: import("../server/item-recipes-client").ItemRecipesRequest,
+  signal: AbortSignal, preferCached = true) {
+  if (!itemResources) throw new Error("Item resources are not initialized.");
+  return itemResources.loadRecipes(envelope, request, signal, preferCached);
+}
+
 async function readFactionObjectPage(
   { envelope, cursor }: FactionObjectRequest,
   signal: AbortSignal,
 ) {
-  const source = connectedSourceFor(envelope);
-  if (!source || source.audience.seat !== "dm" || source.audience.perspective !== "dm" || signal.aborted)
-    throw new Error("The faction directory is unavailable to this audience.");
-  const [{ readRegisteredFactionDirectoryPage }, { connectedCampaignToHubEnvelope }] = await Promise.all([
-    import("../server/game-server-context.js"), import("../server/connected-hub-envelope"),
-  ]);
-  const page = await readRegisteredFactionDirectoryPage({
-    fetchImpl: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, { ...init, signal }),
-    origin: window.location.origin,
-    applicationId: source.applicationId,
-    stateSpaceId: source.stateSpaceId,
-    worldId: envelope.contextSelection?.selectedWorldId ?? "",
-    cursor,
-  });
-  if (!page) throw new Error("The faction directory could not be read.");
-  if (signal.aborted) throw new DOMException("View replaced", "AbortError");
-  const key = connectedSourceScope(source);
-  const latest = connectedSources.get(key);
-  if (!latest) throw new DOMException("View replaced", "AbortError");
-  const factions = cursor === null ? page.factions : [
-    ...(latest.worldDirectory?.factions ?? []),
-    ...page.factions.filter((item: { id: string }) =>
-      !latest.worldDirectory?.factions.some((previous) => previous.id === item.id)),
-  ];
-  connectedSources.set(key, {
-    ...latest, worldDirectory: { ...latest.worldDirectory, people: latest.worldDirectory?.people ?? [], factions,
-      holdings: latest.worldDirectory?.holdings ?? [] },
-  });
-  const projected = connectedCampaignToHubEnvelope({ ...source,
-    worldDirectory: { people: [], factions: page.factions, holdings: [] }, rules: [],
-  });
-  const ids = new Set(page.factions.map((faction: { id: string }) => faction.id));
-  return {
-    factions: projected.world.factions.filter((faction) => ids.has(faction.id)),
-    totalCount: page.totalCount,
-    complete: page.complete,
-    nextCursor: page.nextCursor,
-    sourceRevisionFingerprint: page.sourceRevisionFingerprint ?? null,
-    projection: page.projection,
-  };
+  const lease = await connectedSources.acquireMerge(projectedSourceScope(envelope), "factions", signal);
+  try {
+    const source = lease.source;
+    if (source.audience.seat !== "dm" || source.audience.perspective !== "dm")
+      throw new Error("The faction directory is unavailable to this audience.");
+    const [{ readRegisteredFactionDirectoryPage }, { connectedCampaignToHubEnvelope }] = await Promise.all([
+      import("../server/game-server-context.js"), import("../server/connected-hub-envelope"),
+    ]);
+    const page = await readRegisteredFactionDirectoryPage({
+      fetchImpl: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, { ...init, signal }),
+      origin: window.location.origin,
+      applicationId: source.applicationId,
+      stateSpaceId: source.stateSpaceId,
+      worldId: envelope.contextSelection?.selectedWorldId ?? "",
+      cursor,
+    });
+    if (!page) throw new Error("The faction directory could not be read.");
+    if (signal.aborted) throw new DOMException("View replaced", "AbortError");
+    connectedSources.current(lease.ticket, signal);
+    const projected = connectedCampaignToHubEnvelope({ ...source,
+      worldDirectory: { people: [], factions: page.factions, holdings: [] }, rules: [],
+    });
+    const ids = new Set(page.factions.map((faction: { id: string }) => faction.id));
+    return {
+      factions: projected.world.factions.filter((faction) => ids.has(faction.id)),
+      coverage: page.coverage === "partial" ? "partial" as const : "complete" as const,
+      totalCount: page.totalCount,
+      complete: page.complete,
+      nextCursor: page.nextCursor,
+      sourceRevisionFingerprint: page.sourceRevisionFingerprint ?? null,
+      projection: page.projection,
+    };
+  } finally {
+    lease.release();
+  }
 }
 
 async function loadFactionPage(envelope: ReadyHubEnvelope, cursor: string | null, signal: AbortSignal) {
@@ -308,6 +330,7 @@ async function readCampaignDetailsObject(
 ): Promise<CampaignReadModel> {
   const source = connectedSourceFor(envelope);
   if (!source || signal.aborted) throw new Error("The campaign details are unavailable.");
+  const ticket = connectedSources.begin(connectedSourceScope(source), "campaign-details");
   const [{ readDeferredCampaignDetails }, { connectedCampaignToHubEnvelope, mergeConnectedCampaignDetails }] = await Promise.all([
     import("../server/game-server-context.js"), import("../server/connected-hub-envelope"),
   ]);
@@ -317,9 +340,8 @@ async function readCampaignDetailsObject(
     source,
   });
   if (signal.aborted) throw new DOMException("View replaced", "AbortError");
-  const key = connectedSourceScope(source);
-  const latest = connectedSources.get(key);
-  if (!latest || !sameCampaignProjection(source, latest))
+  const latest = connectedSources.current(ticket, signal);
+  if (!sameCampaignProjection(source, latest))
     throw new DOMException("View replaced", "AbortError");
   return connectedCampaignToHubEnvelope({
     ...mergeConnectedCampaignDetails(latest, details), rules: [],
@@ -341,55 +363,66 @@ async function readDeferredSectionObject(
   { envelope }: CampaignContextObjectRequest,
   section: DeferredHubSection,
   signal: AbortSignal,
+  onProgress?: (update: DeferredHubUpdate) => Promise<void> | void,
 ): Promise<DeferredHubUpdate> {
   const key = projectedSourceScope(envelope);
-  const source = connectedSources.get(key);
-  if (!source || signal.aborted) throw new Error("Refresh the authorized view before continuing.");
-  const [{ readDeferredHubSection }, { connectedCampaignToDeferredHubUpdate }] = await Promise.all([
-    import("../server/game-server-context.js"), import("../server/connected-hub-envelope"),
-  ]);
-  const patch = await readDeferredHubSection({
-    fetchImpl: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, { ...init, signal }),
-    origin: window.location.origin, source, section,
-  });
-  const latest = connectedSources.get(key);
-  if (signal.aborted || !latest)
-    throw new DOMException("View replaced", "AbortError");
-  // Independent context discovery may finish beside a section read. Merge their disjoint
-  // patches; the hub aborts both owners before replacing the authorized bootstrap.
-  const updated = { ...latest, ...patch };
-  connectedSources.set(key, updated);
-  return connectedCampaignToDeferredHubUpdate({ ...updated, rules: [] }, section);
+  const overlapping = ["lore", "locations", "people", "current"].includes(section);
+  const lease = overlapping ? await connectedSources.acquireMerge(key, section, signal) : null;
+  const source = lease?.source ?? connectedSources.get(key);
+  if (!source || signal.aborted) {
+    lease?.release();
+    throw new Error("Refresh the authorized view before continuing.");
+  }
+  const ticket = lease?.ticket ?? connectedSources.begin(key, section);
+  try {
+    const [{ readDeferredHubSection }, { connectedCampaignToDeferredHubUpdate }] = await Promise.all([
+      import("../server/game-server-context.js"), import("../server/connected-hub-envelope"),
+    ]);
+    const project = (patch: object) => {
+      const latest = connectedSources.current(ticket, signal);
+      // Progress values are projected directly into the table store by the hub. They are not
+      // retained as raw connected-source responses or permitted to outlive their lease.
+      return connectedCampaignToDeferredHubUpdate({ ...latest, ...patch, rules: [] }, section);
+    };
+    const patch = await readDeferredHubSection({
+      fetchImpl: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, { ...init, signal }),
+      origin: window.location.origin, source, section,
+      onProgress: onProgress ? async (progress: object) => {
+        if (signal.aborted) return;
+        await onProgress(project(progress));
+      } : undefined,
+    });
+    // Project the completed response while its lease is current, but do not
+    // retain it in the raw source workspace. Redux owns completed view data.
+    // Only location-scope pagination below retains raw continuation staging.
+    return project(patch);
+  } finally {
+    lease?.release();
+  }
 }
 
 async function readWorldScopeObject(
-  { envelope, scopeId, cursor, completeDirectory = false }: WorldScopeRequest,
+  { envelope, scopeId, cursor }: WorldScopeRequest,
   signal: AbortSignal,
 ): Promise<WorldScopeUpdate> {
   const key = projectedSourceScope(envelope);
-  const source = connectedSources.get(key);
-  if (!source || signal.aborted) throw new Error("Refresh the authorized World view before continuing.");
-  const [{ readWorldLocationDirectory, readWorldLocationScopePatch }, { connectedCampaignToDeferredHubUpdate }] = await Promise.all([
-    import("../server/game-server-context.js"), import("../server/connected-hub-envelope"),
-  ]);
-  let patch = await readWorldLocationScopePatch({
-    fetchImpl: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, { ...init, signal }),
-    origin: window.location.origin, source, scopeId, cursor,
-  });
-  const rootId = source.contextSelection.selectedWorldId;
-  if (completeDirectory && cursor === null && scopeId === rootId) {
-    patch = { ...patch, ...await readWorldLocationDirectory({
+  const lease = await connectedSources.acquireMerge(key, "locations", signal);
+  try {
+    const source = lease.source;
+    const [{ readWorldLocationScopePatch }, { connectedCampaignToWorldScopeUpdate }] = await Promise.all([
+      import("../server/game-server-context.js"), import("../server/connected-hub-envelope"),
+    ]);
+    const patch = await readWorldLocationScopePatch({
       fetchImpl: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, { ...init, signal }),
-      origin: window.location.origin, source: { ...source, ...patch },
-    }) };
+      origin: window.location.origin, source, scopeId, cursor,
+    });
+    const latest = connectedSources.current(lease.ticket, signal);
+    const updated = { ...latest, ...patch };
+    connectedSources.update(lease.ticket, updated, signal);
+    return connectedCampaignToWorldScopeUpdate({ ...updated, rules: [] }, scopeId);
+  } finally {
+    lease.release();
   }
-  const latest = connectedSources.get(key);
-  if (signal.aborted || !latest) throw new DOMException("World scope replaced", "AbortError");
-  const updated = { ...latest, ...patch };
-  connectedSources.set(key, updated);
-  const projected = connectedCampaignToDeferredHubUpdate({ ...updated, rules: [] }, "locations");
-  if (projected.section !== "locations") throw new Error("The World scope response is incompatible.");
-  return projected;
 }
 
 async function loadWorldScope(
@@ -433,7 +466,9 @@ async function loadDeferredSection(
   envelope: ReadyHubEnvelope,
   section: DeferredHubSection,
   signal: AbortSignal,
-): Promise<DeferredHubUpdate> {
+  preferCached = true,
+  onProgress?: (update: DeferredHubUpdate) => Promise<void> | void,
+): Promise<DeferredHubUpdate | CurrentDisplay> {
   return section === "context"
     ? tableResources.loadCampaignContext({ envelope }, signal)
     : section === "locations"
@@ -441,39 +476,34 @@ async function loadDeferredSection(
         envelope,
         scopeId: envelope.contextSelection?.selectedWorldId ?? envelope.world.id,
         cursor: null,
-        completeDirectory: true,
       }, signal)
-      : ["people", "lore", "history"].includes(section)
+      : ["people", "history"].includes(section)
         ? worldResources.loadInformation({ envelope, section: section as WorldInformationRequest["section"] }, signal)
+        : section === "lore"
+          ? readDeferredSectionObject({ envelope }, section, signal, onProgress)
         : section === "current"
-          ? currentViewResources.loadCurrent({ envelope }, signal)
+          ? currentViewResources
+            ? currentViewResources.loadCurrent({ envelope }, signal, preferCached)
+            : Promise.reject(new ViewReadError("transport", "Current View resources are not initialized."))
           : readDeferredSectionObject({ envelope }, section, signal);
 }
 
-async function loadRulesReference(preferCached = true, signal?: AbortSignal): Promise<RulesReferencePublication> {
-  if (!rulesReferenceClient) {
-    rulesReferenceClient = import("../server/rules-reference").then(({ RulesReferenceClient }) =>
-      new RulesReferenceClient({ serverOrigin: window.location.origin, applicationId: "dnd2024" }));
-  }
-  const client = await rulesReferenceClient;
-  return withinDevelopmentInteraction("rules-load", () => client.load(signal, preferCached));
+async function loadRulesReference(_preferCached = true, signal?: AbortSignal): Promise<RulesReferencePublication> {
+  const { readRulesReference } = await import("../server/rules-reference");
+  return withinDevelopmentInteraction("rules-load", () => readRulesReference({
+    serverOrigin: window.location.origin, applicationId: "dnd2024", signal,
+  }));
 }
 
 async function loadInstalledContent(
   request: InstalledContentRequest,
   signal: AbortSignal,
-  preferCached = true,
+  _preferCached = true,
 ) {
-  if (!installedContentClient) {
-    installedContentClient = import("../server/effective-content").then(({ InstalledContentClient }) =>
-      new InstalledContentClient({
-        serverOrigin: window.location.origin,
-        applicationId: "dnd2024",
-      }));
-  }
-  const client = await installedContentClient;
-  return withinDevelopmentInteraction("content-load", () =>
-    client.load(request, signal, preferCached));
+  const { readInstalledContent } = await import("../server/effective-content");
+  return withinDevelopmentInteraction("content-load", () => readInstalledContent({
+    serverOrigin: window.location.origin, applicationId: "dnd2024", request, signal,
+  }));
 }
 
 async function registryClient() {
@@ -525,16 +555,13 @@ async function loadReadyEnvelope(
   campaignId: string,
   preferCached = false,
 ): Promise<ReadyHubEnvelope> {
-  const request = { perspective, campaignId };
-  const explicit = preferCached ? tableResources.peekCampaign(request) : null;
-  const bound = preferCached && explicit === null
-    ? tableResources.peekCampaign({ perspective })
+  const cached = preferCached && hubStore && hubStoreApi
+    ? hubStoreApi.selectTableEnvelope(hubStore.getState())
     : null;
-  const cached = explicit ?? (bound?.value.status === "ready" &&
-    bound.value.contextSelection?.selectedCampaignId === campaignId
-    ? bound
-    : null);
-  const envelope = cached?.value ?? await loadEnvelope(perspective, campaignId);
+  const envelope = cached?.status === "ready" && cached.audience.perspective === perspective &&
+    cached.contextSelection?.selectedCampaignId === campaignId
+    ? cached
+    : await loadEnvelope(perspective, campaignId);
   if (envelope.status !== "ready") {
     throw new ViewReadError("transport", envelopeMessage(envelope));
   }
@@ -545,33 +572,33 @@ const rootElement = document.querySelector<HTMLElement>("#root");
 function subscribeChanges(envelope: ReadyHubEnvelope) {
   if (typeof EventSource === "undefined") return () => {};
   const invalidate = (reason: ResourceInvalidationReason = "stream-recovery") => {
+    connectedSources.invalidate();
     tableResources.invalidateAll(reason);
     characterResources.invalidateAll(reason);
     worldResources.invalidateAll(reason);
-    currentViewResources.invalidateAll(reason);
+    currentViewResources?.invalidateAll(reason);
     window.dispatchEvent(new CustomEvent("dnd2024-view-invalidated", { detail: { reason } }));
   };
   return subscribeScopedChanges(envelope, {
     invalidate,
     changed: (notice) => {
+      connectedSources.invalidate();
       const consumers = objectConsumers(notice.object.qualifiedId);
       if (!consumers.known) { invalidate("unknown-object"); return; }
       tableResources.invalidateObject(notice.object.qualifiedId);
       if (consumers.character) characterResources.invalidateObject(notice.object.qualifiedId);
       if (consumers.world) worldResources.invalidateAll("object-change");
-      currentViewResources.invalidateObject(notice.object.qualifiedId);
+      currentViewResources?.invalidateObject(notice.object.qualifiedId);
       window.dispatchEvent(new CustomEvent("dnd2024-object-changed", { detail: notice }));
+    },
+    reconnected: () => {
+      window.dispatchEvent(new CustomEvent("dnd2024-stream-reconnected"));
     },
   });
 }
 
-async function saveCampaignPremise(
-  request: CampaignPremiseWriteRequest,
-  signal?: AbortSignal,
-): Promise<CampaignPremiseWriteResult> {
-  const { writeCampaignPremise } = await import("../server/campaign-premise-write");
-  return writeCampaignPremise(request, signal);
-}
+// The published game website is read-only until the user explicitly enables editing.
+// Do not connect game-data writers here; server/MCP mutation validation is unchanged.
 if (!rootElement) throw new Error("The React mount is unavailable.");
 const root = createRoot(rootElement);
 root.render(
@@ -581,9 +608,33 @@ root.render(
 );
 
 try {
+  const [storeModule, itemOwnerModule, currentOwnerModule] = await Promise.all([
+    import("../data/hub-store"), import("../data/item-resource-owner"), import("../data/current-resource-owner"),
+  ]);
+  hubStoreApi = storeModule;
+  hubStore = hubStoreApi.createHubStore();
+  connectedSources.attach(hubStoreApi.createConnectedSourceOwner(hubStore));
+  itemResources = new itemOwnerModule.ItemResourceOwner({
+    store: hubStore,
+    readDetails: async (request, signal) => (await import("../server/item-view-client")).readItemDetails(request, signal),
+    readUses: async (request, signal) => (await import("../server/item-uses-client")).readItemUses(request, signal),
+    readRecipes: async (request, signal) => (await import("../server/item-recipes-client")).readItemRecipes(request, signal),
+  });
+  currentViewResources = new currentOwnerModule.CurrentViewResourceOwner({
+    store: hubStore,
+    readCurrent: readCurrentViewObject,
+  });
   const initialEnvelope = await loadInitialHub(loadEnvelope, {
     getItem: (key) => window.localStorage.getItem(key),
   });
+  if (initialEnvelope.status === "ready") {
+    hubStore.dispatch(hubStoreApi.tableActions.bootstrapCommitted({
+      scope: hubStoreApi.tableScope(initialEnvelope), envelope: initialEnvelope,
+    }));
+    hubStore.dispatch(hubStoreApi.hubActions.bootstrapCommitted({
+      scope: hubStoreApi.characterScope(initialEnvelope), party: initialEnvelope.party,
+    }));
+  }
   markBootstrapResponse(initialEnvelope.status);
   const surface = resolveHubSurface(initialEnvelope);
   root.render(
@@ -591,13 +642,19 @@ try {
       <Suspense fallback={<BootstrapShell />}>
         {surface === "table" && initialEnvelope.status === "ready" ? (
           <DndInformationHub
+            store={hubStore}
             initialEnvelope={initialEnvelope}
+            currentBootstrapManaged
             subscribeChanges={subscribeChanges}
             loadEnvelope={loadReadyEnvelope}
             loadCharacterSheet={loadCharacterSheet}
             loadCharacterDetails={loadCharacterDetails}
             loadCharacterInventory={loadCharacterInventory}
             loadInventoryContainer={loadInventoryContainer}
+            loadItemDetails={loadItemDetails}
+            loadItemUses={loadItemUses}
+            loadItemRecipes={loadItemRecipes}
+            invalidateItemResources={() => itemResources?.invalidateAll()}
             loadItemRegistryPage={loadItemRegistryPage}
             loadItemDefinition={loadItemDefinition}
             loadRecipeRegistryPage={loadRecipeRegistryPage}
@@ -606,7 +663,6 @@ try {
             loadCampaignDetails={loadCampaignDetails}
             loadDeferredSection={loadDeferredSection}
             loadWorldScope={loadWorldScope}
-            writeCampaignPremise={saveCampaignPremise}
             loadRules={loadRulesReference}
             loadContent={loadInstalledContent}
           />

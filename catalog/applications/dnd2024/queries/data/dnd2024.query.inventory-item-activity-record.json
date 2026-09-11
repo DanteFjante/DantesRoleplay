@@ -1,0 +1,22 @@
+{
+  "id": "dnd2024.query.inventory-item-activity-record",
+  "category": "item.structural-object",
+  "name": "Inventory item activity record object",
+  "description": "Reads one exact registered item activity structural record.",
+  "matches": ["read item activity record object", "inspect item activity sources"],
+  "roles": {
+    "record": "The exact activity record to inspect."
+  },
+  "roleBindings": {
+    "record": { "source": "route-entity" }
+  },
+  "executor": "object-projection",
+  "object": {
+    "qualifiedId": "dnd2024.object.inventory-item-activity-record",
+    "version": 2,
+    "contentFingerprint": "534018C4A8C2D1A06F9307C89C8F32BCBE08B0FCA7B0CC9809EB5BA51B39DC4F"
+  },
+  "exposure": "model-visible",
+  "status": "active",
+  "profile": "application-object/v2"
+}

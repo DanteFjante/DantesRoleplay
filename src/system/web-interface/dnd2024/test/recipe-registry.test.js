@@ -66,7 +66,23 @@ test("recipe registry uses recipe and reference indexes with source-bound paging
   (error) => error instanceof ViewReadError && error.category === "stale-data");
 });
 
-test("recipe registry caches list and detail resources without inventory reads", async () => {
+test("recipe registry keeps valid identities when bounded display rows are malformed or duplicated", async () => {
+  const valid = { ...recipeRecord, qualifiedId: "dnd2024.recipe.other", name: "Other recipe" };
+  const malformed = { ...recipeRecord, qualifiedId: "dnd2024.recipe.bad", contentFingerprint: "invalid" };
+  const payload = page();
+  payload.resolvedWinners = [recipeRecord, recipeRecord, malformed, valid].map((record) => ({ record,
+    ownerId: "base", sourceLabel: "D&D 2024 core", classification: "core" }));
+  payload.totalCount = 4;
+  const result = await readRecipeRegistry({
+    serverOrigin: "https://table.test", applicationId: "dnd2024",
+    fetchImpl: async () => json({ ...payload, nextCursor: "next" }),
+  });
+  assert.equal(result.partial, true);
+  assert.deepEqual(result.records.map((record) => record.id), [valid.qualifiedId]);
+  assert.equal(result.nextCursor, "next");
+});
+
+test("recipe registry shares list and detail flights without retaining completed data or reading inventory", async () => {
   let requests = 0;
   const client = new RecipeRegistryClient({ serverOrigin: "https://table.test", fetchImpl: async (input) => {
     requests += 1;
@@ -76,12 +92,12 @@ test("recipe registry caches list and detail resources without inventory reads",
       : url.searchParams.has("id") ? json(page(itemRecord)) : json(page());
   } });
   const listRequest = { query: "", cursor: null, expectedResolutionFingerprint: null, relatedItemId: null };
-  await client.loadPage(listRequest); await client.loadPage(listRequest);
+  await Promise.all([client.loadPage(listRequest), client.loadPage(listRequest)]);
   const detailRequest = { id: recipeRecord.qualifiedId, collection: "dnd2024",
     expectedContentFingerprint: recipeFingerprint, sourceLabel: "D&D 2024 core" };
-  await client.loadDefinition(detailRequest); await client.loadDefinition(detailRequest);
+  await Promise.all([client.loadDefinition(detailRequest), client.loadDefinition(detailRequest)]);
   assert.equal(requests, 3);
-  assert.equal(client.metrics().hits, 2);
+  assert.deepEqual(client.metrics(), { retainedEntries: 0, retainedBytes: 0 });
 });
 
 test("recipe detail presents links, duration, knowledge, and unsupported requirements without evaluating them", async () => {
@@ -135,4 +151,17 @@ test("missing outputs and absent linked definitions remain explicit while change
       expectedContentFingerprint: "D".repeat(64), sourceLabel: null },
     fetchImpl: async () => json({ summary: recipeRecord, contentJson: incomplete }) }),
   (error) => error instanceof ViewReadError && error.category === "stale-data");
+});
+
+test("recipe definition keeps registry identity when its optional recipe component is absent", async () => {
+  const result = await readRecipeDefinition({ serverOrigin: "https://table.test", applicationId: "dnd2024",
+    request: { id: recipeRecord.qualifiedId, collection: "dnd2024",
+      expectedContentFingerprint: recipeFingerprint, sourceLabel: null },
+    fetchImpl: async () => json({ summary: recipeRecord, contentJson: JSON.stringify({
+      id: recipeRecord.qualifiedId, name: "Recipe with unavailable details", components: {},
+    }) }) });
+  assert.equal(result.entry.id, recipeRecord.qualifiedId);
+  assert.equal(result.entry.name, "Recipe with unavailable details");
+  assert.equal(result.entry.availability, "definition-incomplete");
+  assert.deepEqual(result.entry.outputs, []);
 });

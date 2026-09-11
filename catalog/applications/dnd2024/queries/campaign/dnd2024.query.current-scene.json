@@ -5,7 +5,13 @@
   "description": "Returns the exact party-visible current location, play mode, linked conversation or encounter, and currently valid party affordances.",
   "matches": ["show the current scene", "where is the party now", "what can we do here"],
   "roles": { "campaign": "The exact audience-authorized campaign whose current scene is projected." },
-  "campaignSelection": { "queryId": "dnd2024.query.recent-consequences", "entityIdField": "campaignId" },
+  "roleBindings": { "campaign": { "source": "route-entity" } },
+  "selection": {
+    "queryId": "dnd2024.query.recent-consequences",
+    "targetRole": "campaign",
+    "resultPointer": "/campaignId",
+    "roleBindings": { "campaign": "campaign" }
+  },
   "executor": "mechanic-projection",
   "projection": {
     "qualifiedId": "dnd2024.mechanic.campaign.current-scene.project",

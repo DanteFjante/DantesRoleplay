@@ -124,6 +124,10 @@ export function TacticalBoard({ board, placeholder = false, background, title = 
         <div><span className="eyebrow">Tactical board</span><h2 id={headingId}>{title}</h2></div>
         <p>{board.columns} by {board.rows} squares · {placeholder ? "Illustrative placeholder; no recorded scale" : `${board.feetPerSquare} feet per square`}</p>
       </header>
+      {board.coverage === "partial" ? <aside className="tactical-board-coverage" role="status">
+        <strong>Board information is partial</strong>
+        <p>{board.notices?.join(" ") ?? "Some board fields are unavailable; omitted areas are not confirmed clear."}</p>
+      </aside> : null}
       <div className="map-viewport-toolbar" role="toolbar" aria-label="Tactical board view controls">
         <button aria-label="Zoom tactical board out" disabled={viewport.zoom <= MIN_ZOOM} onClick={() => zoom(-ZOOM_STEP)} type="button"><Icon name="ZoomOut" size={17} /></button>
         <output aria-live="polite" aria-label="Current tactical board zoom">{zoomPercent}%</output>
@@ -198,11 +202,11 @@ export function TacticalBoard({ board, placeholder = false, background, title = 
         {board.participants.length ? <ol>{board.participants.map((participant) => <li key={participant.id}>
           <button type="button" onClick={() => focusParticipant(participant.id)} aria-pressed={selectedId === participant.id}>Focus {participant.name}</button>
           <span>Initiative {participant.initiative}. Column {participant.position.x + 1}, row {participant.position.y + 1}. Footprint {participant.position.width} × {participant.position.height} squares. Elevation {participant.position.elevationFeet} feet.{participant.active ? " Current turn." : ""}</span>
-        </li>)}</ol> : <p>No visible recorded token positions. The Initiative list remains available below.</p>}
+        </li>)}</ol> : <p>{board.coverage === "partial" ? "Participant positions are incomplete; omitted combatants are not confirmed absent." : "No visible recorded token positions. The Initiative list remains available below."}</p>}
         <h3>Obstacle legend</h3>
         <p>Brown areas are accepted movement-blocking obstacles; green areas are accepted terrain.</p>
-        {board.obstacles.length ? <ul>{board.obstacles.map((item) => <li key={item.id}><strong>{item.label}</strong><span>Column {item.area.x + 1}, row {item.area.y + 1}; {item.area.width} × {item.area.height} squares. Blocks movement.</span></li>)}</ul> : <p>No visible recorded obstacles.</p>}
-        {board.terrain.length ? <ul>{board.terrain.map((item) => <li key={item.id}><strong>{item.label}</strong><span>Column {item.area.x + 1}, row {item.area.y + 1}; {item.area.width} × {item.area.height} squares. Movement cost {item.movementCost}.</span></li>)}</ul> : <p>No visible recorded terrain.</p>}
+        {board.obstacles.length ? <ul>{board.obstacles.map((item) => <li key={item.id}><strong>{item.label}</strong><span>Column {item.area.x + 1}, row {item.area.y + 1}; {item.area.width} × {item.area.height} squares. Blocks movement.</span></li>)}</ul> : <p>{board.coverage === "partial" ? "Obstacle information is incomplete; omitted areas are not confirmed clear." : "No visible recorded obstacles."}</p>}
+        {board.terrain.length ? <ul>{board.terrain.map((item) => <li key={item.id}><strong>{item.label}</strong><span>Column {item.area.x + 1}, row {item.area.y + 1}; {item.area.width} × {item.area.height} squares. Movement cost {item.movementCost}.</span></li>)}</ul> : <p>{board.coverage === "partial" ? "Terrain information is incomplete; omitted areas are not confirmed clear." : "No visible recorded terrain."}</p>}
       </section>
     </section>
   );

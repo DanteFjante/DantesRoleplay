@@ -58,6 +58,7 @@ public sealed class CatalogCoverageTests : IDisposable
         ["event"] = "Runtime evidence. An event exists only because a world change committed; a "
             + "catalog that could write one would be able to assert a change that never happened.",
         ["event_entity"] = "Join rows for the above.",
+        ["event_component_snapshot"] = "Authoritative before/after runtime event evidence; preserved by database backup, never authored by catalog import.",
         ["event_execution"] = "Runtime evidence: one reaction subscription that ran against one "
             + "accepted event. Same reasoning as the event itself — it records something that "
             + "happened, so it cannot be authored.",
@@ -295,6 +296,7 @@ public sealed class CatalogCoverageTests : IDisposable
         "subscription_version.Mode", "subscription_version.Order", "subscription_version.FixedRoleEntityIdsJson", "subscription_version.RoleFromEventPayloadJson", "subscription_version.FanoutSelectorJson",
         "subscription_version.TrackedEntityIdsJson", "subscription_version.PayloadEqualsJson",
         "subscription_version.MaxExecutionsPerChain", "subscription_version.CreatedBy", "subscription_version.ChangeNote",
+        "subscription_version.ApplicationId", "subscription_version.StateSpaceId",
 
         "system_catalog_namespace.Id", "system_catalog_namespace.ParentId", "system_catalog_namespace.Owner",
         "system_catalog_namespace.Description", "system_catalog_namespace.AllowedKindsJson",
@@ -907,6 +909,16 @@ public sealed class CatalogCoverageTests : IDisposable
         ["event.TypeId"] = "Runtime evidence, not carried by the catalog.",
         ["event.TypeVersion"] = "Runtime evidence, not carried by the catalog.",
         ["event.Scope"] = "Runtime evidence, not carried by the catalog.",
+        ["event.ApplicationId"] = "Immutable runtime event source context; preserved by database backup.",
+        ["event.StateSpaceId"] = "Immutable runtime event source context; preserved by database backup.",
+        ["event_component_snapshot.EventId"] = "Runtime event evidence, not catalog-authored.",
+        ["event_component_snapshot.EntityId"] = "Runtime event evidence, not catalog-authored.",
+        ["event_component_snapshot.QualifiedTypeId"] = "Runtime event evidence, not catalog-authored.",
+        ["event_component_snapshot.TypeVersion"] = "Runtime event evidence, not catalog-authored.",
+        ["event_component_snapshot.BeforeJson"] = "Committed transition evidence; restored only with its database.",
+        ["event_component_snapshot.BeforeRevision"] = "Committed transition evidence; restored only with its database.",
+        ["event_component_snapshot.AfterJson"] = "Committed transition evidence; restored only with its database.",
+        ["event_component_snapshot.AfterRevision"] = "Committed transition evidence; restored only with its database.",
         ["event.PayloadJson"] = "Runtime evidence, not carried by the catalog.",
         ["event.Timestamp"] = "Runtime evidence, not carried by the catalog.",
         ["event.CorrelationId"] = "Runtime evidence, not carried by the catalog.",

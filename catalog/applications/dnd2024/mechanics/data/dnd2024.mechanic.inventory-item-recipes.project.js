@@ -8,7 +8,10 @@ function integer(v) { if (!Number.isSafeInteger(v) || v < 0 || v > 10000) fail()
 if (!observer || observer.version !== 1 || !subject || !campaign || observer.observerId !== subject.id ||
     observer.campaignId !== campaign.id || !ctx.audience || observer.perspective !== ctx.audience.perspective ||
     !observer.knowledgeComplete || !obj(ctx.input)) fail();
-if (Object.keys(ctx.input).sort().join(',') !== 'expectedSourceRevision,itemId,makesOffset,usesOffset') fail();
+var inputKeys = Object.keys(ctx.input).sort().join(',');
+if (inputKeys !== 'expectedSourceRevision,itemId,makesOffset,usesOffset' &&
+    inputKeys !== 'expectedSourceRevision,itemId,makesOffset,selectionId,usesOffset' ||
+    Object.prototype.hasOwnProperty.call(ctx.input, 'selectionId') && text(ctx.input.selectionId, 200) !== campaign.id) fail();
 var itemId = text(ctx.input.itemId, 200), dm = observer.perspective === 'dm';
 if (['player','dm'].indexOf(observer.perspective) < 0) fail();
 var offsets = { makes: integer(ctx.input.makesOffset), uses: integer(ctx.input.usesOffset) };

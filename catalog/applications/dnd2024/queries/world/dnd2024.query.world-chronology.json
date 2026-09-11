@@ -1,0 +1,167 @@
+{
+  "id": "dnd2024.query.world-chronology",
+  "category": "game.core.campaign.read-model",
+  "name": "World history",
+  "description": "Returns a bounded, source-fenced page of audience-filtered dated records for the world of one authorized selection.",
+  "matches": [
+    "show world history",
+    "review the world timeline"
+  ],
+  "roles": {
+    "campaign": "The exact independently authorized selected campaign."
+  },
+  "roleBindings": {
+    "campaign": {
+      "source": "route-entity"
+    }
+  },
+  "executor": "mechanic-projection",
+  "projection": {
+    "qualifiedId": "dnd2024.mechanic.world-chronology.project",
+    "version": 1,
+    "contentHash": "4EC4843E01CEC3760CD5B422E834B6DC586BE072F4C313C5778C9B2019A28D4A",
+    "outputSchemaHash": "C5C6EA584A8B449996C8C23A8AFFD909FF3BCE7C891FE5C216C5D4396431A097"
+  },
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "minProperties": 0,
+    "maxProperties": 3,
+    "properties": {
+      "cursor": {
+        "type": "string",
+        "pattern": "^[1-9][0-9]{0,2}$"
+      },
+      "expectedSourceRevision": {
+        "type": "string",
+        "pattern": "^[0-9A-F]{64}$"
+      },
+      "expectedGraphSourceRevision": {
+        "type": "string",
+        "pattern": "^[0-9A-F]{64}$"
+      }
+    }
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "status",
+      "perspective",
+      "entries",
+      "coverage",
+      "fieldCoverage"
+    ],
+    "properties": {
+      "status": {
+        "enum": [
+          "ready",
+          "empty",
+          "unavailable"
+        ]
+      },
+      "perspective": {
+        "enum": [
+          "player",
+          "dm"
+        ]
+      },
+      "coverage": {
+        "enum": [
+          "complete",
+          "partial"
+        ]
+      },
+      "fieldCoverage": {
+        "enum": [
+          "complete",
+          "partial"
+        ]
+      },
+      "sourceRevision": {
+        "type": "string",
+        "pattern": "^[0-9A-F]{64}$"
+      },
+      "reason": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 100
+      },
+      "nextCursor": {
+        "type": "string",
+        "pattern": "^[1-9][0-9]{0,2}$"
+      },
+      "entries": {
+        "type": "array",
+        "maxItems": 40,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^chronology-[1-9][0-9]{0,2}$"
+            },
+            "occurredAtMinute": {
+              "type": "integer",
+              "minimum": -1000000000,
+              "maximum": 1000000000
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160
+            },
+            "summary": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            },
+            "dateLabel": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "precision": {
+              "enum": [
+                "exact",
+                "approximate",
+                "era"
+              ]
+            },
+            "subjects": {
+              "type": "array",
+              "maxItems": 10,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "id",
+                  "name"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 400
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "exposure": "model-visible",
+  "status": "active"
+}

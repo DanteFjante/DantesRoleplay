@@ -13,6 +13,17 @@ test("map bases keep their intrinsic aspect ratio inside the interactive viewpor
   assert.match(styles, /\.world-map-stage\s*\{[^}]*transform-origin:\s*0 0;/s);
 });
 
+test("map frame follows intrinsic image height at desktop and mobile widths", () => {
+  const canvasRule = styles.match(/\.world-map-canvas\s*\{([^}]*)\}/s)?.[1] ?? "";
+  assert.match(canvasRule, /height:\s*auto;/s);
+  assert.doesNotMatch(canvasRule, /height:\s*clamp\(/s);
+  const mobileStart = styles.indexOf("@media (max-width: 620px)");
+  assert.notEqual(mobileStart, -1);
+  const nextMedia = styles.indexOf("@media", mobileStart + 1);
+  const mobileRules = styles.slice(mobileStart, nextMedia === -1 ? undefined : nextMedia);
+  assert.doesNotMatch(mobileRules, /\.world-map-canvas\s*\{/s);
+});
+
 test("marker bottom center is the coordinate anchor and label width cannot move it", () => {
   assert.match(styles, /\.world-map-marker\s*\{[^}]*width:\s*40px;[^}]*height:\s*46px;/s);
   assert.match(styles, /\.world-map-marker\s*\{[^}]*transform:\s*translate\(-50%,\s*-100%\) scale\(var\(--map-marker-scale, 1\)\);/s);

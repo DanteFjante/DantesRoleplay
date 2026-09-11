@@ -1,18 +1,6 @@
 {
   "id": "dnd2024.object.inventory-item-recipe-record",
-  "version": 1,
-  "schema": {
-    "type": "object",
-    "additionalProperties": false,
-    "properties": {
-      "dnd2024.crafting.recipe": {
-        "type": "object"
-      }
-    },
-    "required": [
-      "dnd2024.crafting.recipe"
-    ]
-  },
+  "version": 2,
   "roles": {
     "record": {
       "required": true
@@ -52,5 +40,6 @@
       "dm"
     ],
     "write": []
-  }
+  },
+  "profile": "application-object/v2"
 }

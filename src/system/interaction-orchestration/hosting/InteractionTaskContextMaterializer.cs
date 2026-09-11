@@ -1,10 +1,12 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using DantesRoleplay.Applications;
 using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.Knowledge;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.Play;
+using DantesRoleplay.Projections;
 using DantesRoleplay.Sources;
 
 namespace DantesRoleplay.Interactions;
@@ -20,7 +22,8 @@ public sealed class InteractionTaskContextMaterializer(
     IApplicationReadModelService readModels,
     IAuthorizedKnowledgeCandidateResolver? knowledge = null,
     IApplicationPlayRecordStore? play = null,
-    IInteractionRecentReceiptReader? receipts = null) : IInteractionTaskContextMaterializer
+    IInteractionRecentReceiptReader? receipts = null,
+    IProjectionDefinitionRegistry? projections = null) : IInteractionTaskContextMaterializer
 {
     public const int MaximumPackBytes = 32 * 1024;
     public const int MaximumPackElapsedMilliseconds = 5_000;
@@ -30,6 +33,8 @@ public sealed class InteractionTaskContextMaterializer(
     private const int MaximumKnowledge = 8;
     private const int MaximumFacts = 16;
     private const int MaximumReceipts = 6;
+    private const int MaximumCapabilityBytes = 16 * 1024;
+    private const int MaximumObjectReadEvidenceBytes = 16 * 1024;
 
     public async Task<InteractionTaskContextPack> MaterializeAsync(
         AuthorizedInteractionEnvelope envelope,
@@ -71,10 +76,21 @@ public sealed class InteractionTaskContextMaterializer(
                 "Current capability retrieval is unavailable.");
 
         var records = Rehydrate(snapshot, search.Hits);
+        var objectDiscoveryOmitted = false;
+        var objectDiscoveryUnavailable = false;
         var capabilityItems = records.Select(record =>
         {
+            var (discovery, expected) = ObjectDiscovery(record, envelope.Host.ApplicationRevision.ApplicationId);
+            if (expected && discovery is null) objectDiscoveryUnavailable = true;
             var descriptor = ApplicationCapabilityContractAdapter.Create(
-                envelope.Host.ApplicationRevision.ApplicationId, record, envelope.Host.StateSpaceId);
+                envelope.Host.ApplicationRevision.ApplicationId, record, envelope.Host.StateSpaceId, discovery);
+            if (discovery is not null
+                && Encoding.UTF8.GetByteCount(JsonSerializer.Serialize(descriptor)) > MaximumCapabilityBytes)
+            {
+                objectDiscoveryOmitted = true;
+                descriptor = ApplicationCapabilityContractAdapter.Create(
+                    envelope.Host.ApplicationRevision.ApplicationId, record, envelope.Host.StateSpaceId);
+            }
             return Item($"capability:{descriptor.Id}@{descriptor.Version}#{descriptor.Fingerprint}",
                 descriptor.Version.ToString(), descriptor.Fingerprint, descriptor);
         }).ToList();
@@ -83,6 +99,10 @@ public sealed class InteractionTaskContextMaterializer(
         var omissions = new List<PackOmission>();
         if (!string.IsNullOrEmpty(search.AvailabilityCode))
             limitations.Add(search.AvailabilityCode);
+        if (objectDiscoveryOmitted)
+            limitations.Add("TASK_CONTEXT_OBJECT_DISCOVERY_BUDGET_EXCEEDED");
+        if (objectDiscoveryUnavailable)
+            limitations.Add("TASK_CONTEXT_OBJECT_DISCOVERY_UNAVAILABLE");
         var knowledgeItems = await ReadKnowledge(envelope, limitations, omissions, cancellationToken);
         var readViewItems = await ReadViews(
             envelope, records, knowledgeItems.Audience, limitations, omissions, cancellationToken);
@@ -117,6 +137,17 @@ public sealed class InteractionTaskContextMaterializer(
             Array.AsReadOnly(references));
     }
 
+    private (ApplicationObjectDiscovery? Discovery, bool Expected) ObjectDiscovery(
+        CatalogRecordDefinition record,
+        ApplicationIdentifier applicationId)
+    {
+        if (record.Kind != ApplicationQueryContract.CatalogKind) return (null, false);
+        var query = ApplicationQueryContract.Parse(record.ContentJson, applicationId);
+        if (!query.IsFieldBasedObject) return (null, false);
+        return (projections?.Discover(new(query.ProjectionQualifiedId, query.ProjectionVersion,
+            query.ProjectionContentHash)), true);
+    }
+
     private async Task<List<ContextItem>> ReadViews(
         AuthorizedInteractionEnvelope envelope,
         IReadOnlyList<CatalogRecordDefinition> records,
@@ -147,25 +178,51 @@ public sealed class InteractionTaskContextMaterializer(
                 .ToDictionary(role => role, role => envelope.Intent.RoleHints[role], StringComparer.Ordinal);
             try
             {
-                var result = await readModels.ReadAsync(new(envelope.Host.StateSpaceId,
+                var result = await readModels.ReadAsync(new ApplicationReadModelRequest(envelope.Host.StateSpaceId,
                     envelope.Host.ApplicationRevision.ApplicationId, contract.Id, bindings,
                     audience is null ? null : audience.ActorAudience
                         ? MechanicAudienceContext.Player
-                        : MechanicAudienceContext.GameMaster), cancellationToken);
+                        : MechanicAudienceContext.GameMaster)
+                { IncludeObjectReadEvidence = contract.IsFieldBasedObject }, cancellationToken);
                 if (result.StateSpaceFingerprint != envelope.Host.EffectiveSetFingerprint
                     || result.ResolutionFingerprint != envelope.Host.ResolutionFingerprint)
                     throw Failure("TASK_CONTEXT_READ_VIEW_STALE",
                         "A read view does not match the authorized state-space revision.");
-                values.Add(Item($"read-view:{result.QualifiedQueryId}#{result.ResultFingerprint}",
-                    result.SourceRevisionFingerprint, result.ResultFingerprint, new
+                object readView = new
+                {
+                    result.ApplicationId,
+                    result.StateSpaceId,
+                    result.QualifiedQueryId,
+                    result.OutputSchemaHash,
+                    result.SourceRevisionFingerprint,
+                    data = JsonSerializer.Deserialize<JsonElement>(result.DataJson)
+                };
+                if (contract.IsFieldBasedObject)
+                {
+                    if (result.ObjectReadEvidence is null)
+                        limitations.Add("TASK_CONTEXT_OBJECT_READ_EVIDENCE_UNAVAILABLE");
+                    else if (result.ObjectReadEvidence.Availability == "budget-exceeded"
+                             || Encoding.UTF8.GetByteCount(JsonSerializer.Serialize(result.ObjectReadEvidence))
+                             > MaximumObjectReadEvidenceBytes)
+                        limitations.Add("TASK_CONTEXT_OBJECT_READ_EVIDENCE_BUDGET_EXCEEDED");
+                    else if (result.ObjectReadEvidence.Availability != "available")
+                        limitations.Add("TASK_CONTEXT_OBJECT_READ_EVIDENCE_UNAVAILABLE");
+                    else
                     {
-                        result.ApplicationId,
-                        result.StateSpaceId,
-                        result.QualifiedQueryId,
-                        result.OutputSchemaHash,
-                        result.SourceRevisionFingerprint,
-                        data = JsonSerializer.Deserialize<JsonElement>(result.DataJson)
-                    }));
+                        readView = new
+                        {
+                            result.ApplicationId,
+                            result.StateSpaceId,
+                            result.QualifiedQueryId,
+                            result.OutputSchemaHash,
+                            result.SourceRevisionFingerprint,
+                            objectReadEvidence = result.ObjectReadEvidence,
+                            data = JsonSerializer.Deserialize<JsonElement>(result.DataJson)
+                        };
+                    }
+                }
+                values.Add(Item($"read-view:{result.QualifiedQueryId}#{result.ResultFingerprint}",
+                    result.SourceRevisionFingerprint, result.ResultFingerprint, readView));
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (InteractionTaskContextException) { throw; }

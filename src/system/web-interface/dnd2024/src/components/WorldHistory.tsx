@@ -46,6 +46,9 @@ export function WorldHistory({
         A record of turning points whose consequences still shape the world, independent of any
         single campaign.
       </p>
+      {world.historyCoverage === "partial" ? (
+        <p role="status">Some history information is unavailable. This is not the complete record.</p>
+      ) : null}
       <HistoryFilters
         categories={categories}
         category={category}

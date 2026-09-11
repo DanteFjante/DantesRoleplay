@@ -32,6 +32,18 @@ public interface IApplicationComponentTypeRegistry
         int limit);
 }
 
+/// <summary>Bounded exact identity reads, without loading component schemas or choosing newer versions.</summary>
+public interface IApplicationComponentTypeIdentityReader
+{
+    IReadOnlyList<ComponentTypeVersion> ReadIdentities(IReadOnlyList<EcsComponentReference> references);
+}
+
+/// <summary>Bounded exact version reads for authorized schema discovery; no latest-version selection.</summary>
+public interface IApplicationComponentTypeVersionReader
+{
+    IReadOnlyList<RegisteredComponentTypeVersion> ReadVersions(IReadOnlyList<EcsComponentReference> references);
+}
+
 public static class ComponentTypeIdentifier
 {
     public static void Validate(ApplicationIdentifier owner, string qualifiedId)

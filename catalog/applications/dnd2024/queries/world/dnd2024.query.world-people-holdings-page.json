@@ -5,6 +5,7 @@
   "description": "Returns one source-bound DM page of explicitly classified people, creatures, and durable holdings in the selected World, with location paths and containment completeness evidence.",
   "matches": ["page people in the selected world", "page dm holdings by location"],
   "roles": { "world": "The exact selected World." },
+  "roleBindings": { "world": { "source": "route-entity" } },
   "executor": "mechanic-projection",
   "projection": {
     "qualifiedId": "dnd2024.mechanic.world.people-holdings.page",

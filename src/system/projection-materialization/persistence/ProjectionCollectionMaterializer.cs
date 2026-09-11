@@ -19,7 +19,8 @@ public sealed class ProjectionCollectionMaterializer(
     IEntityComponentStore components,
     IBoundedJsonSchemaValidator schemas,
     IProjectionReadTransaction transactions,
-    IProjectionCollectionEndpointSelector? endpointSelector = null) : IProjectionCollectionMaterializer
+    IProjectionCollectionEndpointSelector? endpointSelector = null,
+    IApplicationComponentTypeRegistry? componentTypes = null) : IProjectionCollectionMaterializer
 {
     public Task<ProjectionCollectionMaterializationResult> MaterializeAsync(
         ProjectionCollectionMaterializationRequest request,
@@ -33,7 +34,8 @@ public sealed class ProjectionCollectionMaterializer(
         ArgumentNullException.ThrowIfNull(request);
         request.Projection.Validate();
         if (string.IsNullOrWhiteSpace(request.StateSpaceId) || string.IsNullOrWhiteSpace(request.CollectionId)
-            || request.Perspective is not ("player" or "dm") || request.RoleEntityIds is null)
+            || request.Perspective is not ("player" or "dm") || request.RoleEntityIds is null
+            || !Enum.IsDefined(request.Purpose))
             throw new ArgumentException("A bounded object collection request is required.");
 
         var definition = definitions.Get(request.Projection.QualifiedId, request.Projection.Version);
@@ -60,7 +62,7 @@ public sealed class ProjectionCollectionMaterializer(
 
         ProjectionCollectionMaterializationResult? expanded = null;
         await materializer.MaterializeExpandedAsync(new(request.StateSpaceId, request.Projection,
-            request.RoleEntityIds), async (root, token) =>
+            request.RoleEntityIds) { Purpose = request.Purpose }, async (root, token) =>
         {
             expanded = await ExpandAsync(request, definition, collection, relationship, root, pageSize, token);
             return expanded.OutputJson;
@@ -78,6 +80,8 @@ public sealed class ProjectionCollectionMaterializer(
         CancellationToken cancellationToken)
     {
         var contract = definition.ObjectContract!;
+        var display = request.Purpose == ProjectionReadPurpose.Display && contract.IsFieldBased;
+        var compatibility = new ProjectionSourceCompatibility(componentTypes);
         var incoming = relationship.Direction == "incoming";
         var fromEntityId = request.RoleEntityIds[incoming ? relationship.ToRole : relationship.FromRole];
         var itemRole = incoming ? relationship.FromRole : relationship.ToRole;
@@ -126,9 +130,11 @@ public sealed class ProjectionCollectionMaterializer(
         var itemTypes = endpointTypes.Where(value => value.Endpoint == itemEndpoint).ToArray();
         var requiredItemTypes = relationship.RequiredEndpointComponents
             .Where(value => value.Endpoint == itemEndpoint).ToArray();
-        var selected = endpointSelector is null ? null : await endpointSelector.SelectAsync(
-            request.StateSpaceId, allCandidateIds, allEntityIds, requiredItemTypes, itemTypes,
-            collection.Order, cancellationToken);
+        var selected = endpointSelector is null ? null : display
+            ? await endpointSelector.SelectCurrentAsync(request.StateSpaceId, allCandidateIds, allEntityIds,
+                requiredItemTypes, itemTypes, collection.Order, cancellationToken)
+            : await endpointSelector.SelectAsync(request.StateSpaceId, allCandidateIds, allEntityIds,
+                requiredItemTypes, itemTypes, collection.Order, cancellationToken);
 
         IReadOnlyList<EcsEntityView> firstEntities;
         IReadOnlyList<ProjectionSourceRevision> endpointRevisions;
@@ -149,23 +155,24 @@ public sealed class ProjectionCollectionMaterializer(
                 throw new InvalidOperationException("The collection component read bound exceeded.");
             var firstComponents = await components.GetComponentsAsync(request.StateSpaceId, locators, cancellationToken);
             var componentByKey = firstComponents.ToDictionary(value => (value.EntityId, value.Type.QualifiedTypeId));
+            if (display) Prepare(firstComponents.Select(value => value.Type));
 
             foreach (var required in relationship.RequiredEndpointComponents)
             {
                 var ids = required.Endpoint == sourceEndpoint ? new[] { fromEntityId } : candidateIds;
                 if (ids.Any(id => !componentByKey.TryGetValue((id, required.Type.QualifiedTypeId), out var value)
-                    || value.Type != required.Type))
+                    || !Matches(required.Type, value.Type)))
                     candidateIds = required.Endpoint == itemEndpoint
                         ? candidateIds.Where(id => componentByKey.TryGetValue((id, required.Type.QualifiedTypeId), out var value)
-                            && value.Type == required.Type).ToArray()
+                            && Matches(required.Type, value.Type)).ToArray()
                         : throw new InvalidOperationException("A required collection source component is missing or stale.");
             }
 
             var items = candidateIds.Where(entityById.ContainsKey).Select(entityId =>
-                Item(entityById[entityId], itemTypes, componentByKey)).ToList();
+                Item(entityById[entityId], itemTypes, componentByKey, display, compatibility)).ToList();
             // Undisclosed arrays stay empty; their edges, names and revisions are never read.
             ApplyNestedReferences(items, firstNestedEdges, declaredNestedRelationships, entityById);
-            items.Sort((left, right) => Compare(left, right, collection.Order));
+            items.Sort((left, right) => Compare(left, right, collection.Order, display));
             sourceFingerprint = Fingerprint(firstEdges.Concat(firstNestedEdges), firstEntities,
                 firstComponents.Select(ComponentRevision), root.SourceRevisions, request, collection.CollectionId);
             var offset = DecodeCursor(request.Cursor, sourceFingerprint, items.Count);
@@ -184,6 +191,12 @@ public sealed class ProjectionCollectionMaterializer(
         else
         {
             firstEntities = selected.Entities;
+            if (display) Prepare(selected.ExistingComponentRevisions.Select(value => value.Type));
+            foreach (var revision in display ? selected.ExistingComponentRevisions : [])
+            {
+                var declared = itemTypes.Single(value => value.Type.QualifiedTypeId == revision.Type.QualifiedTypeId);
+                Matches(declared.Type, revision.Type);
+            }
             var entityById = firstEntities.ToDictionary(value => value.EntityId, StringComparer.Ordinal);
             var sourceLocators = endpointTypes.Where(value => value.Endpoint == sourceEndpoint)
                 .Select(value => new EcsComponentLocator(fromEntityId, value.Type.QualifiedTypeId))
@@ -192,10 +205,11 @@ public sealed class ProjectionCollectionMaterializer(
                 ? []
                 : await components.GetComponentsAsync(request.StateSpaceId, sourceLocators, cancellationToken);
             var sourceByKey = sourceComponents.ToDictionary(value => (value.EntityId, value.Type.QualifiedTypeId));
+            if (display) Prepare(sourceComponents.Select(value => value.Type));
             foreach (var required in relationship.RequiredEndpointComponents
                          .Where(value => value.Endpoint == sourceEndpoint))
                 if (!sourceByKey.TryGetValue((fromEntityId, required.Type.QualifiedTypeId), out var value)
-                    || value.Type != required.Type)
+                    || !Matches(required.Type, value.Type))
                     throw new InvalidOperationException("A required collection source component is missing or stale.");
 
             var existingRevisions = selected.ExistingComponentRevisions
@@ -216,7 +230,7 @@ public sealed class ProjectionCollectionMaterializer(
                 : await components.GetComponentsAsync(request.StateSpaceId, pageLocators, cancellationToken);
             var componentByKey = sourceComponents.Concat(pageComponents)
                 .ToDictionary(value => (value.EntityId, value.Type.QualifiedTypeId));
-            var pageItems = pageIds.Select(entityId => Item(entityById[entityId], itemTypes, componentByKey)).ToArray();
+            var pageItems = pageIds.Select(entityId => Item(entityById[entityId], itemTypes, componentByKey, display, compatibility)).ToArray();
             ApplyNestedReferences(pageItems, firstNestedEdges, declaredNestedRelationships, entityById);
             page = pageItems;
 
@@ -236,7 +250,15 @@ public sealed class ProjectionCollectionMaterializer(
         var output = JsonNode.Parse(root.OutputJson)?.AsObject()
             ?? throw new InvalidOperationException("The object collection root is invalid.");
         Set(output, relationship.TargetPointer, new JsonArray(page.Select(value => value.DeepClone()).ToArray()));
-        SetDeclaredMetadata(output, definition.OutputSchemaJson, totalCount, nextCursor);
+        if (contract.IsFieldBased)
+        {
+            var metadata = collection.Metadata
+                ?? throw new InvalidOperationException("Field-based collections require explicit metadata placement.");
+            Set(output, metadata.TotalCount, JsonValue.Create(totalCount));
+            Set(output, metadata.Complete, JsonValue.Create(nextCursor is null));
+            Set(output, metadata.NextCursor, JsonValue.Create(nextCursor));
+        }
+        else SetDeclaredMetadata(output, definition.OutputSchemaJson, totalCount, nextCursor);
         var outputJson = output.ToJsonString();
         if (Encoding.UTF8.GetByteCount(outputJson) > contract.Limits.OutputBytes
             || schemas.Validate(definition.ProfileId, definition.OutputSchemaJson, outputJson).Status != SchemaValueStatus.Valid)
@@ -254,13 +276,56 @@ public sealed class ProjectionCollectionMaterializer(
                 snapshots.Add(new(nested.Declaration.QualifiedKind, anchor, nestedIncoming,
                     RelationshipRevisions(firstNestedEdges.Where(value =>
                         value.QualifiedKind == nested.Declaration.QualifiedKind && AnchorEntityId(value, nestedIncoming) == anchor))));
+        var renderedEntityIds = page.Select(value => value["id"]?.GetValue<string>()
+                ?? throw new InvalidOperationException("A collection item lacks its host identity."))
+            .ToArray();
+        var observedSources = root.ObservedSources.Concat(CollectionObservedSources(
+            collection, relationship, itemEndpoint, itemRole, itemTypes, endpointRevisions, renderedEntityIds)).ToArray();
         return new(definition.Reference, outputJson, Array.AsReadOnly(revisions), sourceFingerprint)
         {
+            Fields = root.Fields,
+            ObservedSources = Array.AsReadOnly(observedSources),
             Complete = nextCursor is null,
             RelationshipRevisions = RelationshipRevisions(firstEdges.Concat(firstNestedEdges)),
             RelationshipCollections = snapshots,
             EntityRevisions = firstEntities.Select(value => new ProjectionEntityRevision(value.EntityId, value.Revision)).ToArray()
         };
+
+        bool Matches(EcsComponentReference declared, EcsComponentReference actual) =>
+            compatibility.Matches(declared, actual, display);
+
+        void Prepare(IEnumerable<EcsComponentReference> actual) => compatibility.Prepare(actual.Select(type =>
+            (endpointTypes.First(value => value.Type.QualifiedTypeId == type.QualifiedTypeId).Type, type)));
+    }
+
+    private static IReadOnlyList<ProjectionObservedSource> CollectionObservedSources(
+        ApplicationObjectCollection collection,
+        ApplicationObjectRelationship relationship,
+        string itemEndpoint,
+        string itemRole,
+        IReadOnlyList<ApplicationObjectEndpointComponent> itemTypes,
+        IReadOnlyList<ProjectionSourceRevision> revisions,
+        IReadOnlyList<string> candidateIds)
+    {
+        if (candidateIds.Count == 0) return [];
+        var candidates = candidateIds.ToHashSet(StringComparer.Ordinal);
+        var required = relationship.RequiredEndpointComponents
+            .Where(value => value.Endpoint == itemEndpoint).Select(value => value.Type).ToHashSet();
+        var path = Array.AsReadOnly(new[] { "collection", collection.CollectionId,
+            relationship.RelationshipId, itemEndpoint });
+        var result = new List<ProjectionObservedSource>();
+        foreach (var endpoint in itemTypes)
+        {
+            var matches = revisions.Where(value => candidates.Contains(value.EntityId)
+                    && value.Type.QualifiedTypeId == endpoint.Type.QualifiedTypeId).ToArray();
+            foreach (var actual in matches.Where(value => value.Revision > 0).Select(value => value.Type).Distinct())
+                result.Add(new(path, itemRole, required.Contains(endpoint.Type), endpoint.Type,
+                    actual, "available"));
+            if (matches.Length == 0 || matches.Any(value => value.Revision == 0))
+                result.Add(new(path, itemRole, required.Contains(endpoint.Type), endpoint.Type,
+                    null, "absent-source"));
+        }
+        return Array.AsReadOnly(result.ToArray());
     }
 
     private static ProjectionRelationshipRevision[] RelationshipRevisions(IEnumerable<EcsRelationshipView> edges) =>
@@ -276,19 +341,30 @@ public sealed class ProjectionCollectionMaterializer(
 
     private static JsonObject Item(EcsEntityView entity,
         IEnumerable<ApplicationObjectEndpointComponent> declarations,
-        IReadOnlyDictionary<(string, string), EcsComponentView> values)
+        IReadOnlyDictionary<(string, string), EcsComponentView> values,
+        bool display,
+        ProjectionSourceCompatibility compatibility)
     {
         var item = new JsonObject { ["id"] = entity.EntityId, ["name"] = entity.Name };
+        var ambiguous = new HashSet<string>(StringComparer.Ordinal);
         foreach (var declaration in declarations)
         {
             if (!values.TryGetValue((entity.EntityId, declaration.Type.QualifiedTypeId), out var component)
-                || component.Type != declaration.Type) continue;
+                || !compatibility.Matches(declaration.Type, component.Type, display)) continue;
             var source = JsonNode.Parse(component.ValueJson) as JsonObject
                 ?? throw new InvalidOperationException("Collection endpoint components must be objects.");
             foreach (var property in source)
             {
+                // Newly introduced source properties cannot replace host identity, nor can
+                // competing sources silently choose a winner. Exact execution still rejects.
+                if (display && (property.Key is "id" or "name" || ambiguous.Contains(property.Key))) continue;
                 if (item.ContainsKey(property.Key))
-                    throw new InvalidOperationException("Collection endpoint component fields overlap.");
+                {
+                    if (!display) throw new InvalidOperationException("Collection endpoint component fields overlap.");
+                    item.Remove(property.Key);
+                    ambiguous.Add(property.Key);
+                    continue;
+                }
                 item[property.Key] = property.Value?.DeepClone();
             }
         }
@@ -331,21 +407,27 @@ public sealed class ProjectionCollectionMaterializer(
     private static string ItemEntityId(EcsRelationshipView value, bool incoming) =>
         incoming ? value.FromEntityId : value.ToEntityId;
 
-    private static int Compare(JsonObject left, JsonObject right, IReadOnlyList<ApplicationObjectOrder> order)
+    private static int Compare(JsonObject left, JsonObject right, IReadOnlyList<ApplicationObjectOrder> order,
+        bool display)
     {
         foreach (var rule in order)
         {
-            var comparison = StringComparer.Ordinal.Compare(Scalar(left, rule.Pointer), Scalar(right, rule.Pointer));
+            var comparison = StringComparer.Ordinal.Compare(Scalar(left, rule.Pointer, display), Scalar(right, rule.Pointer, display));
             if (comparison != 0) return rule.Direction == "desc" ? -comparison : comparison;
         }
         return StringComparer.Ordinal.Compare(left["id"]!.GetValue<string>(), right["id"]!.GetValue<string>());
     }
 
-    private static string Scalar(JsonNode value, string pointer)
+    private static string Scalar(JsonNode value, string pointer, bool display)
     {
         var current = value;
         foreach (var token in Tokens(pointer))
-            current = current[token] ?? throw new InvalidOperationException("A collection order path is absent.");
+        {
+            if (current is JsonObject obj && obj.TryGetPropertyValue(token, out var next) && next is not null)
+                current = next;
+            else if (display) return "null";
+            else throw new InvalidOperationException("A collection order path is absent.");
+        }
         return current.ToJsonString();
     }
 
@@ -410,7 +492,7 @@ public sealed class ProjectionCollectionMaterializer(
         if (properties.TryGetProperty("nextCursor", out _)) output["nextCursor"] = nextCursor;
     }
 
-    private static void Set(JsonObject root, string pointer, JsonNode value)
+    private static void Set(JsonObject root, string pointer, JsonNode? value)
     {
         var tokens = Tokens(pointer).ToArray();
         if (tokens.Length == 0) throw new InvalidOperationException("A collection cannot replace the object root.");

@@ -2,58 +2,6 @@ using DantesRoleplay.EcsEffects;
 
 namespace DantesRoleplay.Knowledge;
 
-/// <summary>
-/// A private player-notebook request. Ambient host policy owns the principal, role, actor, and
-/// world; callers can select only the campaign and harmless presentation filters.
-/// </summary>
-public sealed record AuthorizedKnowledgeNotebookRequest(
-    string CampaignId,
-    string? Query = null,
-    IReadOnlyList<string>? Kinds = null,
-    int Limit = 200);
-
-public sealed record AuthorizedKnowledgeNotebookEntry(
-    string Text,
-    string Stance,
-    string PresentationKind,
-    AuthorizedKnowledgeNotebookSubject? Subject = null,
-    string? MediaOwnerId = null);
-
-/// <summary>
-/// The exact subject of already-admitted non-familiar knowledge. Consumers must independently
-/// authorize and project the target before using this identity for navigation.
-/// </summary>
-public sealed record AuthorizedKnowledgeNotebookSubject(string Id, string Name);
-
-/// <summary>
-/// A player-safe location label derived only from already-admitted knowledge. The label carries no
-/// location data; its entries repeat notebook content that is visible already and may carry the
-/// same admitted subject reference as the main entry list.
-/// </summary>
-public sealed record AuthorizedKnowledgeNotebookLocation(
-    string Name,
-    IReadOnlyList<AuthorizedKnowledgeNotebookEntry> Entries);
-
-public sealed record AuthorizedKnowledgeNotebookResult(
-    string Status,
-    IReadOnlyList<AuthorizedKnowledgeNotebookEntry> Entries,
-    IReadOnlyList<AuthorizedKnowledgeNotebookLocation> Locations,
-    string ErrorCode = "")
-{
-    public static AuthorizedKnowledgeNotebookResult Denied() =>
-        new("denied", [], [], "KNOWLEDGE_AUDIENCE_DENIED");
-
-    public static AuthorizedKnowledgeNotebookResult Unavailable(string code = "KNOWLEDGE_UNAVAILABLE") =>
-        new("unavailable", [], [], code);
-}
-
-public interface IAuthorizedKnowledgeNotebookReader
-{
-    Task<AuthorizedKnowledgeNotebookResult> ReadAsync(
-        AuthorizedKnowledgeNotebookRequest request,
-        CancellationToken cancellationToken = default);
-}
-
 /// <summary>One exact, human-reviewed epistemic-state decision for the ambient actor.</summary>
 public sealed record ReviewedKnowledgeStateEntry(string KnowledgeId, string State);
 

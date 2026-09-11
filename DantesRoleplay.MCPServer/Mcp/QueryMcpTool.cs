@@ -40,7 +40,7 @@ public sealed class QueryMcpTool
     [McpServerTool(Name = "query")]
     [Description(
         "Read anything in this system. kind is one of: capabilities, procedures, categories, world, entities, graph, information-answer, information-actions, system.audience-context, " +
-        "mechanics, event-types, events, subscriptions, notifications, feedback, system.applications, system.sources, system.application-preview, system.application-readiness, system.dependencies, system.catalogs, system.catalog.browse, system.catalog.search, system.catalog.record, system.feature-search, system.interaction-plan, system.interaction-receipt, system.interaction-recipes, system.trigger-scheduling, system.blobs, namespaces, history. Omit id for a list or search; " +
+        "mechanics, event-types, events, subscriptions, notifications, feedback, system.applications, system.sources, system.application-preview, system.application-readiness, system.application-object, system.dependencies, system.catalogs, system.catalog.browse, system.catalog.search, system.catalog.record, system.feature-search, system.interaction-plan, system.interaction-receipt, system.interaction-recipes, system.trigger-scheduling, system.blobs, namespaces, history. Omit id for a list or search; " +
         "pass id for one record in full. When you are unsure what a kind takes or what a commit payload looks like, call " +
         "query(kind: \"capabilities\") — it is the exact catalog. Irrelevant filters are ignored unless a fixed query kind explicitly rejects them. Never changes state.")]
     public async Task<ToolEnvelope> QueryAsync(
@@ -55,7 +55,7 @@ public sealed class QueryMcpTool
         INotificationStore notifications,
         [Description(
             "Closed kind: capabilities, procedures, categories, world, entities, graph, mechanics, event-types, events, "
-            + "subscriptions, notifications, feedback, information-answer, information-actions, system.audience-context, system.applications, system.sources, system.application-preview, system.application-readiness, system.dependencies, system.catalogs, system.catalog.browse, system.catalog.search, system.catalog.record, system.feature-search, system.interaction-plan, system.interaction-receipt, system.interaction-recipes, system.trigger-scheduling, system.blobs, or history.")]
+            + "subscriptions, notifications, feedback, information-answer, information-actions, system.audience-context, system.applications, system.sources, system.application-preview, system.application-readiness, system.application-object, system.dependencies, system.catalogs, system.catalog.browse, system.catalog.search, system.catalog.record, system.feature-search, system.interaction-plan, system.interaction-receipt, system.interaction-recipes, system.trigger-scheduling, system.blobs, or history.")]
         string kind,
         [Description("Full-record id for procedures, mechanics, or one entity.")] string? id = null,
         [Description("Entity ids for a full batch read.")] string[]? ids = null,
@@ -147,7 +147,11 @@ public sealed class QueryMcpTool
         IStateSpaceRegistry? applicationEntityStateSpaces = null,
         IEntityComponentStore? applicationEntities = null,
         IBlobTransferService? blobTransfers = null,
-        ApplicationReadinessService? applicationReadiness = null)
+        ApplicationReadinessService? applicationReadiness = null,
+        IProjectionDefinitionRegistry? projectionDefinitions = null,
+        IApplicationReadModelService? applicationReadModels = null,
+        IApplicationQueryRoleBindingResolver? applicationRoleBindings = null,
+        IApplicationQueryAuthorizedContextProvider? applicationAuthorizedContext = null)
     {
         var normalizedKind = kind?.Trim().ToLowerInvariant() ?? string.Empty;
 
@@ -267,6 +271,10 @@ public sealed class QueryMcpTool
                 applicationPreviews, privateOperator, log, applicationId, sourceIds, extensionIds, limit, cancellationToken),
             "system.application-readiness" => await new SystemApplicationReadinessHandler().ReadAsync(
                 applicationReadiness, privateOperator, log, applicationId, cancellationToken),
+            "system.application-object" => await new SystemApplicationObjectHandler().ReadAsync(
+                applicationReadModels, publicCatalogs, applicationRoleBindings, applicationAuthorizedContext,
+                applicationEntityStateSpaces, applicationEntities, privateOperator, log, applicationId,
+                stateSpaceId, id, entityId, request, cancellationToken),
             "system.dependencies" => await new SystemDependencyHandler().InspectAsync(
                 projectionImpacts, privateOperator, log, applicationId, id, transitive, limit),
             "system.catalogs" => await new SystemCatalogHandler().ListAsync(
@@ -278,7 +286,8 @@ public sealed class QueryMcpTool
             "system.catalog.record" => await new SystemCatalogHandler().RecordAsync(
                 publicCatalogs ?? new EmptyPublicApplicationCatalogProvider(), log, applicationId, collection, id),
             "system.feature-search" => await new SystemInteractionHandler().SearchAsync(
-                interactionGateway, privateOperator, log, applicationId, query, id, limit, namespaceId, cancellationToken),
+                interactionGateway, privateOperator, log, applicationId, query, id, limit, namespaceId, cancellationToken,
+                projectionDefinitions),
             "system.interaction-plan" => await new SystemInteractionHandler().PlanAsync(
                 interactionGateway, privateOperator, log, applicationId, request, cancellationToken),
             "system.interaction-receipt" => await new SystemInteractionHandler().ReceiptAsync(

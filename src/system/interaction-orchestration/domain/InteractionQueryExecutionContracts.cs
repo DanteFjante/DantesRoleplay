@@ -1,5 +1,7 @@
 using DantesRoleplay.Applications;
 using DantesRoleplay.Mechanics;
+using DantesRoleplay.Projections;
+using System.Text.Json.Serialization;
 
 namespace DantesRoleplay.Interactions;
 
@@ -23,7 +25,11 @@ public sealed record InteractionQueryExecutionResult(
     string OutputJson,
     string OutputSchemaHash,
     string ResultFingerprint,
-    string SourceRevisionFingerprint);
+    string SourceRevisionFingerprint)
+{
+    [JsonIgnore]
+    public ApplicationObjectReadEvidence? ObjectReadEvidence { get; init; }
+}
 
 public interface IInteractionQueryExecutor
 {

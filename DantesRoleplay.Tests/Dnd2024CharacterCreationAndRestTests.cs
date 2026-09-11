@@ -26,6 +26,22 @@ namespace DantesRoleplay.Tests;
 
 public sealed class Dnd2024CharacterCreationAndRestTests : Dnd2024TestBase
 {
+    private static void AssertApplicationEventChain(
+        IReadOnlyList<EventSummary> events, string operationId, params string[] expectedTypes)
+    {
+        Assert.Equal(expectedTypes, events.Select(value => value.TypeId));
+        Assert.Equal(Enumerable.Range(0, expectedTypes.Length), events.Select(value => value.Sequence));
+        Assert.Equal(expectedTypes.Length, events.Select(value => value.Id).Distinct(StringComparer.Ordinal).Count());
+        Assert.All(events, value =>
+        {
+            Assert.Equal(operationId, value.CorrelationId);
+            Assert.Equal(operationId, value.RootOperationId);
+            Assert.Equal("dnd2024", value.Source?.ApplicationId);
+            Assert.Equal(DndHarness.StateSpaceId, value.Source?.StateSpaceId);
+            Assert.True(value.Source?.IsValid == true);
+        });
+    }
+
     [Fact]
     public async Task Character_content_definition_is_source_fixed_write_once_and_replay_safe()
     {
@@ -1179,8 +1195,16 @@ public sealed class Dnd2024CharacterCreationAndRestTests : Dnd2024TestBase
         Assert.Equal("ready", finalState.RootElement.GetProperty("status").GetString());
         Assert.Equal(60, finalState.RootElement.GetProperty("lightActivityMinutes").GetInt32());
         Assert.Equal(3, ready.Revision);
-        Assert.Equal(2, (await harness.EventsAsync(first.OperationId)).Count);
-        Assert.Equal(2, (await harness.EventsAsync(final.OperationId)).Count);
+        var firstEvents = await harness.EventsAsync(first.OperationId);
+        var replayedFirstEvents = await harness.EventsAsync(replay.OperationId);
+        var finalEvents = await harness.EventsAsync(final.OperationId);
+        AssertApplicationEventChain(firstEvents, first.OperationId,
+            "world.component.replaced", "world.component.replaced",
+            "game.core.world.clock.advanced", "dnd2024.rest.progressed");
+        Assert.Equal(firstEvents.Select(value => value.Id), replayedFirstEvents.Select(value => value.Id));
+        AssertApplicationEventChain(finalEvents, final.OperationId,
+            "world.component.replaced", "world.component.replaced",
+            "game.core.world.clock.advanced", "dnd2024.rest.progressed");
     }
 
     [Theory]
@@ -1278,11 +1302,24 @@ public sealed class Dnd2024CharacterCreationAndRestTests : Dnd2024TestBase
             DndHarness.StateSpaceId, "subject.high", "dnd2024.rest-episode"));
         Assert.Null(await harness.Edges.GetRelationshipAsync(
             DndHarness.StateSpaceId, "world.rest.fixture", "subject.high", "dnd2024.rest.world"));
-        Assert.Single(await harness.EventsAsync(started.OperationId));
-        Assert.Equal(2, (await harness.EventsAsync(progressed.OperationId)).Count);
-        Assert.Single(await harness.EventsAsync(completed.OperationId));
-        Assert.Equal("dnd2024.rest.completed",
-            Assert.Single(await harness.EventsAsync(completed.OperationId)).TypeId);
+        var startedEvents = await harness.EventsAsync(started.OperationId);
+        var progressedEvents = await harness.EventsAsync(progressed.OperationId);
+        var completedEvents = await harness.EventsAsync(completed.OperationId);
+        var replayedCompletedEvents = await harness.EventsAsync(replay.OperationId);
+        AssertApplicationEventChain(startedEvents, started.OperationId,
+            "world.component.added", "dnd2024.rest.started");
+        AssertApplicationEventChain(progressedEvents, progressed.OperationId,
+            "world.component.replaced", "world.component.replaced",
+            "game.core.world.clock.advanced", "dnd2024.rest.progressed");
+        if (kind == "long")
+            AssertApplicationEventChain(completedEvents, completed.OperationId,
+                "world.component.replaced", "world.component.replaced", "world.component.replaced",
+                "world.component.replaced", "world.component.replaced", "world.component.removed",
+                "world.component.added", "dnd2024.rest.completed");
+        else
+            AssertApplicationEventChain(completedEvents, completed.OperationId,
+                "world.component.removed", "world.component.added", "dnd2024.rest.completed");
+        Assert.Equal(completedEvents.Select(value => value.Id), replayedCompletedEvents.Select(value => value.Id));
         if (kind == "long")
         {
             using var dice = JsonDocument.Parse((await harness.Entities.GetComponentAsync(

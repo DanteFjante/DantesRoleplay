@@ -2,6 +2,7 @@ using DantesRoleplay.Assistants;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.Operations;
 using DantesRoleplay.Retrieval;
+using DantesRoleplay.SystemConversations;
 using Microsoft.EntityFrameworkCore;
 
 namespace DantesRoleplay.Tests;
@@ -9,6 +10,96 @@ namespace DantesRoleplay.Tests;
 public sealed class AssistantConversationTests
 {
     private const string Operator = "principal.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+
+    [Fact]
+    public async Task Interrupted_turn_lookup_is_principal_provider_scope_bound_and_never_returns_message_content()
+    {
+        using var fixture = new SqliteFixture();
+        await using var db = fixture.CreateContext();
+        var store = new AssistantConversationStore(db, new OperationLog(db));
+        var capture = new AssistantTurnContextCapture(AssistantTurnContextProfiles.SystemReadV1,
+            new string('A', 64), ["surface:inner"]);
+        var begin = await store.BeginTurnAsync(new(Operator, "local", null, null,
+            "private prompt must not leave the durable lookup", "recover.turn", new string('A', 64),
+            AssistantConversationScopes.System, capture));
+        await store.CompleteTurnAsync(new(begin.TurnId, AssistantConversationStatuses.Failed, null,
+            "RECOVERY_FIXTURE", "The request ended safely.", "local", "fixture", "", "", 0, 0, 0));
+
+        var found = await store.FindByIdempotencyKeyAsync(Operator, "local", "recover.turn",
+            AssistantConversationScopes.System, context: capture);
+
+        Assert.NotNull(found);
+        Assert.Equal(begin.ConversationId, found!.ConversationId);
+        Assert.Equal(begin.TurnId, found.TurnId);
+        Assert.Equal(AssistantConversationStatuses.Failed, found.Status);
+        Assert.Null(await store.FindByIdempotencyKeyAsync(Operator, "other", "recover.turn",
+            AssistantConversationScopes.System, context: capture));
+        Assert.Null(await store.FindByIdempotencyKeyAsync("principal.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "local", "recover.turn", AssistantConversationScopes.System, context: capture));
+        Assert.Null(await store.FindByIdempotencyKeyAsync(Operator, "local", "recover.turn",
+            AssistantConversationScopes.Advisory, context: capture));
+        var forgedCapture = capture with { SourceReferences = ["surface:outer"] };
+        Assert.Null(await store.FindByIdempotencyKeyAsync(Operator, "local", "recover.turn",
+            AssistantConversationScopes.System, context: forgedCapture));
+        var replayConflict = await Assert.ThrowsAsync<AssistantConversationException>(() => store.BeginTurnAsync(new(
+            Operator, "local", null, null, "private prompt must not leave the durable lookup", "recover.turn",
+            new string('A', 64), AssistantConversationScopes.System, forgedCapture)));
+        Assert.Equal("ASSISTANT_IDEMPOTENCY_CONFLICT", replayConflict.Code);
+        Assert.DoesNotContain("private prompt", System.Text.Json.JsonSerializer.Serialize(found), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Omitted_context_replay_proves_legacy_system_identity_and_rejects_captured_web_turns()
+    {
+        using var fixture = new SqliteFixture();
+        await using var db = fixture.CreateContext();
+        var store = new AssistantConversationStore(db, new OperationLog(db));
+        const string message = "Normalized legacy request.";
+        var legacyHash = SystemConversationRequestIdentity.Hash(message);
+        var legacy = await store.BeginTurnAsync(new(Operator, SystemConversationRequestIdentity.Provider, null, null,
+            message, "legacy-empty", legacyHash, AssistantConversationScopes.System));
+        await store.CompleteTurnAsync(new(legacy.TurnId, AssistantConversationStatuses.Failed, null,
+            "LEGACY_FAILURE", "The request ended safely.", "", "", "", "", 0, 0, 0));
+
+        Assert.NotNull(await store.FindByIdempotencyKeyAsync(Operator, SystemConversationRequestIdentity.Provider,
+            "legacy-empty", AssistantConversationScopes.System));
+        Assert.True((await store.BeginTurnAsync(new(Operator, SystemConversationRequestIdentity.Provider, null, null,
+            message, "legacy-empty", legacyHash, AssistantConversationScopes.System))).Replay);
+
+        var capture = new AssistantTurnContextCapture(AssistantTurnContextProfiles.SystemReadV1,
+            new string('B', 64), ["surface:inner"]);
+        var captured = await store.BeginTurnAsync(new(Operator, SystemConversationRequestIdentity.Provider, null, null,
+            message, "captured-same-hash", legacyHash, AssistantConversationScopes.System, capture));
+        await store.CompleteTurnAsync(new(captured.TurnId, AssistantConversationStatuses.Failed, null,
+            "CAPTURED_FAILURE", "The request ended safely.", "", "", "", "", 0, 0, 0));
+
+        Assert.Null(await store.FindByIdempotencyKeyAsync(Operator, SystemConversationRequestIdentity.Provider,
+            "captured-same-hash", AssistantConversationScopes.System));
+        var capturedConflict = await Assert.ThrowsAsync<AssistantConversationException>(() => store.BeginTurnAsync(new(
+            Operator, SystemConversationRequestIdentity.Provider, null, null, message, "captured-same-hash",
+            legacyHash, AssistantConversationScopes.System)));
+        Assert.Equal("ASSISTANT_IDEMPOTENCY_CONFLICT", capturedConflict.Code);
+
+        var oldFailedWeb = await store.BeginTurnAsync(new(Operator, SystemConversationRequestIdentity.Provider, null, null,
+            "old failed web request", "old-web-failed", new string('D', 64), AssistantConversationScopes.System));
+        await store.CompleteTurnAsync(new(oldFailedWeb.TurnId, AssistantConversationStatuses.Failed, null,
+            "OLD_WEB_FAILURE", "The request ended safely.", "", "", "", "", 0, 0, 0));
+        Assert.Null(await store.FindByIdempotencyKeyAsync(Operator, SystemConversationRequestIdentity.Provider,
+            "old-web-failed", AssistantConversationScopes.System));
+        var oldFailedConflict = await Assert.ThrowsAsync<AssistantConversationException>(() => store.BeginTurnAsync(new(
+            Operator, SystemConversationRequestIdentity.Provider, null, null, "old failed web request", "old-web-failed",
+            new string('D', 64), AssistantConversationScopes.System)));
+        Assert.Equal("ASSISTANT_IDEMPOTENCY_CONFLICT", oldFailedConflict.Code);
+
+        var oldWeb = await store.BeginTurnAsync(new(Operator, SystemConversationRequestIdentity.Provider, null, null,
+            "old web request", "old-web-complete", new string('C', 64), AssistantConversationScopes.System, capture));
+        await store.CompleteTurnAsync(new(oldWeb.TurnId, AssistantConversationStatuses.Completed, "Done.", "", "",
+            "ollama", "fixture", "", "inner", 0, 0, 0, Context: new(
+                AssistantTurnContextProfiles.SystemReadV1, capture.Fingerprint, capture.SourceReferences,
+                AssistantTurnResponseDispositions.Answered)));
+        Assert.Null(await store.FindByIdempotencyKeyAsync(Operator, SystemConversationRequestIdentity.Provider,
+            "old-web-complete", AssistantConversationScopes.System));
+    }
 
     [Fact]
     public async Task Successful_turn_is_schema_bound_audited_and_same_key_replays_without_second_call()

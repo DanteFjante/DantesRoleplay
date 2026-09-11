@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using DantesRoleplay.Applications;
 using DantesRoleplay.CatalogNavigation;
+using DantesRoleplay.Ecs;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Knowledge;
 using DantesRoleplay.Mechanics;
@@ -56,7 +57,7 @@ public sealed class ApplicationReadModelWebEndpointTests
         Assert.Equal("actor.aric", own.Body.GetProperty("data").GetProperty("subject")
             .GetProperty("id").GetString());
         Assert.Equal(StatusCodes.Status403Forbidden, other.StatusCode);
-        Assert.Equal("READ_MODEL_AUDIENCE_DENIED", other.Body.GetProperty("code").GetString());
+        Assert.Equal("READ_MODEL_FORBIDDEN", other.Body.GetProperty("code").GetString());
         Assert.Equal(1, service.Calls);
     }
 
@@ -91,17 +92,29 @@ public sealed class ApplicationReadModelWebEndpointTests
     }
 
     [Fact]
-    public async Task Live_catalog_roles_bind_from_the_authorized_seat_context()
+    public async Task Unbound_multi_role_catalog_never_infers_role_names_from_the_seat()
     {
         var service = new ReadModels();
         var response = await ReadAsync(
             new(true, "player", "dnd2024", "campaign.1", "actor.aric"),
             "actor.aric", service, new QueryCatalog("dnd2024.query.actor-context", "campaign", "actor"));
 
+        Assert.Equal(StatusCodes.Status422UnprocessableEntity, response.StatusCode);
+        Assert.Equal("READ_MODEL_ROLES_UNAVAILABLE", response.Body.GetProperty("code").GetString());
+        Assert.Equal(0, service.Calls);
+    }
+
+    [Fact]
+    public async Task Single_unbound_route_entity_role_is_bound_without_role_name_inference()
+    {
+        var service = new ReadModels();
+        var response = await ReadAsync(
+            new(true, "player", "dnd2024", "campaign.1", "actor.aric"),
+            "actor.aric", service, new QueryCatalog("dnd2024.query.neutral-single", "opaque-route"));
+
         Assert.Equal(StatusCodes.Status200OK, response.StatusCode);
-        Assert.Equal("campaign.1", service.LastRequest!.RoleBindings["campaign"]);
-        Assert.Equal("actor.aric", service.LastRequest.RoleBindings["actor"]);
-        Assert.Equal(2, service.LastRequest.RoleBindings.Count);
+        Assert.Equal("actor.aric", service.LastRequest!.RoleBindings["opaque-route"]);
+        Assert.Single(service.LastRequest.RoleBindings);
     }
 
     [Fact]
@@ -113,7 +126,7 @@ public sealed class ApplicationReadModelWebEndpointTests
             "actor.aric", service, new EmptyPublicApplicationCatalogProvider());
 
         Assert.Equal(StatusCodes.Status503ServiceUnavailable, response.StatusCode);
-        Assert.Equal("READ_MODEL_CATALOG_UNAVAILABLE", response.Body.GetProperty("code").GetString());
+        Assert.Equal("READ_MODEL_UNAVAILABLE", response.Body.GetProperty("code").GetString());
         Assert.Equal(0, service.Calls);
     }
 
@@ -167,13 +180,13 @@ public sealed class ApplicationReadModelWebEndpointTests
     }
 
     [Fact]
-    public async Task Explicit_campaign_requires_host_authorization_before_projection()
+    public async Task CampaignId_alias_is_rejected_before_projection()
     {
         var service = new ReadModels();
         var response = await ReadAsync(new(true, "player", "dnd2024", "campaign.1", "actor.aric"),
             "actor.aric", service, query: "campaignId=foreign");
-        Assert.Equal(403, response.StatusCode);
-        Assert.Equal("READ_MODEL_FORBIDDEN", response.Body.GetProperty("code").GetString());
+        Assert.Equal(400, response.StatusCode);
+        Assert.Equal("READ_MODEL_INPUT_INVALID", response.Body.GetProperty("code").GetString());
         Assert.Equal(0, service.Calls);
     }
 
@@ -191,6 +204,23 @@ public sealed class ApplicationReadModelWebEndpointTests
         Assert.Equal(2, response.Body.EnumerateObject().Count());
     }
 
+    [Fact]
+    public async Task Inputless_registered_role_binding_sanitizes_unexpected_projection_failures()
+    {
+        var response = await ReadAsync(
+            new(true, "gm", "dnd2024", "campaign.1", null, KnowledgeAudienceRole.GameMaster),
+            "actor.aric", new ReadModels { ThrowUnexpected = true }, new RouteBoundCatalog(),
+            qualifiedQueryId: "dnd2024.query.route-bound",
+            roleResolver: new ApplicationQueryRoleBindingResolver(
+                new DantesRoleplay.SchemaValidation.BoundedJsonSchemaValidator()),
+            entities: new ExistingEntities("actor.aric"), stateSpaces: new StateSpaces());
+
+        Assert.Equal(StatusCodes.Status503ServiceUnavailable, response.StatusCode);
+        Assert.Equal("READ_MODEL_UNAVAILABLE", response.Body.GetProperty("code").GetString());
+        Assert.DoesNotContain("SECRET", response.Body.GetRawText());
+        Assert.Equal(2, response.Body.EnumerateObject().Count());
+    }
+
     private static async Task<(int StatusCode, JsonElement Body)> ReadAsync(
         LocalKnowledgeSeatSnapshot seat,
         string entityId,
@@ -198,7 +228,11 @@ public sealed class ApplicationReadModelWebEndpointTests
         IPublicApplicationCatalogProvider? catalogs = null,
         string? perspective = null,
         string? query = null,
-        bool? active = null)
+        string qualifiedQueryId = "dnd2024.query.character-sheet",
+        IApplicationQueryRoleBindingResolver? roleResolver = null,
+        IApplicationQueryAuthorizedContextProvider? authorizedContext = null,
+        IEntityComponentStore? entities = null,
+        IStateSpaceRegistry? stateSpaces = null)
     {
         var context = new DefaultHttpContext();
         if (perspective is not null) context.Request.QueryString = new QueryString("?perspective=" + perspective);
@@ -211,10 +245,11 @@ public sealed class ApplicationReadModelWebEndpointTests
             .AddLogging()
             .BuildServiceProvider();
         var result = await ApplicationReadModelWebEndpoint.ReadAsync(
-            "dnd2024", "dnd2024-main", entityId, "dnd2024.query.character-sheet",
-            context, new Seats(seat), service, CancellationToken.None, catalogs,
-            active is null ? null : new Audience(seat), active is null ? null : new Bindings(),
-            active is null ? null : new Participation(active.Value));
+            "dnd2024", "dnd2024-main", entityId, qualifiedQueryId,
+            context, new Seats(seat), service, CancellationToken.None,
+            catalogs ?? new QueryCatalog(qualifiedQueryId, "subject"),
+            roleResolver, authorizedContext,
+            entities, stateSpaces);
         await result.ExecuteAsync(context);
         context.Response.Body.Position = 0;
         using var document = await JsonDocument.ParseAsync(context.Response.Body);
@@ -230,9 +265,14 @@ public sealed class ApplicationReadModelWebEndpointTests
     {
         public int Calls { get; private set; }
         public ApplicationReadModelRequest? LastRequest { get; private set; }
+        public List<ApplicationReadModelRequest> Requests { get; } = [];
         public string? FailureCode { get; init; }
+        public bool ThrowUnexpected { get; init; }
         public string SelectedId { get; init; } = "encounter.1";
+        public string ProofId { get; init; } = "entity.root";
         public bool ChangeSelection { get; init; }
+        public bool ChangeSelectionEvidence { get; init; }
+        public bool ChangeSelectedScope { get; init; }
 
         public Task<ApplicationReadModelResult> ReadAsync(
             ApplicationReadModelRequest request,
@@ -240,8 +280,12 @@ public sealed class ApplicationReadModelWebEndpointTests
         {
             Calls++;
             LastRequest = request;
+            Requests.Add(request);
+            if (ThrowUnexpected) throw new InvalidOperationException("SECRET unexpected projection detail");
             if (FailureCode is not null) throw new ApplicationReadModelException(FailureCode, "SECRET source detail");
-            var data = request.QualifiedQueryId == "dnd2024.query.current-scene"
+            var data = request.QualifiedQueryId == "dnd2024.query.selection-proof"
+                ? JsonSerializer.Serialize(new { proof = new { id = ProofId } })
+                : request.QualifiedQueryId == "dnd2024.query.current-scene"
                 ? JsonSerializer.Serialize(new { encounterId = ChangeSelection && Calls > 1 ? "encounter.changed" : SelectedId })
                 : request.RoleBindings.TryGetValue("subject", out var subject)
                 ? JsonSerializer.Serialize(new { subject = new { id = subject } })
@@ -250,11 +294,13 @@ public sealed class ApplicationReadModelWebEndpointTests
                 request.ApplicationId.Value,
                 request.StateSpaceId,
                 request.QualifiedQueryId,
-                "state-fingerprint",
+                ChangeSelectedScope && request.QualifiedQueryId == "dnd2024.query.neutral-read"
+                    ? "changed-state-fingerprint" : "state-fingerprint",
                 "resolution-fingerprint",
                 new string('A', 64),
                 new string('B', 64),
-                new string('C', 64),
+                ChangeSelectionEvidence && request.QualifiedQueryId == "dnd2024.query.selection-proof" && Calls > 2
+                    ? new string('D', 64) : new string('C', 64),
                 data));
         }
     }
@@ -320,33 +366,113 @@ public sealed class ApplicationReadModelWebEndpointTests
         public ReadableRulesResult ReadableRules(ReadableRulesRequest request) => throw new NotSupportedException();
     }
 
-    [Theory]
-    [InlineData("encounter.1", true, false, 200, 3)]
-    [InlineData("encounter.foreign", true, false, 403, 1)]
-    [InlineData("encounter.1", false, false, 403, 0)]
-    [InlineData("encounter.1", true, true, 409, 3)]
-    public async Task Campaign_selected_read_is_bound_to_active_participation_and_current_selection(
-        string target, bool active, bool changed, int expectedStatus, int expectedCalls)
-    {
-        var reads = new ReadModels { ChangeSelection = changed };
-        var result = await ReadAsync(new(true, "player", "dnd2024", "campaign.1", "actor.aric"),
-            target, reads, new QueryCatalog("dnd2024.query.selected", "encounter"), active: active);
-        Assert.Equal(expectedStatus, result.StatusCode);
-        Assert.Equal(expectedCalls, reads.Calls);
-        if (expectedStatus == 200) Assert.Equal(MechanicAudienceContext.Player, reads.LastRequest!.Audience);
-        else Assert.DoesNotContain("encounter.changed", result.Body.GetRawText());
-    }
-
     [Fact]
-    public async Task Selected_read_rejects_a_foreign_campaign_before_projection()
+    public async Task Legacy_campaign_selection_contract_is_rejected_before_projection()
     {
         var reads = new ReadModels();
         var result = await ReadAsync(new(true, "player", "dnd2024", "campaign.1", "actor.aric"),
-            "encounter.1", reads, new QueryCatalog("dnd2024.query.selected", "encounter"),
-            query: "campaignId=campaign.foreign", active: true);
+            "encounter.1", reads, new QueryCatalog("dnd2024.query.selected", "encounter"));
         Assert.Equal(403, result.StatusCode);
+        Assert.Equal("READ_MODEL_FORBIDDEN", result.Body.GetProperty("code").GetString());
         Assert.Equal(0, reads.Calls);
     }
+
+    private sealed class RouteBoundCatalog : IPublicApplicationCatalogProvider
+    {
+        private readonly ICatalogNavigator navigator = new RouteBoundNavigator();
+
+        public bool TryGet(ApplicationIdentifier applicationId, out ICatalogNavigator value)
+        {
+            value = navigator;
+            return applicationId.Value == "dnd2024";
+        }
+    }
+
+    private sealed class RouteBoundNavigator : ICatalogNavigator
+    {
+        public CatalogRecordView Inspect(CatalogRecordRequest request)
+        {
+            var source = new QueryNavigator("dnd2024.query.route-bound", ["subject"]).Inspect(request);
+            var node = JsonNode.Parse(source.ContentJson)!.AsObject();
+            node["roleBindings"] = new JsonObject
+            {
+                ["subject"] = new JsonObject { ["source"] = "route-entity" }
+            };
+            return source with { ContentJson = node.ToJsonString() };
+        }
+
+        public IReadOnlyList<CatalogCollectionSummary> ListCollections(ApplicationIdentifier applicationId) =>
+            throw new NotSupportedException();
+        public CatalogBrowseResult Browse(CatalogBrowseRequest request) => throw new NotSupportedException();
+        public CatalogSearchResult Search(CatalogSearchRequest request) => throw new NotSupportedException();
+        public EffectiveApplicationContentResult EffectiveContent(EffectiveApplicationContentRequest request) =>
+            throw new NotSupportedException();
+        public ReadableRulesResult ReadableRules(ReadableRulesRequest request) => throw new NotSupportedException();
+    }
+
+    [Fact]
+    public async Task Neutral_selection_transport_passes_only_authorized_parent_roles_to_the_shared_service()
+    {
+        var reads = new ReadModels();
+        var roles = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["seat.root"] = "entity.root",
+            ["seat.witness"] = "entity.witness"
+        };
+
+        var result = await ReadAsync(new(true, "player", "dnd2024", "legacy.selection", "actor.aric"),
+            "entity.root", reads, new NeutralSelectionCatalog(),
+            qualifiedQueryId: "dnd2024.query.neutral-read",
+            roleResolver: new ApplicationQueryRoleBindingResolver(new DantesRoleplay.SchemaValidation.BoundedJsonSchemaValidator()),
+            authorizedContext: new AuthorizedContext(roles),
+            entities: new ExistingEntities("entity.root", "entity.witness"),
+            stateSpaces: new StateSpaces());
+
+        Assert.Equal(200, result.StatusCode);
+        Assert.Equal(1, reads.Calls);
+        Assert.Equal("dnd2024.query.neutral-read", reads.LastRequest!.QualifiedQueryId);
+        Assert.Equal("entity.root", reads.LastRequest.RoleBindings["target"]);
+        Assert.Equal("entity.witness", reads.LastRequest.RoleBindings["witness"]);
+    }
+
+    [Fact]
+    public async Task Neutral_selection_registration_never_grants_an_untrusted_route_entity()
+    {
+        var reads = new ReadModels();
+        var result = await NeutralRead(reads,
+            authorizedRoles: new Dictionary<string, string> { ["seat.witness"] = "entity.witness" });
+
+        Assert.Equal(403, result.StatusCode);
+        Assert.Equal("READ_MODEL_FORBIDDEN", result.Body.GetProperty("code").GetString());
+        Assert.Equal(0, reads.Calls);
+    }
+
+    [Fact]
+    public async Task Neutral_selection_rejects_the_retired_campaignId_alias_before_the_shared_service()
+    {
+        var reads = new ReadModels();
+        var alias = await NeutralRead(reads, query: "campaignId=entity.other");
+        Assert.Equal(400, alias.StatusCode);
+        Assert.Equal("READ_MODEL_INPUT_INVALID", alias.Body.GetProperty("code").GetString());
+        Assert.Equal(0, reads.Calls);
+    }
+
+    private static Task<(int StatusCode, JsonElement Body)> NeutralRead(
+        ReadModels reads,
+        IReadOnlyDictionary<string, string>? authorizedRoles = null,
+        IPublicApplicationCatalogProvider? catalog = null,
+        string? query = null) => ReadAsync(
+        new(true, "player", "dnd2024", "legacy.selection", "actor.aric"),
+        "entity.root", reads, catalog ?? new NeutralSelectionCatalog(), query: query,
+        qualifiedQueryId: "dnd2024.query.neutral-read",
+        roleResolver: new ApplicationQueryRoleBindingResolver(new DantesRoleplay.SchemaValidation.BoundedJsonSchemaValidator()),
+        authorizedContext: new AuthorizedContext(authorizedRoles ?? new Dictionary<string, string>
+        {
+            ["seat.root"] = "entity.root",
+            ["seat.witness"] = "entity.witness"
+        }),
+        entities: new ExistingEntities("entity.root", "entity.witness"),
+        stateSpaces: new StateSpaces());
 
     [Theory]
     [InlineData("dnd2024.query.character-sheet", "encounterId")]
@@ -367,6 +493,134 @@ public sealed class ApplicationReadModelWebEndpointTests
         public Task<KnowledgeAudienceResolution> ResolveAsync(string campaignId, CancellationToken cancellationToken = default) =>
             Task.FromResult(new KnowledgeAudienceResolution(new(seat.PrincipalId, campaignId, seat.Role,
                 seat.ActorId, "policy.1")));
+    }
+
+    private sealed class NeutralSelectionCatalog(
+        bool recursive = false,
+        bool missing = false,
+        bool targetWitness = false)
+        : IPublicApplicationCatalogProvider
+    {
+        private readonly ICatalogNavigator navigator = new NeutralSelectionNavigator(recursive, missing, targetWitness);
+        public bool TryGet(ApplicationIdentifier applicationId, out ICatalogNavigator value)
+        {
+            value = navigator;
+            return applicationId.Value == "dnd2024";
+        }
+    }
+
+    private sealed class NeutralSelectionNavigator(bool recursive, bool missing, bool targetWitness) : ICatalogNavigator
+    {
+        public CatalogRecordView Inspect(CatalogRecordRequest request)
+        {
+            if (request.QualifiedId == "dnd2024.query.selection-missing")
+                throw new KeyNotFoundException("Missing selector.");
+            var selector = request.QualifiedId == "dnd2024.query.selection-proof";
+            var roles = selector
+                ? new Dictionary<string, string> { ["proof-root"] = "Opaque root.", ["proof-witness"] = "Opaque witness." }
+                : new Dictionary<string, string> { ["target"] = "Opaque target.", ["witness"] = "Opaque witness." };
+            var roleBindings = selector
+                ? new Dictionary<string, object>
+                {
+                    ["proof-root"] = new { source = "route-entity" },
+                    ["proof-witness"] = new { source = "authorized-context", key = "seat.witness" }
+                }
+                : new Dictionary<string, object>
+                {
+                    ["target"] = new { source = "route-entity" },
+                    ["witness"] = new { source = "authorized-context", key = "seat.witness" }
+                };
+            var node = JsonSerializer.SerializeToNode(new
+            {
+                id = request.QualifiedId,
+                category = "sample.read",
+                name = "Neutral selection fixture",
+                description = "Exercises application-neutral selection roles.",
+                matches = new[] { "neutral selection fixture" },
+                roles,
+                roleBindings,
+                executor = "mechanic-projection",
+                projection = new
+                {
+                    qualifiedId = "dnd2024.mechanic.neutral.fixture",
+                    version = 1,
+                    contentHash = new string('A', 64),
+                    outputSchemaHash = new string('B', 64)
+                },
+                outputSchema = new { type = "object" },
+                exposure = "binding-only",
+                status = "active"
+            })!.AsObject();
+            if (!selector)
+                node["selection"] = new JsonObject
+                {
+                    ["queryId"] = missing ? "dnd2024.query.selection-missing" : "dnd2024.query.selection-proof",
+                    ["targetRole"] = targetWitness ? "witness" : "target",
+                    ["resultPointer"] = "/proof/id",
+                    ["roleBindings"] = new JsonObject
+                    {
+                        ["proof-root"] = "target",
+                        ["proof-witness"] = "witness"
+                    }
+                };
+            else if (recursive)
+                node["selection"] = new JsonObject
+                {
+                    ["queryId"] = "dnd2024.query.selection-proof-2",
+                    ["targetRole"] = "proof-root",
+                    ["resultPointer"] = "/proof/id",
+                    ["roleBindings"] = new JsonObject { ["next-root"] = "proof-root" }
+                };
+            return new(new("dnd2024", "query", request.QualifiedId, "Neutral selection fixture",
+                "Exercises application-neutral selection roles.", "", "active", 1,
+                new string('C', 64), "test", "neutral-selection.json"), node.ToJsonString());
+        }
+
+        public IReadOnlyList<CatalogCollectionSummary> ListCollections(ApplicationIdentifier applicationId) => throw new NotSupportedException();
+        public CatalogBrowseResult Browse(CatalogBrowseRequest request) => throw new NotSupportedException();
+        public CatalogSearchResult Search(CatalogSearchRequest request) => throw new NotSupportedException();
+        public EffectiveApplicationContentResult EffectiveContent(EffectiveApplicationContentRequest request) => throw new NotSupportedException();
+        public ReadableRulesResult ReadableRules(ReadableRulesRequest request) => throw new NotSupportedException();
+    }
+
+    private sealed class AuthorizedContext(IReadOnlyDictionary<string, string> values)
+        : IApplicationQueryAuthorizedContextProvider
+    {
+        public Task<IReadOnlyDictionary<string, string>?> ResolveAsync(ApplicationIdentifier applicationId,
+            string stateSpaceId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyDictionary<string, string>?>(
+                applicationId.Value == "dnd2024" && stateSpaceId == "dnd2024-main" ? values : null);
+    }
+
+    private sealed class StateSpaces : IStateSpaceRegistry
+    {
+        private static readonly ApplicationIdentifier App = ApplicationIdentifier.Parse("dnd2024");
+        private static readonly StateSpaceView State = new("dnd2024-main",
+            new(App, 1, new string('A', 64), []), new string('B', 64), 1,
+            DateTime.UnixEpoch, DateTime.UnixEpoch);
+        public StateSpaceView? Get(string stateSpaceId) => stateSpaceId == State.StateSpaceId ? State : null;
+        public StateSpaceView Create(StateSpaceBinding binding) => throw new NotSupportedException();
+        public StateSpaceDiscoveryPage ListPage(ApplicationIdentifier applicationId,
+            string? afterStateSpaceId, int limit) => throw new NotSupportedException();
+    }
+
+    private sealed class ExistingEntities(params string[] ids) : IEntityComponentStore
+    {
+        private readonly HashSet<string> values = ids.ToHashSet(StringComparer.Ordinal);
+        public Task<EcsEntityView?> GetEntityAsync(string stateSpaceId, string entityId,
+            CancellationToken cancellationToken = default) => Task.FromResult<EcsEntityView?>(
+                stateSpaceId == "dnd2024-main" && values.Contains(entityId)
+                    ? new(stateSpaceId, entityId, entityId, 1, DateTime.UnixEpoch, null) : null);
+        public Task<EcsEntityView> CreateEntityAsync(string stateSpaceId, string entityId, string name, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public Task<EcsEntityDiscoveryPage> ListEntitiesAsync(string stateSpaceId, string? afterEntityId, int limit, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public Task<bool> DeleteEntityAsync(string stateSpaceId, string entityId, int expectedRevision, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public Task<EcsComponentView?> GetComponentAsync(string stateSpaceId, string entityId, string qualifiedTypeId, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public Task<IReadOnlyList<EcsComponentView>> GetComponentsAsync(string stateSpaceId, IReadOnlyList<EcsComponentLocator> locators, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public Task<EcsComponentDiscoveryPage> ListComponentsAsync(string stateSpaceId, string entityId, string? afterQualifiedTypeId, int limit, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public Task<EcsComponentView> AddComponentAsync(EcsComponentWrite write, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public Task<EcsComponentView> SetComponentAsync(EcsComponentWrite write, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public Task<EcsComponentView> MergeComponentAsync(EcsComponentWrite write, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public Task<bool> RemoveComponentAsync(string stateSpaceId, string entityId, EcsComponentReference type, int expectedRevision, CancellationToken cancellationToken = default) => throw new NotSupportedException();
     }
 
     private sealed class Participation(bool active) : IKnowledgeActorParticipationVerifier

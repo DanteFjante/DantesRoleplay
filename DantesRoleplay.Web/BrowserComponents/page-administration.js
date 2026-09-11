@@ -3,6 +3,37 @@ import '/components/system-publication.js';
 
 const encode = encodeURIComponent;
 
+function validIdentity(value, maximum = 200) {
+  return typeof value === 'string' && value.length > 0 && value.length <= maximum &&
+    value.trim() === value && !/[\u0000-\u001f\u007f/\\]/.test(value);
+}
+
+function displayText(value, fallback, maximum = 400) {
+  return typeof value === 'string' && value.length <= maximum ? value : fallback;
+}
+
+function normalizeAdminPage(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value) || !validIdentity(value.entityId)) return null;
+  const unavailableFields = [];
+  const title = displayText(value.title, value.entityId, 200);
+  const navigationLabel = displayText(value.navigationLabel, title, 100);
+  const slug = validIdentity(value.slug, 120) ? value.slug : '';
+  const order = Number.isInteger(value.order) && value.order >= -1000000 && value.order <= 1000000 ? value.order : 0;
+  const visibility = value.visibility === 'public' || value.visibility === 'hidden' ? value.visibility : 'public';
+  for (const [key, valid] of [['title', typeof value.title === 'string' && value.title.length > 0 && value.title.length <= 200],
+    ['navigationLabel', typeof value.navigationLabel === 'string' && value.navigationLabel.length > 0 && value.navigationLabel.length <= 100],
+    ['slug', slug !== ''], ['order', order === value.order], ['visibility', value.visibility === 'public' || value.visibility === 'hidden']])
+    if (!valid) unavailableFields.push(key);
+  const normalized = {...value, title, navigationLabel, slug, order, visibility};
+  normalized.metadataReady = unavailableFields.length === 0 && Number.isInteger(value.pageComponentRevision) && value.pageComponentRevision > 0;
+  normalized.entityReady = Number.isInteger(value.entityRevision) && value.entityRevision > 0;
+  normalized.contentReady = value.content === null || (value.content && typeof value.content === 'object' &&
+    Number.isInteger(value.content.latestRevision) && value.content.latestRevision > 0 &&
+    Number.isInteger(value.content.activeRevision) && value.content.activeRevision > 0);
+  if (unavailableFields.length) normalized.unavailableFields = unavailableFields;
+  return normalized;
+}
+
 class PageAdministration extends HTMLElement {
   constructor() {
     super();
@@ -86,13 +117,22 @@ class PageAdministration extends HTMLElement {
     this.$('[data-editor]').hidden = true;
     if (!this._application) return;
     this.$('[data-application]').value = applicationId;
-    this._pages = await this._request(`/api/control/web/applications/${encode(applicationId)}/pages`);
+    const pages = await this._request(`/api/control/web/applications/${encode(applicationId)}/pages`);
+    if (!Array.isArray(pages) || pages.length > 1000) throw new Error('The application page list is unavailable.');
+    this._pages = pages.map(normalizeAdminPage).filter(Boolean);
+    this._pagesPartial = this._pages.length !== pages.length;
     this._renderPages();
   }
 
   _renderPages() {
     const list = this.$('[data-pages]');
     list.replaceChildren();
+    if (this._pagesPartial) {
+      const warning = document.createElement('li');
+      warning.className = 'danger';
+      warning.textContent = 'Some page identities are unavailable for this read.';
+      list.append(warning);
+    }
     if (this._pages.length === 0) {
       const empty = document.createElement('li');
       empty.textContent = 'This application has no page identities yet.';
@@ -103,7 +143,7 @@ class PageAdministration extends HTMLElement {
       const item = document.createElement('li');
       const button = document.createElement('button');
       button.type = 'button';
-      button.textContent = `${page.navigationLabel || page.entityId}${page.isIndexPage ? ' · landing page' : ''}${page.enabled ? '' : ' · disabled'}`;
+      button.textContent = `${page.navigationLabel || page.entityId}${page.isIndexPage ? ' · landing page' : ''}${page.enabled === false ? ' · disabled' : ''}${page.unavailableFields?.length ? ' · partial' : ''}`;
       button.setAttribute('aria-current', String(this._page?.entityId === page.entityId));
       button.addEventListener('click', () => this._selectPage(page.entityId));
       item.append(button);
@@ -112,7 +152,8 @@ class PageAdministration extends HTMLElement {
   }
 
   async _selectPage(entityId) {
-    this._page = await this._request(this._root(entityId));
+    this._page = normalizeAdminPage(await this._request(this._root(entityId)));
+    if (!this._page) throw new Error('The selected page identity is unavailable.');
     this._renderPages();
     this._renderEditor();
   }
@@ -141,10 +182,10 @@ class PageAdministration extends HTMLElement {
     section.hidden = false;
     section.replaceChildren();
     section.append(this._heading(page.title || page.entityId));
-    if (page.errors?.length) {
+    if (Array.isArray(page.errors) && page.errors.length) {
       const errors = document.createElement('p');
       errors.className = 'danger';
-      errors.textContent = page.errors.map(error => error.message).join(' ');
+      errors.textContent = page.errors.map(error => displayText(error?.message, 'Page evidence unavailable.', 800)).join(' ');
       section.append(errors);
     }
     const fields = this._pageFields(page);
@@ -155,6 +196,13 @@ class PageAdministration extends HTMLElement {
       await this._selectApplication(this._application.applicationId);
       await this._selectPage(page.entityId);
     });
+    saveMetadata.disabled = !page.metadataReady;
+    if (!page.metadataReady) {
+      const warning = document.createElement('p');
+      warning.className = 'danger';
+      warning.textContent = 'Some page metadata or its revision is unavailable; metadata editing is disabled until refreshed.';
+      section.append(warning);
+    }
     const index = this._checkbox('Application landing page', page.isIndexPage);
     index.input.addEventListener('change', async () => {
       this._page = await this._request(`${this._root()}/index`, {method: 'PUT', body: {isIndexPage: index.input.checked}});
@@ -162,7 +210,9 @@ class PageAdministration extends HTMLElement {
       await this._selectPage(page.entityId);
     });
     const enabled = this._checkbox('Enabled', page.enabled);
+    enabled.input.disabled = !page.entityReady;
     enabled.input.addEventListener('change', async () => {
+      if (!page.entityReady) return;
       this._page = await this._request(`${this._root()}/enabled`, {
         method: 'PUT', body: {expectedEntityRevision: page.entityRevision, enabled: enabled.input.checked}
       });
@@ -174,7 +224,7 @@ class PageAdministration extends HTMLElement {
       await this._request(this._root(), {method: 'DELETE'});
       await this._selectApplication(this._application.applicationId);
     });
-    remove.disabled = page.enabled;
+    remove.disabled = page.enabled !== false;
     section.append(fields.element, index.wrapper, enabled.wrapper, this._actions(saveMetadata, remove));
     this._renderPublishedLink(page);
     await this._renderRevisions(section, page);
@@ -182,16 +232,40 @@ class PageAdministration extends HTMLElement {
 
   async _renderRevisions(section, page) {
     if (!page.content) return;
+    if (!page.contentReady) {
+      const warning = document.createElement('p');
+      warning.className = 'danger';
+      warning.textContent = 'Content revision metadata is unavailable; revision actions are disabled until refreshed.';
+      section.append(warning);
+      return;
+    }
     const history = document.createElement('section');
     history.append(this._heading('Content revisions'));
     const revisions = await this._request(`${this._root()}/revisions?limit=100`);
+    if (!revisions || !Array.isArray(revisions.revisions) || revisions.revisions.length > 100) {
+      const warning = document.createElement('p');
+      warning.className = 'danger';
+      warning.textContent = 'Content revision history is unavailable.';
+      section.append(warning);
+      return;
+    }
+    const validRevisions = revisions.revisions.filter(value => value && Number.isInteger(value.revision) &&
+      value.revision > 0 && typeof value.isActive === 'boolean');
+    if (validRevisions.length !== revisions.revisions.length) {
+      const warning = document.createElement('p');
+      warning.className = 'danger';
+      warning.textContent = 'Some content revisions are unavailable for this read.';
+      section.append(warning);
+    }
     const select = document.createElement('select');
-    for (const revision of revisions.revisions) {
+    for (const revision of validRevisions) {
       select.append(new Option(`Revision ${revision.revision}${revision.isActive ? ' · active' : ''}`, revision.revision));
     }
+    if (!validRevisions.length) { section.append(select); return; }
     const html = this._htmlField('');
     const load = async () => {
       const document = await this._request(`${this._root()}/revisions/${encode(select.value)}`);
+      if (!document || typeof document.html !== 'string') throw new Error('The selected revision content is unavailable.');
       html.value = document.html;
     };
     select.addEventListener('change', load);

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import type {
   CharacterInventoryItemV2,
@@ -8,12 +8,13 @@ import type {
 } from "../../data/hub-types";
 import { Icon } from "../Icon";
 import { MediaImage } from "../MediaImage";
+import { useCollectionValue } from "../../data/use-collection-value";
 
 type InventoryTreeItem = CharacterInventoryItemV2 | InventoryContainerItem;
-type ScopeState = "loading" | "ready" | "error";
+type ScopeState = "loading" | "ready" | "partial" | "error";
 
 function hasContentsControl(item: InventoryTreeItem) {
-  return ("isContainer" in item && item.isContainer) || (item.childCount ?? 0) > 0;
+  return ("isContainer" in item && item.isContainer === true) || (item.childCount ?? 0) > 0;
 }
 
 function validateGraph(items: InventoryTreeItem[]) {
@@ -49,7 +50,7 @@ export function mergeInventoryContainerItems(
     parentItemId: containerId,
     depth: container.depth + 1,
     childCount: null,
-    deeperContentsOmitted: item.isContainer,
+    deeperContentsOmitted: item.isContainer === true,
   }));
   const merged = [...current, ...children];
   validateGraph(merged);
@@ -59,7 +60,9 @@ export function mergeInventoryContainerItems(
 function ItemIdentity({ item, parentName, viewCue = false }: { item: InventoryTreeItem; parentName?: string; viewCue?: boolean }) {
   const visual = item.media?.illustration ?? item.media?.icon;
   const metadata = [
-    item.quantity !== null ? `Quantity ${item.quantity}` : null,
+    item.quantity !== null ? `Quantity ${item.quantity}`
+      : "quantityState" in item && item.quantityState === "null" ? "Quantity not recorded"
+        : "Quantity unavailable",
     item.equipmentSlots.length ? `Equipped: ${item.equipmentSlots.map((slot) => slot.label).join(", ")}` : null,
     parentName ? `Inside ${parentName}` : item.slot && !/^(?:inventory|contents)$/iu.test(item.slot) ? item.slot : null,
   ].filter(Boolean);
@@ -72,6 +75,10 @@ function ItemIdentity({ item, parentName, viewCue = false }: { item: InventoryTr
       {metadata.length ? <small>{metadata.join(" · ")}</small> : null}
       {"classification" in item && item.classification === "unclassified"
         ? <small className="character-inventory__unknown">Unknown item record</small> : null}
+      {"classification" in item && item.classification === "unknown"
+        ? <small className="character-inventory__unknown">Item classification unavailable</small> : null}
+      {"unavailableFields" in item && item.unavailableFields.length
+        ? <small className="character-inventory__unknown">Unavailable: {item.unavailableFields.join(", ")}</small> : null}
     </span>
     {viewCue ? <span className="character-inventory__view-cue">View details <Icon name="ChevronRight" size={17} /></span> : null}
   </>;
@@ -117,12 +124,14 @@ function InventoryBranch({
     {expanded ? <div className="character-inventory__contents" id={contentsId}>
       {state === "loading" ? <p role="status">Loading contents…</p>
         : state === "error" ? <p role="alert">Contents could not be loaded. Collapse and try again.</p>
-          : children.length ? <ul>{children.map((child) => <li key={child.id}>
-            <InventoryBranch childrenByParent={childrenByParent} item={child} itemById={itemById} onDisclosure={onDisclosure}
-              onOpenItem={onOpenItem} expandedIds={expandedIds} queryActive={queryActive}
-              scopeStates={scopeStates} visibleIds={visibleIds} />
-          </li>)}</ul>
-            : <p>{state === "ready" ? "This container is empty." : "No loaded contents."}</p>}
+          : <>{state === "partial" ? <p role="status">Some contents could not be safely displayed.</p> : null}
+            {children.length ? <ul>{children.map((child) => <li key={child.id}>
+              <InventoryBranch childrenByParent={childrenByParent} item={child} itemById={itemById} onDisclosure={onDisclosure}
+                onOpenItem={onOpenItem} expandedIds={expandedIds} queryActive={queryActive}
+                scopeStates={scopeStates} visibleIds={visibleIds} />
+            </li>)}</ul>
+              : <p>{state === "ready" ? "This container is empty." : "No loaded contents."}</p>}
+          </>}
     </div> : null}
   </div>;
 }
@@ -136,7 +145,10 @@ export function InventoryTree({
   query: controlledQuery,
   onQueryChange,
   reasons = [],
+  notices = [],
   restore,
+  subjectId,
+  sourceRevision,
 }: {
   items: InventoryTreeItem[];
   loadContainer?: (containerId: string, signal: AbortSignal) => Promise<InventoryContainerPageResult>;
@@ -146,12 +158,29 @@ export function InventoryTree({
   query?: string;
   onQueryChange?: (query: string) => void;
   reasons?: Array<"unclassified-content">;
+  notices?: Array<"source-incomplete" | "item-bound" | "invalid-item-identity" | "duplicate-item-identity" | "item-fields-unavailable">;
   restore?: { focusItemId: string; scrollY: number } | null;
+  subjectId?: string;
+  sourceRevision?: string;
 }) {
   const [announcement, setAnnouncement] = useState("");
   const [localQuery, setLocalQuery] = useState("");
   const [localExpanded, setLocalExpanded] = useState<string[]>([]);
-  const [loadedItems, setLoadedItems] = useState<InventoryTreeItem[]>(items);
+  const instance = useId();
+  type ContainerData = Extract<InventoryContainerPageResult, { status: "ready" }>["data"];
+  const [containerPages, setContainerPages, resourceEpoch, pagesFresh, resourceReady, , evicted] = useCollectionValue<Record<string, ContainerData>>(
+    JSON.stringify(["inventory-contents", subjectId ?? instance, sourceRevision ?? instance]), {}, 30_000);
+  const previousItems = useRef(items);
+  const baseChanged = previousItems.current !== items;
+  const loadedItems = useMemo(() => {
+    let result = items;
+    if (baseChanged) return result;
+    for (const [containerId, page] of Object.entries(containerPages))
+      if (result.some((item) => item.id === containerId)) result = mergeInventoryContainerItems(result, containerId, page.items);
+    return result;
+  }, [baseChanged, containerPages, items]);
+  const loadedItemsRef = useRef<InventoryTreeItem[]>(items);
+  loadedItemsRef.current = loadedItems;
   const [scopeStates, setScopeStates] = useState<Map<string, ScopeState>>(new Map());
   const controllers = useRef(new Map<string, AbortController>());
   const restored = useRef(false);
@@ -159,29 +188,46 @@ export function InventoryTree({
   const expandedIds = controlledExpanded ?? localExpanded;
   useEffect(() => {
     validateGraph(items);
-    setLoadedItems(items);
-    setScopeStates(new Map());
+    if (baseChanged || !sourceRevision || !pagesFresh) setContainerPages({});
+    previousItems.current = items;
+    setScopeStates(new Map(Object.entries(!baseChanged && sourceRevision && pagesFresh ? containerPages : {}).map(([id, page]) =>
+      [id, page.state !== "ready" || page.limits?.directComplete !== true || (page.notices?.length ?? 0) > 0 ||
+        page.reasons?.includes("unclassified-content") ? "partial" : "ready"])));
     controllers.current.forEach((controller) => controller.abort());
     controllers.current.clear();
     restored.current = false;
-  }, [items]);
+    // Source replacement retires all child pages; their own arrival must not
+    // reset the tree or restart an already completed container read.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, resourceEpoch, sourceRevision]);
   useEffect(() => () => controllers.current.forEach((controller) => controller.abort()), []);
+  useEffect(() => {
+    if (evicted) setScopeStates((previous) => new Map([...previous].map(([id, state]) =>
+      [id, state === "ready" || state === "partial" ? "error" : state])));
+  }, [evicted]);
 
   const ensureScope = useCallback((item: InventoryTreeItem) => {
-    if (!hasContentsControl(item) || !loadContainer || scopeStates.has(item.id) || childrenLoaded(loadedItems, item.id)) return;
+    if (!resourceReady || !hasContentsControl(item) || !loadContainer || scopeStates.has(item.id) || childrenLoaded(loadedItems, item.id)) return;
     const controller = new AbortController();
     controllers.current.set(item.id, controller);
     setScopeStates((previous) => new Map(previous).set(item.id, "loading"));
     void loadContainer(item.id, controller.signal).then((result) => {
       if (controller.signal.aborted) return;
       if (result.status !== "ready" || result.data.container.id !== item.id) throw new Error("Container unavailable.");
-      setLoadedItems((previous) => mergeInventoryContainerItems(previous, item.id, result.data.items));
-      setScopeStates((previous) => new Map(previous).set(item.id, "ready"));
+      // Validate outside React's deferred updater so a conflicting page becomes a local
+      // contents error. The ref also serializes concurrently completed container pages.
+      const merged = mergeInventoryContainerItems(loadedItemsRef.current, item.id, result.data.items);
+      loadedItemsRef.current = merged;
+      setContainerPages((previous) => ({ ...previous, [item.id]: result.data }));
+      setScopeStates((previous) => new Map(previous).set(item.id,
+        result.data.state !== "ready" || result.data.limits?.directComplete !== true ||
+          (result.data.notices?.length ?? 0) > 0 || result.data.reasons?.includes("unclassified-content")
+          ? "partial" : "ready"));
     }).catch((error) => {
       if (controller.signal.aborted || error?.name === "AbortError") return;
       setScopeStates((previous) => new Map(previous).set(item.id, "error"));
-    }).finally(() => controllers.current.delete(item.id));
-  }, [loadContainer, loadedItems, scopeStates]);
+    }).finally(() => { if (controllers.current.get(item.id) === controller) controllers.current.delete(item.id); });
+  }, [loadContainer, loadedItems, resourceReady, scopeStates, setContainerPages]);
 
   useEffect(() => {
     for (const id of expandedIds) {
@@ -261,6 +307,22 @@ export function InventoryTree({
       <Icon name="Clock3" size={18} /><div><strong>Some records are not classified as items</strong>
         <p>They remain visible as unknown records without invented definitions.</p></div>
     </div> : null}
+    {notices.includes("invalid-item-identity") || notices.includes("duplicate-item-identity") ? <div className="character-state character-state--stale" role="status">
+      <Icon name="Clock3" size={18} /><div><strong>Some inventory rows were withheld</strong>
+        <p>Rows without a unique valid identity cannot be safely displayed or opened.</p></div>
+    </div> : null}
+    {notices.includes("item-fields-unavailable") ? <div className="character-state character-state--stale" role="status">
+      <Icon name="Clock3" size={18} /><div><strong>Some item fields are unavailable</strong>
+        <p>Other item fields remain available; missing container information will not load contents.</p></div>
+    </div> : null}
+    {notices.includes("source-incomplete") ? <div className="character-state character-state--stale" role="status">
+      <Icon name="Clock3" size={18} /><div><strong>Inventory completeness is unavailable</strong>
+        <p>This view cannot confirm that the loaded rows are the complete contents of the container.</p></div>
+    </div> : null}
+    {notices.includes("item-bound") ? <div className="character-state character-state--stale" role="status">
+      <Icon name="Clock3" size={18} /><div><strong>Inventory display is bounded</strong>
+        <p>Only the first 200 rows can be shown in this view.</p></div>
+    </div> : null}
     <p aria-live="polite" className="sr-only">{announcement}</p>
     {roots.length ? <ul className="character-inventory__tree">{roots.map((item) => <li key={item.id}>
       <InventoryBranch childrenByParent={childrenByParent} item={item} itemById={itemById} onDisclosure={setExpanded}
@@ -269,7 +331,9 @@ export function InventoryTree({
     </li>)}</ul> : normalizedQuery ? <div className="character-inventory__empty">
       <Icon name="Search" size={25} /><div><strong>No matching loaded items</strong><p>Try a broader search or open more containers.</p></div>
     </div> : <div className="character-inventory__empty"><Icon name="PackageOpen" size={25} />
-      <div><strong>No carried items</strong><p>This inventory container is empty.</p></div>
+      <div>{notices.length ? <><strong>No inventory rows are safely available</strong>
+        <p>The available response cannot confirm an empty inventory.</p></> : <><strong>No carried items</strong>
+          <p>This inventory container is empty.</p></>}</div>
     </div>}
   </section>;
 }

@@ -20,6 +20,31 @@ public sealed class InteractionReceiptStoreTests : IDisposable
     public void Dispose() => _fixture.Dispose();
 
     [Fact]
+    public async Task Interrupted_receipt_lookup_is_scope_phase_bound_and_does_not_replay_or_expose_intent()
+    {
+        await using var db = _fixture.CreateContext();
+        var policy = new TestAuthorizationPolicy();
+        var store = new InteractionReceiptStore(db, policy);
+        var resolution = (await store.AppendResolutionAsync(Resolution("recover.plan", "private intent"))).Receipt!;
+        var consent = new InteractionExecutionConsentReference(resolution.Id, resolution.ProposalFingerprint!,
+            Principal, App(), "state.1", "recover.execute");
+        var execution = (await store.AppendExecutionAsync(new(consent, HashB,
+            InteractionExecutionReceiptDisposition.Succeeded, "Safe completion.", [],
+            [new(1, "step.1", InteractionExecutionStepDisposition.Succeeded)]))).Receipt!;
+
+        var plan = await store.FindByIdempotencyKeyAsync(ReadRequest(App(), "state.1"), "recover.plan");
+        var executed = await store.FindByIdempotencyKeyAsync(ReadRequest(App(), "state.1"), "recover.execute", resolution.Id);
+
+        Assert.Equal(resolution.Id, plan!.Id);
+        Assert.Equal(execution.Id, executed!.Id);
+        Assert.Null(await store.FindByIdempotencyKeyAsync(ReadRequest(App(), "state.other"), "recover.plan"));
+        Assert.Null(await store.FindByIdempotencyKeyAsync(ReadRequest(App(), "state.1"), "recover.execute", InteractionReceiptIds.New()));
+        Assert.Null(await store.FindByIdempotencyKeyAsync(ReadRequest(App(), "state.1"), "no-receipt"));
+        Assert.DoesNotContain("private intent", JsonSerializer.Serialize(plan), StringComparison.Ordinal);
+        Assert.Single(db.InteractionExecutionReceipts);
+    }
+
+    [Fact]
     public async Task Resolution_receipts_are_immutable_redacted_and_replay_safe()
     {
         await using var db = _fixture.CreateContext();

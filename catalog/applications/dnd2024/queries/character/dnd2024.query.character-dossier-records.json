@@ -1,0 +1,22 @@
+{
+  "id": "dnd2024.query.character-dossier-records",
+  "category": "character.structural-object",
+  "name": "Character dossier records object",
+  "description": "Reads the exact registered structural records that contribute to one character dossier.",
+  "matches": ["read character dossier records object", "inspect character dossier sources"],
+  "roles": {
+    "subject": "The exact character to inspect."
+  },
+  "roleBindings": {
+    "subject": { "source": "route-entity" }
+  },
+  "executor": "object-projection",
+  "object": {
+    "qualifiedId": "dnd2024.object.character-dossier-records",
+    "version": 2,
+    "contentFingerprint": "35A8A12BD202792DA4E7025788FE1D80CD983583EE5E5D919F71F7C9B3A8F2EB"
+  },
+  "exposure": "model-visible",
+  "status": "active",
+  "profile": "application-object/v2"
+}

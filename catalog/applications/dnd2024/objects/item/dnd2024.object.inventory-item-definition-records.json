@@ -1,16 +1,6 @@
 {
   "id": "dnd2024.object.inventory-item-definition-records",
-  "version": 2,
-  "schema": {
-    "type": "object",
-    "additionalProperties": false,
-    "required": [],
-    "properties": {
-      "definition": { "type": "object" },
-      "activityMembership": { "type": "object" },
-      "inlineActivities": { "type": "object" }
-    }
-  },
+  "version": 3,
   "roles": {
     "definition": { "required": false }
   },
@@ -39,5 +29,6 @@
       "dm"
     ],
     "write": []
-  }
+  },
+  "profile": "application-object/v2"
 }

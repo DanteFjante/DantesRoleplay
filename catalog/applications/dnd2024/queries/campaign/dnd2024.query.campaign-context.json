@@ -5,6 +5,7 @@
   "description": "Returns the selected active campaign and its exact declared World identity without identifier inference.",
   "matches": ["show campaign context", "resolve campaign world", "open table context"],
   "roles": { "campaign": "The exact audience-authorized campaign." },
+  "roleBindings": { "campaign": { "source": "route-entity" } },
   "executor": "mechanic-projection",
   "projection": {
     "qualifiedId": "dnd2024.mechanic.campaign.context.project",

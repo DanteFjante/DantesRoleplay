@@ -1,0 +1,175 @@
+{
+  "id": "dnd2024.query.party-knowledge",
+  "category": "game.core.campaign.read-model",
+  "name": "Party knowledge",
+  "description": "Returns the bounded authorized union of knowledge admitted to active members of the selected campaign.",
+  "matches": [
+    "show what the party knows",
+    "open the party notebook",
+    "review shared party knowledge"
+  ],
+  "roles": {
+    "campaign": "The exact independently authorized selected campaign."
+  },
+  "roleBindings": {
+    "campaign": {
+      "source": "route-entity"
+    }
+  },
+  "executor": "mechanic-projection",
+  "projection": {
+    "qualifiedId": "dnd2024.mechanic.party-knowledge.project",
+    "version": 1,
+    "contentHash": "E6D448528C72052982A55C52C5B5E876E7F755AED14E1D9C2D2B2DB001351646",
+    "outputSchemaHash": "F07B849ADA93B0CFF088DC87C86E178A6D23E61AB085DB841B84E93AC2559172"
+  },
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "minProperties": 0,
+    "maxProperties": 3,
+    "properties": {
+      "cursor": {
+        "type": "string",
+        "pattern": "^[1-9][0-9]{0,3}$"
+      },
+      "expectedSourceRevision": {
+        "type": "string",
+        "pattern": "^[0-9A-F]{64}$"
+      },
+      "expectedGraphSourceRevision": {
+        "type": "string",
+        "pattern": "^[0-9A-F]{64}$"
+      }
+    }
+  },
+  "outputSchema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "status",
+      "entries",
+      "locations",
+      "audience",
+      "campaignId",
+      "worldId",
+      "sourceRevision",
+      "coverage",
+      "fieldCoverage"
+    ],
+    "properties": {
+      "status": {
+        "enum": ["ready", "empty", "unavailable"]
+      },
+      "entries": {
+        "type": "array",
+        "maxItems": 40,
+        "items": { "$ref": "#/$defs/entry" }
+      },
+      "locations": {
+        "type": "array",
+        "maxItems": 40,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "entries"],
+          "properties": {
+            "name": { "type": "string", "minLength": 1, "maxLength": 400 },
+            "entries": {
+              "type": "array",
+              "maxItems": 40,
+              "items": { "$ref": "#/$defs/entry" }
+            }
+          }
+        }
+      },
+      "audience": { "enum": ["party", "dm"] },
+      "campaignId": { "type": "string", "minLength": 1, "maxLength": 200 },
+      "worldId": { "type": "string", "minLength": 1, "maxLength": 200 },
+      "sourceRevision": { "type": "string", "minLength": 1, "maxLength": 128 },
+      "coverage": { "enum": ["complete", "partial"] },
+      "fieldCoverage": { "enum": ["complete", "partial"] },
+      "reason": { "type": "string", "minLength": 1, "maxLength": 100 },
+      "nextCursor": { "type": "string", "pattern": "^[1-9][0-9]{0,3}$" }
+    },
+    "$defs": {
+      "subject": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "name": { "type": "string", "minLength": 1, "maxLength": 400 }
+        }
+      },
+      "admission": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["actorId", "actorName", "stance", "source"],
+        "properties": {
+          "actorId": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "actorName": { "type": "string", "minLength": 1, "maxLength": 400 },
+          "stance": {
+            "enum": ["known", "suspected", "believed", "doubted", "disbelieved", "familiar", "unknown"]
+          },
+          "source": { "enum": ["explicit", "baseline"] },
+          "scopeId": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "admits": { "const": false }
+        }
+      },
+      "contentEntry": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "knowledgeId",
+          "documentRevision",
+          "text",
+          "stance",
+          "presentationKind",
+          "mediaOwnerId",
+          "admissions"
+        ],
+        "properties": {
+          "knowledgeId": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "documentRevision": { "type": "string", "pattern": "^[0-9A-F]{64}$" },
+          "text": { "type": "string", "minLength": 1, "maxLength": 1500 },
+          "stance": { "enum": ["known", "suspected", "believed", "doubted", "disbelieved", "mixed", "dm"] },
+          "presentationKind": { "enum": ["statement", "rumour", "evidence"] },
+          "subject": { "$ref": "#/$defs/subject" },
+          "mediaOwnerId": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "admissions": {
+            "type": "array",
+            "maxItems": 20,
+            "items": { "$ref": "#/$defs/admission" }
+          }
+        }
+      },
+      "recognitionEntry": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["recognitionKey", "text", "stance", "presentationKind", "admissions"],
+        "properties": {
+          "recognitionKey": { "type": "string", "minLength": 3, "maxLength": 140 },
+          "text": { "const": "You recognize this as a familiar topic, but do not remember details." },
+          "stance": { "const": "familiar" },
+          "presentationKind": { "const": "recognition" },
+          "admissions": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 20,
+            "items": { "$ref": "#/$defs/admission" }
+          }
+        }
+      },
+      "entry": {
+        "oneOf": [
+          { "$ref": "#/$defs/contentEntry" },
+          { "$ref": "#/$defs/recognitionEntry" }
+        ]
+      }
+    }
+  },
+  "exposure": "model-visible",
+  "status": "active"
+}

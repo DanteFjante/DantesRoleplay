@@ -1,3 +1,4 @@
+using DantesRoleplay.Ecs;
 using DantesRoleplay.EcsEffects;
 using DantesRoleplay.Events;
 
@@ -9,30 +10,32 @@ namespace DantesRoleplay.DataAccess;
 /// </summary>
 public sealed class ApplicationDeclaredEventTransactionParticipant(
     DantesRoleplayDbContext db,
-    IEventLedger events) : IApplicationEcsTransactionParticipant
+    IEventLedger events,
+    IStateSpaceRegistry stateSpaces) : IApplicationEcsEventSourceParticipant
 {
-    public async Task StageAsync(
+    public async Task<IReadOnlyList<EventDetail>> StageEventsAsync(
         ApplicationEcsEffectBatch batch,
         IReadOnlyList<ApplicationEcsEffectReceipt> receipts,
-        string operationId,
+        ApplicationEcsEventEmissionContext emission,
         CancellationToken cancellationToken = default)
     {
-        if (batch.DeclaredEvents.Count == 0) return;
+        if (batch.DeclaredEvents.Count == 0) return [];
 
         var proposed = await DerivedEvents.ProposeAsync(
             db,
             batch.DeclaredEvents,
             "application action",
-            "application-action:" + operationId,
-            operationId,
-            causationEventId: string.Empty,
-            depth: 0,
+            emission.ProducerExecutionId,
+            emission.RootOperationId,
+            causationEventId: emission.CausationEventId,
+            depth: emission.Depth,
             cancellationToken,
             applicationStateSpaceId: batch.StateSpaceId);
         if (!proposed.Ok)
             throw new ApplicationEcsTransactionParticipantException(
                 $"{proposed.Code}: {proposed.Reason}");
 
-        await events.WriteAcceptedAsync(proposed.Proposals, operationId, cancellationToken);
+        return await events.WriteAcceptedAsync(proposed.Proposals, emission.RootOperationId, cancellationToken,
+            ApplicationEventSourceContext.Require(stateSpaces, batch));
     }
 }

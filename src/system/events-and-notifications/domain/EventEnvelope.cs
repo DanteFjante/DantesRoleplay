@@ -46,6 +46,31 @@ public static class EventEnvelope
         envelope["id"] = accepted.Id;
         envelope["sequence"] = accepted.Sequence;
 
+        // Application reactions receive the authoritative source and component before/after
+        // evidence that was recorded by the trusted ledger participant. Legacy world reactions
+        // retain their historical envelope shape exactly.
+        if (accepted.Source is { } source)
+        {
+            envelope["source"] = new JsonObject
+            {
+                ["applicationId"] = source.ApplicationId,
+                ["stateSpaceId"] = source.StateSpaceId
+            };
+            if (accepted.ComponentSnapshot is { } snapshot)
+            {
+                envelope["componentSnapshot"] = new JsonObject
+                {
+                    ["entityId"] = snapshot.EntityId,
+                    ["qualifiedTypeId"] = snapshot.QualifiedTypeId,
+                    ["typeVersion"] = snapshot.TypeVersion,
+                    ["before"] = Payload(snapshot.BeforeJson),
+                    ["after"] = Payload(snapshot.AfterJson),
+                    ["beforeRevision"] = snapshot.BeforeRevision,
+                    ["afterRevision"] = snapshot.AfterRevision
+                };
+            }
+        }
+
         return envelope.ToJsonString();
     }
 
@@ -84,7 +109,7 @@ public static class EventEnvelope
         };
     }
 
-    private static JsonNode Payload(string payloadJson)
+    private static JsonNode Payload(string? payloadJson)
     {
         if (string.IsNullOrWhiteSpace(payloadJson))
         {

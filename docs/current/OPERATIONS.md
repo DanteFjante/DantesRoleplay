@@ -67,6 +67,11 @@ exact probe origin. The source directory must contain `catalog/`. Normal startup
 release from the editable checkout or the newest folder. It verifies byte lengths and SHA-256
 hashes, including line endings, before starting or replacing a process.
 
+Before cleanup, resolve the saved launch profile and the executable path of every running server.
+Their host/source directories are required runtime files, even when ignored by Git or located under
+`data/releases/`, `bin/`, or a worktree. Do not delete them as backups or build caches. After cleanup,
+run the launcher's `-Check` and verify application readiness through the configured website origins.
+
 ```powershell
 .\run-mcp-server.ps1 -Check
 # Explicit development/recovery selection, not an argument required for normal use:

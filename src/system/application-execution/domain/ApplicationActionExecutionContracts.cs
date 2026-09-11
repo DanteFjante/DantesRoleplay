@@ -1,5 +1,7 @@
 using DantesRoleplay.Applications;
+using DantesRoleplay.Ecs;
 using DantesRoleplay.EcsEffects;
+using DantesRoleplay.Mechanics;
 
 namespace DantesRoleplay.ApplicationExecution;
 
@@ -40,6 +42,33 @@ public sealed record ApplicationActionExecutionResult(
     public int MechanicVersion { get; init; }
     public IReadOnlyList<string> AffectedEntityIds { get; init; } = [];
     public IReadOnlyList<ApplicationEcsEffectReceipt> EffectReceipts { get; init; } = [];
+}
+
+/// <summary>
+/// The common, host-verified translation from a mechanic proposal to typed ECS effects. Action
+/// execution and event reactions share this result so reactions cannot invent a second effect
+/// mapping or weaken the normal component/entity snapshot checks.
+/// </summary>
+public sealed record ApplicationEcsEffectBatchBuildResult(
+    ApplicationEcsEffectBatch? Batch,
+    IReadOnlyList<ApplicationActionExecutionProblem> Problems,
+    bool Stale)
+{
+    public bool Ok => Batch is not null && Problems.Count == 0;
+}
+
+public interface IApplicationEcsEffectBatchBuilder
+{
+    Task<ApplicationEcsEffectBatchBuildResult> BuildAsync(
+        StateSpaceView stateSpace,
+        ApplicationMechanicProjectionMapping mapping,
+        MechanicProjection projection,
+        MechanicRequirements requirements,
+        CompositionProposal proposal,
+        string mechanicId,
+        int mechanicVersion,
+        long seed,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>

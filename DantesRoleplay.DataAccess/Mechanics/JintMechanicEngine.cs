@@ -97,6 +97,7 @@ public sealed class JintMechanicEngine : IMechanicEngine
                     roles = projection.Roles,
                     objects = projection.Objects,
                     references = projection.References,
+                    graphSnapshots = projection.GraphSnapshots,
                     input = projection.Input,
                     seed = projection.Seed,
                     children = projection.Children,
@@ -104,6 +105,15 @@ public sealed class JintMechanicEngine : IMechanicEngine
                     eventEntities = projection.EventEntities
                 },
                 Json);
+
+            // The trusted harness must not turn a deeply nested serialized context into a way
+            // around the sandbox recursion limit merely by switching to native JSON revivers.
+            // Input and event are nested JSON strings inside the outer serialized payload.
+            if (ExceedsJsonDepth(payload) || ExceedsJsonDepth(projection.Input) || ExceedsJsonDepth(projection.Event))
+            {
+                return Task.FromResult(MechanicRunResult.Failed(
+                    $"The mechanic context is nested more than {MaximumJsonDepth} levels."));
+            }
 
             engine.SetValue("__payload", payload);
             engine.SetValue("__source", source);
@@ -155,6 +165,27 @@ public sealed class JintMechanicEngine : IMechanicEngine
             // Parse errors land here, as does anything Jint reports that is not one of the above.
             // Never rethrown: a broken mechanic must not be able to take down the caller.
             return Task.FromResult(MechanicRunResult.Failed($"The mechanic could not run: {ex.Message}"));
+        }
+    }
+
+    private const int MaximumJsonDepth = 64;
+
+    private static bool ExceedsJsonDepth(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return false;
+        try
+        {
+            var reader = new Utf8JsonReader(System.Text.Encoding.UTF8.GetBytes(json),
+                new JsonReaderOptions { MaxDepth = 1_024 });
+            while (reader.Read())
+                if (reader.CurrentDepth > MaximumJsonDepth) return true;
+            return false;
+        }
+        catch (JsonException)
+        {
+            // Preserve the harness's established malformed-input result rather than conflating
+            // syntax errors with the explicit depth fence.
+            return false;
         }
     }
 
@@ -297,9 +328,12 @@ public sealed class JintMechanicEngine : IMechanicEngine
             var random = makeRandom(payload.seed);
 
             function freezeDeep(value) {
-              if (!value || typeof value !== 'object' || Object.isFrozen(value)) { return value; }
-              Object.keys(value).forEach(function (key) { freezeDeep(value[key]); });
-              return Object.freeze(value);
+              if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+                for (var key in Object.freeze(value)) {
+                  if (value[key] && typeof value[key] === 'object') freezeDeep(value[key]);
+                }
+              }
+              return value;
             }
 
             var ctx = {
@@ -311,6 +345,7 @@ public sealed class JintMechanicEngine : IMechanicEngine
               roles: freezeDeep(payload.roles || {}),
               objects: freezeDeep(payload.objects || {}),
               references: freezeDeep(payload.references || {}),
+              graphSnapshots: freezeDeep(payload.graphSnapshots || {}),
               input: freezeDeep(JSON.parse(payload.input || '{}')),
               seed: payload.seed,
               children: freezeDeep(payload.children || {}),

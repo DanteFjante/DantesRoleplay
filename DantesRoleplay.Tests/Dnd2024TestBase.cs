@@ -630,6 +630,17 @@ public abstract class Dnd2024TestBase
         public Task<IReadOnlyList<EventSummary>> EventsAsync(string rootOperationId) =>
             new EventLedger(_db).FindAsync(rootOperationId: rootOperationId);
 
+        // Domain event assertions remain independent of the additional generic
+        // component transition events. Rollback/replay assertions use EventsAsync
+        // so they still cover every event, including structural changes.
+        public async Task<IReadOnlyList<EventSummary>> RuleEventsAsync(string rootOperationId) =>
+            (await EventsAsync(rootOperationId)).Where(value => value.TypeId is not
+                ("world.component.added" or "world.component.replaced" or "world.component.merged" or "world.component.removed"))
+                .ToArray();
+
+        public Task<int> ChangeDeliveryCountAsync() =>
+            _db.Set<ApplicationObjectChangeRecord>().AsNoTracking().CountAsync();
+
         /// <summary>
         /// One prepared database per source set, kept for the process.
         ///
@@ -670,7 +681,8 @@ public abstract class Dnd2024TestBase
 
         public static async Task<DndHarness> CreateAsync(
             bool includeLegacyEquipmentExtension = false,
-            bool failTransactionAfterEffects = false)
+            bool failTransactionAfterEffects = false,
+            bool includeObjectChangeParticipant = false)
         {
             var template = await TemplateAsync(includeLegacyEquipmentExtension);
             var fixture = SqliteFixture.CloneOf(template.Fixture.Connection);
@@ -689,7 +701,9 @@ public abstract class Dnd2024TestBase
             var schemas = new BoundedJsonSchemaValidator();
             var types = new SqliteComponentTypeRegistry(db, schemas);
             var entities = new SqliteEntityComponentStore(db, types, schemas);
-            var projectionRegistry = new SqliteProjectionDefinitionRegistry(db, types, schemas, applications);
+            var dependencyIndices = new ApplicationObjectDependencyIndexCache();
+            var projectionRegistry = new SqliteProjectionDefinitionRegistry(db, types, schemas, applications,
+                dependencyIndices);
             var materializer = new ActivatedApplicationCatalogMaterializer(applications, activations, sources, roots,
                 projections: projectionRegistry);
             _ = materializer.BuildFeatureSnapshot(Application);
@@ -712,16 +726,19 @@ public abstract class Dnd2024TestBase
             var mappings = new ApplicationMechanicProjectionMappingResolver(
                 catalogs, stateSpaces, types, edges);
             var clockParticipant = new ApplicationClockEventTransactionParticipant(
-                new EventTypeStore(db), new EventLedger(db), schemas);
+                new EventTypeStore(db), new EventLedger(db), stateSpaces, schemas);
             var declaredEventParticipant = new ApplicationDeclaredEventTransactionParticipant(
-                db, new EventLedger(db));
-            IReadOnlyList<IApplicationEcsTransactionParticipant> participants =
-                failTransactionAfterEffects
-                    ? [clockParticipant, declaredEventParticipant,
-                        new RejectAfterEffectsTransactionParticipant()]
-                    : [clockParticipant, declaredEventParticipant];
+                db, new EventLedger(db), stateSpaces);
+            var structuralEventParticipant = new ApplicationStructuralEventTransactionParticipant(
+                stateSpaces, new EventLedger(db), new EventTypeStore(db), schemas);
+            var participants = new List<IApplicationEcsTransactionParticipant>();
+            if (includeObjectChangeParticipant)
+                participants.Add(new ApplicationObjectChangeTransactionParticipant(db, stateSpaces,
+                    dependencyIndices));
+            if (failTransactionAfterEffects)
+                participants.Add(new RejectAfterEffectsTransactionParticipant());
             var applier = new ApplicationEcsEffectApplier(db, entities, stateSpaces, operations, edges,
-                participants);
+                participants, eventSources: [structuralEventParticipant, clockParticipant, declaredEventParticipant]);
             var runner = new ApplicationActionRunner(
                 catalogs, activations, stateSpaces, types, entities, edges,
                 mappings,
@@ -826,6 +843,24 @@ public abstract class Dnd2024TestBase
                     GameApplication, definition.Id, definition.Schema));
             }
             var entities = new SqliteEntityComponentStore(db, types, schemas);
+            // Application ECS writes now stage authoritative structural component events. The
+            // direct D&D fixture does not run the host bootstrap, so install the embedded kernel
+            // event contracts here just as DataAccessServiceCollectionExtensions does at startup.
+            var eventTypeStore = new EventTypeStore(db);
+            var embeddedEventTypes = DantesRoleplay.DataAccess.Bootstrap.EventTypeSeeder.Load();
+            foreach (var file in embeddedEventTypes.Where(value => value.Id.StartsWith("world.component.", StringComparison.Ordinal)))
+                await eventTypeStore.WriteAsync(new()
+                {
+                    Id = file.Id,
+                    Category = file.Category,
+                    Name = file.Name,
+                    Description = file.Description,
+                    PayloadSchema = file.Schema,
+                    Scope = file.Scope,
+                    Status = file.Status,
+                    CreatedBy = "seed",
+                    ChangeNote = "Seeded for the direct D&D ECS fixture."
+                });
             await new EventTypeStore(db).WriteAsync(new()
             {
                 Id = "game.core.world.clock.advanced",

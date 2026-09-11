@@ -164,6 +164,38 @@ public sealed class InteractionReceiptStore(
         return execution is null ? null : Projection(execution);
     }
 
+    public async Task<InteractionReceiptProjection?> FindByIdempotencyKeyAsync(
+        InteractionAuthorizationRequest authorizationRequest,
+        string idempotencyKey,
+        string? resolutionReceiptId = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(authorizationRequest);
+        if (string.IsNullOrWhiteSpace(idempotencyKey) || idempotencyKey.Length > 128 ||
+            idempotencyKey.Any(char.IsControl))
+            throw new InteractionContractException("INVALID_IDEMPOTENCY_KEY", "The idempotency key is invalid.");
+        var authorization = authorizationPolicy.Evaluate(authorizationRequest);
+        if (!CanRead(authorization, authorizationRequest)) return null;
+
+        if (resolutionReceiptId is null)
+        {
+            var rows = await db.InteractionResolutionReceipts.AsNoTracking().Where(row =>
+                    row.PrincipalReference == authorization.PrincipalReference &&
+                    row.ApplicationId == authorization.ApplicationId.Value &&
+                    row.StateSpaceId == authorization.StateSpaceId && row.IdempotencyKey == idempotencyKey)
+                .Take(2).ToArrayAsync(cancellationToken);
+            return rows.Length == 1 ? Projection(rows[0]) : null;
+        }
+
+        resolutionReceiptId = InteractionReceiptIds.Require(resolutionReceiptId, nameof(resolutionReceiptId));
+        var executions = await db.InteractionExecutionReceipts.AsNoTracking().Include(row => row.Steps)
+            .Include(row => row.QueryResults).Where(row => row.PrincipalReference == authorization.PrincipalReference &&
+                row.ApplicationId == authorization.ApplicationId.Value && row.StateSpaceId == authorization.StateSpaceId &&
+                row.ResolutionReceiptId == resolutionReceiptId && row.IdempotencyKey == idempotencyKey)
+            .Take(2).ToArrayAsync(cancellationToken);
+        return executions.Length == 1 ? Projection(executions[0]) : null;
+    }
+
     public async Task<IReadOnlyList<InteractionReceiptContext>> ReadRecentAsync(
         InteractionAuthorizationRequest authorizationRequest,
         string sessionContextId,

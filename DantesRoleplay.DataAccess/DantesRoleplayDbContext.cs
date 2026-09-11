@@ -1163,7 +1163,7 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
 
     private static void ConfigureEventLedger(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<EventRecord>(entity => { entity.ToTable("event"); entity.HasKey(x => x.Id); entity.Property(x => x.Id).HasMaxLength(40); entity.Property(x => x.TypeId).HasMaxLength(200).IsRequired(); entity.Property(x => x.CorrelationId).HasMaxLength(40).IsRequired(); entity.Property(x => x.CausationId).HasMaxLength(40); entity.Property(x => x.RootOperationId).HasMaxLength(40); entity.Property(x => x.PayloadJson).IsRequired(); entity.HasIndex(x => new { x.CorrelationId, x.Sequence }); entity.HasIndex(x => x.RootOperationId); entity.HasIndex(x => new { x.TypeId, x.Timestamp }); });
+        modelBuilder.Entity<EventRecord>(entity => { entity.ToTable("event", table => table.HasCheckConstraint("CK_event_application_source_pair", "(\"ApplicationId\" IS NULL AND \"StateSpaceId\" IS NULL) OR (\"ApplicationId\" IS NOT NULL AND \"StateSpaceId\" IS NOT NULL)")); entity.HasKey(x => x.Id); entity.Property(x => x.Id).HasMaxLength(40); entity.Property(x => x.TypeId).HasMaxLength(200).IsRequired(); entity.Property(x => x.CorrelationId).HasMaxLength(40).IsRequired(); entity.Property(x => x.CausationId).HasMaxLength(40); entity.Property(x => x.RootOperationId).HasMaxLength(40); entity.Property(x => x.PayloadJson).IsRequired(); entity.Property(x => x.ApplicationId).HasMaxLength(63); entity.Property(x => x.StateSpaceId).HasMaxLength(200); entity.HasIndex(x => new { x.CorrelationId, x.Sequence }); entity.HasIndex(x => x.RootOperationId); entity.HasIndex(x => new { x.TypeId, x.Timestamp }); entity.HasIndex(x => new { x.ApplicationId, x.StateSpaceId, x.TypeId, x.Timestamp }); });
         modelBuilder.Entity<EventExecution>(entity =>
         {
             entity.ToTable("event_execution"); entity.HasKey(x => x.Id);
@@ -1181,6 +1181,7 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
             entity.HasIndex(x => x.SubscriptionId);
         });
         modelBuilder.Entity<EventEntity>(entity => { entity.ToTable("event_entity"); entity.HasKey(x => x.Id); entity.Property(x => x.EventId).HasMaxLength(40).IsRequired(); entity.Property(x => x.EntityId).HasMaxLength(200).IsRequired(); entity.HasOne(x => x.Event).WithMany(x => x.Entities).HasForeignKey(x => x.EventId).OnDelete(DeleteBehavior.Cascade); entity.HasIndex(x => new { x.EntityId, x.Id }); entity.HasIndex(x => new { x.EventId, x.Ordinal }).IsUnique(); });
+        modelBuilder.Entity<EventComponentSnapshot>(entity => { entity.ToTable("event_component_snapshot"); entity.HasKey(x => x.EventId); entity.Property(x => x.EventId).HasMaxLength(40); entity.Property(x => x.EntityId).HasMaxLength(200).IsRequired(); entity.Property(x => x.QualifiedTypeId).HasMaxLength(200).IsRequired(); entity.Property(x => x.BeforeJson); entity.Property(x => x.AfterJson); entity.HasOne(x => x.Event).WithOne(x => x.ComponentSnapshot).HasForeignKey<EventComponentSnapshot>(x => x.EventId).OnDelete(DeleteBehavior.Cascade); entity.HasIndex(x => new { x.EntityId, x.QualifiedTypeId }); });
     }
 
     private static void ConfigureSubscriptions(ModelBuilder modelBuilder)
@@ -1194,10 +1195,12 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
         });
         modelBuilder.Entity<SubscriptionVersion>(entity =>
         {
-            entity.ToTable("subscription_version"); entity.HasKey(x => x.Id);
+            entity.ToTable("subscription_version", table => table.HasCheckConstraint("CK_subscription_version_application_source_pair", "(\"ApplicationId\" IS NULL AND \"StateSpaceId\" IS NULL) OR (\"ApplicationId\" IS NOT NULL AND \"StateSpaceId\" IS NOT NULL)")); entity.HasKey(x => x.Id);
             entity.Property(x => x.SubscriptionId).HasMaxLength(200).IsRequired(); entity.Property(x => x.EventTypeId).HasMaxLength(200).IsRequired(); entity.Property(x => x.EventMechanicId).HasMaxLength(200).IsRequired();
             entity.Property(x => x.Mode).HasConversion<string>().HasMaxLength(20).IsRequired(); entity.Property(x => x.FixedRoleEntityIdsJson).IsRequired(); entity.Property(x => x.RoleFromEventPayloadJson).HasDefaultValue("{}").IsRequired(); entity.Property(x => x.FanoutSelectorJson).HasDefaultValue("{}").IsRequired(); entity.Property(x => x.TrackedEntityIdsJson).IsRequired(); entity.Property(x => x.PayloadEqualsJson).IsRequired();
             entity.Property(x => x.CreatedBy).HasMaxLength(200).IsRequired(); entity.Property(x => x.SourceHash).HasMaxLength(64);
+            entity.Property(x => x.ApplicationId).HasMaxLength(63); entity.Property(x => x.StateSpaceId).HasMaxLength(200);
+            entity.HasIndex(x => new { x.ApplicationId, x.StateSpaceId });
             entity.HasOne(x => x.Subscription).WithMany(x => x.Versions).HasForeignKey(x => x.SubscriptionId).OnDelete(DeleteBehavior.Cascade);
             entity.HasIndex(x => new { x.SubscriptionId, x.Version }).IsUnique(); entity.HasIndex(x => x.EventTypeId); entity.HasIndex(x => x.EventMechanicId); entity.HasIndex(x => new { x.Mode, x.Order });
         });

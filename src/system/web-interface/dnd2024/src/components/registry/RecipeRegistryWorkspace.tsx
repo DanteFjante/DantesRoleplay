@@ -5,6 +5,7 @@ import { navigateItemRoute, readItemReturn, type RegistryRecipeRoute,
   type RegistryReturnContext } from "../../data/item-view-route";
 import type { Perspective } from "../../data/hub-types";
 import { ViewReadError } from "../../data/view-read-client";
+import { useCollectionValue } from "../../data/use-collection-value";
 import type { RecipeDefinition, RecipeDefinitionRequest, RecipeRegistryPage,
   RecipeRegistryRecord, RecipeRegistryRequest } from "../../server/recipe-registry";
 import { Icon } from "../Icon";
@@ -16,6 +17,8 @@ export type RecipeDefinitionLoader = (request: RecipeDefinitionRequest, signal: 
   preferCached?: boolean) => Promise<RecipeDefinition>;
 
 function listError(error: unknown) {
+  if (error instanceof ViewReadError && error.category === "authorization")
+    return "The registry is not available for this audience. Refresh the table after access is restored.";
   if (error instanceof ViewReadError && error.category === "stale-data")
     return "The recipe registry changed while this page was loading. Reload the list to continue.";
   if (error instanceof ViewReadError && error.category === "incompatible-data")
@@ -35,7 +38,8 @@ export function RecipeRegistryDirectory({ campaignId, perspective, loadPage, rel
     && restored.campaignId === campaignId && restored.perspective === perspective ? restored : null;
   const [query, setQuery] = useState(returnContext?.query ?? "");
   const [draftQuery, setDraftQuery] = useState(returnContext?.query ?? "");
-  const [pages, setPages] = useState<RecipeRegistryPage[]>([]);
+  const [pages, setPages, resourceEpoch, fresh, resourceReady, deny, evicted] = useCollectionValue<RecipeRegistryPage[]>(
+    JSON.stringify(["registry-recipes", campaignId, perspective, relatedItemId, query]), []);
   const [cursor, setCursor] = useState<string | null>(null);
   const [restorePages, setRestorePages] = useState(returnContext?.pageCount ?? 1);
   const [requestVersion, setRequestVersion] = useState(0);
@@ -43,8 +47,21 @@ export function RecipeRegistryDirectory({ campaignId, perspective, loadPage, rel
   const [error, setError] = useState("");
   const preferCached = useRef(true);
   const restoredFocus = useRef(false);
+  const readEpoch = useRef(resourceEpoch);
+  const admittedCursor = useRef<string | null | undefined>(undefined);
 
   useEffect(() => {
+    if (!resourceReady) return;
+    if (readEpoch.current !== resourceEpoch) {
+      readEpoch.current = resourceEpoch;
+      preferCached.current = false;
+      admittedCursor.current = undefined;
+      if (cursor !== null) { setCursor(null); return; }
+    }
+    if (preferCached.current && fresh && pages.length && (admittedCursor.current === undefined && cursor === null || admittedCursor.current === cursor)) {
+      setLoading(false); return;
+    }
+    admittedCursor.current = cursor;
     const controller = new AbortController();
     const firstPage = pages[0] ?? null;
     const request: RecipeRegistryRequest = { query, cursor, relatedItemId,
@@ -55,12 +72,15 @@ export function RecipeRegistryDirectory({ campaignId, perspective, loadPage, rel
     void loadPage(request, controller.signal, useCache).then((page) => {
       if (!controller.signal.aborted) setPages((current) => cursor ? [...current, page] : [page]);
     }).catch((reason: unknown) => {
-      if (!controller.signal.aborted) setError(listError(reason));
+      if (!controller.signal.aborted) {
+        if (reason instanceof ViewReadError && reason.category === "authorization") deny();
+        setError(listError(reason));
+      }
     }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
     // Page accumulation must not retrigger the current cursor.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cursor, loadPage, query, relatedItemId, requestVersion]);
+  }, [cursor, loadPage, query, relatedItemId, requestVersion, resourceEpoch]);
 
   const records = useMemo(() => pages.flatMap((page) => page.records), [pages]);
   const lastPage = pages.at(-1) ?? null;
@@ -79,10 +99,15 @@ export function RecipeRegistryDirectory({ campaignId, perspective, loadPage, rel
   }, [embedded, error, lastPage, loading, pages.length, restorePages, returnContext]);
 
   const replaceQuery = (next: string) => {
+    admittedCursor.current = undefined;
     restoredFocus.current = true; setPages([]); setCursor(null); setRestorePages(1); setQuery(next);
   };
   const submitSearch = (event: FormEvent) => { event.preventDefault(); replaceQuery(draftQuery.trim()); };
-  const retry = () => { preferCached.current = false; setRequestVersion((value) => value + 1); };
+  const retry = () => {
+    preferCached.current = false;
+    if (evicted) { admittedCursor.current = undefined; setCursor(null); }
+    setRequestVersion((value) => value + 1);
+  };
   const openRecipe = (record: RecipeRegistryRecord) => {
     let context = readItemReturn(window.history.state);
     if (!embedded) {
@@ -113,8 +138,11 @@ export function RecipeRegistryDirectory({ campaignId, perspective, loadPage, rel
       </form>
     </>}
     {!pages.length && loading ? <p className="party-registry__notice" role="status">Loading recipe definitions…</p> : null}
-    {error ? <div className="party-registry__notice party-registry__notice--error" role="alert">
-      <p>{error}</p><button type="button" onClick={retry}>Try again</button></div> : null}
+    {error || evicted && !loading ? <div className="party-registry__notice party-registry__notice--error" role="alert">
+      <p>{error || "The saved list was released to make room. Reload it to continue."}</p><button type="button" onClick={retry}>Try again</button></div> : null}
+    {pages.some((page) => page.partial) ? <p className="party-registry__notice" role="status">
+      Some recipe definitions are unavailable and were omitted from this page.
+    </p> : null}
     {pages.length && !records.length && !loading && !error ? <div className="party-registry__empty">
       <Icon name="CookingPot" size={28} /><div><h2>{embedded ? "No linked recipes" : "No matching recipes"}</h2>
         <p>{embedded ? "No recorded recipe refers to this item definition." : "Try a broader name, source, input, or output."}</p></div>
@@ -134,30 +162,37 @@ export function RecipeRegistryDirectory({ campaignId, perspective, loadPage, rel
   </section>;
 }
 
-export function RecipeRegistryDetails({ route, loadDefinition }: {
+export function RecipeRegistryDetails({ route, loadDefinition, onNavigateParty }: {
   route: RegistryRecipeRoute; loadDefinition: RecipeDefinitionLoader;
+  onNavigateParty?: (section: "overview" | "registry", replace?: boolean) => void;
 }) {
   const fromRules = window.history.state?.itemMainTab === "rules";
   const [state, setState] = useState<"loading" | "ready" | "error" | "stale">("loading");
-  const [definition, setDefinition] = useState<RecipeDefinition | null>(null);
+  const [definition, setDefinition, resourceEpoch, fresh, resourceReady, deny] = useCollectionValue<RecipeDefinition | null>(
+    JSON.stringify(["registry-recipe-definition", route.campaignId, route.perspective, route.collection, route.recipeId, route.contentFingerprint]), null);
   const [retry, setRetry] = useState(0);
   const preferCached = useRef(true);
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => { heading.current?.focus(); }, [route.recipeId]);
   useEffect(() => {
+    if (!resourceReady) return;
+    if (preferCached.current && fresh && definition) { setState("ready"); return; }
     const controller = new AbortController(); setState("loading");
     void loadDefinition({ id: route.recipeId, collection: route.collection,
       expectedContentFingerprint: route.contentFingerprint, sourceLabel: null }, controller.signal,
     preferCached.current).then((result) => {
       if (!controller.signal.aborted) { setDefinition(result); setState("ready"); }
     }).catch((error: unknown) => {
-      if (!controller.signal.aborted) setState(error instanceof ViewReadError && error.category === "stale-data" ? "stale" : "error");
+      if (!controller.signal.aborted) {
+        if (error instanceof ViewReadError && error.category === "authorization") deny();
+        setState(error instanceof ViewReadError && error.category === "stale-data" ? "stale" : "error");
+      }
     });
     preferCached.current = true;
     return () => controller.abort();
-  }, [loadDefinition, retry, route.collection, route.contentFingerprint, route.recipeId]);
+  }, [loadDefinition, retry, resourceEpoch, route.collection, route.contentFingerprint, route.recipeId]);
   const back = () => readItemReturn(window.history.state)?.kind === "registry" || fromRules ? window.history.back()
-    : navigateHubRoute("party", "overview", true, { partySection: "registry" });
+    : onNavigateParty ? onNavigateParty("registry", true) : navigateHubRoute("party", "overview", true, { partySection: "registry" });
   const retryRead = () => { preferCached.current = false; setDefinition(null); setRetry((value) => value + 1); };
   const linked = new Map(definition?.linkedItems.map((item) => [item.id, item]) ?? []);
   const openItem = (definitionId: string) => {
@@ -170,8 +205,8 @@ export function RecipeRegistryDetails({ route, loadDefinition }: {
   return <section className="recipe-page" aria-labelledby="recipe-view-heading">
     <nav aria-label="Breadcrumb" className="item-page__breadcrumbs"><ol>
       {fromRules ? <li><button type="button" onClick={back}>Rules</button></li> : <>
-        <li><button type="button" onClick={() => navigateHubRoute("party")}>Party</button></li>
-        <li><button type="button" onClick={() => navigateHubRoute("party", "overview", false,
+        <li><button type="button" onClick={() => onNavigateParty ? onNavigateParty("overview") : navigateHubRoute("party")}>Party</button></li>
+        <li><button type="button" onClick={() => onNavigateParty ? onNavigateParty("registry") : navigateHubRoute("party", "overview", false,
           { partySection: "registry" })}>Registry</button></li>
         <li><button type="button" onClick={back}>Recipes</button></li>
       </>}
