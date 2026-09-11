@@ -14,6 +14,7 @@ using DantesRoleplay.Interactions;
 using DantesRoleplay.MCPServer;
 using DantesRoleplay.Operations;
 using DantesRoleplay.Procedures;
+using DantesRoleplay.SchemaValidation;
 using DantesRoleplay.SystemCapabilities;
 using DantesRoleplay.SystemTasks;
 using DantesRoleplay.SystemTasks.Persistence;

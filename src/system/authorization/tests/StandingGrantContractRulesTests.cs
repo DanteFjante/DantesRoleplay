@@ -2,6 +2,7 @@ using DantesRoleplay.Applications;
 using DantesRoleplay.Authorization;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.SystemTasks;
+using System.Text.Json;
 
 namespace DantesRoleplay.Tests;
 
@@ -9,6 +10,26 @@ public sealed class StandingGrantContractRulesTests
 {
     private static readonly ApplicationIdentifier App = ApplicationIdentifier.Parse("demo");
     private const string Hash = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+
+    [Fact]
+    public void Absent_catalog_selection_preserves_the_legacy_target_json_shape()
+    {
+        var target = Target();
+        var legacy = JsonSerializer.Serialize(new
+        {
+            target.DefinitionId,
+            target.Kind,
+            target.OwnerApplicationId,
+            target.NamespaceId,
+            target.OwnershipEvidenceReference,
+            target.Revision,
+            target.ContentFingerprint,
+            target.Candidate,
+            target.RetainedActivation
+        });
+
+        Assert.Equal(legacy, JsonSerializer.Serialize(target));
+    }
 
     [Fact]
     public void Candidate_origin_never_authorizes_execution_state_reads_or_task_access()

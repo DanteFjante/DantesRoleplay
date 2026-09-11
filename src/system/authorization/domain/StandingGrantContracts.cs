@@ -67,6 +67,7 @@ public sealed record StandingGrantDefinitionTarget(
     string OwnershipEvidenceReference, int Revision, string ContentFingerprint,
     ApplicationCandidateReference? Candidate = null,
     StandingGrantActivationOrigin? RetainedActivation = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     StandingGrantCatalogSelectionOrigin? CatalogSelection = null);
 
 /// <summary>Owner-produced retained activation provenance captured at task admission, never inferred for legacy tasks.</summary>
