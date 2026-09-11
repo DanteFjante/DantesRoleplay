@@ -11,6 +11,22 @@ namespace DantesRoleplay.Tests;
 public sealed class SystemInnerWorkerValidationInvokerTests
 {
     [Fact]
+    public async Task Unconfigured_provider_does_not_enter_the_durable_lifecycle()
+    {
+        var input = Fixture.Input();
+        var events = new List<string>();
+        var lifecycle = new Lifecycle(events);
+        var result = await new SystemInnerWorkerValidationInvoker(null, new Clock())
+            .InvokeAsync(Fixture.Profile(input), input, Fixture.Configuration(), lifecycle);
+
+        Assert.False(result.Response.Ok);
+        Assert.Null(result.Judgment);
+        Assert.Equal("AI_SERVICE_UNAVAILABLE", result.FailureCode);
+        Assert.Empty(events);
+        Assert.Empty(lifecycle.Calls);
+    }
+
+    [Fact]
     public async Task Actual_runner_forwards_one_bounded_request_through_required_lifecycle()
     {
         var input = Fixture.Input();

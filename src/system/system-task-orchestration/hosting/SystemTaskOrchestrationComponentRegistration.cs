@@ -29,7 +29,9 @@ internal static class SystemTaskOrchestrationComponentRegistration
             provider.GetRequiredService<IInteractionFeatureRetriever>()));
         services.AddScoped<SystemTaskApplicationValidationService>();
         services.AddSingleton<SystemTaskAiInvocationLifecycleFactory>();
-        services.AddScoped<SystemInnerWorkerValidationInvoker>();
+        services.AddScoped<SystemInnerWorkerValidationInvoker>(provider => new(
+            provider.GetService<DantesRoleplay.AI.IAiService>(),
+            provider.GetRequiredService<TimeProvider>()));
         services.TryAddSingleton<IPrivateOperatorAuthorizationPolicy, PrivateOperatorAuthorizationPolicy>();
         return services;
     }

@@ -18,7 +18,7 @@ internal sealed record SystemInnerWorkerValidationComputation(
 /// lease/profile factory after owner coverage and authority checks; passing an interface or DTO here
 /// establishes neither. No provider is enabled or registered by this adapter, and it never retries.
 /// </summary>
-internal sealed class SystemInnerWorkerValidationInvoker(IAiService ai, TimeProvider time)
+internal sealed class SystemInnerWorkerValidationInvoker(IAiService? ai, TimeProvider time)
 {
     internal async Task<SystemInnerWorkerValidationComputation> InvokeAsync(SystemInnerWorkerResolvedProfile profile,
         ApplicationCandidateReuseInputV2 input, AiRequest hostConfiguration, IAiInvocationLifecycle lifecycle,
@@ -26,6 +26,9 @@ internal sealed class SystemInnerWorkerValidationInvoker(IAiService ai, TimeProv
     {
         ArgumentNullException.ThrowIfNull(lifecycle);
         cancellationToken.ThrowIfCancellationRequested();
+        if (ai is null)
+            return new(AiResponse.Failure("AI_SERVICE_UNAVAILABLE", "No AI service is configured for this host."),
+                null, "AI_SERVICE_UNAVAILABLE");
         var request = SystemInnerWorkerValidationRequestBuilder.Build(profile, input, hostConfiguration,
             time.GetUtcNow().UtcDateTime);
         var response = await ai.SendAgentRequestAsync(profile.Profile, request, [], lifecycle, cancellationToken);
