@@ -50,8 +50,10 @@ standing-grant read adapter and owner-resolved grant targets, with no legacy per
 Its registered workflow profile exposes only exact actions declared by the retained
 `requirements.service.actions` contract. Each action derives a deterministic child command,
 preserves the parent command, shares the root deadline and operation ledger, rechecks current
-state-scoped Execute authority, and commits through the existing action, effect and operation-log
-owners. Successful child receipts remain attached to later workflow completion or failure. The
+state-scoped Execute authority for the exact action and every actual typed root/reaction effect
+inside the effect applier's writer transaction, and commits through the existing action, effect and
+operation-log owners. A denied commit guard rolls back staged effects without writing an action
+operation. Successful child receipts remain attached to later workflow completion or failure. The
 public root atomic adapter still rejects parented requests, and read-only engine instances still
 return the canonical unavailable result for `ctx.services.action`. Atomic service execution,
 workflow handoff, wait, job and AI callbacks remain unavailable until their real dependencies and

@@ -101,6 +101,47 @@ public sealed class ApplicationReadOnlyServiceAuthorizationTests
     }
 
     [Fact]
+    public async Task Workflow_child_rejects_an_actual_effect_missing_from_the_current_grant()
+    {
+        await using var fixture = await Fixture.CreateAsync(
+            workflow: true, includeActionEffectInGrant: false);
+        var request = fixture.WorkflowRequest("command.workflow.effect-denied", "{\"value\":15}");
+        var operationCount = await fixture.Db.Set<Operation>().CountAsync();
+
+        var result = await fixture.WorkflowService.InvokeAsync(request);
+
+        Assert.Equal(InteractionInvocationResultTag.Failed, result.Tag);
+        Assert.Equal("INVOCATION_NOT_AUTHORIZED", result.Code);
+        Assert.Empty(result.PreviousCommits);
+        Assert.Equal(operationCount, await fixture.Db.Set<Operation>().CountAsync());
+        var component = (await fixture.Entities.GetComponentAsync(
+            Fixture.SpaceId, "subject", fixture.CounterType.QualifiedId))!;
+        Assert.Equal(1, component.Revision);
+        Assert.Equal("{\"value\":7}", component.ValueJson);
+    }
+
+    [Fact]
+    public async Task Workflow_child_rechecks_revocation_after_evaluation_inside_the_commit_transaction()
+    {
+        await using var fixture = await Fixture.CreateAsync(workflow: true, revokeAfterEvaluation: true);
+        var request = fixture.WorkflowRequest("command.workflow.revoked-before-commit", "{\"value\":16}");
+        var actionAuditCount = await fixture.Db.Set<Operation>()
+            .CountAsync(value => value.Tool == ApplicationEcsExecutionIdentity.AuditTool);
+
+        var result = await fixture.WorkflowService.InvokeAsync(request);
+
+        Assert.Equal(InteractionInvocationResultTag.Failed, result.Tag);
+        Assert.Equal("INVOCATION_NOT_AUTHORIZED", result.Code);
+        Assert.Empty(result.PreviousCommits);
+        Assert.Equal(actionAuditCount, await fixture.Db.Set<Operation>()
+            .CountAsync(value => value.Tool == ApplicationEcsExecutionIdentity.AuditTool));
+        var component = (await fixture.Entities.GetComponentAsync(
+            Fixture.SpaceId, "subject", fixture.CounterType.QualifiedId))!;
+        Assert.Equal(1, component.Revision);
+        Assert.Equal("{\"value\":7}", component.ValueJson);
+    }
+
+    [Fact]
     public async Task Workflow_failure_after_commit_preserves_the_successful_child_receipt()
     {
         await using var fixture = await Fixture.CreateAsync(
@@ -279,7 +320,9 @@ public sealed class ApplicationReadOnlyServiceAuthorizationTests
             bool includeQueryInGrant = true,
             bool workflow = false,
             string? workflowSource = null,
-            bool includeActionInGrant = true)
+            bool includeActionInGrant = true,
+            bool includeActionEffectInGrant = true,
+            bool revokeAfterEvaluation = false)
         {
             var sqlite = new SqliteFixture();
             var db = sqlite.CreateContext();
@@ -406,12 +449,27 @@ public sealed class ApplicationReadOnlyServiceAuthorizationTests
                 var targets = new SqliteStandingGrantTargetResolver(
                     db, applications, activation, activation, sources, extensions, namespaces, materializer);
                 var policy = new SqliteStandingGrantPolicy(db, targets);
+                var principal = PrivateOperatorPrincipal.Create("test", "service-fixture-operator");
                 var standingReads = new StandingGrantApplicationReadModelInvocationAdapter(
                     policy, targets, stateSpaces, readModels);
                 var operations = new OperationLog(db);
                 var effects = new ApplicationEcsEffectApplier(db, entities, stateSpaces, operations, edges);
+                IApplicationEcsEffectBatchBuilder? batchBuilder = revokeAfterEvaluation
+                    ? new AfterBuildBatchBuilder(
+                        new ApplicationEcsEffectBatchBuilder(types, entities, edges),
+                        async () =>
+                        {
+                            await SeedGrantAsync(db, principal, [ServiceId, ActionId], 2,
+                                "service-grant@2", revoked: true, addCurrent: false,
+                                capabilities: [StandingGrantCapability.Read, StandingGrantCapability.Execute],
+                                effectKinds: [ApplicationEcsEffectType.ComponentSet]);
+                            var current = await db.Set<StandingGrantCurrentRecord>().SingleAsync();
+                            current.Revision = 2;
+                            await db.SaveChangesAsync();
+                        })
+                    : null;
                 var runner = new ApplicationActionRunner(catalogs, activation, stateSpaces, types, entities, edges,
-                    mapping, evaluator, effects, operations);
+                    mapping, evaluator, effects, operations, batchBuilder);
                 var transactions = new SqliteEcsWriteTransactionFactory(db);
                 var actionAdapter = new ApplicationActionInvocationAdapter(
                     new PrivateHostInteractionAuthorizationPolicy(stateSpaces), stateSpaces, runner, operations,
@@ -419,7 +477,6 @@ public sealed class ApplicationReadOnlyServiceAuthorizationTests
                 var service = new ApplicationReadOnlyServiceInvocationAdapter(
                     catalogs, new ApplicationReadOnlyServiceDefinitionReader(schemas), standingReads,
                     schemas, engine, stateSpaces, targets, policy, actionAdapter, transactions);
-                var principal = PrivateOperatorPrincipal.Create("test", "service-fixture-operator");
                 IReadOnlyList<string> exactIds = workflow
                     ? includeActionInGrant ? [ServiceId, ActionId] : [ServiceId]
                     : includeQueryInGrant ? [ServiceId, QueryId] : [ServiceId];
@@ -427,7 +484,10 @@ public sealed class ApplicationReadOnlyServiceAuthorizationTests
                     GrantReference, revoked: false,
                     capabilities: workflow
                         ? [StandingGrantCapability.Read, StandingGrantCapability.Execute]
-                        : [StandingGrantCapability.Read]);
+                        : [StandingGrantCapability.Read],
+                    effectKinds: workflow && includeActionEffectInGrant
+                        ? [ApplicationEcsEffectType.ComponentSet]
+                        : []);
                 return new(sqlite, db, root, revision, principal, stateSpaces, entities, counterType,
                     service, service, serviceRecord, retainedDefinition);
             }
@@ -516,7 +576,8 @@ public sealed class ApplicationReadOnlyServiceAuthorizationTests
             string reference,
             bool revoked,
             bool addCurrent = true,
-            IReadOnlyList<StandingGrantCapability>? capabilities = null)
+            IReadOnlyList<StandingGrantCapability>? capabilities = null,
+            IReadOnlyList<string>? effectKinds = null)
         {
             var operationId = $"grant-seed-{revision}";
             db.Add(new Operation { Id = operationId, Timestamp = DateTime.UtcNow, Tool = "test" });
@@ -528,7 +589,7 @@ public sealed class ApplicationReadOnlyServiceAuthorizationTests
                     StandingGrantDefinitionMode.ExactIds,
                     exactIds.Order(StringComparer.Ordinal).ToArray(),
                     []),
-                [], 16, DateTime.UtcNow.AddHours(1), revoked, operationId);
+                effectKinds ?? [], 16, DateTime.UtcNow.AddHours(1), revoked, operationId);
             db.Add(new StandingGrantRevisionRecord
             {
                 GrantId = grant.GrantId, Revision = grant.Revision, GrantReference = grant.GrantReference,
@@ -590,6 +651,34 @@ public sealed class ApplicationReadOnlyServiceAuthorizationTests
             {
                 canonicalPath = root;
                 return allowedRootId == RootId;
+            }
+        }
+
+        private sealed class AfterBuildBatchBuilder(
+            IApplicationEcsEffectBatchBuilder inner,
+            Func<Task> afterBuild) : IApplicationEcsEffectBatchBuilder
+        {
+            private bool invoked;
+
+            public async Task<ApplicationEcsEffectBatchBuildResult> BuildAsync(
+                StateSpaceView stateSpace,
+                ApplicationMechanicProjectionMapping mapping,
+                MechanicProjection projection,
+                MechanicRequirements requirements,
+                CompositionProposal proposal,
+                string mechanicId,
+                int mechanicVersion,
+                long seed,
+                CancellationToken cancellationToken = default)
+            {
+                var result = await inner.BuildAsync(stateSpace, mapping, projection, requirements,
+                    proposal, mechanicId, mechanicVersion, seed, cancellationToken);
+                if (result.Ok && !invoked)
+                {
+                    invoked = true;
+                    await afterBuild();
+                }
+                return result;
             }
         }
     }

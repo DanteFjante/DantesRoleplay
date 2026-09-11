@@ -1,6 +1,7 @@
 using DantesRoleplay.ApplicationActivation;
 using DantesRoleplay.ApplicationExecution;
 using DantesRoleplay.Authorization;
+using DantesRoleplay.EcsEffects;
 using DantesRoleplay.MCPServer;
 using DantesRoleplay.SystemCapabilities;
 using DantesRoleplay.SystemTasks;
@@ -29,6 +30,8 @@ public sealed class InteractionFoundationRegistrationTests
             services.GetRequiredService<IApplicationReadOnlyServiceInvocationAdapter>());
         Assert.IsType<ApplicationReadOnlyServiceInvocationAdapter>(
             services.GetRequiredService<IApplicationWorkflowServiceInvocationAdapter>());
+        Assert.IsAssignableFrom<IApplicationEcsGuardedEffectApplier>(
+            services.GetRequiredService<IApplicationEcsEffectApplier>());
         Assert.IsType<SqliteStandingGrantPolicy>(services.GetRequiredService<IStandingGrantPolicy>());
         Assert.IsType<ResourceStandingGrantTargetResolver>(services.GetRequiredService<IStandingGrantTargetResolver>());
         Assert.IsType<SqliteStandingGrantTargetResolver>(services.GetRequiredService<SqliteStandingGrantTargetResolver>());

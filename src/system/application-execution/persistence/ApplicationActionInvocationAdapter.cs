@@ -57,7 +57,7 @@ internal sealed class ApplicationActionInvocationAdapter(
                 return InteractionInvocationResult.Failed("INVOCATION_BUDGET_EXHAUSTED", "The invocation operation budget is exhausted.");
             if (trustedWorkflowChild)
             {
-                var authority = await AuthorizeWorkflowChildAsync(request, cancellationToken);
+                var authority = await AuthorizeWorkflowSelectionAsync(request, cancellationToken);
                 if (authority is not null) return authority;
             }
             else
@@ -82,9 +82,27 @@ internal sealed class ApplicationActionInvocationAdapter(
             var seed = BinaryPrimitives.ReadInt64BigEndian(Convert.FromHexString(fingerprint[..16]));
             executionIdentity = new(InteractionInvocationIdentity.OperationId(request.Host), fingerprint);
             using var deadline = Deadline(request.Host.Budget, cancellationToken);
-            var result = await actions.RunAsync(new(stateSpaceId, request.Host.ApplicationRevision.ApplicationId,
+            var execution = new ApplicationActionExecutionRequest(
+                stateSpaceId, request.Host.ApplicationRevision.ApplicationId,
                 request.QualifiedMechanicId, request.MechanicVersion, request.ContentFingerprint, roles,
-                input, seed, executionIdentity), deadline.Token);
+                input, seed, executionIdentity);
+            ApplicationActionExecutionResult result;
+            if (trustedWorkflowChild)
+            {
+                if (actions is not ApplicationActionRunner trustedActions
+                    || grantTargets is null || standingGrants is null)
+                    return InteractionInvocationResult.Unavailable(
+                        "WORKFLOW_ACTION_AUTHORITY_UNAVAILABLE",
+                        "The workflow action commit authority is unavailable.");
+                result = await trustedActions.RunAuthorizedAsync(execution,
+                    new WorkflowActionCommitGuard(
+                        request.Host, stateSpaces, grantTargets, standingGrants,
+                        new(request.QualifiedMechanicId, CatalogNamespaceKinds.Mechanic,
+                            request.MechanicVersion, request.ContentFingerprint)),
+                    deadline.Token);
+            }
+            else
+                result = await actions.RunAsync(execution, deadline.Token);
             if (!result.Successful)
             {
                 var problem = result.Problems.FirstOrDefault();
@@ -119,7 +137,7 @@ internal sealed class ApplicationActionInvocationAdapter(
         }
     }
 
-    private async Task<InteractionInvocationResult?> AuthorizeWorkflowChildAsync(
+    private async Task<InteractionInvocationResult?> AuthorizeWorkflowSelectionAsync(
         ApplicationActionInvocationRequest request,
         CancellationToken cancellationToken)
     {
@@ -134,29 +152,77 @@ internal sealed class ApplicationActionInvocationAdapter(
         var selection = new StandingGrantDefinitionReference(request.QualifiedMechanicId,
             CatalogNamespaceKinds.Mechanic, request.MechanicVersion, request.ContentFingerprint);
         var resolution = await grantTargets.ResolveAsync(request.Host, selection, deadline.Token);
-        if (resolution is not { Status: StandingGrantTargetResolutionStatus.Available, Target: { } target })
-            return resolution?.Status == StandingGrantTargetResolutionStatus.Denied
-                ? InteractionInvocationResult.Failed("INVOCATION_NOT_AUTHORIZED", "The action is not authorized for this scope.")
-                : InteractionInvocationResult.Unavailable(
-                    "WORKFLOW_ACTION_AUTHORITY_UNAVAILABLE", "Current workflow action authority is unavailable.");
-        if (target.DefinitionId != selection.DefinitionId || target.Kind != selection.Kind
+        if (resolution is not { Status: StandingGrantTargetResolutionStatus.Available, Target: { } target }
+            || target.DefinitionId != selection.DefinitionId || target.Kind != selection.Kind
             || target.Revision != selection.Revision || target.ContentFingerprint != selection.ContentFingerprint
             || target.OwnerApplicationId != request.Host.ApplicationRevision.ApplicationId
             || target.Candidate is not null || target.RetainedActivation is not null)
-            return InteractionInvocationResult.Unavailable(
-                "WORKFLOW_ACTION_AUTHORITY_UNAVAILABLE", "Current workflow action authority is unavailable.");
+            return resolution?.Status == StandingGrantTargetResolutionStatus.Denied
+                ? InteractionInvocationResult.Failed(
+                    "INVOCATION_NOT_AUTHORIZED", "The action is not authorized for this scope.")
+                : InteractionInvocationResult.Unavailable(
+                    "WORKFLOW_ACTION_AUTHORITY_UNAVAILABLE", "Current workflow action authority is unavailable.");
         var decision = await standingGrants.EvaluateAsync(request.Host,
             new(StandingGrantCapability.Execute, StandingGrantScope.StateSpace, [target], []), deadline.Token);
-        if (!ExactAllowedDecision(request.Host, target, decision))
+        if (!ExactAllowedDecision(request.Host, target, [], decision))
             return InteractionInvocationResult.Failed(
                 "INVOCATION_NOT_AUTHORIZED", "The action is not authorized for this scope.");
         await transaction.RollbackAsync(CancellationToken.None);
         return null;
     }
 
+    private sealed class WorkflowActionCommitGuard(
+        InteractionInvocationHost host,
+        IStateSpaceRegistry stateSpaces,
+        IStandingGrantTargetResolver grantTargets,
+        IStandingGrantPolicy standingGrants,
+        StandingGrantDefinitionReference selection) : IApplicationEcsCommitGuard
+    {
+        public async Task<ApplicationEcsCommitGuardDecision> EvaluateAsync(
+            ApplicationEcsEffectBatch committedBatch,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                if (committedBatch.StateSpaceId != host.StateSpaceId
+                    || host.StateRevision is null
+                    || stateSpaces.Get(committedBatch.StateSpaceId) is not { } state
+                    || !ScopeMatches(state, host)
+                    || InteractionStateRevision.From(state) != host.StateRevision)
+                    return Denied("INVOCATION_SCOPE_STALE");
+                var resolution = await grantTargets.ResolveAsync(host, selection, cancellationToken);
+                if (resolution is not { Status: StandingGrantTargetResolutionStatus.Available, Target: { } target }
+                    || target.DefinitionId != selection.DefinitionId || target.Kind != selection.Kind
+                    || target.Revision != selection.Revision
+                    || target.ContentFingerprint != selection.ContentFingerprint
+                    || target.OwnerApplicationId != host.ApplicationRevision.ApplicationId
+                    || target.Candidate is not null || target.RetainedActivation is not null)
+                    return Denied(resolution?.Status == StandingGrantTargetResolutionStatus.Denied
+                        ? "INVOCATION_NOT_AUTHORIZED"
+                        : "WORKFLOW_ACTION_AUTHORITY_UNAVAILABLE");
+                var effectKinds = committedBatch.Effects.Select(effect => effect.Type)
+                    .Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray();
+                var decision = await standingGrants.EvaluateAsync(host,
+                    new(StandingGrantCapability.Execute, StandingGrantScope.StateSpace,
+                        [target], effectKinds), cancellationToken);
+                return ExactAllowedDecision(host, target, effectKinds, decision)
+                    ? new(true, "STANDING_GRANT_ALLOWED")
+                    : Denied("INVOCATION_NOT_AUTHORIZED");
+            }
+            catch (OperationCanceledException) { throw; }
+            catch
+            {
+                return Denied("WORKFLOW_ACTION_AUTHORITY_UNAVAILABLE");
+            }
+        }
+
+        private static ApplicationEcsCommitGuardDecision Denied(string code) => new(false, code);
+    }
+
     private static bool ExactAllowedDecision(
         InteractionInvocationHost host,
         StandingGrantDefinitionTarget target,
+        IReadOnlyList<string> effectKinds,
         StandingGrantDecision? decision)
     {
         if (decision is not { Allowed: true, Grant: not null, Evidence.Allowed: true }
@@ -178,6 +244,7 @@ internal sealed class ApplicationActionInvocationAdapter(
             && host.Budget.DeadlineUtc <= grant.ExpiresAtUtc
             && host.Budget.MaximumOperations <= grant.MaximumOperations
             && grant.Capabilities.Contains(StandingGrantCapability.Execute)
+            && effectKinds.All(effect => grant.EffectKinds.Contains(effect, StringComparer.Ordinal))
             && StandingGrantContractRules.MatchesDefinitionAllowance(
                 host.ApplicationRevision.ApplicationId, grant.Definitions, target);
     }

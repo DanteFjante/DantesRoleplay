@@ -30,7 +30,19 @@ public sealed class ApplicationActionRunner(
 
     public async Task<ApplicationActionExecutionResult> RunAsync(
         ApplicationActionExecutionRequest request,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) =>
+        await RunAsync(request, commitGuard: null, cancellationToken);
+
+    internal async Task<ApplicationActionExecutionResult> RunAuthorizedAsync(
+        ApplicationActionExecutionRequest request,
+        IApplicationEcsCommitGuard commitGuard,
+        CancellationToken cancellationToken = default) =>
+        await RunAsync(request, commitGuard ?? throw new ArgumentNullException(nameof(commitGuard)), cancellationToken);
+
+    private async Task<ApplicationActionExecutionResult> RunAsync(
+        ApplicationActionExecutionRequest request,
+        IApplicationEcsCommitGuard? commitGuard,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(request.ApplicationId);
@@ -136,7 +148,16 @@ public sealed class ApplicationActionRunner(
                     : ApplicationActionExecutionDisposition.Unsupported,
                 built.Problems[0].Code, built.Problems[0].SafeMessage);
 
-        var applied = await effects.ApplyAsync(built.Batch! with { ExecutionIdentity = request.ExecutionIdentity }, cancellationToken: cancellationToken);
+        var batch = built.Batch! with { ExecutionIdentity = request.ExecutionIdentity };
+        ApplicationEcsEffectResult applied;
+        if (commitGuard is null)
+            applied = await effects.ApplyAsync(batch, cancellationToken: cancellationToken);
+        else if (effects is IApplicationEcsGuardedEffectApplier guarded)
+            applied = await guarded.ApplyAuthorizedAsync(batch, commitGuard, cancellationToken);
+        else
+            return Failed(request, ApplicationActionExecutionDisposition.Unsupported,
+                "APPLICATION_ACTION_COMMIT_GUARD_UNAVAILABLE",
+                "The action commit authorization boundary is unavailable.");
         if (applied.Replayed)
             return Result(request, ApplicationActionExecutionDisposition.Replayed, applied.OperationId,
                 "The exact application action was already committed.", 0, [], applied.Receipts);
