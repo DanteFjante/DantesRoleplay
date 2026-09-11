@@ -68,6 +68,14 @@ CLR capability objects never enter JavaScript. The host resolves and validates t
 identities and current authority, and validates output before emitting
 process-local computation evidence. That evidence is not a durable task, read receipt or commit.
 
+Trusted application-scoped invocations use `InteractionInvocationHost.ForApplication` with both
+state identity fields absent. The existing constructor, planner context and envelope factory remain
+state-required; state read, action and service adapters reject an application-only host before
+accessing authority or storage. `TryTransferOperations` atomically debits the current budget and
+its ancestors, returning an independent bounded ledger at the same deadline. Downstream spending
+does not debit the original ledger again, and unused or failed work receives no refund. A transfer
+does not establish authority, admit expired work or create durable task history.
+
 ## Proposed execution contract
 
 A service definition declares an immutable definition revision, input/output shape, permitted data reads, callable actions and dependency revisions. The host constructs an invocation envelope containing invocation principal/scope/grant ref, definition revision, operation/parent identity, budgets and cancellation. Script input cannot manufacture authority. The same contract serves website, Codex and inner-AI callers; adapters establish identity and presentation.

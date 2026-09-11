@@ -128,6 +128,8 @@ public sealed class ApplicationReadOnlyServiceAuthorityTests
             CancellationToken cancellationToken = default)
         {
             PolicyCalls++;
+            var stateSpaceId = host.StateSpaceId
+                ?? throw new InvalidOperationException("This authority fixture requires a state host.");
             var principal = mutation == AuthorityMutation.MisboundGrant
                 ? "principal.other"
                 : host.Principal.PrincipalId;
@@ -146,7 +148,7 @@ public sealed class ApplicationReadOnlyServiceAuthorityTests
                     evidencePrincipal,
                     host.Principal.AuthenticationMethod,
                     "standing-grant",
-                    mutation == AuthorityMutation.MisboundEvidenceScope ? "state.other" : host.StateSpaceId,
+                    mutation == AuthorityMutation.MisboundEvidenceScope ? "state.other" : stateSpaceId,
                     mutation == AuthorityMutation.MisboundEvidenceCorrelation ? "command.other" : host.CommandId,
                     true,
                     "STANDING_GRANT_ALLOWED")));

@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -60,34 +61,67 @@ public sealed class InteractionInvocationBudget
             : new(maximumOperations, deadlineUtc, _ledger, this);
 
     /// <summary>Consumes one shared root allowance; retries are new attempts and consume again.</summary>
-    public bool TryConsumeOperation()
+    public bool TryConsumeOperation() => TryDebit(1);
+
+    /// <summary>
+    /// Atomically reserves operations from this budget and every shared ancestor, returning an
+    /// independent ledger for downstream work. Reserved operations are never refunded.
+    /// </summary>
+    public bool TryTransferOperations(
+        int operations,
+        [NotNullWhen(true)] out InteractionInvocationBudget? transferred)
     {
+        if (operations is < 1 or > InteractionContractLimits.ProposalSteps)
+            throw new InteractionContractException(
+                "INVALID_INVOCATION_BUDGET",
+                "The transferred operation count is outside the closed limit.");
         lock (_ledger)
         {
-            if (!CanConsume() || !_ledger.TryConsume()) return false;
-            ConsumeThroughAncestors();
+            if (!CanDebit(operations))
+            {
+                transferred = null;
+                return false;
+            }
+            var reservation = new InteractionInvocationBudget(operations, DeadlineUtc);
+            Debit(operations);
+            transferred = reservation;
             return true;
         }
     }
 
-    private bool CanConsume() => _consumed < MaximumOperations && (_parent?.CanConsume() ?? true);
-
-    private void ConsumeThroughAncestors()
+    private bool TryDebit(int operations)
     {
-        _consumed++;
-        _parent?.ConsumeThroughAncestors();
+        lock (_ledger)
+        {
+            if (!CanDebit(operations)) return false;
+            Debit(operations);
+            return true;
+        }
+    }
+
+    private bool CanDebit(int operations) =>
+        operations <= MaximumOperations - _consumed
+        && (_parent?.CanDebit(operations) ?? true)
+        && _ledger.CanDebit(operations);
+
+    private void Debit(int operations)
+    {
+        _ledger.Debit(operations);
+        DebitAncestors(operations);
+    }
+
+    private void DebitAncestors(int operations)
+    {
+        _consumed += operations;
+        _parent?.DebitAncestors(operations);
     }
 
     private sealed class InvocationBudgetLedger(int maximum)
     {
         private int _remaining = maximum;
         public int Remaining => _remaining;
-        public bool TryConsume()
-        {
-            if (_remaining == 0) return false;
-            _remaining--;
-            return true;
-        }
+        public bool CanDebit(int operations) => operations <= _remaining;
+        public void Debit(int operations) => _remaining -= operations;
     }
 }
 
@@ -98,6 +132,13 @@ public sealed record InteractionInvocationHost
     public InteractionInvocationHost(TrustedPrincipalContext principal, ApplicationRevision applicationRevision,
         string stateSpaceId, string grantReference, string commandId, string stateRevision,
         InteractionExecutionProfile profile, InteractionInvocationBudget budget, string? parentCommandId = null)
+        : this(principal, applicationRevision, stateSpaceId, grantReference, commandId, stateRevision,
+            profile, budget, parentCommandId, applicationScope: false) { }
+
+    private InteractionInvocationHost(TrustedPrincipalContext principal, ApplicationRevision applicationRevision,
+        string? stateSpaceId, string grantReference, string commandId, string? stateRevision,
+        InteractionExecutionProfile profile, InteractionInvocationBudget budget, string? parentCommandId,
+        bool applicationScope)
     {
         Principal = principal ?? throw new ArgumentNullException(nameof(principal));
         ArgumentNullException.ThrowIfNull(applicationRevision);
@@ -106,21 +147,37 @@ public sealed record InteractionInvocationHost
             throw new InteractionContractException("INVALID_APPLICATION_REVISION", "The application revision is invalid.");
         InteractionGuard.UpperSha256(applicationRevision.Fingerprint, nameof(applicationRevision.Fingerprint));
         ApplicationRevision = applicationRevision with { BaseApplications = Array.AsReadOnly(applicationRevision.BaseApplications.ToArray()) };
-        StateSpaceId = InteractionGuard.Identifier(stateSpaceId, nameof(stateSpaceId));
+        StateSpaceId = applicationScope
+            ? null
+            : InteractionGuard.Identifier(stateSpaceId!, nameof(stateSpaceId));
         GrantReference = InteractionGuard.Identifier(grantReference, nameof(grantReference));
         CommandId = InteractionGuard.IdempotencyKey(commandId);
-        StateRevision = InteractionGuard.Identifier(stateRevision, nameof(stateRevision));
+        StateRevision = applicationScope
+            ? null
+            : InteractionGuard.Identifier(stateRevision!, nameof(stateRevision));
         if (!Enum.IsDefined(profile)) throw new InteractionContractException("INVALID_EXECUTION_PROFILE", "The execution profile is not supported.");
         Profile = profile;
         Budget = budget ?? throw new ArgumentNullException(nameof(budget));
         ParentCommandId = parentCommandId is null ? null : InteractionGuard.IdempotencyKey(parentCommandId);
     }
+
+    public static InteractionInvocationHost ForApplication(
+        TrustedPrincipalContext principal,
+        ApplicationRevision applicationRevision,
+        string grantReference,
+        string commandId,
+        InteractionExecutionProfile profile,
+        InteractionInvocationBudget budget,
+        string? parentCommandId = null) =>
+        new(principal, applicationRevision, null, grantReference, commandId, null,
+            profile, budget, parentCommandId, applicationScope: true);
+
     public TrustedPrincipalContext Principal { get; }
     public ApplicationRevision ApplicationRevision { get; }
-    public string StateSpaceId { get; }
+    public string? StateSpaceId { get; }
     public string GrantReference { get; }
     public string CommandId { get; }
-    public string StateRevision { get; }
+    public string? StateRevision { get; }
     public InteractionExecutionProfile Profile { get; }
     public InteractionInvocationBudget Budget { get; }
     public string? ParentCommandId { get; }

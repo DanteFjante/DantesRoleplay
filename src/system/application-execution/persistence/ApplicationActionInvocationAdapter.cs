@@ -24,21 +24,24 @@ internal sealed class ApplicationActionInvocationAdapter(
                 return InteractionInvocationResult.Unavailable("ACTION_PROFILE_UNSUPPORTED", "The requested action profile is unavailable.");
             if (request.Host.ParentCommandId is not null)
                 return InteractionInvocationResult.Unavailable("ATOMIC_CHILD_UNSUPPORTED", "Atomic child proposals are not executable in this adapter.");
+            if (request.Host.StateSpaceId is not { } stateSpaceId || request.Host.StateRevision is not { } stateRevision)
+                return InteractionInvocationResult.Failed(
+                    "INVOCATION_STATE_SCOPE_REQUIRED", "The action requires a state scope.");
             if (request.Host.Budget.DeadlineUtc <= DateTime.UtcNow)
                 return InteractionInvocationResult.Cancelled("INVOCATION_DEADLINE_EXCEEDED", "The invocation deadline elapsed before the action started.");
             if (!request.Host.Budget.TryConsumeOperation())
                 return InteractionInvocationResult.Failed("INVOCATION_BUDGET_EXHAUSTED", "The invocation operation budget is exhausted.");
             var decision = authorization.Evaluate(new(request.Host.Principal, request.Host.ApplicationRevision.ApplicationId,
-                request.Host.StateSpaceId, InteractionCapability.Execute, request.Host.CommandId));
+                stateSpaceId, InteractionCapability.Execute, request.Host.CommandId));
             if (!decision.Allowed || decision.Capability != InteractionCapability.Execute
                 || decision.PrincipalReference != request.Host.Principal.PrincipalId
                 || decision.ApplicationId != request.Host.ApplicationRevision.ApplicationId
                 || decision.StateSpaceId != request.Host.StateSpaceId
                 || decision.EvidenceReference != request.Host.GrantReference)
                 return InteractionInvocationResult.Failed("INVOCATION_NOT_AUTHORIZED", "The action is not authorized for this scope.");
-            var state = stateSpaces.Get(request.Host.StateSpaceId);
+            var state = stateSpaces.Get(stateSpaceId);
             if (state is null || !ScopeMatches(state, request.Host)
-                || InteractionStateRevision.From(state) != request.Host.StateRevision)
+                || InteractionStateRevision.From(state) != stateRevision)
                 return InteractionInvocationResult.Failed("INVOCATION_SCOPE_STALE", "The requested state scope is no longer current.");
             var input = InteractionCanonicalJson.CanonicalizeObject(request.InputJson);
             var roles = InteractionInvocationRoles.Normalize(request.RoleEntityIds);
@@ -47,7 +50,7 @@ internal sealed class ApplicationActionInvocationAdapter(
             var seed = BinaryPrimitives.ReadInt64BigEndian(Convert.FromHexString(fingerprint[..16]));
             executionIdentity = new(InteractionInvocationIdentity.OperationId(request.Host), fingerprint);
             using var deadline = Deadline(request.Host.Budget, cancellationToken);
-            var result = await actions.RunAsync(new(request.Host.StateSpaceId, request.Host.ApplicationRevision.ApplicationId,
+            var result = await actions.RunAsync(new(stateSpaceId, request.Host.ApplicationRevision.ApplicationId,
                 request.QualifiedMechanicId, request.MechanicVersion, request.ContentFingerprint, roles,
                 input, seed, executionIdentity), deadline.Token);
             if (!result.Successful)

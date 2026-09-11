@@ -33,6 +33,9 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
         try
         {
             ArgumentNullException.ThrowIfNull(request);
+            if (request.Host.StateSpaceId is not { } stateSpaceId || request.Host.StateRevision is null)
+                return InteractionInvocationResult.Failed(
+                    "INVOCATION_STATE_SCOPE_REQUIRED", "The service requires a state scope.");
             progress = request.Progress ?? new ApplicationServiceProgressChannel();
             if (!progress.TryBind())
                 return InteractionInvocationResult.Failed(
@@ -105,7 +108,7 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
                 SynchronizationContext.SetSynchronizationContext(null);
                 run = mechanics.RunServiceAsync(
                     retained.Source,
-                    new MechanicProjection { StateSpaceId = request.Host.StateSpaceId, Input = input, Seed = seed },
+                    new MechanicProjection { StateSpaceId = stateSpaceId, Input = input, Seed = seed },
                     limits,
                     capabilities,
                     cancellationToken).GetAwaiter().GetResult();
@@ -324,7 +327,10 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
 
     private InteractionInvocationResult? CurrentScopeFailure(InteractionInvocationHost host)
     {
-        var state = stateSpaces.Get(host.StateSpaceId);
+        if (host.StateSpaceId is not { } stateSpaceId || host.StateRevision is null)
+            return InteractionInvocationResult.Failed(
+                "INVOCATION_STATE_SCOPE_REQUIRED", "The service requires a state scope.");
+        var state = stateSpaces.Get(stateSpaceId);
         return state is not null
                && state.ApplicationRevision.ApplicationId == host.ApplicationRevision.ApplicationId
                && state.ApplicationRevision.Revision == host.ApplicationRevision.Revision
@@ -557,7 +563,10 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
 
         private InteractionInvocationResult? ScopeFailure()
         {
-            var state = stateSpaces.Get(host.StateSpaceId);
+            if (host.StateSpaceId is not { } stateSpaceId || host.StateRevision is null)
+                return InteractionInvocationResult.Failed(
+                    "INVOCATION_STATE_SCOPE_REQUIRED", "The service read requires a state scope.");
+            var state = stateSpaces.Get(stateSpaceId);
             return state is not null
                    && state.ApplicationRevision.ApplicationId == host.ApplicationRevision.ApplicationId
                    && state.ApplicationRevision.Revision == host.ApplicationRevision.Revision
