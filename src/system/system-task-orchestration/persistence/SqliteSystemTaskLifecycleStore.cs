@@ -33,6 +33,9 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
         CancellationToken cancellationToken = default, StandingGrantActivationOrigin? activationOrigin = null)
     {
         ArgumentNullException.ThrowIfNull(request);
+        if (request.InvocationHost.StateSpaceId is not { } stateSpaceId
+            || request.InvocationHost.StateRevision is not { } stateRevision)
+            return Rejected("INVOCATION_STATE_SCOPE_REQUIRED", "Durable tasks require a state scope.");
         if (activationOrigin is not null && !ValidActivationOrigin(request, activationOrigin))
             return Rejected("SYSTEM_TASK_ACTIVATION_ORIGIN_INVALID",
                 "The retained activation origin is invalid or does not match the admitted application revision.");
@@ -50,9 +53,9 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
             baseApplications = InteractionCanonicalJson.Fingerprint(FingerprintDomain + "/bases",
                 InteractionCanonicalJson.Canonicalize(JsonSerializer.Serialize(
                     request.InvocationHost.ApplicationRevision.BaseApplications.Select(value => value.ToString())))),
-            request.InvocationHost.StateSpaceId,
+            StateSpaceId = stateSpaceId,
             request.InvocationHost.GrantReference,
-            request.InvocationHost.StateRevision,
+            StateRevision = stateRevision,
             profile = InteractionExecutionProfileNames.Get(request.InvocationHost.Profile),
             request.InvocationHost.CommandId,
             request.InvocationHost.ParentCommandId,
@@ -139,9 +142,9 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
                 parent.ApplicationRevision != request.InvocationHost.ApplicationRevision.Revision ||
                 !StringComparer.Ordinal.Equals(parent.ApplicationFingerprint, request.InvocationHost.ApplicationRevision.Fingerprint) ||
                 !StringComparer.Ordinal.Equals(parent.BaseApplicationsJson, requestedBases) ||
-                !StringComparer.Ordinal.Equals(parent.StateSpaceId, request.InvocationHost.StateSpaceId) ||
+                !StringComparer.Ordinal.Equals(parent.StateSpaceId, stateSpaceId) ||
                 !StringComparer.Ordinal.Equals(parent.GrantReference, request.InvocationHost.GrantReference) ||
-                !StringComparer.Ordinal.Equals(parent.StateRevision, request.InvocationHost.StateRevision) ||
+                !StringComparer.Ordinal.Equals(parent.StateRevision, stateRevision) ||
                 !StringComparer.Ordinal.Equals(parent.ExecutionProfile, InteractionExecutionProfileNames.Get(request.InvocationHost.Profile)))
                 return Rejected("SYSTEM_TASK_PARENT_SCOPE_MISMATCH", "A child task must retain its parent's exact principal and invocation scope.");
             var childCount = await ScalarLongAsync(connection, transaction,
@@ -178,7 +181,7 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
                 request.InvocationHost.ApplicationRevision.ApplicationId.ToString(),
                 request.InvocationHost.ApplicationRevision.Revision,
                 request.InvocationHost.ApplicationRevision.Fingerprint,
-                dependencyBases, request.InvocationHost.StateSpaceId, cancellationToken))
+                dependencyBases, stateSpaceId, cancellationToken))
                 return Rejected("SYSTEM_TASK_DEPENDENCY_SCOPE_MISMATCH", "A dependency must have the same principal, application revision, and state scope.");
             if (ancestorIds.Contains(dependency.TaskId))
                 return Rejected("SYSTEM_TASK_DEPENDENCY_ANCESTOR", "A task cannot depend on its parent ancestry.");
@@ -227,8 +230,8 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
             ("$activationFingerprint", activationOrigin?.ActivationFingerprint),
             ("$activationApplicationRevision", activationOrigin?.ApplicationRevision),
             ("$activationApplicationFingerprint", activationOrigin?.ApplicationFingerprint),
-            ("$stateSpace", request.InvocationHost.StateSpaceId), ("$grant", request.InvocationHost.GrantReference),
-            ("$stateRevision", request.InvocationHost.StateRevision), ("$profile", InteractionExecutionProfileNames.Get(request.InvocationHost.Profile)),
+            ("$stateSpace", stateSpaceId), ("$grant", request.InvocationHost.GrantReference),
+            ("$stateRevision", stateRevision), ("$profile", InteractionExecutionProfileNames.Get(request.InvocationHost.Profile)),
             ("$admitted", admitted), ("$deadline", ToDb(request.InvocationHost.Budget.DeadlineUtc)),
             ("$definition", request.SelectedDefinition.ExactDefinitionId), ("$definitionVersion", request.SelectedDefinition.Version),
             ("$definitionFingerprint", request.SelectedDefinition.Fingerprint), ("$input", request.InputJson),

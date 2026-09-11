@@ -138,6 +138,29 @@ public sealed class SqliteSystemTaskLifecycleStoreTests
     }
 
     [Fact]
+    public async Task Application_scope_cannot_enter_the_procedure_lifecycle_or_consume_its_budget()
+    {
+        await using var fixture = await SystemTaskLifecycleSchemaFixture.CreateAsync();
+        var budget = new InteractionInvocationBudget(16,
+            fixture.TimeProvider.GetUtcNow().AddHours(1).UtcDateTime);
+        var host = InteractionInvocationHost.ForApplication(
+            TrustedPrincipalContext.VerifiedPrincipal(Principal, "fixture"),
+            new ApplicationRevision(ApplicationIdentifier.Parse("fixture-app"), 1, Hash,
+                [ApplicationIdentifier.Parse("base-app")]),
+            "grant.1", "command.application", InteractionExecutionProfile.Workflow, budget);
+
+        var result = await fixture.CreateStore().EnqueueAsync(new(
+            host, new("procedure.fixture", 1, Hash), "{}"));
+
+        Assert.Equal(SystemTaskEnqueueDisposition.Rejected, result.Disposition);
+        Assert.Equal("INVOCATION_STATE_SCOPE_REQUIRED", result.Code);
+        Assert.Null(result.Handle);
+        Assert.Equal(16, budget.RemainingOperations);
+        Assert.Equal(0L, await ScalarAsync(fixture, "SELECT COUNT(*) FROM system_task_lifecycle"));
+        Assert.Equal(0L, await ScalarAsync(fixture, "SELECT COUNT(*) FROM system_task_root_budget"));
+    }
+
+    [Fact]
     public async Task Retained_activation_origin_is_immutable_and_equivalent_replay_is_inert()
     {
         await using var fixture = await SystemTaskLifecycleSchemaFixture.CreateAsync();

@@ -49,6 +49,22 @@ public sealed class SystemTaskDurableTriggerTargetTests
             Target(Host(profile: profile), new("procedure.fixture", 1, Hash), "{}")).Code);
 
     [Fact]
+    public void Trigger_target_rejects_application_scope_before_deriving_an_executable_identity()
+    {
+        var host = InteractionInvocationHost.ForApplication(
+            TrustedPrincipalContext.VerifiedPrincipal(Principal, "fixture"),
+            new ApplicationRevision(ApplicationIdentifier.Parse("fixture-app"), 1, Hash, []),
+            "grant.1", "application.command", InteractionExecutionProfile.Workflow,
+            new InteractionInvocationBudget(16, new DateTime(2030, 1, 1, 0, 0, 0, DateTimeKind.Utc)));
+
+        var error = Assert.Throws<InteractionContractException>(() =>
+            Target(host, new("procedure.fixture", 1, Hash), "{}"));
+
+        Assert.Equal("INVOCATION_STATE_SCOPE_REQUIRED", error.Code);
+        Assert.Equal(16, host.Budget.RemainingOperations);
+    }
+
+    [Fact]
     public void Delivery_attempt_cannot_supply_a_fresh_command_identity() =>
         Assert.Equal("SYSTEM_TASK_TRIGGER_IDENTITY_MISMATCH", Assert.Throws<InteractionContractException>(() =>
             Target(Host(command: "another-command"), new("procedure.fixture", 1, Hash), "{}")).Code);

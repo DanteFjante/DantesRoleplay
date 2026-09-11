@@ -20,10 +20,13 @@ internal sealed class SystemTaskDurableTriggerTarget
         BindingFingerprint = UpperSha256(bindingFingerprint, nameof(bindingFingerprint));
         OccurrenceId = Identifier(occurrenceId, nameof(occurrenceId));
         ArgumentNullException.ThrowIfNull(host);
+        if (host.StateSpaceId is not { } stateSpaceId || host.StateRevision is null)
+            throw new InteractionContractException("INVOCATION_STATE_SCOPE_REQUIRED",
+                "A durable trigger requires a state scope.");
         if (host.Profile != InteractionExecutionProfile.Workflow)
             throw new InteractionContractException("SYSTEM_TASK_PROFILE_UNSUPPORTED", "A durable trigger requires the workflow profile.");
         var identity = Identity(bindingId, bindingVersion, occurrenceId, host.Principal.PrincipalId,
-            host.ApplicationRevision.ApplicationId.Value, host.StateSpaceId);
+            host.ApplicationRevision.ApplicationId.Value, stateSpaceId);
         if (host.CommandId != identity.CommandId)
             throw new InteractionContractException("SYSTEM_TASK_TRIGGER_IDENTITY_MISMATCH", "The host command must identify the durable occurrence.");
         CorrelationId = identity.CorrelationId;

@@ -110,6 +110,9 @@ internal sealed partial class SqliteSystemTaskDurableService(
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(host);
+        if (host.StateSpaceId is not { } stateSpaceId || host.StateRevision is not { } stateRevision)
+            return InteractionInvocationResult.Failed("INVOCATION_STATE_SCOPE_REQUIRED",
+                "Durable tasks require a state scope.");
         // Public Pending cannot escape an uncommitted caller transaction. Effect/scheduler owners
         // use the internal staging API and publish their result after their own commit boundary.
         if (db.Database.CurrentTransaction is not null)
@@ -132,12 +135,12 @@ internal sealed partial class SqliteSystemTaskDurableService(
             }
             await using var transaction = connection.BeginTransaction(IsolationLevel.Serializable, deferred: !write);
             await using var enlistment = await db.Database.UseTransactionAsync(transaction, cancellationToken);
-            var currentState = stateSpaces.Get(host.StateSpaceId);
+            var currentState = stateSpaces.Get(stateSpaceId);
             if (currentState is null || currentState.ApplicationRevision.ApplicationId != host.ApplicationRevision.ApplicationId
                 || currentState.ApplicationRevision.Revision != host.ApplicationRevision.Revision
                 || currentState.ApplicationRevision.Fingerprint != host.ApplicationRevision.Fingerprint
                 || !currentState.ApplicationRevision.BaseApplications.SequenceEqual(host.ApplicationRevision.BaseApplications)
-                || InteractionStateRevision.From(currentState) != host.StateRevision)
+                || InteractionStateRevision.From(currentState) != stateRevision)
                 return InteractionInvocationResult.Failed("INVOCATION_SCOPE_STALE", "The requested state scope is no longer current.");
             var store = new SqliteSystemTaskLifecycleStore(connection.ConnectionString, timeProvider);
             var result = await action(store, connection, transaction);

@@ -214,6 +214,36 @@ public sealed class SystemTaskDurableServiceBoundaryTests
         Assert.Equal(0L, await fixture.CountTasksAsync());
     }
 
+    [Theory]
+    [InlineData("submit")]
+    [InlineData("get")]
+    [InlineData("read")]
+    [InlineData("children")]
+    [InlineData("cancel")]
+    public async Task Application_scope_is_rejected_before_budget_or_authority_access(string operation)
+    {
+        await using var fixture = await BoundaryFixture.CreateAsync();
+        var host = ApplicationHost(fixture, "command.application." + operation);
+        var handle = new SystemTaskDurableHandle("task.application", "command.application.target");
+
+        var result = operation switch
+        {
+            "submit" => await fixture.Service.SubmitAsync(Request(fixture, host)),
+            "get" => await fixture.Service.GetAsync(host, handle),
+            "read" => await fixture.Service.ReadAsync(host, handle),
+            "children" => await fixture.Service.ListChildrenAsync(host, handle),
+            "cancel" => await fixture.Service.CancelAsync(host, handle),
+            _ => throw new ArgumentOutOfRangeException(nameof(operation))
+        };
+
+        Assert.Equal(InteractionInvocationResultTag.Failed, result.Tag);
+        Assert.Equal("INVOCATION_STATE_SCOPE_REQUIRED", result.Code);
+        Assert.Equal(16, host.Budget.RemainingOperations);
+        Assert.Equal(0, fixture.Resolver.CallCount);
+        Assert.Equal(0, fixture.Policy.CallCount);
+        Assert.Equal(0L, await fixture.CountTasksAsync());
+    }
+
     [Fact]
     public async Task Current_grant_can_differ_from_stored_grant_for_read_and_cancel()
     {
@@ -526,6 +556,13 @@ public sealed class SystemTaskDurableServiceBoundaryTests
                 (deadline ?? fixture.TimeProvider.GetUtcNow().AddHours(1)).UtcDateTime), parentCommand);
     }
 
+    private static InteractionInvocationHost ApplicationHost(BoundaryFixture fixture, string command) =>
+        InteractionInvocationHost.ForApplication(
+            TrustedPrincipalContext.VerifiedPrincipal(Principal, "boundary-test"),
+            new ApplicationRevision(App, 1, Hash, []), "grant.current", command,
+            InteractionExecutionProfile.Workflow,
+            new InteractionInvocationBudget(16, fixture.TimeProvider.GetUtcNow().AddHours(1).UtcDateTime));
+
     private static StandingGrantRevision Grant(InteractionInvocationHost host) => new(
         host.GrantReference, "grant.family", 1, Hash, host.Principal.PrincipalId,
         host.ApplicationRevision.ApplicationId, StandingGrantScope.StateSpace, host.StateSpaceId,
@@ -536,7 +573,8 @@ public sealed class SystemTaskDurableServiceBoundaryTests
     private static StandingGrantDecision Decision(InteractionInvocationHost host, bool allowed,
         string code, StandingGrantRevision? grant) => new(allowed, code, grant,
         new(host.Principal.PrincipalId, host.Principal.AuthenticationMethod, "boundary-test",
-            host.StateSpaceId, host.CommandId, allowed, code));
+            host.StateSpaceId ?? throw new InvalidOperationException("This workflow authority fixture requires a state scope."),
+            host.CommandId, allowed, code));
 
     private static async Task<long> ScalarAsync(SqliteConnection connection, string sql,
         params (string Name, object Value)[] parameters)
