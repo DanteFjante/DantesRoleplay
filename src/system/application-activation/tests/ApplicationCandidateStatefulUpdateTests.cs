@@ -14,6 +14,7 @@ using DantesRoleplay.Mechanics;
 using DantesRoleplay.Operations;
 using DantesRoleplay.Procedures;
 using DantesRoleplay.SchemaValidation;
+using DantesRoleplay.SystemCapabilities;
 using Microsoft.EntityFrameworkCore;
 
 namespace DantesRoleplay.Authorization.Tests;
@@ -94,11 +95,29 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
                 InteractionStateRevision.From(state), new Dictionary<string, string> { ["subject"] = "subject" },
                 expectedEffects)
         ]);
-        var validated = await service.ValidateAsync(request, AuthorHost(setup, "stateful-validate"));
+        var gateway = new ApplicationCandidateCapabilityGateway(CandidateCatalog(db, setup, service));
+        var validationJson = JsonSerializer.Serialize(new
+        {
+            applicationId = Application.Value, candidateId = candidate.CandidateId,
+            revision = candidate.Revision, contentFingerprint = candidate.ContentFingerprint,
+            samples = request.Samples.Select(sample => new
+            {
+                definition = new { definitionId = sample.Definition.DefinitionId,
+                    kind = sample.Definition.Kind, revision = sample.Definition.Revision,
+                    contentFingerprint = sample.Definition.ContentFingerprint },
+                inputJson = sample.InputJson, expectedDataJson = sample.ExpectedDataJson,
+                stateSpaceId = sample.StateSpaceId, stateRevision = sample.StateRevision,
+                roleEntityIds = sample.RoleEntityIds, expectedEffectsJson = sample.ExpectedEffectsJson
+            }).ToArray()
+        });
+        var validated = await gateway.InvokeAsync(AuthorHost(setup, "stateful-validate").Principal,
+            Application, SystemCapabilityIds.ApplicationCandidateValidate,
+            validationJson, "stateful-validate", "website");
 
-        Assert.Equal(InteractionInvocationResultTag.Committed, validated.Tag);
+        Assert.True(validated.Ok, validated.Error?.Code + ":" + validated.Error?.Message);
         Assert.Null(await entities.GetEntityAsync(StatefulSpace, "created"));
-        var validation = await db.Set<ApplicationCandidateValidationRecord>().AsNoTracking().SingleAsync();
+        var validation = await db.Set<ApplicationCandidateValidationRecord>().AsNoTracking()
+            .SingleAsync(value => value.OperationId == validated.OperationId);
         Assert.True(validation.Outcome == "valid", validation.DiagnosticsJson);
         Assert.StartsWith(ApplicationCandidateStatefulRuntimeValidator.PolicyVersion + "@", validation.PreparationVersion);
         Assert.Contains("stateful-runtime-report", validation.PreparedEvidenceReference);
@@ -143,9 +162,11 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         db.ChangeTracker.Clear();
         Assert.False(await runtime.CurrentAsync(update, retainedReport,
             AuthorHost(setup, "stateful-current-revoked"), default));
-        var denied = await service.ValidateAsync(request, AuthorHost(setup, "stateful-validate"));
-        Assert.Equal(InteractionInvocationResultTag.Unavailable, denied.Tag);
-        Assert.Equal("APPLICATION_CANDIDATE_VALIDATION_EVIDENCE_INCONSISTENT", denied.Code);
+        var denied = await gateway.InvokeAsync(AuthorHost(setup, "stateful-validate").Principal,
+            Application, SystemCapabilityIds.ApplicationCandidateValidate,
+            validationJson, "stateful-validate", "website");
+        Assert.False(denied.Ok);
+        Assert.Equal("APPLICATION_CANDIDATE_VALIDATION_EVIDENCE_INCONSISTENT", denied.Error?.Code);
     }
 
     [Fact]

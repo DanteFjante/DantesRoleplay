@@ -41,7 +41,10 @@ public sealed class ApplicationCandidateSystemCapabilityTests
             candidateId = new string('b', 32),
             revision = 3,
             contentFingerprint = Hash,
-            samples = new[] { new { definition, inputJson = "{\"value\":1}", expectedDataJson = "{\"value\":2}" } }
+            samples = new[] { new { definition, inputJson = "{\"value\":1}", expectedDataJson = "{\"value\":2}",
+                stateSpaceId = "candidate-state", stateRevision = "state-binding.1." + new string('a', 64),
+                roleEntityIds = new Dictionary<string, string> { ["actor"] = "entity.actor" },
+                expectedEffectsJson = "[]" } }
         });
 
         var result = await tool.InvokeAsync(new("call.1", tool.Definition.Name, input, AiRequestKind.Task));
@@ -49,7 +52,11 @@ public sealed class ApplicationCandidateSystemCapabilityTests
         Assert.True(result.Ok, result.ErrorMessage);
         var call = Assert.Single(fixture.Authoring.ValidationCalls);
         Assert.Equal(Application, call.Request.Candidate.ApplicationId);
-        Assert.Equal("candidate-app.runtime.roll", Assert.Single(call.Request.Samples).Definition.DefinitionId);
+        var sample = Assert.Single(call.Request.Samples);
+        Assert.Equal("candidate-app.runtime.roll", sample.Definition.DefinitionId);
+        Assert.Equal("candidate-state", sample.StateSpaceId);
+        Assert.Equal("entity.actor", sample.RoleEntityIds!["actor"]);
+        Assert.Equal("[]", sample.ExpectedEffectsJson);
         Assert.Equal(Principal.PrincipalId, call.Host.Principal.PrincipalId);
         Assert.Equal("grant.validate@1", call.Host.GrantReference);
         Assert.Equal(InteractionExecutionProfile.Atomic, call.Host.Profile);
