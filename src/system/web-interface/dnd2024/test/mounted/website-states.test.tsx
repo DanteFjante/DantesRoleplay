@@ -1515,8 +1515,60 @@ test("Campaign Clues renders a source-fenced partial prefix while its owned cont
     await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
     assert.equal(progressCalls, 1);
     assert.match(mounted.container.textContent ?? "", /partial view/);
-    assert.doesNotMatch(mounted.container.textContent ?? "", /View unavailable|Later page unavailable/,
-      "a later failure does not erase the independently retained partial prefix");
+    assert.match(mounted.container.textContent ?? "", /Later page unavailable/,
+      "a later failure remains explicit without erasing the independently retained partial prefix");
+    assert.match(mounted.container.textContent ?? "", /The brass reliquary/);
+    assert.ok(button(mounted.container, "Retry view"));
+  } finally { await mounted.cleanup(); }
+});
+
+test("an aborted progressive Clues continuation retires its lease and resumes from its retained prefix", async () => {
+  const { DndInformationHub } = await import("../../src/components/DndInformationHub");
+  const { createHubStore, selectTableEnvelope, tableScope } = await import("../../src/data/hub-store");
+  const initial = envelope("dm");
+  initial.campaign.clues = [];
+  initial.campaign.cluesCoverage = "unavailable";
+  const prefix = structuredClone(initial);
+  prefix.campaign.clues = [structuredClone(envelope("dm").campaign.clues[0]!)];
+  prefix.campaign.cluesCoverage = "partial";
+  const complete = structuredClone(prefix);
+  complete.campaign.clues = [
+    structuredClone(envelope("dm").campaign.clues[0]!),
+    { ...structuredClone(envelope("dm").campaign.clues[0]!), id: "clue.resumed", title: "Resumed clue" },
+  ];
+  complete.campaign.cluesCoverage = "complete";
+  const store = createHubStore();
+  let loreCalls = 0;
+  const mounted = await mount(<DndInformationHub store={store} initialEnvelope={initial}
+    loadContent={async () => { throw new Error("not used"); }}
+    loadCampaignDetails={async () => initial.campaign}
+    loadDeferredSection={async (_scope, section, signal, _preferCached, onProgress) => {
+      if (section !== "lore") return deferredUpdate(section);
+      loreCalls += 1;
+      if (loreCalls === 1) {
+        await onProgress?.(deferredUpdate("lore", prefix));
+        await new Promise<void>((resolve) => signal.addEventListener("abort", () => resolve(), { once: true }));
+        throw new DOMException("aborted", "AbortError");
+      }
+      return deferredUpdate("lore", complete);
+    }} />, "https://table.example.test/ui/dnd2024-play#view?tab=campaign&section=clues");
+  try {
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
+    assert.equal(loreCalls, 1);
+    assert.match(mounted.container.textContent ?? "", /partial view/);
+    await click(button(mounted.container, "World"));
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
+    const scope = tableScope(initial);
+    assert.equal(store.getState().table.requests["deferred:lore"], undefined);
+    assert.equal(store.getState().table.facets["deferred:lore"]?.fresh, false);
+    assert.equal(selectTableEnvelope(store.getState())?.campaign.clues.length, 1);
+    await click(button(mounted.container, "Campaign"));
+    await click(button(mounted.container, "Browse clues"));
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
+    assert.equal(loreCalls, 2, "a nonfresh retained prefix is resumed on the next authorized visit");
+    assert.equal(selectTableEnvelope(store.getState())?.campaign.clues.length, 2);
+    assert.equal(store.getState().table.requests["deferred:lore"], undefined);
+    assert.equal(store.getState().table.scope, scope);
   } finally { await mounted.cleanup(); }
 });
 

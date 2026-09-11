@@ -1033,15 +1033,23 @@ function DndInformationHubContent({
   async function requestDeferred(section: DeferredHubSection, force = false) {
     const existing = deferredStates[section] ?? "unloaded";
     const owner = section === "context" ? contextAbort : deferredAbort;
-    if (!loadDeferredSection || (!force && (existing === "ready" || existing === "error" ||
-        existing === "loading" && !owner.current?.signal.aborted))) return;
     const requestScope = tableScope(envelope);
     const tableKey = `deferred:${section}`;
     const maximumAgeMs = section === "context" ? RESOURCE_FRESHNESS_MS.campaignContext
       : section === "locations" ? RESOURCE_FRESHNESS_MS.worldLocationScope
         : RESOURCE_FRESHNESS_MS.worldInformation;
+    const fresh = section !== "current" && tableFacetFresh(
+      confirmedStore.getState().table, requestScope, tableKey, maximumAgeMs,
+    );
+    // A source-fenced prefix is visible, but it is not terminal. Once its
+    // continuation is aborted or fails, its reducer retires the owned lease and
+    // marks the facet nonfresh. A later visit may then resume it instead of
+    // treating the retained prefix as a completed response.
+    if (!loadDeferredSection || (!force && (existing === "error" ||
+        existing === "loading" && !owner.current?.signal.aborted ||
+        existing === "ready" && (section === "current" || fresh)))) return;
     if (section !== "current" && !force &&
-        tableFacetFresh(confirmedStore.getState().table, requestScope, tableKey, maximumAgeMs)) {
+        fresh) {
       if (section === "locations") loadedWorldScopes.current.add(
         envelope.contextSelection?.selectedWorldId ?? envelope.world.id,
       );
@@ -1068,6 +1076,14 @@ function DndInformationHubContent({
     if (tableRequest) dispatch(tableActions.requestStarted({
       scope: tableRequest.scope, key: tableRequest.key, requestToken: tableRequest.requestToken,
     }));
+    const retireAbortedTableRequest = () => {
+      if (tableRequest) dispatch(tableActions.requestFinished({
+        scope: tableRequest.scope, key: tableRequest.key, requestToken: tableRequest.requestToken,
+      }));
+    };
+    // An abort can leave a fetch promise pending indefinitely. Retire the exact
+    // lease at the signal boundary instead of waiting for that promise to throw.
+    controller.signal.addEventListener("abort", retireAbortedTableRequest, { once: true });
     setDeferredStates((states) => ({ ...states, [section]: "loading" }));
     setDeferredErrors((errors) => ({ ...errors, [section]: "" }));
     let progressCommitted = false;
@@ -1127,7 +1143,14 @@ function DndInformationHubContent({
       );
       setDeferredStates((states) => ({ ...states, [section]: "ready" }));
     } catch (error) {
-      if (controller.signal.aborted) return;
+      if (controller.signal.aborted) {
+        // An aborted progressive read must retire its exact table lease. Its
+        // prefix remains bounded Redux data, marked nonfresh by requestFinished,
+        // so returning to the section starts a new source-fenced continuation.
+        retireAbortedTableRequest();
+        if (!progressCommitted) setDeferredStates((states) => ({ ...states, [section]: "unloaded" }));
+        return;
+      }
       if (tableRequest) dispatch(tableActions.requestFinished({
         scope: tableRequest.scope, key: tableRequest.key, requestToken: tableRequest.requestToken,
       }));
@@ -1247,6 +1270,11 @@ function DndInformationHubContent({
         ? <button type="button" onClick={() => void requestDeferred(deferredSection, true)}>Retry view</button> : null}
     </section>
   ) : null;
+  const deferredPartialFailure = deferredSection && deferredState === "ready" && deferredErrors[deferredSection]
+    ? <p className="perspective-notice" role="alert">
+      {deferredErrors[deferredSection]}
+      <button type="button" onClick={() => void requestDeferred(deferredSection, true)}>Retry view</button>
+    </p> : null;
 
   async function requestFactionPage(cursor: string | null, force = false) {
     if (!loadFactionPage || perspective !== "dm" || hubBusy) return;
@@ -1841,6 +1869,7 @@ function DndInformationHubContent({
         contextError={deferredErrors.context}
       />
       {hubError ? <p className="perspective-notice" role="alert">{hubError}</p> : null}
+      {deferredPartialFailure}
       {pendingChange !== null ? <div className="perspective-notice" role="status">
         The server changed or the live connection was interrupted. Showing the last loaded view.
         <button type="button" disabled={hubBusy} onClick={refreshChangedView}>Refresh view</button>
