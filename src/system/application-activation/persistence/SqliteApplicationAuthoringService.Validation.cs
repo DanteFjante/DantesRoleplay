@@ -79,8 +79,12 @@ public sealed partial class SqliteApplicationAuthoringService
                 await transaction.CommitAsync(cancellationToken);
                 return Receipt(operationId, commandFingerprint);
             }
+            var intentMatchUpdate = samples.Count == 0
+                ? await new ApplicationCandidateIntentMatchUpdateReader(db, applications, activations, evidence)
+                    .ReadAsync(candidate, cancellationToken)
+                : null;
             ApplicationCandidateRuntimeReport? runtimeReport = null;
-            if (preparation is not null)
+            if (intentMatchUpdate is null && preparation is not null)
             {
                 var prepared = await preparation.ValidateAsync(
                     new ApplicationCandidateValidationRequest(candidate, samples), host, cancellationToken);
@@ -129,7 +133,13 @@ public sealed partial class SqliteApplicationAuthoringService
                 Outcome = runtimeReport?.Status == ApplicationCandidateRuntimeStatus.Invalid ? "invalid" : "unavailable",
                 DiagnosticsJson = InteractionCanonicalJson.Canonicalize(JsonSerializer.Serialize(diagnostics)), AlternativesJson = "[]"
             };
-            if (runtimeReport is not null && manuals is not null)
+            if (intentMatchUpdate is not null && manuals is not null)
+            {
+                var exactMatch = new ApplicationCandidateIntentMatchUpdateValidation(
+                    db, targets, grants, manuals, operations);
+                await exactMatch.CompleteAsync(host, intentMatchUpdate, validationRow, cancellationToken);
+            }
+            else if (runtimeReport is not null && manuals is not null)
             {
                 var compatible = new ApplicationCandidateCompatibleUpdateValidation(db,
                     new(db, applications, activations, evidence, targets,

@@ -99,17 +99,24 @@ Incomplete coverage remains Unavailable. V1 fingerprint semantics are unchanged.
 provider request has its own size check, including prompts and escaping; fitting the model-input
 bound alone does not guarantee that request fits.
 
-Alternate-intent preparation is internal and limited to existing application procedures. It accepts
-only a typed candidate lookup, exact definition reference and replacement phrase list; the candidate
-reader rehydrates linked retained rows and bytes. Independent Read and Author checks run before and
-after preparation, with fresh source/target and active-generation evidence. Up to 32 phrases of
-200 characters are trimmed, whitespace-normalized and deduplicated under retrieval matching rules.
-Selected source text and replacement text each have a 32,000-byte UTF-8 bound.
-The editor changes only the `## Matches` section, preserves other source text and parsed fields,
-and rejects ambiguous section/fence layouts. Removing all phrases preserves the canonical target
-and its instructions. Existing synchronization/source hash semantics are unchanged. The result is
-one inert `ApplicationCandidateDocumentInput`; only plan 02's existing candidate lifecycle may write,
-validate or activate it with its expected revision. Global orientation and MCP surfaces are excluded.
+Alternate-intent authoring is internal and limited to existing trusted application procedures and
+mechanics. It accepts an exact current definition reference, expected candidate revision and replacement
+phrase list; active and candidate readers rehydrate retained rows and bytes. Read authority is checked
+before retained source preparation, Author is checked by the candidate writer in its SQLite transaction,
+and Validate and Activate are checked by their existing lifecycle stages. Up to 32 phrases of 200
+characters are trimmed, whitespace-normalized and deduplicated under retrieval matching rules. Selected
+source text and replacement text each have a 32,000-byte UTF-8 bound.
+
+The editor changes only the explicit `## Matches` section and rejects ambiguous section/fence layouts.
+Publication requires a separate exact structural proof: the same existing ID, kind, version, contract,
+requirements and source sidecar; byte-identical authored text outside the editor-owned section; and an
+otherwise identical retained generation. It records validation and publication receipts without runtime
+samples or model equivalence. The existing application candidate and activation histories retain every
+revision. Removing all phrases disables the alternate association while preserving the canonical target
+and its implementation; a later revision may restore or replace phrases. Each publication advances the
+definition-change feed, so catalog and derived retrieval generations refresh from the authoritative
+activation. Existing synchronization/source hash semantics are unchanged. Global orientation and MCP
+surfaces remain excluded pending coordinator integration.
 
 Prerequisite: implement [00 — Shared foundation](00-shared-foundation.md) first and have the coordinator supply its accepted foundation revision and contract baseline. This workstream consumes those shared contracts and does not redefine them independently.
 

@@ -90,6 +90,14 @@ internal static class ApplicationCandidateOperationProof
             || applicationId != candidate.ApplicationId.Value || command.CanonicalCommand != operation.ProjectionJson
             || InteractionCanonicalJson.Fingerprint("dantes-roleplay/application-candidate-validation/v1", command.CanonicalCommand) != row.CanonicalCommandFingerprint)
             return false;
+        if (row.PreparationVersion == ApplicationCandidateIntentMatchUpdateValidation.PreparationVersion)
+            return row.Outcome == "valid" && row.DependenciesComplete
+                && row.ManualPacketResultFingerprint is { Length: 64 }
+                && row.PreparedEvidenceReference is { Length: 97 } reference && reference[32] == ':'
+                && row.DependencyEvidenceReference == reference && row.ReuseEvidenceReference == reference
+                && operation.GuardEvidenceJson == Guard(principal, authenticationMethod, applicationId,
+                    commandId, candidate, row.GrantReference, actualDefinitions,
+                    row.CanonicalCommandFingerprint, ValidationFingerprint(row), null);
         if (row.PreparedEvidenceReference is not null || row.PreparationVersion is not null)
             return TryReadRuntimeReport(operation, row, candidate, actualDefinitions, out _);
         return operation.GuardEvidenceJson == Guard(principal, authenticationMethod, applicationId,

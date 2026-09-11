@@ -9,6 +9,30 @@ internal static class ProcedureIntentPhraseEditor
     {
         ArgumentNullException.ThrowIfNull(markdown); ArgumentNullException.ThrowIfNull(phrases);
         var before = ProcedureFile.Parse(markdown, "retained.md");
+        var (edited, normalized) = EditSection(markdown, phrases);
+        var after = ProcedureFile.Parse(edited, "retained.md");
+        if (after.Matches.Replace("\r\n", "\n", StringComparison.Ordinal) != string.Join('\n', normalized)
+            || (before with { Matches = "" }) != (after with { Matches = "" }))
+            throw new ArgumentException("Procedure meaning could not be preserved.");
+        return edited;
+    }
+
+    internal static string EditMechanic(string markdown, string sidecarSource, IReadOnlyList<string> phrases)
+    {
+        ArgumentNullException.ThrowIfNull(markdown); ArgumentNullException.ThrowIfNull(sidecarSource);
+        ArgumentNullException.ThrowIfNull(phrases);
+        var before = MechanicFile.Parse(markdown, "retained.md", sidecarSource);
+        var (edited, normalized) = EditSection(markdown, phrases);
+        var after = MechanicFile.Parse(edited, "retained.md", sidecarSource);
+        if (after.Matches.Replace("\r\n", "\n", StringComparison.Ordinal) != string.Join('\n', normalized)
+            || (before with { Matches = "" }) != (after with { Matches = "" }))
+            throw new ArgumentException("Mechanic meaning could not be preserved.");
+        return edited;
+    }
+
+    private static (string Edited, IReadOnlyList<string> Normalized) EditSection(
+        string markdown, IReadOnlyList<string> phrases)
+    {
         var normalized = Normalize(phrases);
         var matches = Find(markdown);
         if (matches.Count > 1) throw new ArgumentException("Repeated Matches sections are ambiguous.");
@@ -28,11 +52,7 @@ internal static class ProcedureIntentPhraseEditor
                 + "## Matches" + nl + string.Join(nl, normalized) + nl + nl;
             edited = markdown[..at] + insert + markdown[at..];
         }
-        var after = ProcedureFile.Parse(edited, "retained.md");
-        if (after.Matches.Replace("\r\n", "\n", StringComparison.Ordinal) != string.Join('\n', normalized)
-            || (before with { Matches = "" }) != (after with { Matches = "" }))
-            throw new ArgumentException("Procedure meaning could not be preserved.");
-        return edited;
+        return (edited, normalized);
     }
 
     private static IReadOnlyList<string> Normalize(IReadOnlyList<string> values)
