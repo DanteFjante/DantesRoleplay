@@ -401,7 +401,11 @@ public sealed class CatalogWorldFeature3Tests : IDisposable
         foreach (var directory in Directory.EnumerateDirectories(source, "*", SearchOption.AllDirectories))
             Directory.CreateDirectory(Path.Combine(destination, Path.GetRelativePath(source, directory)));
         foreach (var file in Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories))
-            File.Copy(file, Path.Combine(destination, Path.GetRelativePath(source, file)));
+        {
+            var target = Path.Combine(destination, Path.GetRelativePath(source, file));
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            File.Copy(file, target);
+        }
 
         WorldFeatureFixture.RestoreRelationships(source, destination);
     }

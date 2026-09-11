@@ -518,11 +518,9 @@ public sealed class PreparedMechanicProgramTests(ITestOutputHelper output)
     [Fact]
     public void Catalog_mechanics_fit_preparation_resource_fences()
     {
-        var catalog = Path.GetFullPath(Path.Combine(
-            AppContext.BaseDirectory,
-            "..", "..", "..", "..", "catalog"));
-        var roots = new[] { Path.Combine(catalog, "mechanics") }
-            .Concat(Directory.EnumerateDirectories(Path.Combine(catalog, "applications"))
+        using var catalog = CatalogTestTemplate.CopyRepositoryCatalog("prepared-mechanic-programs");
+        var roots = new[] { Path.Combine(catalog.Root, "mechanics") }
+            .Concat(Directory.EnumerateDirectories(Path.Combine(catalog.Root, "applications"))
                 .Select(application => Path.Combine(application, "mechanics")).Where(Directory.Exists)).ToArray();
         var measured = roots.SelectMany(root => Directory.EnumerateFiles(root, "*.js", SearchOption.AllDirectories))
             .Select(path => (Path: path, Complexity: JintMechanicEngine.InspectMechanicProgramComplexity(
