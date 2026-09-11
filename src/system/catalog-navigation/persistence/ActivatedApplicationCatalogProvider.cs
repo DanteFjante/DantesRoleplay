@@ -66,8 +66,9 @@ public sealed class ActivatedApplicationCatalogMaterializer(
             .ToDictionary(value => value.ExtensionId, StringComparer.Ordinal);
         foreach (var retained in activation.Sources)
         {
-            if (!registrations.TryGetValue(retained.SourceId, out var current)
-                || SourceRegistrationFingerprint.Compute(current) != retained.RegistrationFingerprint)
+            if (activation.PreparationVersion is null
+                && (!registrations.TryGetValue(retained.SourceId, out var current)
+                    || SourceRegistrationFingerprint.Compute(current) != retained.RegistrationFingerprint))
                 throw Failure("SOURCE_REGISTRATION_DRIFT", "An active source registration no longer matches its retained evidence.");
         }
 
@@ -80,7 +81,7 @@ public sealed class ActivatedApplicationCatalogMaterializer(
         }
 
         var winners = activation.Winners.ToDictionary(value => value.RelativePath, StringComparer.Ordinal);
-        var documents = ReadCatalogBytes(activation.Winners, winners, registrations);
+        var documents = ReadCatalogBytes(applicationId, activation, winners, registrations);
         var preparationFingerprint = PreparationFingerprint(application, activation, registrations,
             extensionRegistrations, documents.Keys);
         ActiveCatalogFeatureSnapshot Factory()
@@ -358,10 +359,12 @@ public sealed class ActivatedApplicationCatalogMaterializer(
     }
 
     private IReadOnlyDictionary<string, byte[]> ReadCatalogBytes(
-        IReadOnlyList<ActivatedApplicationDocument> activationWinners,
+        ApplicationIdentifier applicationId,
+        ActiveApplicationManifest activation,
         IReadOnlyDictionary<string, ActivatedApplicationDocument> winners,
         IReadOnlyDictionary<string, SourceRegistration> registrations)
     {
+        var activationWinners = activation.Winners;
         var used = activationWinners.Where(value => IsObjectDocument(value.RelativePath)
                 || TryRecordKind(value.RelativePath, out _))
             .ToDictionary(value => value.RelativePath, StringComparer.Ordinal);
@@ -372,7 +375,8 @@ public sealed class ActivatedApplicationCatalogMaterializer(
             if (winners.TryGetValue(sourcePath, out var source)) used.TryAdd(sourcePath, source);
         }
         return used.OrderBy(value => value.Key, StringComparer.Ordinal)
-            .ToDictionary(value => value.Key, value => ReadBytes(value.Value, registrations),
+            .ToDictionary(value => value.Key,
+                value => ReadBytes(applicationId, activation, value.Value, registrations),
                 StringComparer.Ordinal);
     }
 
@@ -420,9 +424,33 @@ public sealed class ActivatedApplicationCatalogMaterializer(
     }
 
     private byte[] ReadBytes(
+        ApplicationIdentifier applicationId,
+        ActiveApplicationManifest activation,
         ActivatedApplicationDocument winner,
         IReadOnlyDictionary<string, SourceRegistration> registrations)
     {
+        if (activations is IActivatedApplicationEvidenceReader evidenceReader)
+        {
+            ActivatedApplicationDocumentEvidence? evidence;
+            try
+            {
+                evidence = evidenceReader.ReadDocumentEvidence(
+                    applicationId, activation.ActivationRevision, winner.LogicalIdentity);
+            }
+            catch (ApplicationActivationException exception)
+            {
+                throw Failure(exception.Code, exception.Message, exception);
+            }
+            if (evidence?.RetainedBytes is { } retainedBytes) return retainedBytes;
+            if (activation.PreparationVersion is not null)
+                throw Failure("ACTIVATION_EVIDENCE_MISSING",
+                    "A prepared catalog document has no retained bytes.");
+        }
+        else if (activation.PreparationVersion is not null)
+            throw Failure("ACTIVATION_EVIDENCE_UNAVAILABLE",
+                "The prepared activation evidence reader is unavailable.");
+
+        // Explicit compatibility path for historical metadata-only activation revisions.
         if (!winner.IsText || !registrations.TryGetValue(winner.SourceId, out var registration)
             || !allowedRoots.TryResolve(registration.AllowedRootId, out var configuredRoot)
             || string.IsNullOrWhiteSpace(configuredRoot))

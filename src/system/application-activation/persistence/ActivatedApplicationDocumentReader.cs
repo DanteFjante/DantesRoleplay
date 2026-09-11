@@ -32,6 +32,37 @@ public sealed class ActivatedApplicationDocumentReader(
         var winner = winners[0];
         if (!winner.IsText)
             throw Failure("ACTIVE_DOCUMENT_NOT_TEXT", "The active document is not text.");
+        if (activations is IActivatedApplicationEvidenceReader evidenceReader)
+        {
+            ActivatedApplicationDocumentEvidence? evidence;
+            try
+            {
+                evidence = evidenceReader.ReadDocumentEvidence(
+                    applicationId, activation.ActivationRevision, winner.LogicalIdentity);
+            }
+            catch (ApplicationActivationException exception)
+            {
+                throw Failure(exception.Code, exception.Message, exception);
+            }
+            if (evidence?.RetainedBytes is { } retainedBytes)
+            {
+                try { return Result(applicationId, activation, winner, retainedBytes); }
+                catch (ActivatedApplicationDocumentReadException) { throw; }
+                catch (DecoderFallbackException exception)
+                {
+                    throw Failure("ACTIVE_DOCUMENT_UNAVAILABLE",
+                        "The retained active document is not valid UTF-8 text.", exception);
+                }
+            }
+            if (activation.PreparationVersion is not null)
+                throw Failure("ACTIVATION_EVIDENCE_MISSING",
+                    "A prepared active document has no retained bytes.");
+        }
+        else if (activation.PreparationVersion is not null)
+            throw Failure("ACTIVATION_EVIDENCE_UNAVAILABLE",
+                "The prepared activation evidence reader is unavailable.");
+
+        // Explicit compatibility path for historical metadata-only activation revisions.
         var retained = activation.Sources.Where(value => value.SourceId == winner.SourceId).ToArray();
         var registration = sources.Get(applicationId, winner.SourceId);
         if (retained.Length != 1 || registration is null ||
@@ -51,12 +82,7 @@ public sealed class ActivatedApplicationDocumentReader(
             var bytes = File.ReadAllBytes(path);
             if (bytes.LongLength != winner.Length || Hash(bytes) != winner.ContentFingerprint)
                 throw Failure("ACTIVE_DOCUMENT_FILE_DRIFT", "The active document no longer matches its retained evidence.");
-            var text = StrictUtf8.GetString(bytes);
-            if (text.Length > 0 && text[0] == '\uFEFF') text = text[1..];
-            return new(applicationId, activation.ActivationRevision, activation.ActivationFingerprint,
-                winner.SourceId, winner.RelativePath, winner.ContentFingerprint, text,
-                Array.AsReadOnly(activation.Sources.Select(value => value.SourceId)
-                    .Order(StringComparer.Ordinal).ToArray()));
+            return Result(applicationId, activation, winner, bytes);
         }
         catch (ActivatedApplicationDocumentReadException) { throw; }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException
@@ -64,6 +90,23 @@ public sealed class ActivatedApplicationDocumentReader(
         {
             throw Failure("ACTIVE_DOCUMENT_UNAVAILABLE", "The active document could not be read safely.", exception);
         }
+    }
+
+    private static ActivatedApplicationTextDocument Result(
+        ApplicationIdentifier applicationId,
+        ActiveApplicationManifest activation,
+        ActivatedApplicationDocument winner,
+        byte[] bytes)
+    {
+        if (bytes.LongLength != winner.Length || Hash(bytes) != winner.ContentFingerprint)
+            throw Failure("ACTIVATION_EVIDENCE_CORRUPT",
+                "Active document bytes do not match their immutable evidence.");
+        var text = StrictUtf8.GetString(bytes);
+        if (text.Length > 0 && text[0] == '\uFEFF') text = text[1..];
+        return new(applicationId, activation.ActivationRevision, activation.ActivationFingerprint,
+            winner.SourceId, winner.RelativePath, winner.ContentFingerprint, text,
+            Array.AsReadOnly(activation.Sources.Select(value => value.SourceId)
+                .Order(StringComparer.Ordinal).ToArray()));
     }
 
     private static bool Inside(string root, string path)

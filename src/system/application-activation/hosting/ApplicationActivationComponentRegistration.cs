@@ -11,6 +11,10 @@ internal static class ApplicationActivationComponentRegistration
             provider.GetRequiredService<ApplicationActivationService>());
         services.AddScoped<IApplicationActivationReader>(provider =>
             provider.GetRequiredService<ApplicationActivationService>());
+        services.AddScoped<IActivatedApplicationEvidenceReader>(provider =>
+            provider.GetRequiredService<ApplicationActivationService>());
+        services.AddScoped<IApplicationDefinitionChangeReader>(provider =>
+            provider.GetRequiredService<ApplicationActivationService>());
         services.AddScoped<IActivatedApplicationDocumentReader, ActivatedApplicationDocumentReader>();
         return services;
     }

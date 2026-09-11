@@ -26,6 +26,7 @@ internal static class ApplicationActivationModelConfiguration
             entity.Property(x => x.DependencyGraphFingerprint).HasMaxLength(64).IsRequired();
             entity.Property(x => x.ResolutionFingerprint).HasMaxLength(64).IsRequired();
             entity.Property(x => x.ActivationFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.PreparationVersion).HasMaxLength(64);
             entity.Property(x => x.DependencyCoverageVersion).HasMaxLength(100).IsRequired();
             entity.Property(x => x.ActivatedByOperationId).HasMaxLength(200).IsRequired();
             entity.HasIndex(x => new { x.ApplicationId, x.ActivationFingerprint });
@@ -116,6 +117,7 @@ internal static class ApplicationActivationModelConfiguration
             entity.Property(x => x.RelativePath).HasMaxLength(1000).IsRequired();
             entity.Property(x => x.MediaType).HasMaxLength(200).IsRequired();
             entity.Property(x => x.ContentFingerprint).HasMaxLength(64).IsRequired();
+            entity.Property(x => x.RetainedBytes).HasColumnType("BLOB");
             entity.HasIndex(x => new
             {
                 x.IdentityId,
