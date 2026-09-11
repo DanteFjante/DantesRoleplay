@@ -130,13 +130,47 @@ public sealed partial class AiService : IAiService
         }
         var promptTokens = 0;
         var outputTokens = 0;
+        long inputUsage = 0, outputUsage = 0, totalUsage = 0, responseBytes = 0;
+        var hasUsage = false;
+        var completeUsage = true;
+        var toolAttempts = 0;
+        var callLimitReached = 0;
+        var executionClosed = 0;
+        var callerCancellation = cancellationToken;
+        using var requestLifetime = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        requestLifetime.CancelAfter(request.MaximumDuration ?? TimeSpan.FromMinutes(10));
+        cancellationToken = requestLifetime.Token;
+        AiTokenUsageEvidence? Usage() => hasUsage
+            ? new(inputUsage, outputUsage, totalUsage, completeUsage) : null;
+        void RecordUsage(AiTokenUsageEvidence? usage)
+        {
+            if (usage is null || usage.InputTokens < 0 || usage.OutputTokens < 0 || usage.TotalTokens < 0
+                || usage.InputTokens > usage.TotalTokens || usage.OutputTokens > usage.TotalTokens
+                || usage.InputTokens > usage.TotalTokens - usage.OutputTokens)
+            {
+                completeUsage = false;
+                return;
+            }
+            try
+            {
+                var nextInput = checked(inputUsage + usage.InputTokens);
+                var nextOutput = checked(outputUsage + usage.OutputTokens);
+                var nextTotal = checked(totalUsage + usage.TotalTokens);
+                inputUsage = nextInput;
+                outputUsage = nextOutput;
+                totalUsage = nextTotal;
+                hasUsage = true;
+                completeUsage &= usage.IsComplete;
+            }
+            catch (OverflowException) { completeUsage = false; }
+        }
         AiResponse Failure(string code, string message)
         {
             Activity("request", "failed", message, errorCode: code);
             return AiResponse.Failure(code, message) with
             {
                 PromptTokens = promptTokens, OutputTokens = outputTokens,
-                ToolCalls = observedCalls.ToArray(), Activities = activities.ToArray()
+                ToolCalls = observedCalls.ToArray(), Activities = activities.ToArray(), Usage = Usage()
             };
         }
         void RejectedCallActivity(IEnumerable<AiToolCall> calls)
@@ -144,69 +178,116 @@ public sealed partial class AiService : IAiService
             foreach (var call in calls)
                 Activity("tool-call", "requested", $"The provider returned direct tool '{call.Name}'.", call);
         }
-        for (var round = 0; round <= request.MaximumToolRounds; round++)
+        try
         {
-            AiToolExecutor executor = async (call, token) =>
+            for (var round = 0; round <= request.MaximumToolRounds; round++)
             {
-                Activity("tool-call", "requested", $"The assistant requested direct tool '{call.Name}'.", call);
-                var result = await InvokeToolAsync(call, request.Kind, selectedTools, token);
-                if (result.Ok && result.Media is { Count: > 0 })
-                    attachedMedia.AddRange(result.Media);
-                var validated = result.ErrorCode is not ("AI_TOOL_UNKNOWN" or "AI_TOOL_ARGUMENTS_INVALID");
-                Activity("tool-call", result.Ok ? "completed" : "failed",
-                    result.Ok ? $"Direct tool '{call.Name}' completed." : result.ErrorMessage,
-                    call, validated, result.ErrorCode);
-                return result;
-            };
-            var result = await provider!.SendAsync(new(
-                request.Model,
-                messages,
-                request.Kind,
-                request.Reasoning,
-                request.ResponseSchemaJson,
-                selectedTools.Values.Select(value => value.Definition).ToArray(),
-                selectedTools.Count == 0 ? null : executor,
-                request.MaximumOutputTokens), cancellationToken);
-            promptTokens += result.PromptTokens;
-            outputTokens += result.OutputTokens;
-            // Preserve every provider-returned request in evidence, including calls rejected by a
-            // provider failure, an empty authorization set, or the final round fence. Activities
-            // remain owned by the executor so ordinary calls still have one "requested" record.
-            observedCalls.AddRange(result.ToolCalls);
-            if (!result.Ok)
-            {
-                RejectedCallActivity(result.ToolCalls);
-                return Failure(
-                    string.IsNullOrWhiteSpace(result.ErrorCode) ? "AI_PROVIDER_FAILED" : result.ErrorCode,
-                    string.IsNullOrWhiteSpace(result.ErrorMessage) ? "The AI provider did not return a result." : result.ErrorMessage);
+                cancellationToken.ThrowIfCancellationRequested();
+                AiToolExecutor executor = async (call, token) =>
+                {
+                    using var callbackLifetime = CancellationTokenSource.CreateLinkedTokenSource(token, cancellationToken);
+                    token = callbackLifetime.Token;
+                    token.ThrowIfCancellationRequested();
+                    if (Volatile.Read(ref executionClosed) != 0)
+                        return AiToolResult.Failure("AI_REQUEST_CLOSED", "The request is no longer executing.");
+                    lock (activitySync)
+                        if (!observedCalls.Contains(call)) observedCalls.Add(call);
+                    Activity("tool-call", "requested", $"The assistant requested direct tool '{call.Name}'.", call);
+                    if (Interlocked.Increment(ref toolAttempts) > request.MaximumToolCalls)
+                    {
+                        Interlocked.Exchange(ref callLimitReached, 1);
+                        Activity("tool-call", "failed", "The total tool-call allowance is exhausted.", call,
+                            errorCode: "AI_TOOL_CALL_LIMIT");
+                        requestLifetime.Cancel();
+                        return AiToolResult.Failure("AI_TOOL_CALL_LIMIT", "The total tool-call allowance is exhausted.");
+                    }
+                    var result = await InvokeToolAsync(call, request.Kind, selectedTools, token);
+                    if (result.Ok && result.Media is { Count: > 0 })
+                        lock (activitySync) attachedMedia.AddRange(result.Media);
+                    var validated = result.ErrorCode is not ("AI_TOOL_UNKNOWN" or "AI_TOOL_ARGUMENTS_INVALID");
+                    Activity("tool-call", result.Ok ? "completed" : "failed",
+                        result.Ok ? $"Direct tool '{call.Name}' completed." : result.ErrorMessage,
+                        call, validated, result.ErrorCode);
+                    return result;
+                };
+                var result = await provider!.SendAsync(new(
+                    request.Model,
+                    messages,
+                    request.Kind,
+                    request.Reasoning,
+                    request.ResponseSchemaJson,
+                    selectedTools.Values.Select(value => value.Definition).ToArray(),
+                    selectedTools.Count == 0 ? null : executor,
+                    request.MaximumOutputTokens,
+                    request.MaximumToolCalls,
+                    request.MaximumResponseBytes,
+                    request.MaximumDuration), cancellationToken);
+                // Legacy counters are display-only; explicit long evidence owns accounting knownness.
+                promptTokens = (int)Math.Min(int.MaxValue, (long)promptTokens + Math.Max(0, result.PromptTokens));
+                outputTokens = (int)Math.Min(int.MaxValue, (long)outputTokens + Math.Max(0, result.OutputTokens));
+                RecordUsage(result.Usage);
+                // Preserve every provider-returned request in evidence, including calls rejected by a
+                // provider failure, an empty authorization set, or the final round fence. Activities
+                // remain owned by the executor so ordinary calls still have one "requested" record.
+                lock (activitySync)
+                    foreach (var call in result.ToolCalls)
+                        if (!observedCalls.Contains(call)) observedCalls.Add(call);
+                if (Volatile.Read(ref callLimitReached) != 0)
+                    return Failure("AI_TOOL_CALL_LIMIT", "The total tool-call allowance is exhausted.");
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    completeUsage = false;
+                    return Failure(callerCancellation.IsCancellationRequested ? "AI_REQUEST_CANCELLED" : "AI_REQUEST_TIMEOUT",
+                        "The AI request was cancelled or exceeded its time limit.");
+                }
+                responseBytes += Encoding.UTF8.GetByteCount(result.Text);
+                if (result.StructuredJson != result.Text)
+                    responseBytes += Encoding.UTF8.GetByteCount(result.StructuredJson);
+                if (responseBytes > request.MaximumResponseBytes)
+                    return Failure("AI_RESPONSE_BYTE_LIMIT", "The response exceeds the host output-byte limit.");
+                if (!result.Ok)
+                {
+                    RejectedCallActivity(result.ToolCalls);
+                    return Failure(
+                        string.IsNullOrWhiteSpace(result.ErrorCode) ? "AI_PROVIDER_FAILED" : result.ErrorCode,
+                        string.IsNullOrWhiteSpace(result.ErrorMessage) ? "The AI provider did not return a result." : result.ErrorMessage);
+                }
+
+                if (result.ToolCalls.Count == 0)
+                    return Complete(result, observedCalls, promptTokens, outputTokens, responseSchema,
+                        activities, attachedMedia, Activity) with { Usage = Usage() };
+                if (selectedTools.Count == 0)
+                {
+                    RejectedCallActivity(result.ToolCalls);
+                    return Failure("AI_TOOL_CALL_UNEXPECTED", "The provider returned a tool call when no tools were allowed.");
+                }
+                if (round == request.MaximumToolRounds)
+                {
+                    RejectedCallActivity(result.ToolCalls);
+                    return Failure("AI_TOOL_ROUND_LIMIT", "The AI did not finish within the configured tool-call limit.");
+                }
+
+                messages.Add(new(AiMessageRole.Assistant, result.Text, ToolCalls: result.ToolCalls));
+                foreach (var call in result.ToolCalls)
+                {
+                    var toolResult = await executor(call, cancellationToken);
+                    var content = toolResult.Ok
+                        ? toolResult.Content
+                        : JsonSerializer.Serialize(new { error = toolResult.ErrorCode, message = toolResult.ErrorMessage });
+                    messages.Add(new(AiMessageRole.Tool, content, call.Id, Media: toolResult.Media));
+                }
             }
 
-            if (result.ToolCalls.Count == 0)
-                return Complete(result, observedCalls, promptTokens, outputTokens, responseSchema,
-                    activities, attachedMedia, Activity);
-            if (selectedTools.Count == 0)
-            {
-                RejectedCallActivity(result.ToolCalls);
-                return Failure("AI_TOOL_CALL_UNEXPECTED", "The provider returned a tool call when no tools were allowed.");
-            }
-            if (round == request.MaximumToolRounds)
-            {
-                RejectedCallActivity(result.ToolCalls);
-                return Failure("AI_TOOL_ROUND_LIMIT", "The AI did not finish within the configured tool-call limit.");
-            }
-
-            messages.Add(new(AiMessageRole.Assistant, result.Text, ToolCalls: result.ToolCalls));
-            foreach (var call in result.ToolCalls)
-            {
-                var toolResult = await executor(call, cancellationToken);
-                var content = toolResult.Ok
-                    ? toolResult.Content
-                    : JsonSerializer.Serialize(new { error = toolResult.ErrorCode, message = toolResult.ErrorMessage });
-                messages.Add(new(AiMessageRole.Tool, content, call.Id, Media: toolResult.Media));
-            }
+            return Failure("AI_TOOL_ROUND_LIMIT", "The AI did not finish within the configured tool-call limit.");
         }
-
-        return Failure("AI_TOOL_ROUND_LIMIT", "The AI did not finish within the configured tool-call limit.");
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            completeUsage = false;
+            return Failure(Volatile.Read(ref callLimitReached) != 0 ? "AI_TOOL_CALL_LIMIT"
+                : callerCancellation.IsCancellationRequested ? "AI_REQUEST_CANCELLED" : "AI_REQUEST_TIMEOUT",
+                "The AI request stopped at its host execution limit.");
+        }
+        finally { Interlocked.Exchange(ref executionClosed, 1); }
     }
 
     private AiResponse Complete(
@@ -323,7 +404,9 @@ public sealed partial class AiService : IAiService
             string.IsNullOrWhiteSpace(request.Model) || request.Messages is null or { Count: 0 } ||
             request.Messages.Any(message => message is null || string.IsNullOrWhiteSpace(message.Content) &&
                 (message.ToolCalls is null or { Count: 0 })) ||
-            request.MaximumToolRounds is < 0 or > 16 || request.MaximumOutputTokens is < 1 or > 131_072)
+            request.MaximumToolRounds is < 0 or > 16 || request.MaximumOutputTokens is < 1 or > 131_072 ||
+            request.MaximumToolCalls is < 0 or > 16 || request.MaximumResponseBytes is < 1 or > 1_048_576 ||
+            request.MaximumDuration is { } duration && (duration <= TimeSpan.Zero || duration > TimeSpan.FromMinutes(10)))
         {
             error = "Provider, model, messages, and bounded execution limits are required.";
             return false;
