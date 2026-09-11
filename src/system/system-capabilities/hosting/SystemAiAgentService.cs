@@ -18,6 +18,29 @@ public sealed class SystemAiAgentService(
         ISystemCapabilityAiWriteApprovalGate? writeApprovalGate = null,
         IAiToolApprovalGate? toolApprovalGate = null,
         CancellationToken cancellationToken = default)
+        => SendCoreAsync(profile, request, context, null, writeApprovalGate, toolApprovalGate, cancellationToken);
+
+    public Task<AiResponse> SendAsync(
+        AiAgentProfile profile,
+        AiRequest request,
+        SystemCapabilityInvocationContext context,
+        IAiInvocationLifecycle lifecycle,
+        ISystemCapabilityAiWriteApprovalGate? writeApprovalGate = null,
+        IAiToolApprovalGate? toolApprovalGate = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(lifecycle);
+        return SendCoreAsync(profile, request, context, lifecycle, writeApprovalGate, toolApprovalGate, cancellationToken);
+    }
+
+    private Task<AiResponse> SendCoreAsync(
+        AiAgentProfile profile,
+        AiRequest request,
+        SystemCapabilityInvocationContext context,
+        IAiInvocationLifecycle? lifecycle,
+        ISystemCapabilityAiWriteApprovalGate? writeApprovalGate,
+        IAiToolApprovalGate? toolApprovalGate,
+        CancellationToken cancellationToken)
     {
         if (ai is null)
             return Task.FromResult(AiResponse.Failure(
@@ -34,7 +57,9 @@ public sealed class SystemAiAgentService(
             tools.AddRange(source.CreateTools(sourceContext));
         if (context.ApplicationId is not null || !string.IsNullOrEmpty(context.StateSpaceId))
             tools = tools.Select(tool => (IAiTool)new ContextBoundTool(tool, context)).ToList();
-        return ai.SendAgentRequestAsync(profile, request, tools, cancellationToken);
+        return lifecycle is null
+            ? ai.SendAgentRequestAsync(profile, request, tools, cancellationToken)
+            : ai.SendAgentRequestAsync(profile, request, tools, lifecycle, cancellationToken);
     }
 
     private sealed class ContextBoundTool(

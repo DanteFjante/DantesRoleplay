@@ -1,0 +1,224 @@
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using DantesRoleplay.AI;
+using DantesRoleplay.ApplicationActivation;
+using DantesRoleplay.Applications;
+using DantesRoleplay.CatalogNamespaces;
+using DantesRoleplay.CatalogNavigation;
+using DantesRoleplay.DataAccess;
+using DantesRoleplay.DataAccess.Composition;
+using DantesRoleplay.DataAccess.Bootstrap;
+using DantesRoleplay.Ecs;
+using DantesRoleplay.Interactions;
+using DantesRoleplay.MCPServer;
+using DantesRoleplay.Operations;
+using DantesRoleplay.Procedures;
+using DantesRoleplay.SystemCapabilities;
+using DantesRoleplay.SystemTasks;
+using DantesRoleplay.SystemTasks.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace DantesRoleplay.Authorization.Tests;
+
+public sealed partial class SqliteStandingGrantTargetResolverTests
+{
+    [Fact]
+    public async Task Procedure_worker_submits_leases_invokes_and_reads_the_same_durable_result()
+    {
+        await using var database = await InnerWorkerDatabase.CreateAsync();
+        var db = database.Db;
+        var setup = Setup(db);
+        await ActivateAsync(setup);
+        var activation = setup.Activation.Current(Application)!;
+        var application = setup.Applications.Get(Application)!;
+        var stateSpaces = new SqliteStateSpaceRegistry(db, setup.Applications);
+        var state = stateSpaces.Create(new("state", application, activation.ActivationFingerprint,
+            activation.ResolutionFingerprint));
+        await SeedInnerWorkerGrantAsync(db);
+        var procedureFile = ProcedureFile.Parse(File.ReadAllText(Path.Combine(root,
+            RelativePath.Replace('/', Path.DirectorySeparatorChar))), RelativePath);
+        var procedure = await new ProcedureStore(db).WriteAsync(new WriteProcedureRequest
+        {
+            Id = procedureFile.Id, Category = procedureFile.Category, Name = procedureFile.Name,
+            Description = procedureFile.Description, Governs = procedureFile.Governs,
+            Matches = procedureFile.Matches, Instructions = procedureFile.Instructions,
+            Constraints = procedureFile.Constraints, Status = procedureFile.Status,
+            CreatedBy = "fixture", ChangeNote = "Focused worker fixture."
+        });
+        var deadline = DateTime.UtcNow.AddMinutes(2);
+        var host = InnerWorkerHost(application, state, "inner-worker-command", deadline);
+        StandingGrantTargetResolution target;
+        await using (var transaction = await db.Database.BeginTransactionAsync())
+        {
+            target = await setup.Resolver.ResolveCurrentAsync(host, procedure.Procedure.Id, "procedure");
+            await transaction.CommitAsync();
+        }
+        Assert.Equal(StandingGrantTargetResolutionStatus.Available, target.Status);
+        Assert.NotEqual(procedure.Procedure.SourceHash, target.Target!.ContentFingerprint);
+        var selected = new SystemTaskSelectedDefinition(target.Target.DefinitionId,
+            target.Target.Revision, target.Target.ContentFingerprint);
+
+        var catalog = new ActivatedApplicationCatalogMaterializer(setup.Applications, setup.Activation,
+            setup.Sources, setup.Roots, setup.Extensions).UsePreparationCache(
+                new ActivatedApplicationCatalogSnapshotCache(), new ActivatedApplicationCatalogCacheAuthority());
+        var snapshots = new ActivatedApplicationCatalogProvider(
+            new ConfiguredPublicApplicationCatalogPolicy([Application.Value]), catalog,
+            new CatalogCursorCodec(RandomNumberGenerator.GetBytes(32)), setup.Activation);
+        var retrieval = new InteractionFeatureRetriever(snapshots, namespaces: setup.Namespaces,
+            changes: setup.Activation);
+        var interactionAuthority = new PrivateHostInteractionAuthorizationPolicy(stateSpaces);
+        var contexts = new InteractionTaskContextMaterializer(interactionAuthority, retrieval,
+            snapshots, new UnusedReadModels());
+        var resolver = new SystemInnerWorkerProcedureResolver(
+            new InteractionEnvelopeFactory(setup.Applications, setup.Activation, stateSpaces, interactionAuthority),
+            contexts, snapshots, new SystemInnerWorkerPreparation(new ProcedureStore(db), contexts),
+            new SystemInnerWorkerHostPolicy(new AiAgentProfileRegistry([
+                new("web.inner", "Inner AI", "Perform the bounded host-selected procedure.")
+            ])), TimeProvider.System);
+        var standingPolicy = new SqliteStandingGrantPolicy(db, setup.Resolver);
+        var durable = new SqliteSystemTaskDurableService(db, standingPolicy, setup.Resolver,
+            stateSpaces, TimeProvider.System);
+        var service = new SystemInnerWorkerService(resolver, durable);
+        var provider = new SuccessfulProcedureProvider();
+        var systemAi = new SystemAiAgentService([], new AiService([provider]));
+        var invoker = new SystemInnerWorkerProcedureInvoker(systemAi);
+        var lifecycleServices = new ServiceCollection()
+            .AddSingleton(db)
+            .AddSingleton(durable)
+            .BuildServiceProvider();
+        using (lifecycleServices)
+        {
+            var lifecycles = new SystemTaskAiInvocationLifecycleFactory(
+                lifecycleServices.GetRequiredService<IServiceScopeFactory>(), TimeProvider.System);
+            var executor = new SystemInnerWorkerProcedureExecutor(db, durable, resolver, invoker,
+                lifecycles, TimeProvider.System);
+            const string schema = """
+                {"additionalProperties":false,"properties":{"answer":{"type":"string"},"summary":{"type":"string"}},"required":["answer","summary"],"type":"object"}
+                """;
+            var assignment = JsonSerializer.Serialize(new
+            {
+                format = SystemInnerWorkerAssignmentV1.Format,
+                instruction = "Inspect the active runtime definition and return a short answer."
+            });
+            var submitted = await service.SubmitAsync(new(host, selected, assignment, schema));
+            Assert.True(submitted.Tag == InteractionInvocationResultTag.Pending,
+                submitted.Code + ": " + submitted.SafeMessage);
+            Assert.Equal(15, host.Budget.RemainingOperations);
+
+            var store = new SqliteSystemTaskLifecycleStore(db.Database.GetConnectionString()!, TimeProvider.System);
+            var runner = new SqliteSystemTaskLifecycleRunner(store, TimeProvider.System);
+            Assert.True(await runner.RunOnceAsync("inner-worker", executor.ExecuteLeaseAsync,
+                purpose: SystemTaskPurpose.ProcedureWorkflow));
+
+            var readHost = InnerWorkerHost(application, state, "inner-worker-read", deadline);
+            var completed = await service.GetAsync(readHost, submitted.TaskHandle!);
+            Assert.Equal(InteractionInvocationResultTag.Completed, completed.Tag);
+            Assert.Contains("\"answer\":\"42\"", completed.DataJson, StringComparison.Ordinal);
+            Assert.StartsWith("inner-result.", completed.CompletionEvidenceReference, StringComparison.Ordinal);
+            Assert.Equal(1, provider.Calls);
+            Assert.Equal(1L, await db.Set<SystemTaskAiDispatchEvidenceRecord>().LongCountAsync(
+                value => value.Kind == "dispatch" && value.DispatchKind == "provider"));
+            Assert.Equal(1L, await db.Set<SystemTaskAiDispatchEvidenceRecord>().LongCountAsync(
+                value => value.Kind == "usage" && value.IsComplete == 1));
+
+            var replay = await service.SubmitAsync(new(
+                InnerWorkerHost(application, state, "inner-worker-command", deadline), selected, assignment, schema));
+            Assert.Equal(submitted.TaskHandle, replay.TaskHandle);
+            Assert.False(await runner.RunOnceAsync("inner-worker", executor.ExecuteLeaseAsync,
+                purpose: SystemTaskPurpose.ProcedureWorkflow));
+            Assert.Equal(1, provider.Calls);
+        }
+    }
+
+    [Fact]
+    public void Procedure_worker_assignment_rejects_authority_and_unknown_grammar_fields()
+    {
+        var authority = Assert.Throws<InteractionContractException>(() => SystemInnerWorkerAssignmentV1.Parse("""
+            {"format":"dantes-roleplay/inner-procedure-assignment/v1","instruction":"inspect","allowedTools":["root"]}
+            """));
+        Assert.Equal("INNER_WORKER_ASSIGNMENT_UNSUPPORTED", authority.Code);
+        var version = Assert.Throws<InteractionContractException>(() => SystemInnerWorkerAssignmentV1.Parse("""
+            {"format":"dantes-roleplay/inner-procedure-assignment/v2","instruction":"inspect"}
+            """));
+        Assert.Equal("INNER_WORKER_ASSIGNMENT_UNSUPPORTED", version.Code);
+    }
+
+    private static InteractionInvocationHost InnerWorkerHost(ApplicationRevision application,
+        StateSpaceView state, string command, DateTime deadline) => new(
+        TrustedPrincipalContext.VerifiedPrincipal("principal." + new string('a', 64), "test"),
+        application, state.StateSpaceId, "inner-grant@1", command, InteractionStateRevision.From(state),
+        InteractionExecutionProfile.Workflow, new InteractionInvocationBudget(16, deadline));
+
+    private static async Task SeedInnerWorkerGrantAsync(DantesRoleplayDbContext db)
+    {
+        var grant = new StandingGrantRevision("inner-grant@1", "inner-grant", 1, new string('0', 64),
+            "principal." + new string('a', 64), Application, StandingGrantScope.StateSpace, "state",
+            [StandingGrantCapability.Execute, StandingGrantCapability.ReadTask, StandingGrantCapability.CancelTask],
+            new(StandingGrantDefinitionMode.ApplicationOwned, [], [new("demo.runtime", true, [CatalogNamespaceKinds.Procedure])]),
+            [], 16, DateTime.UtcNow.AddMinutes(10), false, "inner-grant-operation");
+        grant = grant with { ContentFingerprint = StandingGrantRevisionCanonicalization.ContentFingerprint(grant) };
+        db.Add(new Operation { Id = grant.IssuedByOperationId, Timestamp = DateTime.UtcNow, Tool = "test" });
+        db.Add(new StandingGrantRevisionRecord
+        {
+            GrantId = grant.GrantId, Revision = grant.Revision, GrantReference = grant.GrantReference,
+            PrincipalReference = grant.PrincipalReference, ApplicationId = grant.ApplicationId.Value,
+            Scope = "stateSpace", StateSpaceId = grant.StateSpaceId,
+            PermissionsJson = StandingGrantRevisionCanonicalization.PermissionsJson(grant),
+            ContentFingerprint = grant.ContentFingerprint, MaximumOperations = grant.MaximumOperations,
+            ExpiresAtUtc = grant.ExpiresAtUtc, Revoked = false, IssuedByOperationId = grant.IssuedByOperationId
+        });
+        db.Add(new StandingGrantCurrentRecord { GrantId = grant.GrantId, Revision = 1 });
+        await db.SaveChangesAsync();
+    }
+
+    private sealed class SuccessfulProcedureProvider : IAiProvider
+    {
+        internal int Calls { get; private set; }
+        public AiProviderInfo Info { get; } = new("codex", "Controlled Codex fixture");
+        public Task<IReadOnlyList<AiModel>> ListModelsAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<AiModel>>([]);
+        public Task<AiProviderResponse> SendAsync(AiProviderRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            Calls++;
+            Assert.Equal(InteractionRoleProfile.Inner.Model, request.Model);
+            Assert.Empty(request.Tools);
+            Assert.Null(request.ToolExecutor);
+            Assert.NotEmpty(request.ResponseSchemaJson);
+            return Task.FromResult(new AiProviderResponse(true, null, "done",
+                "{\"answer\":\"42\",\"summary\":\"Inspection completed.\"}", [],
+                Usage: new(7, 2, 9, true)));
+        }
+    }
+
+    private sealed class UnusedReadModels : IApplicationReadModelService
+    {
+        public Task<ApplicationReadModelResult> ReadAsync(ApplicationReadModelRequest request,
+            CancellationToken cancellationToken = default) => throw new InvalidOperationException(
+            "The procedure-only fixture must not invent a query read model.");
+    }
+
+    private sealed class InnerWorkerDatabase(string path, DantesRoleplayDbContext db) : IAsyncDisposable
+    {
+        internal DantesRoleplayDbContext Db { get; } = db;
+
+        internal static async Task<InnerWorkerDatabase> CreateAsync()
+        {
+            var path = Path.Combine(Path.GetTempPath(), $"inner-worker-{Guid.NewGuid():N}.db");
+            var options = new DbContextOptionsBuilder<DantesRoleplayDbContext>()
+                .UseSqlite("Filename=" + path).Options;
+            var db = new DantesRoleplayDbContext(options);
+            await db.Database.EnsureCreatedAsync();
+            return new(path, db);
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            await Db.DisposeAsync();
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            if (File.Exists(path)) File.Delete(path);
+        }
+    }
+}

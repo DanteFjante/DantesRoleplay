@@ -232,8 +232,10 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
         SystemTaskSelectedDefinition procedureVersion) => AiHash(
         InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
         {
-            profile.ProfileVersion, profile.OutputSchemaFingerprint, profile.AuthorityProvenance,
+            profile.ProfileVersion, profileDefinition = profile.Profile,
+            profile.OutputSchemaFingerprint, profile.AuthorityProvenance,
             ProcedureVersion = procedureVersion, profile.Worker.InvocationHost.GrantReference, profile.AiBudget,
+            profile.ToolBindings, profile.RequiredContextReferences, contextEvidence = profile.ManualContext,
             profile.Worker.InvocationHost.Budget.DeadlineUtc,
             inputFingerprint = AiHash(profile.Worker.InputJson)
         }, AiJson)));

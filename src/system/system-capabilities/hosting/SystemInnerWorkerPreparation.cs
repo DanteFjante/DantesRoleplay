@@ -22,7 +22,8 @@ internal sealed record SystemInnerWorkerPreparationInput(
     InteractionAuthorizationRequest ContextAuthorization,
     IReadOnlyList<string> RequiredContextReferences,
     IReadOnlyList<string> PermittedToolNames,
-    string SelectedResultSchemaJson);
+    string SelectedResultSchemaJson,
+    string? SelectedProcedureContractFingerprint = null);
 
 /// <summary>Immutable evidence and provider inputs produced without starting a worker.</summary>
 internal sealed record SystemInnerWorkerPreparedRequest(
@@ -67,7 +68,7 @@ internal sealed class SystemInnerWorkerPreparation(
 
         var procedure = await procedures.GetAsync(selectedProcedure.ExactDefinitionId,
             selectedProcedure.Version, cancellationToken);
-        EnsureCurrentProcedure(procedure, selectedProcedure);
+        EnsureCurrentProcedure(procedure, selectedProcedure, input.SelectedProcedureContractFingerprint);
 
         var resultSchema = CanonicalSchema(input.SelectedResultSchemaJson, "WORKER_RESULT_SCHEMA_INVALID");
         if (!StringComparer.Ordinal.Equals(resultSchema, input.Worker.ResultSchemaJson))
@@ -79,7 +80,7 @@ internal sealed class SystemInnerWorkerPreparation(
             selectedProcedure.Version, cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
         EnsureViableHost(input.Worker.InvocationHost, input.ContextEnvelope, input.ContextAuthorization);
-        EnsureCurrentProcedure(currentProcedure, selectedProcedure);
+        EnsureCurrentProcedure(currentProcedure, selectedProcedure, input.SelectedProcedureContractFingerprint);
         var selected = SelectContext(pack, input.RequiredContextReferences);
         var prompt = BuildPrompt(input.Worker.InputJson, selected);
         var promptBytes = Encoding.UTF8.GetByteCount(prompt);
@@ -92,7 +93,7 @@ internal sealed class SystemInnerWorkerPreparation(
             .Where(value => !string.IsNullOrWhiteSpace(value)));
         var profile = input.HostProfile with { Instructions = instructions };
         ValidateProfile(profile);
-        return new(profile, request, currentProcedure.SourceHash, pack.Fingerprint,
+        return new(profile, request, selectedProcedure.Fingerprint, pack.Fingerprint,
             Sha256(resultSchema), Array.AsReadOnly(selected.Select(value => value.Reference).ToArray()), promptBytes);
     }
 
@@ -120,14 +121,16 @@ internal sealed class SystemInnerWorkerPreparation(
             throw Failure("WORKER_PREPARATION_SCOPE_MISMATCH", "The worker and context authorization scopes do not match.");
     }
 
-    private static void EnsureCurrentProcedure(ProcedureDetail? procedure, SystemTaskSelectedDefinition selected)
+    private static void EnsureCurrentProcedure(ProcedureDetail? procedure, SystemTaskSelectedDefinition selected,
+        string? selectedContractFingerprint)
     {
         if (procedure is null)
             throw Failure("WORKER_PROCEDURE_MISSING", "The selected worker procedure is unavailable.");
         if (procedure.Status != ProcedureStatus.Active)
             throw Failure("WORKER_PROCEDURE_INACTIVE", "The selected worker procedure is not active.");
+        var contractFingerprint = selectedContractFingerprint ?? selected.Fingerprint;
         if (procedure.Id != selected.ExactDefinitionId || procedure.Version != selected.Version
-            || procedure.LatestVersion != selected.Version || procedure.SourceHash != selected.Fingerprint)
+            || procedure.LatestVersion != selected.Version || procedure.SourceHash != contractFingerprint)
             throw Failure("WORKER_PROCEDURE_STALE", "The selected worker procedure is no longer the current exact revision.");
     }
 
@@ -181,10 +184,10 @@ internal sealed class SystemInnerWorkerPreparation(
             foreach (var value in values.EnumerateArray())
             {
                 if (value.ValueKind != JsonValueKind.Object
-                    || !value.TryGetProperty("reference", out var reference) || reference.ValueKind != JsonValueKind.String
-                    || !value.TryGetProperty("revision", out var revision) || revision.ValueKind != JsonValueKind.String
-                    || !value.TryGetProperty("fingerprint", out var fingerprint) || fingerprint.ValueKind != JsonValueKind.String
-                    || !value.TryGetProperty("value", out var payload))
+                    || !TryProperty(value, "reference", "Reference", out var reference) || reference.ValueKind != JsonValueKind.String
+                    || !TryProperty(value, "revision", "Revision", out var revision) || revision.ValueKind != JsonValueKind.String
+                    || !TryProperty(value, "fingerprint", "Fingerprint", out var fingerprint) || fingerprint.ValueKind != JsonValueKind.String
+                    || !TryProperty(value, "value", "Value", out var payload))
                     throw Failure("WORKER_CONTEXT_PACK_INVALID", "A task-context item is malformed.");
                 var key = reference.GetString()!;
                 if (!actual.TryAdd(key, new(key, revision.GetString()!, fingerprint.GetString()!, payload.Clone())))
@@ -203,6 +206,9 @@ internal sealed class SystemInnerWorkerPreparation(
         }
         return selected;
     }
+
+    private static bool TryProperty(JsonElement value, string camel, string declared, out JsonElement property) =>
+        value.TryGetProperty(camel, out property) || value.TryGetProperty(declared, out property);
 
     private static IReadOnlyList<string> NormalizeNames(IReadOnlyList<string> values, string code)
     {

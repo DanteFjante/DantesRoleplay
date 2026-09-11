@@ -3,6 +3,8 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using DantesRoleplay.Authorization;
 using DantesRoleplay.Interactions;
+using DantesRoleplay.SystemCapabilities;
+using DantesRoleplay.DataAccess.Composition;
 using Microsoft.Data.Sqlite;
 
 namespace DantesRoleplay.SystemTasks.Persistence;
@@ -31,7 +33,8 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
     private async Task<SystemTaskEnqueueResult> EnqueueCoreAsync(
         SystemTaskDurableSubmissionRequest request,
         bool propagateCancellation, SqliteConnection connection, SqliteTransaction transaction,
-        CancellationToken cancellationToken = default, StandingGrantActivationOrigin? activationOrigin = null)
+        CancellationToken cancellationToken = default, StandingGrantActivationOrigin? activationOrigin = null,
+        SystemInnerWorkerResolvedProfile? innerWorkerProfile = null)
     {
         ArgumentNullException.ThrowIfNull(request);
         if (request.InvocationHost.StateSpaceId is not { } stateSpaceId
@@ -89,6 +92,45 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
                 activationFingerprint = activationOrigin.ActivationFingerprint,
                 applicationRevision = activationOrigin.ApplicationRevision,
                 applicationFingerprint = activationOrigin.ApplicationFingerprint
+            }));
+            payloadJson = InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(extendedPayload));
+        }
+        if (innerWorkerProfile is not null)
+        {
+            if (activationOrigin is null
+                || innerWorkerProfile.Worker.Subject is not SystemInnerWorkerSubject.ProcedureWorkflow workflow
+                || workflow.ProcedureVersion != request.SelectedDefinition
+                || innerWorkerProfile.Worker.InvocationHost != request.InvocationHost
+                || innerWorkerProfile.Worker.InputJson != request.InputJson
+                || !innerWorkerProfile.Worker.DependencyHandles.SequenceEqual(request.DependencyHandles))
+                return Rejected("INNER_WORKER_ADMISSION_SCOPE_MISMATCH",
+                    "The focused worker profile does not match the durable submission.");
+            using var retainedPayload = JsonDocument.Parse(payloadJson);
+            var extendedPayload = retainedPayload.RootElement.EnumerateObject()
+                .ToDictionary(property => property.Name, property => property.Value.Clone(), StringComparer.Ordinal);
+            extendedPayload.Add("innerWorker", JsonSerializer.SerializeToElement(new
+            {
+                format = SystemInnerWorkerAssignmentV1.Format,
+                resultSchemaJson = innerWorkerProfile.Worker.ResultSchemaJson,
+                innerWorkerProfile.OutputSchemaFingerprint,
+                innerWorkerProfile.ProfileVersion,
+                profile = new
+                {
+                    innerWorkerProfile.Profile.Id,
+                    innerWorkerProfile.Profile.Name,
+                    innerWorkerProfile.Profile.Identity,
+                    innerWorkerProfile.Profile.Instructions
+                },
+                toolBindings = innerWorkerProfile.ToolBindings.Select(value => new
+                {
+                    value.Definition,
+                    value.CapabilityVersion
+                }),
+                innerWorkerProfile.RequiredContextReferences,
+                contextEvidence = innerWorkerProfile.ManualContext,
+                innerWorkerProfile.AuthorityProvenance,
+                innerWorkerProfile.AiBudget,
+                enrollmentFingerprint = SqliteSystemTaskLifecycleStore.AiEnrollmentFingerprint(innerWorkerProfile)
             }));
             payloadJson = InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(extendedPayload));
         }

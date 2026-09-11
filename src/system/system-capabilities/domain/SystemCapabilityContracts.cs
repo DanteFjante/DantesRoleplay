@@ -365,6 +365,21 @@ public interface ISystemAiAgentService
         ISystemCapabilityAiWriteApprovalGate? writeApprovalGate = null,
         IAiToolApprovalGate? toolApprovalGate = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Durable agent path. Implementations that cannot preserve the caller's lifecycle boundary
+    /// fail closed instead of silently dispatching through the legacy overload.
+    /// </summary>
+    Task<AiResponse> SendAsync(
+        AiAgentProfile profile,
+        AiRequest request,
+        SystemCapabilityInvocationContext context,
+        IAiInvocationLifecycle lifecycle,
+        ISystemCapabilityAiWriteApprovalGate? writeApprovalGate = null,
+        IAiToolApprovalGate? toolApprovalGate = null,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(AiResponse.Failure(
+            "AI_LIFECYCLE_UNAVAILABLE", "This system AI service does not support durable dispatch admission."));
 }
 
 public sealed record SystemAiToolSourceContext(

@@ -4,6 +4,7 @@ using DantesRoleplay.Authorization;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.Ecs;
 using DantesRoleplay.Interactions;
+using DantesRoleplay.SystemCapabilities;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
@@ -20,6 +21,44 @@ internal sealed partial class SqliteSystemTaskDurableService(
     IStateSpaceRegistry stateSpaces,
     TimeProvider timeProvider) : ISystemTaskDurableService
 {
+    internal sealed record InnerWorkerAuthorityResolution(
+        SystemInnerWorkerResolvedProfile? Profile,
+        InteractionInvocationResult? Failure);
+
+    internal Task<InteractionInvocationResult> SubmitInnerWorkerAsync(
+        DataAccess.Composition.SystemInnerWorkerProcedurePreparationResult preparation,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(preparation);
+        var worker = preparation.Worker;
+        if (worker.Subject is not SystemInnerWorkerSubject.ProcedureWorkflow workflow)
+            return Task.FromResult(InteractionInvocationResult.Failed("INNER_WORKER_SUBJECT_UNSUPPORTED",
+                "Only exact procedure workflow subjects can be admitted here."));
+        var request = new SystemTaskDurableSubmissionRequest(worker.InvocationHost, workflow.ProcedureVersion,
+            worker.InputJson, dependencyHandles: worker.DependencyHandles);
+        return InOwnedTransactionAsync(worker.InvocationHost, write: true, async (store, connection, transaction) =>
+        {
+            var authorization = await AuthorizeCoreAsync(worker.InvocationHost, workflow.ProcedureVersion,
+                StandingGrantCapability.Execute, null, null, cancellationToken);
+            if (authorization.Failure is not null) return authorization.Failure;
+            if (authorization.CurrentActivation is null || authorization.Decision?.Grant is not { } grant)
+                return TargetUnavailable();
+            var profile = preparation.BindAuthority(new(
+                grant.GrantReference, grant.Revision.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                grant.ContentFingerprint));
+            var staged = await store.StageEnqueueInnerWorkerAsync(request, profile, false,
+                connection, transaction, cancellationToken, authorization.CurrentActivation);
+            if (staged.Disposition is not (SystemTaskEnqueueDisposition.Created or SystemTaskEnqueueDisposition.Existing))
+                return InteractionInvocationResult.Failed(staged.Code, staged.SafeMessage);
+            var enrollment = await store.StageEnrollAiBudgetAsync(staged.Handle!, profile,
+                connection, transaction, cancellationToken);
+            return enrollment.Accepted
+                ? InteractionInvocationResult.Pending(staged.Handle!)
+                : InteractionInvocationResult.Unavailable(enrollment.Code,
+                    "The focused worker accounting could not be admitted.");
+        }, cancellationToken);
+    }
+
     public Task<InteractionInvocationResult> SubmitAsync(SystemTaskDurableSubmissionRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -105,6 +144,54 @@ internal sealed partial class SqliteSystemTaskDurableService(
         }, cancellationToken);
     }
 
+    /// <summary>
+    /// Rechecks the exact current procedure, activation and Execute grant inside the caller's
+    /// existing transaction. The retained profile and lease are correlation only.
+    /// </summary>
+    internal async Task<InteractionInvocationResult?> ReauthorizeInnerWorkerAsync(
+        SystemInnerWorkerResolvedProfile profile,
+        SystemTaskStoredRequest retained,
+        CancellationToken cancellationToken = default)
+    {
+        if (profile.Worker.Subject is not SystemInnerWorkerSubject.ProcedureWorkflow workflow
+            || retained.Purpose != SystemTaskPurpose.ProcedureWorkflow
+            || retained.SelectedDefinition != workflow.ProcedureVersion
+            || retained.ActivationOrigin is null)
+            return NotAuthorized();
+        var authorization = await AuthorizeCoreAsync(profile.Worker.InvocationHost, workflow.ProcedureVersion,
+            StandingGrantCapability.Execute, null, null, cancellationToken);
+        if (authorization.Failure is not null) return authorization.Failure;
+        if (authorization.CurrentActivation != retained.ActivationOrigin
+            || authorization.Decision?.Grant is not { } grant
+            || grant.GrantReference != profile.AuthorityProvenance.Reference
+            || grant.Revision.ToString(System.Globalization.CultureInfo.InvariantCulture) != profile.AuthorityProvenance.GrantRevision
+            || grant.ContentFingerprint != profile.AuthorityProvenance.GrantFingerprint)
+            return InteractionInvocationResult.Unavailable("INNER_WORKER_AUTHORITY_STALE",
+                "The focused worker's procedure or grant selection is no longer current.");
+        return null;
+    }
+
+    internal async Task<InnerWorkerAuthorityResolution> ResolveCurrentInnerWorkerProfileAsync(
+        DataAccess.Composition.SystemInnerWorkerProcedurePreparationResult preparation,
+        SystemTaskStoredRequest retained,
+        CancellationToken cancellationToken = default)
+    {
+        if (preparation.Worker.Subject is not SystemInnerWorkerSubject.ProcedureWorkflow workflow
+            || retained.Purpose != SystemTaskPurpose.ProcedureWorkflow
+            || retained.SelectedDefinition != workflow.ProcedureVersion
+            || retained.ActivationOrigin is null)
+            return new(null, NotAuthorized());
+        var authorization = await AuthorizeCoreAsync(preparation.Worker.InvocationHost, workflow.ProcedureVersion,
+            StandingGrantCapability.Execute, null, null, cancellationToken);
+        if (authorization.Failure is not null) return new(null, authorization.Failure);
+        if (authorization.CurrentActivation != retained.ActivationOrigin
+            || authorization.Decision?.Grant is not { } grant)
+            return new(null, InteractionInvocationResult.Unavailable("INNER_WORKER_AUTHORITY_STALE",
+                "The focused worker's procedure or grant selection is no longer current."));
+        return new(preparation.BindAuthority(new(grant.GrantReference,
+            grant.Revision.ToString(System.Globalization.CultureInfo.InvariantCulture), grant.ContentFingerprint)), null);
+    }
+
     private async Task<InteractionInvocationResult> InOwnedTransactionAsync(InteractionInvocationHost host, bool write,
         Func<SqliteSystemTaskLifecycleStore, SqliteConnection, SqliteTransaction, Task<InteractionInvocationResult>> action,
         CancellationToken cancellationToken)
@@ -176,43 +263,44 @@ internal sealed partial class SqliteSystemTaskDurableService(
         StandingGrantTaskTarget? task, CancellationToken cancellationToken, StandingGrantActivationOrigin? origin = null) =>
         (await AuthorizeCoreAsync(host, selection, capability, task, origin, cancellationToken)).Failure;
 
-    private async Task<(InteractionInvocationResult? Failure, StandingGrantActivationOrigin? CurrentActivation)> AuthorizeCoreAsync(
+    private async Task<(InteractionInvocationResult? Failure, StandingGrantActivationOrigin? CurrentActivation,
+        StandingGrantDecision? Decision)> AuthorizeCoreAsync(
         InteractionInvocationHost host, SystemTaskSelectedDefinition selection, StandingGrantCapability capability,
         StandingGrantTaskTarget? task, StandingGrantActivationOrigin? origin, CancellationToken cancellationToken)
     {
         if (origin is not null && (task is null || capability is not (StandingGrantCapability.ReadTask or StandingGrantCapability.CancelTask)))
-            return (NotAuthorized(), null);
+            return (NotAuthorized(), null, null);
         var definition = new StandingGrantDefinitionReference(selection.ExactDefinitionId, "procedure", selection.Version, selection.Fingerprint);
         // Provenance chooses the lookup; permission failures never broaden it. Legacy rows have
         // no inferred origin and can use only the exact current definition selection.
         var resolution = origin is null
             ? await targets.ResolveAsync(host, definition, cancellationToken)
             : await targets.ResolveRetainedAsync(host, origin, definition, cancellationToken);
-        if (resolution.Status == StandingGrantTargetResolutionStatus.Denied) return (NotAuthorized(), null);
+        if (resolution.Status == StandingGrantTargetResolutionStatus.Denied) return (NotAuthorized(), null, null);
         if (resolution.Status != StandingGrantTargetResolutionStatus.Available || resolution.Target is not { } target)
-            return (TargetUnavailable(), null);
+            return (TargetUnavailable(), null, null);
         if (target.DefinitionId != selection.ExactDefinitionId || target.Revision != selection.Version
             || target.ContentFingerprint != selection.Fingerprint || target.Kind != "procedure"
             || target.OwnerApplicationId != host.ApplicationRevision.ApplicationId || target.Candidate is not null
             || target.RetainedActivation != origin)
-            return (TargetUnavailable(), null);
+            return (TargetUnavailable(), null, null);
         if (origin is null && resolution.CurrentActivation is { } current
             && (current.ActivationRevision < 1 || !IsActivationHash(current.ActivationFingerprint)
                 || current.ApplicationRevision != host.ApplicationRevision.Revision
                 || current.ApplicationFingerprint != host.ApplicationRevision.Fingerprint))
-            return (TargetUnavailable(), null);
+            return (TargetUnavailable(), null, null);
         var requirement = new StandingGrantRequirement(capability, StandingGrantScope.StateSpace, [target], [], task);
         StandingGrantContractRules.ValidateRequirement(host, requirement);
         var decision = await policy.EvaluateAsync(host, requirement, cancellationToken);
         if (!decision.Allowed)
             return (decision.Code.Contains("UNAVAILABLE", StringComparison.Ordinal)
                 ? InteractionInvocationResult.Unavailable("SYSTEM_TASK_AUTHORIZATION_UNAVAILABLE", "Current task authorization is unavailable.")
-                : NotAuthorized(), null);
+                : NotAuthorized(), null, decision);
         if (decision.Grant is not { } grant || grant.GrantReference != host.GrantReference
             || grant.PrincipalReference != host.Principal.PrincipalId || grant.ApplicationId != host.ApplicationRevision.ApplicationId
             || grant.Scope != StandingGrantScope.StateSpace || grant.StateSpaceId != host.StateSpaceId)
-            return (NotAuthorized(), null);
-        return (null, origin is null ? resolution.CurrentActivation : null);
+            return (NotAuthorized(), null, decision);
+        return (null, origin is null ? resolution.CurrentActivation : null, decision);
     }
 
     private static bool IsActivationHash(string value) => value is { Length: 64 }
