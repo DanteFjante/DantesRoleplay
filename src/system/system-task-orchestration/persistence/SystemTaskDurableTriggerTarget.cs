@@ -12,7 +12,7 @@ internal sealed class SystemTaskDurableTriggerTarget
 {
     internal SystemTaskDurableTriggerTarget(string bindingId, int bindingVersion, string bindingFingerprint,
         string occurrenceId, InteractionInvocationHost host, SystemTaskSelectedDefinition selectedDefinition,
-        string inputJson, SystemTaskCheckpoint? checkpoint = null)
+        string inputJson, string resultSchemaJson, SystemTaskCheckpoint? checkpoint = null)
     {
         BindingId = Identifier(bindingId, nameof(bindingId));
         if (bindingVersion < 1) throw new ArgumentOutOfRangeException(nameof(bindingVersion));
@@ -31,6 +31,7 @@ internal sealed class SystemTaskDurableTriggerTarget
             throw new InteractionContractException("SYSTEM_TASK_TRIGGER_IDENTITY_MISMATCH", "The host command must identify the durable occurrence.");
         CorrelationId = identity.CorrelationId;
         Submission = new(host, selectedDefinition, inputJson, checkpoint);
+        ResultSchemaJson = InteractionCanonicalJson.CanonicalizeObject(resultSchemaJson);
     }
 
     internal string BindingId { get; }
@@ -39,6 +40,7 @@ internal sealed class SystemTaskDurableTriggerTarget
     internal string OccurrenceId { get; }
     internal string CorrelationId { get; }
     internal SystemTaskDurableSubmissionRequest Submission { get; }
+    internal string ResultSchemaJson { get; }
 
     // Deliberately exclude definition, payload, grant, delivery time and attempt from identity:
     // a changed payload for an already delivered occurrence must conflict, never become new work.

@@ -11,6 +11,7 @@ public sealed class DurableWorkflowTriggerMigrationTests
 {
     private const string Previous = "20260911195508_SystemTaskLifecycleOrigins";
     private const string Current = "20260911222713_DurableProcedureWorkflowTriggers";
+    private const string ResultSchemas = "20260911231305_DurableProcedureWorkflowResultSchemas";
     private const string Hash = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 
     [Fact]
@@ -77,6 +78,55 @@ public sealed class DurableWorkflowTriggerMigrationTests
     }
 
     [Fact]
+    public async Task Result_schema_upgrade_preserves_legacy_rows_and_downgrade_refuses_new_schema_data()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        await using var db = Context(connection);
+        await db.GetService<IMigrator>().MigrateAsync(Current);
+        SeedApplication(db);
+        await SeedLegacyWorkflowBindingAsync(db);
+        await db.Database.ExecuteSqlRawAsync("""
+            CREATE TABLE workflow_schema_probe (observed INTEGER NOT NULL);
+            INSERT INTO workflow_schema_probe (observed) VALUES (0);
+            CREATE TRIGGER preserve_workflow_binding_trigger
+            AFTER UPDATE OF RuntimeWindowSeconds ON trigger_one_time_workflow_binding
+            BEGIN UPDATE workflow_schema_probe SET observed=observed+1; END;
+            """);
+
+        await db.Database.MigrateAsync();
+
+        Assert.Contains(ResultSchemas, await db.Database.GetAppliedMigrationsAsync());
+        Assert.Equal(1L, await ScalarAsync(connection,
+            "SELECT COUNT(*) FROM trigger_one_time_workflow_binding WHERE ResultSchemaJson IS NULL AND ResultSchemaFingerprint IS NULL"));
+        Assert.Equal(1L, await ScalarAsync(connection,
+            "SELECT COUNT(*) FROM sqlite_schema WHERE type='trigger' AND name='preserve_workflow_binding_trigger'"));
+        Assert.Equal(1L, await ScalarAsync(connection,
+            "SELECT instr(sql, 'CK_trigger_one_time_workflow_binding_result_schema') > 0 FROM sqlite_schema WHERE type='table' AND name='trigger_one_time_workflow_binding'"));
+        Assert.Equal(0L, await ScalarAsync(connection, "SELECT COUNT(*) FROM pragma_foreign_key_check"));
+        await Assert.ThrowsAsync<SqliteException>(() => db.Database.ExecuteSqlRawAsync("""
+            UPDATE trigger_one_time_workflow_binding
+            SET ResultSchemaJson = '{{"type":"object"}}' WHERE TriggerId = 'jobs.workflow';
+            """));
+
+        const string resultSchema = "{\"type\":\"object\"}";
+        await db.Database.ExecuteSqlInterpolatedAsync($"""
+            UPDATE trigger_one_time_workflow_binding
+            SET ResultSchemaJson = {resultSchema}, ResultSchemaFingerprint = {Hash}
+            WHERE TriggerId = 'jobs.workflow';
+            """);
+        var rejected = await Assert.ThrowsAsync<SqliteException>(() =>
+            db.GetService<IMigrator>().MigrateAsync(Current));
+
+        Assert.Contains("retained_workflow_result_schema_prevents_downgrade", rejected.Message);
+        Assert.Contains(ResultSchemas, await db.Database.GetAppliedMigrationsAsync());
+        Assert.Equal(1L, await ScalarAsync(connection,
+            "SELECT COUNT(*) FROM pragma_table_info('trigger_one_time_workflow_binding') WHERE name='ResultSchemaJson'"));
+        Assert.Equal(1L, await ScalarAsync(connection,
+            "SELECT COUNT(*) FROM sqlite_schema WHERE type='trigger' AND name='preserve_workflow_binding_trigger'"));
+    }
+
+    [Fact]
     public async Task Late_upgrade_guard_failure_rolls_back_schema_and_history_then_allows_retry()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
@@ -128,6 +178,24 @@ public sealed class DurableWorkflowTriggerMigrationTests
             CREATE TRIGGER preserve_workflow_trigger_parent
             AFTER UPDATE OF NotificationBody ON trigger_one_time_definition
             BEGIN UPDATE durable_trigger_migration_probe SET observed=observed+1; END;
+            """);
+
+    private static async Task SeedLegacyWorkflowBindingAsync(DantesRoleplayDbContext db) =>
+        await db.Database.ExecuteSqlRawAsync($"""
+            INSERT INTO trigger_one_time_definition
+                (ApplicationId, Id, Version, DueAtUtc, MisfirePolicy, Target, Lifecycle,
+                 NotificationTopic, NotificationSubject, NotificationBody, RecordedAtUtc)
+            VALUES ('jobs', 'jobs.workflow', 1, '2026-09-12T12:00:00Z', 'fire-once',
+                'procedure-workflow', 'active', 'scheduled.workflow', 'Workflow', '',
+                '2026-09-12T11:00:00Z');
+            INSERT INTO trigger_one_time_workflow_binding
+                (ApplicationId, TriggerId, TriggerVersion, PrincipalReference, AuthenticationMethod,
+                 ApplicationRevision, ApplicationFingerprint, BaseApplicationsJson, StateSpaceId,
+                 GrantReference, StateRevision, DefinitionId, DefinitionVersion, DefinitionFingerprint,
+                 ExecutionRequestJson, MaximumOperations, RuntimeWindowSeconds, BindingFingerprint)
+            VALUES ('jobs', 'jobs.workflow', 1, 'principal.' || lower('{Hash}'), 'fixture', 1,
+                '{Hash}', '[]', 'state.jobs', 'grant.jobs', 'state.revision', 'jobs.procedure', 1,
+                '{Hash}', char(123) || char(125), 4, 60, '{Hash}');
             """);
 
     private static void SeedApplication(DantesRoleplayDbContext db) =>

@@ -50,6 +50,7 @@ public sealed record TriggerProcedureWorkflowTarget
         DantesRoleplay.Interactions.InteractionInvocationHost invocationHost,
         DantesRoleplay.SystemTasks.SystemTaskSelectedDefinition selectedDefinition,
         string executionRequestJson,
+        string resultSchemaJson,
         TimeSpan runtimeWindow)
     {
         InvocationHost = invocationHost ?? throw new ArgumentNullException(nameof(invocationHost));
@@ -64,6 +65,8 @@ public sealed record TriggerProcedureWorkflowTarget
             runtimeWindow.Ticks % TimeSpan.TicksPerSecond != 0)
             throw Failure("TRIGGER_WORKFLOW_WINDOW", "The trigger workflow runtime window must be an integral number of seconds from five through six hundred.");
         ExecutionRequestJson = DantesRoleplay.Interactions.InteractionCanonicalJson.CanonicalizeObject(executionRequestJson);
+        ResultSchemaJson = DantesRoleplay.Interactions.InteractionCanonicalJson.CanonicalizeObject(resultSchemaJson);
+        ResultSchemaFingerprint = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(ResultSchemaJson)));
         RuntimeWindow = runtimeWindow;
         Fingerprint = DantesRoleplay.Interactions.InteractionCanonicalJson.Fingerprint(
             "dantes-roleplay/trigger-procedure-workflow-binding/v1",
@@ -82,6 +85,7 @@ public sealed record TriggerProcedureWorkflowTarget
                 definitionVersion = selectedDefinition.Version,
                 definitionFingerprint = selectedDefinition.Fingerprint,
                 executionRequest = ExecutionRequestJson,
+                resultSchema = ResultSchemaJson,
                 maximumOperations = invocationHost.Budget.MaximumOperations,
                 runtimeWindowSeconds = (int)runtimeWindow.TotalSeconds
             })));
@@ -90,6 +94,8 @@ public sealed record TriggerProcedureWorkflowTarget
     public DantesRoleplay.Interactions.InteractionInvocationHost InvocationHost { get; }
     public DantesRoleplay.SystemTasks.SystemTaskSelectedDefinition SelectedDefinition { get; }
     public string ExecutionRequestJson { get; }
+    public string ResultSchemaJson { get; }
+    public string ResultSchemaFingerprint { get; }
     public TimeSpan RuntimeWindow { get; }
     public string Fingerprint { get; }
 
@@ -97,8 +103,9 @@ public sealed record TriggerProcedureWorkflowTarget
         DantesRoleplay.Interactions.InteractionInvocationHost invocationHost,
         DantesRoleplay.SystemTasks.SystemTaskSelectedDefinition selectedDefinition,
         string executionRequestJson,
+        string resultSchemaJson,
         TimeSpan runtimeWindow) =>
-        new(invocationHost, selectedDefinition, executionRequestJson, runtimeWindow);
+        new(invocationHost, selectedDefinition, executionRequestJson, resultSchemaJson, runtimeWindow);
 }
 
 public enum TriggerLifecycle

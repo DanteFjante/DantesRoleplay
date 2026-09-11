@@ -82,5 +82,6 @@ public sealed class SystemTaskDurableTriggerTargetTests
 
     private static SystemTaskDurableTriggerTarget Target(InteractionInvocationHost host,
         SystemTaskSelectedDefinition selected, string input) =>
-        new("trigger.binding", 1, Hash, "event.1", host, selected, input);
+        new("trigger.binding", 1, Hash, "event.1", host, selected, input,
+            "{\"additionalProperties\":true,\"type\":\"object\"}");
 }

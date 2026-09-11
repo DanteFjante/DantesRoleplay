@@ -930,6 +930,8 @@ internal static class TriggerSchedulingModelConfiguration
                 "length(\"ApplicationId\") BETWEEN 1 AND 63 AND length(\"TriggerId\") BETWEEN 3 AND 200 AND \"TriggerVersion\" > 0 AND length(\"AuthenticationMethod\") BETWEEN 1 AND 64 AND \"ApplicationRevision\" > 0 AND length(\"BaseApplicationsJson\") BETWEEN 2 AND 4096 AND json_valid(\"BaseApplicationsJson\") AND json_type(\"BaseApplicationsJson\") = 'array' AND length(\"StateSpaceId\") BETWEEN 1 AND 200 AND length(\"GrantReference\") BETWEEN 1 AND 200 AND length(\"StateRevision\") BETWEEN 1 AND 200 AND length(\"DefinitionId\") BETWEEN 1 AND 200 AND \"DefinitionVersion\" > 0 AND length(\"ExecutionRequestJson\") BETWEEN 2 AND 98304 AND json_valid(\"ExecutionRequestJson\") AND json_type(\"ExecutionRequestJson\") = 'object' AND \"MaximumOperations\" BETWEEN 2 AND 16 AND \"RuntimeWindowSeconds\" BETWEEN 5 AND 600");
             table.HasCheckConstraint("CK_" + tableName + "_hashes",
                 "length(\"ApplicationFingerprint\") = 64 AND \"ApplicationFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"DefinitionFingerprint\") = 64 AND \"DefinitionFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"BindingFingerprint\") = 64 AND \"BindingFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+            table.HasCheckConstraint("CK_" + tableName + "_result_schema",
+                "((\"ResultSchemaJson\" IS NULL AND \"ResultSchemaFingerprint\" IS NULL) OR (length(\"ResultSchemaJson\") BETWEEN 2 AND 65536 AND json_valid(\"ResultSchemaJson\") AND json_type(\"ResultSchemaJson\") = 'object' AND length(\"ResultSchemaFingerprint\") = 64 AND \"ResultSchemaFingerprint\" NOT GLOB '*[^0-9A-F]*'))");
         });
         entity.HasKey("ApplicationId", "TriggerId", "TriggerVersion");
         entity.Property("ApplicationId").HasMaxLength(63);
@@ -944,6 +946,8 @@ internal static class TriggerSchedulingModelConfiguration
         entity.Property("DefinitionId").HasMaxLength(200).IsRequired();
         entity.Property("DefinitionFingerprint").HasMaxLength(64).IsRequired();
         entity.Property("ExecutionRequestJson").HasMaxLength(98_304).IsRequired();
+        entity.Property("ResultSchemaJson").HasMaxLength(65_536);
+        entity.Property("ResultSchemaFingerprint").HasMaxLength(64);
         entity.Property("BindingFingerprint").HasMaxLength(64).IsRequired();
     }
 }

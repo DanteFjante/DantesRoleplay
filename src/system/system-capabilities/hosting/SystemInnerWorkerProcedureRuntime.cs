@@ -123,6 +123,12 @@ internal sealed record SystemInnerWorkerHostSelection(
     IReadOnlyList<SystemInnerWorkerToolBinding> ToolBindings,
     SystemInnerWorkerAiBudget AiBudget);
 
+internal interface ISystemInnerWorkerProcedureResolver
+{
+    Task<SystemInnerWorkerProcedurePreparationResult> ResolveAsync(
+        SystemInnerWorkerRequest worker, CancellationToken cancellationToken = default);
+}
+
 /// <summary>Builds an exact fresh preparation without dispatching or consuming durable allowance.</summary>
 internal sealed class SystemInnerWorkerProcedureResolver(
     IInteractionEnvelopeFactory envelopes,
@@ -130,9 +136,9 @@ internal sealed class SystemInnerWorkerProcedureResolver(
     IActiveCatalogFeatureSnapshotProvider snapshots,
     SystemInnerWorkerPreparation preparation,
     SystemInnerWorkerHostPolicy policy,
-    TimeProvider time)
+    TimeProvider time) : ISystemInnerWorkerProcedureResolver
 {
-    internal async Task<SystemInnerWorkerProcedurePreparationResult> ResolveAsync(
+    public async Task<SystemInnerWorkerProcedurePreparationResult> ResolveAsync(
         SystemInnerWorkerRequest worker, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(worker);

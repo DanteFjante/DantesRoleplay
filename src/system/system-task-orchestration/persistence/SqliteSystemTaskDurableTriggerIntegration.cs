@@ -1,5 +1,7 @@
 using DantesRoleplay.Applications;
+using DantesRoleplay.DataAccess.Composition;
 using DantesRoleplay.Interactions;
+using DantesRoleplay.SystemCapabilities;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -34,10 +36,15 @@ internal sealed partial class SqliteSystemTaskDurableService
     }
 
     internal async Task<SystemTaskTriggerAdmissionDecision> StageTriggerAsync(
-        SystemTaskDurableSubmissionRequest request,
+        SystemInnerWorkerProcedurePreparationResult preparation,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(preparation);
+        var worker = preparation.Worker;
+        if (worker.Subject is not SystemInnerWorkerSubject.ProcedureWorkflow workflow)
+            return SystemTaskTriggerAdmissionDecision.Deny("INNER_WORKER_SUBJECT_UNSUPPORTED");
+        var request = new SystemTaskDurableSubmissionRequest(worker.InvocationHost,
+            workflow.ProcedureVersion, worker.InputJson, dependencyHandles: worker.DependencyHandles);
         if (db.Database.CurrentTransaction?.GetDbTransaction() is not SqliteTransaction transaction ||
             db.Database.GetDbConnection() is not SqliteConnection connection ||
             !ReferenceEquals(transaction.Connection, connection))
@@ -48,18 +55,22 @@ internal sealed partial class SqliteSystemTaskDurableService
             return SystemTaskTriggerAdmissionDecision.Deny("INVOCATION_SCOPE_STALE");
         var authorization = await AuthorizeCoreAsync(request.InvocationHost, request.SelectedDefinition,
             DantesRoleplay.Authorization.StandingGrantCapability.Execute, null, null, cancellationToken);
-        if (authorization.Failure is not null || authorization.CurrentActivation is null)
+        if (authorization.Failure is not null || authorization.CurrentActivation is null ||
+            authorization.Decision?.Grant is not { } grant)
             return SystemTaskTriggerAdmissionDecision.Deny(
                 authorization.Failure?.Code ?? "SYSTEM_TASK_TARGET_UNAVAILABLE",
                 authorization.Failure?.Tag == InteractionInvocationResultTag.Unavailable);
+        var profile = preparation.BindAuthority(new(
+            grant.GrantReference, grant.Revision.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            grant.ContentFingerprint));
         var store = new SqliteSystemTaskLifecycleStore(connection.ConnectionString, timeProvider);
-        var staged = await store.StageEnqueueAsync(request, false, connection, transaction, cancellationToken,
-            authorization.CurrentActivation);
-        return staged.Disposition switch
+        var staged = await StageInnerWorkerAsync(request, profile, authorization.CurrentActivation,
+            allowEphemeralParent: false, store, connection, transaction, cancellationToken);
+        return staged.Tag switch
         {
-            SystemTaskEnqueueDisposition.Created or SystemTaskEnqueueDisposition.Existing =>
-                SystemTaskTriggerAdmissionDecision.Allow(),
-            SystemTaskEnqueueDisposition.Rejected => SystemTaskTriggerAdmissionDecision.Deny(staged.Code),
+            InteractionInvocationResultTag.Pending => SystemTaskTriggerAdmissionDecision.Allow(),
+            InteractionInvocationResultTag.Unavailable =>
+                SystemTaskTriggerAdmissionDecision.Deny(staged.Code, transient: true),
             _ => SystemTaskTriggerAdmissionDecision.Deny(staged.Code)
         };
     }

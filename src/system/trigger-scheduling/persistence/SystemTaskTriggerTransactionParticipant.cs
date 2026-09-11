@@ -1,4 +1,6 @@
 using DantesRoleplay.DataAccess;
+using DantesRoleplay.DataAccess.Composition;
+using DantesRoleplay.SystemCapabilities;
 using DantesRoleplay.SystemTasks.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,7 +13,8 @@ namespace DantesRoleplay.TriggerScheduling;
 internal sealed class SystemTaskTriggerTransactionParticipant(
     DantesRoleplayDbContext db,
     TriggerNotificationTransactionParticipant notifications,
-    SqliteSystemTaskDurableService durableTasks) : ITriggerFireTransactionParticipant
+    SqliteSystemTaskDurableService durableTasks,
+    ISystemInnerWorkerProcedureResolver procedureWorkers) : ITriggerFireTransactionParticipant
 {
     public bool IsAvailable => notifications.IsAvailable;
 
@@ -39,7 +42,11 @@ internal sealed class SystemTaskTriggerTransactionParticipant(
             };
             if (target is null)
                 return TriggerFireAttemptResult.Permanent(TriggerFireFailureKind.StaleTrigger);
-            var staged = await durableTasks.StageTriggerAsync(target.Submission, cancellationToken);
+            var request = new SystemInnerWorkerRequest(target.Submission.InvocationHost,
+                target.Submission.SelectedDefinition, target.Submission.InputJson,
+                target.ResultSchemaJson, target.Submission.DependencyHandles);
+            var preparation = await procedureWorkers.ResolveAsync(request, cancellationToken);
+            var staged = await durableTasks.StageTriggerAsync(preparation, cancellationToken);
             return staged.Accepted
                 ? TriggerFireAttemptResult.Succeeded()
                 : staged.Transient

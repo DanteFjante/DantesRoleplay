@@ -43,6 +43,8 @@ public sealed class ObservationTriggerWorkflowBindingRecord
     public int DefinitionVersion { get; set; }
     public required string DefinitionFingerprint { get; set; }
     public required string ExecutionRequestJson { get; set; }
+    public string? ResultSchemaJson { get; set; }
+    public string? ResultSchemaFingerprint { get; set; }
     public int MaximumOperations { get; set; }
     public int RuntimeWindowSeconds { get; set; }
     public required string BindingFingerprint { get; set; }

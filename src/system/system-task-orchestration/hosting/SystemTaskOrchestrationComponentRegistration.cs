@@ -40,6 +40,8 @@ internal static class SystemTaskOrchestrationComponentRegistration
         services.AddScoped<SystemInnerWorkerPreparation>();
         services.AddScoped<SystemInnerWorkerHostPolicy>();
         services.AddScoped<SystemInnerWorkerProcedureResolver>();
+        services.AddScoped<ISystemInnerWorkerProcedureResolver>(provider =>
+            provider.GetRequiredService<SystemInnerWorkerProcedureResolver>());
         services.AddScoped<SystemInnerWorkerProcedureInvoker>();
         services.AddScoped<SystemInnerWorkerProcedureExecutor>();
         services.AddScoped<SystemInnerWorkerService>();

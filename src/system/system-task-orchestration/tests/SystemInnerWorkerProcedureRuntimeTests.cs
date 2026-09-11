@@ -14,10 +14,10 @@ using DantesRoleplay.Interactions;
 using DantesRoleplay.MCPServer;
 using DantesRoleplay.Operations;
 using DantesRoleplay.Procedures;
-using DantesRoleplay.SchemaValidation;
 using DantesRoleplay.SystemCapabilities;
 using DantesRoleplay.SystemTasks;
 using DantesRoleplay.SystemTasks.Persistence;
+using DantesRoleplay.TriggerScheduling;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -56,7 +56,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
     }
 
     [Fact]
-    public async Task Procedure_worker_submits_leases_invokes_and_reads_the_same_durable_result()
+    public async Task Procedure_worker_submission_and_due_trigger_use_the_registered_durable_runner()
     {
         await using var database = await InnerWorkerDatabase.CreateAsync();
         var db = database.Db;
@@ -176,6 +176,39 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             Assert.Equal(submitted.TaskHandle, replay.TaskHandle);
             Assert.False(await worker.RunOnceAsync("inner-worker"));
             Assert.Equal(1, provider.Calls);
+
+            var triggerClock = new RuntimeTriggerClock(DateTimeOffset.UtcNow);
+            var triggerHost = InnerWorkerHost(application, state, "trigger-binding-command", deadline);
+            var triggerTarget = TriggerProcedureWorkflowTarget.Create(triggerHost, selected,
+                assignment, schema, TimeSpan.FromMinutes(2));
+            var triggerStore = new SqliteTriggerSchedulingStore(db, triggerClock,
+                durableTasks: durable);
+            await triggerStore.AppendOneTimeTriggerAsync(OneTimeTriggerDefinition.Create(
+                Application, "demo.runtime.inner-trigger", 1, triggerClock.UtcNow,
+                TriggerMisfirePolicy.FireOnce, TriggerFireTarget.ProcedureWorkflow,
+                procedureWorkflow: triggerTarget));
+            var triggerWorker = new SqliteOneTimeTriggerWorker(db, triggerClock, triggerStore,
+                new SystemTaskTriggerTransactionParticipant(db,
+                    new TriggerNotificationTransactionParticipant(db, triggerClock), durable,
+                    resolver));
+
+            var fired = await triggerWorker.RunBatchAsync("trigger-inner-worker");
+
+            Assert.Equal(1, fired.Completed);
+            var triggerTask = await db.Set<SystemTaskLifecycleRecord>().AsNoTracking()
+                .SingleAsync(value => value.CommandId != submitted.TaskHandle!.CommandId);
+            Assert.NotNull(triggerTask.AdmissionPayloadJson);
+            Assert.Contains("\"innerWorker\"", triggerTask.AdmissionPayloadJson,
+                StringComparison.Ordinal);
+            Assert.Equal(2L, await db.Set<SystemTaskAiCeilingRecord>().LongCountAsync());
+            Assert.True(await worker.RunOnceAsync("inner-worker-trigger-trigger"));
+            var triggerResult = await service.GetAsync(
+                InnerWorkerHost(application, state, "trigger-result-read", deadline),
+                new(triggerTask.TaskId, triggerTask.CommandId));
+            Assert.Equal(InteractionInvocationResultTag.Completed, triggerResult.Tag);
+            Assert.Contains("\"answer\":\"42\"", triggerResult.DataJson,
+                StringComparison.Ordinal);
+            Assert.Equal(2, provider.Calls);
         }
     }
 
@@ -239,6 +272,12 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
                 "{\"answer\":\"42\",\"summary\":\"Inspection completed.\"}", [],
                 Usage: new(7, 2, 9, true)));
         }
+    }
+
+    private sealed class RuntimeTriggerClock(DateTimeOffset value) : TimeProvider, ITriggerClock
+    {
+        public DateTimeOffset UtcNow { get; } = value;
+        public override DateTimeOffset GetUtcNow() => UtcNow;
     }
 
     private sealed class UnusedReadModels : IApplicationReadModelService

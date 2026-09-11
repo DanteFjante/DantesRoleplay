@@ -65,18 +65,52 @@ internal sealed partial class SqliteSystemTaskDurableService(
             var profile = preparation.BindAuthority(new(
                 grant.GrantReference, grant.Revision.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 grant.ContentFingerprint));
+            return await StageInnerWorkerAsync(request, profile, authorization.CurrentActivation,
+                allowEphemeralParent, store, connection, transaction, cancellationToken);
+        }, cancellationToken);
+    }
+
+    private static async Task<InteractionInvocationResult> StageInnerWorkerAsync(
+        SystemTaskDurableSubmissionRequest request,
+        SystemInnerWorkerResolvedProfile profile,
+        StandingGrantActivationOrigin activationOrigin,
+        bool allowEphemeralParent,
+        SqliteSystemTaskLifecycleStore store,
+        SqliteConnection connection,
+        SqliteTransaction transaction,
+        CancellationToken cancellationToken)
+    {
+        var savepoint = "inner_worker_admission_" + Guid.NewGuid().ToString("N");
+        await transaction.SaveAsync(savepoint, cancellationToken);
+        try
+        {
             var staged = await store.StageEnqueueInnerWorkerAsync(request, profile, false,
-                connection, transaction, cancellationToken, authorization.CurrentActivation,
+                connection, transaction, cancellationToken, activationOrigin,
                 allowEphemeralParent);
             if (staged.Disposition is not (SystemTaskEnqueueDisposition.Created or SystemTaskEnqueueDisposition.Existing))
+            {
+                await transaction.RollbackAsync(savepoint, CancellationToken.None);
+                await transaction.ReleaseAsync(savepoint, CancellationToken.None);
                 return InteractionInvocationResult.Failed(staged.Code, staged.SafeMessage);
+            }
             var enrollment = await store.StageEnrollAiBudgetAsync(staged.Handle!, profile,
                 connection, transaction, cancellationToken);
-            return enrollment.Accepted
-                ? InteractionInvocationResult.Pending(staged.Handle!)
-                : InteractionInvocationResult.Unavailable(enrollment.Code,
+            if (!enrollment.Accepted)
+            {
+                await transaction.RollbackAsync(savepoint, CancellationToken.None);
+                await transaction.ReleaseAsync(savepoint, CancellationToken.None);
+                return InteractionInvocationResult.Unavailable(enrollment.Code,
                     "The focused worker accounting could not be admitted.");
-        }, cancellationToken);
+            }
+            await transaction.ReleaseAsync(savepoint, CancellationToken.None);
+            return InteractionInvocationResult.Pending(staged.Handle!);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(savepoint, CancellationToken.None);
+            await transaction.ReleaseAsync(savepoint, CancellationToken.None);
+            throw;
+        }
     }
 
     public Task<InteractionInvocationResult> SubmitAsync(SystemTaskDurableSubmissionRequest request,

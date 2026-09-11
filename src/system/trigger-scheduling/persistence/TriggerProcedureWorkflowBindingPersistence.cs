@@ -31,6 +31,8 @@ internal static class TriggerProcedureWorkflowBindingPersistence
             DefinitionVersion = data.DefinitionVersion,
             DefinitionFingerprint = data.DefinitionFingerprint,
             ExecutionRequestJson = data.ExecutionRequestJson,
+            ResultSchemaJson = data.ResultSchemaJson,
+            ResultSchemaFingerprint = data.ResultSchemaFingerprint,
             MaximumOperations = data.MaximumOperations,
             RuntimeWindowSeconds = data.RuntimeWindowSeconds,
             BindingFingerprint = data.BindingFingerprint
@@ -59,6 +61,8 @@ internal static class TriggerProcedureWorkflowBindingPersistence
             DefinitionVersion = data.DefinitionVersion,
             DefinitionFingerprint = data.DefinitionFingerprint,
             ExecutionRequestJson = data.ExecutionRequestJson,
+            ResultSchemaJson = data.ResultSchemaJson,
+            ResultSchemaFingerprint = data.ResultSchemaFingerprint,
             MaximumOperations = data.MaximumOperations,
             RuntimeWindowSeconds = data.RuntimeWindowSeconds,
             BindingFingerprint = data.BindingFingerprint
@@ -71,7 +75,7 @@ internal static class TriggerProcedureWorkflowBindingPersistence
     internal static bool Same(ObservationTriggerWorkflowBindingRecord? row, TriggerProcedureWorkflowTarget? target) =>
         row is null ? target is null : target is not null && row.BindingFingerprint == target.Fingerprint;
 
-    internal static SystemTaskDurableTriggerTarget Materialize(
+    internal static SystemTaskDurableTriggerTarget? Materialize(
         string bindingId,
         int bindingVersion,
         string occurrenceId,
@@ -79,7 +83,7 @@ internal static class TriggerProcedureWorkflowBindingPersistence
         OneTimeTriggerWorkflowBindingRecord row) =>
         Materialize(bindingId, bindingVersion, occurrenceId, admittedAt, Data(row));
 
-    internal static SystemTaskDurableTriggerTarget Materialize(
+    internal static SystemTaskDurableTriggerTarget? Materialize(
         string bindingId,
         int bindingVersion,
         string occurrenceId,
@@ -87,9 +91,11 @@ internal static class TriggerProcedureWorkflowBindingPersistence
         ObservationTriggerWorkflowBindingRecord row) =>
         Materialize(bindingId, bindingVersion, occurrenceId, admittedAt, Data(row));
 
-    private static SystemTaskDurableTriggerTarget Materialize(string bindingId, int bindingVersion,
+    private static SystemTaskDurableTriggerTarget? Materialize(string bindingId, int bindingVersion,
         string occurrenceId, DateTimeOffset admittedAt, BindingData data)
     {
+        if (data.ResultSchemaJson is null || data.ResultSchemaFingerprint is null)
+            return null;
         var applicationId = ApplicationIdentifier.Parse(data.ApplicationId);
         var bases = JsonSerializer.Deserialize<string[]>(data.BaseApplicationsJson)
             ?.Select(ApplicationIdentifier.Parse).ToArray() ?? [];
@@ -105,11 +111,12 @@ internal static class TriggerProcedureWorkflowBindingPersistence
         var definition = new SystemTaskSelectedDefinition(data.DefinitionId, data.DefinitionVersion,
             data.DefinitionFingerprint);
         var target = TriggerProcedureWorkflowTarget.Create(host, definition, data.ExecutionRequestJson,
-            TimeSpan.FromSeconds(data.RuntimeWindowSeconds));
-        if (target.Fingerprint != data.BindingFingerprint)
+            data.ResultSchemaJson, TimeSpan.FromSeconds(data.RuntimeWindowSeconds));
+        if (target.Fingerprint != data.BindingFingerprint ||
+            target.ResultSchemaFingerprint != data.ResultSchemaFingerprint)
             throw new InvalidDataException("The retained trigger workflow binding fingerprint is invalid.");
         return new SystemTaskDurableTriggerTarget(bindingId, bindingVersion, data.BindingFingerprint,
-            occurrenceId, host, definition, data.ExecutionRequestJson);
+            occurrenceId, host, definition, data.ExecutionRequestJson, data.ResultSchemaJson);
     }
 
     private static BindingData Data(TriggerProcedureWorkflowTarget target)
@@ -123,6 +130,7 @@ internal static class TriggerProcedureWorkflowBindingPersistence
             host.StateSpaceId!, host.GrantReference, host.StateRevision!,
             target.SelectedDefinition.ExactDefinitionId, target.SelectedDefinition.Version,
             target.SelectedDefinition.Fingerprint, target.ExecutionRequestJson,
+            target.ResultSchemaJson, target.ResultSchemaFingerprint,
             host.Budget.MaximumOperations, checked((int)target.RuntimeWindow.TotalSeconds), target.Fingerprint);
     }
 
@@ -130,19 +138,22 @@ internal static class TriggerProcedureWorkflowBindingPersistence
         row.PrincipalReference, row.AuthenticationMethod, row.ApplicationId, row.ApplicationRevision,
         row.ApplicationFingerprint, row.BaseApplicationsJson, row.StateSpaceId, row.GrantReference,
         row.StateRevision, row.DefinitionId, row.DefinitionVersion, row.DefinitionFingerprint,
-        row.ExecutionRequestJson, row.MaximumOperations, row.RuntimeWindowSeconds, row.BindingFingerprint);
+        row.ExecutionRequestJson, row.ResultSchemaJson, row.ResultSchemaFingerprint,
+        row.MaximumOperations, row.RuntimeWindowSeconds, row.BindingFingerprint);
 
     private static BindingData Data(ObservationTriggerWorkflowBindingRecord row) => new(
         row.PrincipalReference, row.AuthenticationMethod, row.ApplicationId, row.ApplicationRevision,
         row.ApplicationFingerprint, row.BaseApplicationsJson, row.StateSpaceId, row.GrantReference,
         row.StateRevision, row.DefinitionId, row.DefinitionVersion, row.DefinitionFingerprint,
-        row.ExecutionRequestJson, row.MaximumOperations, row.RuntimeWindowSeconds, row.BindingFingerprint);
+        row.ExecutionRequestJson, row.ResultSchemaJson, row.ResultSchemaFingerprint,
+        row.MaximumOperations, row.RuntimeWindowSeconds, row.BindingFingerprint);
 
     private sealed record BindingData(string PrincipalReference, string AuthenticationMethod,
         string ApplicationId, int ApplicationRevision, string ApplicationFingerprint,
         string BaseApplicationsJson, string StateSpaceId, string GrantReference, string StateRevision,
         string DefinitionId, int DefinitionVersion, string DefinitionFingerprint,
-        string ExecutionRequestJson, int MaximumOperations, int RuntimeWindowSeconds,
+        string ExecutionRequestJson, string? ResultSchemaJson, string? ResultSchemaFingerprint,
+        int MaximumOperations, int RuntimeWindowSeconds,
         string BindingFingerprint);
 
     private static IEnumerable<string> BaseRealmApps(this ApplicationRevision revision) =>
