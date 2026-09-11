@@ -79,7 +79,7 @@ public sealed class SystemInnerWorkerBudgetContractTests
         var request = new SystemInnerWorkerAiReservationRequest(Host(), TaskHandle(), Attempt(), "tool.call.1", new(), 0, 1);
         Assert.Null(request.ProviderBoundFailure());
         var evidence = new SystemInnerWorkerAiReservationEvidence("record.tool", "tool.call.1", Root(), TaskHandle(), Attempt(), 0, 1);
-        var result = SystemInnerWorkerAiUsageReconciliation.Calculate(evidence, new("record.tool", Attempt(), 0, 0, 1));
+        var result = SystemInnerWorkerAiUsageReconciliation.Calculate(evidence, new("record.tool", Attempt(), 0, 0, 1, 0, true));
         Assert.True(result.UsageKnown);
         Assert.Equal(0, result.ChargedProviderTokens);
         Assert.Equal(1, result.ChargedToolCalls);
@@ -89,10 +89,34 @@ public sealed class SystemInnerWorkerBudgetContractTests
     [Fact]
     public void Known_usage_releases_only_the_unused_reserved_amount()
     {
-        var result = SystemInnerWorkerAiUsageReconciliation.Calculate(Reservation(), new("record.1", Attempt(), 10, 5, 1));
+        var result = SystemInnerWorkerAiUsageReconciliation.Calculate(Reservation(), new("record.1", Attempt(), 10, 5, 1, 15, true));
         Assert.Equal(new SystemInnerWorkerAiUsageReconciliation(15, 1, 85, 1, true, false, false, SystemInnerWorkerTokenBudgetMode.MeasuredStop), result);
         Assert.Equal(100, result.ChargedProviderTokens + result.ReleasedProviderTokens);
         Assert.Equal(2, result.ChargedToolCalls + result.ReleasedToolCalls);
+    }
+
+    [Theory]
+    [InlineData(true, 20L, 80)]
+    [InlineData(false, 100L, 0)]
+    public void Independent_total_includes_overhead_and_partial_evidence_cannot_release_holds(bool complete, long charged, int released)
+    {
+        var report = new SystemInnerWorkerAiUsageReport("record.1", Attempt(), 10, 5, 1, 20, complete);
+        var result = SystemInnerWorkerAiUsageReconciliation.Calculate(Reservation(), report);
+        Assert.Equal(charged, result.ChargedProviderTokens);
+        Assert.Equal(released, result.ReleasedProviderTokens);
+        Assert.Equal(complete, result.UsageKnown);
+    }
+
+    [Fact]
+    public void Complete_components_without_total_remain_unknown_and_partial_overrun_is_retained()
+    {
+        var missing = SystemInnerWorkerAiUsageReconciliation.Calculate(Reservation(), new("record.1", Attempt(), 10, 5, 1, isComplete: true));
+        Assert.False(missing.UsageKnown);
+        Assert.Equal(100, missing.ChargedProviderTokens);
+        var partial = SystemInnerWorkerAiUsageReconciliation.Calculate(Reservation(), new("record.1", Attempt(), 10, 5, 1, 130));
+        Assert.Equal(130, partial.ChargedProviderTokens);
+        Assert.Equal(0, partial.ReleasedProviderTokens);
+        Assert.True(partial.RequiresReconciliation);
     }
 
     [Theory]
@@ -111,7 +135,8 @@ public sealed class SystemInnerWorkerBudgetContractTests
     [InlineData(150L, null, false)]
     public void Observed_overrun_is_never_clamped_to_reservation(long input, long? output, bool known)
     {
-        var result = SystemInnerWorkerAiUsageReconciliation.Calculate(Reservation(), new("record.1", Attempt(), input, output, 3));
+        var result = SystemInnerWorkerAiUsageReconciliation.Calculate(Reservation(), new("record.1", Attempt(), input, output, 3,
+            known ? input + output : null, known));
         Assert.Equal(input + output.GetValueOrDefault(), result.ChargedProviderTokens);
         Assert.Equal(3, result.ChargedToolCalls);
         Assert.Equal(0, result.ReleasedProviderTokens);
@@ -221,7 +246,7 @@ public sealed class SystemInnerWorkerBudgetContractTests
     {
         var evidence = new SystemInnerWorkerAiReservationEvidence("record.1", "reservation.1", Root(), TaskHandle(), Attempt(), 100, 2, mode);
         var unknown = SystemInnerWorkerAiUsageReconciliation.Calculate(evidence, new("record.1", Attempt(), null, 0, 1));
-        var overrun = SystemInnerWorkerAiUsageReconciliation.Calculate(evidence, new("record.1", Attempt(), 150, 10, 3));
+        var overrun = SystemInnerWorkerAiUsageReconciliation.Calculate(evidence, new("record.1", Attempt(), 150, 10, 3, 160, true));
         Assert.Equal(mode, unknown.Mode);
         Assert.Equal(mode, overrun.Mode);
         Assert.True(unknown.RequiresReconciliation);

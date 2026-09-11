@@ -90,7 +90,7 @@ by the resolver; constructing the DTO is not permission. Both profile and invoca
 JSON import/export. `IInteractionManualContextService` remains the manual source; no packet is copied.
 
 `SystemInnerWorkerAiBudget` defaults to a measured-stop threshold of 32,768 total provider input/output
-tokens, 8 tool dispatches and 2 concurrent provider requests per root. Host ceilings are configurable
+tokens including provider overhead, 8 tool dispatches and 2 concurrent provider requests per root. Host ceilings are configurable
 up to 131,072 tokens, 16 tools and 4 concurrent requests. Child ceilings only narrow and preserve the
 root's token mode. Existing shared
 operations/deadline limits remain independent. `SystemInnerWorkerAiReservationRequest` supplies the
@@ -121,7 +121,10 @@ Interrupt/disposal is best-effort cancellation, not proof that remote billing st
 observations are not live provider acceptance and do not enable INNER execution.
 
 `SystemInnerWorkerAiReservationEvidence` and `SystemInnerWorkerAiUsageReport` are inert host/owner
-data, serialized with `JsonSerializerDefaults.Web` for camelCase. Null token fields mean unknown,
+data, serialized with `JsonSerializerDefaults.Web` for camelCase. `TotalTokens` preserves independent
+provider totals including overhead; input/output components must not replace that total. Only explicit
+`IsComplete` with a present total can settle known provider usage. Missing total or incomplete evidence
+retains the reservation and any larger credible lower bound. Null token fields mean unknown,
 including provider failures where zero usage cannot be proved. Their source must be verified against
 the original provider response/host dispatch record. Public task readback must not expose lease tokens.
 `SystemInnerWorkerAiUsageReconciliation.Calculate` supplies only bounded arithmetic: known usage
