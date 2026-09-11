@@ -295,6 +295,263 @@ public sealed partial class SqliteStandingGrantTargetResolverTests : IDisposable
         Assert.Equal(drift == "namespace" ? "STANDING_GRANT_NAMESPACE_UNREVIEWED" : "STANDING_GRANT_SOURCE_DRIFT", result.Code);
     }
 
+    [Fact]
+    public async Task Candidate_authoring_creates_inspects_and_replays_without_activation()
+    {
+        await using var db = fixture.CreateContext();
+        var setup = Setup(db); await ActivateAsync(setup);
+        await SeedGrantAsync(db, [StandingGrantCapability.Author, StandingGrantCapability.Read]);
+        var active = setup.Activation.Current(Application)!;
+        var service = Service(db, setup);
+        var request = Request(active.ActivationFingerprint);
+
+        var created = await service.WriteCandidateAsync(Host(setup, "write", InteractionExecutionProfile.Atomic), request);
+        Assert.Equal(InteractionInvocationResultTag.Committed, created.Tag);
+        Assert.NotNull(created.Receipt);
+        var stored = Assert.Single(await db.Set<ApplicationCandidateRevisionRecord>().ToArrayAsync());
+        var inspected = await service.InspectAsync(Host(setup, "inspect"), new(stored.CandidateId, stored.Revision));
+        var replay = await service.WriteCandidateAsync(Host(setup, "write", InteractionExecutionProfile.Atomic), request);
+
+        Assert.Equal(InteractionInvocationResultTag.Completed, inspected.Tag);
+        Assert.Equal(InteractionInvocationResultTag.Committed, replay.Tag);
+        Assert.Single(await db.Set<ApplicationCandidateRevisionRecord>().ToArrayAsync());
+        Assert.Single(await db.Operations.Where(x => x.Tool == "application-candidate").ToArrayAsync());
+        Assert.Equal(active.ActivationFingerprint, setup.Activation.Current(Application)!.ActivationFingerprint);
+    }
+
+    [Fact]
+    public async Task Candidate_created_from_a_commit_receipt_is_inspectable_by_its_source_operation_with_current_read_authority()
+    {
+        await using var db = fixture.CreateContext();
+        var setup = Setup(db); await ActivateAsync(setup);
+        await SeedGrantAsync(db, [StandingGrantCapability.Author, StandingGrantCapability.Read]);
+        var service = Service(db, setup);
+
+        var created = await service.WriteCandidateAsync(Host(setup, "receipt-inspect", InteractionExecutionProfile.Atomic),
+            Request(setup.Activation.Current(Application)!.ActivationFingerprint));
+        Assert.NotNull(created.Receipt);
+        var receipt = created.Receipt!;
+        var inspected = await service.InspectAsync(Host(setup, "receipt-read"), new(null, 0, receipt.OperationId));
+
+        Assert.Equal(InteractionInvocationResultTag.Committed, created.Tag);
+        Assert.Equal(InteractionInvocationResultTag.Completed, inspected.Tag);
+        Assert.NotNull(inspected.DataJson);
+        Assert.Contains(receipt.OperationId, inspected.DataJson, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Candidate_receipt_lookup_rejects_a_mixed_candidate_and_operation_selector()
+    {
+        await using var db = fixture.CreateContext();
+        var setup = Setup(db); await ActivateAsync(setup);
+        await SeedGrantAsync(db, [StandingGrantCapability.Author, StandingGrantCapability.Read]);
+        var service = Service(db, setup);
+        var created = await service.WriteCandidateAsync(Host(setup, "mixed-selector", InteractionExecutionProfile.Atomic),
+            Request(setup.Activation.Current(Application)!.ActivationFingerprint));
+        var stored = Assert.Single(await db.Set<ApplicationCandidateRevisionRecord>().ToArrayAsync());
+
+        Assert.NotNull(created.Receipt);
+        var inspected = await service.InspectAsync(Host(setup, "mixed-read"),
+            new(stored.CandidateId, stored.Revision, created.Receipt!.OperationId));
+
+        Assert.Equal(InteractionInvocationResultTag.Failed, inspected.Tag);
+        Assert.Equal("INVALID_PAYLOAD", inspected.Code);
+        Assert.Null(inspected.DataJson);
+    }
+
+    [Theory]
+    [InlineData("revoked")]
+    [InlineData("read-absent")]
+    public async Task Candidate_receipt_lookup_denies_content_when_current_read_authority_is_revoked_or_absent(string state)
+    {
+        await using var db = fixture.CreateContext();
+        var setup = Setup(db); await ActivateAsync(setup);
+        await SeedGrantAsync(db, [StandingGrantCapability.Author, StandingGrantCapability.Read]);
+        var service = Service(db, setup);
+        var created = await service.WriteCandidateAsync(Host(setup, "receipt-" + state, InteractionExecutionProfile.Atomic),
+            Request(setup.Activation.Current(Application)!.ActivationFingerprint));
+        Assert.NotNull(created.Receipt);
+        var receipt = created.Receipt!;
+        if (state == "revoked")
+            await RevokeGrantAsync(db);
+        else
+            await ReplaceGrantCapabilitiesAsync(db, [StandingGrantCapability.Author]);
+
+        var inspected = await service.InspectAsync(Host(setup, "receipt-denied-" + state,
+            grantReference: "grant@2"), new(null, 0, receipt.OperationId));
+
+        Assert.Equal(InteractionInvocationResultTag.Failed, inspected.Tag);
+        Assert.Equal("STANDING_GRANT_DENIED", inspected.Code);
+        Assert.Null(inspected.DataJson);
+    }
+
+    [Fact]
+    public async Task Candidate_receipt_from_another_application_cannot_disclose_candidate_content()
+    {
+        await using var db = fixture.CreateContext();
+        var setup = Setup(db); await ActivateAsync(setup);
+        await SeedGrantAsync(db, [StandingGrantCapability.Author, StandingGrantCapability.Read]);
+        var service = Service(db, setup);
+        var created = await service.WriteCandidateAsync(Host(setup, "demo-receipt", InteractionExecutionProfile.Atomic),
+            Request(setup.Activation.Current(Application)!.ActivationFingerprint));
+        Assert.NotNull(created.Receipt);
+        var receipt = created.Receipt!;
+        var other = ApplicationIdentifier.Parse("other");
+        setup.Applications.Register(new(other, "Other", "Other fixture application.", []));
+        var otherHost = new InteractionInvocationHost(
+            TrustedPrincipalContext.VerifiedPrincipal("principal." + new string('a', 64), "test"),
+            new ApplicationRevision(other, 1, new string('B', 64), []), "state", "grant@1", "other-receipt-read", "state@1",
+            InteractionExecutionProfile.ReadOnly, new InteractionInvocationBudget(1, DateTime.UtcNow.AddMinutes(1)));
+
+        var inspected = await service.InspectAsync(otherHost, new(null, 0, receipt.OperationId));
+
+        Assert.Equal(InteractionInvocationResultTag.Failed, inspected.Tag);
+        Assert.Equal("APPLICATION_CANDIDATE_NOT_FOUND", inspected.Code);
+        Assert.Null(inspected.DataJson);
+    }
+
+    [Theory]
+    [InlineData("null-request")]
+    [InlineData("null-documents")]
+    [InlineData("maximum-revision")]
+    [InlineData("blank-reason")]
+    [InlineData("runtime-sync-evidence")]
+    public async Task Invalid_candidate_write_payloads_leave_no_candidate_or_audit(string invalid)
+    {
+        await using var db = fixture.CreateContext();
+        var setup = Setup(db); await ActivateAsync(setup);
+        await SeedGrantAsync(db, [StandingGrantCapability.Author]);
+        var fingerprint = setup.Activation.Current(Application)!.ActivationFingerprint;
+        ApplicationCandidateWriteRequest? request = invalid switch
+        {
+            "null-request" => null,
+            "null-documents" => Request(fingerprint) with { Documents = null! },
+            "maximum-revision" => Request(fingerprint) with
+            {
+                CandidateId = CandidateId("maximum-revision"),
+                ExpectedCandidateRevision = int.MaxValue
+            },
+            "blank-reason" => Request(fingerprint) with { NewImplementationReason = "   " },
+            "runtime-sync-evidence" => Request(fingerprint) with { SynchronizationEvidenceReference = "export@1" },
+            _ => throw new ArgumentOutOfRangeException(nameof(invalid))
+        };
+
+        var result = await Service(db, setup).WriteCandidateAsync(
+            Host(setup, "invalid-" + invalid, InteractionExecutionProfile.Atomic), request!);
+
+        Assert.Equal(InteractionInvocationResultTag.Failed, result.Tag);
+        Assert.Equal("INVALID_PAYLOAD", result.Code);
+        Assert.Empty(await db.Set<ApplicationCandidateRevisionRecord>().ToArrayAsync());
+        Assert.Empty(await db.Operations.Where(x => x.Tool == "application-candidate").ToArrayAsync());
+    }
+
+    [Fact]
+    public async Task Denied_candidate_authoring_leaves_no_candidate_or_audit()
+    {
+        await using var db = fixture.CreateContext();
+        var setup = Setup(db); await ActivateAsync(setup);
+        await SeedGrantAsync(db, [StandingGrantCapability.Read]);
+        var result = await Service(db, setup).WriteCandidateAsync(Host(setup, "denied", InteractionExecutionProfile.Atomic), Request(setup.Activation.Current(Application)!.ActivationFingerprint));
+
+        Assert.Equal(InteractionInvocationResultTag.Failed, result.Tag);
+        Assert.Empty(await db.Set<ApplicationCandidateRevisionRecord>().ToArrayAsync());
+        Assert.Empty(await db.Operations.Where(x => x.Tool == "application-candidate").ToArrayAsync());
+        Assert.False(db.ChangeTracker.HasChanges());
+        Assert.Null(db.Database.CurrentTransaction);
+        var absent = await Service(db, setup).InspectAsync(Host(setup), new("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 1));
+        Assert.Equal(InteractionInvocationResultTag.Failed, absent.Tag);
+        Assert.Null(absent.DataJson);
+    }
+
+    [Fact]
+    public async Task Committed_candidate_replay_survives_a_later_active_generation()
+    {
+        await using var db = fixture.CreateContext();
+        var setup = Setup(db); await ActivateAsync(setup); await SeedGrantAsync(db, [StandingGrantCapability.Author]);
+        var request = Request(setup.Activation.Current(Application)!.ActivationFingerprint);
+        var service = Service(db, setup);
+        var first = await service.WriteCandidateAsync(Host(setup, "stale-replay", InteractionExecutionProfile.Atomic), request);
+        WriteProcedure("A later active generation.");
+        await ActivateAsync(setup, setup.Activation.Current(Application)!.ActivationFingerprint);
+
+        var replay = await service.WriteCandidateAsync(Host(setup, "stale-replay", InteractionExecutionProfile.Atomic), request);
+
+        Assert.Equal(InteractionInvocationResultTag.Committed, first.Tag);
+        Assert.Equal(first.Receipt, replay.Receipt);
+        Assert.Single(await db.Set<ApplicationCandidateRevisionRecord>().ToArrayAsync());
+    }
+
+    [Fact]
+    public async Task Changed_payload_conflicts_even_after_the_active_generation_changes()
+    {
+        await using var db = fixture.CreateContext();
+        var setup = Setup(db); await ActivateAsync(setup); await SeedGrantAsync(db, [StandingGrantCapability.Author]);
+        var request = Request(setup.Activation.Current(Application)!.ActivationFingerprint);
+        var service = Service(db, setup);
+        _ = await service.WriteCandidateAsync(Host(setup, "payload-conflict", InteractionExecutionProfile.Atomic), request);
+        WriteProcedure("A later active generation.");
+        await ActivateAsync(setup, setup.Activation.Current(Application)!.ActivationFingerprint);
+
+        var conflict = await service.WriteCandidateAsync(Host(setup, "payload-conflict", InteractionExecutionProfile.Atomic), request with { NewImplementationReason = "Different payload." });
+
+        Assert.Equal(InteractionInvocationResultTag.Failed, conflict.Tag);
+        Assert.Equal("APPLICATION_CANDIDATE_COMMAND_CONFLICT", conflict.Code);
+        Assert.Single(await db.Set<ApplicationCandidateRevisionRecord>().ToArrayAsync());
+    }
+
+    [Fact]
+    public async Task New_procedure_under_registered_source_glob_is_retained_and_a_sibling_escape_is_unavailable()
+    {
+        await using var db = fixture.CreateContext();
+        var setup = Setup(db); await ActivateAsync(setup); await SeedGrantAsync(db, [StandingGrantCapability.Author, StandingGrantCapability.Read]);
+        var service = Service(db, setup); var fingerprint = setup.Activation.Current(Application)!.ActivationFingerprint;
+        var allowed = await service.WriteCandidateAsync(Host(setup, "new-path", InteractionExecutionProfile.Atomic), NewProcedureRequest(fingerprint, "content/procedures/new.md", "demo.runtime.new"));
+        var stored = Assert.Single(await db.Set<ApplicationCandidateRevisionRecord>().ToArrayAsync());
+        var readable = await service.InspectAsync(Host(setup, "new-read"), new(stored.CandidateId, 1));
+        var escaped = await service.WriteCandidateAsync(Host(setup, "escape", InteractionExecutionProfile.Atomic), NewProcedureRequest(fingerprint, "outside/escape.md", "demo.runtime.escape"));
+
+        Assert.Equal(InteractionInvocationResultTag.Committed, allowed.Tag);
+        Assert.Equal(InteractionInvocationResultTag.Completed, readable.Tag);
+        Assert.Equal(InteractionInvocationResultTag.Unavailable, escaped.Tag);
+        Assert.Single(await db.Operations.Where(x => x.Tool == "application-candidate").ToArrayAsync());
+    }
+
+    [Fact]
+    public async Task Candidate_revision_preserves_prior_retained_bytes_and_rejects_stale_revision()
+    {
+        await using var db = fixture.CreateContext();
+        var setup = Setup(db); await ActivateAsync(setup); await SeedGrantAsync(db, [StandingGrantCapability.Author]);
+        var fingerprint = setup.Activation.Current(Application)!.ActivationFingerprint; var service = Service(db, setup);
+        _ = await service.WriteCandidateAsync(Host(setup, "rev-one", InteractionExecutionProfile.Atomic), Request(fingerprint));
+        var first = Assert.Single(await db.Set<ApplicationCandidateRevisionRecord>().ToArrayAsync());
+        var old = (await new ApplicationCandidateRetainedReader(db, setup.Applications).ReadAsync(Application, first.CandidateId, 1))!.Documents.Single().RetainedBytes;
+        var secondRequest = Request(fingerprint) with { CandidateId = first.CandidateId, ExpectedCandidateRevision = 1, Documents = [new("file:" + RelativePath, "catalog", RelativePath, "text/markdown", ProcedureText("Revision two."))] };
+        var second = await service.WriteCandidateAsync(Host(setup, "rev-two", InteractionExecutionProfile.Atomic), secondRequest);
+        var stale = await service.WriteCandidateAsync(Host(setup, "rev-three", InteractionExecutionProfile.Atomic), secondRequest);
+        var retainedOld = (await new ApplicationCandidateRetainedReader(db, setup.Applications).ReadAsync(Application, first.CandidateId, 1))!.Documents.Single().RetainedBytes;
+
+        Assert.Equal(InteractionInvocationResultTag.Committed, second.Tag);
+        Assert.Equal(InteractionInvocationResultTag.Failed, stale.Tag);
+        Assert.Equal("APPLICATION_CANDIDATE_CAS_MISMATCH", stale.Code);
+        Assert.Equal(old, retainedOld);
+        Assert.Equal(2, await db.Set<ApplicationCandidateRevisionRecord>().CountAsync());
+    }
+
+    [Fact]
+    public async Task Revoked_current_grant_denies_a_later_candidate_replay()
+    {
+        await using var db = fixture.CreateContext();
+        var setup = Setup(db); await ActivateAsync(setup); await SeedGrantAsync(db, [StandingGrantCapability.Author]);
+        var request = Request(setup.Activation.Current(Application)!.ActivationFingerprint); var service = Service(db, setup);
+        _ = await service.WriteCandidateAsync(Host(setup, "revoked-replay", InteractionExecutionProfile.Atomic), request);
+        await RevokeGrantAsync(db);
+
+        var replay = await service.WriteCandidateAsync(Host(setup, "revoked-replay", InteractionExecutionProfile.Atomic), request);
+
+        Assert.Equal(InteractionInvocationResultTag.Failed, replay.Tag);
+        Assert.Equal("STANDING_GRANT_NOT_CURRENT", replay.Code);
+    }
+
     private SetupState Setup(DantesRoleplayDbContext db, bool extension = false)
     {
         var applications = new SqliteApplicationRegistry(db);
@@ -407,10 +664,96 @@ public sealed partial class SqliteStandingGrantTargetResolverTests : IDisposable
             """, new UTF8Encoding(false));
     }
 
-    private static InteractionInvocationHost Host(SetupState setup) => new(
+    private static InteractionInvocationHost Host(SetupState setup, string command = "command", InteractionExecutionProfile profile = InteractionExecutionProfile.ReadOnly,
+        string grantReference = "grant@1") => new(
         TrustedPrincipalContext.VerifiedPrincipal("principal." + new string('a', 64), "test"),
-        new ApplicationRevision(Application, 1, setup.Applications.Get(Application)!.Fingerprint, []), "state", "grant@1", "command", "state@1",
-        InteractionExecutionProfile.ReadOnly, new InteractionInvocationBudget(1, DateTime.UtcNow.AddMinutes(1)));
+        new ApplicationRevision(Application, 1, setup.Applications.Get(Application)!.Fingerprint, []), "state", grantReference, command, "state@1",
+        profile, new InteractionInvocationBudget(1, DateTime.UtcNow.AddMinutes(1)));
+
+    private static string CandidateId(string command) => Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(
+        "dantes-roleplay/application-candidate/candidate/v1\nprincipal." + new string('a', 64) + "\ndemo\n" + command)))[..32].ToLowerInvariant();
+
+    private static ApplicationCandidateWriteRequest Request(string fingerprint) => new(null, 0, fingerprint, "runtime", null,
+        "Fixture change.", [new("file:" + RelativePath, "catalog", RelativePath, "text/markdown", ProcedureText("Changed by candidate."))]);
+
+    private static ApplicationCandidateWriteRequest NewProcedureRequest(string fingerprint, string path, string id) => new(null, 0, fingerprint, "runtime", null,
+        "New fixture procedure.", [new("file:" + path, "catalog", path, "text/markdown", ProcedureText("New procedure.").Replace("demo.runtime.inspect", id, StringComparison.Ordinal))]);
+
+    private static string ProcedureText(string instruction) => $$"""
+        ---
+        id: demo.runtime.inspect
+        category: runtime.inspect
+        name: Inspect runtime
+        governs: query(kind: "runtime.inspect")
+        status: active
+        ---
+
+        ## Description
+        Inspect the active runtime definition.
+
+        ## Instructions
+        1. {{instruction}}
+
+        ## Constraints
+        - Preserve it.
+        """;
+
+    private static SqliteApplicationAuthoringService Service(DantesRoleplayDbContext db, SetupState setup)
+    {
+        var policy = new SqliteStandingGrantPolicy(db, setup.Resolver);
+        return new(db, setup.Applications, setup.Activation, setup.Activation, setup.Sources, policy, setup.Resolver, new OperationLog(db));
+    }
+
+    private static async Task SeedGrantAsync(DantesRoleplayDbContext db, IReadOnlyList<StandingGrantCapability> capabilities)
+    {
+        var grant = new StandingGrantRevision("grant@1", "grant", 1, new string('0', 64), "principal." + new string('a', 64), Application,
+            StandingGrantScope.Application, null, capabilities,
+            new(StandingGrantDefinitionMode.ApplicationOwned, [], [new("demo.runtime", true, [CatalogNamespaceKinds.Procedure])]), [], 1, DateTime.UtcNow.AddMinutes(10), false, "grant-operation");
+        db.Add(new Operation { Id = "grant-operation", Timestamp = DateTime.UtcNow, Tool = "test" });
+        db.Add(new StandingGrantRevisionRecord { GrantId = grant.GrantId, Revision = grant.Revision, GrantReference = grant.GrantReference,
+            PrincipalReference = grant.PrincipalReference, ApplicationId = grant.ApplicationId.Value, Scope = "application", StateSpaceId = null,
+            PermissionsJson = StandingGrantRevisionCanonicalization.PermissionsJson(grant), ContentFingerprint = StandingGrantRevisionCanonicalization.ContentFingerprint(grant),
+            MaximumOperations = grant.MaximumOperations, ExpiresAtUtc = grant.ExpiresAtUtc, Revoked = false, IssuedByOperationId = "grant-operation" });
+        db.Add(new StandingGrantCurrentRecord { GrantId = "grant", Revision = 1 });
+        await db.SaveChangesAsync();
+    }
+
+    private static async Task RevokeGrantAsync(DantesRoleplayDbContext db)
+    {
+        var prior = SqliteStandingGrantPolicy.Parse(await db.Set<StandingGrantRevisionRecord>().SingleAsync(x => x.GrantId == "grant"));
+        var revoked = prior with { Revision = 2, GrantReference = "grant@2", Revoked = true, IssuedByOperationId = "grant-revoke" };
+        db.Add(new Operation { Id = "grant-revoke", Timestamp = DateTime.UtcNow, Tool = "test" });
+        db.Add(new StandingGrantRevisionRecord { GrantId = revoked.GrantId, Revision = revoked.Revision, GrantReference = revoked.GrantReference,
+            PrincipalReference = revoked.PrincipalReference, ApplicationId = revoked.ApplicationId.Value, Scope = "application", StateSpaceId = null,
+            PermissionsJson = StandingGrantRevisionCanonicalization.PermissionsJson(revoked), ContentFingerprint = StandingGrantRevisionCanonicalization.ContentFingerprint(revoked),
+            MaximumOperations = revoked.MaximumOperations, ExpiresAtUtc = revoked.ExpiresAtUtc, Revoked = true, IssuedByOperationId = "grant-revoke" });
+        (await db.Set<StandingGrantCurrentRecord>().SingleAsync(x => x.GrantId == "grant")).Revision = 2;
+        await db.SaveChangesAsync();
+    }
+
+    private static async Task ReplaceGrantCapabilitiesAsync(
+        DantesRoleplayDbContext db, IReadOnlyList<StandingGrantCapability> capabilities)
+    {
+        var prior = SqliteStandingGrantPolicy.Parse(await db.Set<StandingGrantRevisionRecord>()
+            .SingleAsync(x => x.GrantId == "grant" && x.Revision == 1));
+        var replacement = prior with
+        {
+            Revision = 2,
+            GrantReference = "grant@2",
+            Capabilities = capabilities,
+            IssuedByOperationId = "grant-capability-replace"
+        };
+        db.Add(new Operation { Id = replacement.IssuedByOperationId, Timestamp = DateTime.UtcNow, Tool = "test" });
+        db.Add(new StandingGrantRevisionRecord { GrantId = replacement.GrantId, Revision = replacement.Revision,
+            GrantReference = replacement.GrantReference, PrincipalReference = replacement.PrincipalReference,
+            ApplicationId = replacement.ApplicationId.Value, Scope = "application", StateSpaceId = null,
+            PermissionsJson = StandingGrantRevisionCanonicalization.PermissionsJson(replacement),
+            ContentFingerprint = StandingGrantRevisionCanonicalization.ContentFingerprint(replacement),
+            MaximumOperations = replacement.MaximumOperations, ExpiresAtUtc = replacement.ExpiresAtUtc,
+            Revoked = false, IssuedByOperationId = replacement.IssuedByOperationId });
+        (await db.Set<StandingGrantCurrentRecord>().SingleAsync(x => x.GrantId == "grant")).Revision = 2;
+        await db.SaveChangesAsync();
+    }
 
     private static StandingGrantDefinitionReference Selection(StandingGrantDefinitionTarget target) =>
         new(target.DefinitionId, target.Kind, target.Revision, target.ContentFingerprint);
