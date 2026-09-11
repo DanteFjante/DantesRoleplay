@@ -121,6 +121,42 @@ public sealed class SqliteStandingGrantAdministrationTests
     }
 
     [Fact]
+    public async Task Orphan_next_revision_cannot_be_adopted_after_audit_salvages_the_duplicate_insert()
+    {
+        using var fixture = new SqliteFixture();
+        await using var db = fixture.CreateContext();
+        var (store, _, request) = Setup(db);
+        await store.MutateAsync(Operator, request, "issue");
+        var first = await db.Set<StandingGrantRevisionRecord>().AsNoTracking().SingleAsync();
+        var orphan = SqliteStandingGrantPolicy.Parse(first) with
+        {
+            Revision = 2, GrantReference = "grant:authors:2", MaximumOperations = 4,
+            IssuedByOperationId = new string('c', 32)
+        };
+        orphan = orphan with { ContentFingerprint = StandingGrantRevisionCanonicalization.ContentFingerprint(orphan) };
+        db.Add(new Operation { Id = orphan.IssuedByOperationId, Tool = "fixture-orphan", Timestamp = DateTime.UtcNow });
+        db.Add(new StandingGrantRevisionRecord
+        {
+            GrantId = orphan.GrantId, Revision = orphan.Revision, GrantReference = orphan.GrantReference,
+            PrincipalReference = orphan.PrincipalReference, ApplicationId = orphan.ApplicationId.Value, Scope = "application",
+            StateSpaceId = null, PermissionsJson = StandingGrantRevisionCanonicalization.PermissionsJson(orphan),
+            ContentFingerprint = orphan.ContentFingerprint, MaximumOperations = orphan.MaximumOperations,
+            ExpiresAtUtc = orphan.ExpiresAtUtc, Revoked = false, IssuedByOperationId = orphan.IssuedByOperationId
+        });
+        await db.SaveChangesAsync();
+        db.ChangeTracker.Clear();
+        var replacement = request with { Mutation = StandingGrantIssuerMutation.Replace, ExpectedCurrentRevision = 1, MaximumOperations = 3 };
+        var result = await store.MutateAsync(Operator, replacement, "replace");
+        Assert.Equal(InteractionInvocationResultTag.Unavailable, result.Tag);
+        Assert.Null(result.Receipt);
+        Assert.Equal(1, (await db.Set<StandingGrantCurrentRecord>().AsNoTracking().SingleAsync()).Revision);
+        Assert.Equal(2, await db.Operations.AsNoTracking().CountAsync());
+        Assert.Equal(orphan.ContentFingerprint, (await db.Set<StandingGrantRevisionRecord>().AsNoTracking()
+            .SingleAsync(value => value.Revision == 2)).ContentFingerprint);
+        Assert.Null(db.Database.CurrentTransaction);
+    }
+
+    [Fact]
     public async Task Outer_transaction_and_unrelated_pending_writes_are_preserved_and_rejected()
     {
         using var fixture = new SqliteFixture();
