@@ -56,13 +56,18 @@ public sealed partial class SqliteApplicationAuthoringService
                 : null;
             var reviewed = compatibleUpdate is null && intentMatchUpdate is null && reviewedPureUpdates is not null
                 ? await reviewedPureUpdates.ReadAsync(host, candidate, token) : null;
-            if (compatibleUpdate is null && intentMatchUpdate is null && reviewed is null)
+            var statefulUpdate = compatibleUpdate is null && intentMatchUpdate is null && reviewed is null
+                && statefulRuntime is not null
+                ? await new ApplicationCandidateStatefulUpdateReader(db, applications, activations, evidence, targets)
+                    .ReadAsync(host, candidate, token) : null;
+            if (compatibleUpdate is null && intentMatchUpdate is null && reviewed is null && statefulUpdate is null)
                 return InteractionInvocationResult.Unavailable("APPLICATION_CANDIDATE_COMPATIBILITY_UNAVAILABLE",
-                    "This publication path requires a compatible body update, exact intent metadata update, or independently reviewed closed pure mechanic candidate.");
+                    "This publication path requires a compatible body update, exact intent metadata update, independently reviewed closed pure mechanic candidate, or validated existing atomic body update.");
             var definitions = compatibleUpdate is not null
                 ? compatibleUpdate.Closure.Definitions.Select(value => value.Plan.Definition).ToArray()
                 : intentMatchUpdate is not null ? new[] { intentMatchUpdate.Successor }
-                : reviewed!.Closure.Definitions.Select(value => value.Plan.Definition).ToArray();
+                : reviewed is not null ? reviewed.Closure.Definitions.Select(value => value.Plan.Definition).ToArray()
+                : new[] { statefulUpdate!.Definition };
             var selected = new List<StandingGrantDefinitionTarget>();
             foreach (var definition in definitions)
             {
@@ -81,11 +86,26 @@ public sealed partial class SqliteApplicationAuthoringService
                 .SingleOrDefaultAsync(value => value.Id == request.ValidationOperationId, token);
             if (validation is null || checkedOperation is null)
                 return Failed("APPLICATION_CANDIDATE_VALIDATION_REQUIRED");
+            ApplicationCandidateStatefulRuntimeReport? statefulReport = null;
             if (intentMatchUpdate is not null)
             {
                 if (!ApplicationCandidateOperationProof.ValidationMatches(checkedOperation, validation, candidate, definitions)
                     || !await ApplicationCandidateIntentMatchUpdateValidation.VerifyAsync(db, intentMatchUpdate, validation, token))
                     return Failed("APPLICATION_CANDIDATE_VALIDATION_REQUIRED");
+            }
+            else if (statefulUpdate is not null)
+            {
+                if (!ApplicationCandidateOperationProof.TryReadStatefulRuntimeReport(checkedOperation, validation,
+                        candidate, definitions, out statefulReport) || statefulReport is null
+                    || !await ApplicationCandidateStatefulUpdateValidation.VerifyAsync(
+                        db, statefulUpdate, statefulReport, validation, token)
+                    || statefulRuntime is null
+                    || !await statefulRuntime.CurrentAsync(statefulUpdate, statefulReport, host, token))
+                    return Failed("APPLICATION_CANDIDATE_VALIDATION_REQUIRED");
+                var activationAuthority = await grants.EvaluateAsync(host,
+                    new(StandingGrantCapability.Activate, StandingGrantScope.Application,
+                        selected, statefulReport.EffectKinds), token);
+                if (!activationAuthority.Allowed) return Failed(activationAuthority.Code);
             }
             else
             {
@@ -119,27 +139,33 @@ public sealed partial class SqliteApplicationAuthoringService
                 await transaction.CommitAsync(token);
                 return Receipt(operationId, commandFingerprint);
             }
-            var basis = compatibleUpdate?.Basis ?? intentMatchUpdate?.Basis ?? reviewed!.Basis;
+            var basis = compatibleUpdate?.Basis ?? intentMatchUpdate?.Basis ?? reviewed?.Basis ?? statefulUpdate!.Basis;
             if (activations.Current(candidate.ApplicationId)?.ActivationFingerprint != basis.ActivationFingerprint)
                 return Failed("APPLICATION_CANDIDATE_ACTIVE_STALE");
             var operation = await operations.RecordAsync("application-candidate-activation",
                 compatibleUpdate is not null
                     ? "Published validated runtime mechanic body updates."
                     : intentMatchUpdate is not null ? "Published a validated intent match metadata update."
-                    : "Published a runtime-tested and independently reviewed pure mechanic candidate.",
+                    : reviewed is not null ? "Published a runtime-tested and independently reviewed pure mechanic candidate."
+                    : "Published a dry-run-validated existing atomic mechanic body update.",
                 true, subject: candidate.ApplicationId.Value, projectionJson: canonical, guardEvidenceJson: "{}", id: operationId,
                 cancellationToken: token);
             var activation = compatibleUpdate is not null
                 ? await publisher.StageCompatibleUpdateAsync(compatibleUpdate, validation, operation.Id, token)
                 : intentMatchUpdate is not null
                     ? await publisher.StageIntentMatchUpdateAsync(intentMatchUpdate, validation, operation.Id, token)
-                    : await publisher.StageReviewedPureUpdateAsync(reviewed!, validation, operation.Id, token);
+                    : reviewed is not null
+                        ? await publisher.StageReviewedPureUpdateAsync(reviewed, validation, operation.Id, token)
+                        : await publisher.StageStatefulUpdateAsync(statefulUpdate!, statefulReport!, validation,
+                            operation.Id, token);
             if (compatibleUpdate is not null)
                 _ = await stateSpaceRebinder.StageAsync(compatibleUpdate, activation, token);
             else if (intentMatchUpdate is not null)
                 _ = await stateSpaceRebinder.StageAsync(intentMatchUpdate, activation, token);
-            else
+            else if (reviewed is not null)
                 _ = await stateSpaceRebinder.StageAsync(reviewed!, activation, token);
+            else
+                _ = await stateSpaceRebinder.StageAsync(statefulUpdate!, activation, token);
             operation.GuardEvidenceJson = ActivationGuard(candidate, validation.OperationId, activation.ActivationFingerprint);
             await db.SaveChangesAsync(token);
             await transaction.CommitAsync(token);

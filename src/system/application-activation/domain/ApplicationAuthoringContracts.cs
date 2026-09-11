@@ -17,12 +17,16 @@ public sealed record ApplicationCandidateLookup(string? CandidateId, int Revisio
 public sealed record ApplicationCandidateDocumentInput(
     string LogicalIdentity, string SourceId, string RelativePath, string MediaType, string Text);
 
-/// <summary>Pure data examples pinned to an exact selected definition; examples confer no execution permission.</summary>
+/// <summary>Expected data, plus optional state and typed effects, pinned to one definition; examples confer no permission.</summary>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record ApplicationCandidateValidationSample(
     [property: JsonRequired] Authorization.StandingGrantDefinitionReference Definition,
     [property: JsonRequired] string InputJson,
-    [property: JsonRequired] string ExpectedDataJson);
+    [property: JsonRequired] string ExpectedDataJson,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? StateSpaceId = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? StateRevision = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyDictionary<string, string>? RoleEntityIds = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? ExpectedEffectsJson = null);
 
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record ApplicationCandidateValidationRequest(

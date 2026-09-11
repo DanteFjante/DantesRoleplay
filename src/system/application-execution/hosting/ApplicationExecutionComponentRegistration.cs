@@ -9,13 +9,16 @@ public static class ApplicationExecutionComponentRegistration
         .AddScoped<ApplicationCandidatePureMechanicClassifier>()
         .AddScoped<ApplicationCandidatePureRuntimeClosureReader>()
         .AddScoped<ApplicationCandidateRuntimeValidator>()
+        .AddScoped<ApplicationCandidateStatefulRuntimeValidator>()
         .AddScoped<IApplicationCandidatePreparation>(provider =>
             provider.GetRequiredService<ApplicationCandidateRuntimeValidator>())
         .AddScoped<IApplicationMechanicProjectionResolver, ApplicationMechanicProjectionResolver>()
         .AddScoped<IApplicationGraphSnapshotReader, ApplicationGraphSnapshotReader>()
         .AddScoped<IApplicationMechanicObjectProjectionResolver, ApplicationMechanicObjectProjectionResolver>()
         .AddScoped<IApplicationMechanicProjectionMappingResolver, ApplicationMechanicProjectionMappingResolver>()
-        .AddScoped<IApplicationMechanicEvaluator, ApplicationMechanicEvaluator>()
+        .AddScoped<ApplicationMechanicEvaluator>()
+        .AddScoped<IApplicationMechanicEvaluator>(provider =>
+            provider.GetRequiredService<ApplicationMechanicEvaluator>())
         .AddScoped<IApplicationEcsEffectBatchBuilder, ApplicationEcsEffectBatchBuilder>()
         .AddScoped<IApplicationPureActionExecutor, ApplicationPureActionExecutor>()
         .AddScoped<ApplicationActionInvocationAdapter>()

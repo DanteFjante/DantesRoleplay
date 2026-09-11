@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using DantesRoleplay.ApplicationExecution;
 using DantesRoleplay.Authorization;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.Interactions;
@@ -34,6 +35,18 @@ public sealed partial class SqliteApplicationAuthoringService
             var canonical = ApplicationCandidateOperationProof.CanonicalValidation(host, candidate, samples);
             var commandFingerprint = InteractionCanonicalJson.Fingerprint("dantes-roleplay/application-candidate-validation/v1", canonical);
             var operationId = Id(host, candidate.ApplicationId, "validation");
+            ApplicationCandidateStatefulUpdateEvidence? stagedStatefulUpdate = null;
+            ApplicationCandidateStatefulRuntimeReport? statefulReport = null;
+            if (statefulRuntime is not null && samples.Count > 0
+                && samples.All(value => value.StateSpaceId is not null))
+            {
+                stagedStatefulUpdate = await new ApplicationCandidateStatefulUpdateReader(
+                        db, applications, activations, evidence, targets)
+                    .ReadAsync(host, candidate, cancellationToken);
+                if (stagedStatefulUpdate is not null)
+                    statefulReport = await statefulRuntime.ValidateAsync(
+                        stagedStatefulUpdate, samples, host, cancellationToken);
+            }
             await db.Database.OpenConnectionAsync(cancellationToken); opened = true;
             await using var transaction = ((SqliteConnection)db.Database.GetDbConnection()).BeginTransaction(deferred: false);
             await using var enlistment = await db.Database.UseTransactionAsync(transaction, cancellationToken);
@@ -76,6 +89,23 @@ public sealed partial class SqliteApplicationAuthoringService
                     cancellationToken);
                 if (validation is null || !ApplicationCandidateOperationProof.ValidationMatches(prior, validation, candidate, definitions))
                     return InteractionInvocationResult.Unavailable("APPLICATION_CANDIDATE_RECEIPT_INCONSISTENT", "The stored validation receipt cannot be reconciled.");
+                if (validation.PreparationVersion is { } statefulVersion
+                    && statefulVersion.StartsWith(ApplicationCandidateStatefulRuntimeValidator.PolicyVersion + "@", StringComparison.Ordinal))
+                {
+                    var update = await new ApplicationCandidateStatefulUpdateReader(
+                            db, applications, activations, evidence, targets)
+                        .ReadAsync(host, candidate, cancellationToken);
+                    if (update is null || statefulRuntime is null
+                        || !ApplicationCandidateOperationProof.TryReadStatefulRuntimeReport(
+                            prior, validation, candidate, definitions, out var retainedStateful)
+                        || retainedStateful is null
+                        || !await ApplicationCandidateStatefulUpdateValidation.VerifyAsync(
+                            db, update, retainedStateful, validation, cancellationToken)
+                        || !await statefulRuntime.CurrentAsync(update, retainedStateful, host, cancellationToken))
+                        return InteractionInvocationResult.Unavailable(
+                            "APPLICATION_CANDIDATE_VALIDATION_EVIDENCE_INCONSISTENT",
+                            "The retained stateful validation is no longer current or cannot be reconciled.");
+                }
                 if (validation.Outcome == "valid"
                     && validation.DependencyEvidenceReference is { } durableReview
                     && durableReview.StartsWith("validation.result.", StringComparison.Ordinal)
@@ -96,7 +126,8 @@ public sealed partial class SqliteApplicationAuthoringService
                     .ReadAsync(candidate, cancellationToken)
                 : null;
             ApplicationCandidateRuntimeReport? runtimeReport = null;
-            if (intentMatchUpdate is null && preparation is not null)
+            if (intentMatchUpdate is null && statefulReport is null && preparation is not null
+                && samples.All(value => value.StateSpaceId is null))
             {
                 var prepared = await preparation.ValidateAsync(
                     new ApplicationCandidateValidationRequest(candidate, samples), host, cancellationToken);
@@ -114,7 +145,7 @@ public sealed partial class SqliteApplicationAuthoringService
                 new ApplicationCandidateDiagnostic("DEPENDENCY_EXTRACTION_UNAVAILABLE", candidate.CandidateId, "Exact dependency extraction is unavailable."),
                 new ApplicationCandidateDiagnostic("REUSE_REVIEW_UNAVAILABLE", candidate.CandidateId, "Reuse review is unavailable.")
             };
-            if (runtimeReport is null)
+            if (runtimeReport is null && statefulReport is null)
             {
                 diagnostics.Add(new("RUNTIME_PREPARATION_UNAVAILABLE", candidate.CandidateId,
                     "Runtime preparation and sample validation are unavailable."));
@@ -122,12 +153,14 @@ public sealed partial class SqliteApplicationAuthoringService
                     diagnostics.Add(new("RUNTIME_SAMPLES_UNAVAILABLE", candidate.CandidateId,
                         "Retained execution samples are missing."));
             }
-            else
+            else if (runtimeReport is not null)
             {
                 diagnostics.AddRange(runtimeReport.Diagnostics);
             }
             var runtimeFingerprint = runtimeReport is null ? null
                 : ApplicationCandidateOperationProof.RuntimeReportFingerprint(runtimeReport);
+            var statefulFingerprint = statefulReport is null ? null
+                : ApplicationCandidateOperationProof.StatefulRuntimeReportFingerprint(statefulReport);
             var validationRow = new ApplicationCandidateValidationRecord
             {
                 OperationId = operation.Id, ApplicationId = candidate.ApplicationId.Value, CandidateId = candidate.CandidateId,
@@ -135,16 +168,30 @@ public sealed partial class SqliteApplicationAuthoringService
                 ExpectedActiveFingerprint = readback.RevisionRow.ExpectedActiveFingerprint,
                 DependencyFingerprint = InteractionCanonicalJson.Fingerprint("dantes-roleplay/application-candidate-dependencies-incomplete/v1",
                     InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new { candidate.ApplicationId, candidate.CandidateId, candidate.Revision, candidate.ContentFingerprint }))),
-                PreparationVersion = runtimeReport is { RuntimePolicyVersion: not null, RuntimePolicyFingerprint: not null }
-                    ? runtimeReport.RuntimePolicyVersion + "@" + runtimeReport.RuntimePolicyFingerprint : null,
+                PreparationVersion = statefulReport is not null
+                    ? statefulReport.PolicyVersion + "@" + statefulReport.PolicyFingerprint
+                    : runtimeReport is { RuntimePolicyVersion: not null, RuntimePolicyFingerprint: not null }
+                        ? runtimeReport.RuntimePolicyVersion + "@" + runtimeReport.RuntimePolicyFingerprint : null,
                 ManualPacketResultFingerprint = null, CanonicalCommandFingerprint = commandFingerprint,
                 DependenciesJson = "[]", DependenciesComplete = false, DependencyEvidenceReference = null,
-                PreparedEvidenceReference = runtimeFingerprint is null ? null
-                    : ApplicationCandidateOperationProof.RuntimeEvidenceReference(operation.Id, runtimeFingerprint),
+                PreparedEvidenceReference = statefulFingerprint is not null
+                    ? ApplicationCandidateOperationProof.StatefulRuntimeEvidenceReference(operation.Id, statefulFingerprint)
+                    : runtimeFingerprint is null ? null
+                        : ApplicationCandidateOperationProof.RuntimeEvidenceReference(operation.Id, runtimeFingerprint),
                 ReuseEvidenceReference = null,
                 Outcome = runtimeReport?.Status == ApplicationCandidateRuntimeStatus.Invalid ? "invalid" : "unavailable",
                 DiagnosticsJson = InteractionCanonicalJson.Canonicalize(JsonSerializer.Serialize(diagnostics)), AlternativesJson = "[]"
             };
+            if (statefulReport is not null && stagedStatefulUpdate is not null && manuals is not null)
+            {
+                var currentUpdate = await new ApplicationCandidateStatefulUpdateReader(
+                        db, applications, activations, evidence, targets)
+                    .ReadAsync(host, candidate, cancellationToken);
+                if (currentUpdate is not null && currentUpdate.Fingerprint == stagedStatefulUpdate.Fingerprint)
+                    await new ApplicationCandidateStatefulUpdateValidation(
+                            db, targets, grants, manuals, operations, statefulRuntime!)
+                        .CompleteAsync(host, currentUpdate, statefulReport, validationRow, cancellationToken);
+            }
             if (intentMatchUpdate is not null && manuals is not null)
             {
                 var exactMatch = new ApplicationCandidateIntentMatchUpdateValidation(
@@ -162,8 +209,11 @@ public sealed partial class SqliteApplicationAuthoringService
                 await new ApplicationCandidateReviewedPureUpdateValidation(reviewedPureUpdates)
                     .CompleteAsync(host, runtimeReport, validationRow, cancellationToken);
             db.Add(validationRow);
-            operation.GuardEvidenceJson = ApplicationCandidateOperationProof.ValidationGuard(host, candidate, validationRow,
-                definitions, commandFingerprint, runtimeReport);
+            operation.GuardEvidenceJson = statefulReport is not null && validationRow.Outcome == "valid"
+                ? ApplicationCandidateOperationProof.StatefulValidationGuard(host, candidate, validationRow,
+                    definitions, commandFingerprint, statefulReport)
+                : ApplicationCandidateOperationProof.ValidationGuard(host, candidate, validationRow,
+                    definitions, commandFingerprint, runtimeReport);
             await db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             return Receipt(operationId, commandFingerprint);
@@ -187,15 +237,40 @@ public sealed partial class SqliteApplicationAuthoringService
             || samples.Any(sample => sample is null || sample.Definition is null
                 || string.IsNullOrWhiteSpace(sample.Definition.DefinitionId) || string.IsNullOrWhiteSpace(sample.Definition.Kind)
                 || sample.Definition.Revision < 1 || sample.Definition.ContentFingerprint is null || !Hash(sample.Definition.ContentFingerprint)
-                || sample.InputJson is null || sample.ExpectedDataJson is null)
+                || sample.InputJson is null || sample.ExpectedDataJson is null
+                || !CompleteStatefulSample(sample))
             || samples.GroupBy(sample => sample.Definition.DefinitionId, StringComparer.Ordinal)
                 .Any(group => group.Count() > ApplicationAuthoringLimits.SamplesPerDefinition))
             throw new ApplicationActivationException("APPLICATION_CANDIDATE_SAMPLES_INVALID", "Validation samples exceed their bounds or lack an exact definition.");
-        return Array.AsReadOnly(samples.Select(sample => sample with
+        return Array.AsReadOnly(samples.Select(NormalizeSample).ToArray());
+
+        static bool CompleteStatefulSample(ApplicationCandidateValidationSample sample)
         {
-            InputJson = InteractionCanonicalJson.CanonicalizeObject(sample.InputJson),
-            ExpectedDataJson = InteractionCanonicalJson.CanonicalizeObject(sample.ExpectedDataJson)
-        }).ToArray());
+            var supplied = new object?[] { sample.StateSpaceId, sample.StateRevision,
+                sample.RoleEntityIds, sample.ExpectedEffectsJson }.Count(value => value is not null);
+            if (supplied == 0) return true;
+            if (supplied != 4 || string.IsNullOrWhiteSpace(sample.StateSpaceId)
+                || string.IsNullOrWhiteSpace(sample.StateRevision)
+                || sample.RoleEntityIds!.Count > 32
+                || sample.RoleEntityIds.Any(value => string.IsNullOrWhiteSpace(value.Key)
+                    || string.IsNullOrWhiteSpace(value.Value))) return false;
+            try
+            {
+                using var effects = JsonDocument.Parse(sample.ExpectedEffectsJson!);
+                return effects.RootElement.ValueKind == JsonValueKind.Array;
+            }
+            catch (JsonException) { return false; }
+        }
+
+        static ApplicationCandidateValidationSample NormalizeSample(ApplicationCandidateValidationSample sample) =>
+            sample with
+            {
+                InputJson = InteractionCanonicalJson.CanonicalizeObject(sample.InputJson),
+                ExpectedDataJson = InteractionCanonicalJson.CanonicalizeObject(sample.ExpectedDataJson),
+                RoleEntityIds = sample.RoleEntityIds is null ? null : InteractionInvocationRoles.Normalize(sample.RoleEntityIds),
+                ExpectedEffectsJson = sample.ExpectedEffectsJson is null ? null
+                    : InteractionCanonicalJson.Canonicalize(sample.ExpectedEffectsJson)
+            };
     }
 
 }

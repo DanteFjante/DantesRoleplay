@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using DantesRoleplay.Applications;
+using DantesRoleplay.ApplicationExecution;
 using DantesRoleplay.Authorization;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.DataAccess.Catalog;
@@ -31,6 +32,7 @@ public sealed partial class SqliteApplicationAuthoringService : IApplicationAuth
     private readonly ApplicationCandidateReviewedPureUpdateReader? reviewedPureUpdates;
     private readonly IApplicationCatalogSynchronizationEvidenceReader? synchronization;
     private readonly CompatibleStateSpacePublicationRebinder stateSpaceRebinder;
+    private readonly ApplicationCandidateStatefulRuntimeValidator? statefulRuntime;
 
     public SqliteApplicationAuthoringService(DantesRoleplayDbContext db, IApplicationRegistry applications,
         IApplicationActivationReader activations, IActivatedApplicationEvidenceReader evidence, ISourceRegistry sources,
@@ -38,20 +40,22 @@ public sealed partial class SqliteApplicationAuthoringService : IApplicationAuth
         IApplicationCandidatePreparation? preparation = null, IInteractionManualContextService? manuals = null,
         IApplicationCatalogSynchronizationEvidenceReader? synchronization = null)
         : this(db, applications, activations, evidence, sources, grants, targets, operations, preparation, manuals,
-            reviewedPureUpdates: null, synchronization: synchronization) { }
+            reviewedPureUpdates: null, synchronization: synchronization, statefulRuntime: null) { }
 
     internal SqliteApplicationAuthoringService(DantesRoleplayDbContext db, IApplicationRegistry applications,
         IApplicationActivationReader activations, IActivatedApplicationEvidenceReader evidence, ISourceRegistry sources,
         IStandingGrantPolicy grants, IStandingGrantTargetResolver targets, IOperationLog operations,
         IApplicationCandidatePreparation? preparation, IInteractionManualContextService? manuals,
         ApplicationCandidateReviewedPureUpdateReader? reviewedPureUpdates,
-        IApplicationCatalogSynchronizationEvidenceReader? synchronization = null)
+        IApplicationCatalogSynchronizationEvidenceReader? synchronization = null,
+        ApplicationCandidateStatefulRuntimeValidator? statefulRuntime = null)
     {
         this.db = db; this.applications = applications; this.activations = activations; this.evidence = evidence;
         this.sources = sources; this.grants = grants; this.targets = targets; this.operations = operations;
         this.preparation = preparation; this.manuals = manuals; this.reviewedPureUpdates = reviewedPureUpdates;
         this.synchronization = synchronization;
         stateSpaceRebinder = new(db, applications);
+        this.statefulRuntime = statefulRuntime;
     }
 
     private const string Tool = "application-candidate";

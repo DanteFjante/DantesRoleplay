@@ -98,6 +98,9 @@ internal static class ApplicationCandidateOperationProof
                 && operation.GuardEvidenceJson == Guard(principal, authenticationMethod, applicationId,
                     commandId, candidate, row.GrantReference, actualDefinitions,
                     row.CanonicalCommandFingerprint, ValidationFingerprint(row), null);
+        if (row.PreparationVersion is { } statefulVersion
+            && statefulVersion.StartsWith(ApplicationCandidateStatefulRuntimeValidator.PolicyVersion + "@", StringComparison.Ordinal))
+            return TryReadStatefulRuntimeReport(operation, row, candidate, actualDefinitions, out _);
         if (row.PreparedEvidenceReference is not null || row.PreparationVersion is not null)
             return TryReadRuntimeReport(operation, row, candidate, actualDefinitions, out _);
         return operation.GuardEvidenceJson == Guard(principal, authenticationMethod, applicationId,
@@ -115,6 +118,185 @@ internal static class ApplicationCandidateOperationProof
 
     internal static string RuntimeEvidenceReference(string operationId, string reportFingerprint) =>
         operationId + "#runtime-report." + reportFingerprint;
+
+    internal static string StatefulRuntimeReportFingerprint(ApplicationCandidateStatefulRuntimeReport report) =>
+        InteractionCanonicalJson.Fingerprint("dantes-roleplay/application-candidate-stateful-runtime-report/v1",
+            InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(report)));
+
+    internal static string StatefulRuntimeEvidenceReference(string operationId, string reportFingerprint) =>
+        operationId + "#stateful-runtime-report." + reportFingerprint;
+
+    internal static string StatefulValidationGuard(InteractionInvocationHost host,
+        ApplicationCandidateReference candidate, ApplicationCandidateValidationRecord row,
+        IReadOnlyList<StandingGrantDefinitionReference> definitions, string commandFingerprint,
+        ApplicationCandidateStatefulRuntimeReport report) => StatefulValidationGuard(
+            host.Principal.PrincipalId, host.Principal.AuthenticationMethod, candidate.ApplicationId.Value,
+            host.CommandId, candidate, row, definitions, commandFingerprint, report);
+
+    private static string StatefulValidationGuard(string principal, string authenticationMethod,
+        string applicationId, string commandId, ApplicationCandidateReference candidate,
+        ApplicationCandidateValidationRecord row, IReadOnlyList<StandingGrantDefinitionReference> definitions,
+        string commandFingerprint, ApplicationCandidateStatefulRuntimeReport report)
+    {
+        var authorization = new AuthorizationAuditEvidence(principal, authenticationMethod,
+            "standing-grant", applicationId, commandId, true, "STANDING_GRANT_ALLOWED");
+        var selectedDefinitions = definitions.OrderBy(value => value.DefinitionId, StringComparer.Ordinal)
+            .ThenBy(value => value.Kind, StringComparer.Ordinal).ThenBy(value => value.Revision)
+            .ThenBy(value => value.ContentFingerprint, StringComparer.Ordinal)
+            .Select(value => new { value.DefinitionId, value.Kind, value.Revision, value.ContentFingerprint }).ToArray();
+        var reportFingerprint = StatefulRuntimeReportFingerprint(report);
+        return InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
+        {
+            authorization, commandFingerprint, candidate, grantReference = row.GrantReference,
+            selectedDefinitions, validationFingerprint = ValidationFingerprint(row),
+            statefulRuntimeReportFingerprint = reportFingerprint, statefulRuntimeReport = report
+        }));
+    }
+
+    internal static bool TryValidateStatefulRuntimeReport(ApplicationCandidateStatefulRuntimeReport? report,
+        ApplicationCandidateValidationRequest request, out string fingerprint)
+    {
+        fingerprint = string.Empty;
+        try
+        {
+            if (report is null || report.Candidate != request.Candidate || !Hash(report.UpdateFingerprint)
+                || report.PolicyVersion != ApplicationCandidateStatefulRuntimeValidator.PolicyVersion
+                || report.PolicyFingerprint != ApplicationCandidateStatefulRuntimeValidator.PolicyFingerprint
+                || report.Dependencies is null || report.Dependencies.Count == 0
+                || report.Dependencies.Any(value => value.Revision < 1 || !Hash(value.ContentFingerprint))
+                || string.IsNullOrWhiteSpace(report.StateGrantReference) || !Hash(report.StateGrantFingerprint)
+                || report.EffectKinds is null || report.EffectKinds.Any(value =>
+                    !EcsEffects.ApplicationEcsEffectType.All.Contains(value, StringComparer.Ordinal))
+                || report.Samples is null || report.Samples.Count != request.Samples.Count) return false;
+            for (var index = 0; index < report.Samples.Count; index++)
+            {
+                var actual = report.Samples[index];
+                var expected = request.Samples[index];
+                if (expected.StateSpaceId is null || expected.StateRevision is null
+                    || expected.RoleEntityIds is null || expected.ExpectedEffectsJson is null
+                    || actual.Definition != expected.Definition || actual.SampleIndex != index
+                    || actual.StateSpaceId != expected.StateSpaceId || actual.StateRevision != expected.StateRevision
+                    || !actual.RoleEntityIds.SequenceEqual(expected.RoleEntityIds)
+                    || actual.InputFingerprint != ApplicationCandidateStatefulRuntimeValidator.DataFingerprint(expected.InputJson)
+                    || actual.ExpectedDataFingerprint != ApplicationCandidateStatefulRuntimeValidator.DataFingerprint(expected.ExpectedDataJson)
+                    || actual.ActualDataFingerprint != actual.ExpectedDataFingerprint
+                    || actual.ExpectedEffectsFingerprint != ApplicationCandidateStatefulRuntimeValidator.DataFingerprint(expected.ExpectedEffectsJson)
+                    || actual.ActualEffectsFingerprint != actual.ExpectedEffectsFingerprint
+                    || !Hash(actual.ProjectionFingerprint) || !Hash(actual.BatchFingerprint)
+                    || !TryValidateStatefulBatch(actual)
+                    || actual.DryRunOperationId is not { Length: 32 }) return false;
+            }
+            var canonical = InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(report));
+            if (Encoding.UTF8.GetByteCount(canonical) > InteractionContractLimits.JsonBytes) return false;
+            fingerprint = StatefulRuntimeReportFingerprint(report);
+            return true;
+        }
+        catch (Exception exception) when (exception is JsonException or InteractionContractException
+            or ArgumentException or InvalidOperationException or NotSupportedException) { return false; }
+    }
+
+    internal static bool TryReadStatefulRuntimeReport(Operation operation, ApplicationCandidateValidationRecord row,
+        ApplicationCandidateReference candidate, IReadOnlyList<StandingGrantDefinitionReference> actualDefinitions,
+        out ApplicationCandidateStatefulRuntimeReport? report)
+    {
+        report = null;
+        try
+        {
+            if (operation.Tool != ValidationTool || !operation.Success || operation.Subject != candidate.ApplicationId.Value
+                || operation.Id != row.OperationId || row.ApplicationId != candidate.ApplicationId.Value
+                || row.CandidateId != candidate.CandidateId || row.Revision != candidate.Revision
+                || row.CandidateFingerprint != candidate.ContentFingerprint || row.Outcome != "valid"
+                || !TryValidationCommand(operation.ProjectionJson, candidate, out var command) || command is null
+                || command.applicationId != candidate.ApplicationId.Value
+                || command.Samples.Any(sample => !actualDefinitions.Contains(sample.Definition))) return false;
+            using var guard = JsonDocument.Parse(operation.GuardEvidenceJson);
+            var root = guard.RootElement;
+            if (!root.TryGetProperty("statefulRuntimeReport", out var reportElement)
+                || !root.TryGetProperty("statefulRuntimeReportFingerprint", out var fingerprintElement)
+                || fingerprintElement.ValueKind != JsonValueKind.String) return false;
+            if (!TryParseStatefulRuntimeReport(reportElement, candidate, out var parsed) || parsed is null) return false;
+            var request = new ApplicationCandidateValidationRequest(candidate, command.Samples);
+            if (!TryValidateStatefulRuntimeReport(parsed, request, out var fingerprint)
+                || fingerprintElement.GetString() != fingerprint
+                || row.PreparedEvidenceReference != StatefulRuntimeEvidenceReference(operation.Id, fingerprint)
+                || row.PreparationVersion != parsed.PolicyVersion + "@" + parsed.PolicyFingerprint
+                || operation.GuardEvidenceJson != StatefulValidationGuard(command.principal!,
+                    command.authenticationMethod!, command.applicationId!, command.CommandId!, candidate,
+                    row, actualDefinitions, row.CanonicalCommandFingerprint, parsed)) return false;
+            report = parsed;
+            return true;
+        }
+        catch (Exception exception) when (exception is JsonException or InteractionContractException
+            or ArgumentException or InvalidOperationException or NotSupportedException) { return false; }
+    }
+
+    private static bool TryParseStatefulRuntimeReport(JsonElement element, ApplicationCandidateReference candidate,
+        out ApplicationCandidateStatefulRuntimeReport? report)
+    {
+        report = null;
+        try
+        {
+            if (element.ValueKind != JsonValueKind.Object
+                || InteractionCanonicalJson.CanonicalizeObject(element.GetProperty("Candidate").GetRawText())
+                    != InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(candidate))) return false;
+            var predecessor = Definition(element.GetProperty("RootPredecessor"));
+            var dependencies = element.GetProperty("Dependencies").EnumerateArray().Select(Definition).ToArray();
+            var effectKinds = element.GetProperty("EffectKinds").EnumerateArray()
+                .Select(value => value.GetString() ?? throw new JsonException()).ToArray();
+            var samples = new List<ApplicationCandidateStatefulSampleResult>();
+            foreach (var value in element.GetProperty("Samples").EnumerateArray())
+            {
+                var roles = new SortedDictionary<string, string>(StringComparer.Ordinal);
+                foreach (var property in value.GetProperty("RoleEntityIds").EnumerateObject())
+                    roles.Add(property.Name, property.Value.GetString() ?? throw new JsonException());
+                samples.Add(new(Definition(value.GetProperty("Definition")),
+                    value.GetProperty("SampleIndex").GetInt32(), value.GetProperty("StateSpaceId").GetString()!,
+                    value.GetProperty("StateRevision").GetString()!, roles,
+                    value.GetProperty("InputFingerprint").GetString()!,
+                    value.GetProperty("ExpectedDataFingerprint").GetString()!,
+                    value.GetProperty("ActualDataFingerprint").GetString()!,
+                    value.GetProperty("ExpectedEffectsFingerprint").GetString()!,
+                    value.GetProperty("ActualEffectsFingerprint").GetString()!,
+                    value.GetProperty("ProjectionFingerprint").GetString()!,
+                    value.GetProperty("BatchJson").GetString()!,
+                    value.GetProperty("BatchFingerprint").GetString()!,
+                    value.GetProperty("DryRunOperationId").GetString()!));
+            }
+            report = new(candidate, element.GetProperty("UpdateFingerprint").GetString()!,
+                element.GetProperty("PolicyVersion").GetString()!, element.GetProperty("PolicyFingerprint").GetString()!,
+                predecessor, dependencies, element.GetProperty("StateGrantReference").GetString()!,
+                element.GetProperty("StateGrantFingerprint").GetString()!, effectKinds, samples.AsReadOnly());
+            return true;
+        }
+        catch (Exception exception) when (exception is JsonException or InteractionContractException
+            or ArgumentException or InvalidOperationException or NotSupportedException) { return false; }
+    }
+
+    private static StandingGrantDefinitionReference Definition(JsonElement element) => new(
+        element.GetProperty("DefinitionId").GetString()!, element.GetProperty("Kind").GetString()!,
+        element.GetProperty("Revision").GetInt32(), element.GetProperty("ContentFingerprint").GetString()!);
+
+    private static bool TryValidateStatefulBatch(ApplicationCandidateStatefulSampleResult sample)
+    {
+        try
+        {
+            if (InteractionCanonicalJson.CanonicalizeObject(sample.BatchJson) != sample.BatchJson
+                || ApplicationCandidateStatefulRuntimeValidator.DataFingerprint(sample.BatchJson) != sample.BatchFingerprint)
+                return false;
+            using var document = JsonDocument.Parse(sample.BatchJson);
+            var root = document.RootElement;
+            return root.GetProperty("StateSpaceId").GetString() == sample.StateSpaceId
+                && root.GetProperty("MechanicId").GetString() == sample.Definition.DefinitionId
+                && root.GetProperty("MechanicVersion").GetInt32() == sample.Definition.Revision
+                && root.GetProperty("ExecutionIdentity").ValueKind == JsonValueKind.Null
+                && ApplicationCandidateStatefulRuntimeValidator.DataFingerprint(
+                    root.GetProperty("ProjectionJson").GetString()!) == sample.ProjectionFingerprint
+                && ApplicationCandidateStatefulRuntimeValidator.DataFingerprint(
+                    root.GetProperty("Effects").GetRawText()) == sample.ExpectedEffectsFingerprint;
+        }
+        catch (Exception exception) when (exception is JsonException or InteractionContractException
+            or ArgumentException or InvalidOperationException or NotSupportedException) { return false; }
+    }
 
     internal static bool TryValidateRuntimeReport(ApplicationCandidateRuntimeReport? report,
         ApplicationCandidateValidationRequest request, out string canonical, out string fingerprint)

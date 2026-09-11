@@ -28,6 +28,13 @@ public sealed class ApplicationMechanicEvaluator(
         CancellationToken cancellationToken = default) =>
         EvaluateCoreAsync(request, null, 0, new HashSet<string>(StringComparer.Ordinal), new CompositionBudget(), cancellationToken);
 
+    /// <summary>Evaluates against one host-owned immutable candidate overlay; it never applies output.</summary>
+    internal Task<ApplicationMechanicEvaluationResult> EvaluateCandidateAsync(
+        ApplicationMechanicEvaluationRequest request, ICatalogNavigator candidateCatalog,
+        CancellationToken cancellationToken = default) =>
+        EvaluateCoreAsync(request, candidateCatalog ?? throw new ArgumentNullException(nameof(candidateCatalog)),
+            0, new HashSet<string>(StringComparer.Ordinal), new CompositionBudget(), cancellationToken);
+
     private async Task<ApplicationMechanicEvaluationResult> EvaluateCoreAsync(
         ApplicationMechanicEvaluationRequest request,
         ICatalogNavigator? catalog,
