@@ -13,12 +13,52 @@ using DantesRoleplay.Mechanics;
 using DantesRoleplay.MCPServer;
 using DantesRoleplay.Operations;
 using DantesRoleplay.SchemaValidation;
+using DantesRoleplay.SystemTasks;
 using DantesRoleplay.Tests;
 
 namespace DantesRoleplay.Interactions.Tests;
 
 public sealed class InteractionInvocationAdapterTests
 {
+    [Fact]
+    public async Task Rejected_progress_reuse_does_not_close_the_first_invocations_outlet()
+    {
+        using var fixture = await InvocationFixture.CreateAsync();
+        var authority = new GatedMissingStandingAuthority();
+        var adapter = fixture.CreateServiceAdapter(authority, authority);
+        var progress = new ApplicationServiceProgressChannel();
+        var first = adapter.InvokeAsync(fixture.ServiceRequest("command.service.first", progress));
+        await authority.Started.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        try
+        {
+            var second = await adapter.InvokeAsync(fixture.ServiceRequest("command.service.second", progress));
+            Assert.Equal("SERVICE_PROGRESS_ALREADY_BOUND", second.Code);
+            Assert.False(progress.Reader.Completion.IsCompleted);
+        }
+        finally { authority.Release(); }
+        Assert.Equal(InteractionInvocationResultTag.Unavailable, (await first).Tag);
+        await progress.Reader.Completion.WaitAsync(TimeSpan.FromSeconds(1));
+    }
+
+    [Fact]
+    public async Task Service_is_unavailable_when_current_standing_authority_cannot_be_resolved()
+    {
+        using var fixture = await InvocationFixture.CreateAsync();
+        var before = await fixture.SnapshotAsync();
+        var authority = new MissingStandingAuthority();
+        var progress = new ApplicationServiceProgressChannel();
+        var adapter = fixture.CreateServiceAdapter(authority, authority);
+        var result = await adapter.InvokeAsync(fixture.ServiceRequest("command.service.unavailable", progress));
+        Assert.Equal(InteractionInvocationResultTag.Unavailable, result.Tag);
+        Assert.Null(result.DataJson);
+        Assert.Null(result.CompletionEvidenceReference);
+        Assert.Null(result.TaskHandle);
+        Assert.Equal(0, authority.PolicyCalls);
+        Assert.False(progress.Reader.TryRead(out _));
+        await progress.Reader.Completion.WaitAsync(TimeSpan.FromSeconds(1));
+        Assert.Equal(before, await fixture.SnapshotAsync());
+    }
+
     [Fact]
     public async Task Noncanonical_schema_order_preserves_owner_hash_for_cold_and_repeated_reads()
     {
@@ -239,7 +279,10 @@ public sealed class InteractionInvocationAdapterTests
             string resolutionFingerprint, InteractionQueryContractReference queryContract,
             IApplicationActionRunner runner, IApplicationReadModelService readModels,
             IApplicationReadModelInvocationAdapter readAdapter,
-            IApplicationActionInvocationAdapter actionAdapter)
+            IApplicationActionInvocationAdapter actionAdapter,
+            IPublicApplicationCatalogProvider catalogs, BoundedJsonSchemaValidator schemas,
+            JintMechanicEngine engine, CatalogRecordDefinition serviceRecord,
+            ApplicationReadOnlyServiceDefinition serviceDefinition)
         {
             this.database = database;
             this.db = db;
@@ -258,6 +301,11 @@ public sealed class InteractionInvocationAdapterTests
             ReadModels = readModels;
             ReadAdapter = readAdapter;
             ActionAdapter = actionAdapter;
+            Catalogs = catalogs;
+            Schemas = schemas;
+            Engine = engine;
+            ServiceRecord = serviceRecord;
+            ServiceDefinition = serviceDefinition;
         }
 
         public SqliteStateSpaceRegistry StateSpaces { get; }
@@ -274,8 +322,13 @@ public sealed class InteractionInvocationAdapterTests
         public IApplicationActionInvocationAdapter ActionAdapter { get; }
         public InteractionQueryContractReference QueryContract => queryContract;
         public string OriginalOutputSchema => OutputSchema;
+        public IPublicApplicationCatalogProvider Catalogs { get; }
+        public BoundedJsonSchemaValidator Schemas { get; }
+        public JintMechanicEngine Engine { get; }
+        public CatalogRecordDefinition ServiceRecord { get; }
+        public ApplicationReadOnlyServiceDefinition ServiceDefinition { get; }
 
-        public static async Task<InvocationFixture> CreateAsync()
+        public static async Task<InvocationFixture> CreateAsync(string? serviceSource = null)
         {
             var database = new SqliteFixture();
             var db = database.CreateContext();
@@ -331,13 +384,29 @@ public sealed class InteractionInvocationAdapterTests
                 status = "active"
             });
             var queryRecord = Record("query", App.Value + ".query.counter", queryContent);
+            var parsedQuery = ApplicationQueryContract.Parse(queryContent, App);
+            var queryContract = new InteractionQueryContractReference(parsedQuery.Executor,
+                parsedQuery.ProjectionQualifiedId, parsedQuery.ProjectionVersion,
+                parsedQuery.ProjectionContentHash, parsedQuery.OutputSchemaHash,
+                parsedQuery.OutputSchemaJson, parsedQuery.Exposure, parsedQuery.Roles.Keys);
+            var inputSchema = schemas.Compile("""{"type":"object","additionalProperties":false,"properties":{}}""");
+            var serviceDefinition = new ApplicationReadOnlyServiceDefinition(inputSchema.SchemaHash,
+                inputSchema.NormalizedSchema, output.SchemaHash, output.NormalizedSchema,
+                [new("counter", parsedQuery.Id, queryContract,
+                    new Dictionary<string, string> { ["subject"] = "subject" }, schemas, output.NormalizedSchema)], schemas);
+            var serviceRecord = Record("mechanic", App.Value + ".mechanic.counter-service", JsonSerializer.Serialize(new
+            {
+                id = "mechanic.counter-service",
+                requirements = "{\"service\":" + serviceDefinition.ToJson() + "}",
+                source = serviceSource ?? "var r=ctx.services.read('counter',{});ctx.services.progress({phase:'read'});return {data:JSON.parse(r.dataJson)};"
+            }));
             var manifest = CatalogNavigationManifest.Create(App, Hash("foundation-catalog"), "catalog-lexical-v1",
                 [new(App.Value, "Foundation fixture", "Invocation acceptance.")],
                 [
                     new(App.Value, "", "Foundation fixture", "Invocation acceptance.", CatalogDescriptionStatus.Authored),
                     new(App.Value, "mechanics", "Mechanics", "", CatalogDescriptionStatus.Missing),
                     new(App.Value, "queries", "Queries", "", CatalogDescriptionStatus.Missing)
-                ], [readMechanic, actionRecord, queryRecord]);
+                ], [readMechanic, actionRecord, queryRecord, serviceRecord]);
             var catalogs = new InMemoryPublicApplicationCatalogProvider(
                 new Dictionary<ApplicationIdentifier, ICatalogNavigator>
                 {
@@ -353,18 +422,13 @@ public sealed class InteractionInvocationAdapterTests
             var activation = new StaticActivation(active);
             var mapping = new ApplicationMechanicProjectionMappingResolver(catalogs, stateSpaces, types, edges);
             var projection = new ApplicationMechanicProjectionResolver(db, stateSpaces);
-            var evaluator = new ApplicationMechanicEvaluator(catalogs, projection, new JintMechanicEngine());
+            var engine = new JintMechanicEngine();
+            var evaluator = new ApplicationMechanicEvaluator(catalogs, projection, engine);
             var readService = new ApplicationReadModelService(catalogs, activation, stateSpaces, mapping, evaluator, schemas);
             var effects = new ApplicationEcsEffectApplier(db, entities, stateSpaces, operations, edges);
             var runner = new ApplicationActionRunner(catalogs, activation, stateSpaces, types, entities, edges,
                 mapping, evaluator, effects, operations);
             var authorization = new PrivateHostInteractionAuthorizationPolicy(stateSpaces);
-            var parsedQuery = ApplicationQueryContract.Parse(queryContent, App);
-            var queryContract = new InteractionQueryContractReference(parsedQuery.Executor,
-                parsedQuery.ProjectionQualifiedId, parsedQuery.ProjectionVersion,
-                parsedQuery.ProjectionContentHash, parsedQuery.OutputSchemaHash,
-                parsedQuery.OutputSchemaJson, parsedQuery.Exposure, parsedQuery.Roles.Keys);
-
             return new(database, db, revision,
                 PrivateOperatorPrincipal.Create("local-loopback", "foundation-invocation-acceptance"),
                 stateSpaces, entities, operations, counterType, actionRecord,
@@ -373,7 +437,8 @@ public sealed class InteractionInvocationAdapterTests
                 activationFingerprint, resolutionFingerprint, queryContract,
                 runner, readService,
                 new ApplicationReadModelInvocationAdapter(authorization, stateSpaces, readService),
-                new ApplicationActionInvocationAdapter(authorization, stateSpaces, runner, operations));
+                new ApplicationActionInvocationAdapter(authorization, stateSpaces, runner, operations),
+                catalogs, schemas, engine, serviceRecord, serviceDefinition);
         }
 
         public IApplicationActionInvocationAdapter CreateActionAdapter(
@@ -381,6 +446,13 @@ public sealed class InteractionInvocationAdapterTests
             IOperationLog operationLog) =>
             new ApplicationActionInvocationAdapter(
                 new PrivateHostInteractionAuthorizationPolicy(StateSpaces), StateSpaces, actions, operationLog);
+
+        public IApplicationReadOnlyServiceInvocationAdapter CreateServiceAdapter(
+            IStandingGrantTargetResolver targets, IStandingGrantPolicy policy) =>
+            new ApplicationReadOnlyServiceInvocationAdapter(Catalogs,
+                new ApplicationReadOnlyServiceDefinitionReader(Schemas),
+                new StandingGrantApplicationReadModelInvocationAdapter(policy, targets, StateSpaces, ReadModels),
+                Schemas, Engine, StateSpaces, targets, policy);
 
         public ApplicationReadModelInvocationRequest ReadRequest(
             string commandId,
@@ -390,6 +462,13 @@ public sealed class InteractionInvocationAdapterTests
                 maximumOperations: maximumOperations),
             App.Value + ".query.counter", queryContract,
             new Dictionary<string, string> { ["subject"] = "subject" });
+
+        public ApplicationReadOnlyServiceInvocationRequest ServiceRequest(string commandId,
+            ApplicationServiceProgressChannel? progress = null, ExecutionLimits? limits = null) => new(
+            Host(commandId, InteractionExecutionProfile.ReadOnly, "interaction.private-host.read"),
+            new SystemTaskSelectedDefinition(ServiceRecord.QualifiedId, ServiceRecord.Version, ServiceRecord.ContentFingerprint),
+            ServiceDefinition, new Dictionary<string, string> { ["subject"] = "subject" }, "{}",
+            limits ?? ExecutionLimits.ReadModel, progress);
 
         public ApplicationActionInvocationRequest ActionRequest(
             string commandId,
@@ -446,6 +525,44 @@ public sealed class InteractionInvocationAdapterTests
             public ActiveApplicationManifest? Current(ApplicationIdentifier applicationId) =>
                 applicationId == value.ApplicationId ? value : null;
         }
+    }
+
+    // Missing dependencies prove only fail-closed behavior, never standing-grant availability.
+    private class MissingStandingAuthority : IStandingGrantTargetResolver, IStandingGrantPolicy
+    {
+        public int PolicyCalls { get; private set; }
+        public virtual Task<StandingGrantTargetResolution> ResolveAsync(InteractionInvocationHost host,
+            StandingGrantDefinitionReference selection, CancellationToken cancellationToken = default) =>
+            Task.FromResult(new StandingGrantTargetResolution(StandingGrantTargetResolutionStatus.Unavailable,
+                "STANDING_AUTHORITY_UNAVAILABLE", null));
+
+        public Task<StandingGrantTargetResolution> ResolveCandidateAsync(InteractionInvocationHost host,
+            ApplicationCandidateSnapshot candidate, StandingGrantDefinitionReference selection,
+            CancellationToken cancellationToken = default) => ResolveAsync(host, selection, cancellationToken);
+
+        public Task<StandingGrantDecision> EvaluateAsync(InteractionInvocationHost host,
+            StandingGrantRequirement requirement, CancellationToken cancellationToken = default)
+        {
+            PolicyCalls++;
+            throw new InvalidOperationException("Missing targets must not reach policy evaluation.");
+        }
+    }
+
+    private sealed class GatedMissingStandingAuthority : MissingStandingAuthority
+    {
+        public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource<StandingGrantTargetResolution> _result =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public override Task<StandingGrantTargetResolution> ResolveAsync(InteractionInvocationHost host,
+            StandingGrantDefinitionReference selection, CancellationToken cancellationToken = default)
+        {
+            Started.TrySetResult();
+            return _result.Task;
+        }
+
+        public void Release() => _result.TrySetResult(new(StandingGrantTargetResolutionStatus.Unavailable,
+            "STANDING_AUTHORITY_UNAVAILABLE", null));
     }
 
     private sealed class ThrowAfterCommitRunner(IApplicationActionRunner inner) : IApplicationActionRunner

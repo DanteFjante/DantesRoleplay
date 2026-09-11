@@ -19,8 +19,10 @@ wrapper. The mechanic function and trusted harness have separate lexical scopes.
 cache retains at most 256 programs, 16 MiB of UTF-8 source, and one million combined token/node
 work units; these bounds do not measure total interpreter memory. Source is limited to 256 KiB
 before cache indexing. Token, lexical nesting, recursive-expression, syntax-tree size and depth
-checks bound cold preparation. The key includes exact source, wrapper text and parser/runtime
-configuration. No engine, JavaScript value, input or random state is shared between calls.
+checks bound cold preparation. Constant folding is disabled for untrusted preparation so literal
+expressions cannot allocate cached values before interpreter limits apply. The key includes exact
+source, wrapper text and parser/runtime configuration. No engine, JavaScript value, input or random
+state is shared between calls.
 
 Set the AppContext switch `DantesRoleplay.Mechanics.DisablePreparedProgramCache` before constructing
 the engine to use fresh preparation for recovery. The existing singleton registration controls the
@@ -30,7 +32,8 @@ cache lifetime. The `DantesRoleplay.Mechanics.JintMechanicEngine` meter reports 
 `dantesroleplay.mechanic.execution.duration` histograms in milliseconds. Preparation includes cache
 lookup/wait time. Preparation runs outside the cache lock, with at most two active preparations
 and 32 admitted callers. Same-source waiters share preparation and observe their own cancellation
-and deadline. Tokenization and source parsing check cancellation/deadline; the final synchronous
+and deadline. A leader's personal cancellation or timeout lets healthy waiters retry under their
+own original budgets. Tokenization and source parsing check cancellation/deadline; the final synchronous
 Jint preparation is structurally bounded and checked before and after. Preparation and context time
 reduce the remaining execution timeout. Diagnostics cannot replace the invocation result.
 
@@ -41,10 +44,25 @@ catalog provider, authorize old-generation commits, or implement activation and 
 
 The internal `JintMechanicEngine.PrepareMechanicProgram` method is the exact executable preparation
 seam for coordinated activation integration. Existing activation preparation remains separately
-owned until that integration is accepted. Service capability declarations/callbacks and workflow
-child execution still require coordinated shared contracts; the existing registered read and root
-atomic action adapters retain their supported profiles. Durable/AI execution remains unavailable
-until the real 04/05 implementations are integrated.
+owned until that integration is accepted. The internal read-only service adapter consumes the
+standing-grant read adapter and owner-resolved grant targets. It has no legacy permission fallback
+and remains unregistered pending real authorization and host integration. The existing registered
+read and root atomic action adapters retain their supported profiles. Service action, workflow,
+wait, job and AI callbacks return unavailable until their real dependencies and shared contracts
+are integrated.
+
+The frozen read-only service contract bounds each JSON exchange to 64 KiB/depth 32 and the root
+exchange total to 1 MiB. The root consumes one shared operation; each registered read consumes one
+through its existing adapter, up to 16 overall. `ComputationLimits` controls the root mechanic.
+Child reads retain the existing host-owned `ExecutionLimits.ReadModel` caps and share the invocation
+deadline; callback waits also observe the root's remaining wall time. Root memory, statement and
+recursion limits do not describe aggregate resource use across child interpreters. Progress is a
+transient channel of eight frames, at most 32 attempts and 16 KiB total, with 2 KiB per serialized
+frame; full and closed attempts count, and only accepted frames receive consecutive sequence numbers.
+Reads and progress execute synchronously on the sole engine thread through captured JSON functions;
+CLR capability objects never enter JavaScript. The host resolves and validates the exact retained
+`requirements.service` declaration, rechecks current authority, and validates output before emitting
+process-local computation evidence. That evidence is not a durable task, read receipt or commit.
 
 ## Proposed execution contract
 

@@ -5,12 +5,16 @@ using System.Text;
 using System.Text.Json;
 using Acornima;
 using Acornima.Ast;
+using DantesRoleplay.ApplicationExecution;
 using DantesRoleplay.Effects;
 using DantesRoleplay.Events;
+using DantesRoleplay.Interactions;
 using DantesRoleplay.Notifications;
 using DantesRoleplay.Mechanics;
 using Jint;
+using Jint.Native;
 using Jint.Runtime;
+using Jint.Runtime.Interop;
 
 namespace DantesRoleplay.Mechanics;
 
@@ -92,6 +96,9 @@ public sealed class JintMechanicEngine : IMechanicEngine
     private static readonly Prepared<Script> PreparedHarness =
         Engine.PrepareScript(Harness, strict: true);
 
+    private static readonly Prepared<Script> PreparedServiceBindingHarness =
+        Engine.PrepareScript(ServiceBindingHarness, strict: true);
+
     private static readonly PreparedProgramCache StandalonePreparationCoordinator = new(
         retentionEnabled: false,
         countLimit: 1,
@@ -148,7 +155,31 @@ public sealed class JintMechanicEngine : IMechanicEngine
         string source,
         MechanicProjection projection,
         ExecutionLimits limits,
+        CancellationToken cancellationToken = default) =>
+        RunCore(source, projection, limits, serviceCapabilities: null, cancellationToken);
+
+    /// <summary>
+    /// Runs the same prepared mechanic on the same isolated engine while exposing one invocation-
+    /// bound read-only service capability. The capability is internal host wiring and never becomes
+    /// part of the general mechanic contract.
+    /// </summary>
+    internal Task<MechanicRunResult> RunServiceAsync(
+        string source,
+        MechanicProjection projection,
+        ExecutionLimits limits,
+        IApplicationReadOnlyServiceCapabilities serviceCapabilities,
         CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(serviceCapabilities);
+        return RunCore(source, projection, limits, serviceCapabilities, cancellationToken);
+    }
+
+    private Task<MechanicRunResult> RunCore(
+        string source,
+        MechanicProjection projection,
+        ExecutionLimits limits,
+        IApplicationReadOnlyServiceCapabilities? serviceCapabilities,
+        CancellationToken cancellationToken)
     {
         limits ??= ExecutionLimits.Default;
 
@@ -255,6 +286,9 @@ public sealed class JintMechanicEngine : IMechanicEngine
                 // lexical environment is the fresh realm's global environment, so it cannot close
                 // over harness locals such as the log buffer or random state.
                 engine.Execute(preparedMechanic);
+                if (serviceCapabilities is not null)
+                    BindServiceCapabilities(engine, serviceCapabilities, stopwatch, limits.Timeout,
+                        cancellationToken);
                 completion = engine.Evaluate(PreparedHarness).AsString();
             }
             finally
@@ -326,6 +360,91 @@ public sealed class JintMechanicEngine : IMechanicEngine
                 // Diagnostics are observational. A broken listener must never replace a mechanic's
                 // deterministic result or weaken its failure handling.
             }
+        }
+    }
+
+    private static void BindServiceCapabilities(
+        Engine engine,
+        IApplicationReadOnlyServiceCapabilities capabilities,
+        Stopwatch invocation,
+        TimeSpan timeout,
+        CancellationToken cancellationToken)
+    {
+        var bridge = new ServiceCallbackBridge(capabilities, invocation, timeout, cancellationToken);
+        var read = new ClrFunction(engine, "serviceRead", (_, arguments) =>
+            (JsValue)bridge.Read(RequiredString(arguments, 0), RequiredString(arguments, 1)), 2);
+        var progressAttempt = new ClrFunction(engine, "serviceProgressAttempt", (_, arguments) =>
+            (JsValue)bridge.ProgressAttempt(RequiredString(arguments, 0)), 1);
+        var progress = new ClrFunction(engine, "serviceProgress", (_, arguments) =>
+            (JsValue)bridge.Progress(RequiredString(arguments, 0)), 1);
+        var unavailable = InteractionInvocationResult.Unavailable(
+            "SERVICE_CAPABILITY_UNAVAILABLE",
+            "This service capability is unavailable in the read-only runtime.").ToJson();
+
+        var binder = engine.Evaluate(PreparedServiceBindingHarness);
+        engine.Invoke(binder, read, progressAttempt, progress, (JsValue)unavailable);
+    }
+
+    private static string RequiredString(JsValue[] arguments, int index)
+    {
+        if (index >= arguments.Length || !arguments[index].IsString())
+            throw new InvalidOperationException("Service callbacks accept only string arguments.");
+        return arguments[index].AsString();
+    }
+
+    private sealed class ServiceCallbackBridge(
+        IApplicationReadOnlyServiceCapabilities capabilities,
+        Stopwatch invocation,
+        TimeSpan timeout,
+        CancellationToken cancellationToken)
+    {
+        public string Read(string alias, string inputJson)
+        {
+            using var wait = RemainingWait();
+            var task = capabilities.ReadAsync(alias, inputJson, wait.Token);
+            var result = task.WaitAsync(wait.Token).ConfigureAwait(false).GetAwaiter().GetResult();
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfTimeoutElapsed(invocation.Elapsed, timeout);
+            return result.ToJson();
+        }
+
+        public string Progress(string dataJson)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfTimeoutElapsed(invocation.Elapsed, timeout);
+            var disposition = capabilities is IApplicationReadOnlyServiceProgressAttemptSink sink
+                ? sink.WriteProgress(dataJson)
+                : capabilities.TryWriteProgress(dataJson);
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfTimeoutElapsed(invocation.Elapsed, timeout);
+            return disposition switch
+            {
+                ApplicationServiceProgressDisposition.Accepted => "accepted",
+                ApplicationServiceProgressDisposition.Backpressured => "backpressured",
+                ApplicationServiceProgressDisposition.Closed => "closed",
+                _ => throw new InvalidOperationException("The progress disposition is unsupported.")
+            };
+        }
+
+        public string ProgressAttempt(string attempt)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfTimeoutElapsed(invocation.Elapsed, timeout);
+            if (!int.TryParse(attempt, out var parsed) || parsed is < 1 or > 33)
+                throw new InvalidOperationException("The progress attempt is invalid.");
+            if (capabilities is IApplicationReadOnlyServiceProgressAttemptSink sink)
+                sink.BeginProgressAttempt();
+            return "ok";
+        }
+
+        private CancellationTokenSource RemainingWait()
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var remaining = timeout - invocation.Elapsed;
+            if (remaining <= TimeSpan.Zero) throw new TimeoutException();
+            var source = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            if (remaining <= TimeSpan.FromMilliseconds(int.MaxValue)) source.CancelAfter(remaining);
+            return source;
         }
     }
 
@@ -725,9 +844,72 @@ public sealed class JintMechanicEngine : IMechanicEngine
     /// A game's own conventions for rolling anything are written on top of this, in JavaScript,
     /// where the game belongs (§3.11).
     /// </summary>
+    /// <summary>
+    /// Creates the authored service surface from native functions passed as values. The native
+    /// functions are captured only in this trusted closure and are never installed on the global
+    /// object. JSON and other intrinsics are captured before authored code can replace them.
+    /// </summary>
+    private const string ServiceBindingHarness = """
+        (function (readNative, progressAttemptNative, progressNative, unavailableJson) {
+          var safeParse = JSON.parse;
+          var safeStringify = JSON.stringify;
+          var safeString = String;
+          var safeKeys = Object.keys;
+          var safeFreeze = Object.freeze;
+          var safeIsFrozen = Object.isFrozen;
+          var safeIsArray = Array.isArray;
+          var progressAttempts = 0;
+
+          function freezeDeep(value) {
+            if (value && typeof value === 'object' && !safeIsFrozen(value)) {
+              var keys = safeKeys(value);
+              for (var i = 0; i < keys.length; i++) freezeDeep(value[keys[i]]);
+              safeFreeze(value);
+            }
+            return value;
+          }
+
+          function inputJson(value, name) {
+            if (value === null || typeof value !== 'object' || safeIsArray(value)) {
+              throw new TypeError(name + ' input must be an object.');
+            }
+            return safeStringify(value);
+          }
+
+          var unavailable = freezeDeep(safeParse(unavailableJson));
+          function unsupported() { return unavailable; }
+          var services = {
+            read: function (alias, input) {
+              if (typeof alias !== 'string') throw new TypeError('services.read alias must be a string.');
+              return freezeDeep(safeParse(readNative(safeString(alias), inputJson(input, 'services.read'))));
+            },
+            progress: function (data) {
+              progressAttempts++;
+              progressAttemptNative(safeString(progressAttempts));
+              if (progressAttempts > 32) throw new RangeError('services.progress attempt limit exceeded.');
+              return progressNative(inputJson(data, 'services.progress'));
+            },
+            action: unsupported,
+            workflow: unsupported,
+            wait: unsupported,
+            job: unsupported,
+            ai: unsupported
+          };
+          safeFreeze(services);
+          Object.defineProperty(globalThis, '__boundServices', {
+            value: services, writable: false, configurable: true, enumerable: false
+          });
+        })
+        """;
+
     private const string Harness = """
         (function () {
           var log = [];
+          var safeJsonParse = JSON.parse;
+          var safeJsonStringify = JSON.stringify;
+          var services = typeof globalThis.__boundServices === 'undefined'
+            ? null : globalThis.__boundServices;
+          delete globalThis.__boundServices;
 
           function makeRandom(seed) {
             var a = (seed >>> 0) || 1;
@@ -740,7 +922,7 @@ public sealed class JintMechanicEngine : IMechanicEngine
           }
 
           try {
-            var payload = JSON.parse(__payload);
+            var payload = safeJsonParse(__payload);
             var random = makeRandom(payload.seed);
 
             function freezeDeep(value) {
@@ -762,10 +944,10 @@ public sealed class JintMechanicEngine : IMechanicEngine
               objects: freezeDeep(payload.objects || {}),
               references: freezeDeep(payload.references || {}),
               graphSnapshots: freezeDeep(payload.graphSnapshots || {}),
-              input: freezeDeep(JSON.parse(payload.input || '{}')),
+              input: freezeDeep(safeJsonParse(payload.input || '{}')),
               seed: payload.seed,
               children: freezeDeep(payload.children || {}),
-              event: freezeDeep(JSON.parse(payload.event || '{}')),
+              event: freezeDeep(safeJsonParse(payload.event || '{}')),
               eventEntities: freezeDeep(payload.eventEntities || {}),
 
               random: random,
@@ -788,6 +970,12 @@ public sealed class JintMechanicEngine : IMechanicEngine
               effects: []
             };
 
+            if (services !== null) {
+              Object.defineProperty(ctx, 'services', {
+                value: services, writable: false, configurable: false, enumerable: true
+              });
+            }
+
             if (payload.authorizedObserver !== null && payload.authorizedObserver !== undefined) {
               Object.defineProperty(ctx, 'authorizedObserver', {
                 value: freezeDeep(payload.authorizedObserver), writable: false, configurable: false, enumerable: true
@@ -804,7 +992,7 @@ public sealed class JintMechanicEngine : IMechanicEngine
             }
 
             if (output && output.data !== undefined && typeof output.data !== 'string') {
-              output.data = JSON.stringify(output.data);
+              output.data = safeJsonStringify(output.data);
             }
 
             // Only strings cross this boundary, so a declared event's payload is stringified here
@@ -815,20 +1003,26 @@ public sealed class JintMechanicEngine : IMechanicEngine
               for (var i = 0; i < output.events.length; i++) {
                 var declared = output.events[i];
                 if (declared && declared.payload !== undefined && typeof declared.payload !== 'string') {
-                  declared.payload = JSON.stringify(declared.payload);
+                  declared.payload = safeJsonStringify(declared.payload);
                 }
               }
             }
 
-            return JSON.stringify({ output: output, log: log });
+            return safeJsonStringify({ output: output, log: log });
           } catch (e) {
-            return JSON.stringify({
+            return safeJsonStringify({
               error: (e && e.message) ? String(e.message) : String(e),
               log: log
             });
           }
         })();
         """;
+}
+
+internal interface IApplicationReadOnlyServiceProgressAttemptSink
+{
+    void BeginProgressAttempt();
+    ApplicationServiceProgressDisposition WriteProgress(string dataJson);
 }
 
 internal readonly record struct MechanicRunMeasurements(

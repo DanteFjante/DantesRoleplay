@@ -146,7 +146,7 @@ public sealed record ApplicationServiceReadDeclaration
 }
 
 /// <summary>
-/// Trusted host request for the proposed runtime. Authored JSON cannot create the
+/// Trusted host request for the read-only runtime. Authored JSON cannot create the
 /// <see cref="InteractionInvocationHost"/> authority and cannot supply source. The runtime must
 /// re-resolve <see cref="SelectedDefinition"/>, compare <see cref="Definition"/> to that exact
 /// retained mechanic's requirements, resolve its read dependencies, validate
@@ -169,7 +169,7 @@ public sealed record ApplicationReadOnlyServiceInvocationRequest
         if (host.Profile != InteractionExecutionProfile.ReadOnly)
             throw new InteractionContractException(
                 "SERVICE_PROFILE_UNAVAILABLE",
-                "The proposed service surface supports only the read-only profile.");
+                "The service surface supports only the read-only profile.");
         SelectedDefinition = selectedDefinition ?? throw new ArgumentNullException(nameof(selectedDefinition));
         Definition = definition ?? throw new ArgumentNullException(nameof(definition));
         var normalizedRoles = InteractionInvocationRoles.Normalize(hostRoleBindings);
@@ -186,6 +186,12 @@ public sealed record ApplicationReadOnlyServiceInvocationRequest
     public ApplicationReadOnlyServiceDefinition Definition { get; }
     public IReadOnlyDictionary<string, string> HostRoleBindings { get; }
     public string InputJson { get; }
+    /// <summary>
+    /// Root mechanic limits only. Child reads retain the existing host-owned ReadModel interpreter
+    /// limits; all calls share the invocation operation ledger/deadline, and callback waits are
+    /// additionally bounded by the root's remaining wall time. This is not aggregate memory,
+    /// statement or recursion accounting across child engines.
+    /// </summary>
     public ExecutionLimits ComputationLimits { get; }
     public ApplicationServiceProgressChannel? Progress { get; }
 }
@@ -198,7 +204,7 @@ public sealed record ApplicationReadOnlyServiceInvocationRequest
 /// resolves the declared alias, derives query roles from trusted host bindings, canonicalizes and
 /// bounds input/output to 64 KiB and depth 32, and counts all exchanged data toward the 1 MiB root
 /// ceiling. Cancellation and the host deadline are checked before a call and after every wait.
-/// The proposed JavaScript surface is <c>ctx.services.read(alias, inputObject)</c> and
+/// The JavaScript surface is <c>ctx.services.read(alias, inputObject)</c> and
 /// <c>ctx.services.progress(dataObject)</c>. JSON alone crosses the callback boundary; the CLR
 /// capability object is never exposed. Reads and progress are synchronous on the sole owning
 /// engine thread. Host waits use a linked deadline bounded by both the invocation deadline and
@@ -260,13 +266,13 @@ public enum ApplicationServiceProgressDisposition
 }
 
 /// <summary>
-/// Unaccepted read-only v1 runtime proposal. Until coordinator integration, callers must return a
+/// Read-only v1 runtime contract. Until coordinator integration, production callers must return a
 /// truthful <c>unavailable</c> result. Action, atomic service execution, workflow, durable waits,
 /// jobs, and AI callbacks remain unavailable and cannot be represented as pending work.
 ///
 /// A conforming implementation owns one serialized Jint execution per invocation. Producers may
 /// enqueue progress or complete awaited reads, but never enter a busy engine concurrently. It uses
-/// the host-selected limits without increasing any parent limit, permits at most 16 shared
+/// the host-selected root limits, permits at most 16 shared
 /// operations including retries, and bounds progress to 32 frames, 2 KiB per frame, 16 KiB total,
 /// and channel capacity 8; <c>TryWriteProgress</c> reports backpressure instead of growing a queue.
 /// Attempts, including backpressured retries, consume the 32-attempt root allowance; accepted
@@ -277,6 +283,8 @@ public enum ApplicationServiceProgressDisposition
 /// pre-consume the adapter's read allowance. The canonical root input, every callback input/output,
 /// and the final output are each limited to 64 KiB/depth 32; together they may exchange at most
 /// 1 MiB per root. Progress additionally observes its smaller aggregate limit.
+/// Child queries use the existing host-owned ReadModel computation caps, sharing the root operation
+/// ledger and deadline. Root memory, statement and recursion caps are not aggregate child limits.
 ///
 /// Real-read conformance requires: the declared exact query succeeds through the production read
 /// adapter and returns its read evidence; an undeclared alias, stale dependency, schema mismatch,
@@ -293,9 +301,9 @@ public interface IApplicationReadOnlyServiceInvocationAdapter
 }
 
 /// <summary>
-/// Required owner-local declaration boundary for this proposal. It accepts only retained authored
+/// Owner-local declaration boundary. It accepts only retained authored
 /// bytes already covered by the supplied <c>selectedDefinition</c> fingerprint; an invocation
-/// caller cannot submit or replace the capability list. Before acceptance, its implementation must
+/// caller cannot submit or replace the capability list. Its implementation must
 /// canonicalize with duplicate-key rejection, enforce the 64 KiB/depth-32 aggregate bound, require
 /// the exact camel-case fields shown above, reject unknown fields recursively, validate closed
 /// input/output schemas and hashes, and explicitly construct every existing
