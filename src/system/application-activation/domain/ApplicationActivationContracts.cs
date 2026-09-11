@@ -153,6 +153,8 @@ public sealed class ApplicationActivationException(string code, string message, 
 public interface IApplicationActivationReader
 {
     ActiveApplicationManifest? Current(ApplicationIdentifier applicationId);
+    /// <summary>Returns an exact retained generation, without substituting today's active generation.</summary>
+    ActiveApplicationManifest? ReadRevision(ApplicationIdentifier applicationId, int activationRevision) => null;
 }
 
 public sealed record ActivatedApplicationTextDocument(

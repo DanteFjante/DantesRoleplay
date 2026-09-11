@@ -65,7 +65,12 @@ public sealed record StandingGrantDefinitionAllowance(
 public sealed record StandingGrantDefinitionTarget(
     string DefinitionId, string Kind, ApplicationIdentifier OwnerApplicationId, string NamespaceId,
     string OwnershipEvidenceReference, int Revision, string ContentFingerprint,
-    ApplicationCandidateReference? Candidate = null);
+    ApplicationCandidateReference? Candidate = null,
+    StandingGrantActivationOrigin? RetainedActivation = null);
+
+/// <summary>Owner-produced retained activation provenance captured at task admission, never inferred for legacy tasks.</summary>
+public sealed record StandingGrantActivationOrigin(
+    int ActivationRevision, string ActivationFingerprint, int ApplicationRevision, string ApplicationFingerprint);
 
 /// <summary>
 /// Loaded from the durable task owner, not the caller: read/cancel requires its stored principal,

@@ -51,6 +51,10 @@ public static class StandingGrantContractRules
                 || requirement.Capability is not (StandingGrantCapability.Author or StandingGrantCapability.Validate
                     or StandingGrantCapability.Activate or StandingGrantCapability.Read)))
             Fail("STANDING_GRANT_CANDIDATE_SCOPE_DENIED", "Candidate targets authorize application authoring or inspection only.");
+        if (targets.Any(target => target.RetainedActivation is not null)
+            && (requirement.Scope != StandingGrantScope.StateSpace
+                || requirement.Capability is not (StandingGrantCapability.ReadTask or StandingGrantCapability.CancelTask)))
+            Fail("STANDING_GRANT_RETAINED_SCOPE_DENIED", "Historical targets authorize only the stored task's read or cancellation.");
         if (targets.Select(target => target.DefinitionId).Distinct(StringComparer.Ordinal).Count() != targets.Count)
             Fail("INVALID_STANDING_GRANT_TARGETS", "Definition targets must have distinct identities.");
         var effects = Distinct(requirement.EffectKinds, StandingGrantLimits.EffectKinds, "INVALID_STANDING_GRANT_EFFECTS");
@@ -103,6 +107,13 @@ public static class StandingGrantContractRules
     {
         if (target is null || app is null || app.IsSystem || target.OwnerApplicationId != app || !Kinds.Contains(target.Kind) || !Namespace(app, target.NamespaceId) || !RecordId(target.DefinitionId, "INVALID_STANDING_GRANT_TARGET") || !Id(target.OwnershipEvidenceReference, "INVALID_STANDING_GRANT_TARGET") || target.Revision < 1) Fail("INVALID_STANDING_GRANT_TARGET", "Definition target is invalid or cross-application.");
         Hash(target.ContentFingerprint);
+        if (target.RetainedActivation is { } origin)
+        {
+            if (target.Candidate is not null || origin.ActivationRevision < 1 || origin.ApplicationRevision < 1)
+                Fail("INVALID_STANDING_GRANT_TARGET", "The retained activation origin is invalid.");
+            Hash(origin.ActivationFingerprint);
+            Hash(origin.ApplicationFingerprint);
+        }
         if (target.Candidate is { } candidate)
         {
             if (candidate.ApplicationId != app || candidate.Revision < 1

@@ -11,7 +11,8 @@ public enum StandingGrantTargetResolutionStatus { Available, Denied, Unavailable
 
 /// <summary>Available requires a target freshly resolved by its owner; other states have no target.</summary>
 public sealed record StandingGrantTargetResolution(
-    StandingGrantTargetResolutionStatus Status, string Code, StandingGrantDefinitionTarget? Target);
+    StandingGrantTargetResolutionStatus Status, string Code, StandingGrantDefinitionTarget? Target,
+    StandingGrantActivationOrigin? CurrentActivation = null);
 
 /// <summary>
 /// Trusted resolution before permission evaluation. Active definitions must match exact retained
@@ -26,6 +27,13 @@ public sealed record StandingGrantTargetResolution(
 /// </summary>
 public interface IStandingGrantTargetResolver
 {
+    /// <summary>Historical task lookup uses only the task owner's retained admission provenance.</summary>
+    Task<StandingGrantTargetResolution> ResolveRetainedAsync(InteractionInvocationHost host,
+        StandingGrantActivationOrigin origin, StandingGrantDefinitionReference selection,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(new StandingGrantTargetResolution(StandingGrantTargetResolutionStatus.Unavailable,
+            "STANDING_GRANT_RETAINED_TARGET_UNAVAILABLE", null));
+
     /// <summary>
     /// Rehydrates active evidence or the exact Candidate tuple from owner storage in the current
     /// transaction, then compares every target field. An evidence string is never origin authority.
