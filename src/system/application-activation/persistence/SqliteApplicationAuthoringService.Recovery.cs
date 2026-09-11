@@ -24,12 +24,24 @@ public sealed partial class SqliteApplicationAuthoringService
             var selected = activations.ReadRevision(applicationId, activationRevision);
             if (selected is null || selected.PreparationVersion is null)
                 return Unavailable();
-            if (selected.Winners.Count is 0 or > ApplicationAuthoringLimits.DocumentsPerWrite
-                || selected.Winners.Any(value => !value.IsText || value.Length is < 0 or > 64 * 1024)
-                || selected.Winners.Sum(value => value.Length) > 64 * 1024)
+            if (selected.Winners.Count is 0 || selected.Winners.Count > CatalogNavigation.CatalogNavigationLimits.MaximumRecords * 4
+                || selected.Winners.Any(value => value.Length is < 0 or > 10L * 1024 * 1024)
+                || selected.Winners.Sum(value => value.Length) > 256L * 1024 * 1024)
                 return Unavailable();
-            var documents = new List<ApplicationCandidateDocumentInput>(selected.Winners.Count);
-            foreach (var winner in selected.Winners.OrderBy(value => value.RelativePath, StringComparer.Ordinal))
+            // The request is derived from two immutable generations, so it remains identical on
+            // replay after the current pointer changes. Only the changed retained bytes are read.
+            var basis = await BaseAsync(applicationId, expectedActiveFingerprint, cancellationToken);
+            if (basis is null || basis.PreparationVersion is null) return Unavailable();
+            var baseByPath = basis.Winners.ToDictionary(value => value.RelativePath, StringComparer.Ordinal);
+            if (baseByPath.Count != selected.Winners.Count || selected.Winners.Any(value =>
+                    !baseByPath.TryGetValue(value.RelativePath, out var previous) || !SameDocumentIdentity(value, previous)))
+                return Unavailable();
+            var changed = selected.Winners.Where(value => value != baseByPath[value.RelativePath]).ToArray();
+            if (changed.Length is 0 or > ApplicationAuthoringLimits.DocumentsPerWrite
+                || changed.Any(value => !value.IsText || value.Length > 64 * 1024)
+                || changed.Sum(value => value.Length) > 64 * 1024) return Unavailable();
+            var documents = new List<ApplicationCandidateDocumentInput>(changed.Length);
+            foreach (var winner in changed.OrderBy(value => value.RelativePath, StringComparer.Ordinal))
             {
                 var retained = evidence.ReadDocumentEvidence(applicationId, selected.ActivationRevision, winner.LogicalIdentity);
                 if (retained is null || retained.IsLegacyMetadataOnly || retained.RetainedBytes is null
@@ -47,23 +59,11 @@ public sealed partial class SqliteApplicationAuthoringService
             }
             var request = new ApplicationCandidateWriteRequest(null, 0, expectedActiveFingerprint, "runtime", null,
                 $"Recover retained activation revision {activationRevision}.", documents);
-            var operationId = Id(host, applicationId, "operation");
-            if (!await db.Operations.AsNoTracking().AnyAsync(value => value.Id == operationId, cancellationToken))
-            {
-                var current = activations.Current(applicationId);
-                if (current is null || current.PreparationVersion is null)
-                    return Unavailable();
-                if (!string.Equals(current.ActivationFingerprint, expectedActiveFingerprint, StringComparison.Ordinal))
-                    return Failed("APPLICATION_CANDIDATE_ACTIVE_STALE");
-                var currentByPath = current.Winners.ToDictionary(value => value.RelativePath, StringComparer.Ordinal);
-                if (currentByPath.Count != selected.Winners.Count || selected.Winners.Any(value =>
-                        !currentByPath.TryGetValue(value.RelativePath, out var currentValue)
-                        || !SameDocumentIdentity(value, currentValue)))
-                    return Unavailable();
-            }
             return await WriteCandidateAsync(host, request, cancellationToken);
         }
         catch (DecoderFallbackException) { return Unavailable(); }
+        catch (ApplicationActivationException exception) when (exception.Code == "APPLICATION_CANDIDATE_BASE_UNAVAILABLE")
+        { return Failed("APPLICATION_CANDIDATE_ACTIVE_STALE"); }
         catch (ApplicationActivationException) { return Unavailable(); }
         catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or JsonException
             or IOException or UnauthorizedAccessException) { return Unavailable(); }

@@ -62,14 +62,15 @@ public sealed partial class SqliteApplicationAuthoringService(
                 if (replay.Tool != Tool || !replay.Success || replay.ProjectionJson != canonical) return Failed("APPLICATION_CANDIDATE_COMMAND_CONFLICT");
                 var prior = await db.Set<ApplicationCandidateRevisionRecord>().AsNoTracking().SingleOrDefaultAsync(x => x.SourceOperationId == operationId, cancellationToken);
                 if (prior is null || prior.CanonicalCommandFingerprint != commandFingerprint) return InteractionInvocationResult.Unavailable("APPLICATION_CANDIDATE_RECEIPT_INCONSISTENT", "The stored candidate receipt cannot be reconciled.");
-                var retained = await new ApplicationCandidateRetainedReader(db, applications).ReadAsync(app, prior.CandidateId, prior.Revision, cancellationToken);
+                var retained = await new ApplicationCandidateRetainedReader(db, applications).ReadMetadataAsync(app, prior.CandidateId, prior.Revision, cancellationToken);
                 if (retained is null) return InteractionInvocationResult.Unavailable("APPLICATION_CANDIDATE_RECEIPT_INCONSISTENT", "The stored candidate cannot be rehydrated.");
-                var replaySnapshot = new ApplicationCandidateSnapshot(new(app, prior.CandidateId, prior.Revision, prior.ContentFingerprint), retained.ApplicationRevision.Revision, retained.ApplicationRevision.Fingerprint, prior.ExpectedActiveFingerprint, prior.Origin, prior.SynchronizationEvidenceReference, prior.NewImplementationReason, prior.AuthorGrantReference, operationId, retained.Documents, []);
                 var replayTargets = new List<StandingGrantDefinitionTarget>();
                 var replayBase = await BaseAsync(app, prior.ExpectedActiveFingerprint, cancellationToken);
-                foreach (var definition in Definitions(app, retained, ChangedPaths(retained, replayBase)))
+                var replayChanged = ApplicationCandidateDocumentSelection.ChangedPaths(retained.Documents, replayBase);
+                var replayDocuments = await ReadChangedAsync(retained, replayChanged, cancellationToken);
+                foreach (var definition in Definitions(app, replayDocuments, replayChanged))
                 {
-                    var replayResolved = await targets.ResolveCandidateAsync(host, replaySnapshot, definition, cancellationToken);
+                    var replayResolved = await targets.ResolveCandidateReferenceAsync(host, new(app, prior.CandidateId, prior.Revision, prior.ContentFingerprint), definition, cancellationToken);
                     if (replayResolved.Status == StandingGrantTargetResolutionStatus.Unavailable) return InteractionInvocationResult.Unavailable(replayResolved.Code, "Candidate definition ownership is unavailable.");
                     if (replayResolved.Status != StandingGrantTargetResolutionStatus.Available || replayResolved.Target is null) return Failed(replayResolved.Code);
                     replayTargets.Add(replayResolved.Target);
@@ -84,7 +85,7 @@ public sealed partial class SqliteApplicationAuthoringService(
             if (!string.Equals(active?.ActivationFingerprint, request.ExpectedActiveFingerprint, StringComparison.Ordinal)) return Failed("APPLICATION_CANDIDATE_ACTIVE_STALE");
             var latest = await db.Set<ApplicationCandidateRevisionRecord>().AsNoTracking().Where(x => x.ApplicationId == app.Value && x.CandidateId == id).MaxAsync(x => (int?)x.Revision, cancellationToken) ?? 0;
             if (latest != request.ExpectedCandidateRevision) return Failed("APPLICATION_CANDIDATE_CAS_MISMATCH");
-            var effective = await EffectiveAsync(app, active, request.Documents, cancellationToken);
+            var effective = Effective(app, active, request.Documents);
             var next = latest + 1;
 
             // The audit principal must exist before the candidate's FK can be inserted. Its final
@@ -98,20 +99,19 @@ public sealed partial class SqliteApplicationAuthoringService(
                 AuthorGrantReference = host.GrantReference, SourceOperationId = operationId, CanonicalCommandFingerprint = commandFingerprint,
                 ContentFingerprint = new string('0', 64) };
             row.ContentFingerprint = ApplicationCandidateRetainedReader.ContentFingerprint(row, registered,
-                effective.Select(x => new ApplicationCandidateDocument(x.Document, x.Bytes)).ToArray());
+                effective.Select(x => x.Document).ToArray());
             db.Add(row);
-            var links = await new ApplicationRetainedDocumentStore(db).RetainAsync(app, effective.Select(x => x.Document).ToArray(), effective.ToDictionary(x => x.Document.LogicalIdentity, x => x.Bytes, StringComparer.Ordinal), cancellationToken);
+            var links = await RetainEffectiveAsync(app, active, effective, cancellationToken);
             foreach (var link in links) db.Add(new ApplicationCandidateDocumentRecord { ApplicationId = app.Value, CandidateId = id, Revision = next, Ordinal = link.Ordinal, IdentityId = link.IdentityId, EvidenceVersion = link.EvidenceVersion });
             await db.SaveChangesAsync(cancellationToken);
-            var readback = await new ApplicationCandidateRetainedReader(db, applications).ReadAsync(app, id, next, cancellationToken)
+            var readback = await new ApplicationCandidateRetainedReader(db, applications).ReadMetadataAsync(app, id, next, cancellationToken)
                 ?? throw new ApplicationActivationException("APPLICATION_CANDIDATE_WRITE_INCONSISTENT", "Candidate was not retained.");
-            var snapshot = new ApplicationCandidateSnapshot(new(app, id, next, row.ContentFingerprint), registered.Revision, registered.Fingerprint,
-                row.ExpectedActiveFingerprint, row.Origin, null, row.NewImplementationReason, host.GrantReference, operationId, readback.Documents, []);
-            var definitions = Definitions(app, readback, ChangedPaths(readback, active));
+            var changed = ApplicationCandidateDocumentSelection.ChangedPaths(readback.Documents, active);
+            var definitions = Definitions(app, await ReadChangedAsync(readback, changed, cancellationToken), changed);
             var resolved = new List<StandingGrantDefinitionTarget>();
             foreach (var definition in definitions)
             {
-                var target = await targets.ResolveCandidateAsync(host, snapshot, definition, cancellationToken);
+                var target = await targets.ResolveCandidateReferenceAsync(host, new(app, id, next, row.ContentFingerprint), definition, cancellationToken);
                 if (target.Status == StandingGrantTargetResolutionStatus.Unavailable) return InteractionInvocationResult.Unavailable(target.Code, "Candidate definition ownership is unavailable.");
                 if (target.Status != StandingGrantTargetResolutionStatus.Available || target.Target is null) return Failed(target.Code);
                 resolved.Add(target.Target);
@@ -164,48 +164,58 @@ public sealed partial class SqliteApplicationAuthoringService(
                 if (matches.Length != 1) return Failed("APPLICATION_CANDIDATE_NOT_FOUND");
                 candidate = new(matches[0].CandidateId, matches[0].Revision);
             }
-            var readback = await new ApplicationCandidateRetainedReader(db, applications).ReadAsync(app, candidate.CandidateId!, candidate.Revision, cancellationToken);
+            var readback = await new ApplicationCandidateRetainedReader(db, applications).ReadMetadataAsync(app, candidate.CandidateId!, candidate.Revision, cancellationToken);
             if (readback is null) return Failed("APPLICATION_CANDIDATE_NOT_FOUND");
             var baseManifest = await BaseAsync(app, readback.RevisionRow.ExpectedActiveFingerprint, cancellationToken);
-            var changed = ChangedPaths(readback, baseManifest);
-            var snapshot = new ApplicationCandidateSnapshot(new(app, candidate.CandidateId!, candidate.Revision, readback.RevisionRow.ContentFingerprint),
-                readback.ApplicationRevision.Revision, readback.ApplicationRevision.Fingerprint, readback.RevisionRow.ExpectedActiveFingerprint,
-                readback.RevisionRow.Origin, readback.RevisionRow.SynchronizationEvidenceReference, readback.RevisionRow.NewImplementationReason,
-                readback.RevisionRow.AuthorGrantReference, readback.RevisionRow.SourceOperationId, readback.Documents, []);
+            var changed = ApplicationCandidateDocumentSelection.ChangedPaths(readback.Documents, baseManifest);
+            var selectedDocuments = await ReadChangedAsync(readback, changed, cancellationToken);
+            var candidateReference = new ApplicationCandidateReference(app, candidate.CandidateId!, candidate.Revision, readback.RevisionRow.ContentFingerprint);
             var resolved = new List<StandingGrantDefinitionTarget>();
-            foreach (var definition in Definitions(app, readback, changed))
+            foreach (var definition in Definitions(app, selectedDocuments, changed))
             {
-                var result = await targets.ResolveCandidateAsync(host, snapshot, definition, cancellationToken);
+                var result = await targets.ResolveCandidateReferenceAsync(host, candidateReference, definition, cancellationToken);
                 if (result.Status == StandingGrantTargetResolutionStatus.Unavailable) return InteractionInvocationResult.Unavailable(result.Code, "Candidate definition ownership is unavailable.");
                 if (result.Status != StandingGrantTargetResolutionStatus.Available || result.Target is null) return Failed(result.Code);
                 resolved.Add(result.Target);
             }
             var decision = await grants.EvaluateAsync(host, new(StandingGrantCapability.Read, StandingGrantScope.Application, resolved, []), cancellationToken);
             if (!decision.Allowed) return decision.Code.EndsWith("UNAVAILABLE", StringComparison.Ordinal) ? InteractionInvocationResult.Unavailable(decision.Code, "Read authority is unavailable.") : Failed(decision.Code);
-            var items = readback.Documents.Where(x => changed.Contains(x.Document.RelativePath)).Select(x => new { x.Document.LogicalIdentity, x.Document.SourceId, x.Document.RelativePath, x.Document.MediaType, x.Document.ContentFingerprint, text = x.Document.IsText ? Encoding.UTF8.GetString(x.RetainedBytes) : null }).ToArray();
-            var json = InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new { candidate = snapshot.Candidate, sourceOperationId = snapshot.SourceOperationId, origin = snapshot.Origin, documents = items }));
+            var items = selectedDocuments.Where(x => changed.Contains(x.Document.RelativePath)).Select(x => new { x.Document.LogicalIdentity, x.Document.SourceId, x.Document.RelativePath, x.Document.MediaType, x.Document.ContentFingerprint, text = x.Document.IsText ? Encoding.UTF8.GetString(x.RetainedBytes) : null }).ToArray();
+            var latestValidation = await (from value in db.Set<ApplicationCandidateValidationRecord>().AsNoTracking()
+                                    join operation in db.Operations.AsNoTracking() on value.OperationId equals operation.Id
+                                    where value.ApplicationId == app.Value && value.CandidateId == candidateReference.CandidateId
+                                        && value.Revision == candidateReference.Revision && value.CandidateFingerprint == candidateReference.ContentFingerprint
+                                        && operation.Tool == "application-candidate-validation" && operation.Success && operation.Subject == app.Value
+                                    orderby operation.Timestamp descending, operation.Id descending
+                                    select new { Record = value, operation.GuardEvidenceJson }).FirstOrDefaultAsync(cancellationToken);
+            object? validation = null;
+            if (latestValidation is not null)
+                validation = ValidationEvidenceMatches(latestValidation.Record, latestValidation.GuardEvidenceJson)
+                    ? new { latestValidation.Record.OperationId, latestValidation.Record.Outcome, latestValidation.Record.DiagnosticsJson }
+                    : new { OperationId = latestValidation.Record.OperationId, Outcome = "unavailable",
+                        DiagnosticsJson = "[{\"Code\":\"APPLICATION_CANDIDATE_VALIDATION_EVIDENCE_INCONSISTENT\",\"Message\":\"Stored validation evidence cannot be reconciled.\"}]" };
+            var json = InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new { candidate = candidateReference, sourceOperationId = readback.RevisionRow.SourceOperationId, origin = readback.RevisionRow.Origin, documents = items, validation }));
             if (Encoding.UTF8.GetByteCount(json) > 64 * 1024) return InteractionInvocationResult.Unavailable("APPLICATION_CANDIDATE_INSPECT_LIMIT", "Candidate inspection exceeds its bounded result limit.");
-            return InteractionInvocationResult.CompletedComputation(json, snapshot.SourceOperationId);
+            return InteractionInvocationResult.CompletedComputation(json, readback.RevisionRow.SourceOperationId);
         }
         catch (ApplicationActivationException e) { return Failed(e.Code); }
         catch (OperationCanceledException) { throw; }
         catch (Exception) { return InteractionInvocationResult.Unavailable("APPLICATION_CANDIDATE_INSPECT_UNAVAILABLE", "Candidate inspection is unavailable."); }
     }
-    public Task<InteractionInvocationResult> ValidateAsync(InteractionInvocationHost host, ApplicationCandidateReference candidate, CancellationToken cancellationToken = default) =>
-        Task.FromResult(InteractionInvocationResult.Unavailable("APPLICATION_CANDIDATE_VALIDATE_UNAVAILABLE", "Candidate validation is not available."));
     public Task<InteractionInvocationResult> ActivateAsync(InteractionInvocationHost host, ApplicationCandidateActivationRequest request, CancellationToken cancellationToken = default) =>
         Task.FromResult(InteractionInvocationResult.Unavailable("APPLICATION_CANDIDATE_ACTIVATE_UNAVAILABLE", "Candidate activation is not available."));
-    private async Task<List<(ActivatedApplicationDocument Document, byte[] Bytes)>> EffectiveAsync(ApplicationIdentifier app, ActiveApplicationManifest? active, IReadOnlyList<ApplicationCandidateDocumentInput> replacements, CancellationToken ct)
+    private List<(ActivatedApplicationDocument Document, byte[]? Bytes)> Effective(ApplicationIdentifier app, ActiveApplicationManifest? active, IReadOnlyList<ApplicationCandidateDocumentInput> replacements)
     {
-        var values = new Dictionary<string, (ActivatedApplicationDocument Document, byte[] Bytes)>(StringComparer.Ordinal);
-        if (active is not null && (active.Winners.Count > 128 || active.Winners.Sum(x => x.Length) > 16L * 1024 * 1024))
+        var values = new Dictionary<string, (ActivatedApplicationDocument Document, byte[]? Bytes)>(StringComparer.Ordinal);
+        if (active is not null && (active.Winners.Count > CatalogNavigation.CatalogNavigationLimits.MaximumRecords * 4
+                || active.Winners.Any(x => x.Length < 0 || x.Length > 10L * 1024 * 1024)
+                || active.Winners.Sum(x => x.Length) > 256L * 1024 * 1024))
             throw new ApplicationActivationException("APPLICATION_CANDIDATE_BASE_LIMIT", "The retained base generation exceeds candidate bounds.");
+        if (active is not null && active.PreparationVersion is null)
+            throw new ApplicationActivationException("APPLICATION_CANDIDATE_LEGACY_BASE_UNAVAILABLE", "Legacy base evidence cannot be repaired by candidate authoring.");
         if (active is not null) foreach (var winner in active.Winners)
         {
-            var retained = evidence.ReadDocumentEvidence(app, active.ActivationRevision, winner.LogicalIdentity);
-            if (retained?.IsLegacyMetadataOnly == true) throw new ApplicationActivationException("APPLICATION_CANDIDATE_LEGACY_BASE_UNAVAILABLE", "Legacy base evidence cannot be repaired by candidate authoring.");
-            if (retained?.RetainedBytes is null) throw new ApplicationActivationException("ACTIVATION_EVIDENCE_MISSING", "The retained base generation is unavailable.");
-            values[winner.RelativePath] = (winner, retained.RetainedBytes);
+            values.Add(winner.RelativePath, (winner, null));
         }
         foreach (var input in replacements)
         {
@@ -220,7 +230,9 @@ public sealed partial class SqliteApplicationAuthoringService(
             var bytes = Encoding.UTF8.GetBytes(input.Text);
             values[input.RelativePath] = (new(input.LogicalIdentity, source.SourceId, source.Trust, source.Precedence, input.RelativePath, input.MediaType, Convert.ToHexString(SHA256.HashData(bytes)), bytes.Length, true), bytes);
         }
-        if (values.Count > 128 || values.Values.Sum(x => (long)x.Bytes.Length) > 16L * 1024 * 1024) throw new ApplicationActivationException("APPLICATION_CANDIDATE_LIMIT", "Effective candidate content exceeds its bound.");
+        if (values.Count > CatalogNavigation.CatalogNavigationLimits.MaximumRecords * 4
+            || values.Values.Sum(x => x.Document.Length) > 256L * 1024 * 1024)
+            throw new ApplicationActivationException("APPLICATION_CANDIDATE_LIMIT", "Effective candidate content exceeds its retained generation bound.");
         return values.Values.OrderBy(x => x.Document.RelativePath, StringComparer.Ordinal).ToList();
     }
 
@@ -232,18 +244,36 @@ public sealed partial class SqliteApplicationAuthoringService(
         return activations.ReadRevision(app, revision.Value) ?? throw new ApplicationActivationException("APPLICATION_CANDIDATE_BASE_UNAVAILABLE", "The pinned activation generation is unavailable.");
     }
 
-    private static IReadOnlyList<string> ChangedPaths(ApplicationCandidateRetainedReadback candidate, ActiveApplicationManifest? basis)
+    private async Task<IReadOnlyList<ApplicationRetainedDocumentLink>> RetainEffectiveAsync(ApplicationIdentifier app,
+        ActiveApplicationManifest? basis, IReadOnlyList<(ActivatedApplicationDocument Document, byte[]? Bytes)> effective, CancellationToken ct)
     {
-        var baseByPath = basis?.Winners.ToDictionary(x => x.RelativePath, StringComparer.Ordinal) ?? [];
-        return candidate.Documents.Where(x => !baseByPath.TryGetValue(x.Document.RelativePath, out var prior)
-                || prior != x.Document)
-            .Select(x => x.Document.RelativePath).ToArray();
+        var replacements = effective.Where(value => value.Bytes is not null).ToArray();
+        var retained = await new ApplicationRetainedDocumentStore(db).RetainAsync(app,
+            replacements.Select(value => value.Document).ToArray(), replacements.ToDictionary(
+                value => value.Document.LogicalIdentity, value => value.Bytes!, StringComparer.Ordinal), ct);
+        var byIdentity = retained.ToDictionary(value => replacements[value.Ordinal].Document.LogicalIdentity, StringComparer.Ordinal);
+        if (basis is not null)
+        {
+            var baselineLinks = await (from link in db.Set<ApplicationActivationDocumentRecord>().AsNoTracking()
+                join identity in db.Set<ApplicationActivationDocumentIdentityRecord>().AsNoTracking()
+                    on new { link.ApplicationId, link.IdentityId } equals new { identity.ApplicationId, IdentityId = identity.Id }
+                where link.ApplicationId == app.Value && link.ActivationRevision == basis.ActivationRevision
+                select new { identity.LogicalIdentity, link.IdentityId, link.EvidenceVersion }).ToArrayAsync(ct);
+            foreach (var link in baselineLinks) byIdentity.TryAdd(link.LogicalIdentity, new(0, link.IdentityId, link.EvidenceVersion));
+        }
+        return effective.Select((value, ordinal) => byIdentity.TryGetValue(value.Document.LogicalIdentity, out var link)
+            ? link with { Ordinal = ordinal }
+            : throw new ApplicationActivationException("APPLICATION_CANDIDATE_BASE_UNAVAILABLE", "The unchanged base document link is missing.")).ToArray();
     }
 
-    private static IReadOnlyList<StandingGrantDefinitionReference> Definitions(ApplicationIdentifier app, ApplicationCandidateRetainedReadback value, IReadOnlyList<string> changed)
+    private Task<IReadOnlyList<ApplicationCandidateDocument>> ReadChangedAsync(ApplicationCandidateRetainedMetadata metadata,
+        IReadOnlyList<string> changed, CancellationToken ct) => new ApplicationCandidateRetainedReader(db, applications)
+        .ReadSelectedAsync(metadata, ApplicationCandidateDocumentSelection.WithKnownSidecars(metadata.Documents, changed), ct);
+
+    private static IReadOnlyList<StandingGrantDefinitionReference> Definitions(ApplicationIdentifier app, IReadOnlyList<ApplicationCandidateDocument> value, IReadOnlyList<string> changed)
     {
-        var winners = value.Documents.Where(x => x.Document.IsText).ToDictionary(x => x.Document.RelativePath, x => x.Document, StringComparer.Ordinal);
-        var bytes = value.Documents.Where(x => x.Document.IsText).ToDictionary(x => x.Document.RelativePath, x => x.RetainedBytes, StringComparer.Ordinal);
+        var winners = value.Where(x => x.Document.IsText).ToDictionary(x => x.Document.RelativePath, x => x.Document, StringComparer.Ordinal);
+        var bytes = value.Where(x => x.Document.IsText).ToDictionary(x => x.Document.RelativePath, x => x.RetainedBytes, StringComparer.Ordinal);
         var changedPaths = changed.ToHashSet(StringComparer.Ordinal);
         var records = winners.Values.Select(x => CatalogNavigation.ActivatedApplicationCatalogMaterializer.ParseRetainedRecord(app, x, winners, bytes)).Where(x => x is not null).ToArray();
         var selected = records.Where(x => changedPaths.Contains(x!.SourceLogicalPath) || (x!.Kind == "mechanic" && changedPaths.Contains(Path.ChangeExtension(x.SourceLogicalPath, ".js").Replace('\\', '/')))).ToArray();
