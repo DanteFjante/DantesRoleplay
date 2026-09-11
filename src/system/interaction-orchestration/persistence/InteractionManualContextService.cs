@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
@@ -19,7 +20,8 @@ public sealed class InteractionManualContextService(
     IStandingGrantTargetResolver targets,
     IApplicationDefinitionChangeReader changes,
     IReadOnlyCollection<string> permittedGlobalCategories,
-    IInteractionRecipeStore? recipes = null) : IInteractionManualContextService
+    IInteractionRecipeStore? recipes = null,
+    ProcedureManualSectionRetriever? sectionRetriever = null) : IInteractionManualContextService
 {
     private const int MaximumSources = 128;
     private readonly string[] _globalCategories = CopyCategories(permittedGlobalCategories);
@@ -73,6 +75,8 @@ public sealed class InteractionManualContextService(
             var selectedTargets = new Dictionary<string, StandingGrantDefinitionReference>(StringComparer.Ordinal);
             var candidates = new JsonArray();
             var sections = new List<ManualCandidate>();
+            var globalSections = new Dictionary<string, ManualCandidate>(StringComparer.Ordinal);
+            var globalVectorSources = new List<ProcedureManualSectionVectorSource>();
             var sourceEvidence = new List<string>();
             var globalSources = new Dictionary<string, string>(StringComparer.Ordinal);
             var exact = new List<string>();
@@ -89,8 +93,24 @@ public sealed class InteractionManualContextService(
                 AddSections(detail.Id, detail.Version, sourceFingerprint, detail.Governs, detail.Instructions,
                     detail.Constraints, detail.Name + " " + detail.Description + " " + detail.Matches, isExact,
                     string.IsNullOrEmpty(detail.SourceHash) ? null : detail.SourceHash,
-                    ProcedureManualSections.Hash(detail.Matches));
+                    ProcedureManualSections.Hash(detail.Matches), candidate =>
+                    {
+                        globalSections.Add(candidate.Section.Reference, candidate);
+                        globalVectorSources.Add(new(detail.Id, detail.Version, sourceFingerprint,
+                            candidate.Section.Reference, candidate.Section.ContentFingerprint,
+                            ManualEmbeddingText(detail, candidate.Section)));
+                    }, deferSelection: true);
             }
+            if (sectionRetriever is not null && globalVectorSources.Count != 0)
+            {
+                var semantic = await sectionRetriever.SearchAsync(host.ApplicationRevision.ApplicationId,
+                    search.Query, globalVectorSources, token);
+                foreach (var hit in semantic.Hits)
+                    if (globalSections.TryGetValue(hit.SectionReference, out var candidate))
+                        globalSections[hit.SectionReference] = candidate with
+                        { Score = Math.Max(candidate.Score, 500 - hit.Rank) };
+            }
+            sections.AddRange(globalSections.Values.Where(value => value.Score > 0));
             foreach (var hit in featureResult.Hits)
             {
                 selectedTargets[hit.Reference.QualifiedId] = Selection(hit.Reference);
@@ -206,15 +226,17 @@ public sealed class InteractionManualContextService(
 
             void AddSections(string id, int version, string sourceFingerprint, string governs,
                 string instructions, string constraints, string metadata, bool isExact, string? storedSourceHash,
-                string associationFingerprint)
+                string associationFingerprint, Action<ManualCandidate>? observe = null, bool deferSelection = false)
             {
                 if (instructions.Length + constraints.Length > 64_000) { bounded = true; return; }
                 foreach (var section in ProcedureManualSections.Derive(id, instructions, constraints))
                 {
                     var score = isExact ? 1000 : Score(search.Query,
                         metadata + " " + governs + " " + section.ParentContext + " " + section.Text);
-                    if (score > 0) sections.Add(new(id, version, sourceFingerprint, storedSourceHash,
-                        associationFingerprint, governs, section, score));
+                    var candidate = new ManualCandidate(id, version, sourceFingerprint, storedSourceHash,
+                        associationFingerprint, governs, section, score);
+                    observe?.Invoke(candidate);
+                    if (!deferSelection && score > 0) sections.Add(candidate);
                 }
             }
         }
@@ -270,6 +292,14 @@ public sealed class InteractionManualContextService(
     private static string Normalize(string text) => string.Join(' ', text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)).ToLowerInvariant();
     private static int Score(string query, string text) => query.Split([' ', '.', '-', ','], StringSplitOptions.RemoveEmptyEntries)
         .Distinct(StringComparer.OrdinalIgnoreCase).Count(value => text.Contains(value, StringComparison.OrdinalIgnoreCase));
+    private static string ManualEmbeddingText(ProcedureDetail detail, ProcedureManualSections.Section section)
+    {
+        var text = string.Join('\n', detail.Id, section.Heading, section.ParentContext, section.Text,
+            detail.Name, detail.Description, detail.Governs, detail.Matches).Normalize(NormalizationForm.FormKC);
+        return text.Length <= InteractionRetrievalLimits.MaximumEmbeddingInputText
+            ? text
+            : text[..InteractionRetrievalLimits.MaximumEmbeddingInputText];
+    }
     private static string[] MissingInputs(JsonElement root, string input)
     {
         using var known = JsonDocument.Parse(input);

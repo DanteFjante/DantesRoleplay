@@ -15,7 +15,8 @@ public enum InteractionRetrievalLane
 {
     TrustedFeature,
     UntrustedReference,
-    TrustedRecipe
+    TrustedRecipe,
+    SystemManual
 }
 
 public enum InteractionRetrievalMode

@@ -97,6 +97,10 @@ internal static class InteractionOrchestrationComponentRegistration
         services.AddScoped<IStandingGrantApplicationReadModelInvocationAdapter,
             StandingGrantApplicationReadModelInvocationAdapter>();
         services.TryAddScoped<IApplicationQueryRoleBindingResolver, ApplicationQueryRoleBindingResolver>();
+        services.TryAddScoped(provider => new ProcedureManualSectionRetriever(
+            provider.GetService<ITextEmbeddingProvider>(),
+            provider.GetService<IInteractionDerivedVectorIndex>(),
+            provider.GetRequiredService<InteractionRetrievalRefreshCoordinator>()));
         services.AddScoped<IInteractionManualContextService>(provider => new InteractionManualContextService(
             provider.GetRequiredService<IProcedureStore>(),
             provider.GetRequiredService<IInteractionFeatureRetriever>(),
@@ -104,7 +108,8 @@ internal static class InteractionOrchestrationComponentRegistration
             provider.GetRequiredService<IStandingGrantTargetResolver>(),
             provider.GetRequiredService<IApplicationDefinitionChangeReader>(),
             ["system"],
-            provider.GetRequiredService<IInteractionRecipeStore>()));
+            provider.GetRequiredService<IInteractionRecipeStore>(),
+            provider.GetRequiredService<ProcedureManualSectionRetriever>()));
         services.TryAddScoped<IInteractionTaskContextMaterializer>(provider =>
             new InteractionTaskContextMaterializer(
                 provider.GetRequiredService<IInteractionAuthorizationPolicy>(),

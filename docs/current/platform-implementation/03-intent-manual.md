@@ -53,11 +53,19 @@ It admits at most 16 active generations and 64 waiters per generation; waiters c
 caller or fall back after five seconds. The owner performs awaited work within its caller lifetime,
 pins the requested generation, and releases capacity on failure/cancellation. No background work
 captures scoped services. Without host injection, coordination is limited to one retriever instance.
+System-manual sections use the same disposable derived index under a distinct lane. The generation
+fingerprint covers the host application, exact permitted procedure IDs and revisions, full source and
+section fingerprints, normalized embedding text, format and embedding-provider identity. Exact host
+category filtering happens before any section text reaches the embedding provider. Repeated lookups and
+new scoped service instances reuse an unchanged retained generation; source edits or provider revisions
+select a new generation. The procedure store remains authoritative, and every selected source revision
+is rechecked before a packet returns. Missing, stale or failed section generations preserve current
+lexical section selection.
 The accepted context seam is `IInteractionManualContextService` with `InteractionManualContextRequest`.
 Coordinator integration owns constructor registration and MCP/website mapping. Production standing
 grant policy/ownership resolution and publication are supplied by plan 02; consumer fixtures do not
-prove issuance or production authorization. Section-level vector identity/index support,
-candidate-bound equivalence review and end-to-end invocation through plans 01/05/06 remain separate
+prove issuance or production authorization. Candidate-bound equivalence review and end-to-end
+invocation through plans 01/05/06 remain separate
 integration dependencies; discovery tests do not prove those dependent scenarios.
 
 Candidate reuse preparation implements `IApplicationCandidateReuseReview` without a successful

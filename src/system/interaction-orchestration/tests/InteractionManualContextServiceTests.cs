@@ -19,10 +19,15 @@ namespace DantesRoleplay.Tests;
 public sealed class InteractionManualContextServiceTests : IDisposable
 {
     private readonly SqliteFixture _fixture = new();
+    private readonly string _derivedRoot = Path.Combine(Path.GetTempPath(), "manual-sections-" + Guid.NewGuid().ToString("N"));
     private static readonly ApplicationIdentifier App = ApplicationIdentifier.Parse("sample-app");
     private static readonly string HashA = Hash("activation");
 
-    public void Dispose() => _fixture.Dispose();
+    public void Dispose()
+    {
+        _fixture.Dispose();
+        if (Directory.Exists(_derivedRoot)) Directory.Delete(_derivedRoot, recursive: true);
+    }
 
     [Fact]
     public async Task Global_categories_filter_before_disclosure_and_preserve_inactive_history()
@@ -76,6 +81,78 @@ public sealed class InteractionManualContextServiceTests : IDisposable
             secondPacket.RootElement.GetProperty("resolutionFingerprint").GetString());
         Assert.Equal("refresh-required", refreshedPacket.RootElement.GetProperty("resolution").GetString());
         Assert.Equal(JsonValueKind.Null, firstPacket.RootElement.GetProperty("selectedAction").ValueKind);
+    }
+
+    [Fact]
+    public async Task System_manual_semantic_sections_are_filtered_cached_invalidated_and_restartable()
+    {
+        await using var db = _fixture.CreateContext();
+        var procedures = new ProcedureStore(db);
+        await procedures.WriteAsync(Request("procedure.system.recovery", "system", "Operational guidance", """
+            ## Routine
+            Inspect the ordinary status.
+            ## Recovery
+            Resume persisted campaign from checkpoint.
+            """));
+        await procedures.WriteAsync(Request("procedure.secret.recovery", "secret", "DENIED_SECRET", """
+            ## Hidden
+            Resume persisted campaign from checkpoint. DENIED_SECRET
+            """));
+        var embeddings = new SectionEmbeddings();
+        var location = InteractionDerivedIndexLocation.Create(_derivedRoot);
+        InteractionManualContextService CreateService() => new(procedures,
+            new InteractionFeatureRetriever(new Snapshots()), new FixtureGrants(), new FixtureTargets(),
+            new Changes(App, HashA), ["system"], sectionRetriever: new(embeddings,
+                new SqliteInteractionDerivedVectorIndex(location), new InteractionRetrievalRefreshCoordinator()));
+
+        var first = await CreateService().DiscoverAsync(Host(), "restore lost progress");
+        Assert.Equal(InteractionInvocationResultTag.Completed, first.Tag);
+        Assert.Contains("Resume persisted campaign from checkpoint.", first.DataJson!, StringComparison.Ordinal);
+        Assert.DoesNotContain("DENIED_SECRET", first.DataJson!, StringComparison.Ordinal);
+        Assert.DoesNotContain(embeddings.Inputs.SelectMany(value => value),
+            value => value.Contains("DENIED_SECRET", StringComparison.Ordinal));
+        Assert.Equal(1, embeddings.DocumentBatches);
+
+        _ = await CreateService().DiscoverAsync(Host("command.2"), "restore lost progress");
+        // A new service and index instance reuse the retained generation without re-embedding sections.
+        _ = await CreateService().DiscoverAsync(Host("command.3"), "restore lost progress");
+        Assert.Equal(1, embeddings.DocumentBatches);
+
+        await procedures.WriteAsync(Request("procedure.system.recovery", "system", "Operational guidance", """
+            ## Routine
+            Inspect the ordinary status.
+            ## Recovery
+            Continue the saved session from its durable checkpoint.
+            """));
+        var edited = await CreateService().DiscoverAsync(Host("command.4"), "restore lost progress");
+        Assert.Contains("Continue the saved session", edited.DataJson!, StringComparison.Ordinal);
+        Assert.DoesNotContain("Resume persisted campaign", edited.DataJson!, StringComparison.Ordinal);
+        Assert.Equal(2, embeddings.DocumentBatches);
+
+        embeddings.Revision = "2";
+        _ = await CreateService().DiscoverAsync(Host("command.5"), "restore lost progress");
+        Assert.Equal(3, embeddings.DocumentBatches);
+    }
+
+    [Fact]
+    public async Task System_manual_keeps_current_lexical_sections_when_embedding_provider_is_unavailable()
+    {
+        await using var db = _fixture.CreateContext();
+        var procedures = new ProcedureStore(db);
+        await procedures.WriteAsync(Request("procedure.system.recovery", "system", "Recovery", """
+            ## Recovery
+            Restore lost progress safely.
+            """));
+        var location = InteractionDerivedIndexLocation.Create(_derivedRoot);
+        var sections = new ProcedureManualSectionRetriever(new UnavailableSectionEmbeddings(),
+            new SqliteInteractionDerivedVectorIndex(location), new InteractionRetrievalRefreshCoordinator());
+        var service = new InteractionManualContextService(procedures, new InteractionFeatureRetriever(new Snapshots()),
+            new FixtureGrants(), new FixtureTargets(), new Changes(App, HashA), ["system"], sectionRetriever: sections);
+
+        var result = await service.DiscoverAsync(Host(), "restore lost progress");
+
+        Assert.Equal(InteractionInvocationResultTag.Completed, result.Tag);
+        Assert.Contains("Restore lost progress safely.", result.DataJson!, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -436,6 +513,36 @@ public sealed class InteractionManualContextServiceTests : IDisposable
             return Task.FromResult<IReadOnlyList<InteractionVectorCandidate>>(rankedIds
                 .Where(allowed.Contains).Take(limit).Select((id, index) => new InteractionVectorCandidate(id, index)).ToArray());
         }
+    }
+
+    private sealed class SectionEmbeddings : ITextEmbeddingProvider
+    {
+        internal string Revision { get; set; } = "1";
+        internal int DocumentBatches { get; private set; }
+        internal List<string[]> Inputs { get; } = [];
+        public Task<EmbeddingProviderStatus> CheckAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult(new EmbeddingProviderStatus(true, Identity()));
+        public Task<EmbeddingBatchResult> EmbedAsync(IReadOnlyList<string> inputs,
+            CancellationToken cancellationToken = default)
+        {
+            Inputs.Add(inputs.ToArray());
+            if (inputs.Count > 1) DocumentBatches++;
+            return Task.FromResult(new EmbeddingBatchResult(Identity(), inputs.Select(value =>
+                value.Contains("restore lost progress", StringComparison.OrdinalIgnoreCase)
+                || value.Contains("Resume persisted campaign", StringComparison.OrdinalIgnoreCase)
+                || value.Contains("Continue the saved session", StringComparison.OrdinalIgnoreCase)
+                    ? new[] { 0f, 1f }
+                    : new[] { 1f, 0f }).ToArray()));
+        }
+        private EmbeddingProviderIdentity Identity() => new("fixture", "manual-section", Revision, 2);
+    }
+
+    private sealed class UnavailableSectionEmbeddings : ITextEmbeddingProvider
+    {
+        public Task<EmbeddingProviderStatus> CheckAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult(EmbeddingProviderStatus.Unavailable("EMBEDDING_OFFLINE", "Fixture unavailable."));
+        public Task<EmbeddingBatchResult> EmbedAsync(IReadOnlyList<string> inputs,
+            CancellationToken cancellationToken = default) => throw new InvalidOperationException();
     }
 
     private sealed class Changes(ApplicationIdentifier app, string fingerprint) : IApplicationDefinitionChangeReader
