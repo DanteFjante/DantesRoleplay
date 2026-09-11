@@ -5,17 +5,17 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DantesRoleplay.DataAccess;
 
-// Review-only schema proposal. Production DantesRoleplayDbContext deliberately does not call this.
-internal static class ProposedApplicationAuthoringModel
+// Frozen owner model. The coordinator owns DbContext registration and migrations.
+internal static class ApplicationAuthoringModelConfiguration
 {
     internal static void Configure(ModelBuilder b)
     {
         b.Entity<ApplicationCandidateRevisionRecord>(e =>
         {
-            e.ToTable("proposed_application_candidate_revision", t =>
+            e.ToTable("system_application_candidate_revision", t =>
             {
-                t.HasCheckConstraint("CK_proposed_candidate_revision", "\"Revision\" > 0 AND \"ApplicationRevision\" > 0");
-                t.HasCheckConstraint("CK_proposed_candidate_hashes", Hash("ContentFingerprint") + " AND " + Hash("CanonicalCommandFingerprint") + " AND (\"ExpectedActiveFingerprint\" IS NULL OR " + Hash("ExpectedActiveFingerprint") + ")");
+                t.HasCheckConstraint("CK_system_candidate_revision", "\"Revision\" > 0 AND \"ApplicationRevision\" > 0");
+                t.HasCheckConstraint("CK_system_candidate_hashes", Hash("ContentFingerprint") + " AND " + Hash("CanonicalCommandFingerprint") + " AND (\"ExpectedActiveFingerprint\" IS NULL OR " + Hash("ExpectedActiveFingerprint") + ")");
             });
             e.HasKey(x => new { x.ApplicationId, x.CandidateId, x.Revision });
             e.Property(x => x.ApplicationId).HasMaxLength(63); e.Property(x => x.CandidateId).HasMaxLength(32);
@@ -29,7 +29,7 @@ internal static class ProposedApplicationAuthoringModel
         });
         b.Entity<ApplicationCandidateDocumentRecord>(e =>
         {
-            e.ToTable("proposed_application_candidate_document", t => t.HasCheckConstraint("CK_proposed_candidate_document_ordinal", "\"Ordinal\" >= 0"));
+            e.ToTable("system_application_candidate_document", t => t.HasCheckConstraint("CK_system_candidate_document_ordinal", "\"Ordinal\" >= 0"));
             e.HasKey(x => new { x.ApplicationId, x.CandidateId, x.Revision, x.Ordinal }); e.Property(x => x.ApplicationId).HasMaxLength(63); e.Property(x => x.CandidateId).HasMaxLength(32);
             e.HasIndex(x => new { x.ApplicationId, x.CandidateId, x.Revision, x.IdentityId }).IsUnique();
             e.HasOne<ApplicationCandidateRevisionRecord>().WithMany().HasForeignKey(x => new { x.ApplicationId, x.CandidateId, x.Revision }).OnDelete(DeleteBehavior.Cascade);
@@ -38,10 +38,10 @@ internal static class ProposedApplicationAuthoringModel
         });
         b.Entity<ApplicationCandidateValidationRecord>(e =>
         {
-            e.ToTable("proposed_application_candidate_validation", t =>
+            e.ToTable("system_application_candidate_validation", t =>
             {
-                t.HasCheckConstraint("CK_proposed_candidate_validation_outcome", "\"Outcome\" IN ('valid','invalid','unavailable')");
-                t.HasCheckConstraint("CK_proposed_candidate_validation_valid_evidence", """
+                t.HasCheckConstraint("CK_system_candidate_validation_outcome", "\"Outcome\" IN ('valid','invalid','unavailable')");
+                t.HasCheckConstraint("CK_system_candidate_validation_valid_evidence", """
                     "Outcome" <> 'valid' OR COALESCE(
                         length(trim("PreparationVersion")) BETWEEN 1 AND 100
                         AND length(trim("PreparedEvidenceReference")) BETWEEN 1 AND 200
@@ -50,10 +50,10 @@ internal static class ProposedApplicationAuthoringModel
                         AND length(trim("DependencyEvidenceReference")) BETWEEN 1 AND 200
                         AND "DependenciesComplete" = 1, 0)
                     """);
-                t.HasCheckConstraint("CK_proposed_candidate_validation_json", "json_valid(\"DiagnosticsJson\") AND json_valid(\"AlternativesJson\") AND length(CAST(\"DiagnosticsJson\" AS BLOB)) <= 16000 AND length(CAST(\"AlternativesJson\" AS BLOB)) <= 16000");
-                t.HasCheckConstraint("CK_proposed_candidate_validation_revision", "\"Revision\" > 0");
-                t.HasCheckConstraint("CK_proposed_candidate_validation_expected_hash", "(\"ExpectedActiveFingerprint\" IS NULL OR " + Hash("ExpectedActiveFingerprint") + ") AND " + Hash("CandidateFingerprint") + " AND " + Hash("DependencyFingerprint") + " AND (\"ManualPacketResultFingerprint\" IS NULL OR " + Hash("ManualPacketResultFingerprint") + ") AND " + Hash("CanonicalCommandFingerprint"));
-                t.HasCheckConstraint("CK_proposed_candidate_validation_dependencies", """
+                t.HasCheckConstraint("CK_system_candidate_validation_json", "json_valid(\"DiagnosticsJson\") AND json_valid(\"AlternativesJson\") AND length(CAST(\"DiagnosticsJson\" AS BLOB)) <= 16000 AND length(CAST(\"AlternativesJson\" AS BLOB)) <= 16000");
+                t.HasCheckConstraint("CK_system_candidate_validation_revision", "\"Revision\" > 0");
+                t.HasCheckConstraint("CK_system_candidate_validation_expected_hash", "(\"ExpectedActiveFingerprint\" IS NULL OR " + Hash("ExpectedActiveFingerprint") + ") AND " + Hash("CandidateFingerprint") + " AND " + Hash("DependencyFingerprint") + " AND (\"ManualPacketResultFingerprint\" IS NULL OR " + Hash("ManualPacketResultFingerprint") + ") AND " + Hash("CanonicalCommandFingerprint"));
+                t.HasCheckConstraint("CK_system_candidate_validation_dependencies", """
                     "DependenciesComplete" IN (0,1) AND
                     CASE WHEN json_valid("DependenciesJson") THEN COALESCE(
                         json_type("DependenciesJson") = 'array'
@@ -71,7 +71,7 @@ internal static class ProposedApplicationAuthoringModel
         });
         b.Entity<ApplicationCandidatePublicationRecord>(e =>
         {
-            e.ToTable("proposed_application_candidate_publication"); e.HasKey(x => x.ActivationOperationId); e.Property(x => x.ActivationOperationId).HasMaxLength(200); e.Property(x => x.ValidationOperationId).HasMaxLength(200); e.Property(x => x.ApplicationId).HasMaxLength(63); e.Property(x => x.CandidateId).HasMaxLength(32);
+            e.ToTable("system_application_candidate_publication"); e.HasKey(x => x.ActivationOperationId); e.Property(x => x.ActivationOperationId).HasMaxLength(200); e.Property(x => x.ValidationOperationId).HasMaxLength(200); e.Property(x => x.ApplicationId).HasMaxLength(63); e.Property(x => x.CandidateId).HasMaxLength(32);
             e.HasOne<ApplicationActivationReceiptRecord>().WithMany().HasForeignKey(x => x.ActivationOperationId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne<ApplicationCandidateValidationRecord>().WithMany().HasForeignKey(x => new { x.ValidationOperationId, x.ApplicationId, x.CandidateId, x.Revision }).HasPrincipalKey(x => new { x.OperationId, x.ApplicationId, x.CandidateId, x.Revision }).OnDelete(DeleteBehavior.Restrict);
             e.HasOne<ApplicationCandidateRevisionRecord>().WithMany().HasForeignKey(x => new { x.ApplicationId, x.CandidateId, x.Revision }).OnDelete(DeleteBehavior.Restrict);

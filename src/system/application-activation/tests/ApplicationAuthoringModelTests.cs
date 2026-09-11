@@ -8,17 +8,8 @@ using System.Text.Json;
 
 namespace DantesRoleplay.Tests;
 
-public sealed class ProposedApplicationAuthoringModelTests
+public sealed class ApplicationAuthoringModelTests
 {
-    [Fact]
-    public void Production_model_does_not_include_review_only_rows()
-    {
-        using var fixture = new SqliteFixture(); using var db = fixture.CreateContext();
-        Assert.Null(db.Model.FindEntityType(typeof(ApplicationCandidateRevisionRecord)));
-        Assert.Null(db.Model.FindEntityType(typeof(StandingGrantRevisionRecord)));
-        Assert.Null(db.Model.FindEntityType(typeof(InformationContentRevisionRecord)));
-    }
-
     [Fact]
     public async Task Proposed_model_enforces_grant_budget_and_valid_evidence_requirements()
     {
@@ -27,14 +18,14 @@ public sealed class ProposedApplicationAuthoringModelTests
         db.Add(new Operation { Id = "operation", Timestamp = DateTime.UtcNow, Tool = "test" });
         await db.SaveChangesAsync();
         db.Add(new StandingGrantRevisionRecord { GrantId = "grant", Revision = 1, GrantReference = "grant@1", PrincipalReference = "principal", ApplicationId = "app", Scope = "stateSpace", StateSpaceId = "space", PermissionsJson = EmptyPermissions, ContentFingerprint = Hash, MaximumOperations = 17, ExpiresAtUtc = DateTime.UtcNow, IssuedByOperationId = "operation" });
-        var grantFailure = await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync()); Assert.Contains("CK_proposed_grant_budget", grantFailure.InnerException!.Message); db.ChangeTracker.Clear();
+        var grantFailure = await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync()); Assert.Contains("CK_system_grant_budget", grantFailure.InnerException!.Message); db.ChangeTracker.Clear();
         db.Add(new ApplicationRegistryRecord { Id = "app", DisplayName = "App", Description = "Test" });
         db.Add(new ApplicationRevisionRecord { ApplicationId = "app", Revision = 1, Fingerprint = Hash, CreatedAtUtc = DateTime.UtcNow });
         db.Add(new ApplicationCandidateRevisionRecord { ApplicationId = "app", CandidateId = "candidate", Revision = 1, ApplicationRevision = 1, ContentFingerprint = Hash, Origin = "runtime", NewImplementationReason = "needed", AuthorGrantReference = "grant@1", SourceOperationId = "operation", CanonicalCommandFingerprint = Hash });
         await db.SaveChangesAsync();
         db.Add(new Operation { Id = "validation", Timestamp = DateTime.UtcNow, Tool = "test" });
         db.Add(new ApplicationCandidateValidationRecord { OperationId = "validation", ApplicationId = "app", CandidateId = "candidate", Revision = 1, CandidateFingerprint = Hash, GrantReference = "grant@1", DependencyFingerprint = Hash, Outcome = "valid", PreparationVersion = "v1", ManualPacketResultFingerprint = Hash, CanonicalCommandFingerprint = Hash, DependenciesJson = "[]", DiagnosticsJson = "[]", AlternativesJson = "[]" });
-        var validationFailure = await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync()); Assert.Contains("CK_proposed_candidate_validation_valid_evidence", validationFailure.InnerException!.Message); db.ChangeTracker.Clear();
+        var validationFailure = await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync()); Assert.Contains("CK_system_candidate_validation_valid_evidence", validationFailure.InnerException!.Message); db.ChangeTracker.Clear();
         db.Add(new Operation { Id = "validation", Timestamp = DateTime.UtcNow, Tool = "test" });
         db.Add(new ApplicationCandidateValidationRecord { OperationId = "validation", ApplicationId = "app", CandidateId = "candidate", Revision = 1, CandidateFingerprint = Hash, GrantReference = "grant@1", DependencyFingerprint = Hash, Outcome = "valid", PreparationVersion = "v1", ManualPacketResultFingerprint = Hash, CanonicalCommandFingerprint = Hash, DependenciesJson = "[]", DependenciesComplete = true, DependencyEvidenceReference = "dependencies", PreparedEvidenceReference = "prepared", ReuseEvidenceReference = "reuse", DiagnosticsJson = "[]", AlternativesJson = "[]" });
         await db.SaveChangesAsync();
@@ -55,7 +46,7 @@ public sealed class ProposedApplicationAuthoringModelTests
         else
         {
             var failure = await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
-            Assert.Contains("CK_proposed_grant_scope", failure.InnerException!.Message);
+            Assert.Contains("CK_system_grant_scope", failure.InnerException!.Message);
         }
     }
 
@@ -94,7 +85,7 @@ public sealed class ProposedApplicationAuthoringModelTests
         else
         {
             var failure = await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
-            Assert.Contains("CK_proposed_grant_definition_mode", failure.InnerException!.Message);
+            Assert.Contains("CK_system_grant_definition_mode", failure.InnerException!.Message);
         }
     }
 
@@ -125,7 +116,7 @@ public sealed class ProposedApplicationAuthoringModelTests
         }
         db.Add(row);
         var failure = await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
-        Assert.Contains("CK_proposed_candidate_validation", failure.InnerException!.Message);
+        Assert.Contains("CK_system_candidate_validation", failure.InnerException!.Message);
     }
 
     [Fact]
@@ -216,9 +207,9 @@ public sealed class ProposedApplicationAuthoringModelTests
             b.Entity<ApplicationActivationDocumentIdentityRecord>(e => { e.HasKey(x => x.Id); e.HasAlternateKey(x => new { x.ApplicationId, x.Id }); });
             b.Entity<ApplicationActivationDocumentEvidenceRecord>(e => e.HasKey(x => new { x.IdentityId, x.EvidenceVersion }));
             b.Entity<ApplicationActivationReceiptRecord>(e => e.HasKey(x => x.OperationId));
-            ProposedApplicationAuthoringModel.Configure(b);
-            ProposedStandingGrantModel.Configure(b);
-            ProposedInformationHistoryModel.Configure(b);
+            ApplicationAuthoringModelConfiguration.Configure(b);
+            StandingGrantModelConfiguration.Configure(b);
+            InformationHistoryModelConfiguration.Configure(b);
         }
     }
 }

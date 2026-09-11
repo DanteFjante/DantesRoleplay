@@ -3,20 +3,20 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DantesRoleplay.DataAccess;
 
-// Review-only proposal. Production DbContext does not call this configuration.
-internal static class ProposedInformationHistoryModel
+// Frozen owner model. The coordinator owns DbContext registration and migrations.
+internal static class InformationHistoryModelConfiguration
 {
     internal static void Configure(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<InformationContentRevisionRecord>(entity =>
         {
-            entity.ToTable("proposed_information_content_revision", table =>
+            entity.ToTable("system_information_content_revision", table =>
             {
-                table.HasCheckConstraint("CK_proposed_information_content_kind", "\"Kind\" IN ('source','record')");
-                table.HasCheckConstraint("CK_proposed_information_content_origin", "\"Origin\" IN ('baseline-retained','conditional-write')");
-                table.HasCheckConstraint("CK_proposed_information_content_json", "json_valid(\"ContentJson\") AND length(CAST(\"ContentJson\" AS BLOB)) <= 65536");
-                table.HasCheckConstraint("CK_proposed_information_content_hash", Hash("ContentFingerprint"));
-                table.HasCheckConstraint("CK_proposed_information_content_revision", "\"Revision\" > 0");
+                table.HasCheckConstraint("CK_system_information_content_kind", "\"Kind\" IN ('source','record')");
+                table.HasCheckConstraint("CK_system_information_content_origin", "\"Origin\" IN ('baseline-retained','conditional-write')");
+                table.HasCheckConstraint("CK_system_information_content_json", "json_valid(\"ContentJson\") AND length(CAST(\"ContentJson\" AS BLOB)) <= 65536");
+                table.HasCheckConstraint("CK_system_information_content_hash", Hash("ContentFingerprint"));
+                table.HasCheckConstraint("CK_system_information_content_revision", "\"Revision\" > 0");
             });
             entity.HasKey(x => new { x.Kind, x.Id, x.Revision });
             entity.Property(x => x.Kind).HasMaxLength(10); entity.Property(x => x.Id).HasMaxLength(200);

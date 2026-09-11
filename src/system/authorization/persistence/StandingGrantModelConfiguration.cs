@@ -3,18 +3,18 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DantesRoleplay.DataAccess;
 
-// Review-only proposal. Production DbContext does not call this configuration.
-internal static class ProposedStandingGrantModel
+// Frozen owner model. The coordinator owns DbContext registration and migrations.
+internal static class StandingGrantModelConfiguration
 {
     internal static void Configure(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<StandingGrantRevisionRecord>(entity =>
         {
-            entity.ToTable("proposed_standing_grant_revision", table =>
+            entity.ToTable("system_standing_grant_revision", table =>
             {
-                table.HasCheckConstraint("CK_proposed_grant_budget", "\"MaximumOperations\" BETWEEN 1 AND 16");
-                table.HasCheckConstraint("CK_proposed_grant_permissions", "json_valid(\"PermissionsJson\") AND length(CAST(\"PermissionsJson\" AS BLOB)) <= 16000");
-                table.HasCheckConstraint("CK_proposed_grant_definition_mode", """
+                table.HasCheckConstraint("CK_system_grant_budget", "\"MaximumOperations\" BETWEEN 1 AND 16");
+                table.HasCheckConstraint("CK_system_grant_permissions", "json_valid(\"PermissionsJson\") AND length(CAST(\"PermissionsJson\" AS BLOB)) <= 16000");
+                table.HasCheckConstraint("CK_system_grant_definition_mode", """
                     CASE WHEN json_valid("PermissionsJson") THEN COALESCE(
                         json_type("PermissionsJson") = 'object'
                         AND json_type("PermissionsJson", '$.capabilities') = 'array'
@@ -31,9 +31,9 @@ internal static class ProposedStandingGrantModel
                               AND json_array_length("PermissionsJson", '$.definitions.applicationOwnedNamespaces') > 0)), 0)
                     ELSE 0 END
                     """);
-                table.HasCheckConstraint("CK_proposed_grant_hash", Hash("ContentFingerprint"));
-                table.HasCheckConstraint("CK_proposed_grant_revision", "\"Revision\" > 0");
-                table.HasCheckConstraint("CK_proposed_grant_scope", "(\"Scope\" = 'application' AND \"StateSpaceId\" IS NULL) OR (\"Scope\" = 'stateSpace' AND \"StateSpaceId\" IS NOT NULL AND length(\"StateSpaceId\") > 0)");
+                table.HasCheckConstraint("CK_system_grant_hash", Hash("ContentFingerprint"));
+                table.HasCheckConstraint("CK_system_grant_revision", "\"Revision\" > 0");
+                table.HasCheckConstraint("CK_system_grant_scope", "(\"Scope\" = 'application' AND \"StateSpaceId\" IS NULL) OR (\"Scope\" = 'stateSpace' AND \"StateSpaceId\" IS NOT NULL AND length(\"StateSpaceId\") > 0)");
             });
             entity.HasKey(x => new { x.GrantId, x.Revision });
             entity.Property(x => x.GrantId).HasMaxLength(200); entity.Property(x => x.GrantReference).HasMaxLength(200);
@@ -45,7 +45,7 @@ internal static class ProposedStandingGrantModel
         });
         modelBuilder.Entity<StandingGrantCurrentRecord>(entity =>
         {
-            entity.ToTable("proposed_standing_grant_current"); entity.HasKey(x => x.GrantId); entity.Property(x => x.GrantId).HasMaxLength(200);
+            entity.ToTable("system_standing_grant_current"); entity.HasKey(x => x.GrantId); entity.Property(x => x.GrantId).HasMaxLength(200);
             entity.HasOne<StandingGrantRevisionRecord>().WithMany().HasForeignKey(x => new { x.GrantId, x.Revision }).OnDelete(DeleteBehavior.Restrict);
         });
     }
