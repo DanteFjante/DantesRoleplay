@@ -128,6 +128,45 @@ public sealed class SystemInnerWorkerProfileContractTests
         Assert.Equal(2, narrowed.ToolCalls);
     }
 
+    [Fact]
+    public void Candidate_profile_keeps_reviewer_and_both_authority_pins_independent()
+    {
+        var profile = CandidateProfile();
+        Assert.Null(profile.Worker.ProcedureVersion);
+        Assert.Equal("inner.application-candidate-reuse-review", profile.ProfileVersion.ExactDefinitionId);
+        Assert.Equal(1, profile.ProfileVersion.Version);
+        Assert.Equal(HashOf(SystemInnerWorkerCandidateReviewer.CanonicalDefinitionJson), profile.ProfileVersion.Fingerprint);
+        Assert.Equal("validate.1", profile.AuthorityProvenance.Reference);
+        Assert.Equal("read.1", profile.ReadAuthorityProvenance!.Reference);
+        Assert.Empty(profile.ToolBindings);
+        Assert.Equal(0, profile.AiBudget.ToolCalls);
+        var changedCopy = profile.Profile with { Instructions = "caller replacement" };
+        Assert.NotEqual(changedCopy.Instructions, SystemInnerWorkerCandidateReviewer.Profile.Instructions);
+    }
+
+    [Theory]
+    [InlineData(true, false, 0)]
+    [InlineData(false, true, 0)]
+    [InlineData(false, false, 1)]
+    public void Candidate_profile_rejects_missing_read_or_any_tool_authority(bool omitRead, bool addTool, int toolBudget)
+    {
+        var error = Assert.Throws<InteractionContractException>(() => CandidateProfile(omitRead, addTool, toolBudget));
+        Assert.Equal("WORKER_VALIDATION_AUTHORITY_INVALID", error.Code);
+    }
+
+    private static SystemInnerWorkerResolvedProfile CandidateProfile(bool omitRead = false, bool addTool = false, int toolBudget = 0)
+    {
+        var host = InteractionInvocationHost.ForApplication(Host().Principal, Host().ApplicationRevision,
+            "grant.1", "command.1", InteractionExecutionProfile.ReadOnly, new InteractionInvocationBudget(2, DateTime.UtcNow.AddMinutes(1)));
+        var subject = new SystemInnerWorkerSubject.ApplicationCandidateValidation(
+            new(host.ApplicationRevision.ApplicationId, new string('a', 32), 1, Hash));
+        return new(new SystemInnerWorkerRequest(host, subject, "{}", Schema),
+            SystemInnerWorkerCandidateReviewer.ProfileVersion, SystemInnerWorkerCandidateReviewer.Profile, HashOf(Schema),
+            addTool ? [Binding("read_value", "capability.read")] : [], [], new("manual.1", Hash),
+            new("validate.1", "1", Hash), new SystemInnerWorkerAiBudget(toolCalls: toolBudget),
+            omitRead ? null : new("read.1", "1", Hash));
+    }
+
     private static SystemInnerWorkerResolvedProfile Create(
         IReadOnlyList<SystemInnerWorkerToolBinding>? tools = null,
         IReadOnlyList<string>? references = null,

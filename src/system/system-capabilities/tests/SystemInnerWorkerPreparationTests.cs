@@ -188,6 +188,24 @@ public sealed class SystemInnerWorkerPreparationTests
         Assert.Equal(0, materializer.Calls);
     }
 
+    [Fact]
+    public async Task Candidate_subject_never_enters_legacy_procedure_or_context_stores()
+    {
+        var stateHost = Host(InteractionExecutionProfile.Workflow, DateTime.UtcNow.AddMinutes(1));
+        var applicationHost = InteractionInvocationHost.ForApplication(stateHost.Principal, stateHost.ApplicationRevision,
+            stateHost.GrantReference, stateHost.CommandId, InteractionExecutionProfile.ReadOnly, stateHost.Budget);
+        var subject = new SystemInnerWorkerSubject.ApplicationCandidateValidation(
+            new(applicationHost.ApplicationRevision.ApplicationId, new string('a', 32), 1, Hash));
+        var input = Input(stateHost) with { Worker = new(applicationHost, subject, "{}", "{}") };
+        var store = new ProcedureStoreStub(Procedure());
+        var materializer = new ContextMaterializerStub(Pack(("scope:one", "one")));
+        var error = await Assert.ThrowsAsync<InteractionContractException>(() =>
+            new SystemInnerWorkerPreparation(store, materializer).PrepareAsync(input));
+        Assert.Equal("WORKER_PREPARATION_SUBJECT_UNSUPPORTED", error.Code);
+        Assert.Equal(0, store.Calls);
+        Assert.Equal(0, materializer.Calls);
+    }
+
     private static async Task<SystemInnerWorkerPreparedRequest> PrepareAsync(
         string input = "{\"assignment\":\"inspect\"}",
         IReadOnlyList<string>? required = null,

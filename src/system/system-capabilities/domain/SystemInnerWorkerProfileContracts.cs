@@ -75,7 +75,8 @@ public sealed record SystemInnerWorkerResolvedProfile
         IReadOnlyList<string>? requiredContextReferences,
         SystemInnerWorkerManualContextEvidence manualContext,
         SystemInnerWorkerAuthorityProvenance authorityProvenance,
-        SystemInnerWorkerAiBudget? aiBudget = null)
+        SystemInnerWorkerAiBudget? aiBudget = null,
+        SystemInnerWorkerAuthorityProvenance? readAuthorityProvenance = null)
     {
         Worker = worker ?? throw new ArgumentNullException(nameof(worker));
         ProfileVersion = profileVersion ?? throw new ArgumentNullException(nameof(profileVersion));
@@ -105,7 +106,11 @@ public sealed record SystemInnerWorkerResolvedProfile
         RequiredContextReferences = Array.AsReadOnly(references);
         ManualContext = (manualContext ?? throw new ArgumentNullException(nameof(manualContext))).Validate();
         AuthorityProvenance = (authorityProvenance ?? throw new ArgumentNullException(nameof(authorityProvenance))).Validate();
+        ReadAuthorityProvenance = readAuthorityProvenance?.Validate();
         AiBudget = aiBudget ?? new SystemInnerWorkerAiBudget();
+        if (Worker.Subject is SystemInnerWorkerSubject.ApplicationCandidateValidation
+            && (ReadAuthorityProvenance is null || ToolBindings.Count != 0 || AiBudget.ToolCalls != 0))
+            throw Failure("WORKER_VALIDATION_AUTHORITY_INVALID", "Candidate validation requires independent Read evidence, no tools, and a zero tool-call budget.");
     }
 
     public SystemInnerWorkerRequest Worker { get; }
@@ -115,7 +120,10 @@ public sealed record SystemInnerWorkerResolvedProfile
     public IReadOnlyList<SystemInnerWorkerToolBinding> ToolBindings { get; }
     public IReadOnlyList<string> RequiredContextReferences { get; }
     public SystemInnerWorkerManualContextEvidence ManualContext { get; }
+    /// <summary>Workflow Execute or candidate Validate provenance; not an authorization decision.</summary>
     public SystemInnerWorkerAuthorityProvenance AuthorityProvenance { get; }
+    /// <summary>Independent context/candidate Read evidence. Required for candidate validation.</summary>
+    public SystemInnerWorkerAuthorityProvenance? ReadAuthorityProvenance { get; }
     /// <summary>Host-selected ceiling only; it is not a reservation, debit, or execution grant.</summary>
     public SystemInnerWorkerAiBudget AiBudget { get; }
 

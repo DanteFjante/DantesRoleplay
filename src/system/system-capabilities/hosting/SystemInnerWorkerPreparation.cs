@@ -60,11 +60,14 @@ internal sealed class SystemInnerWorkerPreparation(
         ArgumentNullException.ThrowIfNull(input.HostConfiguration);
         ArgumentNullException.ThrowIfNull(input.ContextEnvelope);
         ArgumentNullException.ThrowIfNull(input.ContextAuthorization);
+        if (input.Worker.Subject is not SystemInnerWorkerSubject.ProcedureWorkflow workflow)
+            throw Failure("WORKER_PREPARATION_SUBJECT_UNSUPPORTED", "This preparation path requires an exact procedure workflow subject.");
+        var selectedProcedure = workflow.ProcedureVersion;
         EnsureViableHost(input.Worker.InvocationHost, input.ContextEnvelope, input.ContextAuthorization);
 
-        var procedure = await procedures.GetAsync(input.Worker.ProcedureVersion.ExactDefinitionId,
-            input.Worker.ProcedureVersion.Version, cancellationToken);
-        EnsureCurrentProcedure(procedure, input.Worker.ProcedureVersion);
+        var procedure = await procedures.GetAsync(selectedProcedure.ExactDefinitionId,
+            selectedProcedure.Version, cancellationToken);
+        EnsureCurrentProcedure(procedure, selectedProcedure);
 
         var resultSchema = CanonicalSchema(input.SelectedResultSchemaJson, "WORKER_RESULT_SCHEMA_INVALID");
         if (!StringComparer.Ordinal.Equals(resultSchema, input.Worker.ResultSchemaJson))
@@ -72,11 +75,11 @@ internal sealed class SystemInnerWorkerPreparation(
 
         var pack = await contextMaterializer.MaterializeAsync(input.ContextEnvelope, input.ContextAuthorization, cancellationToken);
         EnsureViableHost(input.Worker.InvocationHost, input.ContextEnvelope, input.ContextAuthorization);
-        var currentProcedure = await procedures.GetAsync(input.Worker.ProcedureVersion.ExactDefinitionId,
-            input.Worker.ProcedureVersion.Version, cancellationToken);
+        var currentProcedure = await procedures.GetAsync(selectedProcedure.ExactDefinitionId,
+            selectedProcedure.Version, cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
         EnsureViableHost(input.Worker.InvocationHost, input.ContextEnvelope, input.ContextAuthorization);
-        EnsureCurrentProcedure(currentProcedure, input.Worker.ProcedureVersion);
+        EnsureCurrentProcedure(currentProcedure, selectedProcedure);
         var selected = SelectContext(pack, input.RequiredContextReferences);
         var prompt = BuildPrompt(input.Worker.InputJson, selected);
         var promptBytes = Encoding.UTF8.GetByteCount(prompt);
@@ -96,6 +99,8 @@ internal sealed class SystemInnerWorkerPreparation(
     private static void EnsureViableHost(InteractionInvocationHost worker, AuthorizedInteractionEnvelope envelope,
         InteractionAuthorizationRequest authorization)
     {
+        if (worker.StateSpaceId is null || worker.StateRevision is null)
+            throw Failure("WORKER_STATE_SCOPE_REQUIRED", "Procedure preparation requires an actual state scope.");
         if (worker.Profile == InteractionExecutionProfile.Atomic)
             throw Failure("ATOMIC_WORKER_PREPARATION_FORBIDDEN", "Atomic work cannot prepare a background worker.");
         if (worker.Budget.DeadlineUtc <= DateTime.UtcNow)
