@@ -104,6 +104,14 @@ public sealed class SqliteStandingGrantAdministration(
             await operations.RecordAsync(Tool, "Recorded standing-grant revision.", true, subject: request.GrantId,
                 projectionJson: commandJson, guardEvidenceJson: Canonical(authority.Evidence), id: operationId,
                 cancellationToken: cancellationToken);
+            // The legacy audit owner can salvage its audit after a failed companion save.
+            // A successful audit alone therefore cannot prove this immutable revision was stored.
+            var saved = await db.Set<StandingGrantRevisionRecord>().AsNoTracking().SingleOrDefaultAsync(
+                value => value.GrantId == next.GrantId && value.Revision == next.Revision, cancellationToken);
+            if (saved is null || StandingGrantRevisionCanonicalization.RevisionJson(SqliteStandingGrantPolicy.Parse(saved))
+                    != StandingGrantRevisionCanonicalization.RevisionJson(next))
+                return InteractionInvocationResult.Unavailable("STANDING_GRANT_WRITE_INCONSISTENT",
+                    "The grant revision could not be retained with its audit receipt.");
             if (current is null)
             {
                 db.Add(new StandingGrantCurrentRecord { GrantId = next.GrantId, Revision = next.Revision });

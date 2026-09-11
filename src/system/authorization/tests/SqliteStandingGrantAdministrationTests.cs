@@ -102,6 +102,25 @@ public sealed class SqliteStandingGrantAdministrationTests
     }
 
     [Fact]
+    public async Task Audit_owner_salvage_cannot_turn_a_failed_revision_insert_into_a_commit()
+    {
+        using var fixture = new SqliteFixture();
+        await using var db = fixture.CreateContext();
+        var (store, _, request) = Setup(db);
+        await db.Database.ExecuteSqlRawAsync("""
+            CREATE TRIGGER fixture_reject_grant_insert BEFORE INSERT ON system_standing_grant_revision
+            BEGIN SELECT RAISE(ABORT, 'fixture grant insert failure'); END;
+            """);
+        var result = await store.MutateAsync(Operator, request, "issue");
+        Assert.Equal(InteractionInvocationResultTag.Unavailable, result.Tag);
+        Assert.Empty(await db.Set<StandingGrantRevisionRecord>().AsNoTracking().ToArrayAsync());
+        Assert.Empty(await db.Set<StandingGrantCurrentRecord>().AsNoTracking().ToArrayAsync());
+        Assert.Empty(await db.Operations.AsNoTracking().ToArrayAsync());
+        Assert.Null(db.Database.CurrentTransaction);
+        Assert.False(db.ChangeTracker.HasChanges());
+    }
+
+    [Fact]
     public async Task Outer_transaction_and_unrelated_pending_writes_are_preserved_and_rejected()
     {
         using var fixture = new SqliteFixture();
