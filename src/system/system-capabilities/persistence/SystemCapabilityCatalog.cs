@@ -42,12 +42,17 @@ public sealed class SystemCapabilityCatalog : ISystemCapabilityCatalog
 
     public SystemCapabilityDiscoveryResult Discover(SystemCapabilityInvocationContext context)
     {
-        var decision = Authorize(context, PrivateOperatorCapability.Read);
+        var applicationScoped = IsApplicationAuthoring(context);
+        var decision = applicationScoped
+            ? AuthorizeApplication(context)
+            : Authorize(context, PrivateOperatorCapability.Read);
         if (!decision.Allowed)
             return new(false, [], AuthorizationError(decision), decision.Evidence);
         return new(
             true,
-            Array.AsReadOnly(_entries.Values.Select(value => value.Descriptor)
+            Array.AsReadOnly(_entries.Values
+                .Where(value => !applicationScoped || ApplicationCandidateCapabilityAccess.Supports(value.Descriptor.Id))
+                .Select(value => value.Descriptor)
                 .OrderBy(value => value.Id, StringComparer.Ordinal).ToArray()),
             null,
             decision.Evidence);
@@ -59,9 +64,18 @@ public sealed class SystemCapabilityCatalog : ISystemCapabilityCatalog
         SystemCapabilityInvocationContext context,
         CancellationToken cancellationToken = default)
     {
-        var baseline = Authorize(context, PrivateOperatorCapability.Read);
+        var applicationScoped = IsApplicationAuthoring(context);
+        var baseline = applicationScoped
+            ? AuthorizeApplication(context)
+            : Authorize(context, PrivateOperatorCapability.Read);
         if (!baseline.Allowed)
             return Failure(capabilityId, "", AuthorizationError(baseline), baseline.Evidence);
+
+        if (applicationScoped && !ApplicationCandidateCapabilityAccess.Supports(capabilityId))
+            return Failure(capabilityId, "", Error(
+                "APPLICATION_AUTHORING_CAPABILITY_DENIED",
+                "Only application-candidate capabilities are available in this scope.",
+                "Use an exact application-candidate capability."), baseline.Evidence);
 
         if (!ValidCapabilityId(capabilityId) || !_entries.TryGetValue(capabilityId, out var entry))
             return Failure(capabilityId, "", Error(
@@ -70,7 +84,7 @@ public sealed class SystemCapabilityCatalog : ISystemCapabilityCatalog
             return Failure(capabilityId, entry.Descriptor.Fingerprint, Error(
                 "SYSTEM_CAPABILITY_MODE_MISMATCH", "The requested system capability is not readable.", Recovery), baseline.Evidence);
 
-        var decision = entry.Descriptor.RequiredCapability == PrivateOperatorCapability.Read
+        var decision = applicationScoped || entry.Descriptor.RequiredCapability == PrivateOperatorCapability.Read
             ? baseline
             : Authorize(context, entry.Descriptor.RequiredCapability);
         if (!decision.Allowed)
@@ -314,7 +328,11 @@ public sealed class SystemCapabilityCatalog : ISystemCapabilityCatalog
         new(false, SafeId(id), fingerprint, null, error, evidence);
 
     private static SystemCapabilityError AuthorizationError(PrivateOperatorAuthorizationDecision decision) =>
-        Error(decision.Code, "Private-operator authorization is required for this system capability.", decision.Recovery);
+        Error(decision.Code,
+            decision.Evidence.Scope == ApplicationCandidateCapabilityAccess.Scope
+                ? "Authenticated application context is required for this candidate capability."
+                : "Private-operator authorization is required for this system capability.",
+            decision.Recovery);
 
     private static SystemCapabilityError SafeHandlerError(SystemCapabilityError? error) =>
         error is not null && error.Diagnostics is not null &&
@@ -366,10 +384,18 @@ public sealed class SystemCapabilityCatalog : ISystemCapabilityCatalog
         string inputJson,
         SystemCapabilityInvocationContext context)
     {
-        var baseline = Authorize(context, PrivateOperatorCapability.Modify);
+        var applicationScoped = IsApplicationAuthoring(context);
+        var baseline = applicationScoped
+            ? AuthorizeApplication(context)
+            : Authorize(context, PrivateOperatorCapability.Modify);
         var id = SafeId(capabilityId);
         if (!baseline.Allowed)
             return WriteResolution.Failure(id, "", AuthorizationError(baseline), baseline.Evidence);
+        if (applicationScoped && !ApplicationCandidateCapabilityAccess.Supports(capabilityId))
+            return WriteResolution.Failure(id, "", Error(
+                "APPLICATION_AUTHORING_CAPABILITY_DENIED",
+                "Only application-candidate capabilities are available in this scope.",
+                "Use an exact application-candidate capability."), baseline.Evidence);
         if (!ValidCapabilityId(capabilityId) || !_entries.TryGetValue(capabilityId!, out var entry))
             return WriteResolution.Failure(id, "", Error(
                 "SYSTEM_CAPABILITY_UNKNOWN", "The requested system capability is not registered.", Recovery), baseline.Evidence);
@@ -379,7 +405,7 @@ public sealed class SystemCapabilityCatalog : ISystemCapabilityCatalog
         if (!string.Equals(descriptorFingerprint, entry.Descriptor.Fingerprint, StringComparison.Ordinal))
             return WriteResolution.Failure(id, entry.Descriptor.Fingerprint, Error(
                 "SYSTEM_CAPABILITY_DESCRIPTOR_STALE", "The system capability descriptor changed after planning.", Recovery), baseline.Evidence);
-        var decision = entry.Descriptor.RequiredCapability == PrivateOperatorCapability.Modify
+        var decision = applicationScoped || entry.Descriptor.RequiredCapability == PrivateOperatorCapability.Modify
             ? baseline : Authorize(context, entry.Descriptor.RequiredCapability);
         if (!decision.Allowed)
             return WriteResolution.Failure(id, entry.Descriptor.Fingerprint, AuthorizationError(decision), decision.Evidence);
@@ -416,7 +442,7 @@ public sealed class SystemCapabilityCatalog : ISystemCapabilityCatalog
         SystemCapabilityWriteExecutionContext context,
         AuthorizationAuditEvidence evidence) =>
         context.Invocation is not null && context.AuthorizationEvidence is not null &&
-        string.Equals(context.AuthorizationEvidence.PrincipalReference, evidence.PrincipalReference, StringComparison.Ordinal) &&
+        context.AuthorizationEvidence == evidence &&
         context.AuthorizationEvidence.Allowed && context.RequestToken is { Length: 32 } &&
         context.RequestToken.All(character => char.IsAsciiHexDigitLower(character)) &&
         BoundedText(context.Intent, 8000) && context.ProceduresUsed is { Count: >= 1 and <= 16 } &&
@@ -440,6 +466,34 @@ public sealed class SystemCapabilityCatalog : ISystemCapabilityCatalog
         !value.Any(char.IsControl);
 
     private static string SafeOperationId(string? value) => ValidOperationId(value) ? value! : "";
+
+    private static bool IsApplicationAuthoring(SystemCapabilityInvocationContext? context) =>
+        context is not null && string.Equals(
+            context.Scope, ApplicationCandidateCapabilityAccess.Scope, StringComparison.Ordinal);
+
+    private static PrivateOperatorAuthorizationDecision AuthorizeApplication(
+        SystemCapabilityInvocationContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        var correlation = BoundedText(context.CorrelationId, 128) ? context.CorrelationId : "invalid";
+        var allowed = context.Principal.Verified && context.ApplicationId is { IsSystem: false }
+            && BoundedText(context.Principal.AuthenticationMethod, 64)
+            && BoundedText(context.Principal.PrincipalId, 80)
+            && correlation != "invalid";
+        var code = allowed ? "APPLICATION_AUTHORING_CONTEXT_ACCEPTED"
+            : context.Principal.Verified ? "APPLICATION_AUTHORING_CONTEXT_INVALID"
+            : "APPLICATION_AUTHORING_UNAUTHENTICATED";
+        var evidence = new AuthorizationAuditEvidence(
+            context.Principal.Verified ? context.Principal.PrincipalId : "",
+            context.Principal.Verified ? context.Principal.AuthenticationMethod : "",
+            "application.authoring",
+            ApplicationCandidateCapabilityAccess.Scope,
+            correlation,
+            allowed,
+            code);
+        return new(allowed, code,
+            allowed ? "" : "Authenticate, select the exact current application, and retry.", evidence);
+    }
 
     private static SystemCapabilityConfigurationException Configuration(string code, string message) =>
         new(code, message);

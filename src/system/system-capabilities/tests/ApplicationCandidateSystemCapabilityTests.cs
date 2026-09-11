@@ -209,6 +209,121 @@ public sealed class ApplicationCandidateSystemCapabilityTests
     }
 
     [Fact]
+    public async Task Application_scoped_gateway_uses_verified_grantee_context_without_operator_confirmation()
+    {
+        await using var fixture = await Fixture.CreateAsync(withGrant: true);
+        var gateway = fixture.Scope.ServiceProvider.GetRequiredService<IApplicationCandidateCapabilityGateway>();
+        var invited = TrustedPrincipalContext.VerifiedPrincipal(Principal.PrincipalId, "invited-test");
+        var discovery = gateway.Discover(invited, Application, "web-request");
+        var input = JsonSerializer.Serialize(new
+        {
+            applicationId = Application.Value,
+            candidateId = new string('d', 32), revision = 1, contentFingerprint = Hash,
+            samples = Array.Empty<object>()
+        });
+
+        var allowed = await gateway.InvokeAsync(invited, Application,
+            SystemCapabilityIds.ApplicationCandidateValidate, input, "candidate-validation-1", "web-request");
+        var unauthenticated = await gateway.InvokeAsync(
+            TrustedPrincipalContext.Unauthenticated("TEST_UNAUTHENTICATED"), Application,
+            SystemCapabilityIds.ApplicationCandidateValidate, input, "candidate-validation-2", "web-request");
+
+        Assert.True(discovery.Ok, discovery.Error?.Message);
+        Assert.Equal(5, discovery.Capabilities.Count);
+        Assert.DoesNotContain(discovery.Capabilities, value =>
+            value.Id == SystemCapabilityIds.StandingGrantAdmin || value.RequiresConfirmation);
+        Assert.Equal(StandingGrantCapability.Validate, discovery.Capabilities.Single(value =>
+            value.Id == SystemCapabilityIds.ApplicationCandidateValidate).RequiredStandingGrantCapability);
+        Assert.True(allowed.Ok, allowed.Error?.Message);
+        Assert.Equal("grant.validate@1", Assert.Single(fixture.Authoring.ValidationCalls).Host.GrantReference);
+        Assert.False(unauthenticated.Ok);
+        Assert.Equal("APPLICATION_AUTHORING_UNAUTHENTICATED", unauthenticated.Error?.Code);
+    }
+
+    [Fact]
+    public async Task Candidate_owner_can_reject_a_narrow_first_grant_and_authorize_with_a_later_current_grant()
+    {
+        await using var fixture = await Fixture.CreateAsync(withGrant: false);
+        var db = fixture.Scope.ServiceProvider.GetRequiredService<DantesRoleplayDbContext>();
+        await Fixture.AddGrantAsync(db, StandingGrantCapability.Validate, "a-narrow");
+        await Fixture.AddGrantAsync(db, StandingGrantCapability.Validate, "b-valid");
+        fixture.Authoring.DeniedGrantReference = "grant.a-narrow@1";
+        var gateway = fixture.Scope.ServiceProvider.GetRequiredService<IApplicationCandidateCapabilityGateway>();
+        var input = JsonSerializer.Serialize(new
+        {
+            applicationId = Application.Value,
+            candidateId = new string('d', 32), revision = 1, contentFingerprint = Hash,
+            samples = Array.Empty<object>()
+        });
+
+        var result = await gateway.InvokeAsync(Principal, Application,
+            SystemCapabilityIds.ApplicationCandidateValidate, input, "candidate-validation-3", "codex-call");
+
+        Assert.True(result.Ok, result.Error?.Message);
+        Assert.Equal(["grant.a-narrow@1", "grant.b-valid@1"],
+            fixture.Authoring.ValidationCalls.Select(value => value.Host.GrantReference).ToArray());
+        Assert.Same(fixture.Authoring.ValidationCalls[0].Host.Budget,
+            fixture.Authoring.ValidationCalls[1].Host.Budget);
+    }
+
+    [Fact]
+    public async Task Revoked_grant_is_immediately_unavailable_to_the_application_gateway()
+    {
+        await using var fixture = await Fixture.CreateAsync(withGrant: true);
+        var db = fixture.Scope.ServiceProvider.GetRequiredService<DantesRoleplayDbContext>();
+        var row = await db.Set<StandingGrantRevisionRecord>().SingleAsync(value =>
+            value.GrantId == "grant.validate");
+        row.Revoked = true;
+        await db.SaveChangesAsync();
+        var gateway = fixture.Scope.ServiceProvider.GetRequiredService<IApplicationCandidateCapabilityGateway>();
+        var input = JsonSerializer.Serialize(new
+        {
+            applicationId = Application.Value,
+            candidateId = new string('d', 32), revision = 1, contentFingerprint = Hash,
+            samples = Array.Empty<object>()
+        });
+
+        var result = await gateway.InvokeAsync(Principal, Application,
+            SystemCapabilityIds.ApplicationCandidateValidate, input, "candidate-validation-4", "web-request");
+
+        Assert.False(result.Ok);
+        Assert.Equal("STANDING_GRANT_DENIED", result.Error?.Code);
+        Assert.Empty(fixture.Authoring.ValidationCalls);
+    }
+
+    [Fact]
+    public async Task Selected_application_ai_gets_grant_backed_candidate_tools_without_an_approval_gate()
+    {
+        await using var fixture = await Fixture.CreateAsync(withGrant: true);
+        var gateway = fixture.Scope.ServiceProvider.GetRequiredService<IApplicationCandidateCapabilityGateway>();
+        var source = new ApplicationCandidateCapabilityAiToolSource(gateway);
+        var context = Context(Application);
+        var tools = source.CreateTools(new(
+            new("test", "Test", "Test application authoring."),
+            new("test", "model", [new(AiMessageRole.User, "Validate the candidate")], AiRequestKind.Task),
+            context,
+            null,
+            null,
+            () => []));
+        var tool = tools.Single(value => value.Definition.Name == "system_application-candidate_validate");
+        var arguments = JsonSerializer.SerializeToElement(new
+        {
+            idempotencyKey = "candidate-validation-ai-1",
+            input = new
+            {
+                applicationId = Application.Value,
+                candidateId = new string('d', 32), revision = 1, contentFingerprint = Hash,
+                samples = Array.Empty<object>()
+            }
+        });
+
+        var result = await tool.InvokeAsync(new("call.1", tool.Definition.Name, arguments, AiRequestKind.Task));
+
+        Assert.True(result.Ok, result.ErrorMessage);
+        Assert.Single(fixture.Authoring.ValidationCalls);
+    }
+
+    [Fact]
     public async Task Default_data_access_composition_resolves_the_real_authoring_owner()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
@@ -260,6 +375,7 @@ public sealed class ApplicationCandidateSystemCapabilityTests
 
     private sealed class RecordingAuthoringService : IApplicationAuthoringService
     {
+        public string? DeniedGrantReference { get; set; }
         public List<(ApplicationCandidateValidationRequest Request, InteractionInvocationHost Host)> ValidationCalls { get; } = [];
         public List<(ApplicationCandidateLookup Lookup, InteractionInvocationHost Host)> InspectionCalls { get; } = [];
         public List<(ApplicationCandidateWriteRequest Request, InteractionInvocationHost Host)> Writes { get; } = [];
@@ -289,7 +405,9 @@ public sealed class ApplicationCandidateSystemCapabilityTests
             InteractionInvocationHost host, CancellationToken cancellationToken = default)
         {
             ValidationCalls.Add((request, host));
-            return Task.FromResult(Committed());
+            return Task.FromResult(host.GrantReference == DeniedGrantReference
+                ? InteractionInvocationResult.Failed("STANDING_GRANT_TARGET_DENIED", "The selected grant does not cover the exact target.")
+                : Committed());
         }
 
         public Task<InteractionInvocationResult> ActivateAsync(InteractionInvocationHost host,
@@ -353,11 +471,13 @@ public sealed class ApplicationCandidateSystemCapabilityTests
             return new(connection, provider, scope, authoring);
         }
 
-        private static async Task AddGrantAsync(DantesRoleplayDbContext db, StandingGrantCapability capability)
+        internal static async Task AddGrantAsync(DantesRoleplayDbContext db,
+            StandingGrantCapability capability, string? grantId = null)
         {
             var name = capability.ToString().ToLowerInvariant();
-            var operationId = "grant-issuer-" + name;
-            var grant = new StandingGrantRevision($"grant.{name}@1", $"grant.{name}", 1,
+            grantId ??= name;
+            var operationId = "grant-issuer-" + grantId;
+            var grant = new StandingGrantRevision($"grant.{grantId}@1", $"grant.{grantId}", 1,
                 new string('0', 64), Principal.PrincipalId, Application, StandingGrantScope.Application, null,
                 [capability], new(StandingGrantDefinitionMode.ExactIds, [], []), [], 16,
                 DateTime.UtcNow.AddMinutes(5), false, operationId);

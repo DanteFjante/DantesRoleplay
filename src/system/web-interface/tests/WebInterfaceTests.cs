@@ -57,6 +57,24 @@ public sealed class WebInterfaceTests
     }
 
     [Fact]
+    public void Application_authoring_routes_are_shared_authenticated_application_endpoints()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.Services.AddDantesRoleplayWeb("Data Source=:memory:", new ConfigurationBuilder().Build());
+        var application = builder.Build();
+        application.MapDantesRoleplayWeb();
+        var routes = ((IEndpointRouteBuilder)application).DataSources.SelectMany(source => source.Endpoints)
+            .OfType<RouteEndpoint>().ToArray();
+        var discovery = Assert.Single(routes, endpoint => endpoint.RoutePattern.RawText ==
+            "/api/applications/{applicationId}/authoring/capabilities");
+        var invocation = Assert.Single(routes, endpoint => endpoint.RoutePattern.RawText ==
+            "/api/applications/{applicationId}/authoring/capabilities/{capabilityId}");
+
+        Assert.Equal([HttpMethods.Get], discovery.Metadata.GetMetadata<HttpMethodMetadata>()!.HttpMethods);
+        Assert.Equal([HttpMethods.Post], invocation.Metadata.GetMetadata<HttpMethodMetadata>()!.HttpMethods);
+    }
+
+    [Fact]
     public async Task System_task_body_is_closed_and_allows_bounded_large_semantic_agendas()
     {
         var invalid = new DefaultHttpContext();

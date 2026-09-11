@@ -25,6 +25,7 @@ public static class SystemCapabilityIds
     public const string ApplicationCandidateValidate = "system.application-candidate.validate";
     public const string ApplicationCandidateActivate = "system.application-candidate.activate";
     public const string ApplicationCandidateRecover = "system.application-candidate.recover";
+    public const string StandingGrantAdmin = "system.standing-grant.admin";
     public const string StateSpaceCreate = "system.state-space.create";
     public const string StateSpaceUpgrade = "system.state-space.upgrade";
     public const string StateSpaceAdoptLegacy = "system.state-space.adopt-legacy";
@@ -35,6 +36,31 @@ public static class SystemCapabilityIds
     public const string InteractionRecipes = "system.interaction-recipes";
     public const string InteractionRecipeReview = "system.interaction-recipe.review";
     public const string MechanicOpportunities = "system.mechanic-opportunities";
+}
+
+/// <summary>
+/// Trusted transports use this scope only for the five application-candidate capabilities. The
+/// capability handlers still construct current standing-grant hosts and their owners reauthorize
+/// every exact target; this marker grants no authority by itself.
+/// </summary>
+public static class ApplicationCandidateCapabilityAccess
+{
+    public const string Scope = "application.authoring";
+
+    public static bool Supports(string? capabilityId) => capabilityId is
+        SystemCapabilityIds.ApplicationCandidateInspect or
+        SystemCapabilityIds.ApplicationCandidateWrite or
+        SystemCapabilityIds.ApplicationCandidateValidate or
+        SystemCapabilityIds.ApplicationCandidateActivate or
+        SystemCapabilityIds.ApplicationCandidateRecover;
+
+    public static SystemCapabilityInvocationContext Context(
+        TrustedPrincipalContext principal,
+        ApplicationIdentifier applicationId,
+        string correlationId) => new(principal, Scope, correlationId)
+        {
+            ApplicationId = applicationId
+        };
 }
 
 public enum SystemCapabilityMode

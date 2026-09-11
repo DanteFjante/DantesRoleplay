@@ -36,6 +36,7 @@ internal static class SystemCapabilitiesComponentRegistration
             SystemCapabilityIds.ApplicationCandidateValidate,
             SystemCapabilityIds.ApplicationCandidateActivate,
             SystemCapabilityIds.ApplicationCandidateRecover,
+            SystemCapabilityIds.StandingGrantAdmin,
             SystemCapabilityIds.StateSpaceCreate,
             SystemCapabilityIds.StateSpaceUpgrade,
             SystemCapabilityIds.StateSpaceAdoptLegacy
@@ -45,7 +46,9 @@ internal static class SystemCapabilitiesComponentRegistration
             services.AddScoped<ISystemWriteCapabilityHandler>(provider => Write(provider, capabilityId));
         }
         services.AddScoped<ISystemCapabilityCatalog, SystemCapabilityCatalog>();
+        services.AddScoped<IApplicationCandidateCapabilityGateway, ApplicationCandidateCapabilityGateway>();
         services.AddScoped<ISystemAiToolSource, SystemCapabilityAiToolSource>();
+        services.AddScoped<ISystemAiToolSource, ApplicationCandidateCapabilityAiToolSource>();
         services.AddScoped<ISystemAiToolSource, EcsLifecycleAiToolSource>();
         services.AddScoped<ISystemAiAgentService, SystemAiAgentService>();
         services.TryAddScoped<ISystemInnerWorkerService, UnavailableSystemInnerWorkerService>();
@@ -64,6 +67,8 @@ internal static class SystemCapabilitiesComponentRegistration
             provider.GetRequiredService<DantesRoleplay.DataAccess.DantesRoleplayDbContext>(),
             provider.GetRequiredService<IApplicationRegistry>(),
             provider.GetRequiredService<IApplicationAuthoringService>())
+        : id == SystemCapabilityIds.StandingGrantAdmin
+        ? new StandingGrantAdministrationSystemCapabilityHandler(provider)
         : new SystemAdministrationWriteCapabilityHandler(
             id,
             provider.GetRequiredService<IApplicationRegistry>(),

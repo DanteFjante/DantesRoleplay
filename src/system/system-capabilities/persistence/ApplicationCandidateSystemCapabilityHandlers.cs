@@ -40,24 +40,31 @@ internal sealed class ApplicationCandidateInspectCapabilityHandler(
         {
             var request = ApplicationCandidateCapabilitySchemas.Deserialize<InspectWire>(input);
             var applicationId = ApplicationIdentifier.Parse(request.ApplicationId);
-            var host = await ApplicationCandidateCapabilityHost.CreateAsync(
+            var selection = await ApplicationCandidateCapabilityHost.CreateAsync(
                 db, applications, context, applicationId, StandingGrantCapability.Read,
                 ApplicationCandidateCapabilityHost.ReadCommand(context, input),
                 InteractionExecutionProfile.ReadOnly, cancellationToken);
-            if (host.Host is null) return ApplicationCandidateCapabilitySchemas.ReadFailure(host.Code);
-            var result = await authoring.InspectAsync(host.Host,
-                new(request.CandidateId, request.Revision, request.SourceOperationId), cancellationToken);
-            if (result.Tag != InteractionInvocationResultTag.Completed || result.DataJson is null
-                || result.CompletionEvidenceReference is null)
-                return ApplicationCandidateCapabilitySchemas.ReadFailure(result.Code, result.SafeMessage);
-            return SystemCapabilityHandlerResult.Success(JsonSerializer.SerializeToElement(new
+            if (selection.Hosts.Count == 0)
+                return ApplicationCandidateCapabilitySchemas.ReadFailure(selection.Code);
+            InteractionInvocationResult? result = null;
+            foreach (var host in selection.Hosts)
             {
-                status = result.WireTag,
-                code = result.Code,
-                message = result.SafeMessage,
-                dataJson = result.DataJson,
-                evidenceReference = result.CompletionEvidenceReference
-            }));
+                result = await authoring.InspectAsync(host,
+                    new(request.CandidateId, request.Revision, request.SourceOperationId), cancellationToken);
+                if (result.Tag == InteractionInvocationResultTag.Completed && result.DataJson is not null
+                    && result.CompletionEvidenceReference is not null)
+                    return SystemCapabilityHandlerResult.Success(JsonSerializer.SerializeToElement(new
+                    {
+                        status = result.WireTag,
+                        code = result.Code,
+                        message = result.SafeMessage,
+                        dataJson = result.DataJson,
+                        evidenceReference = result.CompletionEvidenceReference
+                    }));
+                if (!ApplicationCandidateCapabilityHost.RetryableGrantDenial(result.Code)) break;
+            }
+            return ApplicationCandidateCapabilitySchemas.ReadFailure(
+                result?.Code ?? selection.Code, result?.SafeMessage);
         }
         catch (OperationCanceledException) { throw; }
         catch (InteractionContractException exception)
@@ -135,35 +142,40 @@ internal sealed class ApplicationCandidateWriteCapabilityHandler(
                 SystemCapabilityIds.ApplicationCandidateRecover => StandingGrantCapability.Author,
                 _ => throw new ArgumentException("Unknown application candidate capability.")
             };
-            var host = await ApplicationCandidateCapabilityHost.CreateAsync(
+            var selection = await ApplicationCandidateCapabilityHost.CreateAsync(
                 db, applications, context.Invocation, applicationId, capability,
                 context.RequestToken, InteractionExecutionProfile.Atomic, parsed.RequiredOperations,
                 cancellationToken);
-            if (host.Host is null) return Failure(host.Code);
+            if (selection.Hosts.Count == 0) return Failure(selection.Code);
 
-            var result = id switch
+            InteractionInvocationResult? result = null;
+            foreach (var host in selection.Hosts)
             {
-                SystemCapabilityIds.ApplicationCandidateWrite => await authoring.WriteCandidateAsync(
-                    host.Host, ((WriteParsed)parsed).Request, cancellationToken),
-                SystemCapabilityIds.ApplicationCandidateValidate => await authoring.ValidateAsync(
-                    ((ValidateParsed)parsed).Request, host.Host, cancellationToken),
-                SystemCapabilityIds.ApplicationCandidateActivate => await authoring.ActivateAsync(
-                    host.Host, ((ActivateParsed)parsed).Request, cancellationToken),
-                SystemCapabilityIds.ApplicationCandidateRecover => await authoring.RecoverAsync(
-                    host.Host, ((RecoverParsed)parsed).ActivationRevision,
-                    ((RecoverParsed)parsed).ExpectedActiveFingerprint, cancellationToken),
-                _ => throw new ArgumentException("Unknown application candidate capability.")
-            };
-            if (result.Tag != InteractionInvocationResultTag.Committed || result.Receipt is null)
-                return Failure(result.Code, result.SafeMessage);
-            return SystemCapabilityWriteHandlerResult.Success(JsonSerializer.SerializeToElement(new
-            {
-                status = result.WireTag,
-                code = result.Code,
-                message = result.SafeMessage,
-                operationId = result.Receipt.OperationId,
-                requestFingerprint = result.Receipt.RequestFingerprint
-            }), result.Receipt.OperationId, result.Receipt.RequestFingerprint);
+                result = id switch
+                {
+                    SystemCapabilityIds.ApplicationCandidateWrite => await authoring.WriteCandidateAsync(
+                        host, ((WriteParsed)parsed).Request, cancellationToken),
+                    SystemCapabilityIds.ApplicationCandidateValidate => await authoring.ValidateAsync(
+                        ((ValidateParsed)parsed).Request, host, cancellationToken),
+                    SystemCapabilityIds.ApplicationCandidateActivate => await authoring.ActivateAsync(
+                        host, ((ActivateParsed)parsed).Request, cancellationToken),
+                    SystemCapabilityIds.ApplicationCandidateRecover => await authoring.RecoverAsync(
+                        host, ((RecoverParsed)parsed).ActivationRevision,
+                        ((RecoverParsed)parsed).ExpectedActiveFingerprint, cancellationToken),
+                    _ => throw new ArgumentException("Unknown application candidate capability.")
+                };
+                if (result.Tag == InteractionInvocationResultTag.Committed && result.Receipt is not null)
+                    return SystemCapabilityWriteHandlerResult.Success(JsonSerializer.SerializeToElement(new
+                    {
+                        status = result.WireTag,
+                        code = result.Code,
+                        message = result.SafeMessage,
+                        operationId = result.Receipt.OperationId,
+                        requestFingerprint = result.Receipt.RequestFingerprint
+                    }), result.Receipt.OperationId, result.Receipt.RequestFingerprint);
+                if (!ApplicationCandidateCapabilityHost.RetryableGrantDenial(result.Code)) break;
+            }
+            return Failure(result?.Code ?? selection.Code, result?.SafeMessage);
         }
         catch (OperationCanceledException) { throw; }
         catch (InteractionContractException exception)
@@ -261,14 +273,14 @@ internal sealed class ApplicationCandidateWriteCapabilityHandler(
 
 internal static class ApplicationCandidateCapabilityHost
 {
-    internal static Task<(InteractionInvocationHost? Host, string Code)> CreateAsync(
+    internal static Task<(IReadOnlyList<InteractionInvocationHost> Hosts, string Code)> CreateAsync(
         DantesRoleplayDbContext db, IApplicationRegistry applications,
         SystemCapabilityInvocationContext context, ApplicationIdentifier applicationId,
         StandingGrantCapability capability, string commandId, InteractionExecutionProfile profile,
         CancellationToken cancellationToken) => CreateAsync(db, applications, context, applicationId,
             capability, commandId, profile, 1, cancellationToken);
 
-    internal static async Task<(InteractionInvocationHost? Host, string Code)> CreateAsync(
+    internal static async Task<(IReadOnlyList<InteractionInvocationHost> Hosts, string Code)> CreateAsync(
         DantesRoleplayDbContext db, IApplicationRegistry applications,
         SystemCapabilityInvocationContext context, ApplicationIdentifier applicationId,
         StandingGrantCapability capability, string commandId, InteractionExecutionProfile profile,
@@ -276,26 +288,33 @@ internal static class ApplicationCandidateCapabilityHost
     {
         if (context is null || !context.Principal.Verified
             || context.ApplicationId is not null && context.ApplicationId != applicationId)
-            return (null, "APPLICATION_CONTEXT_REQUIRED");
+            return ([], "APPLICATION_CONTEXT_REQUIRED");
         var application = applications.Get(applicationId);
-        if (application is null) return (null, "APPLICATION_UNKNOWN");
+        if (application is null) return ([], "APPLICATION_UNKNOWN");
         var grants = await CurrentAsync(db, context.Principal, applicationId, cancellationToken);
-        if (grants is null) return (null, "STANDING_GRANT_CANDIDATES_UNAVAILABLE");
+        if (grants is null) return ([], "STANDING_GRANT_CANDIDATES_UNAVAILABLE");
         if (requiredOperations is < 1 or > StandingGrantLimits.MaximumOperations)
-            return (null, "INVOCATION_BUDGET_EXHAUSTED");
+            return ([], "INVOCATION_BUDGET_EXHAUSTED");
         var capable = grants.Where(value => value.Capabilities.Contains(capability)).ToArray();
-        var grant = capable.Where(value => value.MaximumOperations >= requiredOperations)
+        var eligible = capable.Where(value => value.MaximumOperations >= requiredOperations)
             .OrderBy(value => value.Definitions.Mode == StandingGrantDefinitionMode.ExactIds ? 0 : 1)
             .ThenBy(value => value.GrantId, StringComparer.Ordinal).ThenBy(value => value.Revision)
-            .FirstOrDefault();
-        if (grant is null) return (null, capable.Length == 0
+            .ToArray();
+        if (eligible.Length == 0) return ([], capable.Length == 0
             ? "STANDING_GRANT_DENIED" : "STANDING_GRANT_BUDGET_DENIED");
         var now = DateTime.UtcNow;
-        var deadline = grant.ExpiresAtUtc < now.AddSeconds(10) ? grant.ExpiresAtUtc : now.AddSeconds(10);
-        if (deadline <= now) return (null, "STANDING_GRANT_DENIED");
-        return (InteractionInvocationHost.ForApplication(context.Principal, application,
-            grant.GrantReference, commandId, profile, new(requiredOperations, deadline)), "STANDING_GRANT_SELECTED");
+        var deadline = eligible.Min(value => value.ExpiresAtUtc);
+        if (deadline > now.AddSeconds(10)) deadline = now.AddSeconds(10);
+        if (deadline <= now) return ([], "STANDING_GRANT_DENIED");
+        var budget = new InteractionInvocationBudget(requiredOperations, deadline);
+        return (Array.AsReadOnly(eligible.Select(grant => InteractionInvocationHost.ForApplication(
+            context.Principal, application, grant.GrantReference, commandId, profile, budget)).ToArray()),
+            "STANDING_GRANT_SELECTED");
     }
+
+    internal static bool RetryableGrantDenial(string code) => code is
+        "STANDING_GRANT_DENIED" or "STANDING_GRANT_TARGET_DENIED" or
+        "STANDING_GRANT_NOT_CURRENT" or "STANDING_GRANT_INVALID";
 
     internal static string ReadCommand(SystemCapabilityInvocationContext context, JsonElement input) =>
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
