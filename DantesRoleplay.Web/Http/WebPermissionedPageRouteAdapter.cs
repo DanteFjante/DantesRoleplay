@@ -79,20 +79,18 @@ internal sealed class WebPermissionedPageRouteAdapter(
                 if (!initial.Allowed || initial.Grant is null) continue;
                 var result = await bindings.InvokeActionAsync(selected, parsed.Document!, principal,
                     bindingName, commandId, inputJson, deadlineUtc, token);
-                var final = await grants.EvaluateAsync(pageHost, requirement, token);
-                var current = await discovery.ResolveHostRouteAsync(slug, token);
-                _ = await publication.RevalidateSelectionAsync(selected, token);
-                if (!final.Allowed || final.Grant is null
-                    || final.Grant.GrantReference != initial.Grant.GrantReference
-                    || final.Grant.GrantId != initial.Grant.GrantId
-                    || final.Grant.Revision != initial.Grant.Revision
-                    || final.Grant.ContentFingerprint != initial.Grant.ContentFingerprint
-                    || current.Status != "candidate" || !Same(candidate, current.Candidate))
-                    return result.Receipt is not null || result.PreviousCommits.Count != 0
-                        ? result
-                        : InteractionInvocationResult.Failed("INVOCATION_AUTHORITY_CHANGED",
-                            "Page action authority changed before the result could be returned.");
-                return result;
+                return await WebPageActionResultFence.RecheckAsync(result, async recheckToken =>
+                {
+                    var final = await grants.EvaluateAsync(pageHost, requirement, recheckToken);
+                    var current = await discovery.ResolveHostRouteAsync(slug, recheckToken);
+                    _ = await publication.RevalidateSelectionAsync(selected, recheckToken);
+                    return final.Allowed && final.Grant is not null
+                        && final.Grant.GrantReference == initial.Grant.GrantReference
+                        && final.Grant.GrantId == initial.Grant.GrantId
+                        && final.Grant.Revision == initial.Grant.Revision
+                        && final.Grant.ContentFingerprint == initial.Grant.ContentFingerprint
+                        && current.Status == "candidate" && Same(candidate, current.Candidate);
+                }, token);
             }
             return InteractionInvocationResult.Failed("INVOCATION_NOT_AUTHORIZED", "The page action is not authorized.");
         }
@@ -178,3 +176,42 @@ internal sealed class WebPermissionedPageRouteAdapter(
 }
 
 internal sealed record WebPermissionedPageRouteResult(string Status, string? Html, WebPageAssetDocument? Asset);
+
+public static class WebPageActionResultFence
+{
+    public static async Task<InteractionInvocationResult> RecheckAsync(
+        InteractionInvocationResult dispatched,
+        Func<CancellationToken, Task<bool>> recheck,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(dispatched);
+        ArgumentNullException.ThrowIfNull(recheck);
+        try
+        {
+            return await recheck(cancellationToken)
+                ? dispatched
+                : PreserveEvidenceOr(dispatched, InteractionInvocationResult.Failed(
+                    "INVOCATION_AUTHORITY_CHANGED",
+                    "Page action authority changed before the result could be returned."));
+        }
+        catch (OperationCanceledException)
+        {
+            return PreserveEvidenceOr(dispatched,
+                InteractionInvocationResult.Cancelled("INVOCATION_CANCELLED", "The page action was cancelled."));
+        }
+        catch (Exception exception) when (exception is WebPageStoreException or ArgumentException
+            or InteractionContractException)
+        {
+            return PreserveEvidenceOr(dispatched, InteractionInvocationResult.Unavailable(
+                "COMPOSITION_ACTION_UNAVAILABLE", "The page action is unavailable."));
+        }
+    }
+
+    private static InteractionInvocationResult PreserveEvidenceOr(
+        InteractionInvocationResult dispatched,
+        InteractionInvocationResult replacement) =>
+        dispatched.Receipt is not null || dispatched.PreviousCommits.Count != 0
+            || dispatched.TaskHandle is not null || dispatched.RecoveryIdentity is not null
+            ? dispatched
+            : replacement;
+}
