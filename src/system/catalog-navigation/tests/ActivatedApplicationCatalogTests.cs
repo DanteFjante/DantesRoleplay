@@ -242,6 +242,96 @@ public sealed class ActivatedApplicationCatalogTests : IDisposable
     }
 
     [Fact]
+    public void Retained_permission_preparation_stays_pure_until_published_catalog_access_registers_once()
+    {
+        var fixture = CreateRetainedObjectFixture();
+        var cache = new ActivatedApplicationCatalogSnapshotCache();
+        var authority = new ActivatedApplicationCatalogCacheAuthority();
+        var projections = new CountingProjectionRegistry();
+
+        var pure = new ActivatedApplicationCatalogMaterializer(fixture.Applications, fixture.Activations,
+                fixture.Sources, new StaticRoot("fixture-root", Path.Combine(_root, "must-not-be-read")),
+                projections: projections)
+            .UsePreparationCache(cache, authority)
+            .BuildPermissionSnapshot(fixture.ApplicationId, fixture.Activation);
+
+        Assert.Equal(0, projections.DefineCalls);
+
+        var published = new ActivatedApplicationCatalogProvider(
+            new ConfiguredPublicApplicationCatalogPolicy([fixture.ApplicationId.Value]),
+            new ActivatedApplicationCatalogMaterializer(fixture.Applications, fixture.Activations,
+                    fixture.Sources, new StaticRoot("fixture-root", Path.Combine(_root, "must-not-be-read")),
+                    projections: projections)
+                .UsePreparationCache(cache, authority),
+            new CatalogCursorCodec(Encoding.UTF8.GetBytes("retained-pure-catalog-signing-key")));
+        Assert.True(published.TryGet(fixture.ApplicationId, out _));
+        Assert.Equal(1, projections.DefineCalls);
+
+        var normal = new ActivatedApplicationCatalogMaterializer(fixture.Applications, fixture.Activations,
+                fixture.Sources, new StaticRoot("fixture-root", Path.Combine(_root, "must-not-be-read")),
+                projections: projections)
+            .UsePreparationCache(cache, authority)
+            .BuildFeatureSnapshot(fixture.ApplicationId);
+        Assert.Same(pure, normal);
+        Assert.Equal(1, projections.DefineCalls);
+    }
+
+    [Fact]
+    public void Failed_normal_registration_preserves_pure_retained_snapshot_for_retry()
+    {
+        var fixture = CreateRetainedObjectFixture();
+        var cache = new ActivatedApplicationCatalogSnapshotCache();
+        var authority = new ActivatedApplicationCatalogCacheAuthority();
+        var projections = new FailOnceProjectionRegistry();
+        ActivatedApplicationCatalogMaterializer Materializer() => new(
+            fixture.Applications, fixture.Activations, fixture.Sources,
+            new StaticRoot("fixture-root", Path.Combine(_root, "must-not-be-read")), projections: projections);
+
+        var pure = Materializer().UsePreparationCache(cache, authority)
+            .BuildPermissionSnapshot(fixture.ApplicationId, fixture.Activation);
+        Assert.Equal(0, projections.DefineCalls);
+
+        var failed = Assert.Throws<ApplicationCatalogMaterializationException>(() =>
+            Materializer().UsePreparationCache(cache, authority).BuildFeatureSnapshot(fixture.ApplicationId));
+        Assert.Equal("CATALOG_OBJECT_INVALID", failed.Code);
+        Assert.Equal(1, projections.DefineCalls);
+
+        var retried = Materializer().UsePreparationCache(cache, authority)
+            .BuildFeatureSnapshot(fixture.ApplicationId);
+        Assert.Same(pure, retried);
+        Assert.Equal(2, projections.DefineCalls);
+    }
+
+    [Fact]
+    public async Task Prepared_cache_lookup_never_starts_a_cold_or_pending_lazy_factory()
+    {
+        var app = ApplicationIdentifier.Parse("fixture");
+        var cache = new ActivatedApplicationCatalogSnapshotCache();
+        var authority = new ActivatedApplicationCatalogCacheAuthority();
+        var entered = new ManualResetEventSlim(false);
+        var release = new ManualResetEventSlim(false);
+        var factoryCalls = 0;
+
+        Assert.False(cache.TryGetPrepared(authority, app, Sha('A'), out _));
+        Assert.Equal(0, factoryCalls);
+
+        var preparing = Task.Run(() => Assert.Throws<InvalidOperationException>(() =>
+            cache.GetOrCreate(authority, app, "pending-preparation", () =>
+            {
+                Interlocked.Increment(ref factoryCalls);
+                entered.Set();
+                Assert.True(release.Wait(TimeSpan.FromSeconds(5)));
+                throw new InvalidOperationException("fixture pending factory");
+            })));
+        Assert.True(entered.Wait(TimeSpan.FromSeconds(5)));
+
+        Assert.False(cache.TryGetPrepared(authority, app, Sha('A'), out _));
+        Assert.Equal(1, factoryCalls);
+        release.Set();
+        await preparing;
+    }
+
+    [Fact]
     public void Active_query_json_is_searchable_with_exact_source_provenance()
     {
         var app = ApplicationIdentifier.Parse("query-fixture");
@@ -546,6 +636,84 @@ public sealed class ActivatedApplicationCatalogTests : IDisposable
     private static string Hash(byte[] bytes) => Convert.ToHexString(SHA256.HashData(bytes));
     private static string Sha(char value) => new(value, 64);
 
+    private static RetainedObjectFixture CreateRetainedObjectFixture()
+    {
+        var applicationId = ApplicationIdentifier.Parse("fixture");
+        var applications = new InMemoryApplicationRegistry();
+        var revision = applications.Register(new(applicationId, "Fixture application",
+            "Generic public fixture contracts.", []));
+        var sources = new InMemorySourceRegistry();
+        var source = sources.Register(new(applicationId, "catalog", "fixture-root", "**/*",
+            SourceTrust.Trusted, 0, "fixture-catalog"));
+        const string procedurePath = "content/procedures/tools/procedure.fixture.inspect.md";
+        const string path = "objects/tools/fixture.object.summary.json";
+        var procedureBytes = Encoding.UTF8.GetBytes("""
+            ---
+            id: procedure.fixture.inspect
+            category: tools.inspect
+            name: Inspect fixture
+            governs: query(kind: "fixture.inspect")
+            status: active
+            ---
+
+            ## Description
+            Inspect one generic fixture.
+
+            ## Instructions
+            1. Supply the fixture identity.
+
+            ## Constraints
+            - Never change fixture state.
+            """);
+        var bytes = Encoding.UTF8.GetBytes($$"""
+            {
+              "id": "fixture.object.summary",
+              "version": 1,
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["name"],
+                "properties": { "name": { "type": "string" } }
+              },
+              "roles": { "subject": { "required": true } },
+              "sources": [{
+                "id": "subject",
+                "role": "subject",
+                "component": {
+                  "qualifiedId": "fixture.component.name",
+                  "version": 1,
+                  "schemaHash": "{{Sha('A')}}"
+                },
+                "required": true
+              }],
+              "relationships": [],
+              "references": [],
+              "mappings": [{ "inputId": "subject", "sourcePointer": "/name", "targetPointer": "/name" }],
+              "collections": [],
+              "limits": { "traversalDepth": 1, "itemCount": 8, "outputBytes": 4096, "sqlQueries": 2 },
+              "access": { "read": ["dm"], "write": [] }
+            }
+            """);
+        var procedure = new ActivatedApplicationDocument("retained:" + procedurePath, "catalog", SourceTrust.Trusted, 0,
+            procedurePath, "text/markdown", Hash(procedureBytes), procedureBytes.LongLength, true);
+        var winner = new ActivatedApplicationDocument("retained:" + path, "catalog", SourceTrust.Trusted, 0,
+            path, "application/json", Hash(bytes), bytes.LongLength, true);
+        var activation = new ActiveApplicationManifest(applicationId, 1, revision.Revision, revision.Fingerprint,
+            Sha('B'), Sha('C'), Sha('D'), Sha('E'), Sha('F'), "fixture-coverage-v1", true,
+            [new("catalog", SourceRegistrationFingerprint.Compute(source), 2, 0)], [procedure, winner],
+            "fixture-operation", DateTime.UtcNow)
+        {
+            PreparationVersion = "fixture-preparation-v1"
+        };
+        return new(applicationId, applications, sources, activation,
+            new RetainedStaticActivation(activation,
+            [
+                new(applicationId, 1, procedure.LogicalIdentity, procedure.ContentFingerprint, procedure.Length,
+                    procedureBytes, false),
+                new(applicationId, 1, winner.LogicalIdentity, winner.ContentFingerprint, winner.Length, bytes, false)
+            ]));
+    }
+
     private ActiveApplicationManifest RegisterActivatedFixture(
         InMemoryApplicationRegistry applications,
         InMemorySourceRegistry sources,
@@ -619,6 +787,24 @@ public sealed class ActivatedApplicationCatalogTests : IDisposable
             int afterActivationRevision, int limit) => [];
     }
 
+    private sealed class RetainedStaticActivation(
+        ActiveApplicationManifest activation,
+        IEnumerable<ActivatedApplicationDocumentEvidence> evidence)
+        : IApplicationActivationReader, IActivatedApplicationEvidenceReader
+    {
+        private readonly IReadOnlyDictionary<string, ActivatedApplicationDocumentEvidence> _evidence = evidence
+            .ToDictionary(value => value.LogicalIdentity, StringComparer.Ordinal);
+
+        public ActiveApplicationManifest? Current(ApplicationIdentifier applicationId) =>
+            applicationId == activation.ApplicationId ? activation : null;
+
+        public ActivatedApplicationDocumentEvidence? ReadDocumentEvidence(
+            ApplicationIdentifier applicationId, int activationRevision, string logicalIdentity) =>
+            applicationId == activation.ApplicationId && activationRevision == activation.ActivationRevision
+                ? _evidence.GetValueOrDefault(logicalIdentity)
+                : null;
+    }
+
     private sealed class StaticActivations(IEnumerable<ActiveApplicationManifest> activations)
         : IApplicationActivationReader
     {
@@ -673,6 +859,55 @@ public sealed class ActivatedApplicationCatalogTests : IDisposable
             new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal),
             new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal));
     }
+
+    private sealed class CountingProjectionRegistry : IProjectionDefinitionRegistry
+    {
+        private int _defineCalls;
+        public int DefineCalls => Volatile.Read(ref _defineCalls);
+
+        public RegisteredProjectionDefinition Define(ProjectionDefinitionRequest definition)
+        {
+            Interlocked.Increment(ref _defineCalls);
+            return Registered(definition);
+        }
+
+        public RegisteredProjectionDefinition? Get(string qualifiedId, int version) => null;
+
+        public ProjectionImpactGraph GetImpactGraph(ApplicationIdentifier owner) => EmptyImpactGraph();
+    }
+
+    private sealed class FailOnceProjectionRegistry : IProjectionDefinitionRegistry
+    {
+        private int _defineCalls;
+        public int DefineCalls => Volatile.Read(ref _defineCalls);
+
+        public RegisteredProjectionDefinition Define(ProjectionDefinitionRequest definition)
+        {
+            if (Interlocked.Increment(ref _defineCalls) == 1)
+                throw new InvalidOperationException("fixture registration failure");
+            return Registered(definition);
+        }
+
+        public RegisteredProjectionDefinition? Get(string qualifiedId, int version) => null;
+
+        public ProjectionImpactGraph GetImpactGraph(ApplicationIdentifier owner) => EmptyImpactGraph();
+    }
+
+    private static RegisteredProjectionDefinition Registered(ProjectionDefinitionRequest definition) => new(
+        definition.Owner, definition.QualifiedId, definition.DeclaredVersion ?? 1,
+        "fixture-profile", definition.OutputSchemaJson, Sha('1'), Sha('2'), definition.ComponentInputs,
+        definition.DependencyInputs, definition.Mappings, DateTime.UtcNow);
+
+    private static ProjectionImpactGraph EmptyImpactGraph() => new(
+        new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal),
+        new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal));
+
+    private sealed record RetainedObjectFixture(
+        ApplicationIdentifier ApplicationId,
+        InMemoryApplicationRegistry Applications,
+        InMemorySourceRegistry Sources,
+        ActiveApplicationManifest Activation,
+        RetainedStaticActivation Activations);
 
     private sealed class ThrowingProjectionRegistry : IProjectionDefinitionRegistry
     {

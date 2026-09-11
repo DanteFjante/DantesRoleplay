@@ -317,7 +317,9 @@ public sealed partial class SqliteStandingGrantTargetResolverTests : IDisposable
         var activation = new ApplicationActivationService(db, previews, extensions, sources, roots,
             new ProjectionImpactService(applications, new SqliteProjectionImpactSnapshotReader(db)), new OperationLog(db));
         return new(applications, sources, extensions, namespaces, roots, activation,
-            new SqliteStandingGrantTargetResolver(db, applications, activation, activation, sources, extensions, namespaces));
+            new SqliteStandingGrantTargetResolver(db, applications, activation, activation, sources, extensions, namespaces,
+                new ActivatedApplicationCatalogMaterializer(applications, activation, sources, roots, extensions)
+                    .UsePreparationCache(new ActivatedApplicationCatalogSnapshotCache(), new ActivatedApplicationCatalogCacheAuthority())));
     }
 
     private async Task ActivateAsync(SetupState setup, string? expectedActiveFingerprint = null)

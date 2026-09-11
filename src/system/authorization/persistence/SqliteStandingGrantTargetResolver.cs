@@ -16,7 +16,7 @@ public sealed partial class SqliteStandingGrantTargetResolver(
     DantesRoleplayDbContext db, IApplicationRegistry applications,
     IApplicationActivationReader activations, IActivatedApplicationEvidenceReader evidence,
     ISourceRegistry sources, IApplicationExtensionRegistry extensions,
-    ICatalogNamespaceRegistry namespaces) : IStandingGrantTargetResolver
+    ICatalogNamespaceRegistry namespaces, ActivatedApplicationCatalogMaterializer catalog) : IStandingGrantTargetResolver
 {
     // A lookup is bounded independently of the larger activation retention allowance.
     internal const int MaximumLookupDocuments = 128;
@@ -106,16 +106,26 @@ public sealed partial class SqliteStandingGrantTargetResolver(
             if (leaf.Id == CatalogNamespaceIdentity.RootNamespaceId || !leaf.AllowedKinds.Contains(kind, StringComparer.Ordinal))
                 return Denied("STANDING_GRANT_NAMESPACE_KIND_DENIED");
 
-            var textWinners = activation.Winners.Where(value => value.IsText).ToArray();
-            if (textWinners.Length > MaximumLookupDocuments
-                || textWinners.Any(value => value.Length < 0 || value.Length > MaximumLookupBytes)
-                || textWinners.Sum(value => value.Length) > MaximumLookupBytes)
-                return Unavailable("STANDING_GRANT_LOOKUP_LIMIT");
-            if (textWinners.Select(value => value.RelativePath).Distinct(StringComparer.Ordinal).Count() != textWinners.Length)
+            var prepared = catalog.BuildPermissionSnapshot(app, activation);
+            if (prepared.EffectiveSetFingerprint != activation.ActivationFingerprint)
+                return Denied("STANDING_GRANT_LOCATOR_STALE");
+            var located = prepared.Manifest.Records.Where(value => value.QualifiedId == exactDefinitionId).ToArray();
+            if (located.Length == 0) return Unavailable("STANDING_GRANT_DEFINITION_UNAVAILABLE");
+            if (located.Length != 1 || located[0].Kind != kind)
                 return Denied("STANDING_GRANT_DEFINITION_AMBIGUOUS");
-            var winners = textWinners.ToDictionary(value => value.RelativePath, StringComparer.Ordinal);
+            var locator = located[0];
+            var paths = kind == CatalogNamespaceKinds.Mechanic
+                ? new[] { locator.SourceLogicalPath, Path.ChangeExtension(locator.SourceLogicalPath, ".js").Replace('\\', '/') }
+                : new[] { locator.SourceLogicalPath };
+            var selectedWinners = activation.Winners.Where(value => paths.Contains(value.RelativePath, StringComparer.Ordinal)).ToArray();
+            if (selectedWinners.Length != paths.Length || selectedWinners.Select(value => value.RelativePath).Distinct(StringComparer.Ordinal).Count() != paths.Length)
+                return Denied("STANDING_GRANT_DEFINITION_AMBIGUOUS");
+            if (selectedWinners.Any(value => !value.IsText || value.Length < 0 || value.Length > MaximumLookupBytes)
+                || selectedWinners.Sum(value => value.Length) > MaximumLookupBytes)
+                return Unavailable("STANDING_GRANT_LOOKUP_LIMIT");
+            var winners = selectedWinners.ToDictionary(value => value.RelativePath, StringComparer.Ordinal);
             var documents = new Dictionary<string, byte[]>(StringComparer.Ordinal);
-            foreach (var winner in textWinners)
+            foreach (var winner in selectedWinners)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var retained = evidence.ReadDocumentEvidence(app, activation.ActivationRevision, winner.LogicalIdentity);
@@ -128,13 +138,12 @@ public sealed partial class SqliteStandingGrantTargetResolver(
                     return Denied("STANDING_GRANT_RETAINED_BYTES_CORRUPT");
                 documents.Add(winner.RelativePath, bytes);
             }
-            var matches = textWinners.Select(winner =>
-                    ActivatedApplicationCatalogMaterializer.ParseRetainedRecord(app, winner, winners, documents))
-                .Where(record => record?.QualifiedId == exactDefinitionId).ToArray();
-            if (matches.Length == 0) return Unavailable("STANDING_GRANT_DEFINITION_UNAVAILABLE");
-            if (matches.Length != 1 || matches[0]!.Kind != kind)
-                return Denied("STANDING_GRANT_DEFINITION_AMBIGUOUS");
-            var record = matches[0]!;
+            var record = ActivatedApplicationCatalogMaterializer.ParseRetainedRecord(app,
+                winners[locator.SourceLogicalPath], winners, documents);
+            if (record is null || record.QualifiedId != exactDefinitionId || record.Kind != kind
+                || record.Version != locator.Version || record.ContentFingerprint != locator.ContentFingerprint
+                || record.SourceId != locator.SourceId || record.SourceLogicalPath != locator.SourceLogicalPath)
+                return Denied("STANDING_GRANT_LOCATOR_STALE");
             using var content = JsonDocument.Parse(record.ContentJson);
             if (!content.RootElement.TryGetProperty("id", out var id) || id.GetString() != exactDefinitionId)
                 return Denied("STANDING_GRANT_ALIAS_UNSUPPORTED");

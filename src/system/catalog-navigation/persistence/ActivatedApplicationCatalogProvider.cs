@@ -49,17 +49,35 @@ public sealed class ActivatedApplicationCatalogMaterializer(
     public CatalogNavigationManifest Build(ApplicationIdentifier applicationId) =>
         BuildFeatureSnapshot(applicationId).Manifest;
 
-    public ActiveCatalogFeatureSnapshot BuildFeatureSnapshot(ApplicationIdentifier applicationId)
+    public ActiveCatalogFeatureSnapshot BuildFeatureSnapshot(ApplicationIdentifier applicationId) =>
+        BuildSnapshot(applicationId, null, permissionOnly: false);
+
+    /// <summary>Existing prepared catalog as a locator only; never registers objects or reads legacy source files.</summary>
+    internal ActiveCatalogFeatureSnapshot BuildPermissionSnapshot(ApplicationIdentifier applicationId, ActiveApplicationManifest activation)
+    {
+        if (activation.ApplicationId != applicationId || activation.PreparationVersion is null)
+            throw Failure("CATALOG_RETAINED_LOCATOR_UNAVAILABLE", "Permission lookup requires an exact retained generation.");
+        if (_preparations is not null && _preparationAuthority is not null
+            && _preparations.TryGetPrepared(_preparationAuthority, applicationId, activation.ActivationFingerprint, out var prepared))
+            return prepared;
+        return BuildSnapshot(applicationId, activation, permissionOnly: true);
+    }
+
+    private ActiveCatalogFeatureSnapshot BuildSnapshot(ApplicationIdentifier applicationId,
+        ActiveApplicationManifest? exactActivation, bool permissionOnly)
     {
         ArgumentNullException.ThrowIfNull(applicationId);
         var application = applications.Describe(applicationId)
             ?? throw Failure("APPLICATION_UNKNOWN", "The application registration is unavailable.");
         if (string.IsNullOrWhiteSpace(application.DisplayName) || string.IsNullOrWhiteSpace(application.Description))
             throw Failure("APPLICATION_METADATA_INCOMPLETE", "Published catalogs require authored application metadata.");
-        var activation = activations.Current(applicationId)
+        var activation = exactActivation ?? activations.Current(applicationId)
             ?? throw Failure("APPLICATION_INACTIVE", "The application has no active source manifest.");
         if (activation.Winners.Count > CatalogNavigationLimits.MaximumRecords * 4)
             throw Failure("CATALOG_DOCUMENT_LIMIT", "The active source manifest is too large to materialize.");
+        if (permissionOnly && (activation.Winners.Any(value => value.Length < 0 || value.Length > 10L * 1024 * 1024)
+                || activation.Winners.Sum(value => value.Length) > 256L * 1024 * 1024))
+            throw Failure("CATALOG_DOCUMENT_LIMIT", "Retained permission preparation exceeds the activation byte bounds.");
 
         var registrations = sources.For(applicationId).ToDictionary(value => value.SourceId, StringComparer.Ordinal);
         var extensionRegistrations = (extensions ?? new EmptyApplicationExtensionRegistry()).For(applicationId)
@@ -86,13 +104,16 @@ public sealed class ActivatedApplicationCatalogMaterializer(
             extensionRegistrations, documents.Keys);
         ActiveCatalogFeatureSnapshot Factory()
         {
-            RegisterObjects(applicationId, activation.Winners, documents);
             return BuildPreparedSnapshot(applicationId, application,
                 activation, winners, extensionRegistrations, documents);
         }
-        return _preparations is null || _preparationAuthority is null
-            ? Factory()
-            : _preparations.GetOrCreate(_preparationAuthority, applicationId, preparationFingerprint, Factory);
+        void Register() => RegisterObjects(applicationId, activation.Winners, documents);
+        if (_preparations is not null && _preparationAuthority is not null)
+            return _preparations.GetOrCreate(_preparationAuthority, applicationId, preparationFingerprint, Factory,
+                permissionOnly ? null : Register);
+        var snapshot = Factory();
+        if (!permissionOnly) Register();
+        return snapshot;
     }
 
     private ActiveCatalogFeatureSnapshot BuildPreparedSnapshot(
