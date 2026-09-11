@@ -11,6 +11,7 @@ using DantesRoleplay.SchemaValidation;
 using DantesRoleplay.Sources;
 using DantesRoleplay.StateSpaceAdministration;
 using DantesRoleplay.DataAccess.Composition;
+using DantesRoleplay.Interactions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -33,6 +34,7 @@ internal static class SystemCapabilitiesComponentRegistration
             SystemCapabilityIds.ComponentTypeRegister,
             SystemCapabilityIds.ApplicationActivate,
             SystemCapabilityIds.ApplicationCandidateWrite,
+            SystemCapabilityIds.ApplicationCandidateIntentUpdate,
             SystemCapabilityIds.ApplicationCandidateValidate,
             SystemCapabilityIds.ApplicationCandidateActivate,
             SystemCapabilityIds.ApplicationCandidateRecover,
@@ -46,6 +48,7 @@ internal static class SystemCapabilitiesComponentRegistration
             services.AddScoped<ISystemWriteCapabilityHandler>(provider => Write(provider, capabilityId));
         }
         services.AddScoped<ISystemCapabilityCatalog, SystemCapabilityCatalog>();
+        services.AddScoped<IntentMatchAssociationService>();
         services.AddScoped<IApplicationCandidateCapabilityGateway, ApplicationCandidateCapabilityGateway>();
         services.AddScoped<ISystemAiToolSource, SystemCapabilityAiToolSource>();
         services.AddScoped<ISystemAiToolSource, ApplicationCandidateCapabilityAiToolSource>();
@@ -58,7 +61,12 @@ internal static class SystemCapabilitiesComponentRegistration
 
     private static ISystemWriteCapabilityHandler Write(
         IServiceProvider provider,
-        string id) => id is SystemCapabilityIds.ApplicationCandidateWrite
+        string id) => id == SystemCapabilityIds.ApplicationCandidateIntentUpdate
+        ? new ApplicationCandidateIntentUpdateCapabilityHandler(
+            provider.GetRequiredService<DantesRoleplay.DataAccess.DantesRoleplayDbContext>(),
+            provider.GetRequiredService<IApplicationRegistry>(),
+            provider.GetRequiredService<IntentMatchAssociationService>())
+        : id is SystemCapabilityIds.ApplicationCandidateWrite
             or SystemCapabilityIds.ApplicationCandidateValidate
             or SystemCapabilityIds.ApplicationCandidateActivate
             or SystemCapabilityIds.ApplicationCandidateRecover

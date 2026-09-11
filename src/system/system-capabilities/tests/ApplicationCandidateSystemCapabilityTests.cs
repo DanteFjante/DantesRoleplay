@@ -229,7 +229,7 @@ public sealed class ApplicationCandidateSystemCapabilityTests
             SystemCapabilityIds.ApplicationCandidateValidate, input, "candidate-validation-2", "web-request");
 
         Assert.True(discovery.Ok, discovery.Error?.Message);
-        Assert.Equal(5, discovery.Capabilities.Count);
+        Assert.Equal(6, discovery.Capabilities.Count);
         Assert.DoesNotContain(discovery.Capabilities, value =>
             value.Id == SystemCapabilityIds.StandingGrantAdmin || value.RequiresConfirmation);
         Assert.Equal(StandingGrantCapability.Validate, discovery.Capabilities.Single(value =>

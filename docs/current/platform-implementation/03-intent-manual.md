@@ -115,8 +115,16 @@ samples or model equivalence. The existing application candidate and activation 
 revision. Removing all phrases disables the alternate association while preserving the canonical target
 and its implementation; a later revision may restore or replace phrases. Each publication advances the
 definition-change feed, so catalog and derived retrieval generations refresh from the authoritative
-activation. Existing synchronization/source hash semantics are unchanged. Global orientation and MCP
-surfaces remain excluded pending coordinator integration.
+activation. Existing synchronization/source hash semantics are unchanged.
+
+The authenticated application-candidate gateway exposes the closed
+`system.application-candidate.intent-update` operation to the website and Codex tool adapter. Its
+payload pins the current application, exact procedure or mechanic revision and fingerprint, expected
+candidate revision, and the complete desired phrase set. Gateway selection requires one current grant
+with both Read and Author capabilities and reserves the two operations used by source preparation and
+candidate authoring. Stable gateway idempotency maps retries to the existing candidate write receipt.
+The operation returns that real inert receipt; inspection, validation and activation remain separate
+existing capabilities and are the only publication path.
 
 Prerequisite: implement [00 — Shared foundation](00-shared-foundation.md) first and have the coordinator supply its accepted foundation revision and contract baseline. This workstream consumes those shared contracts and does not redefine them independently.
 

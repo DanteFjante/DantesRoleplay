@@ -285,6 +285,15 @@ internal static class ApplicationCandidateCapabilityHost
         SystemCapabilityInvocationContext context, ApplicationIdentifier applicationId,
         StandingGrantCapability capability, string commandId, InteractionExecutionProfile profile,
         int requiredOperations, CancellationToken cancellationToken)
+        => await CreateAsync(db, applications, context, applicationId, [capability], commandId,
+            profile, requiredOperations, cancellationToken);
+
+    internal static async Task<(IReadOnlyList<InteractionInvocationHost> Hosts, string Code)> CreateAsync(
+        DantesRoleplayDbContext db, IApplicationRegistry applications,
+        SystemCapabilityInvocationContext context, ApplicationIdentifier applicationId,
+        IReadOnlyCollection<StandingGrantCapability> capabilities, string commandId,
+        InteractionExecutionProfile profile, int requiredOperations,
+        CancellationToken cancellationToken)
     {
         if (context is null || !context.Principal.Verified
             || context.ApplicationId is not null && context.ApplicationId != applicationId)
@@ -295,7 +304,8 @@ internal static class ApplicationCandidateCapabilityHost
         if (grants is null) return ([], "STANDING_GRANT_CANDIDATES_UNAVAILABLE");
         if (requiredOperations is < 1 or > StandingGrantLimits.MaximumOperations)
             return ([], "INVOCATION_BUDGET_EXHAUSTED");
-        var capable = grants.Where(value => value.Capabilities.Contains(capability)).ToArray();
+        if (capabilities.Count == 0) return ([], "STANDING_GRANT_DENIED");
+        var capable = grants.Where(value => capabilities.All(value.Capabilities.Contains)).ToArray();
         var eligible = capable.Where(value => value.MaximumOperations >= requiredOperations)
             .OrderBy(value => value.Definitions.Mode == StandingGrantDefinitionMode.ExactIds ? 0 : 1)
             .ThenBy(value => value.GrantId, StringComparer.Ordinal).ThenBy(value => value.Revision)

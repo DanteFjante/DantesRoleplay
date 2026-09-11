@@ -21,6 +21,7 @@ public static class SystemCapabilityIds
     public const string ComponentTypeRegister = "system.component-type.register";
     public const string ApplicationActivate = "system.application.activate";
     public const string ApplicationCandidateInspect = "system.application-candidate.inspect";
+    public const string ApplicationCandidateIntentUpdate = "system.application-candidate.intent-update";
     public const string ApplicationCandidateWrite = "system.application-candidate.write";
     public const string ApplicationCandidateValidate = "system.application-candidate.validate";
     public const string ApplicationCandidateActivate = "system.application-candidate.activate";
@@ -39,7 +40,7 @@ public static class SystemCapabilityIds
 }
 
 /// <summary>
-/// Trusted transports use this scope only for the five application-candidate capabilities. The
+/// Trusted transports use this scope only for the application-candidate capabilities. The
 /// capability handlers still construct current standing-grant hosts and their owners reauthorize
 /// every exact target; this marker grants no authority by itself.
 /// </summary>
@@ -49,6 +50,7 @@ public static class ApplicationCandidateCapabilityAccess
 
     public static bool Supports(string? capabilityId) => capabilityId is
         SystemCapabilityIds.ApplicationCandidateInspect or
+        SystemCapabilityIds.ApplicationCandidateIntentUpdate or
         SystemCapabilityIds.ApplicationCandidateWrite or
         SystemCapabilityIds.ApplicationCandidateValidate or
         SystemCapabilityIds.ApplicationCandidateActivate or

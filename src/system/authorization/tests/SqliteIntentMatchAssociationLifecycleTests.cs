@@ -5,12 +5,141 @@ using DantesRoleplay.DataAccess;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Operations;
 using DantesRoleplay.Procedures;
+using DantesRoleplay.SchemaValidation;
+using DantesRoleplay.SystemCapabilities;
 using Microsoft.EntityFrameworkCore;
 
 namespace DantesRoleplay.Authorization.Tests;
 
 public sealed partial class SqliteStandingGrantTargetResolverTests
 {
+    [Fact]
+    public async Task Gateway_intent_update_replays_then_validates_activates_and_refreshes_manual_discovery()
+    {
+        await using var db = fixture.CreateContext();
+        var setup = Setup(db);
+        await ActivateAsync(setup);
+        await SeedGrantAsync(db, [StandingGrantCapability.Read, StandingGrantCapability.Author,
+            StandingGrantCapability.Validate, StandingGrantCapability.Activate]);
+        await ExpandGrantBudgetAsync(db);
+        var policy = new SqliteStandingGrantPolicy(db, setup.Resolver);
+        var authoring = new SqliteApplicationAuthoringService(db, setup.Applications,
+            setup.Activation, setup.Activation, setup.Sources, policy, setup.Resolver,
+            new OperationLog(db), preparation: null, manuals: Manuals(db, setup, policy));
+        var associations = new IntentMatchAssociationService(setup.Activation,
+            setup.Activation, setup.Resolver, policy, authoring);
+        var gateway = new ApplicationCandidateCapabilityGateway(
+            IntentUpdateCatalog(db, setup, authoring, associations));
+        var target = await CurrentProcedureAsync(setup, "gateway-intent-current");
+        var principal = AssociationHost(setup, "gateway-principal").Principal;
+        var input = JsonSerializer.Serialize(new
+        {
+            applicationId = Application.Value,
+            candidateId = (string?)null,
+            expectedCandidateRevision = 0,
+            target = new
+            {
+                definitionId = target.DefinitionId,
+                kind = target.Kind,
+                revision = target.Revision,
+                contentFingerprint = target.ContentFingerprint
+            },
+            matchPhrases = new[] { "  gateway   velvet  astrolabe  " }
+        });
+
+        var staged = await gateway.InvokeAsync(principal, Application,
+            SystemCapabilityIds.ApplicationCandidateIntentUpdate, input,
+            "intent-gateway-stage", "website");
+        var replay = await gateway.InvokeAsync(principal, Application,
+            SystemCapabilityIds.ApplicationCandidateIntentUpdate, input,
+            "intent-gateway-stage", "codex");
+
+        Assert.True(staged.Ok, staged.Error?.Code + ": " + staged.Error?.Message);
+        Assert.True(replay.Ok, replay.Error?.Code + ": " + replay.Error?.Message);
+        Assert.Equal(staged.OperationId, replay.OperationId);
+        Assert.Single(await db.Set<ApplicationCandidateRevisionRecord>().ToArrayAsync());
+        var candidate = await LatestCandidateAsync(db);
+        var validation = await gateway.InvokeAsync(principal, Application,
+            SystemCapabilityIds.ApplicationCandidateValidate,
+            JsonSerializer.Serialize(new
+            {
+                applicationId = Application.Value,
+                candidateId = candidate.CandidateId,
+                revision = candidate.Revision,
+                contentFingerprint = candidate.ContentFingerprint,
+                samples = Array.Empty<object>()
+            }), "intent-gateway-validate", "codex");
+        Assert.True(validation.Ok, validation.Error?.Code + ": " + validation.Error?.Message);
+        var validationRow = await db.Set<ApplicationCandidateValidationRecord>().AsNoTracking()
+            .SingleAsync(value => value.OperationId == validation.OperationId);
+        Assert.Equal("valid", validationRow.Outcome);
+        Assert.Equal(ApplicationCandidateIntentMatchUpdateValidation.PreparationVersion,
+            validationRow.PreparationVersion);
+
+        var activated = await gateway.InvokeAsync(principal, Application,
+            SystemCapabilityIds.ApplicationCandidateActivate,
+            JsonSerializer.Serialize(new
+            {
+                applicationId = Application.Value,
+                candidateId = candidate.CandidateId,
+                revision = candidate.Revision,
+                contentFingerprint = candidate.ContentFingerprint,
+                validationOperationId = validation.OperationId
+            }), "intent-gateway-activate", "website");
+        Assert.True(activated.Ok, activated.Error?.Code + ": " + activated.Error?.Message);
+        AssertSelected(await DiscoverAsync(db, setup, policy,
+            "gateway velvet astrolabe", "gateway-manual-refresh"), target.DefinitionId);
+
+        var beforeStale = await db.Set<ApplicationCandidateRevisionRecord>().CountAsync();
+        var stale = await gateway.InvokeAsync(principal, Application,
+            SystemCapabilityIds.ApplicationCandidateIntentUpdate, input,
+            "intent-gateway-stale", "codex");
+        Assert.False(stale.Ok);
+        Assert.Equal("INTENT_ASSOCIATION_AUTHORITY_UNAVAILABLE", stale.Error?.Code);
+        Assert.Equal(beforeStale, await db.Set<ApplicationCandidateRevisionRecord>().CountAsync());
+    }
+
+    [Fact]
+    public async Task Gateway_intent_update_denies_a_grant_without_both_read_and_author()
+    {
+        await using var db = fixture.CreateContext();
+        var setup = Setup(db);
+        await ActivateAsync(setup);
+        await SeedGrantAsync(db, [StandingGrantCapability.Read]);
+        await ExpandGrantBudgetAsync(db);
+        var policy = new SqliteStandingGrantPolicy(db, setup.Resolver);
+        var authoring = new SqliteApplicationAuthoringService(db, setup.Applications,
+            setup.Activation, setup.Activation, setup.Sources, policy, setup.Resolver,
+            new OperationLog(db), preparation: null, manuals: Manuals(db, setup, policy));
+        var associations = new IntentMatchAssociationService(setup.Activation,
+            setup.Activation, setup.Resolver, policy, authoring);
+        var gateway = new ApplicationCandidateCapabilityGateway(
+            IntentUpdateCatalog(db, setup, authoring, associations));
+        var target = await CurrentProcedureAsync(setup, "gateway-denied-current");
+
+        var denied = await gateway.InvokeAsync(
+            AssociationHost(setup, "gateway-denied-principal").Principal, Application,
+            SystemCapabilityIds.ApplicationCandidateIntentUpdate,
+            JsonSerializer.Serialize(new
+            {
+                applicationId = Application.Value,
+                candidateId = (string?)null,
+                expectedCandidateRevision = 0,
+                target = new
+                {
+                    definitionId = target.DefinitionId,
+                    kind = target.Kind,
+                    revision = target.Revision,
+                    contentFingerprint = target.ContentFingerprint
+                },
+                matchPhrases = new[] { "denied phrase" }
+            }), "intent-gateway-denied", "website");
+
+        Assert.False(denied.Ok);
+        Assert.Equal("STANDING_GRANT_DENIED", denied.Error?.Code);
+        Assert.Empty(await db.Set<ApplicationCandidateRevisionRecord>().ToArrayAsync());
+    }
+
     [Fact]
     public async Task Match_association_create_disable_and_reenable_use_versioned_activation_and_refresh_discovery()
     {
@@ -316,4 +445,21 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         using var json = JsonDocument.Parse(result.DataJson!);
         Assert.Empty(json.RootElement.GetProperty("candidates").EnumerateArray());
     }
+
+    private static ISystemCapabilityCatalog IntentUpdateCatalog(
+        DantesRoleplayDbContext db,
+        SetupState setup,
+        IApplicationAuthoringService authoring,
+        IntentMatchAssociationService associations) => new SystemCapabilityCatalog(
+        [new ApplicationCandidateInspectCapabilityHandler(db, setup.Applications, authoring)],
+        new BoundedJsonSchemaValidator(),
+        new PrivateOperatorAuthorizationPolicy(),
+        new ISystemWriteCapabilityHandler[]
+        {
+            new ApplicationCandidateIntentUpdateCapabilityHandler(db, setup.Applications, associations),
+            new ApplicationCandidateWriteCapabilityHandler(SystemCapabilityIds.ApplicationCandidateValidate,
+                db, setup.Applications, authoring),
+            new ApplicationCandidateWriteCapabilityHandler(SystemCapabilityIds.ApplicationCandidateActivate,
+                db, setup.Applications, authoring)
+        });
 }

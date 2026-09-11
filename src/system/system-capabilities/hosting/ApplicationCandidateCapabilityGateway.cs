@@ -123,6 +123,7 @@ public sealed class ApplicationCandidateCapabilityGateway(ISystemCapabilityCatal
         descriptor.Id switch
         {
             SystemCapabilityIds.ApplicationCandidateInspect => StandingGrantCapability.Read,
+            SystemCapabilityIds.ApplicationCandidateIntentUpdate => StandingGrantCapability.Author,
             SystemCapabilityIds.ApplicationCandidateWrite => StandingGrantCapability.Author,
             SystemCapabilityIds.ApplicationCandidateValidate => StandingGrantCapability.Validate,
             SystemCapabilityIds.ApplicationCandidateActivate => StandingGrantCapability.Activate,
