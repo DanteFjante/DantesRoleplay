@@ -20,6 +20,11 @@ public static class SystemCapabilityIds
     public const string ExtensionRegister = "system.extension.register";
     public const string ComponentTypeRegister = "system.component-type.register";
     public const string ApplicationActivate = "system.application.activate";
+    public const string ApplicationCandidateInspect = "system.application-candidate.inspect";
+    public const string ApplicationCandidateWrite = "system.application-candidate.write";
+    public const string ApplicationCandidateValidate = "system.application-candidate.validate";
+    public const string ApplicationCandidateActivate = "system.application-candidate.activate";
+    public const string ApplicationCandidateRecover = "system.application-candidate.recover";
     public const string StateSpaceCreate = "system.state-space.create";
     public const string StateSpaceUpgrade = "system.state-space.upgrade";
     public const string StateSpaceAdoptLegacy = "system.state-space.adopt-legacy";

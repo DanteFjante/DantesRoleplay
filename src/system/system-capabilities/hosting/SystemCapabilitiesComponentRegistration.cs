@@ -24,6 +24,7 @@ internal static class SystemCapabilitiesComponentRegistration
         services.AddScoped<ISystemReadCapabilityHandler, SourcesSystemCapabilityHandler>();
         services.AddScoped<ISystemReadCapabilityHandler, ApplicationPreviewSystemCapabilityHandler>();
         services.AddScoped<ISystemReadCapabilityHandler, DependenciesSystemCapabilityHandler>();
+        services.AddScoped<ISystemReadCapabilityHandler, ApplicationCandidateInspectCapabilityHandler>();
         foreach (var id in new[]
         {
             SystemCapabilityIds.ApplicationRegister,
@@ -31,6 +32,10 @@ internal static class SystemCapabilitiesComponentRegistration
             SystemCapabilityIds.ExtensionRegister,
             SystemCapabilityIds.ComponentTypeRegister,
             SystemCapabilityIds.ApplicationActivate,
+            SystemCapabilityIds.ApplicationCandidateWrite,
+            SystemCapabilityIds.ApplicationCandidateValidate,
+            SystemCapabilityIds.ApplicationCandidateActivate,
+            SystemCapabilityIds.ApplicationCandidateRecover,
             SystemCapabilityIds.StateSpaceCreate,
             SystemCapabilityIds.StateSpaceUpgrade,
             SystemCapabilityIds.StateSpaceAdoptLegacy
@@ -48,9 +53,18 @@ internal static class SystemCapabilitiesComponentRegistration
         return services;
     }
 
-    private static SystemAdministrationWriteCapabilityHandler Write(
+    private static ISystemWriteCapabilityHandler Write(
         IServiceProvider provider,
-        string id) => new(
+        string id) => id is SystemCapabilityIds.ApplicationCandidateWrite
+            or SystemCapabilityIds.ApplicationCandidateValidate
+            or SystemCapabilityIds.ApplicationCandidateActivate
+            or SystemCapabilityIds.ApplicationCandidateRecover
+        ? new ApplicationCandidateWriteCapabilityHandler(
+            id,
+            provider.GetRequiredService<DantesRoleplay.DataAccess.DantesRoleplayDbContext>(),
+            provider.GetRequiredService<IApplicationRegistry>(),
+            provider.GetRequiredService<IApplicationAuthoringService>())
+        : new SystemAdministrationWriteCapabilityHandler(
             id,
             provider.GetRequiredService<IApplicationRegistry>(),
             provider.GetRequiredService<ISourceRegistry>(),

@@ -28,6 +28,11 @@ public sealed class SystemCapabilityCatalogTests
         var descriptors = catalog.Discover(Context()).Capabilities;
 
         Assert.Equal([
+            SystemCapabilityIds.ApplicationCandidateActivate,
+            SystemCapabilityIds.ApplicationCandidateInspect,
+            SystemCapabilityIds.ApplicationCandidateRecover,
+            SystemCapabilityIds.ApplicationCandidateValidate,
+            SystemCapabilityIds.ApplicationCandidateWrite,
             SystemCapabilityIds.ApplicationPreview,
             SystemCapabilityIds.ApplicationActivate,
             SystemCapabilityIds.ApplicationRegister,
@@ -48,8 +53,8 @@ public sealed class SystemCapabilityCatalogTests
             SystemCapabilityIds.StateSpaceCreate,
             SystemCapabilityIds.StateSpaceUpgrade
         ], descriptors.Select(value => value.Id).ToArray());
-        Assert.Equal(8, descriptors.Count(value => value.Mode == SystemCapabilityMode.Read));
-        Assert.Equal(11, descriptors.Count(value => value.Mode == SystemCapabilityMode.Write));
+        Assert.Equal(9, descriptors.Count(value => value.Mode == SystemCapabilityMode.Read));
+        Assert.Equal(15, descriptors.Count(value => value.Mode == SystemCapabilityMode.Write));
         Assert.All(descriptors, descriptor =>
         {
             var contract = descriptor.Contract;
