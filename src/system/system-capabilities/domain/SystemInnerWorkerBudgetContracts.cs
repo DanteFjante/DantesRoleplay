@@ -1,8 +1,40 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.SystemTasks;
 
 namespace DantesRoleplay.SystemCapabilities;
+
+/// <summary>Host-selected token ceiling behavior. This is never model-provided input.</summary>
+[JsonConverter(typeof(SystemInnerWorkerTokenBudgetModeJsonConverter))]
+public enum SystemInnerWorkerTokenBudgetMode { HardCap, MeasuredStop }
+
+public static class SystemInnerWorkerTokenBudgetModeNames
+{
+    public static string Get(SystemInnerWorkerTokenBudgetMode value) => value switch
+    {
+        SystemInnerWorkerTokenBudgetMode.HardCap => "hard-cap",
+        SystemInnerWorkerTokenBudgetMode.MeasuredStop => "measured-stop",
+        _ => throw new InteractionContractException("INNER_AI_BUDGET_MODE_INVALID", "The AI token budget mode is unsupported.")
+    };
+
+    public static SystemInnerWorkerTokenBudgetMode Parse(string value) => value switch
+    {
+        "hard-cap" => SystemInnerWorkerTokenBudgetMode.HardCap,
+        "measured-stop" => SystemInnerWorkerTokenBudgetMode.MeasuredStop,
+        _ => throw new InteractionContractException("INNER_AI_BUDGET_MODE_INVALID", "The AI token budget mode is unsupported.")
+    };
+}
+
+public sealed class SystemInnerWorkerTokenBudgetModeJsonConverter : JsonConverter<SystemInnerWorkerTokenBudgetMode>
+{
+    public override SystemInnerWorkerTokenBudgetMode Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+        reader.TokenType == JsonTokenType.String
+            ? SystemInnerWorkerTokenBudgetModeNames.Parse(reader.GetString() ?? "")
+            : throw new JsonException("The AI token budget mode must be a supported string.");
+    public override void Write(Utf8JsonWriter writer, SystemInnerWorkerTokenBudgetMode value, JsonSerializerOptions options) =>
+        writer.WriteStringValue(SystemInnerWorkerTokenBudgetModeNames.Get(value));
+}
 
 /// <summary>
 /// PROPOSAL: aggregate input+output provider tokens and host-observed tool dispatches over a
@@ -13,32 +45,79 @@ public sealed record SystemInnerWorkerAiBudget
 {
     public const int DefaultProviderTokens = 32_768;
     public const int DefaultToolCalls = 8;
+    public const int DefaultMaxConcurrentProviderRequests = 2;
     public const int MaximumProviderTokens = 131_072;
     public const int MaximumToolCalls = 16;
+    public const int MaximumConcurrentProviderRequests = 4;
 
     [JsonConstructor]
-    public SystemInnerWorkerAiBudget(int providerTokens = DefaultProviderTokens, int toolCalls = DefaultToolCalls)
+    public SystemInnerWorkerAiBudget(int providerTokens = DefaultProviderTokens, int toolCalls = DefaultToolCalls,
+        SystemInnerWorkerTokenBudgetMode mode = SystemInnerWorkerTokenBudgetMode.MeasuredStop,
+        int maxConcurrentProviderRequests = DefaultMaxConcurrentProviderRequests)
     {
-        if (providerTokens is < 1 or > MaximumProviderTokens || toolCalls is < 0 or > MaximumToolCalls)
+        if (providerTokens is < 1 or > MaximumProviderTokens || toolCalls is < 0 or > MaximumToolCalls
+            || maxConcurrentProviderRequests is < 1 or > MaximumConcurrentProviderRequests)
             throw new InteractionContractException("INNER_AI_BUDGET_INVALID", "The aggregate AI budget exceeds the closed limits.");
+        if (!Enum.IsDefined(mode))
+            throw new InteractionContractException("INNER_AI_BUDGET_MODE_INVALID", "The AI token budget mode is unsupported.");
         ProviderTokens = providerTokens;
         ToolCalls = toolCalls;
+        Mode = mode;
+        MaxConcurrentProviderRequests = maxConcurrentProviderRequests;
     }
 
     public int ProviderTokens { get; }
     public int ToolCalls { get; }
+    public SystemInnerWorkerTokenBudgetMode Mode { get; }
+    public int MaxConcurrentProviderRequests { get; }
 
     /// <summary>Shape check only. Plan 04 must enforce remaining balances at every persisted ancestor.</summary>
     public SystemInnerWorkerAiBudget NarrowTo(SystemInnerWorkerAiBudget child) =>
         child.ProviderTokens > ProviderTokens || child.ToolCalls > ToolCalls
             ? throw new InteractionContractException("INNER_AI_BUDGET_EXPANDED", "A child AI ceiling cannot exceed its ancestor ceiling.")
+            : child.Mode != Mode
+                ? throw new InteractionContractException("INNER_AI_BUDGET_MODE_CHANGED", "A child AI ceiling cannot switch token budget mode.")
+                : child.MaxConcurrentProviderRequests > MaxConcurrentProviderRequests
+                    ? throw new InteractionContractException("INNER_AI_BUDGET_EXPANDED", "A child AI ceiling cannot raise provider concurrency.")
             : child;
+
+    /// <summary>
+    /// Pure admission calculation. Plan 04 must run the equivalent check atomically against its
+    /// root and ancestors before dispatch; this method reserves or invokes nothing.
+    /// </summary>
+    public int ProviderReservationAmount(int requestedProviderTokens, long knownChargedProviderTokens,
+        long outstandingReservedProviderTokens, int activeProviderReservations, bool hasUnknownUsage)
+    {
+        if (requestedProviderTokens < 1 || requestedProviderTokens > ProviderTokens || knownChargedProviderTokens < 0
+            || outstandingReservedProviderTokens < 0 || activeProviderReservations < 0)
+            throw new InteractionContractException("INNER_AI_RESERVATION_INVALID", "The provider admission snapshot is invalid.");
+        if (hasUnknownUsage)
+            throw new InteractionContractException("INNER_AI_USAGE_UNKNOWN", "Unknown provider usage blocks automatic dispatch.");
+        if (knownChargedProviderTokens >= ProviderTokens)
+            throw new InteractionContractException("INNER_AI_TOKEN_THRESHOLD_REACHED", "The AI token threshold has been reached.");
+        var remaining = ProviderTokens - knownChargedProviderTokens;
+        if (outstandingReservedProviderTokens >= remaining)
+            throw new InteractionContractException("INNER_AI_TOKEN_THRESHOLD_REACHED", "Outstanding provider reservations exhaust the remaining token ceiling.");
+        var remainingAfterHolds = remaining - outstandingReservedProviderTokens;
+        if (activeProviderReservations >= MaxConcurrentProviderRequests)
+            throw new InteractionContractException("INNER_AI_PROVIDER_IN_FLIGHT", "The host-selected provider concurrency ceiling has been reached.");
+        if (Mode == SystemInnerWorkerTokenBudgetMode.MeasuredStop)
+        {
+            // This is a hold that stops new dispatch at the threshold; it is not a guaranteed usage bound.
+            // Already admitted provider calls may overrun before their host-observed usage returns.
+            return Math.Min(requestedProviderTokens, (int)remainingAfterHolds);
+        }
+        if (requestedProviderTokens > remainingAfterHolds)
+            throw new InteractionContractException("INNER_AI_TOKEN_THRESHOLD_REACHED", "The requested provider reservation exceeds the remaining token ceiling.");
+        return requestedProviderTokens;
+    }
 }
 
 /// <summary>
 /// Host-verified provider capability evidence for a total input+output token upper bound, including
 /// provider overhead. Both fields null means unavailable. A model name, output-token setting or
-/// token estimate is not proof of this bound. No measured-only fallback is implied by this contract.
+/// token estimate is not proof of this bound. Only hard-cap dispatch requires this evidence;
+/// measured-stop remains a host ceiling and does not claim a guaranteed total bound.
 /// </summary>
 public sealed record SystemInnerWorkerAiProviderTokenBound
 {
@@ -57,9 +136,10 @@ public sealed record SystemInnerWorkerAiProviderTokenBound
 }
 
 /// <summary>
-/// PROPOSAL: reserve before dispatch, using a trusted upper bound for total provider input+output
-/// tokens, including system/context/tool overhead. No safe provider bound means unavailable and
-/// no dispatch. Tool calls are host-counted dispatch attempts (including failed calls), not model
+/// PROPOSAL: reserve before dispatch. Hard-cap requires a trusted upper bound for total provider
+/// input+output tokens, including overhead; measured-stop uses a bounded admission charge and
+/// permits overruns by already admitted requests. Tool calls are host-counted dispatch attempts
+/// (including failed calls), not model
 /// assertions. A provider request and a tool dispatch may reserve separately; neither may bypass
 /// the shared operation/deadline budget. ReservationId identifies one dispatch across redelivery.
 /// Every provider dispatch requires a nonzero provider-token reservation; a tool-only reservation
@@ -99,9 +179,48 @@ public sealed record SystemInnerWorkerAiReservationRequest
     public int ProviderTokens { get; }
     public int ToolCalls { get; }
     public SystemInnerWorkerAiProviderTokenBound ProviderBound { get; }
+    /// <summary>
+    /// Deterministic identity for immutable reservation inputs. It deliberately projects host
+    /// scope fields instead of serializing <see cref="InteractionInvocationHost"/> or its mutable ledger.
+    /// Future plan-04 storage must retain and compare this identity before debiting a root.
+    /// </summary>
+    public string ReservationFingerprint => InteractionCanonicalJson.Fingerprint(
+        "dantes-roleplay/system-inner-worker-ai-reservation/v1",
+        InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
+        {
+            principal = Host.Principal.PrincipalId,
+            applicationId = Host.ApplicationRevision.ApplicationId.Value,
+            applicationRevision = Host.ApplicationRevision.Revision,
+            applicationFingerprint = Host.ApplicationRevision.Fingerprint,
+            Host.StateSpaceId,
+            Host.GrantReference,
+            Host.CommandId,
+            Host.StateRevision,
+            profile = InteractionExecutionProfileNames.Get(Host.Profile),
+            maximumOperations = Host.Budget.MaximumOperations,
+            deadlineUtc = Host.Budget.DeadlineUtc,
+            taskId = Task.TaskId,
+            taskCommandId = Task.CommandId,
+            attemptId = Attempt.AttemptId,
+            Attempt.LeaseToken,
+            Attempt.FencingCounter,
+            Attempt.LeaseExpiresAtUtc,
+            ReservationId,
+            ceiling = new
+            {
+                Ceiling.ProviderTokens,
+                Ceiling.ToolCalls,
+                mode = SystemInnerWorkerTokenBudgetModeNames.Get(Ceiling.Mode),
+                Ceiling.MaxConcurrentProviderRequests
+            },
+            ProviderTokens,
+            ToolCalls,
+            providerBound = new { ProviderBound.MaximumTotalTokens, ProviderBound.EvidenceReference }
+        })));
 
     /// <summary>Null means only that this prerequisite is present; it is not a reservation or permission.</summary>
-    public InteractionInvocationResult? ProviderBoundFailure() => ProviderTokens > 0 && ProviderBound.MaximumTotalTokens is null
+    public InteractionInvocationResult? ProviderBoundFailure() => Ceiling.Mode == SystemInnerWorkerTokenBudgetMode.HardCap
+        && ProviderTokens > 0 && ProviderBound.MaximumTotalTokens is null
         ? InteractionInvocationResult.Unavailable("INNER_AI_PROVIDER_BOUND_UNAVAILABLE",
             "This provider cannot supply a verified total-token upper bound; no hard-cap dispatch is available.")
         : null;
@@ -119,7 +238,7 @@ public sealed record SystemInnerWorkerAiReservationEvidence
     [JsonConstructor]
     public SystemInnerWorkerAiReservationEvidence(string recordReference, string reservationId,
         SystemTaskDurableHandle rootTask, SystemTaskDurableHandle task, SystemTaskAttemptIdentity attempt,
-        int providerTokens, int toolCalls)
+        int providerTokens, int toolCalls, SystemInnerWorkerTokenBudgetMode mode = SystemInnerWorkerTokenBudgetMode.MeasuredStop)
     {
         RecordReference = InteractionGuard.Identifier(recordReference, nameof(recordReference));
         ReservationId = InteractionGuard.IdempotencyKey(reservationId);
@@ -132,8 +251,11 @@ public sealed record SystemInnerWorkerAiReservationEvidence
             || toolCalls is < 0 or > SystemInnerWorkerAiBudget.MaximumToolCalls
             || (providerTokens == 0 && toolCalls == 0))
             throw new InteractionContractException("INNER_AI_RESERVATION_INVALID", "The recorded reservation is outside the closed limits.");
+        if (!Enum.IsDefined(mode))
+            throw new InteractionContractException("INNER_AI_BUDGET_MODE_INVALID", "The AI token budget mode is unsupported.");
         ProviderTokens = providerTokens;
         ToolCalls = toolCalls;
+        Mode = mode;
     }
 
     public string RecordReference { get; }
@@ -143,6 +265,7 @@ public sealed record SystemInnerWorkerAiReservationEvidence
     public SystemTaskAttemptIdentity Attempt { get; }
     public int ProviderTokens { get; }
     public int ToolCalls { get; }
+    public SystemInnerWorkerTokenBudgetMode Mode { get; }
 }
 
 /// <summary>
@@ -189,7 +312,8 @@ public sealed record SystemInnerWorkerAiUsageReport
 /// </summary>
 public sealed record SystemInnerWorkerAiUsageReconciliation(
     long ChargedProviderTokens, long ChargedToolCalls, int ReleasedProviderTokens, int ReleasedToolCalls,
-    bool UsageKnown, bool ExceededReservation, bool RequiresReconciliation)
+    bool UsageKnown, bool ExceededReservation, bool RequiresReconciliation,
+    SystemInnerWorkerTokenBudgetMode Mode = SystemInnerWorkerTokenBudgetMode.MeasuredStop)
 {
     public string Code => !UsageKnown ? "INNER_AI_USAGE_UNKNOWN"
         : ExceededReservation ? "INNER_AI_RESERVATION_EXCEEDED" : "INNER_AI_USAGE_KNOWN";
@@ -209,7 +333,7 @@ public sealed record SystemInnerWorkerAiUsageReconciliation(
         return new(tokens, calls,
             known ? (int)Math.Max(0, reservation.ProviderTokens - tokens) : 0,
             known ? (int)Math.Max(0, reservation.ToolCalls - calls) : 0,
-            known, exceeded, !known || exceeded);
+            known, exceeded, !known || exceeded, reservation.Mode);
     }
 }
 

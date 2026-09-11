@@ -89,19 +89,36 @@ the wrapped invocation. Source-to-profile/tool mapping and current authority mus
 by the resolver; constructing the DTO is not permission. Both profile and invocation authority reject
 JSON import/export. `IInteractionManualContextService` remains the manual source; no packet is copied.
 
-`SystemInnerWorkerAiBudget` defaults to 32,768 total provider input/output tokens and 8 tool dispatches,
-with configurable host ceilings up to 131,072/16. Child ceilings only narrow. Existing shared
+`SystemInnerWorkerAiBudget` defaults to a measured-stop threshold of 32,768 total provider input/output
+tokens, 8 tool dispatches and 2 concurrent provider requests per root. Host ceilings are configurable
+up to 131,072 tokens, 16 tools and 4 concurrent requests. Child ceilings only narrow and preserve the
+root's token mode. Existing shared
 operations/deadline limits remain independent. `SystemInnerWorkerAiReservationRequest` supplies the
 trusted host, current task/attempt/fence, stable reservation identity, selected ceiling and reserved
-amounts. Plan 04 resolves root and every ancestor, checks remaining balances and applies all debits
+amounts. Its immutable reservation fingerprint includes the mode and concurrency limit. Plan 04
+resolves root and every ancestor, checks remaining balances and applies all debits
 atomically. A child cannot supply an ancestry list or replace a root balance. Unchanged reservation
 redelivery must not charge twice; changed payload conflicts; retries consume new reservations.
 
-Every provider dispatch must reserve a nonzero total token amount. Without host-verified provider
-upper-bound evidence, `ProviderBoundFailure()` returns `INNER_AI_PROVIDER_BOUND_UNAVAILABLE`; a
-maximum-output setting or estimate is insufficient. Codex's actual accounting/cancellation limits
-have not been established here. A future measured-usage policy must be explicit and cannot claim
-the hard bound offered by this proposal. Tool-only reservations cannot authorize provider calls.
+Every provider dispatch must reserve a nonzero admission charge. In `hard-cap` mode, dispatch also
+requires host-verified total-token upper-bound evidence; otherwise `ProviderBoundFailure()` returns
+`INNER_AI_PROVIDER_BOUND_UNAVAILABLE`. A maximum-output setting or estimate is insufficient proof.
+In the default `measured-stop` mode, the hold is bounded by the remaining threshold after known charges
+and outstanding holds. It is an admission charge, not a guaranteed usage bound. Already admitted
+in-flight requests may overrun; actual usage is retained without clamping. No new call is admitted
+when known charges/holds exhaust the threshold, usage is unknown, or configured concurrency is full.
+The pure `ProviderReservationAmount` calculation does not reserve anything: plan 04 must apply it
+atomically across the root and every ancestor. Independent root concurrency remains host policy.
+Tool-only reservations cannot authorize provider calls.
+
+Local inspection of Codex CLI 0.153.4's generated app-server schema finds thread/turn-scoped cumulative
+token-usage notifications and no per-turn maximum-output-token parameter. The repository's existing
+pin remains 0.149.1. The current adapter does not yet normalize those usage notifications or forward
+an output-token limit. Default zero counters therefore cannot establish known usage. Provider
+integration must preserve unknown accounting when evidence is missing, bound received output bytes
+and elapsed time at the host, and cap dynamic tool callbacks independently of outer tool rounds.
+Interrupt/disposal is best-effort cancellation, not proof that remote billing stopped. These source
+observations are not live provider acceptance and do not enable INNER execution.
 
 `SystemInnerWorkerAiReservationEvidence` and `SystemInnerWorkerAiUsageReport` are inert host/owner
 data, serialized with `JsonSerializerDefaults.Web` for camelCase. Null token fields mean unknown,
