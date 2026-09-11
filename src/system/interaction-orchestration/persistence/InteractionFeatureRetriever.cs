@@ -37,8 +37,8 @@ public sealed class InteractionFeatureRetriever(
 
     /// <summary>
     /// Owner-internal seam: the adapter must resolve and authorize each exact target using the full
-    /// invocation host. No public request or caller JSON supplies this predicate. Restricted views
-    /// use lexical retrieval because the vector interface cannot rank an authorized subset.
+    /// invocation host. No public request or caller JSON supplies this predicate. Authorization is
+    /// completed against exact current references before exact, lexical or vector ranking and limits.
     /// </summary>
     internal Task<InteractionFeatureSearchResult> SearchAuthorizedAsync(InteractionFeatureRetrievalScope scope,
         InteractionFeatureSearchInput input,
@@ -115,7 +115,6 @@ public sealed class InteractionFeatureRetriever(
             return Unavailable("CATALOG_SEARCH_INVALID", "The host-bound catalog could not search the bounded request.");
         }
 
-        if (authorize is not null) return RestrictedLexical(snapshot, scope, lexical, input);
         if (_embeddings is null || _vectors is null)
             return LexicalFallback(snapshot, scope, lexical, input, "VECTOR_INDEX_DISABLED",
                 "Vector retrieval is not configured; lexical retrieval remains available.");
@@ -138,11 +137,23 @@ public sealed class InteractionFeatureRetriever(
 
         var generation = Generation(scope, snapshot, status.Identity);
         IReadOnlyList<InteractionVectorCandidate> vector;
-        try { vector = await _vectors.SearchAsync(generation, embedded.Vectors[0], CandidateLimit(input.Limit), cancellationToken); }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
-        catch (InteractionContractException exception) when (_changes is not null
-            && exception.Code is "VECTOR_INDEX_STALE" or "VECTOR_INDEX_UNAVAILABLE")
+        try
         {
+            vector = authorize is null
+                ? await _vectors.SearchAsync(generation, embedded.Vectors[0], CandidateLimit(input.Limit), cancellationToken)
+                : await _vectors.SearchAuthorizedAsync(generation, embedded.Vectors[0],
+                    current.Documents.Select(value => value.Record.QualifiedId).ToArray(),
+                    CandidateLimit(input.Limit), cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+        catch (InteractionContractException exception) when (exception.Code is "VECTOR_INDEX_STALE" or "VECTOR_INDEX_UNAVAILABLE")
+        {
+            if (authorize is not null)
+                return LexicalFallback(snapshot, scope, lexical, input, exception.Code,
+                    "The authorized vector generation is unavailable; lexical retrieval remains available.");
+            if (_changes is null)
+                return LexicalFallback(snapshot, scope, lexical, input, exception.Code,
+                    "Vector retrieval is unavailable; lexical retrieval remains available.");
             InteractionFeatureRebuildResult rebuild;
             try { rebuild = await EnsureGenerationAsync(scope, snapshot, generation, embedded.Vectors[0], cancellationToken); }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
@@ -185,7 +196,7 @@ public sealed class InteractionFeatureRetriever(
             .Select(value => Hit(snapshot, scope, value.Document, value.Fusion.LexicalRank, value.Fusion.VectorRank, false))
             .ToArray();
         return InteractionFeatureSearchResult.Create(InteractionRetrievalMode.Hybrid, hits,
-            resolutionDiagnostics: DiagnosticsForHits(resolved.Diagnostics, hits));
+            resolutionDiagnostics: authorize is null ? DiagnosticsForHits(resolved.Diagnostics, hits) : null);
     }
 
     public async Task<InteractionFeatureRebuildResult> RebuildAsync(

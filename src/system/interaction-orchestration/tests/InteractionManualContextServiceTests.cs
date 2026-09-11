@@ -10,6 +10,7 @@ using DantesRoleplay.DataAccess;
 using DantesRoleplay.Ecs;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Procedures;
+using DantesRoleplay.Retrieval;
 using DantesRoleplay.Sources;
 
 namespace DantesRoleplay.Tests;
@@ -222,6 +223,30 @@ public sealed class InteractionManualContextServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Permissioned_manual_context_uses_semantic_ranking_only_for_authorized_current_targets()
+    {
+        await using var db = _fixture.CreateContext();
+        var allowed = AppRecord("sample-app.query.allowed", "authorized-vector", "unrelated phrase");
+        var denied = AppRecord("sample-app.query.denied", "denied-vector", "another phrase");
+        var snapshot = AppSnapshot("semantic-generation", denied, allowed);
+        var grants = new FixtureGrants { AllowedIds = [allowed.QualifiedId] };
+        var vectors = new ManualVectors(denied.QualifiedId, allowed.QualifiedId);
+        var retriever = new InteractionFeatureRetriever(new Snapshots(snapshot), new ManualEmbeddings(), vectors);
+        var service = new InteractionManualContextService(new ProcedureStore(db), retriever, grants,
+            new FixtureTargets(), new Changes(App, HashA), []);
+
+        var result = await service.DiscoverAsync(Host(), "semantic request");
+        var packet = JsonNode.Parse(result.DataJson!)!;
+
+        Assert.Equal(InteractionInvocationResultTag.Completed, result.Tag);
+        Assert.Equal("Hybrid", packet["retrievalMode"]!.GetValue<string>());
+        Assert.Equal(allowed.QualifiedId,
+            Assert.Single(packet["candidates"]!.AsArray())!["reference"]!["qualifiedId"]!.GetValue<string>());
+        Assert.DoesNotContain(denied.QualifiedId, result.DataJson!, StringComparison.Ordinal);
+        Assert.Equal([allowed.QualifiedId], vectors.AuthorizedIds);
+    }
+
+    [Fact]
     public async Task Discovery_requires_application_read_and_consumes_one_host_operation()
     {
         await using var db = _fixture.CreateContext();
@@ -382,6 +407,37 @@ public sealed class InteractionManualContextServiceTests : IDisposable
         public Task<StandingGrantTargetResolution> ResolveCandidateAsync(InteractionInvocationHost host, ApplicationCandidateSnapshot candidate,
             StandingGrantDefinitionReference selection, CancellationToken cancellationToken = default) => throw new NotSupportedException();
     }
+
+    private sealed class ManualEmbeddings : ITextEmbeddingProvider
+    {
+        private static readonly EmbeddingProviderIdentity Identity = new("fixture", "manual", "1", 2);
+        public Task<EmbeddingProviderStatus> CheckAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult(new EmbeddingProviderStatus(true, Identity));
+        public Task<EmbeddingBatchResult> EmbedAsync(IReadOnlyList<string> inputs,
+            CancellationToken cancellationToken = default) => Task.FromResult(new EmbeddingBatchResult(Identity,
+                inputs.Select(_ => new[] { 0f, 1f }).ToArray()));
+    }
+
+    private sealed class ManualVectors(params string[] rankedIds) : IInteractionDerivedVectorIndex
+    {
+        internal IReadOnlyList<string> AuthorizedIds { get; private set; } = [];
+        public Task ReplaceAsync(InteractionRetrievalGeneration generation,
+            IReadOnlyList<InteractionVectorDocument> documents, CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException("The permissioned request must not rebuild the full catalog.");
+        public Task<IReadOnlyList<InteractionVectorCandidate>> SearchAsync(InteractionRetrievalGeneration generation,
+            float[] query, int limit, CancellationToken cancellationToken = default) =>
+            throw new InvalidOperationException("The unrestricted vector route must not be used.");
+        public Task<IReadOnlyList<InteractionVectorCandidate>> SearchAuthorizedAsync(InteractionRetrievalGeneration generation,
+            float[] query, IReadOnlyCollection<string> authorizedQualifiedIds, int limit,
+            CancellationToken cancellationToken = default)
+        {
+            AuthorizedIds = authorizedQualifiedIds.Order(StringComparer.Ordinal).ToArray();
+            var allowed = authorizedQualifiedIds.ToHashSet(StringComparer.Ordinal);
+            return Task.FromResult<IReadOnlyList<InteractionVectorCandidate>>(rankedIds
+                .Where(allowed.Contains).Take(limit).Select((id, index) => new InteractionVectorCandidate(id, index)).ToArray());
+        }
+    }
+
     private sealed class Changes(ApplicationIdentifier app, string fingerprint) : IApplicationDefinitionChangeReader
     { public ApplicationDefinitionChange? CurrentChange(ApplicationIdentifier id) => id == app ? new(app, 1, fingerprint, "operation.1", DateTime.UnixEpoch, new([], []), new(Hash("dependencies"), "fixture", true), new("rebuildable", false, false)) : null; public ApplicationDefinitionChange? RevisionChange(ApplicationIdentifier id, int revision) => CurrentChange(id); public IReadOnlyList<ApplicationDefinitionChange> ChangesAfter(ApplicationIdentifier id, int after, int limit) => []; }
 }

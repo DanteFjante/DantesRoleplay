@@ -39,8 +39,11 @@ candidate drift even when a caller chooses a different output budget.
 Compact candidate references retain application, lane, ID, kind, revision and content fingerprint.
 Whole catalog and activation generation pins remain host-only for freshness checks; they never enter
 the returned packet or its hashes. Denied definitions cannot alter visible alternatives, ranks, fallback
-modes or fingerprints. Authorized discovery uses exact/lexical retrieval until the vector owner supports
-an authorized subset before ranking; it does not send restricted candidates to embeddings.
+modes or fingerprints. Authorized discovery resolves and filters exact current targets before vector
+ranking or result limits. It may query a complete host-built generation, but never rebuilds the full
+catalog under a restricted caller grant or sends denied records to the embedding provider during that
+request. A missing, stale, unsupported or failed authorized vector view falls back to the already-filtered
+lexical view.
 
 The existing activation change reader can invalidate cached catalog snapshots and reject stale
 retrieval generations. Derived index failures preserve lexical discovery and cannot gate activation.

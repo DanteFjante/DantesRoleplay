@@ -1,5 +1,6 @@
 using Microsoft.Data.Sqlite;
 using DantesRoleplay.CatalogNavigation;
+using System.Text.Json;
 
 namespace DantesRoleplay.Interactions;
 
@@ -73,7 +74,32 @@ public sealed class SqliteInteractionDerivedVectorIndex(InteractionDerivedIndexL
         InteractionRetrievalGeneration generation,
         float[] query,
         int limit,
+        CancellationToken cancellationToken = default) =>
+        await SearchCoreAsync(generation, query, null, limit, cancellationToken);
+
+    public async Task<IReadOnlyList<InteractionVectorCandidate>> SearchAuthorizedAsync(
+        InteractionRetrievalGeneration generation,
+        float[] query,
+        IReadOnlyCollection<string> authorizedQualifiedIds,
+        int limit,
         CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(authorizedQualifiedIds);
+        if (authorizedQualifiedIds.Count > CatalogNavigationLimits.MaximumRecords
+            || authorizedQualifiedIds.Any(value => string.IsNullOrWhiteSpace(value) || value.Length > 200)
+            || authorizedQualifiedIds.Distinct(StringComparer.Ordinal).Count() != authorizedQualifiedIds.Count)
+            throw new InteractionContractException("INVALID_VECTOR_AUTHORIZED_SUBSET",
+                "The authorized vector subset is invalid or unbounded.");
+        return await SearchCoreAsync(generation, query,
+            authorizedQualifiedIds.ToHashSet(StringComparer.Ordinal), limit, cancellationToken);
+    }
+
+    private async Task<IReadOnlyList<InteractionVectorCandidate>> SearchCoreAsync(
+        InteractionRetrievalGeneration generation,
+        float[] query,
+        IReadOnlySet<string>? authorizedQualifiedIds,
+        int limit,
+        CancellationToken cancellationToken)
     {
         ValidateGeneration(generation);
         ArgumentNullException.ThrowIfNull(query);
@@ -87,11 +113,15 @@ public sealed class SqliteInteractionDerivedVectorIndex(InteractionDerivedIndexL
         if (!await GenerationExistsAsync(connection, generation, cancellationToken))
             throw new InteractionContractException("VECTOR_INDEX_STALE", "The disposable vector index has no current generation.");
         await using var command = connection.CreateCommand();
-        command.CommandText = """
+        var authorizedJoin = authorizedQualifiedIds is null
+            ? ""
+            : "JOIN json_each($authorizedQualifiedIds) AS authorized ON authorized.value = d.QualifiedId";
+        command.CommandText = $$"""
             SELECT d.QualifiedId, v.Vector
             FROM interaction_retrieval_generations AS g
             JOIN interaction_retrieval_documents AS d ON d.GenerationKey = g.GenerationKey
             JOIN interaction_retrieval_vectors AS v ON v.GenerationKey = d.GenerationKey AND v.QualifiedId = d.QualifiedId
+            {{authorizedJoin}}
             WHERE g.GenerationKey = $key
               AND g.ApplicationId = $applicationId
               AND g.Lane = $lane
@@ -100,12 +130,16 @@ public sealed class SqliteInteractionDerivedVectorIndex(InteractionDerivedIndexL
               AND g.Provider = $provider AND g.Model = $model AND g.Revision = $revision AND g.Dimensions = $dimensions
             """;
         BindGeneration(command, generation);
+        if (authorizedQualifiedIds is not null)
+            command.Parameters.AddWithValue("$authorizedQualifiedIds",
+                JsonSerializer.Serialize(authorizedQualifiedIds.Order(StringComparer.Ordinal)));
         var candidates = new List<InteractionVectorCandidate>();
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
+            var qualifiedId = reader.GetString(0);
             var vector = ToVector(reader.GetFieldValue<byte[]>(1), generation.Embedding.Dimensions);
-            candidates.Add(new(reader.GetString(0), Distance(query, vector)));
+            candidates.Add(new(qualifiedId, Distance(query, vector)));
         }
         return Array.AsReadOnly(candidates.OrderBy(value => value.Distance).ThenBy(value => value.QualifiedId, StringComparer.Ordinal)
             .Take(limit).ToArray());

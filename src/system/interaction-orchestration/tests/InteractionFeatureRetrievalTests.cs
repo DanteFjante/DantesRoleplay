@@ -266,7 +266,7 @@ public sealed class InteractionFeatureRetrievalTests : IDisposable
     }
 
     [Fact]
-    public async Task Restricted_discovery_filters_before_exact_matching_and_rank_limits_without_embedding_calls()
+    public async Task Restricted_discovery_falls_back_after_embedding_failure_without_disclosing_denied_records()
     {
         var allowed = Record("sample-app.allowed", "Allowed", "Inspect target", ["show permitted"]);
         var denied = Enumerable.Range(0, 12).Select(index => Record("sample-app.denied-" + index,
@@ -284,9 +284,79 @@ public sealed class InteractionFeatureRetrievalTests : IDisposable
         Assert.Equal(Assert.Single(baseline.Hits).LexicalRank, hit.LexicalRank);
         Assert.Null(hit.VectorRank);
         Assert.False(hit.Exact);
-        Assert.Equal("AUTHORIZED_VIEW_LEXICAL_ONLY", result.AvailabilityCode);
-        Assert.Equal(0, embeddings.Calls);
+        Assert.Equal("EMBEDDING_UNAVAILABLE", result.AvailabilityCode);
+        Assert.Equal(1, embeddings.Calls);
         Assert.Empty(result.ResolutionDiagnostics!);
+    }
+
+    [Fact]
+    public async Task Vector_index_without_subset_support_retains_authorized_lexical_fallback()
+    {
+        var retriever = new InteractionFeatureRetriever(new MutableSnapshots(Snapshot()),
+            new DeterministicEmbeddings(), new EmptyCurrentVectors());
+
+        var result = await retriever.SearchAuthorizedAsync(
+            new(Application, InteractionRetrievalLane.TrustedFeature), new("find", 1),
+            (reference, _) => Task.FromResult(reference.QualifiedId == "sample-app.trusted"));
+
+        Assert.Equal(InteractionRetrievalMode.LexicalFallback, result.Mode);
+        Assert.Equal("VECTOR_AUTHORIZED_SUBSET_UNAVAILABLE", result.AvailabilityCode);
+        Assert.Equal("sample-app.trusted", Assert.Single(result.Hits).Reference.QualifiedId);
+        Assert.Empty(result.ResolutionDiagnostics!);
+    }
+
+    [Fact]
+    public async Task Authorized_semantic_search_filters_denied_records_before_ranking_and_survives_restart()
+    {
+        var allowed = Record("sample-app.allowed", "Allowed", "Permitted operation authorized-vector", []);
+        var denied = Enumerable.Range(0, 12).Select(index => Record("sample-app.denied-" + index,
+            "Hidden", "Restricted operation denied-vector", [])).ToArray();
+        var provider = new MutableSnapshots(Snapshot(denied.Append(allowed).ToArray()));
+        var embeddings = new AuthorizedSubsetEmbeddings();
+        var location = InteractionDerivedIndexLocation.Create(_temporaryRoot);
+        var vectors = new SqliteInteractionDerivedVectorIndex(location);
+        var scope = new InteractionFeatureRetrievalScope(Application, InteractionRetrievalLane.TrustedFeature);
+        Assert.True((await new InteractionFeatureRetriever(provider, embeddings, vectors).RebuildAsync(scope)).Rebuilt);
+        embeddings.Inputs.Clear();
+
+        // A new retriever instance exercises the persisted disposable generation after restart.
+        var restarted = new InteractionFeatureRetriever(provider, embeddings,
+            new SqliteInteractionDerivedVectorIndex(location));
+        var result = await restarted.SearchAuthorizedAsync(scope, new("semantic request", 1),
+            (reference, _) => Task.FromResult(reference.QualifiedId == allowed.QualifiedId));
+
+        var hit = Assert.Single(result.Hits);
+        Assert.Equal(InteractionRetrievalMode.Hybrid, result.Mode);
+        Assert.Equal(allowed.QualifiedId, hit.Reference.QualifiedId);
+        Assert.Equal(1, hit.VectorRank);
+        Assert.Null(hit.LexicalRank);
+        Assert.Empty(result.ResolutionDiagnostics!);
+        Assert.Equal(["semantic request"], Assert.Single(embeddings.Inputs));
+    }
+
+    [Fact]
+    public async Task Authorized_stale_generation_falls_back_to_current_lexical_view_without_rebuild()
+    {
+        var allowed = Record("sample-app.allowed", "Allowed", "Old description authorized-vector", []);
+        var provider = new MutableSnapshots(Snapshot([allowed]));
+        var changes = new MutableDefinitionChanges(Application, provider.Snapshot.EffectiveSetFingerprint);
+        var embeddings = new AuthorizedSubsetEmbeddings();
+        var vectors = new MemoryVectors();
+        var scope = new InteractionFeatureRetrievalScope(Application, InteractionRetrievalLane.TrustedFeature);
+        var retriever = new InteractionFeatureRetriever(provider, embeddings, vectors, changes: changes);
+        Assert.True((await retriever.RebuildAsync(scope)).Rebuilt);
+        provider.Snapshot = Snapshot([Record("sample-app.allowed", "Allowed", "Current lexical marker", [])], 'B');
+        changes.Fingerprint = provider.Snapshot.EffectiveSetFingerprint;
+        embeddings.Inputs.Clear();
+
+        var result = await retriever.SearchAuthorizedAsync(scope, new("current lexical marker", 1),
+            (reference, _) => Task.FromResult(reference.QualifiedId == allowed.QualifiedId));
+
+        Assert.Equal(InteractionRetrievalMode.LexicalFallback, result.Mode);
+        Assert.Equal("VECTOR_INDEX_STALE", result.AvailabilityCode);
+        Assert.Equal("Current lexical marker", Assert.Single(result.Hits).Description);
+        Assert.Equal(["current lexical marker"], Assert.Single(embeddings.Inputs));
+        Assert.Equal(1, vectors.Replacements);
     }
 
     [Fact]
@@ -521,9 +591,9 @@ public sealed class InteractionFeatureRetrievalTests : IDisposable
         ]);
     }
 
-    private static ActiveCatalogFeatureSnapshot Snapshot(IReadOnlyList<CatalogRecordDefinition> records)
+    private static ActiveCatalogFeatureSnapshot Snapshot(IReadOnlyList<CatalogRecordDefinition> records, char fingerprintMarker = 'A')
     {
-        var manifest = CatalogNavigationManifest.Create(Application, new string('A', 64), "catalog-lexical-v1",
+        var manifest = CatalogNavigationManifest.Create(Application, new string(fingerprintMarker, 64), "catalog-lexical-v1",
             [new("sample", "Sample", "Generic sample contracts.")],
             [new("sample", "", "Sample", "Generic sample contracts.", CatalogDescriptionStatus.Authored)], records);
         return new(manifest, records.Select(record => new ActiveCatalogFeatureDocument(record, SourceTrust.Trusted)).ToArray());
@@ -597,9 +667,11 @@ public sealed class InteractionFeatureRetrievalTests : IDisposable
     private sealed class MemoryVectors : IInteractionDerivedVectorIndex
     {
         private readonly System.Collections.Concurrent.ConcurrentDictionary<string, IReadOnlyList<InteractionVectorDocument>> _documents = new(StringComparer.Ordinal);
+        internal int Replacements;
         public IReadOnlyList<string> Ids => _documents.Values.SelectMany(value => value).Select(value => value.Reference.QualifiedId).ToArray();
         public Task ReplaceAsync(InteractionRetrievalGeneration generation, IReadOnlyList<InteractionVectorDocument> documents, CancellationToken cancellationToken = default)
         {
+            Replacements++;
             _documents[generation.GenerationKey] = documents.ToArray();
             return Task.CompletedTask;
         }
@@ -609,6 +681,35 @@ public sealed class InteractionFeatureRetrievalTests : IDisposable
                 throw new InteractionContractException("VECTOR_INDEX_STALE", "The fixture has no current generation.");
             return Task.FromResult<IReadOnlyList<InteractionVectorCandidate>>(documents.Select(value => new InteractionVectorCandidate(
                 value.Reference.QualifiedId, value.Vector[0] == query[0] ? 0 : 1)).OrderBy(value => value.Distance).ThenBy(value => value.QualifiedId, StringComparer.Ordinal).Take(limit).ToArray());
+        }
+        public Task<IReadOnlyList<InteractionVectorCandidate>> SearchAuthorizedAsync(InteractionRetrievalGeneration generation,
+            float[] query, IReadOnlyCollection<string> authorizedQualifiedIds, int limit,
+            CancellationToken cancellationToken = default)
+        {
+            if (!_documents.TryGetValue(generation.GenerationKey, out var documents))
+                throw new InteractionContractException("VECTOR_INDEX_STALE", "The fixture has no current generation.");
+            var allowed = authorizedQualifiedIds.ToHashSet(StringComparer.Ordinal);
+            return Task.FromResult<IReadOnlyList<InteractionVectorCandidate>>(documents
+                .Where(value => allowed.Contains(value.Reference.QualifiedId))
+                .Select(value => new InteractionVectorCandidate(value.Reference.QualifiedId,
+                    value.Vector[0] == query[0] ? 0 : 1))
+                .OrderBy(value => value.Distance).ThenBy(value => value.QualifiedId, StringComparer.Ordinal)
+                .Take(limit).ToArray());
+        }
+    }
+
+    private sealed class AuthorizedSubsetEmbeddings : ITextEmbeddingProvider
+    {
+        private static readonly EmbeddingProviderIdentity Identity = new("fixture", "authorized-subset", "1", 2);
+        internal List<string[]> Inputs { get; } = [];
+        public Task<EmbeddingProviderStatus> CheckAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult(new EmbeddingProviderStatus(true, Identity));
+        public Task<EmbeddingBatchResult> EmbedAsync(IReadOnlyList<string> inputs, CancellationToken cancellationToken = default)
+        {
+            Inputs.Add(inputs.ToArray());
+            return Task.FromResult(new EmbeddingBatchResult(Identity, inputs.Select(value =>
+                value.Contains("semantic request", StringComparison.OrdinalIgnoreCase)
+                || value.Contains("-vector", StringComparison.OrdinalIgnoreCase) ? new[] { 0f, 1f } : new[] { 1f, 0f }).ToArray()));
         }
     }
 
