@@ -58,6 +58,8 @@ public static partial class WebInterfaceEndpoints
         endpoints.MapGet("/ui/{id}/assets/{**path}", GetAssetAsync).RequireDantesRoleplayReadAccess();
         endpoints.MapGet("/ui/{id}/content/{pageId}/revisions/{revision:int}/{**path}", GetVersionedAssetAsync)
             .RequireDantesRoleplayReadAccess();
+        endpoints.MapPost("/ui/{id}/actions/{binding}", InvokePageActionAsync)
+            .RequireDantesRoleplayUploadAccess();
         endpoints.MapGet("/api/data/entity/{id}", GetEntityDataAsync).RequireDantesRoleplayReadAccess();
         endpoints.MapGet("/api/data/{componentType}/{entityId}", GetComponentDataAsync)
             .RequireDantesRoleplayReadAccess();
@@ -422,6 +424,31 @@ public static partial class WebInterfaceEndpoints
             ? Results.File(result.Asset.Content, result.Asset.ContentType) : PermissionedRouteError(result.Status);
     }
 
+    private static async Task<IResult> InvokePageActionAsync(string id, string binding,
+        HttpContext context, [FromServices] WebPermissionedPageRouteAdapter permissioned,
+        CancellationToken cancellationToken)
+    {
+        context.Response.Headers.CacheControl = "private, no-store";
+        try
+        {
+            var request = await ReadApplicationMechanicBodyAsync<WebCompositionActionRequest>(context, cancellationToken);
+            if (request.CommandId is not { Length: > 0 and <= 128 }
+                || request.CommandId.Any(value => !(char.IsAsciiLetterOrDigit(value) || value is '.' or '_' or ':' or '-'))
+                || request.Input.ValueKind != JsonValueKind.Object)
+                return Results.Json(InteractionInvocationResult.Failed("COMPOSITION_ACTION_REQUEST_INVALID",
+                    "A bounded command ID and object input are required."), statusCode: StatusCodes.Status400BadRequest);
+            var result = await permissioned.InvokeActionAsync(WebTrustedPrincipalContextFactory.FromPrincipal(context.User),
+                id, binding, request.CommandId, request.Input.GetRawText(), cancellationToken);
+            return Results.Json(result);
+        }
+        catch (Exception exception) when (exception is InteractionContractException or JsonException
+            or DecoderFallbackException)
+        {
+            return Results.Json(InteractionInvocationResult.Failed("COMPOSITION_ACTION_REQUEST_INVALID",
+                "The page action request is invalid."), statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
     private static IResult PermissionedRouteError(string status) => status switch
     {
         "forbidden" => Results.StatusCode(StatusCodes.Status403Forbidden),
@@ -496,3 +523,5 @@ public static partial class WebInterfaceEndpoints
     }
 
 }
+
+internal sealed record WebCompositionActionRequest(string? CommandId, JsonElement Input);

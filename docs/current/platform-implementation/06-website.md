@@ -1,7 +1,7 @@
 # Website composition and operator interface
 
-Status: independent composition/read/presentation library and retained draft storage implemented; production publication,
-transport integration and dependent platform acceptance remain pending. The
+Status: retained composition storage and permissioned publication rendering are implemented, including
+the initial exact query and pure application-action bindings; broader dependent platform acceptance remains pending. The
 [coordination plan](../PLATFORM-IMPLEMENTATION.md) defines shared contracts and scheduling; the
 coordinator includes the relevant agreement with each assignment. This file owns the website
 workstream. Initial integrations are the website and Codex. Application-specific
@@ -24,7 +24,8 @@ unsafe URLs and undeclared bindings. Asset references must occur in the host-sup
 revision inventory; render accepts the legacy `/ui/{slug}/` base or the exact retained base
 `/ui/{slug}/content/{contentPageId}/revisions/{revision}/`. The current active-asset
 route does not pin asset reads to the rendered revision. It must be coordinated before claiming
-generation-consistent publication. Action buttons remain disabled until a real dispatcher is attached.
+generation-consistent publication. A published composition enables only action bindings resolved to
+exact active mechanics by the registered server coordinator.
 
 Bounds: 1 MiB document, JSON/node depth 32, 64 component definitions, 4,096 authored nodes,
 16 query/action declarations each, 100 items per loop, 16,384 expanded render nodes, and
@@ -58,8 +59,8 @@ Example composition payload (draft authoring; production publication remains una
 {
   "formatVersion": 1,
   "generation": "example-generation",
-  "queries": [{"name": "records"}],
-  "actions": [{"name": "refresh_record"}],
+  "queries": [{"name": "records", "query": "example.query.records", "input": {}}],
+  "actions": [{"name": "refresh_record", "mechanic": "example.mechanic.refresh-record"}],
   "components": [
     {"id": "heading", "revision": "1", "requiredProps": ["title"],
      "template": {"kind": "element", "tag": "h2", "children": [{"kind": "value", "path": "props.title"}]}},
@@ -74,10 +75,10 @@ Example composition payload (draft authoring; production publication remains una
   ]}
 ```
 
-`records` is only a local binding name. The coordinator-owned resolver must provide its exact
+`records` is only a local binding name. The coordinator resolves the authored qualified query to its exact
 `InteractionQueryContractReference` (projection ID/version/content hash, schema hash/schema,
 exposure/roles), selected application/state revision and trusted caller host. `refresh_record`
-similarly requires the real action owner to pin mechanic ID/version/content hash and command
+similarly resolves through the active catalog and requires the real action owner to pin mechanic ID/version/content hash and command
 identity. Neither declaration can select authority or advertise availability by itself.
 
 ## Retained content and coordinator integration
@@ -158,8 +159,9 @@ invocation, normally created with `InteractionInvocationHost.ForApplication`. Ex
 may also carry state context; that context never substitutes for the required Application-scoped
 Read grant. The reader selects the live ECS publication pin and resolves that exact retained resource.
 It consumes one shared operation and rechecks authority
-and the publication before returning HTML or exact revision assets. Failures return no content;
-query/action compositions remain unavailable. The coordinator owns host construction, registration,
+and the publication before returning HTML or exact revision assets. Query bindings consume child
+operations from the same bounded root ledger and a common deadline; failures return no content.
+The coordinator owns host construction, binding resolution, registration,
 HTTP routing and response cache policy. This consumer does not provide resource adoption, candidate
 acceptance, publication authorization, or mutation receipts. Existing legacy publish/activate and
 directory paths refuse pinned references rather than changing or reading the compatibility pointer.

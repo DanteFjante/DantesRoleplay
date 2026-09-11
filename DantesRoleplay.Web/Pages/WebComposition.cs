@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using DantesRoleplay.Interactions;
 
 namespace DantesRoleplay.Web.Pages;
 
@@ -40,8 +41,8 @@ internal sealed record WebCompositionComponentKey(string Id, string Revision)
     public override string ToString() => $"{Id}@{Revision}";
 }
 
-public sealed record WebCompositionQueryBinding(string Name);
-public sealed record WebCompositionActionBinding(string Name);
+public sealed record WebCompositionQueryBinding(string Name, string? QualifiedQueryId = null, string InputJson = "{}");
+public sealed record WebCompositionActionBinding(string Name, string? QualifiedMechanicId = null);
 
 internal sealed record WebCompositionComponent(
     WebCompositionComponentKey Key,
@@ -185,12 +186,36 @@ public sealed class WebCompositionParser
     }
 
     private static IReadOnlyDictionary<string, WebCompositionQueryBinding> ParseQueryBindings(JsonElement source) =>
-        ParseBindings(source, "queries", "$.queries", name => new WebCompositionQueryBinding(name));
+        ParseBindings(source, "queries", "$.queries", (binding, itemPath, bindingName) =>
+        {
+            RejectUnknown(binding, itemPath, "name", "query", "input");
+            var query = binding.TryGetProperty("query", out _) ? RequiredString(binding, "query", itemPath, 1, 200) : null;
+            if (query is not null && !QualifiedIdentifier(query))
+                throw Error(itemPath + ".query", "INVALID_QUERY_BINDING", "A query binding must name one qualified catalog query.");
+            var input = "{}";
+            if (binding.TryGetProperty("input", out var value))
+            {
+                if (value.ValueKind != JsonValueKind.Object)
+                    throw Error(itemPath + ".input", "BINDING_INPUT_INVALID", "A query binding input must be an object.");
+                input = InteractionCanonicalJson.CanonicalizeObject(value.GetRawText());
+            }
+            if (Encoding.UTF8.GetByteCount(input) > InteractionContractLimits.JsonBytes)
+                throw Error(itemPath + ".input", "BINDING_INPUT_TOO_LARGE", "A query binding input exceeds the interaction limit.");
+            return new WebCompositionQueryBinding(bindingName, query, input);
+        });
 
     private static IReadOnlyDictionary<string, WebCompositionActionBinding> ParseActionBindings(JsonElement source) =>
-        ParseBindings(source, "actions", "$.actions", name => new WebCompositionActionBinding(name));
+        ParseBindings(source, "actions", "$.actions", (binding, itemPath, bindingName) =>
+        {
+            RejectUnknown(binding, itemPath, "name", "mechanic");
+            var mechanic = binding.TryGetProperty("mechanic", out _) ? RequiredString(binding, "mechanic", itemPath, 1, 200) : null;
+            if (mechanic is not null && !QualifiedIdentifier(mechanic))
+                throw Error(itemPath + ".mechanic", "INVALID_ACTION_BINDING", "An action binding must name one qualified catalog mechanic.");
+            return new WebCompositionActionBinding(bindingName, mechanic);
+        });
 
-    private static IReadOnlyDictionary<string, T> ParseBindings<T>(JsonElement source, string name, string path, Func<string, T> create)
+    private static IReadOnlyDictionary<string, T> ParseBindings<T>(JsonElement source, string name, string path,
+        Func<JsonElement, string, string, T> create)
     {
         var result = new Dictionary<string, T>(StringComparer.Ordinal);
         if (!source.TryGetProperty(name, out var values))
@@ -204,11 +229,10 @@ public sealed class WebCompositionParser
         {
             var itemPath = $"{path}[{index++}]";
             RequireObject(binding, itemPath, "BINDING_OBJECT_REQUIRED");
-            RejectUnknown(binding, itemPath, "name");
             var bindingName = RequiredString(binding, "name", itemPath, 1, 100);
-            if (!IsIdentifier(bindingName) || bindingName == "props")
+            if (!IsIdentifier(bindingName) || bindingName == "props" || bindingName.Length > 80)
                 throw Error(itemPath + ".name", "INVALID_BINDING_NAME", "Binding names must be ASCII identifiers other than 'props'.");
-            var declared = create(bindingName);
+            var declared = create(binding, itemPath, bindingName);
             if (!result.TryAdd(bindingName, declared))
                 throw Error(itemPath, "DUPLICATE_BINDING", $"Binding '{bindingName}' is declared more than once.");
         }
@@ -510,6 +534,12 @@ public sealed class WebCompositionParser
         ((value[0] is >= 'A' and <= 'Z') || (value[0] is >= 'a' and <= 'z') || value[0] == '_') &&
         value.All(character => (character is >= 'A' and <= 'Z') || (character is >= 'a' and <= 'z') ||
             (character is >= '0' and <= '9') || character == '_');
+
+    private static bool QualifiedIdentifier(string value) => value.Length <= 200
+        && value.Split('.').Length > 1 && value.Split('.').All(part => part.Length is > 0 and <= 63
+            && char.IsAsciiLetterLower(part[0])
+            && part.All(character => char.IsAsciiLetterLower(character)
+                || char.IsAsciiDigit(character) || character == '-'));
 
     private static void RequireObject(JsonElement value, string path, string code)
     {

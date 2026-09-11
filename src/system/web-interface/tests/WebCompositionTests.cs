@@ -6,6 +6,30 @@ namespace DantesRoleplay.Tests;
 public sealed class WebCompositionTests
 {
     [Fact]
+    public void Dynamic_bindings_retain_only_catalog_intent_and_bounded_input()
+    {
+        var parsed = new WebCompositionParser().Parse("""
+            {"formatVersion":1,"generation":"g","queries":[{"name":"summary","query":"example.query.summary","input":{"filter":"open"}}],
+             "actions":[{"name":"refresh","mechanic":"example.mechanic.refresh"}],"components":[],
+             "root":{"kind":"element","tag":"button","action":"refresh","children":[{"kind":"value","path":"summary.label"}]}}
+            """);
+
+        Assert.True(parsed.IsValid, string.Join("; ", parsed.Errors.Select(error => error.Code)));
+        Assert.Equal("example.query.summary", parsed.Document!.QueryBindings["summary"].QualifiedQueryId);
+        Assert.Equal("{\"filter\":\"open\"}", parsed.Document.QueryBindings["summary"].InputJson);
+        Assert.Equal("example.mechanic.refresh", parsed.Document.ActionBindings["refresh"].QualifiedMechanicId);
+
+        foreach (var authorityField in new[] { "grantReference", "stateSpaceId", "roles", "audience" })
+        {
+            var forged = new WebCompositionParser().Parse($$$"""
+                {"formatVersion":1,"generation":"g","queries":[{"name":"summary","query":"example.query.summary","{{{authorityField}}}":"forged"}],
+                 "components":[],"root":{"kind":"value","path":"summary"}}
+                """);
+            Assert.Equal("UNKNOWN_FIELD", Assert.Single(forged.Errors).Code);
+        }
+    }
+
+    [Fact]
     public void Reusable_component_renders_slots_loops_and_escaped_values()
     {
         var parsed = new WebCompositionParser().Parse("""

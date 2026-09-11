@@ -100,6 +100,33 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         Assert.Empty(result.Candidates);
     }
 
+    [Fact]
+    public async Task Candidate_reader_uses_the_server_selected_scope_and_complete_capability_set()
+    {
+        await using var db = fixture.CreateContext();
+        var principal = "principal." + new string('a', 64);
+        await AddGrantAsync(db, "application-read", "application-read@1", principal,
+            [StandingGrantCapability.Read], StandingGrantDefinitionMode.ExactIds);
+        await AddGrantAsync(db, "application-action", "application-action@1", principal,
+            [StandingGrantCapability.Read, StandingGrantCapability.Execute], StandingGrantDefinitionMode.ExactIds);
+        await AddGrantAsync(db, "state-read", "state-read@1", principal,
+            [StandingGrantCapability.Read], StandingGrantDefinitionMode.ExactIds,
+            scope: StandingGrantScope.StateSpace);
+        var reader = new SqliteStandingGrantReadCandidateReader(db);
+        var trusted = TrustedPrincipalContext.VerifiedPrincipal(principal, "test");
+
+        var state = await reader.ReadAsync(trusted, Application, StandingGrantScope.StateSpace, "state",
+            new HashSet<StandingGrantCapability> { StandingGrantCapability.Read });
+        var action = await reader.ReadAsync(trusted, Application, StandingGrantScope.Application, null,
+            new HashSet<StandingGrantCapability> { StandingGrantCapability.Read, StandingGrantCapability.Execute });
+
+        Assert.Equal(["state-read"], state.Candidates.Select(value => value.GrantId).ToArray());
+        Assert.Equal(["application-action"], action.Candidates.Select(value => value.GrantId).ToArray());
+        Assert.Equal(StandingGrantReadCandidateStatus.Unavailable,
+            (await reader.ReadAsync(trusted, Application, StandingGrantScope.StateSpace, null,
+                new HashSet<StandingGrantCapability> { StandingGrantCapability.Read })).Status);
+    }
+
     private static async Task AddGrantAsync(DantesRoleplayDbContext db, string grantId, string reference, string principal,
         IReadOnlyList<StandingGrantCapability> capabilities, StandingGrantDefinitionMode mode, bool revoked = false,
         StandingGrantScope scope = StandingGrantScope.Application)

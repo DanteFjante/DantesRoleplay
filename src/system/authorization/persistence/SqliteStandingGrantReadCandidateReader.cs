@@ -11,9 +11,20 @@ namespace DantesRoleplay.Authorization;
 public sealed class SqliteStandingGrantReadCandidateReader(DantesRoleplayDbContext db) : IStandingGrantReadCandidateReader
 {
     public async Task<StandingGrantReadCandidateResult> ReadAsync(TrustedPrincipalContext principal,
-        ApplicationIdentifier applicationId, CancellationToken cancellationToken = default)
+        ApplicationIdentifier applicationId, CancellationToken cancellationToken = default) =>
+        await ReadAsync(principal, applicationId, StandingGrantScope.Application, null,
+            new HashSet<StandingGrantCapability> { StandingGrantCapability.Read }, cancellationToken);
+
+    public async Task<StandingGrantReadCandidateResult> ReadAsync(TrustedPrincipalContext principal,
+        ApplicationIdentifier applicationId, StandingGrantScope scope, string? stateSpaceId,
+        IReadOnlySet<StandingGrantCapability> requiredCapabilities,
+        CancellationToken cancellationToken = default)
     {
         if (principal is null || !principal.Verified || applicationId is null || applicationId.IsSystem)
+            return Unavailable("STANDING_GRANT_READ_CANDIDATES_UNAVAILABLE");
+        if (!Enum.IsDefined(scope) || requiredCapabilities is null || requiredCapabilities.Count is < 1 or > 2
+            || requiredCapabilities.Any(value => !Enum.IsDefined(value))
+            || (scope == StandingGrantScope.Application) != (stateSpaceId is null))
             return Unavailable("STANDING_GRANT_READ_CANDIDATES_UNAVAILABLE");
         try
         {
@@ -23,7 +34,8 @@ public sealed class SqliteStandingGrantReadCandidateReader(DantesRoleplayDbConte
                                   join current in db.Set<StandingGrantCurrentRecord>().AsNoTracking()
                                       on new { record.GrantId, record.Revision } equals new { current.GrantId, current.Revision }
                                   where record.PrincipalReference == principal.PrincipalId && record.ApplicationId == applicationId.Value
-                                      && record.Scope == "application" && record.StateSpaceId == null && !record.Revoked
+                                      && record.Scope == (scope == StandingGrantScope.Application ? "application" : "stateSpace")
+                                      && record.StateSpaceId == stateSpaceId && !record.Revoked
                                       && record.ExpiresAtUtc > now
                                   orderby record.GrantId, record.Revision
                                   select new GrantKey(record.GrantId, record.Revision)).Take(33).ToArrayAsync(cancellationToken);
@@ -41,7 +53,7 @@ public sealed class SqliteStandingGrantReadCandidateReader(DantesRoleplayDbConte
                 catch (Exception exception) when (exception is System.Text.Json.JsonException or ArgumentException or InteractionContractException)
                 { return Unavailable("STANDING_GRANT_READ_CANDIDATES_INVALID"); }
             }
-            var candidates = grants.Where(value => value.Capabilities.Contains(StandingGrantCapability.Read))
+            var candidates = grants.Where(value => requiredCapabilities.All(value.Capabilities.Contains))
                 .OrderBy(value => value.Definitions.Mode == StandingGrantDefinitionMode.ExactIds ? 0 : 1)
                 .ThenBy(value => value.GrantId, StringComparer.Ordinal).ThenBy(value => value.Revision)
                 .ToArray();

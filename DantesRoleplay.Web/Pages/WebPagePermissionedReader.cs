@@ -7,14 +7,15 @@ namespace DantesRoleplay.Web.Pages;
 
 /// <summary>
 /// Reads one live publication using a host-created invocation and current Application Read grant.
-/// This owner neither constructs authority nor executes composition bindings. Registration and
-/// transport are coordinator-owned; a successful read is not publication or mutation evidence.
+/// This owner neither constructs authority nor resolves composition bindings. The registered
+/// coordinator supplies those exact authorized reads; a successful read is not publication or mutation evidence.
 /// </summary>
 public sealed class WebPagePermissionedReader(
     WebPagePublicationService publication,
     WebContentDbContext content,
     IStandingGrantTargetResolver targets,
-    IStandingGrantPolicy grants)
+    IStandingGrantPolicy grants,
+    CompositionPageBindingCoordinator? bindings = null)
 {
     public Task<WebPagePermissionedReadResult> ReadPageAsync(InteractionInvocationHost host,
         string entityId, CancellationToken cancellationToken = default) =>
@@ -89,7 +90,18 @@ public sealed class WebPagePermissionedReader(
                     html = retained.Html;
                 else
                 {
-                    var rendered = await publication.RenderLiteralSelectionAsync(selected, token);
+                    var parsed = new WebCompositionParser().Parse(retained.CompositionJson!,
+                        retained.Assets.Select(asset => asset.Path));
+                    if (!parsed.IsValid)
+                        return Unavailable("WEB_COMPOSITION_INVALID");
+                    var rendered = parsed.Document!.QueryBindings.Count == 0
+                                   && parsed.Document.ActionBindings.Count == 0
+                        ? new WebCompositionRenderer().Render(parsed.Document,
+                            new Dictionary<string, System.Text.Json.JsonElement>(), selected.AssetBasePath)
+                        : bindings is null
+                            ? new WebCompositionRenderResult(null,
+                                [new("$", "COMPOSITION_BINDINGS_UNAVAILABLE", "Composition bindings are unavailable.")])
+                            : await bindings.RenderAsync(selected, parsed.Document, host, token);
                     if (!rendered.IsSuccess)
                         return Unavailable(rendered.Errors.Any(error => error.Code == "COMPOSITION_BINDINGS_UNAVAILABLE")
                             ? "COMPOSITION_BINDINGS_UNAVAILABLE" : "WEB_COMPOSITION_INVALID");

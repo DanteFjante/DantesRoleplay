@@ -49,6 +49,8 @@ public static class WebInterfaceServiceCollectionExtensions
         services.AddScoped<IStandingGrantResourceTargetOwner, WebPageStandingGrantResourceTargetOwner>();
         services.AddScoped<WebPagePermissionedReader>();
         services.AddScoped<WebPermissionedPageRouteAdapter>();
+        services.AddScoped<CompositionQueryMaterializer>();
+        services.AddScoped<CompositionPageBindingCoordinator>();
         services.AddSingleton<WebPageIdentityMigrationState>();
         services.AddScoped<WebPagePublicationService>();
         services.AddScoped<IWebPagePublicationDirectory>(provider =>
