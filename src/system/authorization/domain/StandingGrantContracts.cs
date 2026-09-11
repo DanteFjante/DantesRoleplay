@@ -7,7 +7,7 @@ using DantesRoleplay.ApplicationActivation;
 
 namespace DantesRoleplay.Authorization;
 
-// Coordinator review proposal. No production implementation or registration is supplied here.
+// Shared grant contracts. The coordinator owns production registration of their SQLite services.
 [JsonConverter(typeof(StandingGrantCapabilityJsonConverter))]
 public enum StandingGrantCapability { Author, Validate, Activate, Execute, Read, ReadTask, CancelTask }
 
@@ -59,6 +59,8 @@ public sealed record StandingGrantDefinitionAllowance(
 /// EvidenceReference must be rehydrated and revalidated by the policy; caller JSON is not evidence.
 /// New candidates may resolve an intended identity through its registered namespace before that ID
 /// exists; their revision/fingerprint pin the candidate bytes, not a claim of current publication.
+/// Candidate carries that distinct durable origin. Null means active evidence. Candidate targets
+/// permit application authoring/validation/activation/inspection only, never execution or task access.
 /// </summary>
 public sealed record StandingGrantDefinitionTarget(
     string DefinitionId, string Kind, ApplicationIdentifier OwnerApplicationId, string NamespaceId,
@@ -109,7 +111,11 @@ public sealed class RejectStandingGrantRequirementJsonConverter : JsonConverter<
 public sealed record StandingGrantDecision(
     bool Allowed, string Code, StandingGrantRevision? Grant, AuthorizationAuditEvidence Evidence);
 
+[JsonConverter(typeof(StandingGrantIssuerMutationJsonConverter))]
 public enum StandingGrantIssuerMutation { Issue, Replace, Revoke }
+
+public sealed class StandingGrantIssuerMutationJsonConverter()
+    : JsonStringEnumConverter<StandingGrantIssuerMutation>(JsonNamingPolicy.CamelCase, allowIntegerValues: false);
 
 /// <summary>
 /// Owner-resolved transition: Issue expects absence (zero) and writes revision one; Replace/Revoke

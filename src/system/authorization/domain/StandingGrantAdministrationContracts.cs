@@ -1,6 +1,7 @@
 using DantesRoleplay.Applications;
 using DantesRoleplay.Interactions;
 using System.Text.Json.Serialization;
+using System.Text.Json;
 
 namespace DantesRoleplay.Authorization;
 
@@ -16,7 +17,7 @@ public sealed record StandingGrantMutationRequest(
     [property: JsonRequired] string GrantId,
     [property: JsonRequired] int ExpectedCurrentRevision,
     [property: JsonRequired] string PrincipalReference,
-    [property: JsonRequired] ApplicationIdentifier ApplicationId,
+    [property: JsonRequired, JsonConverter(typeof(StandingGrantApplicationIdentifierJsonConverter))] ApplicationIdentifier ApplicationId,
     [property: JsonRequired] StandingGrantScope Scope,
     [property: JsonRequired] string? StateSpaceId,
     [property: JsonRequired] IReadOnlyList<StandingGrantCapability> Capabilities,
@@ -24,6 +25,18 @@ public sealed record StandingGrantMutationRequest(
     [property: JsonRequired] IReadOnlyList<string> EffectKinds,
     [property: JsonRequired] int MaximumOperations,
     [property: JsonRequired] DateTime ExpiresAtUtc);
+
+public sealed class StandingGrantApplicationIdentifierJsonConverter : JsonConverter<ApplicationIdentifier>
+{
+    public override ApplicationIdentifier Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType != JsonTokenType.String) throw new JsonException("An exact application identifier is required.");
+        try { return ApplicationIdentifier.Parse(reader.GetString()!); }
+        catch (ArgumentException exception) { throw new JsonException("The application identifier is invalid.", exception); }
+    }
+    public override void Write(Utf8JsonWriter writer, ApplicationIdentifier value, JsonSerializerOptions options) =>
+        writer.WriteStringValue(value.Value);
+}
 
 public interface IStandingGrantAdministration
 {

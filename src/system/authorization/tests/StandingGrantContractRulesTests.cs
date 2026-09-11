@@ -11,6 +11,27 @@ public sealed class StandingGrantContractRulesTests
     private const string Hash = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 
     [Fact]
+    public void Candidate_origin_never_authorizes_execution_state_reads_or_task_access()
+    {
+        var host = Host();
+        var target = Target() with
+        {
+            Candidate = new DantesRoleplay.ApplicationActivation.ApplicationCandidateReference(App, new string('a', 32), 1, Hash)
+        };
+        foreach (var capability in new[] { StandingGrantCapability.Execute, StandingGrantCapability.Read,
+            StandingGrantCapability.ReadTask, StandingGrantCapability.CancelTask })
+        {
+            var error = Assert.Throws<InteractionContractException>(() => StandingGrantContractRules.ValidateRequirement(host,
+                new(capability, StandingGrantScope.StateSpace, [target], [],
+                    capability is StandingGrantCapability.ReadTask or StandingGrantCapability.CancelTask ? TaskTarget(host, target) : null)));
+            Assert.Equal("STANDING_GRANT_CANDIDATE_SCOPE_DENIED", error.Code);
+        }
+        foreach (var capability in new[] { StandingGrantCapability.Author, StandingGrantCapability.Validate,
+            StandingGrantCapability.Activate, StandingGrantCapability.Read })
+            StandingGrantContractRules.ValidateRequirement(host, new(capability, StandingGrantScope.Application, [target], []));
+    }
+
+    [Fact]
     public void Issuer_transition_requires_exact_predecessor_and_explicit_revocation()
     {
         var grant = new StandingGrantRevision("grant@1", "grant", 1, Hash, "principal", App,

@@ -39,6 +39,17 @@ incompatible values are preserved and reported for explicit correction. These or
 updates do not provide immutable draft history or executable publication. Runtime candidates and
 standing grants require the coordinated authoring contracts and storage boundary.
 
+Standing-grant evaluation rehydrates current grant and definition ownership in the same scoped
+SQLite transaction. Mutation owners acquire an immediate writer before evaluation; the policy does
+not introspect writer mode or mutate rows. Standalone permission reads use one deferred snapshot.
+Active target resolution reuses the catalog's pure retained-record parser and requires exact source
+registration affiliation plus an enabled, reviewed namespace. Namespace `Owner` is a domain label,
+not an application identity. Definition fingerprints refer to normalized catalog content; the
+separate owner evidence also pins raw retained bytes. Current lookups are limited to 128 text
+documents and 16 MiB. Unsupported candidate, historical, and component targets remain unavailable
+until their owner paths exist. Invited or AI principals never gain operator issuance from
+`Verified=true`; the coordinator supplies the separate installation-operator attestation.
+
 Activation may reuse retained document evidence only while its bytes still match their recorded
 length and fingerprint. A new unchanged confirmation checks that evidence too. Missing bytes from
 a prepared revision require recovery; only legacy metadata-only evidence may acquire source bytes

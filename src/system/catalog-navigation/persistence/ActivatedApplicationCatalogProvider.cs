@@ -107,18 +107,9 @@ public sealed class ActivatedApplicationCatalogMaterializer(
         foreach (var winner in activation.Winners.OrderBy(value => value.RelativePath, StringComparer.Ordinal))
         {
             if (!TryRecordKind(winner.RelativePath, out var kind)) continue;
-            var sourceText = DecodeText(winner, documents[winner.RelativePath]);
             try
             {
-                records.Add(kind switch
-                {
-                    "procedure" => ProcedureRecord(applicationId, applicationId.Value, winner,
-                        ProcedureFile.Parse(sourceText, winner.RelativePath)),
-                    "query" => QueryRecord(applicationId, applicationId.Value, winner,
-                        ApplicationQueryContract.Parse(sourceText, applicationId)),
-                    "entity" => EntityRecord(applicationId, applicationId.Value, winner, sourceText),
-                    _ => MechanicRecord(applicationId, applicationId.Value, winner, sourceText, winners, documents)
-                });
+                records.Add(ParseRetainedRecord(applicationId, winner, winners, documents)!);
             }
             catch (ApplicationCatalogMaterializationException) { throw; }
             catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or JsonException)
@@ -213,7 +204,32 @@ public sealed class ActivatedApplicationCatalogMaterializer(
         }
     }
 
-    private CatalogRecordDefinition MechanicRecord(
+    /// <summary>
+    /// Pure parsing shared with owner authorization. The caller supplies exact verified retained
+    /// winners/bytes; this method performs no source reads, cache preparation or projection writes.
+    /// Returned fingerprints retain the catalog's existing normalized definition semantics.
+    /// </summary>
+    internal static CatalogRecordDefinition? ParseRetainedRecord(
+        ApplicationIdentifier applicationId, ActivatedApplicationDocument winner,
+        IReadOnlyDictionary<string, ActivatedApplicationDocument> winners,
+        IReadOnlyDictionary<string, byte[]> documents)
+    {
+        if (!TryRecordKind(winner.RelativePath, out var kind)) return null;
+        if (!winners.TryGetValue(winner.RelativePath, out var exact) || exact != winner)
+            throw Failure("CATALOG_PROVENANCE_MISSING", "The document is not an exact retained winner.");
+        var text = DecodeText(winner, documents[winner.RelativePath]);
+        return kind switch
+        {
+            "procedure" => ProcedureRecord(applicationId, applicationId.Value, winner,
+                ProcedureFile.Parse(text, winner.RelativePath)),
+            "query" => QueryRecord(applicationId, applicationId.Value, winner,
+                ApplicationQueryContract.Parse(text, applicationId)),
+            "entity" => EntityRecord(applicationId, applicationId.Value, winner, text),
+            _ => MechanicRecord(applicationId, applicationId.Value, winner, text, winners, documents)
+        };
+    }
+
+    private static CatalogRecordDefinition MechanicRecord(
         ApplicationIdentifier applicationId,
         string collection,
         ActivatedApplicationDocument markdownWinner,

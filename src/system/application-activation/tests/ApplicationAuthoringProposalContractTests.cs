@@ -45,6 +45,30 @@ public sealed class ApplicationAuthoringProposalContractTests
     }
 
     [Fact]
+    public void Grant_administration_has_named_intent_exact_application_and_no_caller_generated_evidence()
+    {
+        const string example = """
+            {"mutation":"issue","grantId":"authoring","expectedCurrentRevision":0,
+             "principalReference":"principal.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+             "applicationId":"demo","scope":"application","stateSpaceId":null,"capabilities":["author"],
+             "definitions":{"mode":"applicationOwned","exactIds":[],"applicationOwnedNamespaces":[
+                {"namespaceId":"demo.runtime","includeDescendants":false,"definitionKinds":["procedure"]}]},
+             "effectKinds":[],"maximumOperations":2,"expiresAtUtc":"2026-12-31T00:00:00Z"}
+            """;
+        var request = JsonSerializer.Deserialize<StandingGrantMutationRequest>(example, Wire)!;
+        Assert.Equal(StandingGrantIssuerMutation.Issue, request.Mutation);
+        Assert.Equal("demo", request.ApplicationId.Value);
+        Assert.Equal(InteractionCanonicalJson.Canonicalize(example),
+            InteractionCanonicalJson.Canonicalize(JsonSerializer.Serialize(request, Wire)));
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StandingGrantMutationRequest>(
+            example.Replace("\"mutation\":\"issue\"", "\"mutation\":0"), Wire));
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StandingGrantMutationRequest>(
+            example.Replace("\"applicationId\":\"demo\"", "\"applicationId\":\"system\""), Wire));
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StandingGrantMutationRequest>(
+            example.Replace("\"grantId\":", "\"contentFingerprint\":\"self-issued\",\"grantId\":"), Wire));
+    }
+
+    [Fact]
     public void Expanding_allowance_requires_explicit_mode_and_descendant_choice()
     {
         const string example = """

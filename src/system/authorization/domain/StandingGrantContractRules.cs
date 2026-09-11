@@ -46,6 +46,11 @@ public static class StandingGrantContractRules
         var targets = requirement.Definitions?.ToArray() ?? Fail<IReadOnlyList<StandingGrantDefinitionTarget>>("INVALID_STANDING_GRANT_TARGETS", "Definitions are required.");
         if (targets.Count is < 1 or > StandingGrantLimits.Definitions) Fail("INVALID_STANDING_GRANT_TARGETS", "The definition target count is invalid.");
         foreach (var target in targets) ValidateTarget(host.ApplicationRevision.ApplicationId, target);
+        if (targets.Any(target => target.Candidate is not null)
+            && (requirement.Scope != StandingGrantScope.Application
+                || requirement.Capability is not (StandingGrantCapability.Author or StandingGrantCapability.Validate
+                    or StandingGrantCapability.Activate or StandingGrantCapability.Read)))
+            Fail("STANDING_GRANT_CANDIDATE_SCOPE_DENIED", "Candidate targets authorize application authoring or inspection only.");
         if (targets.Select(target => target.DefinitionId).Distinct(StringComparer.Ordinal).Count() != targets.Count)
             Fail("INVALID_STANDING_GRANT_TARGETS", "Definition targets must have distinct identities.");
         var effects = Distinct(requirement.EffectKinds, StandingGrantLimits.EffectKinds, "INVALID_STANDING_GRANT_EFFECTS");
@@ -98,6 +103,14 @@ public static class StandingGrantContractRules
     {
         if (target is null || app is null || app.IsSystem || target.OwnerApplicationId != app || !Kinds.Contains(target.Kind) || !Namespace(app, target.NamespaceId) || !RecordId(target.DefinitionId, "INVALID_STANDING_GRANT_TARGET") || !Id(target.OwnershipEvidenceReference, "INVALID_STANDING_GRANT_TARGET") || target.Revision < 1) Fail("INVALID_STANDING_GRANT_TARGET", "Definition target is invalid or cross-application.");
         Hash(target.ContentFingerprint);
+        if (target.Candidate is { } candidate)
+        {
+            if (candidate.ApplicationId != app || candidate.Revision < 1
+                || candidate.CandidateId is not { Length: 32 }
+                || candidate.CandidateId.Any(c => !(char.IsAsciiDigit(c) || c is >= 'a' and <= 'f')))
+                Fail("INVALID_STANDING_GRANT_TARGET", "The candidate origin is invalid or cross-application.");
+            Hash(candidate.ContentFingerprint);
+        }
         if (CatalogNamespaceIdentity.NamespaceOf(target.DefinitionId) != target.NamespaceId) Fail("INVALID_STANDING_GRANT_TARGET", "Definition identity is outside its namespace.");
     }
 
