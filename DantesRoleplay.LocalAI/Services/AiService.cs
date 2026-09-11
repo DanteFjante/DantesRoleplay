@@ -70,12 +70,10 @@ public sealed partial class AiService : IAiService
         if (!ValidProfile(profile, out var invalid))
             return AiResponse.Failure("AI_AGENT_PROFILE_INVALID", invalid);
 
-        IReadOnlyDictionary<string, PreparedAiTool> available;
         IReadOnlyDictionary<string, PreparedAiTool> authorized;
         try
         {
             authorized = UniqueTools(authorizedTools);
-            available = MergeTools(_tools, authorized);
         }
         catch (ArgumentException exception)
         {
@@ -83,7 +81,9 @@ public sealed partial class AiService : IAiService
         }
 
         var allowed = request.AllowedTools ?? authorized.Keys.ToArray();
-        return await SendRequestCoreAsync(request with { AllowedTools = allowed }, available, profile, cancellationToken);
+        // Agent requests are scoped to the host-materialized tools. Static tools remain available
+        // to direct requests, but naming one here cannot enlarge this invocation's authority.
+        return await SendRequestCoreAsync(request with { AllowedTools = allowed }, authorized, profile, cancellationToken);
     }
 
     private async Task<AiResponse> SendRequestCoreAsync(
@@ -128,13 +128,17 @@ public sealed partial class AiService : IAiService
                 activities.Add(new(++activitySequence, kind, status, Bound(summary), call?.Id ?? "",
                     call?.Name ?? "", inputValidated, errorCode));
         }
+        var promptTokens = 0;
+        var outputTokens = 0;
         AiResponse Failure(string code, string message)
         {
             Activity("request", "failed", message, errorCode: code);
-            return AiResponse.Failure(code, message) with { Activities = activities.ToArray() };
+            return AiResponse.Failure(code, message) with
+            {
+                PromptTokens = promptTokens, OutputTokens = outputTokens,
+                ToolCalls = observedCalls.ToArray(), Activities = activities.ToArray()
+            };
         }
-        var promptTokens = 0;
-        var outputTokens = 0;
         for (var round = 0; round <= request.MaximumToolRounds; round++)
         {
             AiToolExecutor executor = async (call, token) =>
@@ -158,13 +162,13 @@ public sealed partial class AiService : IAiService
                 selectedTools.Values.Select(value => value.Definition).ToArray(),
                 selectedTools.Count == 0 ? null : executor,
                 request.MaximumOutputTokens), cancellationToken);
+            promptTokens += result.PromptTokens;
+            outputTokens += result.OutputTokens;
             if (!result.Ok)
                 return Failure(
                     string.IsNullOrWhiteSpace(result.ErrorCode) ? "AI_PROVIDER_FAILED" : result.ErrorCode,
                     string.IsNullOrWhiteSpace(result.ErrorMessage) ? "The AI provider did not return a result." : result.ErrorMessage);
 
-            promptTokens += result.PromptTokens;
-            outputTokens += result.OutputTokens;
             if (result.ToolCalls.Count == 0)
                 return Complete(result, observedCalls, promptTokens, outputTokens, responseSchema,
                     activities, attachedMedia, Activity);
@@ -210,7 +214,8 @@ public sealed partial class AiService : IAiService
                     activity("validation", "failed", "The AI response does not match the requested schema.",
                         null, false, "AI_RESPONSE_SCHEMA_MISMATCH");
                     return AiResponse.Failure("AI_RESPONSE_SCHEMA_MISMATCH", "The AI response does not match the requested schema.")
-                        with { Activities = activities.ToArray() };
+                        with { PromptTokens = promptTokens, OutputTokens = outputTokens,
+                            ToolCalls = calls.ToArray(), Activities = activities.ToArray() };
                 }
                 structured = document.RootElement.Clone();
                 activity("validation", "completed", "The structured AI response passed its declared schema.",
@@ -221,7 +226,8 @@ public sealed partial class AiService : IAiService
                 activity("validation", "failed", "The AI response is not valid structured JSON.",
                     null, false, "AI_RESPONSE_SCHEMA_MISMATCH");
                 return AiResponse.Failure("AI_RESPONSE_SCHEMA_MISMATCH", "The AI response is not valid structured JSON.")
-                    with { Activities = activities.ToArray() };
+                    with { PromptTokens = promptTokens, OutputTokens = outputTokens,
+                        ToolCalls = calls.ToArray(), Activities = activities.ToArray() };
             }
         }
         activity("result", "completed", "The AI request completed.", null, schema is null || structured is not null, "");
@@ -350,17 +356,6 @@ public sealed partial class AiService : IAiService
             }
             result.Add(definition.Name, new(value, definition, schema));
         }
-        return result;
-    }
-
-    private static IReadOnlyDictionary<string, PreparedAiTool> MergeTools(
-        IReadOnlyDictionary<string, PreparedAiTool> registered,
-        IReadOnlyDictionary<string, PreparedAiTool> authorized)
-    {
-        var result = new Dictionary<string, PreparedAiTool>(registered, StringComparer.Ordinal);
-        foreach (var (name, tool) in authorized)
-            if (!result.TryAdd(name, tool) && !ReferenceEquals(result[name].Tool, tool.Tool))
-                throw new ArgumentException($"AI tool '{name}' has conflicting registrations.", nameof(authorized));
         return result;
     }
 
