@@ -164,6 +164,16 @@ HTTP routing and response cache policy. This consumer does not provide resource 
 acceptance, publication authorization, or mutation receipts. Existing legacy publish/activate and
 directory paths refuse pinned references rather than changing or reading the compatibility pointer.
 
+`StageContentReferenceAsync` requires the publication owner's exact current transaction, proved by
+`IEcsWriteTransactionFactory.OwnsCurrent`. The generic factory fails closed for unsupported factories
+and recognizes only its own live wrapper and current database transaction. Staging rechecks retained
+bytes and the exact ECS selection, then uses the existing validated component write. Its SaveChanges
+remains inside the caller transaction; staging never begins, commits or rolls back a transaction.
+The caller must validate generic state-space constraints and owns current grants, candidate validation,
+audit and commit/rollback. The independent CAS wrapper uses the same stage, requires the actual
+constraint validator, and validates before committing. A returned staged component is uncommitted
+evidence, not an operation receipt; rolling back does not remove the separately retained web draft.
+
 Library and migrated SQLite fixtures demonstrate composition, inert retention, exact historical
 asset readback, local transaction rollback and consumer conformance. They do not demonstrate
 production composition activation, published composition routes, cross-owner failed-publication recovery,

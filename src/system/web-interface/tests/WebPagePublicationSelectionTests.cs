@@ -209,7 +209,8 @@ public sealed class WebPagePublicationSelectionTests
         var entities = new SqliteEntityComponentStore(peerData, types, schemas, new SqliteEcsRoleConstraintValidator(peerData));
         var peer = new WebPagePublicationService(applications, new SqliteStateSpaceRegistry(peerData, applications),
             types, entities, new WorldStore(peerData), new WebPageStore(peerWeb), peerWeb,
-            new SqliteEcsWriteTransactionFactory(peerData), new(), NullLogger<WebPagePublicationService>.Instance);
+            new SqliteEcsWriteTransactionFactory(peerData), new(), NullLogger<WebPagePublicationService>.Instance,
+            publicationConstraints: new SqliteEcsRoleConstraintValidator(peerData));
         var first = await fixture.Publication.SelectDraftAsync(fixture.ApplicationId, Fixture.EntityId, 2);
         var second = await peer.SelectDraftAsync(fixture.ApplicationId, Fixture.EntityId, 3);
         Assert.Equal(first.PageComponent.Revision, second.PageComponent.Revision);
@@ -263,6 +264,8 @@ public sealed class WebPagePublicationSelectionTests
         public required WebPageStore Content { get; init; }
         public required WebPagePublicationService Publication { get; init; }
         public required WebPageAdministration Administration { get; init; }
+        public required SqliteEcsWriteTransactionFactory Transactions { get; init; }
+        public required SqliteEcsRoleConstraintValidator Constraints { get; init; }
 
         public static async Task<Fixture> CreateAsync()
         {
@@ -304,11 +307,12 @@ public sealed class WebPagePublicationSelectionTests
                 }), 0));
             var transactions = new SqliteEcsWriteTransactionFactory(data);
             var publication = new WebPagePublicationService(applications, spaces, types, entities,
-                new WorldStore(data), content, web, transactions, new(), NullLogger<WebPagePublicationService>.Instance);
+                new WorldStore(data), content, web, transactions, new(), NullLogger<WebPagePublicationService>.Instance,
+                publicationConstraints: constraints);
             return new()
             {
                 Data = data, Web = web, Applications = applications, Spaces = spaces, Entities = entities,
-                Lifecycle = lifecycle, Content = content, Publication = publication,
+                Lifecycle = lifecycle, Content = content, Publication = publication, Transactions = transactions, Constraints = constraints,
                 Administration = new(applications, spaces, types, entities, lifecycle, transactions, content, publication)
             };
         }

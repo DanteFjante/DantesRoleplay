@@ -99,7 +99,8 @@ public sealed partial class WebPagePublicationService(
     IEcsWriteTransactionFactory? transactions,
     WebPageIdentityMigrationState migrationState,
     ILogger<WebPagePublicationService> logger,
-    IApplicationActivationReader? activations = null)
+    IApplicationActivationReader? activations = null,
+    IEcsRoleConstraintValidator? publicationConstraints = null)
     : IWebPagePublicationDirectory, IWebPageIdentityMigration
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)

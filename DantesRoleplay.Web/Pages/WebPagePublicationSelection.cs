@@ -143,19 +143,15 @@ public sealed partial class WebPagePublicationService
         WebPagePublicationSelection expected, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(expected);
-        if (!expected.IsDraft)
-            throw SelectionError("WEB_DRAFT_SELECTION_REQUIRED", "Publishing requires an exact retained draft selection.");
-        _ = await RevalidateSelectionAsync(expected, cancellationToken);
         if (transactions is null)
             throw SelectionError("WEB_PUBLICATION_TRANSACTION_UNAVAILABLE", "Transactional publication is unavailable.");
+        if (publicationConstraints is null)
+            throw SelectionError("WEB_PUBLICATION_CONSTRAINTS_UNAVAILABLE", "Publication constraint validation is unavailable.");
         await using var transaction = await transactions.BeginAsync(cancellationToken);
         try
         {
-            var identity = await RecheckIdentityAsync(expected, cancellationToken);
-            var value = identity.Value with { ActiveContentReference = expected.Content };
-            var written = await entities.SetComponentAsync(new(identity.Publication.StateSpaceId,
-                identity.Entity.EntityId, identity.Component.Type, JsonSerializer.Serialize(value, Json),
-                expected.PageComponent.Revision), cancellationToken);
+            var written = await StageContentReferenceAsync(expected, transaction, cancellationToken);
+            await publicationConstraints.ValidateStateSpaceAsync(expected.Publication.StateSpaceId, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             return new(expected.Content, written.Revision);
         }
@@ -164,6 +160,33 @@ public sealed partial class WebPagePublicationService
             await transaction.RollbackAsync(CancellationToken.None);
             throw;
         }
+    }
+
+    /// <summary>
+    /// Saves the validated component change inside this factory's exact current caller transaction.
+    /// The returned component is uncommitted evidence. The caller owns current grant/candidate
+    /// authorization, generic state-space constraint validation, audit, commit and rollback. This
+    /// operation never starts, completes or silently replaces a transaction and creates no receipt.
+    /// Retained web content remains in its separate database when the caller rolls back.
+    /// </summary>
+    public async Task<EcsComponentView> StageContentReferenceAsync(WebPagePublicationSelection expected,
+        IEcsWriteTransaction transaction, CancellationToken cancellationToken = default)
+    {
+        if (transactions is null || !transactions.OwnsCurrent(transaction))
+            throw SelectionError("WEB_PUBLICATION_CALLER_TRANSACTION_REQUIRED",
+                "Publication staging requires this owner's exact current caller transaction.");
+        ArgumentNullException.ThrowIfNull(expected);
+        if (!expected.IsDraft)
+            throw SelectionError("WEB_DRAFT_SELECTION_REQUIRED", "Publishing requires an exact retained draft selection.");
+        _ = await RevalidateSelectionAsync(expected, cancellationToken);
+        var identity = await RecheckIdentityAsync(expected, cancellationToken);
+        var value = identity.Value with { ActiveContentReference = expected.Content };
+        if (!transactions.OwnsCurrent(transaction))
+            throw SelectionError("WEB_PUBLICATION_CALLER_TRANSACTION_REQUIRED",
+                "The caller transaction changed before publication staging.");
+        return await entities.SetComponentAsync(new(identity.Publication.StateSpaceId,
+            identity.Entity.EntityId, identity.Component.Type, JsonSerializer.Serialize(value, Json),
+            expected.PageComponent.Revision), cancellationToken);
     }
 
     public async Task<WebPageCompatibilityPointer> ReadCompatibilityPointerAsync(
