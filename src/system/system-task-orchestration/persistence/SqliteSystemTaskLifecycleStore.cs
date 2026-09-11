@@ -26,9 +26,9 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
         _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
     }
 
-    internal async Task<SystemTaskEnqueueResult> EnqueueAsync(
+    private async Task<SystemTaskEnqueueResult> EnqueueCoreAsync(
         SystemTaskDurableSubmissionRequest request,
-        bool propagateCancellation = false,
+        bool propagateCancellation, SqliteConnection connection, SqliteTransaction transaction,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -73,160 +73,148 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
         var payloadFingerprint = InteractionCanonicalJson.Fingerprint(FingerprintDomain, payloadJson);
         var taskId = NewTaskId(request.InvocationHost.CommandId);
 
-        await using var connection = await OpenAsync(cancellationToken);
-        await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
-        try
+        var existing = await FindByCommandAsync(connection, transaction, request.InvocationHost.CommandId, cancellationToken);
+        if (existing is not null)
         {
-            var existing = await FindByCommandAsync(connection, transaction, request.InvocationHost.CommandId, cancellationToken);
-            if (existing is not null)
-            {
-                await transaction.CommitAsync(cancellationToken);
-                return StringComparer.Ordinal.Equals(existing.Value.PayloadFingerprint, payloadFingerprint)
-                    ? new(SystemTaskEnqueueDisposition.Existing,
-                        new(existing.Value.TaskId, request.InvocationHost.CommandId),
-                        "SYSTEM_TASK_ALREADY_ENQUEUED", "The equivalent durable task already exists.")
-                    : new(SystemTaskEnqueueDisposition.Conflict, null,
-                        "SYSTEM_TASK_COMMAND_CONFLICT", "The command identity is already bound to a different durable payload.");
-            }
+            return StringComparer.Ordinal.Equals(existing.Value.PayloadFingerprint, payloadFingerprint)
+                ? new(SystemTaskEnqueueDisposition.Existing,
+                    new(existing.Value.TaskId, request.InvocationHost.CommandId),
+                    "SYSTEM_TASK_ALREADY_ENQUEUED", "The equivalent durable task already exists.")
+                : new(SystemTaskEnqueueDisposition.Conflict, null,
+                    "SYSTEM_TASK_COMMAND_CONFLICT", "The command identity is already bound to a different durable payload.");
+        }
 
-            // Replays only read the existing handle. New work alone is subject to current
-            // admission limits, after the same transaction has resolved command identity.
-            if (request.InvocationHost.Profile != InteractionExecutionProfile.Workflow)
-                return await RollbackRejectedAsync(transaction, "SYSTEM_TASK_PROFILE_UNSUPPORTED", "Durable tasks require the workflow execution profile.", cancellationToken);
-            if (request.InvocationHost.Budget.DeadlineUtc <= now)
-                return await RollbackRejectedAsync(transaction, "SYSTEM_TASK_DEADLINE_EXPIRED", "The task deadline has already expired.", cancellationToken);
-            var admitted = Math.Min(request.InvocationHost.Budget.RemainingOperations, SystemTaskLifecycleLimits.MaximumRootOperations);
-            if (admitted < 1)
-                return await RollbackRejectedAsync(transaction, "SYSTEM_TASK_BUDGET_EXHAUSTED", "The task has no remaining operation allowance.", cancellationToken);
+        // Replays only read the existing handle. New work alone is subject to current
+        // admission limits, after the same transaction has resolved command identity.
+        if (request.InvocationHost.Profile != InteractionExecutionProfile.Workflow)
+            return Rejected("SYSTEM_TASK_PROFILE_UNSUPPORTED", "Durable tasks require the workflow execution profile.");
+        if (request.InvocationHost.Budget.DeadlineUtc <= now)
+            return Rejected("SYSTEM_TASK_DEADLINE_EXPIRED", "The task deadline has already expired.");
+        var admitted = Math.Min(request.InvocationHost.Budget.RemainingOperations, SystemTaskLifecycleLimits.MaximumRootOperations);
+        if (admitted < 1)
+            return Rejected("SYSTEM_TASK_BUDGET_EXHAUSTED", "The task has no remaining operation allowance.");
 
-            var activeCount = await ScalarLongAsync(connection, transaction,
-                "SELECT COUNT(*) FROM system_task_lifecycle WHERE state IN ('queued','running','waiting','retry')", cancellationToken);
-            if (activeCount >= SystemTaskLifecycleLimits.MaximumQueuedTasks)
-                return await RollbackRejectedAsync(transaction, "SYSTEM_TASK_QUEUE_FULL", "The durable task queue is at its configured bound.", cancellationToken);
+        var activeCount = await ScalarLongAsync(connection, transaction,
+            "SELECT COUNT(*) FROM system_task_lifecycle WHERE state IN ('queued','running','waiting','retry')", cancellationToken);
+        if (activeCount >= SystemTaskLifecycleLimits.MaximumQueuedTasks)
+            return Rejected("SYSTEM_TASK_QUEUE_FULL", "The durable task queue is at its configured bound.");
 
-            string rootTaskId = taskId;
-            string? parentTaskId = null;
-            var parentDepth = 0;
-            var rootBudget = admitted;
-            if (request.InvocationHost.ParentCommandId is not null)
-            {
-                if (StringComparer.Ordinal.Equals(request.InvocationHost.ParentCommandId, request.InvocationHost.CommandId))
-                    return await RollbackRejectedAsync(transaction, "SYSTEM_TASK_PARENT_SELF", "A task cannot be its own parent.", cancellationToken);
-                var parent = await FindParentAsync(connection, transaction, request.InvocationHost.ParentCommandId, cancellationToken);
-                if (parent is null)
-                    return await RollbackRejectedAsync(transaction, "SYSTEM_TASK_PARENT_UNKNOWN", "The declared parent task does not exist.", cancellationToken);
-                if (parent.Depth >= SystemTaskLifecycleLimits.MaximumParentDepth)
-                    return await RollbackRejectedAsync(transaction, "SYSTEM_TASK_PARENT_DEPTH", "The durable task parent depth is at its configured bound.", cancellationToken);
-                if (request.InvocationHost.Budget.DeadlineUtc > parent.DeadlineUtc || admitted > parent.AdmittedOperations)
-                    return await RollbackRejectedAsync(transaction, "SYSTEM_TASK_CHILD_BUDGET_EXPANDED", "A child task cannot expand its parent deadline or allowance.", cancellationToken);
-                var requestedBases = InteractionCanonicalJson.Canonicalize(JsonSerializer.Serialize(
-                    request.InvocationHost.ApplicationRevision.BaseApplications.Select(value => value.ToString())));
-                if (!StringComparer.Ordinal.Equals(parent.PrincipalReference, request.InvocationHost.Principal.PrincipalId) ||
-                    !StringComparer.Ordinal.Equals(parent.ApplicationId, request.InvocationHost.ApplicationRevision.ApplicationId.ToString()) ||
-                    parent.ApplicationRevision != request.InvocationHost.ApplicationRevision.Revision ||
-                    !StringComparer.Ordinal.Equals(parent.ApplicationFingerprint, request.InvocationHost.ApplicationRevision.Fingerprint) ||
-                    !StringComparer.Ordinal.Equals(parent.BaseApplicationsJson, requestedBases) ||
-                    !StringComparer.Ordinal.Equals(parent.StateSpaceId, request.InvocationHost.StateSpaceId) ||
-                    !StringComparer.Ordinal.Equals(parent.GrantReference, request.InvocationHost.GrantReference) ||
-                    !StringComparer.Ordinal.Equals(parent.StateRevision, request.InvocationHost.StateRevision) ||
-                    !StringComparer.Ordinal.Equals(parent.ExecutionProfile, InteractionExecutionProfileNames.Get(request.InvocationHost.Profile)))
-                    return await RollbackRejectedAsync(transaction, "SYSTEM_TASK_PARENT_SCOPE_MISMATCH", "A child task must retain its parent's exact principal and invocation scope.", cancellationToken);
-                var childCount = await ScalarLongAsync(connection, transaction,
-                    "SELECT COUNT(*) FROM system_task_lifecycle WHERE parent_task_id = $parent", cancellationToken,
-                    ("$parent", parent.TaskId));
-                if (childCount >= SystemTaskLifecycleLimits.MaximumChildrenPerTask)
-                    return await RollbackRejectedAsync(transaction, "SYSTEM_TASK_FANOUT_LIMIT", "The parent task is at its child fan-out bound.", cancellationToken);
-                var descendantCount = await ScalarLongAsync(connection, transaction,
-                    "SELECT COUNT(*) FROM system_task_lifecycle WHERE root_task_id = $root AND task_id <> $root", cancellationToken,
-                    ("$root", parent.RootTaskId));
-                if (descendantCount >= SystemTaskLifecycleLimits.MaximumDescendantsPerRoot)
-                    return await RollbackRejectedAsync(transaction, "SYSTEM_TASK_DESCENDANT_LIMIT", "The root task is at its descendant bound.", cancellationToken);
-                rootTaskId = parent.RootTaskId;
-                parentTaskId = parent.TaskId;
-                parentDepth = parent.Depth + 1;
-                rootBudget = parent.RootMaximumOperations;
-            }
-
-            var ancestorIds = parentTaskId is null
-                ? new HashSet<string>(StringComparer.Ordinal)
-                : await ReadAncestorIdsAsync(connection, transaction, parentTaskId, cancellationToken);
-            var dependencyBases = InteractionCanonicalJson.Canonicalize(JsonSerializer.Serialize(
+        string rootTaskId = taskId;
+        string? parentTaskId = null;
+        var parentDepth = 0;
+        var rootBudget = admitted;
+        if (request.InvocationHost.ParentCommandId is not null)
+        {
+            if (StringComparer.Ordinal.Equals(request.InvocationHost.ParentCommandId, request.InvocationHost.CommandId))
+                return Rejected("SYSTEM_TASK_PARENT_SELF", "A task cannot be its own parent.");
+            var parent = await FindParentAsync(connection, transaction, request.InvocationHost.ParentCommandId, cancellationToken);
+            if (parent is null)
+                return Rejected("SYSTEM_TASK_PARENT_UNKNOWN", "The declared parent task does not exist.");
+            if (parent.Depth >= SystemTaskLifecycleLimits.MaximumParentDepth)
+                return Rejected("SYSTEM_TASK_PARENT_DEPTH", "The durable task parent depth is at its configured bound.");
+            if (request.InvocationHost.Budget.DeadlineUtc > parent.DeadlineUtc || admitted > parent.AdmittedOperations)
+                return Rejected("SYSTEM_TASK_CHILD_BUDGET_EXPANDED", "A child task cannot expand its parent deadline or allowance.");
+            var requestedBases = InteractionCanonicalJson.Canonicalize(JsonSerializer.Serialize(
                 request.InvocationHost.ApplicationRevision.BaseApplications.Select(value => value.ToString())));
-            foreach (var dependency in request.DependencyHandles)
-            {
-                if (StringComparer.Ordinal.Equals(dependency.CommandId, request.InvocationHost.CommandId) ||
-                    StringComparer.Ordinal.Equals(dependency.TaskId, taskId))
-                    return await RollbackRejectedAsync(transaction, "SYSTEM_TASK_DEPENDENCY_SELF", "A task cannot depend on itself.", cancellationToken);
-                var stored = await FindHandleAsync(connection, transaction, dependency, cancellationToken);
-                if (!stored)
-                    return await RollbackRejectedAsync(transaction, "SYSTEM_TASK_DEPENDENCY_UNKNOWN", "Every dependency must already exist with the exact durable handle.", cancellationToken);
-                if (!await DependencyMatchesScopeAsync(connection, transaction, dependency,
-                    request.InvocationHost.Principal.PrincipalId,
-                    request.InvocationHost.ApplicationRevision.ApplicationId.ToString(),
-                    request.InvocationHost.ApplicationRevision.Revision,
-                    request.InvocationHost.ApplicationRevision.Fingerprint,
-                    dependencyBases, request.InvocationHost.StateSpaceId, cancellationToken))
-                    return await RollbackRejectedAsync(transaction, "SYSTEM_TASK_DEPENDENCY_SCOPE_MISMATCH", "A dependency must have the same principal, application revision, and state scope.", cancellationToken);
-                if (ancestorIds.Contains(dependency.TaskId))
-                    return await RollbackRejectedAsync(transaction, "SYSTEM_TASK_DEPENDENCY_ANCESTOR", "A task cannot depend on its parent ancestry.", cancellationToken);
-            }
+            if (!StringComparer.Ordinal.Equals(parent.PrincipalReference, request.InvocationHost.Principal.PrincipalId) ||
+                !StringComparer.Ordinal.Equals(parent.ApplicationId, request.InvocationHost.ApplicationRevision.ApplicationId.ToString()) ||
+                parent.ApplicationRevision != request.InvocationHost.ApplicationRevision.Revision ||
+                !StringComparer.Ordinal.Equals(parent.ApplicationFingerprint, request.InvocationHost.ApplicationRevision.Fingerprint) ||
+                !StringComparer.Ordinal.Equals(parent.BaseApplicationsJson, requestedBases) ||
+                !StringComparer.Ordinal.Equals(parent.StateSpaceId, request.InvocationHost.StateSpaceId) ||
+                !StringComparer.Ordinal.Equals(parent.GrantReference, request.InvocationHost.GrantReference) ||
+                !StringComparer.Ordinal.Equals(parent.StateRevision, request.InvocationHost.StateRevision) ||
+                !StringComparer.Ordinal.Equals(parent.ExecutionProfile, InteractionExecutionProfileNames.Get(request.InvocationHost.Profile)))
+                return Rejected("SYSTEM_TASK_PARENT_SCOPE_MISMATCH", "A child task must retain its parent's exact principal and invocation scope.");
+            var childCount = await ScalarLongAsync(connection, transaction,
+                "SELECT COUNT(*) FROM system_task_lifecycle WHERE parent_task_id = $parent", cancellationToken,
+                ("$parent", parent.TaskId));
+            if (childCount >= SystemTaskLifecycleLimits.MaximumChildrenPerTask)
+                return Rejected("SYSTEM_TASK_FANOUT_LIMIT", "The parent task is at its child fan-out bound.");
+            var descendantCount = await ScalarLongAsync(connection, transaction,
+                "SELECT COUNT(*) FROM system_task_lifecycle WHERE root_task_id = $root AND task_id <> $root", cancellationToken,
+                ("$root", parent.RootTaskId));
+            if (descendantCount >= SystemTaskLifecycleLimits.MaximumDescendantsPerRoot)
+                return Rejected("SYSTEM_TASK_DESCENDANT_LIMIT", "The root task is at its descendant bound.");
+            rootTaskId = parent.RootTaskId;
+            parentTaskId = parent.TaskId;
+            parentDepth = parent.Depth + 1;
+            rootBudget = parent.RootMaximumOperations;
+        }
 
-            if (parentTaskId is null)
-            {
-                await ExecuteAsync(connection, transaction, """
-                    INSERT INTO system_task_root_budget(root_task_id, maximum_operations, consumed_operations)
-                    VALUES ($root, $maximum, 0)
-                    """, cancellationToken, ("$root", rootTaskId), ("$maximum", rootBudget));
-            }
+        var ancestorIds = parentTaskId is null
+            ? new HashSet<string>(StringComparer.Ordinal)
+            : await ReadAncestorIdsAsync(connection, transaction, parentTaskId, cancellationToken);
+        var dependencyBases = InteractionCanonicalJson.Canonicalize(JsonSerializer.Serialize(
+            request.InvocationHost.ApplicationRevision.BaseApplications.Select(value => value.ToString())));
+        foreach (var dependency in request.DependencyHandles)
+        {
+            if (StringComparer.Ordinal.Equals(dependency.CommandId, request.InvocationHost.CommandId) ||
+                StringComparer.Ordinal.Equals(dependency.TaskId, taskId))
+                return Rejected("SYSTEM_TASK_DEPENDENCY_SELF", "A task cannot depend on itself.");
+            var stored = await FindHandleAsync(connection, transaction, dependency, cancellationToken);
+            if (!stored)
+                return Rejected("SYSTEM_TASK_DEPENDENCY_UNKNOWN", "Every dependency must already exist with the exact durable handle.");
+            if (!await DependencyMatchesScopeAsync(connection, transaction, dependency,
+                request.InvocationHost.Principal.PrincipalId,
+                request.InvocationHost.ApplicationRevision.ApplicationId.ToString(),
+                request.InvocationHost.ApplicationRevision.Revision,
+                request.InvocationHost.ApplicationRevision.Fingerprint,
+                dependencyBases, request.InvocationHost.StateSpaceId, cancellationToken))
+                return Rejected("SYSTEM_TASK_DEPENDENCY_SCOPE_MISMATCH", "A dependency must have the same principal, application revision, and state scope.");
+            if (ancestorIds.Contains(dependency.TaskId))
+                return Rejected("SYSTEM_TASK_DEPENDENCY_ANCESTOR", "A task cannot depend on its parent ancestry.");
+        }
 
-            var basesJson = InteractionCanonicalJson.Canonicalize(JsonSerializer.Serialize(
-                request.InvocationHost.ApplicationRevision.BaseApplications.Select(value => value.ToString())));
+        if (parentTaskId is null)
+        {
             await ExecuteAsync(connection, transaction, """
-                INSERT INTO system_task_lifecycle(
-                    task_id, command_id, payload_fingerprint, parent_task_id, parent_command_id, root_task_id, parent_depth,
-                    propagate_cancellation, state, principal_reference, authentication_method,
-                    application_id, application_revision, application_fingerprint, base_applications_json,
-                    state_space_id, grant_reference, state_revision, execution_profile,
-                    admitted_operations, deadline_utc, definition_id, definition_version,
-                    definition_fingerprint, input_json, checkpoint_name, completion_handler,
-                    correlation_id, checkpoint_state_json, wake_json, attempt_count, consecutive_failures,
-                    consumed_operations, fencing_counter,
-                    cancel_requested, cancel_acknowledged, created_at_utc, updated_at_utc)
-                VALUES (
-                    $task, $command, $payload, $parent, $parentCommand, $root, $depth, $propagate, 'queued',
-                    $principal, $authentication, $application, $applicationRevision, $applicationFingerprint,
-                    $bases, $stateSpace, $grant, $stateRevision, $profile, $admitted, $deadline,
-                    $definition, $definitionVersion, $definitionFingerprint, $input,
-                    $checkpoint, $handler, $correlation, $checkpointState, NULL, 0, 0, 0, 0, 0, 0, $now, $now)
-                """, cancellationToken,
-                ("$task", taskId), ("$command", request.InvocationHost.CommandId), ("$payload", payloadFingerprint),
-                ("$parent", parentTaskId), ("$parentCommand", request.InvocationHost.ParentCommandId),
-                ("$root", rootTaskId), ("$depth", parentDepth), ("$propagate", propagateCancellation ? 1 : 0),
-                ("$principal", request.InvocationHost.Principal.PrincipalId), ("$authentication", request.InvocationHost.Principal.AuthenticationMethod),
-                ("$application", request.InvocationHost.ApplicationRevision.ApplicationId.ToString()),
-                ("$applicationRevision", request.InvocationHost.ApplicationRevision.Revision),
-                ("$applicationFingerprint", request.InvocationHost.ApplicationRevision.Fingerprint), ("$bases", basesJson),
-                ("$stateSpace", request.InvocationHost.StateSpaceId), ("$grant", request.InvocationHost.GrantReference),
-                ("$stateRevision", request.InvocationHost.StateRevision), ("$profile", InteractionExecutionProfileNames.Get(request.InvocationHost.Profile)),
-                ("$admitted", admitted), ("$deadline", ToDb(request.InvocationHost.Budget.DeadlineUtc)),
-                ("$definition", request.SelectedDefinition.ExactDefinitionId), ("$definitionVersion", request.SelectedDefinition.Version),
-                ("$definitionFingerprint", request.SelectedDefinition.Fingerprint), ("$input", request.InputJson),
-                ("$checkpoint", request.Checkpoint?.Checkpoint), ("$handler", request.Checkpoint?.CompletionHandler),
-                ("$correlation", request.Checkpoint?.CorrelationId), ("$checkpointState", request.Checkpoint?.StateJson),
-                ("$now", ToDb(now)));
-            foreach (var dependency in request.DependencyHandles)
-                await ExecuteAsync(connection, transaction,
-                    "INSERT INTO system_task_dependency(task_id, dependency_task_id, dependency_command_id) VALUES ($task, $dependency, $command)",
-                    cancellationToken, ("$task", taskId), ("$dependency", dependency.TaskId), ("$command", dependency.CommandId));
-            await transaction.CommitAsync(cancellationToken);
-            return new(SystemTaskEnqueueDisposition.Created, new(taskId, request.InvocationHost.CommandId),
-                "SYSTEM_TASK_ENQUEUED", "The durable task was enqueued.");
+                INSERT INTO system_task_root_budget(root_task_id, maximum_operations, consumed_operations)
+                VALUES ($root, $maximum, 0)
+                """, cancellationToken, ("$root", rootTaskId), ("$maximum", rootBudget));
         }
-        catch
-        {
-            await transaction.RollbackAsync(CancellationToken.None);
-            throw;
-        }
+
+        var basesJson = InteractionCanonicalJson.Canonicalize(JsonSerializer.Serialize(
+            request.InvocationHost.ApplicationRevision.BaseApplications.Select(value => value.ToString())));
+        await ExecuteAsync(connection, transaction, """
+            INSERT INTO system_task_lifecycle(
+                task_id, command_id, payload_fingerprint, parent_task_id, parent_command_id, root_task_id, parent_depth,
+                propagate_cancellation, state, principal_reference, authentication_method,
+                application_id, application_revision, application_fingerprint, base_applications_json,
+                state_space_id, grant_reference, state_revision, execution_profile,
+                admitted_operations, deadline_utc, definition_id, definition_version,
+                definition_fingerprint, input_json, checkpoint_name, completion_handler,
+                correlation_id, checkpoint_state_json, wake_json, attempt_count, consecutive_failures,
+                consumed_operations, fencing_counter,
+                cancel_requested, cancel_acknowledged, created_at_utc, updated_at_utc)
+            VALUES (
+                $task, $command, $payload, $parent, $parentCommand, $root, $depth, $propagate, 'queued',
+                $principal, $authentication, $application, $applicationRevision, $applicationFingerprint,
+                $bases, $stateSpace, $grant, $stateRevision, $profile, $admitted, $deadline,
+                $definition, $definitionVersion, $definitionFingerprint, $input,
+                $checkpoint, $handler, $correlation, $checkpointState, NULL, 0, 0, 0, 0, 0, 0, $now, $now)
+            """, cancellationToken,
+            ("$task", taskId), ("$command", request.InvocationHost.CommandId), ("$payload", payloadFingerprint),
+            ("$parent", parentTaskId), ("$parentCommand", request.InvocationHost.ParentCommandId),
+            ("$root", rootTaskId), ("$depth", parentDepth), ("$propagate", propagateCancellation ? 1 : 0),
+            ("$principal", request.InvocationHost.Principal.PrincipalId), ("$authentication", request.InvocationHost.Principal.AuthenticationMethod),
+            ("$application", request.InvocationHost.ApplicationRevision.ApplicationId.ToString()),
+            ("$applicationRevision", request.InvocationHost.ApplicationRevision.Revision),
+            ("$applicationFingerprint", request.InvocationHost.ApplicationRevision.Fingerprint), ("$bases", basesJson),
+            ("$stateSpace", request.InvocationHost.StateSpaceId), ("$grant", request.InvocationHost.GrantReference),
+            ("$stateRevision", request.InvocationHost.StateRevision), ("$profile", InteractionExecutionProfileNames.Get(request.InvocationHost.Profile)),
+            ("$admitted", admitted), ("$deadline", ToDb(request.InvocationHost.Budget.DeadlineUtc)),
+            ("$definition", request.SelectedDefinition.ExactDefinitionId), ("$definitionVersion", request.SelectedDefinition.Version),
+            ("$definitionFingerprint", request.SelectedDefinition.Fingerprint), ("$input", request.InputJson),
+            ("$checkpoint", request.Checkpoint?.Checkpoint), ("$handler", request.Checkpoint?.CompletionHandler),
+            ("$correlation", request.Checkpoint?.CorrelationId), ("$checkpointState", request.Checkpoint?.StateJson),
+            ("$now", ToDb(now)));
+        foreach (var dependency in request.DependencyHandles)
+            await ExecuteAsync(connection, transaction,
+                "INSERT INTO system_task_dependency(task_id, dependency_task_id, dependency_command_id) VALUES ($task, $dependency, $command)",
+                cancellationToken, ("$task", taskId), ("$dependency", dependency.TaskId), ("$command", dependency.CommandId));
+        return new(SystemTaskEnqueueDisposition.Created, new(taskId, request.InvocationHost.CommandId),
+            "SYSTEM_TASK_ENQUEUED", "The durable task was enqueued.");
     }
 
     internal async Task<SystemTaskLease?> ClaimNextAsync(string workerId, TimeSpan leaseDuration,
@@ -474,49 +462,6 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
             await CompleteAttemptAsync(connection, transaction, lease, state, boundedCode, boundedMessage, now, cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         return changed == 1;
-    }
-
-    internal async Task<bool> RequestCancellationAsync(SystemTaskDurableHandle handle, bool propagate,
-        CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(handle);
-        var now = UtcNow();
-        await using var connection = await OpenAsync(cancellationToken);
-        await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
-        var exists = await FindHandleAsync(connection, transaction, handle, cancellationToken);
-        if (!exists)
-        {
-            await transaction.CommitAsync(cancellationToken);
-            return false;
-        }
-        await ExecuteAsync(connection, transaction, """
-            UPDATE system_task_lifecycle SET cancel_requested = 1, updated_at_utc = $now
-            WHERE task_id = $task AND state IN ('queued','running','waiting','retry')
-            """, cancellationToken, ("$task", handle.TaskId), ("$now", ToDb(now)));
-        if (propagate)
-        {
-            await ExecuteAsync(connection, transaction, """
-                WITH RECURSIVE descendants(task_id) AS (
-                    SELECT task_id FROM system_task_lifecycle
-                    WHERE parent_task_id = $task AND propagate_cancellation = 1
-                    UNION ALL
-                    SELECT child.task_id FROM system_task_lifecycle AS child
-                    JOIN descendants AS parent ON child.parent_task_id = parent.task_id
-                    WHERE child.propagate_cancellation = 1)
-                UPDATE system_task_lifecycle SET cancel_requested = 1, updated_at_utc = $now
-                WHERE task_id IN descendants AND state IN ('queued','running','waiting','retry')
-                """, cancellationToken, ("$task", handle.TaskId), ("$now", ToDb(now)));
-        }
-        await ExecuteAsync(connection, transaction, """
-            UPDATE system_task_lifecycle
-            SET state = 'cancelled', cancel_acknowledged = 1, completed_at_utc = $now,
-                updated_at_utc = $now, error_code = 'SYSTEM_TASK_CANCELLED',
-                safe_message = 'Cancellation was acknowledged before execution.',
-                lease_owner = NULL, lease_token = NULL, lease_expires_at_utc = NULL
-            WHERE cancel_requested = 1 AND state IN ('queued','waiting','retry')
-            """, cancellationToken, ("$now", ToDb(now)));
-        await transaction.CommitAsync(cancellationToken);
-        return true;
     }
 
     internal async Task<bool> AcknowledgeCancellationAsync(SystemTaskLease lease,
@@ -1098,13 +1043,6 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
 
     private static SystemTaskEnqueueResult Rejected(string code, string message) =>
         new(SystemTaskEnqueueDisposition.Rejected, null, code, message);
-
-    private static async Task<SystemTaskEnqueueResult> RollbackRejectedAsync(SqliteTransaction transaction,
-        string code, string message, CancellationToken cancellationToken)
-    {
-        await transaction.RollbackAsync(cancellationToken);
-        return Rejected(code, message);
-    }
 
     private sealed record ParentRow(string TaskId, string RootTaskId, int Depth, DateTime DeadlineUtc,
         int AdmittedOperations, int RootMaximumOperations, string PrincipalReference, string ApplicationId,
