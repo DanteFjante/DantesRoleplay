@@ -194,6 +194,49 @@ public sealed class WebPagePublicationSelectionTests
         Assert.Equal(3, (await fixture.Content.GetSummaryAsync(Fixture.ContentId))!.LatestRevision);
     }
 
+    [Fact]
+    public async Task Separate_connections_competing_for_one_publication_revision_commit_only_one_pin()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        await fixture.Content.AppendBundleDraftAsync(Fixture.ContentId, 2, Composition("competitor", [3]));
+        await using var peerData = new DantesRoleplayDbContext(new DbContextOptionsBuilder<DantesRoleplayDbContext>()
+            .UseSqlite(fixture.Data.Database.GetConnectionString()!).Options);
+        await using var peerWeb = new WebContentDbContext(new DbContextOptionsBuilder<WebContentDbContext>()
+            .UseSqlite(fixture.Web.Database.GetConnectionString()!).Options);
+        var applications = new SqliteApplicationRegistry(peerData);
+        var schemas = new BoundedJsonSchemaValidator();
+        var types = new SqliteComponentTypeRegistry(peerData, schemas);
+        var entities = new SqliteEntityComponentStore(peerData, types, schemas, new SqliteEcsRoleConstraintValidator(peerData));
+        var peer = new WebPagePublicationService(applications, new SqliteStateSpaceRegistry(peerData, applications),
+            types, entities, new WorldStore(peerData), new WebPageStore(peerWeb), peerWeb,
+            new SqliteEcsWriteTransactionFactory(peerData), new(), NullLogger<WebPagePublicationService>.Instance);
+        var first = await fixture.Publication.SelectDraftAsync(fixture.ApplicationId, Fixture.EntityId, 2);
+        var second = await peer.SelectDraftAsync(fixture.ApplicationId, Fixture.EntityId, 3);
+        Assert.Equal(first.PageComponent.Revision, second.PageComponent.Revision);
+        var start = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        async Task<(WebPagePublicationPinResult? Result, Exception? Failure)> Attempt(
+            WebPagePublicationService owner, WebPagePublicationSelection selection)
+        {
+            await start.Task;
+            try { return (await owner.CompareExchangeContentReferenceAsync(selection), null); }
+            catch (Exception exception) { return (null, exception); }
+        }
+        var one = Task.Run(() => Attempt(fixture.Publication, first));
+        var two = Task.Run(() => Attempt(peer, second));
+        start.SetResult();
+        var outcomes = await Task.WhenAll(one, two);
+        var winner = Assert.Single(outcomes, value => value.Result is not null).Result!;
+        var loser = Assert.Single(outcomes, value => value.Failure is not null).Failure!;
+        Assert.Equal("WEB_PAGE_SELECTION_STALE", Assert.IsType<WebPageStoreException>(loser).Code);
+        var current = await fixture.Publication.SelectPublishedAsync(fixture.ApplicationId, Fixture.EntityId);
+        Assert.Equal(winner.Content, current.Content);
+        Assert.Equal(first.PageComponent.Revision + 1, current.PageComponent.Revision);
+        Assert.Equal(new byte[] { (byte)winner.Content.Revision!.Value },
+            (await fixture.Publication.ReadSelectedAssetAsync(current, "assets/icon.bin"))!.Content);
+        Assert.NotNull(await fixture.Content.GetRevisionAsync(Fixture.ContentId, 2));
+        Assert.NotNull(await fixture.Content.GetRevisionAsync(Fixture.ContentId, 3));
+    }
+
     private static WebPageBundle Composition(string generation, byte[] bytes) => new(string.Empty, [new("assets/icon.bin", bytes)])
     {
         ContentFormat = WebPageContentFormat.Composition,
@@ -207,7 +250,7 @@ public sealed class WebPagePublicationSelectionTests
     private static async Task Error(string code, Func<Task> action) =>
         Assert.Equal(code, (await Assert.ThrowsAsync<WebPageStoreException>(action)).Code);
 
-    private sealed class Fixture : IAsyncDisposable
+    internal sealed class Fixture : IAsyncDisposable
     {
         public const string EntityId = "web-page:example", ContentId = "example-content", PublicationSpace = "publication:example";
         public ApplicationIdentifier ApplicationId { get; } = ApplicationIdentifier.Parse("example");

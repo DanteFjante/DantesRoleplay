@@ -145,6 +145,23 @@ are Application-scoped; audience queries separately require exact StateSpace Rea
 must share a principal/application generation and operation/deadline ledger while retaining their
 actual distinct scopes and grants. The website does not construct broader query authority.
 
+`WebPageStandingGrantResourceTargetOwner` implements the fixed `web-page` resource-owner seam.
+It reads the immutable content-page mapping, verifies the actual owning application generation
+and the complete enabled/reviewed namespace registration, and verifies exact retained content and
+asset bytes. Its evidence binds the mapping, full content pin and namespace metadata; the shared
+grant policy rehydrates that evidence on every use. Exact resource resolution does not require an
+ECS publication link. `ResolveCurrentAsync` selects the latest retained revision for inspection or
+authoring only; it never selects what a published route serves.
+
+`WebPagePermissionedReader` is an unregistered serving consumer. It accepts a host-created read-only
+invocation, selects the live ECS publication pin, resolves that exact retained resource, and requires
+its current Application-scoped Read grant. It consumes one shared operation and rechecks authority
+and the publication before returning HTML or exact revision assets. Failures return no content;
+query/action compositions remain unavailable. The coordinator owns host construction, registration,
+HTTP routing and response cache policy. This consumer does not provide resource adoption, candidate
+acceptance, publication authorization, or mutation receipts. Existing legacy publish/activate and
+directory paths refuse pinned references rather than changing or reading the compatibility pointer.
+
 Library and migrated SQLite fixtures demonstrate composition, inert retention, exact historical
 asset readback, local transaction rollback and consumer conformance. They do not demonstrate
 production composition activation, published composition routes, cross-owner failed-publication recovery,
