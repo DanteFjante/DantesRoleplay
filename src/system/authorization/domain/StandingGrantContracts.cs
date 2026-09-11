@@ -29,7 +29,7 @@ public sealed class StandingGrantDefinitionModeJsonConverter()
 /// <summary>
 /// An explicit operator-selected namespace, optionally including its dot-segment descendants, and
 /// exact definition kinds within it. Kinds use existing owner vocabulary: mechanic, procedure, query,
-/// component-type or component-definition. Query namespace authorization requires the coordinator's
+/// component-type, component-definition, information-source or web-page. Query namespace authorization requires the coordinator's
 /// verified query-to-namespace ownership mapping; no new namespace kind is registered by this type.
 /// </summary>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
@@ -196,5 +196,5 @@ public static class StandingGrantLimits
     public const int IdentifierCharacters = 200;
     public const int MaximumOperations = 16;
     public const int ApplicationOwnedNamespaces = 16;
-    public const int DefinitionKindsPerNamespace = 5;
+    public const int DefinitionKindsPerNamespace = 7;
 }

@@ -8,7 +8,7 @@ namespace DantesRoleplay.Authorization;
 /// <summary>Structural proposal checks only; an eventual policy must rehydrate ownership and evidence.</summary>
 public static class StandingGrantContractRules
 {
-    private static readonly HashSet<string> Kinds = ["mechanic", "procedure", "component-type", "component-definition", "query"];
+    private static readonly HashSet<string> Kinds = ["mechanic", "procedure", "component-type", "component-definition", "query", "information-source", "web-page"];
 
     public static void ValidateIssuerTransition(StandingGrantIssuerRequirement requirement)
     {
@@ -46,6 +46,15 @@ public static class StandingGrantContractRules
         var targets = requirement.Definitions?.ToArray() ?? Fail<IReadOnlyList<StandingGrantDefinitionTarget>>("INVALID_STANDING_GRANT_TARGETS", "Definitions are required.");
         if (targets.Count is < 1 or > StandingGrantLimits.Definitions) Fail("INVALID_STANDING_GRANT_TARGETS", "The definition target count is invalid.");
         foreach (var target in targets) ValidateTarget(host.ApplicationRevision.ApplicationId, target);
+        if (targets.Any(target => target.Kind == CatalogNamespaceKinds.InformationSource)
+            && (requirement.Scope != StandingGrantScope.Application
+                || requirement.Capability is not (StandingGrantCapability.Read or StandingGrantCapability.Author)))
+            Fail("STANDING_GRANT_INFORMATION_SCOPE_DENIED", "Information sources authorize application knowledge reads and writes only.");
+        if (targets.Any(target => target.Kind == CatalogNamespaceKinds.WebPage)
+            && (requirement.Scope != StandingGrantScope.Application
+                || requirement.Capability is not (StandingGrantCapability.Read or StandingGrantCapability.Author
+                    or StandingGrantCapability.Validate or StandingGrantCapability.Activate)))
+            Fail("STANDING_GRANT_WEB_PAGE_SCOPE_DENIED", "Web pages authorize application authoring and reads only.");
         if (targets.Any(target => target.Candidate is not null)
             && (requirement.Scope != StandingGrantScope.Application
                 || requirement.Capability is not (StandingGrantCapability.Author or StandingGrantCapability.Validate
