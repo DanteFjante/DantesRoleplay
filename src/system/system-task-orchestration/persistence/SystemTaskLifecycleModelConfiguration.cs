@@ -50,6 +50,7 @@ internal static class SystemTaskLifecycleModelConfiguration
                 table.HasCheckConstraint("CK_system_task_lifecycle_fence", "\"fencing_counter\" >= 0");
                 table.HasCheckConstraint("CK_system_task_lifecycle_cancel_requested", "\"cancel_requested\" IN (0, 1)");
                 table.HasCheckConstraint("CK_system_task_lifecycle_cancel_acknowledged", "\"cancel_acknowledged\" IN (0, 1)");
+                table.HasCheckConstraint("CK_system_task_lifecycle_activation_origin", "((\"activation_revision\" IS NULL AND \"activation_fingerprint\" IS NULL AND \"activation_application_revision\" IS NULL AND \"activation_application_fingerprint\" IS NULL) OR (\"activation_revision\" IS NOT NULL AND \"activation_revision\" > 0 AND \"activation_fingerprint\" IS NOT NULL AND length(\"activation_fingerprint\") = 64 AND \"activation_application_revision\" IS NOT NULL AND \"activation_application_revision\" > 0 AND \"activation_application_fingerprint\" IS NOT NULL AND length(\"activation_application_fingerprint\") = 64))");
                 table.HasCheckConstraint("CK_system_task_lifecycle_parent", "((\"parent_task_id\" IS NULL AND \"parent_depth\" = 0 AND \"task_id\" = \"root_task_id\") OR (\"parent_task_id\" IS NOT NULL AND \"parent_depth\" > 0 AND \"task_id\" <> \"root_task_id\"))");
                 table.HasCheckConstraint("CK_system_task_lifecycle_checkpoint", "((\"checkpoint_name\" IS NULL AND \"completion_handler\" IS NULL AND \"correlation_id\" IS NULL AND \"checkpoint_state_json\" IS NULL) OR (\"checkpoint_name\" IS NOT NULL AND \"completion_handler\" IS NOT NULL AND \"correlation_id\" IS NOT NULL AND \"checkpoint_state_json\" IS NOT NULL))");
                 table.HasCheckConstraint("CK_system_task_lifecycle_lease", "((\"state\" = 'running' AND \"lease_owner\" IS NOT NULL AND \"lease_token\" IS NOT NULL AND \"lease_expires_at_utc\" IS NOT NULL) OR (\"state\" <> 'running' AND \"lease_owner\" IS NULL AND \"lease_token\" IS NULL AND \"lease_expires_at_utc\" IS NULL))");
@@ -70,6 +71,10 @@ internal static class SystemTaskLifecycleModelConfiguration
             Text(entity.Property(value => value.ApplicationId), "application_id");
             Integer(entity.Property(value => value.ApplicationRevision), "application_revision");
             Text(entity.Property(value => value.ApplicationFingerprint), "application_fingerprint");
+            entity.Property(value => value.ActivationRevision).HasColumnName("activation_revision").HasColumnType("INTEGER").IsRequired(false);
+            Text(entity.Property(value => value.ActivationFingerprint), "activation_fingerprint", required: false);
+            entity.Property(value => value.ActivationApplicationRevision).HasColumnName("activation_application_revision").HasColumnType("INTEGER").IsRequired(false);
+            Text(entity.Property(value => value.ActivationApplicationFingerprint), "activation_application_fingerprint", required: false);
             Text(entity.Property(value => value.BaseApplicationsJson), "base_applications_json");
             Text(entity.Property(value => value.StateSpaceId), "state_space_id");
             Text(entity.Property(value => value.GrantReference), "grant_reference");

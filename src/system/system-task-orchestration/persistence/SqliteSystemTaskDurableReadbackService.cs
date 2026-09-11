@@ -18,7 +18,7 @@ internal sealed partial class SqliteSystemTaskDurableService : ISystemTaskDurabl
             var snapshot = await store.ReadInTransactionAsync(handle, connection, transaction, cancellationToken);
             if (snapshot is null || !TaskScopeMatches(invocationHost, snapshot.Request)) return NotAuthorized();
             var denied = await AuthorizeAsync(invocationHost, snapshot.Request.SelectedDefinition,
-                StandingGrantCapability.ReadTask, TaskTarget(snapshot.Request), cancellationToken);
+                StandingGrantCapability.ReadTask, TaskTarget(snapshot.Request), cancellationToken, snapshot.Request.ActivationOrigin);
             if (denied is not null) return denied;
             var status = await ToReadbackAsync(snapshot, connection, transaction, cancellationToken);
             return ReadbackResult(invocationHost, status);
@@ -34,7 +34,7 @@ internal sealed partial class SqliteSystemTaskDurableService : ISystemTaskDurabl
             var root = await store.ReadInTransactionAsync(parent, connection, transaction, cancellationToken);
             if (root is null || !TaskScopeMatches(invocationHost, root.Request)) return NotAuthorized();
             var denied = await AuthorizeAsync(invocationHost, root.Request.SelectedDefinition,
-                StandingGrantCapability.ReadTask, TaskTarget(root.Request), cancellationToken);
+                StandingGrantCapability.ReadTask, TaskTarget(root.Request), cancellationToken, root.Request.ActivationOrigin);
             if (denied is not null) return denied;
             var handles = new List<SystemTaskDurableHandle>();
             await using (var command = connection.CreateCommand())
@@ -58,7 +58,7 @@ internal sealed partial class SqliteSystemTaskDurableService : ISystemTaskDurabl
                     return InteractionInvocationResult.Unavailable("SYSTEM_TASK_GRAPH_UNAVAILABLE", "The task graph cannot currently be resolved.");
                 if (!TaskScopeMatches(invocationHost, child.Request)) continue;
                 denied = await AuthorizeAsync(invocationHost, child.Request.SelectedDefinition,
-                    StandingGrantCapability.ReadTask, TaskTarget(child.Request), cancellationToken);
+                    StandingGrantCapability.ReadTask, TaskTarget(child.Request), cancellationToken, child.Request.ActivationOrigin);
                 // A denied child's metadata is omitted. Missing owner support is explicit rather
                 // than silently claiming that a historical child no longer exists.
                 if (denied?.Tag == InteractionInvocationResultTag.Unavailable) return denied;

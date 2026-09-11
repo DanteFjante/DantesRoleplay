@@ -23,6 +23,10 @@ internal sealed class SystemTaskLifecycleRecord
     public string ApplicationId { get; set; } = null!;
     public int ApplicationRevision { get; set; }
     public string ApplicationFingerprint { get; set; } = null!;
+    public int? ActivationRevision { get; set; }
+    public string? ActivationFingerprint { get; set; }
+    public int? ActivationApplicationRevision { get; set; }
+    public string? ActivationApplicationFingerprint { get; set; }
     public string BaseApplicationsJson { get; set; } = null!;
     public string StateSpaceId { get; set; } = null!;
     public string GrantReference { get; set; } = null!;

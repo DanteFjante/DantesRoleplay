@@ -1,4 +1,5 @@
 using DantesRoleplay.Interactions;
+using DantesRoleplay.Authorization;
 using DantesRoleplay.SystemTasks;
 
 namespace DantesRoleplay.SystemTasks.Persistence;
@@ -60,7 +61,8 @@ internal sealed record SystemTaskStoredRequest(
     SystemTaskSelectedDefinition SelectedDefinition,
     string InputJson,
     IReadOnlyList<SystemTaskDurableHandle> Dependencies,
-    bool PropagateCancellation);
+    bool PropagateCancellation,
+    StandingGrantActivationOrigin? ActivationOrigin = null);
 
 internal sealed record SystemTaskLease(
     SystemTaskStoredRequest Request,

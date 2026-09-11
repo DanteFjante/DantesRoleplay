@@ -1,8 +1,10 @@
+using System.Data;
 using DantesRoleplay.Applications;
 using DantesRoleplay.Authorization;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.SystemTasks;
 using DantesRoleplay.SystemTasks.Persistence;
+using Microsoft.Data.Sqlite;
 
 namespace DantesRoleplay.Tests;
 
@@ -136,6 +138,84 @@ public sealed class SqliteSystemTaskLifecycleStoreTests
     }
 
     [Fact]
+    public async Task Retained_activation_origin_is_immutable_and_equivalent_replay_is_inert()
+    {
+        await using var fixture = await SystemTaskLifecycleSchemaFixture.CreateAsync();
+        var store = fixture.CreateStore();
+        var request = Request(fixture, "command.activation");
+        var origin = new StandingGrantActivationOrigin(7, Hash, 1, Hash);
+
+        var created = await StageEnqueueAsync(fixture, store, request, origin);
+        var replay = await StageEnqueueAsync(fixture, fixture.CreateStore(), request, origin);
+        var changed = await StageEnqueueAsync(fixture, store, request, origin with { ActivationRevision = 8 });
+
+        Assert.Equal(SystemTaskEnqueueDisposition.Created, created.Disposition);
+        Assert.Equal(SystemTaskEnqueueDisposition.Existing, replay.Disposition);
+        Assert.Equal(created.Handle, replay.Handle);
+        Assert.Equal(SystemTaskEnqueueDisposition.Conflict, changed.Disposition);
+        Assert.Equal(origin, (await fixture.CreateStore().ReadAsync(created.Handle!))!.Request.ActivationOrigin);
+        Assert.Equal(0L, await ScalarAsync(fixture,
+            "SELECT consumed_operations FROM system_task_root_budget WHERE root_task_id=$task",
+            ("$task", created.Handle!.TaskId)));
+        Assert.Equal(1L, await ScalarAsync(fixture, "SELECT COUNT(*) FROM system_task_lifecycle"));
+    }
+
+    [Fact]
+    public async Task Legacy_null_origin_stays_null_and_invalid_origin_shapes_are_rejected()
+    {
+        await using var fixture = await SystemTaskLifecycleSchemaFixture.CreateAsync();
+        var store = fixture.CreateStore();
+        var legacy = await store.EnqueueAsync(Request(fixture, "command.legacy"));
+
+        Assert.Null((await store.ReadAsync(legacy.Handle!))!.Request.ActivationOrigin);
+        Assert.Equal(1L, await ScalarAsync(fixture, """
+            SELECT COUNT(*) FROM system_task_lifecycle
+            WHERE task_id=$task AND activation_revision IS NULL AND activation_fingerprint IS NULL
+                AND activation_application_revision IS NULL AND activation_application_fingerprint IS NULL
+            """, ("$task", legacy.Handle!.TaskId)));
+
+        var invalidRevision = await StageEnqueueAsync(fixture, store,
+            Request(fixture, "command.invalid.revision"), new(0, Hash, 1, Hash));
+        var wrongApplication = await StageEnqueueAsync(fixture, store,
+            Request(fixture, "command.invalid.application"), new(1, Hash, 2, Hash));
+        var invalidHash = await StageEnqueueAsync(fixture, store,
+            Request(fixture, "command.invalid.hash"), new(1, Hash.ToLowerInvariant(), 1, Hash));
+        Assert.All(new[] { invalidRevision, wrongApplication, invalidHash }, value =>
+        {
+            Assert.Equal(SystemTaskEnqueueDisposition.Rejected, value.Disposition);
+            Assert.Equal("SYSTEM_TASK_ACTIVATION_ORIGIN_INVALID", value.Code);
+        });
+        Assert.Equal(1L, await ScalarAsync(fixture, "SELECT COUNT(*) FROM system_task_lifecycle"));
+
+        await using var connection = new SqliteConnection(fixture.ConnectionString);
+        await connection.OpenAsync();
+        await using var partial = connection.CreateCommand();
+        partial.CommandText = "UPDATE system_task_lifecycle SET activation_revision=1 WHERE task_id=$task";
+        partial.Parameters.AddWithValue("$task", legacy.Handle.TaskId);
+        await Assert.ThrowsAsync<SqliteException>(() => partial.ExecuteNonQueryAsync());
+    }
+
+    [Fact]
+    public async Task Retained_activation_origin_stays_inside_the_caller_owned_enqueue_transaction()
+    {
+        await using var fixture = await SystemTaskLifecycleSchemaFixture.CreateAsync();
+        var store = fixture.CreateStore();
+        var request = Request(fixture, "command.activation.rollback");
+        await using var connection = new SqliteConnection(fixture.ConnectionString);
+        await connection.OpenAsync();
+        await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync(IsolationLevel.Serializable);
+
+        var staged = await store.StageEnqueueAsync(request, false, connection, transaction,
+            activationOrigin: new(3, Hash, 1, Hash));
+        Assert.Equal(SystemTaskEnqueueDisposition.Created, staged.Disposition);
+        await transaction.RollbackAsync();
+
+        Assert.Null(await store.ReadAsync(staged.Handle!));
+        Assert.Equal(0L, await ScalarAsync(fixture, "SELECT COUNT(*) FROM system_task_lifecycle"));
+        Assert.Equal(0L, await ScalarAsync(fixture, "SELECT COUNT(*) FROM system_task_root_budget"));
+    }
+
+    [Fact]
     public async Task Expired_lease_recovers_with_higher_fence_and_rejects_stale_completion()
     {
         await using var fixture = await SystemTaskLifecycleSchemaFixture.CreateAsync();
@@ -251,6 +331,30 @@ public sealed class SqliteSystemTaskLifecycleStoreTests
 
     private static SystemTaskTerminalOutcome Outcome(int value) =>
         new($"{{\"value\":{value}}}", "evidence.fixture", ["bounded evidence"]);
+
+    private static async Task<SystemTaskEnqueueResult> StageEnqueueAsync(
+        SystemTaskLifecycleSchemaFixture fixture, SqliteSystemTaskLifecycleStore store,
+        SystemTaskDurableSubmissionRequest request, StandingGrantActivationOrigin origin)
+    {
+        await using var connection = new SqliteConnection(fixture.ConnectionString);
+        await connection.OpenAsync();
+        await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync(IsolationLevel.Serializable);
+        var result = await store.StageEnqueueAsync(request, false, connection, transaction,
+            activationOrigin: origin);
+        await transaction.CommitAsync();
+        return result;
+    }
+
+    private static async Task<long> ScalarAsync(SystemTaskLifecycleSchemaFixture fixture, string sql,
+        params (string Name, object Value)[] parameters)
+    {
+        await using var connection = new SqliteConnection(fixture.ConnectionString);
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        foreach (var parameter in parameters) command.Parameters.AddWithValue(parameter.Name, parameter.Value);
+        return Convert.ToInt64(await command.ExecuteScalarAsync());
+    }
 
     private static SystemTaskDurableSubmissionRequest Request(SystemTaskLifecycleSchemaFixture fixture,
         string command, string input = "{}", string? parentCommand = null,

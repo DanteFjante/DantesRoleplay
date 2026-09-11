@@ -35,7 +35,88 @@ public sealed class SystemTaskDurableServiceBoundaryTests
         await using var second = await fixture.OpenSecondConnectionAsync();
         Assert.Equal(1L, await ScalarAsync(second,
             "SELECT COUNT(*) FROM system_task_lifecycle WHERE task_id = $task", ("$task", result.TaskHandle!.TaskId)));
-        Assert.NotNull(await fixture.Store.ReadAsync(result.TaskHandle));
+        Assert.Equal(fixture.Resolver.CurrentActivation, (await fixture.Store.ReadAsync(result.TaskHandle))!.Request.ActivationOrigin);
+    }
+
+    [Theory]
+    [InlineData("missing")]
+    [InlineData("wrong-application")]
+    [InlineData("invalid-hash")]
+    public async Task Submit_requires_verified_current_activation_provenance(string failure)
+    {
+        await using var fixture = await BoundaryFixture.CreateAsync();
+        fixture.Resolver.CurrentActivation = failure switch
+        {
+            "missing" => null,
+            "wrong-application" => new(7, Hash, 2, Hash),
+            _ => new(7, "invalid", 1, Hash)
+        };
+        var result = await fixture.Service.SubmitAsync(Request(fixture, Host(fixture, "command.origin")));
+        Assert.Equal("SYSTEM_TASK_TARGET_UNAVAILABLE", result.Code);
+        Assert.Equal(0L, await fixture.CountTasksAsync());
+    }
+
+    [Fact]
+    public async Task Retained_task_uses_exact_origin_with_current_host_and_grant_without_current_lookup()
+    {
+        await using var fixture = await BoundaryFixture.CreateAsync();
+        var submitted = await fixture.Service.SubmitAsync(Request(fixture, Host(fixture, "command.retained")));
+        var origin = fixture.Resolver.CurrentActivation!;
+        fixture.StateSpaces.SetApplicationRevision(new(App, 2, ManifestHash, []));
+        fixture.Resolver.CurrentActivation = new(8, ManifestHash, 2, ManifestHash);
+        fixture.Resolver.Status = StandingGrantTargetResolutionStatus.Denied;
+
+        var result = await fixture.Service.GetAsync(Host(fixture, "command.read-retained", grant: "grant.replacement"), submitted.TaskHandle!);
+        var status = await fixture.Service.ReadAsync(Host(fixture, "command.status-retained", grant: "grant.replacement"), submitted.TaskHandle!);
+        var cancel = await fixture.Service.CancelAsync(Host(fixture, "command.cancel-retained", grant: "grant.replacement"), submitted.TaskHandle!);
+
+        Assert.Equal(InteractionInvocationResultTag.Pending, result.Tag);
+        Assert.Equal(InteractionInvocationResultTag.Completed, status.Tag);
+        Assert.Equal(InteractionInvocationResultTag.Cancelled, cancel.Tag);
+        Assert.Equal(1, fixture.Resolver.CallCount);
+        Assert.Equal(0, fixture.Resolver.ResolveCurrentCallCount);
+        Assert.Equal(3, fixture.Resolver.RetainedOrigins.Count);
+        Assert.All(fixture.Resolver.RetainedOrigins, value => Assert.Equal(origin, value));
+        Assert.All(fixture.Policy.HostGrantReferences.Skip(1), value => Assert.Equal("grant.replacement", value));
+        Assert.DoesNotContain("activationFingerprint", status.DataJson!, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("denied", "SYSTEM_TASK_NOT_AUTHORIZED")]
+    [InlineData("unavailable", "SYSTEM_TASK_TARGET_UNAVAILABLE")]
+    [InlineData("different-origin", "SYSTEM_TASK_TARGET_UNAVAILABLE")]
+    [InlineData("grant-denied", "SYSTEM_TASK_NOT_AUTHORIZED")]
+    public async Task Retained_authorization_failure_never_falls_back_or_cancels(string failure, string code)
+    {
+        await using var fixture = await BoundaryFixture.CreateAsync();
+        var submitted = await fixture.Service.SubmitAsync(Request(fixture, Host(fixture, "command.retained-denied")));
+        if (failure == "denied") fixture.Resolver.RetainedStatus = StandingGrantTargetResolutionStatus.Denied;
+        if (failure == "unavailable") fixture.Resolver.RetainedStatus = StandingGrantTargetResolutionStatus.Unavailable;
+        if (failure == "different-origin") fixture.Resolver.RetainedTargetOriginOverride = new(8, ManifestHash, 1, Hash);
+        if (failure == "grant-denied") fixture.Policy.Decide = (host, _, _) => Decision(host, false, "STANDING_GRANT_DENIED", Grant(host));
+        var result = await fixture.Service.CancelAsync(Host(fixture, "command.cancel"), submitted.TaskHandle!);
+        Assert.Equal(code, result.Code);
+        Assert.Equal(1, fixture.Resolver.CallCount);
+        Assert.Equal(0, fixture.Resolver.ResolveCurrentCallCount);
+        Assert.False((await fixture.Store.ReadAsync(submitted.TaskHandle!))!.CancellationRequested);
+    }
+
+    [Fact]
+    public async Task Child_status_authorizes_each_retained_origin_directly()
+    {
+        await using var fixture = await BoundaryFixture.CreateAsync();
+        var parent = await fixture.Service.SubmitAsync(Request(fixture, Host(fixture, "command.origin-parent")));
+        var parentOrigin = fixture.Resolver.CurrentActivation!;
+        fixture.Resolver.CurrentActivation = new(8, ManifestHash, 1, Hash);
+        var child = await fixture.Service.SubmitAsync(Request(fixture,
+            Host(fixture, "command.origin-child", parentCommand: parent.TaskHandle!.CommandId)));
+        var childOrigin = fixture.Resolver.CurrentActivation!;
+        fixture.Resolver.Status = StandingGrantTargetResolutionStatus.Denied;
+        var result = await fixture.Service.ListChildrenAsync(Host(fixture, "command.children"), parent.TaskHandle);
+        var children = JsonSerializer.Deserialize<SystemTaskDurableChildrenReadback>(result.DataJson!, WebJson)!;
+        Assert.Equal([child.TaskHandle!], children.Children.Select(value => value.Handle));
+        Assert.Equal([parentOrigin, childOrigin], fixture.Resolver.RetainedOrigins);
+        Assert.Equal(2, fixture.Resolver.CallCount);
     }
 
     [Theory]
@@ -507,7 +588,7 @@ public sealed class SystemTaskDurableServiceBoundaryTests
 
     private sealed class BoundaryOnlyStateSpaceRegistry : IStateSpaceRegistry
     {
-        private readonly IReadOnlyDictionary<string, StateSpaceView> values;
+        private readonly Dictionary<string, StateSpaceView> values;
 
         internal BoundaryOnlyStateSpaceRegistry(bool includeSecondState)
         {
@@ -518,6 +599,11 @@ public sealed class SystemTaskDurableServiceBoundaryTests
         }
 
         public StateSpaceView Create(StateSpaceBinding binding) => throw new NotSupportedException();
+        internal void SetApplicationRevision(ApplicationRevision application)
+        {
+            foreach (var key in values.Keys.ToArray())
+                values[key] = new(key, application, ManifestHash, 2, DateTime.UnixEpoch, DateTime.UnixEpoch);
+        }
         public StateSpaceView? Get(string stateSpaceId) => values.GetValueOrDefault(stateSpaceId);
         public StateSpaceDiscoveryPage ListPage(ApplicationIdentifier applicationId,
             string? afterStateSpaceId, int limit) => new(values.Values.ToArray(), null);
@@ -536,6 +622,10 @@ public sealed class SystemTaskDurableServiceBoundaryTests
         internal int CallCount { get; private set; }
         internal int ResolveCurrentCallCount { get; private set; }
         internal List<StandingGrantDefinitionReference> Selections { get; } = [];
+        internal StandingGrantActivationOrigin? CurrentActivation { get; set; } = new(7, Hash, 1, Hash);
+        internal StandingGrantTargetResolutionStatus RetainedStatus { get; set; } = StandingGrantTargetResolutionStatus.Available;
+        internal StandingGrantActivationOrigin? RetainedTargetOriginOverride { get; set; }
+        internal List<StandingGrantActivationOrigin> RetainedOrigins { get; } = [];
 
         public Task<StandingGrantTargetResolution> ResolveAsync(InteractionInvocationHost host,
             StandingGrantDefinitionReference selection, CancellationToken cancellationToken = default)
@@ -549,7 +639,21 @@ public sealed class SystemTaskDurableServiceBoundaryTests
                     CatalogNamespaceIdentity.NamespaceOf(selection.DefinitionId), "ownership.fixture",
                     selection.Revision, selection.ContentFingerprint)
                 : null;
-            return Task.FromResult(new StandingGrantTargetResolution(status, "BOUNDARY_TARGET_" + status, target));
+            return Task.FromResult(new StandingGrantTargetResolution(status, "BOUNDARY_TARGET_" + status, target, CurrentActivation));
+        }
+
+        public Task<StandingGrantTargetResolution> ResolveRetainedAsync(InteractionInvocationHost host,
+            StandingGrantActivationOrigin origin, StandingGrantDefinitionReference selection, CancellationToken cancellationToken = default)
+        {
+            SawActiveTransaction |= db.Database.CurrentTransaction is not null;
+            RetainedOrigins.Add(origin);
+            Selections.Add(selection);
+            var target = RetainedStatus == StandingGrantTargetResolutionStatus.Available
+                ? new StandingGrantDefinitionTarget(selection.DefinitionId, selection.Kind, App,
+                    CatalogNamespaceIdentity.NamespaceOf(selection.DefinitionId), "ownership.fixture",
+                    selection.Revision, selection.ContentFingerprint, RetainedActivation: RetainedTargetOriginOverride ?? origin)
+                : null;
+            return Task.FromResult(new StandingGrantTargetResolution(RetainedStatus, "BOUNDARY_RETAINED_" + RetainedStatus, target));
         }
 
         public Task<StandingGrantTargetResolution> ResolveCurrentAsync(InteractionInvocationHost host,

@@ -1,6 +1,7 @@
 using System.Data;
 using System.Security.Cryptography;
 using System.Text.Json;
+using DantesRoleplay.Authorization;
 using DantesRoleplay.Interactions;
 using Microsoft.Data.Sqlite;
 
@@ -29,9 +30,12 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
     private async Task<SystemTaskEnqueueResult> EnqueueCoreAsync(
         SystemTaskDurableSubmissionRequest request,
         bool propagateCancellation, SqliteConnection connection, SqliteTransaction transaction,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, StandingGrantActivationOrigin? activationOrigin = null)
     {
         ArgumentNullException.ThrowIfNull(request);
+        if (activationOrigin is not null && !ValidActivationOrigin(request, activationOrigin))
+            return Rejected("SYSTEM_TASK_ACTIVATION_ORIGIN_INVALID",
+                "The retained activation origin is invalid or does not match the admitted application revision.");
         var now = UtcNow();
         var dependencyPairs = request.DependencyHandles
             .OrderBy(value => value.TaskId, StringComparer.Ordinal)
@@ -70,6 +74,20 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
             dependencies = dependencyPairs,
             propagateCancellation
         }));
+        if (activationOrigin is not null)
+        {
+            using var legacyPayload = JsonDocument.Parse(payloadJson);
+            var extendedPayload = legacyPayload.RootElement.EnumerateObject()
+                .ToDictionary(property => property.Name, property => property.Value.Clone(), StringComparer.Ordinal);
+            extendedPayload.Add("activationOrigin", JsonSerializer.SerializeToElement(new
+            {
+                activationRevision = activationOrigin.ActivationRevision,
+                activationFingerprint = activationOrigin.ActivationFingerprint,
+                applicationRevision = activationOrigin.ApplicationRevision,
+                applicationFingerprint = activationOrigin.ApplicationFingerprint
+            }));
+            payloadJson = InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(extendedPayload));
+        }
         var payloadFingerprint = InteractionCanonicalJson.Fingerprint(FingerprintDomain, payloadJson);
         var taskId = NewTaskId(request.InvocationHost.CommandId);
 
@@ -181,6 +199,8 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
                 task_id, command_id, payload_fingerprint, parent_task_id, parent_command_id, root_task_id, parent_depth,
                 propagate_cancellation, state, principal_reference, authentication_method,
                 application_id, application_revision, application_fingerprint, base_applications_json,
+                activation_revision, activation_fingerprint, activation_application_revision,
+                activation_application_fingerprint,
                 state_space_id, grant_reference, state_revision, execution_profile,
                 admitted_operations, deadline_utc, definition_id, definition_version,
                 definition_fingerprint, input_json, checkpoint_name, completion_handler,
@@ -190,7 +210,8 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
             VALUES (
                 $task, $command, $payload, $parent, $parentCommand, $root, $depth, $propagate, 'queued',
                 $principal, $authentication, $application, $applicationRevision, $applicationFingerprint,
-                $bases, $stateSpace, $grant, $stateRevision, $profile, $admitted, $deadline,
+                $bases, $activationRevision, $activationFingerprint, $activationApplicationRevision,
+                $activationApplicationFingerprint, $stateSpace, $grant, $stateRevision, $profile, $admitted, $deadline,
                 $definition, $definitionVersion, $definitionFingerprint, $input,
                 $checkpoint, $handler, $correlation, $checkpointState, NULL, 0, 0, 0, 0, 0, 0, $now, $now)
             """, cancellationToken,
@@ -201,6 +222,10 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
             ("$application", request.InvocationHost.ApplicationRevision.ApplicationId.ToString()),
             ("$applicationRevision", request.InvocationHost.ApplicationRevision.Revision),
             ("$applicationFingerprint", request.InvocationHost.ApplicationRevision.Fingerprint), ("$bases", basesJson),
+            ("$activationRevision", activationOrigin?.ActivationRevision),
+            ("$activationFingerprint", activationOrigin?.ActivationFingerprint),
+            ("$activationApplicationRevision", activationOrigin?.ApplicationRevision),
+            ("$activationApplicationFingerprint", activationOrigin?.ApplicationFingerprint),
             ("$stateSpace", request.InvocationHost.StateSpaceId), ("$grant", request.InvocationHost.GrantReference),
             ("$stateRevision", request.InvocationHost.StateRevision), ("$profile", InteractionExecutionProfileNames.Get(request.InvocationHost.Profile)),
             ("$admitted", admitted), ("$deadline", ToDb(request.InvocationHost.Budget.DeadlineUtc)),
@@ -749,6 +774,7 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
             ParseDb(reader.GetString(reader.GetOrdinal("deadline_utc"))));
         var definition = new SystemTaskSelectedDefinition(reader.GetString(reader.GetOrdinal("definition_id")),
             reader.GetInt32(reader.GetOrdinal("definition_version")), reader.GetString(reader.GetOrdinal("definition_fingerprint")));
+        var activationOrigin = ReadActivationOrigin(reader, invocation);
         var checkpointName = NullableString(reader, "checkpoint_name");
         var checkpoint = checkpointName is null ? null : new SystemTaskCheckpoint(checkpointName,
             reader.GetString(reader.GetOrdinal("completion_handler")), reader.GetString(reader.GetOrdinal("correlation_id")),
@@ -756,7 +782,7 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
         var dependencies = await ReadDependenciesAsync(connection, transaction, taskId, cancellationToken);
         var request = new SystemTaskStoredRequest(handle, invocation, definition,
             reader.GetString(reader.GetOrdinal("input_json")), dependencies,
-            reader.GetInt64(reader.GetOrdinal("propagate_cancellation")) != 0);
+            reader.GetInt64(reader.GetOrdinal("propagate_cancellation")) != 0, activationOrigin);
         return new(request, ParseState(reader.GetString(reader.GetOrdinal("state"))), checkpoint,
             NullableString(reader, "wake_json"), reader.GetInt32(reader.GetOrdinal("attempt_count")),
             reader.GetInt64(reader.GetOrdinal("fencing_counter")), reader.GetInt64(reader.GetOrdinal("cancel_requested")) != 0,
@@ -1057,6 +1083,42 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
     private static IReadOnlyList<string> ParseEvidence(string? json) => json is null
         ? Array.Empty<string>()
         : Array.AsReadOnly(JsonSerializer.Deserialize<string[]>(json) ?? []);
+
+    private static bool ValidActivationOrigin(SystemTaskDurableSubmissionRequest request,
+        StandingGrantActivationOrigin origin) => ValidActivationOrigin(
+            request.InvocationHost.ApplicationRevision.Revision,
+            request.InvocationHost.ApplicationRevision.Fingerprint, origin);
+
+    private static bool ValidActivationOrigin(int applicationRevision, string applicationFingerprint,
+        StandingGrantActivationOrigin origin) => origin.ActivationRevision > 0
+        && origin.ApplicationRevision > 0
+        && origin.ApplicationRevision == applicationRevision
+        && StringComparer.Ordinal.Equals(origin.ApplicationFingerprint, applicationFingerprint)
+        && IsUpperHash(origin.ActivationFingerprint) && IsUpperHash(origin.ApplicationFingerprint);
+
+    private static bool IsUpperHash(string? value) => value is { Length: 64 }
+        && value.All(char.IsAsciiHexDigitUpper);
+
+    private static StandingGrantActivationOrigin? ReadActivationOrigin(SqliteDataReader reader,
+        SystemTaskStoredInvocation invocation)
+    {
+        var activationRevisionOrdinal = reader.GetOrdinal("activation_revision");
+        var activationFingerprintOrdinal = reader.GetOrdinal("activation_fingerprint");
+        var applicationRevisionOrdinal = reader.GetOrdinal("activation_application_revision");
+        var applicationFingerprintOrdinal = reader.GetOrdinal("activation_application_fingerprint");
+        var absent = reader.IsDBNull(activationRevisionOrdinal) && reader.IsDBNull(activationFingerprintOrdinal)
+            && reader.IsDBNull(applicationRevisionOrdinal) && reader.IsDBNull(applicationFingerprintOrdinal);
+        if (absent) return null;
+        if (reader.IsDBNull(activationRevisionOrdinal) || reader.IsDBNull(activationFingerprintOrdinal)
+            || reader.IsDBNull(applicationRevisionOrdinal) || reader.IsDBNull(applicationFingerprintOrdinal))
+            throw new InvalidDataException("The stored retained activation origin is incomplete.");
+        var origin = new StandingGrantActivationOrigin(reader.GetInt32(activationRevisionOrdinal),
+            reader.GetString(activationFingerprintOrdinal), reader.GetInt32(applicationRevisionOrdinal),
+            reader.GetString(applicationFingerprintOrdinal));
+        if (!ValidActivationOrigin(invocation.ApplicationRevision, invocation.ApplicationFingerprint, origin))
+            throw new InvalidDataException("The stored retained activation origin is invalid or does not match the admitted application revision.");
+        return origin;
+    }
 
     private static string Required(string value, int maximum, string parameter) =>
         string.IsNullOrWhiteSpace(value) || value.Length > maximum

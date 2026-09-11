@@ -1,4 +1,5 @@
 using System.Data;
+using DantesRoleplay.Authorization;
 using Microsoft.Data.Sqlite;
 
 namespace DantesRoleplay.SystemTasks.Persistence;
@@ -18,8 +19,9 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
     /// <summary>Stages a job under the caller's current grant/effect transaction; never publishes Pending.</summary>
     internal Task<SystemTaskEnqueueResult> StageEnqueueAsync(SystemTaskDurableSubmissionRequest request,
         bool propagateCancellation, SqliteConnection connection, SqliteTransaction transaction,
-        CancellationToken cancellationToken = default) => InCallerTransactionAsync(connection, transaction,
-            () => EnqueueCoreAsync(request, propagateCancellation, connection, transaction, cancellationToken),
+        CancellationToken cancellationToken = default, StandingGrantActivationOrigin? activationOrigin = null) =>
+        InCallerTransactionAsync(connection, transaction,
+            () => EnqueueCoreAsync(request, propagateCancellation, connection, transaction, cancellationToken, activationOrigin),
             result => result.Disposition is SystemTaskEnqueueDisposition.Created or SystemTaskEnqueueDisposition.Existing,
             cancellationToken);
 

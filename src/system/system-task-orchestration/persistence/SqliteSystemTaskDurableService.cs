@@ -29,10 +29,12 @@ internal sealed partial class SqliteSystemTaskDurableService(
                 "Durable tasks require the workflow execution profile."));
         return InOwnedTransactionAsync(request.InvocationHost, write: true, async (store, connection, transaction) =>
         {
-            var denied = await AuthorizeAsync(request.InvocationHost, request.SelectedDefinition,
-                StandingGrantCapability.Execute, null, cancellationToken);
-            if (denied is not null) return denied;
-            var staged = await store.StageEnqueueAsync(request, false, connection, transaction, cancellationToken);
+            var authorization = await AuthorizeCoreAsync(request.InvocationHost, request.SelectedDefinition,
+                StandingGrantCapability.Execute, null, null, cancellationToken);
+            if (authorization.Failure is not null) return authorization.Failure;
+            if (authorization.CurrentActivation is null) return TargetUnavailable();
+            var staged = await store.StageEnqueueAsync(request, false, connection, transaction, cancellationToken,
+                authorization.CurrentActivation);
             return staged.Disposition is SystemTaskEnqueueDisposition.Created or SystemTaskEnqueueDisposition.Existing
                 ? InteractionInvocationResult.Pending(staged.Handle!)
                 : InteractionInvocationResult.Failed(staged.Code, staged.SafeMessage);
@@ -48,7 +50,7 @@ internal sealed partial class SqliteSystemTaskDurableService(
             var snapshot = await store.ReadInTransactionAsync(handle, connection, transaction, cancellationToken);
             if (snapshot is null || !TaskScopeMatches(invocationHost, snapshot.Request)) return NotAuthorized();
             var denied = await AuthorizeAsync(invocationHost, snapshot.Request.SelectedDefinition,
-                StandingGrantCapability.ReadTask, TaskTarget(snapshot.Request), cancellationToken);
+                StandingGrantCapability.ReadTask, TaskTarget(snapshot.Request), cancellationToken, snapshot.Request.ActivationOrigin);
             if (denied is not null) return denied;
 
             // Journal payloads are inert diagnostics. Until the runtime supplies authoritative
@@ -74,14 +76,14 @@ internal sealed partial class SqliteSystemTaskDurableService(
             var snapshot = await store.ReadInTransactionAsync(handle, connection, transaction, cancellationToken);
             if (snapshot is null || !TaskScopeMatches(invocationHost, snapshot.Request)) return NotAuthorized();
             var denied = await AuthorizeAsync(invocationHost, snapshot.Request.SelectedDefinition,
-                StandingGrantCapability.CancelTask, TaskTarget(snapshot.Request), cancellationToken);
+                StandingGrantCapability.CancelTask, TaskTarget(snapshot.Request), cancellationToken, snapshot.Request.ActivationOrigin);
             if (denied is not null) return denied;
             var affected = await store.ReadCancellationTargetsAsync(handle, true, connection, transaction, cancellationToken);
             foreach (var child in affected.Where(value => value.Request.Handle != handle))
             {
                 if (!TaskScopeMatches(invocationHost, child.Request)) return NotAuthorized();
                 denied = await AuthorizeAsync(invocationHost, child.Request.SelectedDefinition,
-                    StandingGrantCapability.CancelTask, TaskTarget(child.Request), cancellationToken);
+                    StandingGrantCapability.CancelTask, TaskTarget(child.Request), cancellationToken, child.Request.ActivationOrigin);
                 if (denied is not null) return denied;
             }
             await store.StageCancellationAsync(handle, true, connection, transaction, cancellationToken);
@@ -168,30 +170,53 @@ internal sealed partial class SqliteSystemTaskDurableService(
 
     private async Task<InteractionInvocationResult?> AuthorizeAsync(InteractionInvocationHost host,
         SystemTaskSelectedDefinition selection, StandingGrantCapability capability,
-        StandingGrantTaskTarget? task, CancellationToken cancellationToken)
+        StandingGrantTaskTarget? task, CancellationToken cancellationToken, StandingGrantActivationOrigin? origin = null) =>
+        (await AuthorizeCoreAsync(host, selection, capability, task, origin, cancellationToken)).Failure;
+
+    private async Task<(InteractionInvocationResult? Failure, StandingGrantActivationOrigin? CurrentActivation)> AuthorizeCoreAsync(
+        InteractionInvocationHost host, SystemTaskSelectedDefinition selection, StandingGrantCapability capability,
+        StandingGrantTaskTarget? task, StandingGrantActivationOrigin? origin, CancellationToken cancellationToken)
     {
-        var resolution = await targets.ResolveAsync(host,
-            new(selection.ExactDefinitionId, "procedure", selection.Version, selection.Fingerprint), cancellationToken);
-        if (resolution.Status == StandingGrantTargetResolutionStatus.Denied) return NotAuthorized();
+        if (origin is not null && (task is null || capability is not (StandingGrantCapability.ReadTask or StandingGrantCapability.CancelTask)))
+            return (NotAuthorized(), null);
+        var definition = new StandingGrantDefinitionReference(selection.ExactDefinitionId, "procedure", selection.Version, selection.Fingerprint);
+        // Provenance chooses the lookup; permission failures never broaden it. Legacy rows have
+        // no inferred origin and can use only the exact current definition selection.
+        var resolution = origin is null
+            ? await targets.ResolveAsync(host, definition, cancellationToken)
+            : await targets.ResolveRetainedAsync(host, origin, definition, cancellationToken);
+        if (resolution.Status == StandingGrantTargetResolutionStatus.Denied) return (NotAuthorized(), null);
         if (resolution.Status != StandingGrantTargetResolutionStatus.Available || resolution.Target is not { } target)
-            return InteractionInvocationResult.Unavailable("SYSTEM_TASK_TARGET_UNAVAILABLE", "The selected task definition cannot currently be resolved.");
+            return (TargetUnavailable(), null);
         if (target.DefinitionId != selection.ExactDefinitionId || target.Revision != selection.Version
             || target.ContentFingerprint != selection.Fingerprint || target.Kind != "procedure"
-            || target.OwnerApplicationId != host.ApplicationRevision.ApplicationId)
-            return InteractionInvocationResult.Unavailable("SYSTEM_TASK_TARGET_UNAVAILABLE", "The selected task definition cannot currently be resolved.");
+            || target.OwnerApplicationId != host.ApplicationRevision.ApplicationId || target.Candidate is not null
+            || target.RetainedActivation != origin)
+            return (TargetUnavailable(), null);
+        if (origin is null && resolution.CurrentActivation is { } current
+            && (current.ActivationRevision < 1 || !IsActivationHash(current.ActivationFingerprint)
+                || current.ApplicationRevision != host.ApplicationRevision.Revision
+                || current.ApplicationFingerprint != host.ApplicationRevision.Fingerprint))
+            return (TargetUnavailable(), null);
         var requirement = new StandingGrantRequirement(capability, StandingGrantScope.StateSpace, [target], [], task);
         StandingGrantContractRules.ValidateRequirement(host, requirement);
         var decision = await policy.EvaluateAsync(host, requirement, cancellationToken);
         if (!decision.Allowed)
-            return decision.Code.Contains("UNAVAILABLE", StringComparison.Ordinal)
+            return (decision.Code.Contains("UNAVAILABLE", StringComparison.Ordinal)
                 ? InteractionInvocationResult.Unavailable("SYSTEM_TASK_AUTHORIZATION_UNAVAILABLE", "Current task authorization is unavailable.")
-                : NotAuthorized();
+                : NotAuthorized(), null);
         if (decision.Grant is not { } grant || grant.GrantReference != host.GrantReference
             || grant.PrincipalReference != host.Principal.PrincipalId || grant.ApplicationId != host.ApplicationRevision.ApplicationId
             || grant.Scope != StandingGrantScope.StateSpace || grant.StateSpaceId != host.StateSpaceId)
-            return NotAuthorized();
-        return null;
+            return (NotAuthorized(), null);
+        return (null, origin is null ? resolution.CurrentActivation : null);
     }
+
+    private static bool IsActivationHash(string value) => value is { Length: 64 }
+        && value.All(character => char.IsAsciiDigit(character) || character is >= 'A' and <= 'F');
+
+    private static InteractionInvocationResult TargetUnavailable() => InteractionInvocationResult.Unavailable(
+        "SYSTEM_TASK_TARGET_UNAVAILABLE", "The selected task definition and its activation provenance cannot currently be resolved.");
 
     private static bool TaskScopeMatches(InteractionInvocationHost host, SystemTaskStoredRequest task) =>
         task.Invocation.PrincipalReference == host.Principal.PrincipalId

@@ -27,6 +27,10 @@ internal sealed class SystemTaskLifecycleSchemaFixture : IAsyncDisposable
             application_id TEXT NOT NULL,
             application_revision INTEGER NOT NULL,
             application_fingerprint TEXT NOT NULL,
+            activation_revision INTEGER NULL,
+            activation_fingerprint TEXT NULL,
+            activation_application_revision INTEGER NULL,
+            activation_application_fingerprint TEXT NULL,
             base_applications_json TEXT NOT NULL,
             state_space_id TEXT NOT NULL,
             grant_reference TEXT NOT NULL,
@@ -61,6 +65,12 @@ internal sealed class SystemTaskLifecycleSchemaFixture : IAsyncDisposable
             created_at_utc TEXT NOT NULL,
             updated_at_utc TEXT NOT NULL,
             completed_at_utc TEXT NULL,
+            CHECK ((activation_revision IS NULL AND activation_fingerprint IS NULL
+                    AND activation_application_revision IS NULL AND activation_application_fingerprint IS NULL)
+                OR (activation_revision IS NOT NULL AND activation_revision > 0
+                    AND activation_fingerprint IS NOT NULL AND length(activation_fingerprint) = 64
+                    AND activation_application_revision IS NOT NULL AND activation_application_revision > 0
+                    AND activation_application_fingerprint IS NOT NULL AND length(activation_application_fingerprint) = 64)),
             CHECK ((parent_task_id IS NULL AND parent_depth = 0 AND task_id = root_task_id)
                 OR (parent_task_id IS NOT NULL AND parent_depth > 0 AND task_id <> root_task_id)),
             CHECK ((checkpoint_name IS NULL AND completion_handler IS NULL AND correlation_id IS NULL AND checkpoint_state_json IS NULL)

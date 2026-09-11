@@ -36,7 +36,10 @@ The lifecycle store owns bounded parent/dependency graphs, shared ancestor opera
 fenced attempts, checkpoints and durable waits, classified retries, cancellation propagation, and
 host-call journals. Internal staging methods join the caller's SQLite writer transaction; the
 caller commits before dispatch. Public submission owns its commit boundary and rechecks current
-scope and grants. Readback exposes bounded diagnostics without returning retained authority,
+scope and grants. Submission retains the resolver's exact activation origin; read and cancellation
+resolve that retained origin under current authority. Legacy rows without provenance can resolve
+only their exact current selection, with no inferred historical origin or lookup fallback.
+Readback exposes bounded diagnostics without returning retained authority,
 lease tokens, raw input, or checkpoint state.
 
 AI accounting uses the same task/attempt history. Host-resolved enrollment and dispatch
@@ -47,6 +50,8 @@ ancestor. Unknown usage retains its hold and blocks automatic execution. Complet
 settles actual, unclamped charges and releases provider concurrency, including an overrun; it
 does not prevent an otherwise valid terminal result, cancellation, or readback. Late observations
 can settle original usage without restoring an expired lease or permitting stale publication.
+Dispatch and usage hashes are checked when rehydrated; admission and result readback verify
+settlement counters against retained observations before treating them as accounted usage.
 
 These internal owners do not establish a production runtime, provider, schedule, or observer
 route. Coordinator registration/migrations and real runtime/grant integration remain separate
