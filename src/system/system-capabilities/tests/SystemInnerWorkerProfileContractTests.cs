@@ -129,6 +129,16 @@ public sealed class SystemInnerWorkerProfileContractTests
     }
 
     [Fact]
+    public void Unreleased_reviewer_v1_is_pinned_to_the_selected_material_v2_definition()
+    {
+        Assert.Equal("inner.application-candidate-reuse-review", SystemInnerWorkerCandidateReviewer.ProfileVersion.ExactDefinitionId);
+        Assert.Equal(1, SystemInnerWorkerCandidateReviewer.ProfileVersion.Version);
+        Assert.Equal("7A34D5EEF82F3FB4FF28306B4CD715077D979F1B95D5AEC719878F45249B179C",
+            SystemInnerWorkerCandidateReviewer.ProfileVersion.Fingerprint);
+        Assert.DoesNotContain("candidateFingerprint", SystemInnerWorkerCandidateReviewer.Profile.Instructions, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Candidate_profile_keeps_reviewer_and_both_authority_pins_independent()
     {
         var profile = CandidateProfile();
