@@ -720,8 +720,13 @@ public sealed class WebCompositionRenderer
         if (string.IsNullOrWhiteSpace(value) || value.Any(char.IsControl) || value.Contains('\\', StringComparison.Ordinal) ||
             value.Contains('?', StringComparison.Ordinal) || value.Contains('#', StringComparison.Ordinal) ||
             !value.StartsWith("/ui/", StringComparison.Ordinal) || !value.EndsWith("/", StringComparison.Ordinal)) return false;
-        var pageId = value[4..^1];
-        if (pageId.Contains('/', StringComparison.Ordinal) || !WebPageId.IsValid(pageId)) return false;
+        var parts = value[4..^1].Split('/');
+        var legacy = parts.Length == 1 && WebPageId.IsValid(parts[0]);
+        var pinned = parts.Length == 5 && WebPageId.IsValid(parts[0]) && parts[1] == "content" &&
+            WebPageId.IsValid(parts[2]) && parts[3] == "revisions" &&
+            int.TryParse(parts[4], System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var revision) &&
+            revision > 0 && parts[4] == revision.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        if (!legacy && !pinned) return false;
         validated = value;
         return true;
     }

@@ -1,0 +1,215 @@
+using System.Text.Json;
+using DantesRoleplay.Applications;
+using DantesRoleplay.DataAccess;
+using DantesRoleplay.Ecs;
+using DantesRoleplay.SchemaValidation;
+using DantesRoleplay.Web.Pages;
+using DantesRoleplay.Web.Persistence;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
+
+namespace DantesRoleplay.Tests;
+
+public sealed class WebPagePublicationSelectionTests
+{
+    [Fact]
+    public async Task Legacy_publication_requires_an_explicit_draft_and_never_substitutes_active_assets()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        await Error("WEB_CONTENT_UNPINNED", () => fixture.Publication.SelectPublishedAsync(fixture.ApplicationId, Fixture.EntityId));
+        var selected = await fixture.Publication.SelectDraftAsync(fixture.ApplicationId, Fixture.EntityId, 2);
+        await fixture.Content.AppendBundleDraftAsync(Fixture.ContentId, 2, Composition("newer", [3]));
+        Assert.Equal(2, (await fixture.Publication.RevalidateSelectionAsync(selected)).Summary.Revision);
+        Assert.Equal(new byte[] { 2 }, (await fixture.Publication.ReadSelectedAssetAsync(selected, "assets/icon.bin"))!.Content);
+        var rendered = await fixture.Publication.RenderLiteralSelectionAsync(selected);
+        Assert.True(rendered.IsSuccess);
+        Assert.Contains("/ui/example/content/example-content/revisions/2/assets/icon.bin", rendered.Html);
+        Assert.Null(await fixture.Publication.ReadSelectedAssetAsync(selected, "assets/missing.bin"));
+        Assert.Equal(1, (await fixture.Content.GetActiveAsync(Fixture.ContentId))!.Revision);
+        Assert.Equal(new byte[] { 1 }, (await fixture.Content.GetActiveAssetAsync(Fixture.ContentId, "assets/icon.bin"))!.Content);
+        await Error("WEB_CONTENT_REVISION_UNKNOWN", () => fixture.Publication.SelectDraftAsync(fixture.ApplicationId, Fixture.EntityId, 500));
+    }
+
+    [Fact]
+    public async Task Literal_retained_components_and_slots_render_without_constructing_query_or_action_authority()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        const string literal = """
+            {"formatVersion":1,"generation":"literal","components":[
+              {"id":"frame","revision":"1","template":{"kind":"element","tag":"section","children":[{"kind":"slot","name":"body"}]}}],
+             "root":{"kind":"component","id":"frame","revision":"1","slots":{"body":[{"kind":"text","text":"Retained & safe"}]}}}
+            """;
+        await fixture.Content.AppendBundleDraftAsync(Fixture.ContentId, 2,
+            new(string.Empty, []) { ContentFormat = WebPageContentFormat.Composition, CompositionJson = literal });
+        var selected = await fixture.Publication.SelectDraftAsync(fixture.ApplicationId, Fixture.EntityId, 3);
+        Assert.Equal("<section>Retained &amp; safe</section>", (await fixture.Publication.RenderLiteralSelectionAsync(selected)).Html);
+        var latest = 3;
+        foreach (var declarations in new[] { "\"queries\":[{\"name\":\"records\"}],", "\"actions\":[{\"name\":\"save\"}]," })
+        {
+            await fixture.Content.AppendBundleDraftAsync(Fixture.ContentId, latest,
+                new(string.Empty, []) { ContentFormat = WebPageContentFormat.Composition, CompositionJson = "{" + declarations + literal[1..] });
+            selected = await fixture.Publication.SelectDraftAsync(fixture.ApplicationId, Fixture.EntityId, ++latest);
+            var rendered = await fixture.Publication.RenderLiteralSelectionAsync(selected);
+            Assert.Null(rendered.Html);
+            Assert.Equal("COMPOSITION_BINDINGS_UNAVAILABLE", Assert.Single(rendered.Errors).Code);
+        }
+    }
+
+    [Fact]
+    public async Task Selection_rechecks_metadata_entity_lifecycle_and_publication_binding()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var beforeMetadata = await fixture.Publication.SelectDraftAsync(fixture.ApplicationId, Fixture.EntityId, 2);
+        await fixture.Administration.UpdateMetadataAsync(fixture.ApplicationId, Fixture.EntityId,
+            new(beforeMetadata.PageComponent.Revision, "Updated", "Page", "example", 0, "public"));
+        await Error("WEB_PAGE_SELECTION_STALE", () => fixture.Publication.RevalidateSelectionAsync(beforeMetadata));
+        await Error("WEB_PAGE_SELECTION_STALE", () => fixture.Publication.CompareExchangeContentReferenceAsync(beforeMetadata));
+
+        var beforeDisable = await fixture.Publication.SelectDraftAsync(fixture.ApplicationId, Fixture.EntityId, 2);
+        await fixture.Lifecycle.SetEntityEnabledAsync(Fixture.PublicationSpace, Fixture.EntityId, false, beforeDisable.Entity.Revision);
+        await Error("WEB_PAGE_UNKNOWN", () => fixture.Publication.RevalidateSelectionAsync(beforeDisable));
+        var disabled = await fixture.Lifecycle.GetEntityAsync(Fixture.PublicationSpace, Fixture.EntityId);
+        await fixture.Lifecycle.SetEntityEnabledAsync(Fixture.PublicationSpace, Fixture.EntityId, true, disabled!.Entity.Revision);
+
+        var beforeRebind = await fixture.Publication.SelectDraftAsync(fixture.ApplicationId, Fixture.EntityId, 2);
+        await fixture.Data.Database.ExecuteSqlRawAsync("UPDATE system_state_space SET BindingRevision = BindingRevision + 1 WHERE Id = 'publication:example';");
+        await Error("WEB_PAGE_SELECTION_STALE", () => fixture.Publication.RevalidateSelectionAsync(beforeRebind));
+        Assert.Equal(1, (await fixture.Content.GetSummaryAsync(Fixture.ContentId))!.ActiveRevision);
+    }
+
+    [Fact]
+    public async Task Retained_payload_corruption_is_detected_before_returning_selected_bytes()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var selected = await fixture.Publication.SelectDraftAsync(fixture.ApplicationId, Fixture.EntityId, 2);
+        await fixture.Web.Database.ExecuteSqlRawAsync("UPDATE web_page_asset_content SET Content = X'99';");
+        await Error("CONTENT_REFERENCE_INVALID_ASSET", () => fixture.Publication.ReadSelectedAssetAsync(selected, "assets/icon.bin"));
+    }
+
+    [Fact]
+    public async Task Pin_CAS_uses_retained_content_preserves_metadata_and_reports_separate_compatibility_pointer()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var draft = await fixture.Publication.SelectDraftAsync(fixture.ApplicationId, Fixture.EntityId, 2);
+        var written = await fixture.Publication.CompareExchangeContentReferenceAsync(draft);
+        Assert.Equal(draft.PageComponent.Revision + 1, written.PageComponentRevision);
+        var published = await fixture.Publication.SelectPublishedAsync(fixture.ApplicationId, Fixture.EntityId);
+        Assert.Equal(draft.Content, published.Content);
+        Assert.False(published.IsDraft);
+        var compatibility = await fixture.Publication.ReadCompatibilityPointerAsync(published);
+        Assert.True(compatibility.RequiresReconciliation);
+        Assert.Equal(1, compatibility.ActiveRevision);
+        Assert.Equal(2, compatibility.PinnedRevision);
+
+        await fixture.Administration.UpdateMetadataAsync(fixture.ApplicationId, Fixture.EntityId,
+            new(published.PageComponent.Revision, "Changed title", "Page", "example", 1, "public"));
+        published = await fixture.Publication.SelectPublishedAsync(fixture.ApplicationId, Fixture.EntityId);
+        Assert.Equal(draft.Content, published.Content);
+        Assert.Equal(new byte[] { 2 }, (await fixture.Publication.ReadSelectedAssetAsync(published, "assets/icon.bin"))!.Content);
+        Assert.Equal(1, (await fixture.Content.GetActiveAsync(Fixture.ContentId))!.Revision);
+
+        // Existing public discovery cannot route this pin to the unrelated legacy active HTML.
+        var discovery = new WebPublicationDiscovery(fixture.Applications, fixture.Spaces, fixture.Entities,
+            fixture.Content, fixture.Lifecycle);
+        var diagnostic = await discovery.GetApplicationAsync(fixture.ApplicationId, diagnostics: true);
+        Assert.Contains(diagnostic!.Evidence!, value => value.Code == "PAGE_PERMISSIONED_CONTENT_UNAVAILABLE");
+        Assert.NotEqual("ready", (await discovery.ResolvePageRouteAsync("example")).Status);
+    }
+
+    [Fact]
+    public async Task Failed_second_publication_keeps_the_prior_ECS_pin_and_retained_assets()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        await fixture.Publication.CompareExchangeContentReferenceAsync(
+            await fixture.Publication.SelectDraftAsync(fixture.ApplicationId, Fixture.EntityId, 2));
+        await fixture.Content.AppendBundleDraftAsync(Fixture.ContentId, 2, Composition("next", [3]));
+        var candidate = await fixture.Publication.SelectDraftAsync(fixture.ApplicationId, Fixture.EntityId, 3);
+        await fixture.Administration.UpdateMetadataAsync(fixture.ApplicationId, Fixture.EntityId,
+            new(candidate.PageComponent.Revision, "Concurrent title", "Page", "example", 0, "public"));
+        await Error("WEB_PAGE_SELECTION_STALE", () => fixture.Publication.CompareExchangeContentReferenceAsync(candidate));
+        var current = await fixture.Publication.SelectPublishedAsync(fixture.ApplicationId, Fixture.EntityId);
+        Assert.Equal(2, current.Content.Revision);
+        Assert.Equal(new byte[] { 2 }, (await fixture.Publication.ReadSelectedAssetAsync(current, "assets/icon.bin"))!.Content);
+        Assert.Equal(3, (await fixture.Content.GetSummaryAsync(Fixture.ContentId))!.LatestRevision);
+    }
+
+    private static WebPageBundle Composition(string generation, byte[] bytes) => new(string.Empty, [new("assets/icon.bin", bytes)])
+    {
+        ContentFormat = WebPageContentFormat.Composition,
+        CompositionJson = JsonSerializer.Serialize(new
+        {
+            formatVersion = 1, generation, components = Array.Empty<object>(),
+            root = new { kind = "asset", path = "assets/icon.bin" }
+        })
+    };
+
+    private static async Task Error(string code, Func<Task> action) =>
+        Assert.Equal(code, (await Assert.ThrowsAsync<WebPageStoreException>(action)).Code);
+
+    private sealed class Fixture : IAsyncDisposable
+    {
+        public const string EntityId = "web-page:example", ContentId = "example-content", PublicationSpace = "publication:example";
+        public ApplicationIdentifier ApplicationId { get; } = ApplicationIdentifier.Parse("example");
+        public required DantesRoleplayDbContext Data { get; init; }
+        public required WebContentDbContext Web { get; init; }
+        public required SqliteApplicationRegistry Applications { get; init; }
+        public required SqliteStateSpaceRegistry Spaces { get; init; }
+        public required SqliteEntityComponentStore Entities { get; init; }
+        public required SqliteEcsLifecycleStore Lifecycle { get; init; }
+        public required WebPageStore Content { get; init; }
+        public required WebPagePublicationService Publication { get; init; }
+        public required WebPageAdministration Administration { get; init; }
+
+        public static async Task<Fixture> CreateAsync()
+        {
+            var root = new DirectoryInfo(AppContext.BaseDirectory);
+            while (root is not null && !File.Exists(Path.Combine(root.FullName, "AGENTS.md"))) root = root.Parent;
+            if (root is null) throw new InvalidOperationException("The test worktree root was not found.");
+            var directory = Path.Combine(root.FullName, ".tmp", "publication-selection-tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            string Connection(string name) => new SqliteConnectionStringBuilder
+            { DataSource = Path.Combine(directory, name), Pooling = false }.ToString();
+            var data = new DantesRoleplayDbContext(new DbContextOptionsBuilder<DantesRoleplayDbContext>().UseSqlite(Connection("kernel.db")).Options);
+            var web = new WebContentDbContext(new DbContextOptionsBuilder<WebContentDbContext>().UseSqlite(Connection("web.db")).Options);
+            await data.Database.MigrateAsync();
+            await web.Database.MigrateAsync();
+            var applications = new SqliteApplicationRegistry(data);
+            var application = applications.Register(new(ApplicationIdentifier.Parse("example"), "Example", "Generic page fixture.", []));
+            var spaces = new SqliteStateSpaceRegistry(data, applications);
+            spaces.Create(new StateSpaceBinding(PublicationSpace, application, application.Fingerprint,
+                application.Fingerprint, EcsStateSpaceScope.ApplicationPublication));
+            var schemas = new BoundedJsonSchemaValidator();
+            var types = new SqliteComponentTypeRegistry(data, schemas);
+            var pageType = types.Define(new(ApplicationIdentifier.System, WebPageComponentTypes.Page,
+                await File.ReadAllTextAsync(Path.Combine(root.FullName, "catalog", "components", "system", "web", "page.schema.json"))));
+            types.Define(new(ApplicationIdentifier.System, WebPageComponentTypes.IndexPage,
+                await File.ReadAllTextAsync(Path.Combine(root.FullName, "catalog", "components", "system", "web", "index-page.schema.json"))));
+            var constraints = new SqliteEcsRoleConstraintValidator(data);
+            var entities = new SqliteEntityComponentStore(data, types, schemas, constraints);
+            var lifecycle = new SqliteEcsLifecycleStore(data, constraints);
+            var content = new WebPageStore(web);
+            await content.SaveBundleAndActivateAsync(ContentId, new("<p>Legacy active</p>", [new("assets/icon.bin", [1])]));
+            await content.AppendBundleDraftAsync(ContentId, 1, Composition("selected", [2]));
+            await entities.CreateEntityAsync(PublicationSpace, EntityId, "Example");
+            await entities.AddComponentAsync(new(PublicationSpace, EntityId,
+                new(pageType.QualifiedId, pageType.Version, pageType.SchemaHash),
+                JsonSerializer.Serialize(new
+                {
+                    title = "Example", navigationLabel = "Page", slug = "example", order = 0, visibility = "public",
+                    activeContentReference = new { pageId = ContentId }
+                }), 0));
+            var transactions = new SqliteEcsWriteTransactionFactory(data);
+            var publication = new WebPagePublicationService(applications, spaces, types, entities,
+                new WorldStore(data), content, web, transactions, new(), NullLogger<WebPagePublicationService>.Instance);
+            return new()
+            {
+                Data = data, Web = web, Applications = applications, Spaces = spaces, Entities = entities,
+                Lifecycle = lifecycle, Content = content, Publication = publication,
+                Administration = new(applications, spaces, types, entities, lifecycle, transactions, content, publication)
+            };
+        }
+
+        public async ValueTask DisposeAsync() { await Web.DisposeAsync(); await Data.DisposeAsync(); }
+    }
+}

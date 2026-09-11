@@ -21,7 +21,8 @@ versioned page store and asset payload owner.
 The renderer permits escaped text/values, allowlisted elements, conditions, loops, required props,
 and caller-scoped slots. It validates references/cycles and rejects duplicate/unknown JSON fields,
 unsafe URLs and undeclared bindings. Asset references must occur in the host-supplied selected
-revision inventory; render requires the host's `/ui/{slug}/` asset base. The current active-asset
+revision inventory; render accepts the legacy `/ui/{slug}/` base or the exact retained base
+`/ui/{slug}/content/{contentPageId}/revisions/{revision}/`. The current active-asset
 route does not pin asset reads to the rendered revision. It must be coordinated before claiming
 generation-consistent publication. Action buttons remain disabled until a real dispatcher is attached.
 
@@ -110,13 +111,39 @@ identity. Neither declaration can select authority or advertise availability by 
   `CompositionPagePreview`. Supply the verified host, exact selected queries and asset base,
   serve audience-specific results without shared HTML caching, and map missing/denied/incompatible
   reads distinctly. Coordinate revision-pinned asset reads and retention with the same publication.
-  The proposed immutable asset base is `/ui/{id}/revisions/{revision}/`; acceptance of its access
+  The proposed immutable asset base is `/ui/{slug}/content/{contentPageId}/revisions/{revision}/`; acceptance of its access
   semantics and transport remains coordinator-owned. It is not a public draft preview URL.
 - Register the read materializer/preview only in the existing coordinator-owned web registration.
   Bind browser actions to the common plan 01 dispatch boundary in
   `WebInterfaceApplicationEndpoints`; preserve stable command identity and reconcile uncertain
   receipts. Plans 02–05 supply authoring/grants, manuals, schedules/observers and child-task readback.
   No proposed downstream contract is consumed before its coordinator freeze.
+
+`WebPageContentReference` preserves the legacy pageId-only reference or requires all four pin
+fields: `revision`, `contentFormat`, `contentHash`, and `assetInventoryFingerprint`. It derives
+the content hash from actual retained bytes and verifies canonical composition and every asset
+payload. The inventory fingerprint is uppercase SHA-256 over UTF-8
+`dantes-roleplay/web-page-asset-inventory/v1`, a NUL separator, and compact JSON containing
+ordinal-path-sorted `[path, contentType, contentHash, length]` arrays. Asset bodies remain in the
+web content store. Metadata updates preserve the whole reference.
+
+The unregistered selection methods in `WebPagePublicationService` capture and recheck the exact
+application-publication binding, application generation, entity, component type/revision/value,
+and retained content pin. Draft selection names its revision; published selection refuses an
+unpinned reference. Literal component/slot rendering needs no synthetic invocation host; query
+and action declarations remain unavailable until their actual owners select exact contracts.
+The unregistered publication CAS writes only the ECS component reference after content retention.
+`ReadCompatibilityPointerAsync` reports disagreement with the separate web `ActiveRevision`;
+it neither repairs the pointer nor promises a transaction across the two databases. Legacy
+discovery refuses to send pinned content through the old mutable-active HTML route.
+
+Selections and pins are evidence, never permission tokens. The coordinator's `web-page` resource
+permission maps to the retained web content page and immutable owning application; publication
+entities are current links to it. Schema Read, namespace prefixes, a verified principal, and
+legacy private access do not substitute for that resource permission. Page Read/authoring/activation
+are Application-scoped; audience queries separately require exact StateSpace Read. Their hosts
+must share a principal/application generation and operation/deadline ledger while retaining their
+actual distinct scopes and grants. The website does not construct broader query authority.
 
 Library and migrated SQLite fixtures demonstrate composition, inert retention, exact historical
 asset readback, local transaction rollback and consumer conformance. They do not demonstrate

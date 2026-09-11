@@ -291,7 +291,7 @@ public sealed class WebPublicationDiscovery(
 
                 PageValue? parsed;
                 try { parsed = JsonSerializer.Deserialize<PageValue>(pageComponent.ValueJson, Json); }
-                catch (JsonException exception)
+                catch (Exception exception) when (exception is JsonException or WebPageStoreException)
                 {
                     evidence.Add(new("PAGE_COMPONENT_MALFORMED", exception.Message, entity.EntityId,
                         Enabled: entity.DeletedAtUtc is null));
@@ -305,9 +305,14 @@ public sealed class WebPublicationDiscovery(
                 }
 
                 var pageContent = await content.GetSummaryAsync(parsed!.ActiveContentReference.PageId, cancellationToken);
-                var contentAvailable = pageContent is { ActiveRevision: > 0 };
+                // Permissioned pinned content must be selected and authorized by the new owner
+                // adapter. The legacy HTML route must never substitute its mutable active pointer.
+                var contentAvailable = !parsed.ActiveContentReference.IsPinned && pageContent is { ActiveRevision: > 0 };
                 if (!contentAvailable)
-                    evidence.Add(new("PAGE_CONTENT_MISSING", "The active content reference does not resolve to active web content.",
+                    evidence.Add(new(parsed.ActiveContentReference.IsPinned ? "PAGE_PERMISSIONED_CONTENT_UNAVAILABLE" : "PAGE_CONTENT_MISSING",
+                        parsed.ActiveContentReference.IsPinned
+                            ? "Pinned content requires the permissioned composition publication adapter."
+                            : "The active content reference does not resolve to active web content.",
                         entity.EntityId, parsed.Slug, entity.DeletedAtUtc is null));
                 if (diagnostics && entity.DeletedAtUtc is not null)
                     evidence.Add(new("PAGE_ENTITY_DISABLED", "The page entity is disabled and excluded from public discovery.",
@@ -425,9 +430,8 @@ public sealed class WebPublicationDiscovery(
     private static WebPublicationException Error(string code, string message) => new(code, message);
 
     private sealed record CursorValue(int Version, string AfterApplicationId, string SnapshotFingerprint);
-    private sealed record ContentReference(string PageId);
     private sealed record PageValue(string Title, string NavigationLabel, string Slug, int Order,
-        string Visibility, ContentReference ActiveContentReference);
+        string Visibility, WebPageContentReference ActiveContentReference);
     private sealed record InspectedPage(string EntityId, string Title, string NavigationLabel, string Slug,
         int Order, string Visibility, string ContentPageId, bool IsIndexPage, bool Enabled, bool IsUsable);
     private sealed record PublicationRead(StateSpaceView? Publication, int PublicationCount,

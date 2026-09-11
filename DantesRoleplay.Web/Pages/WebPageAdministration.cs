@@ -164,8 +164,11 @@ public sealed class WebPageAdministration(
             publication.StateSpaceId,
             entityId,
             page.Type,
-            Serialize(request.Title, request.NavigationLabel, request.Slug, request.Order,
-                request.Visibility, value.ActiveContentReference.PageId),
+            JsonSerializer.Serialize(value with
+            {
+                Title = request.Title, NavigationLabel = request.NavigationLabel, Slug = request.Slug,
+                Order = request.Order, Visibility = request.Visibility
+            }, Json),
             request.ExpectedComponentRevision), cancellationToken);
         return await GetAsync(applicationId, entityId, cancellationToken)
             ?? throw Error("WEB_PAGE_UNKNOWN", "The page identity disappeared after update.");
@@ -332,7 +335,7 @@ public sealed class WebPageAdministration(
         var errors = new List<WebPublicationEvidence>();
         PageValue value;
         try { value = Parse(component.ValueJson); }
-        catch (Exception exception) when (exception is JsonException or InvalidOperationException)
+        catch (Exception exception) when (exception is JsonException or InvalidOperationException or WebPageStoreException)
         {
             return new(applicationId.Value, entity.EntityId, entity.Name, entity.Revision, component.Revision,
                 entity.DeletedAtUtc is null, "", "", "", 0, "", "", false, null,
@@ -398,19 +401,24 @@ public sealed class WebPageAdministration(
         JsonSerializer.Serialize(new PageValue(
             title, navigationLabel, slug, order, visibility, new(pageId)), Json);
 
-    private static PageValue Parse(string json) => JsonSerializer.Deserialize<PageValue>(json, Json)
-        ?? throw new InvalidOperationException("The page component is empty.");
+    private static PageValue Parse(string json)
+    {
+        var value = JsonSerializer.Deserialize<PageValue>(json, Json)
+            ?? throw new InvalidOperationException("The page component is empty.");
+        if (value.ActiveContentReference is null) throw new InvalidOperationException("The page component has no content reference.");
+        value.ActiveContentReference.Validate();
+        return value;
+    }
 
     private static WebPageAdministrationException Error(string code, string message) => new(code, message);
 
-    private sealed record ContentReference(string PageId);
     private sealed record PageValue(
         string Title,
         string NavigationLabel,
         string Slug,
         int Order,
         string Visibility,
-        ContentReference ActiveContentReference);
+        WebPageContentReference ActiveContentReference);
 }
 
 public sealed class WebPageAdministrationException(string code, string message)

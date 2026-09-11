@@ -68,6 +68,14 @@ public sealed class WebCompositionTests
         Assert.Equal("UNSAFE_ASSET_BASE", Assert.Single(renderer.Render(parsed.Document!, new Dictionary<string, JsonElement>(), "https://example.test/").Errors).Code);
         var rendered = renderer.Render(parsed.Document!, new Dictionary<string, JsonElement>(), "/ui/control-center/");
         Assert.Equal("<img src=\"/ui/control-center/assets/logo.svg\">", rendered.Html);
+        rendered = renderer.Render(parsed.Document!, new Dictionary<string, JsonElement>(), "/ui/example/content/retained-page/revisions/2/");
+        Assert.Equal("<img src=\"/ui/example/content/retained-page/revisions/2/assets/logo.svg\">", rendered.Html);
+        foreach (var invalidBase in new[] { "/ui/example/revisions/2/", "/ui/example/content/page/revisions/0/",
+            "/ui/example/content/page/revisions/02/", "/ui/example/content/page/revisions/-1/",
+            "/ui/example/content/page/revisions/2147483648/", "/ui/example/content/../revisions/2/",
+            "/ui/example/content/page/revisions/2/?token=untrusted" })
+            Assert.Equal("UNSAFE_ASSET_BASE", Assert.Single(renderer.Render(parsed.Document!,
+                new Dictionary<string, JsonElement>(), invalidBase).Errors).Code);
     }
 
     [Fact]

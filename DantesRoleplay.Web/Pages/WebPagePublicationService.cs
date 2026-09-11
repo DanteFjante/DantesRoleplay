@@ -88,7 +88,7 @@ public interface IWebPageIdentityMigration
 /// Bridges separately versioned web content to generic ECS publication identity. It interprets
 /// only the two system.web contracts; HTML and assets remain owned by IWebPageStore.
 /// </summary>
-public sealed class WebPagePublicationService(
+public sealed partial class WebPagePublicationService(
     IApplicationRegistry applications,
     IStateSpaceRegistry stateSpaces,
     IApplicationComponentTypeRegistry componentTypes,
@@ -281,7 +281,7 @@ public sealed class WebPagePublicationService(
                 if (component is null) continue;
                 PageValue? value;
                 try { value = JsonSerializer.Deserialize<PageValue>(component.ValueJson, Json); }
-                catch (JsonException) { continue; }
+                catch (Exception exception) when (exception is JsonException or WebPageStoreException) { continue; }
                 if (value?.ActiveContentReference?.PageId is null) continue;
                 var marker = await entities.GetComponentAsync(
                     publication.StateSpaceId, entity.EntityId, WebPageComponentTypes.IndexPage, cancellationToken);
@@ -310,7 +310,7 @@ public sealed class WebPagePublicationService(
             publication.StateSpaceId, entityId, WebPageComponentTypes.Page, cancellationToken);
         var value = JsonSerializer.Serialize(new PageValue(
             review.Title!, review.NavigationLabel!, review.Slug!, review.Order, review.Visibility,
-            new ContentReference(review.PageId)), Json);
+            new WebPageContentReference(review.PageId)), Json);
         if (page is null)
             await entities.AddComponentAsync(new(
                 publication.StateSpaceId, entityId, Reference(pageType), value, 0), cancellationToken);
@@ -348,7 +348,7 @@ public sealed class WebPagePublicationService(
                     if (component is null) continue;
                     PageValue? value;
                     try { value = JsonSerializer.Deserialize<PageValue>(component.ValueJson, Json); }
-                    catch (JsonException) { continue; }
+                    catch (Exception exception) when (exception is JsonException or WebPageStoreException) { continue; }
                     if (value?.ActiveContentReference?.PageId is not { } pageId) continue;
                     var index = await entities.GetComponentAsync(
                         publication.StateSpaceId, entity.EntityId, WebPageComponentTypes.IndexPage, cancellationToken);
@@ -493,15 +493,13 @@ public sealed class WebPagePublicationService(
     private static EcsComponentReference Reference(RegisteredComponentTypeVersion type) =>
         new(type.QualifiedId, type.Version, type.SchemaHash);
 
-    private sealed record ContentReference(string PageId);
-
     private sealed record PageValue(
         string Title,
         string NavigationLabel,
         string Slug,
         int Order,
         string Visibility,
-        ContentReference ActiveContentReference);
+        WebPageContentReference ActiveContentReference);
 }
 
 public static class SystemWebPageIds
