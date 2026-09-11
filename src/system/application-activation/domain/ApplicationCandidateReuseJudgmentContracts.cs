@@ -76,10 +76,11 @@ public sealed class ApplicationCandidateReuseInput
         var documents = candidate.EffectiveDocuments.OrderBy(value => value.Document.LogicalIdentity, StringComparer.Ordinal)
             .Select(value =>
             {
+                retainedLength += value.RetainedBytes.LongLength;
+                if (retainedLength > ApplicationCandidateReuseJudgmentLimits.InputUtf8Bytes)
+                    throw Invalid("Complete retained text exceeds the aggregate review bound.");
                 var copied = value.RetainedBytes.ToArray();
-                retainedLength += copied.Length;
-                if (retainedLength > ApplicationCandidateReuseJudgmentLimits.InputUtf8Bytes
-                    || !value.Document.IsText || copied.LongLength != value.Document.Length
+                if (!value.Document.IsText || copied.LongLength != value.Document.Length
                     || Convert.ToHexString(SHA256.HashData(copied)) != value.Document.ContentFingerprint)
                     throw Invalid("Complete exact retained text is required.");
                 return new { value.Document.LogicalIdentity, value.Document.RelativePath, value.Document.MediaType,
