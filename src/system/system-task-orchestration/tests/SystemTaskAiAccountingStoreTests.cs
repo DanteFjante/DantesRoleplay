@@ -38,6 +38,28 @@ public sealed class SystemTaskAiAccountingStoreTests
     }
 
     [Fact]
+    public async Task Validation_subject_cannot_enroll_or_mutate_a_workflow_task_account()
+    {
+        await using var fixture = await AccountingFixture.CreateAsync();
+        var budget = new SystemInnerWorkerAiBudget(1_000, 1);
+        var handle = await fixture.EnqueueAsync("command.validation-subject", budget, enroll: false);
+        var profile = fixture.ValidationProfile(handle.CommandId);
+
+        var result = await fixture.EnrollAsync(handle, profile);
+
+        Assert.False(result.Accepted);
+        Assert.Equal("INNER_AI_SUBJECT_UNSUPPORTED", result.Code);
+        Assert.Equal(16, profile.Worker.InvocationHost.Budget.RemainingOperations);
+        Assert.Equal(0L, await fixture.ScalarAsync("SELECT COUNT(*) FROM system_task_ai_ceiling"));
+        Assert.Equal(0L, await fixture.ScalarAsync("SELECT COUNT(*) FROM system_task_ai_reservation"));
+        Assert.Equal(0L, await fixture.ScalarAsync("SELECT COUNT(*) FROM system_task_ai_dispatch_evidence"));
+        Assert.Equal(0L, await fixture.ScalarAsync(
+            "SELECT consumed_operations FROM system_task_root_budget WHERE root_task_id=$task",
+            ("$task", handle.TaskId)));
+        Assert.Equal(SystemTaskLifecycleState.Queued, (await fixture.Store.ReadAsync(handle))!.State);
+    }
+
+    [Fact]
     public async Task Child_enrollment_requires_every_ancestor_ceiling_and_cannot_widen_it()
     {
         await using var fixture = await AccountingFixture.CreateAsync();
@@ -613,9 +635,30 @@ public sealed class SystemTaskAiAccountingStoreTests
                 new("authority.1", "grant-revision.1", Hash), budget);
         }
 
-        internal SystemTaskDurableSubmissionRequest Submission(SystemInnerWorkerResolvedProfile profile) => new(
-            profile.Worker.InvocationHost, profile.Worker.ProcedureVersion, profile.Worker.InputJson,
-            dependencyHandles: profile.Worker.DependencyHandles);
+        internal SystemInnerWorkerResolvedProfile ValidationProfile(string command)
+        {
+            var host = InteractionInvocationHost.ForApplication(
+                TrustedPrincipalContext.VerifiedPrincipal(
+                    "principal.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "fixture"),
+                new ApplicationRevision(ApplicationIdentifier.Parse("fixture-app"), 1, Hash, []),
+                "grant.1", command, InteractionExecutionProfile.ReadOnly,
+                new InteractionInvocationBudget(16, TimeProvider.GetUtcNow().AddHours(1).UtcDateTime));
+            var subject = new SystemInnerWorkerSubject.ApplicationCandidateValidation(new(
+                host.ApplicationRevision.ApplicationId, new string('a', 32), 1, Hash));
+            var worker = new SystemInnerWorkerRequest(subject, host, "{\"work\":true}", Schema);
+            return new(worker, SystemInnerWorkerCandidateReviewer.ProfileVersion,
+                SystemInnerWorkerCandidateReviewer.Profile, HashOf(Schema), [], [],
+                new("manual.packet.1", Hash), new("authority.validation", "grant-revision.1", Hash),
+                new SystemInnerWorkerAiBudget(toolCalls: 0),
+                new("authority.read", "grant-revision.1", Hash));
+        }
+
+        internal SystemTaskDurableSubmissionRequest Submission(SystemInnerWorkerResolvedProfile profile)
+        {
+            var workflow = Assert.IsType<SystemInnerWorkerSubject.ProcedureWorkflow>(profile.Worker.Subject);
+            return new(profile.Worker.InvocationHost, workflow.ProcedureVersion, profile.Worker.InputJson,
+                dependencyHandles: profile.Worker.DependencyHandles);
+        }
 
         internal async Task<SystemTaskDurableHandle> EnqueueAsync(string command, SystemInnerWorkerAiBudget budget,
             string? parentCommand = null, bool enroll = true, DateTimeOffset? deadline = null)

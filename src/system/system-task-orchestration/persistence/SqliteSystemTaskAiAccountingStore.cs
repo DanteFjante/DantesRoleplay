@@ -38,11 +38,13 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(profile);
+        if (profile.Worker.Subject is not SystemInnerWorkerSubject.ProcedureWorkflow workflow)
+            return AiRejected("INNER_AI_SUBJECT_UNSUPPORTED");
         var task = await ReadSnapshotAsync(connection, transaction, handle, cancellationToken);
         if (task is null || !AiScopeMatches(profile.Worker.InvocationHost, task.Request)
-            || task.Request.SelectedDefinition != profile.Worker.ProcedureVersion
+            || task.Request.SelectedDefinition != workflow.ProcedureVersion
             || task.Request.InputJson != profile.Worker.InputJson) return AiRejected("INNER_AI_ENROLLMENT_SCOPE_MISMATCH");
-        var fingerprint = AiEnrollmentFingerprint(profile);
+        var fingerprint = AiEnrollmentFingerprint(profile, workflow.ProcedureVersion);
         var existing = await ReadAiCeilingAsync(connection, transaction, handle.TaskId, cancellationToken);
         if (existing is not null) return existing.Fingerprint == fingerprint
             ? new(true, "INNER_AI_ENROLLMENT_EXISTING") : AiRejected("INNER_AI_ENROLLMENT_CONFLICT");
@@ -69,8 +71,8 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
             ("$profile", profile.ProfileVersion.ExactDefinitionId), ("$profileVersion", profile.ProfileVersion.Version),
             ("$profileHash", profile.ProfileVersion.Fingerprint), ("$grant", profile.Worker.InvocationHost.GrantReference),
             ("$grantRevision", profile.AuthorityProvenance.GrantRevision), ("$grantHash", profile.AuthorityProvenance.GrantFingerprint),
-            ("$definition", profile.Worker.ProcedureVersion.ExactDefinitionId), ("$definitionVersion", profile.Worker.ProcedureVersion.Version),
-            ("$definitionHash", profile.Worker.ProcedureVersion.Fingerprint), ("$schema", profile.OutputSchemaFingerprint),
+            ("$definition", workflow.ProcedureVersion.ExactDefinitionId), ("$definitionVersion", workflow.ProcedureVersion.Version),
+            ("$definitionHash", workflow.ProcedureVersion.Fingerprint), ("$schema", profile.OutputSchemaFingerprint),
             ("$mode", SystemInnerWorkerTokenBudgetModeNames.Get(profile.AiBudget.Mode)), ("$tokens", profile.AiBudget.ProviderTokens),
             ("$tools", profile.AiBudget.ToolCalls), ("$concurrency", profile.AiBudget.MaxConcurrentProviderRequests),
             ("$deadline", ToDb(profile.Worker.InvocationHost.Budget.DeadlineUtc)), ("$now", ToDb(UtcNow())));
@@ -167,11 +169,18 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
             ("$fence", attempt.FencingCounter), ("$token", attempt.LeaseToken), ("$now", ToDb(UtcNow()))) == 1;
     }
 
-    private static string AiEnrollmentFingerprint(SystemInnerWorkerResolvedProfile profile) => AiHash(
+    private static string AiEnrollmentFingerprint(SystemInnerWorkerResolvedProfile profile) =>
+        profile.Worker.Subject is SystemInnerWorkerSubject.ProcedureWorkflow workflow
+            ? AiEnrollmentFingerprint(profile, workflow.ProcedureVersion)
+            : throw new InteractionContractException("INNER_AI_SUBJECT_UNSUPPORTED",
+                "AI accounting does not support this worker subject.");
+
+    private static string AiEnrollmentFingerprint(SystemInnerWorkerResolvedProfile profile,
+        SystemTaskSelectedDefinition procedureVersion) => AiHash(
         InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
         {
             profile.ProfileVersion, profile.OutputSchemaFingerprint, profile.AuthorityProvenance,
-            profile.Worker.ProcedureVersion, profile.Worker.InvocationHost.GrantReference, profile.AiBudget,
+            ProcedureVersion = procedureVersion, profile.Worker.InvocationHost.GrantReference, profile.AiBudget,
             profile.Worker.InvocationHost.Budget.DeadlineUtc,
             inputFingerprint = AiHash(profile.Worker.InputJson)
         }, AiJson)));
