@@ -348,7 +348,9 @@ public sealed class SystemTaskOrchestrationTests
             var tables = await db.Database.SqlQueryRaw<string>(
                 "SELECT name AS Value FROM sqlite_master WHERE type = 'table' AND name LIKE 'system_task%'")
                 .ToListAsync();
-            Assert.Equal(6, tables.Count);
+            foreach (var required in new[] { "system_task", "system_task_round", "system_task_step",
+                "system_task_confirmation", "system_task_execution", "system_task_execution_step" })
+                Assert.Contains(required, tables);
         }
         finally
         {
