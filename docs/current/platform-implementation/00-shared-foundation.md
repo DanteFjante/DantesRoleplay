@@ -10,6 +10,13 @@ later work. Durable workflows and focused inner workers remain downstream implem
 These are the concrete shared owners. The remaining sections explain the foundation's acceptance
 and coordination rules; they do not authorize workstreams to replace this agreement independently.
 
+For an additive shared contract, a lead may prepare a separate proposal commit within its owner
+family, with exact symbols, bounded payload examples, evidence semantics and affected consumers.
+The coordinator reviews, freezes and integrates that proposal before other workstreams adopt it.
+Drafting a proposal does not authorize changing frozen contracts, exposing operations, or generating
+competing migrations. Dependency registration, public transports, migrations and snapshots remain
+coordinated centrally while leads continue independent implementation.
+
 | Boundary | Implemented symbols and location | Availability |
 | --- | --- | --- |
 | Invocation and result | [InteractionInvocationContracts.cs](../../../src/system/interaction-orchestration/domain/InteractionInvocationContracts.cs): `InteractionInvocationHost`, `InteractionInvocationBudget`, `InteractionExecutionProfile`, `InteractionInvocationResult`, `InteractionInvocationIdentity` | Trusted C# host context; authored JSON cannot deserialize authority. Reuse the existing principal and application revision types. |
