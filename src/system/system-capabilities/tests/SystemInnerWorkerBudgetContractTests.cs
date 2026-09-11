@@ -143,7 +143,7 @@ public sealed class SystemInnerWorkerBudgetContractTests
         Assert.Equal(0, result.ReleasedToolCalls);
         Assert.Equal(known, result.UsageKnown);
         Assert.True(result.ExceededReservation);
-        Assert.True(result.RequiresReconciliation);
+        Assert.Equal(!known, result.RequiresReconciliation);
         Assert.Equal(known ? "INNER_AI_RESERVATION_EXCEEDED" : "INNER_AI_USAGE_UNKNOWN", result.Code);
     }
 
@@ -188,10 +188,20 @@ public sealed class SystemInnerWorkerBudgetContractTests
     public void Actual_tool_count_above_the_global_ceiling_is_retained_as_an_overrun()
     {
         var result = SystemInnerWorkerAiUsageReconciliation.Calculate(Reservation(),
-            new("record.1", Attempt(), 0, 0, SystemInnerWorkerAiBudget.MaximumToolCalls + 1));
+            new("record.1", Attempt(), 0, 0, SystemInnerWorkerAiBudget.MaximumToolCalls + 1, 0, true));
         Assert.Equal(17, result.ChargedToolCalls);
         Assert.True(result.ExceededReservation);
-        Assert.True(result.RequiresReconciliation);
+        Assert.False(result.RequiresReconciliation);
+    }
+
+    [Fact]
+    public void Complete_overrun_settles_but_blocks_new_admission_at_the_threshold()
+    {
+        var settled = SystemInnerWorkerAiUsageReconciliation.Calculate(Reservation(), new("record.1", Attempt(), 150, 10, 3, 160, true));
+        Assert.False(settled.RequiresReconciliation);
+        Assert.Equal(160, settled.ChargedProviderTokens);
+        Assert.Equal("INNER_AI_TOKEN_THRESHOLD_REACHED", Assert.Throws<InteractionContractException>(() =>
+            new SystemInnerWorkerAiBudget(100, 1).ProviderReservationAmount(1, settled.ChargedProviderTokens, 0, 0, false)).Code);
     }
 
     [Fact]
@@ -252,6 +262,7 @@ public sealed class SystemInnerWorkerBudgetContractTests
         Assert.True(unknown.RequiresReconciliation);
         Assert.Equal(100, unknown.ChargedProviderTokens);
         Assert.True(overrun.ExceededReservation);
+        Assert.False(overrun.RequiresReconciliation);
         Assert.Equal(160, overrun.ChargedProviderTokens);
     }
 

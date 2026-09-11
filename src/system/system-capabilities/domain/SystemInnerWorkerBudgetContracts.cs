@@ -316,8 +316,9 @@ public sealed record SystemInnerWorkerAiUsageReport
 /// <summary>
 /// Pure accounting projection, not a ledger mutation or task outcome. Unknown usage retains the
 /// entire reserved amount (or a larger observed lower bound); no automatic retry/new reservation
-/// may proceed in the affected root until the owner reconciles it. Excess actual usage also blocks
-/// further dispatch. Cancellation/provider failure do not release an unknown reservation.
+/// may proceed in the affected root until the owner reconciles it. Complete overruns settle actual
+/// usage; remaining ancestor balances govern new dispatch without blocking valid terminal results,
+/// cleanup or readback. Cancellation/provider failure do not release an unknown reservation.
 /// </summary>
 public sealed record SystemInnerWorkerAiUsageReconciliation(
     long ChargedProviderTokens, long ChargedToolCalls, int ReleasedProviderTokens, int ReleasedToolCalls,
@@ -342,7 +343,7 @@ public sealed record SystemInnerWorkerAiUsageReconciliation(
         return new(tokens, calls,
             known ? (int)Math.Max(0, reservation.ProviderTokens - tokens) : 0,
             known ? (int)Math.Max(0, reservation.ToolCalls - calls) : 0,
-            known, exceeded, !known || exceeded, reservation.Mode);
+            known, exceeded, !known, reservation.Mode);
     }
 }
 
@@ -358,8 +359,10 @@ public sealed record SystemInnerWorkerAiUsageReconciliation(
 /// conflicting known reports fail. Later evidence may resolve unknown usage via an explicit audited
 /// reconciliation. Late usage remains accountable after lease expiry without authorizing a stale
 /// worker to publish a task result. Neither method invokes a provider or waits in an ECS writer.
-/// Unknown usage/overrun must return failed with INNER_AI_USAGE_UNKNOWN/INNER_AI_RESERVATION_EXCEEDED
-/// after retaining the debit and evidence. Host-to-owner evidence may carry a lease token; public
+/// Unknown usage requires INNER_AI_USAGE_UNKNOWN after retaining the hold and evidence. Complete
+/// overruns retain actual debits and INNER_AI_RESERVATION_EXCEEDED as an accounting diagnostic;
+/// they are settled, release in-flight ownership and do not themselves require reconciliation or
+/// prevent an otherwise authorized terminal result. Host-to-owner evidence may carry a lease token; public
 /// task readback must expose only safe record references and never copy the lease into OUTER/web data.
 /// </summary>
 public interface ISystemInnerWorkerAiBudgetAccounting

@@ -163,9 +163,12 @@ the original provider response/host dispatch record. Public task readback must n
 `SystemInnerWorkerAiUsageReconciliation.Calculate` supplies only bounded arithmetic: known usage
 charges actual counts and releases the unused difference; unknown usage retains the entire reservation
 or a larger observed lower bound, releases nothing and requires explicit reconciliation. Actual
-overruns are retained without clamping. `INNER_AI_USAGE_UNKNOWN` and `INNER_AI_RESERVATION_EXCEEDED`
-are failed accounting outcomes and block new reservations/retries in the affected root until reviewed
-reconciliation. They do not imply rollback of any committed tool action.
+overruns are retained without clamping. `INNER_AI_USAGE_UNKNOWN` retains the admission hold and blocks
+automatic dispatch until reviewed reconciliation. A complete `INNER_AI_RESERVATION_EXCEEDED` outcome
+settles actual usage and releases in-flight ownership; it does not itself require evidence
+reconciliation or prevent an otherwise valid terminal result, cleanup, cancellation or readback.
+Remaining ancestor balances govern further dispatch. Neither outcome implies rollback of a committed
+tool action, and terminal publication still requires current ownership and authoritative evidence.
 
 `ISystemInnerWorkerAiBudgetAccounting` is an unimplemented proposal for plan 04's existing persisted
 task owner. It must settle once across every ancestor, handle conflicting reports, preserve unknown
