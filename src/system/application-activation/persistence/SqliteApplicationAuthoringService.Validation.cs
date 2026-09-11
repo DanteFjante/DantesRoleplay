@@ -79,18 +79,39 @@ public sealed partial class SqliteApplicationAuthoringService
                 await transaction.CommitAsync(cancellationToken);
                 return Receipt(operationId, commandFingerprint);
             }
-            var operation = await operations.RecordAsync("application-candidate-validation", "Candidate validation is unavailable pending dependency preparation.",
+            ApplicationCandidateRuntimeReport? runtimeReport = null;
+            if (preparation is not null)
+            {
+                var prepared = await preparation.ValidateAsync(
+                    new ApplicationCandidateValidationRequest(candidate, samples), host, cancellationToken);
+                if (ApplicationCandidateOperationProof.TryValidateRuntimeReport(
+                        prepared, new ApplicationCandidateValidationRequest(candidate, samples), out _, out _))
+                    runtimeReport = prepared;
+            }
+            var operation = await operations.RecordAsync("application-candidate-validation",
+                "Candidate validation retained bounded runtime evidence; dependency and reuse review remain required.",
                 true, subject: candidate.ApplicationId.Value, projectionJson: canonical,
                 guardEvidenceJson: "{}", id: operationId,
                 cancellationToken: cancellationToken);
             var diagnostics = new List<ApplicationCandidateDiagnostic>
             {
                 new ApplicationCandidateDiagnostic("DEPENDENCY_EXTRACTION_UNAVAILABLE", candidate.CandidateId, "Exact dependency extraction is unavailable."),
-                new ApplicationCandidateDiagnostic("RUNTIME_PREPARATION_UNAVAILABLE", candidate.CandidateId, "Runtime preparation and sample validation are unavailable."),
                 new ApplicationCandidateDiagnostic("REUSE_REVIEW_UNAVAILABLE", candidate.CandidateId, "Reuse review is unavailable.")
             };
-            if (samples.Count == 0)
-                diagnostics.Add(new("RUNTIME_SAMPLES_UNAVAILABLE", candidate.CandidateId, "Retained execution samples are missing."));
+            if (runtimeReport is null)
+            {
+                diagnostics.Add(new("RUNTIME_PREPARATION_UNAVAILABLE", candidate.CandidateId,
+                    "Runtime preparation and sample validation are unavailable."));
+                if (samples.Count == 0)
+                    diagnostics.Add(new("RUNTIME_SAMPLES_UNAVAILABLE", candidate.CandidateId,
+                        "Retained execution samples are missing."));
+            }
+            else
+            {
+                diagnostics.AddRange(runtimeReport.Diagnostics);
+            }
+            var runtimeFingerprint = runtimeReport is null ? null
+                : ApplicationCandidateOperationProof.RuntimeReportFingerprint(runtimeReport);
             var validationRow = new ApplicationCandidateValidationRecord
             {
                 OperationId = operation.Id, ApplicationId = candidate.ApplicationId.Value, CandidateId = candidate.CandidateId,
@@ -98,14 +119,19 @@ public sealed partial class SqliteApplicationAuthoringService
                 ExpectedActiveFingerprint = readback.RevisionRow.ExpectedActiveFingerprint,
                 DependencyFingerprint = InteractionCanonicalJson.Fingerprint("dantes-roleplay/application-candidate-dependencies-incomplete/v1",
                     InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new { candidate.ApplicationId, candidate.CandidateId, candidate.Revision, candidate.ContentFingerprint }))),
-                PreparationVersion = null, ManualPacketResultFingerprint = null, CanonicalCommandFingerprint = commandFingerprint,
+                PreparationVersion = runtimeReport is { RuntimePolicyVersion: not null, RuntimePolicyFingerprint: not null }
+                    ? runtimeReport.RuntimePolicyVersion + "@" + runtimeReport.RuntimePolicyFingerprint : null,
+                ManualPacketResultFingerprint = null, CanonicalCommandFingerprint = commandFingerprint,
                 DependenciesJson = "[]", DependenciesComplete = false, DependencyEvidenceReference = null,
-                PreparedEvidenceReference = null, ReuseEvidenceReference = null, Outcome = "unavailable",
+                PreparedEvidenceReference = runtimeFingerprint is null ? null
+                    : ApplicationCandidateOperationProof.RuntimeEvidenceReference(operation.Id, runtimeFingerprint),
+                ReuseEvidenceReference = null,
+                Outcome = runtimeReport?.Status == ApplicationCandidateRuntimeStatus.Invalid ? "invalid" : "unavailable",
                 DiagnosticsJson = InteractionCanonicalJson.Canonicalize(JsonSerializer.Serialize(diagnostics)), AlternativesJson = "[]"
             };
             db.Add(validationRow);
             operation.GuardEvidenceJson = ApplicationCandidateOperationProof.ValidationGuard(host, candidate, validationRow,
-                definitions, commandFingerprint);
+                definitions, commandFingerprint, runtimeReport);
             await db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             return Receipt(operationId, commandFingerprint);

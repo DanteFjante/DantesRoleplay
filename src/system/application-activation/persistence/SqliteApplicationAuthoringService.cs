@@ -17,7 +17,8 @@ namespace DantesRoleplay.ApplicationActivation;
 public sealed partial class SqliteApplicationAuthoringService(
     DantesRoleplayDbContext db, IApplicationRegistry applications, IApplicationActivationReader activations,
     IActivatedApplicationEvidenceReader evidence, ISourceRegistry sources, IStandingGrantPolicy grants,
-    IStandingGrantTargetResolver targets, IOperationLog operations) : IApplicationAuthoringService
+    IStandingGrantTargetResolver targets, IOperationLog operations,
+    IApplicationCandidatePreparation? preparation = null) : IApplicationAuthoringService
 {
     private const string Tool = "application-candidate";
 
@@ -199,11 +200,19 @@ public sealed partial class SqliteApplicationAuthoringService(
                                     select new { Record = value, Operation = operation }).FirstOrDefaultAsync(cancellationToken);
             object? validation = null;
             if (latestValidation is not null)
-                validation = ApplicationCandidateOperationProof.ValidationMatches(latestValidation.Operation, latestValidation.Record,
-                    candidateReference, definitions)
-                    ? new { latestValidation.Record.OperationId, latestValidation.Record.Outcome, latestValidation.Record.DiagnosticsJson }
+            {
+                var matches = ApplicationCandidateOperationProof.ValidationMatches(latestValidation.Operation,
+                    latestValidation.Record, candidateReference, definitions);
+                ApplicationCandidateRuntimeReport? runtimeReport = null;
+                var hasRuntime = matches && ApplicationCandidateOperationProof.TryReadRuntimeReport(
+                    latestValidation.Operation, latestValidation.Record, candidateReference, definitions, out runtimeReport);
+                validation = matches
+                    ? new { latestValidation.Record.OperationId, latestValidation.Record.Outcome,
+                        latestValidation.Record.DiagnosticsJson, RuntimeReport = hasRuntime ? runtimeReport : null }
                     : new { OperationId = latestValidation.Record.OperationId, Outcome = "unavailable",
-                        DiagnosticsJson = "[{\"Code\":\"APPLICATION_CANDIDATE_VALIDATION_EVIDENCE_INCONSISTENT\",\"Message\":\"Stored validation evidence cannot be reconciled.\"}]" };
+                        DiagnosticsJson = "[{\"Code\":\"APPLICATION_CANDIDATE_VALIDATION_EVIDENCE_INCONSISTENT\",\"Message\":\"Stored validation evidence cannot be reconciled.\"}]",
+                        RuntimeReport = (ApplicationCandidateRuntimeReport?)null };
+            }
             var json = InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new { candidate = candidateReference, sourceOperationId = readback.RevisionRow.SourceOperationId, origin = readback.RevisionRow.Origin, documents = items, validation }));
             if (Encoding.UTF8.GetByteCount(json) > 64 * 1024) return InteractionInvocationResult.Unavailable("APPLICATION_CANDIDATE_INSPECT_LIMIT", "Candidate inspection exceeds its bounded result limit.");
             return InteractionInvocationResult.CompletedComputation(json, readback.RevisionRow.SourceOperationId);

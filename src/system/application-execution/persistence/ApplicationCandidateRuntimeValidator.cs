@@ -10,15 +10,15 @@ using DantesRoleplay.SchemaValidation;
 namespace DantesRoleplay.ApplicationExecution;
 
 /// <summary>
-/// Runs the bounded examples for the initial pure-mechanic candidate subset. A completed report is
-/// process-local runtime evidence only; it does not approve a candidate or establish durable proof.
+/// Runs the bounded examples for the initial pure-mechanic candidate subset. A completed report
+/// does not approve a candidate; the authoring owner must bind it into its durable operation proof.
 /// </summary>
 internal sealed class ApplicationCandidateRuntimeValidator(
     ApplicationCandidatePureRuntimeClosureReader closureReader,
     JintMechanicEngine engine,
     IBoundedJsonSchemaValidator schemas,
     IStandingGrantTargetResolver targets,
-    IStandingGrantPolicy grants)
+    IStandingGrantPolicy grants) : IApplicationCandidatePreparation
 {
     internal const string RuntimePolicyVersion = "selected-pure-mechanic-runtime-v1";
     private const string ClassifierGrammarVersion =
@@ -236,6 +236,25 @@ internal sealed class ApplicationCandidateRuntimeValidator(
                 "Runtime validation ended before all samples could run.");
         }
     }
+
+    public Task<ApplicationCandidateRuntimeReport> ValidateAsync(
+        ApplicationCandidateValidationRequest request,
+        InteractionInvocationHost host,
+        CancellationToken cancellationToken = default) =>
+        CheckAsync(request, host, cancellationToken);
+
+    public Task<ApplicationCandidateCheckResult> ValidateAsync(
+        InteractionInvocationHost host,
+        ApplicationCandidateSnapshot candidate,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(new ApplicationCandidateCheckResult(
+            ApplicationCandidateCheckStatus.Unavailable,
+            candidate.Candidate.ContentFingerprint,
+            candidate.Candidate.ContentFingerprint,
+            null,
+            null,
+            [new("CANDIDATE_PREPARATION_REQUEST_REQUIRED", candidate.Candidate.CandidateId,
+                "Runtime preparation requires the retained sample request.")]));
 
     private async Task<AuthorityStamp?> AuthorizeAsync(
         InteractionInvocationHost host,

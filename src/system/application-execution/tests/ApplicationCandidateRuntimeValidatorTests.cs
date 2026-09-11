@@ -1,4 +1,6 @@
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using DantesRoleplay.ApplicationActivation;
 using DantesRoleplay.ApplicationExecution;
 using DantesRoleplay.CatalogNamespaces;
@@ -8,6 +10,7 @@ using DantesRoleplay.Mechanics;
 using DantesRoleplay.Operations;
 using DantesRoleplay.SchemaValidation;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DantesRoleplay.Authorization.Tests;
 
@@ -17,6 +20,101 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
 {
     private const string PureMarkdownPath = "content/mechanics/pure.md";
     private const string PureJavaScriptPath = "content/mechanics/pure.js";
+
+    [Fact]
+    public void Production_registration_resolves_authoring_with_the_actual_runtime_preparation_chain()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddDantesRoleplayDataAccess("Filename=:memory:");
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+        using var scope = provider.CreateScope();
+
+        Assert.IsType<SqliteApplicationAuthoringService>(
+            scope.ServiceProvider.GetRequiredService<IApplicationAuthoringService>());
+        Assert.IsType<ApplicationCandidateRuntimeValidator>(
+            scope.ServiceProvider.GetRequiredService<IApplicationCandidatePreparation>());
+    }
+
+    [Fact]
+    public async Task Authoring_retains_actual_jint_report_and_replays_only_the_verified_durable_proof()
+    {
+        await using var db = fixture.CreateContext();
+        var data = await PureRuntimeFixtureAsync(db,
+            "return { data: { count: ctx.input.count + 1 } };");
+        var service = Service(db, data.Setup, PureRuntimeValidator(db, data.Setup));
+        var request = new ApplicationCandidateValidationRequest(data.Candidate,
+            [new(data.Definition, "{\"count\":1}", "{\"count\":2}")]);
+        var host = PureRuntimeHost(data.Setup, operations: 2);
+
+        var first = await service.ValidateAsync(request, host);
+
+        Assert.Equal(InteractionInvocationResultTag.Committed, first.Tag);
+        Assert.Equal(0, host.Budget.RemainingOperations);
+        var row = await db.Set<ApplicationCandidateValidationRecord>().AsNoTracking().SingleAsync();
+        Assert.Equal("unavailable", row.Outcome);
+        Assert.False(row.DependenciesComplete);
+        Assert.Equal(ApplicationCandidateRuntimeValidator.RuntimePolicyVersion + "@"
+            + ApplicationCandidateRuntimeValidator.RuntimePolicyFingerprint, row.PreparationVersion);
+        var operation = await db.Operations.AsNoTracking().SingleAsync(value => value.Id == row.OperationId);
+        Assert.True(ApplicationCandidateOperationProof.TryReadRuntimeReport(operation, row,
+            data.Candidate, data.Definitions, out var report));
+        Assert.Equal(ApplicationCandidateRuntimeStatus.Completed, report!.Status);
+        Assert.Equal(report.SelectionEvidenceFingerprint,
+            (await PureRuntimeClosure(db, data.Setup).ReadAsync(PureRuntimeHost(data.Setup), data.Candidate))!.EvidenceFingerprint);
+        Assert.Equal(row.OperationId + "#runtime-report."
+            + ApplicationCandidateOperationProof.RuntimeReportFingerprint(report), row.PreparedEvidenceReference);
+
+        var replayHost = PureRuntimeHost(data.Setup, operations: 2);
+        var replay = await service.ValidateAsync(request, replayHost);
+        Assert.Equal(first.Receipt, replay.Receipt);
+        Assert.Equal(1, replayHost.Budget.RemainingOperations);
+
+        var inspected = await service.InspectAsync(PureRuntimeHost(data.Setup),
+            new(data.Candidate.CandidateId, data.Candidate.Revision));
+        Assert.Equal(InteractionInvocationResultTag.Completed, inspected.Tag);
+        using var inspection = JsonDocument.Parse(inspected.DataJson!);
+        Assert.Equal((int)ApplicationCandidateRuntimeStatus.Completed,
+            inspection.RootElement.GetProperty("validation").GetProperty("RuntimeReport").GetProperty("Status").GetInt32());
+
+        var mutableOperation = await db.Operations.SingleAsync(value => value.Id == row.OperationId);
+        var guard = JsonNode.Parse(mutableOperation.GuardEvidenceJson)!.AsObject();
+        guard["runtimeReportFingerprint"] = new string('A', 64);
+        mutableOperation.GuardEvidenceJson = InteractionCanonicalJson.CanonicalizeObject(guard.ToJsonString());
+        await db.SaveChangesAsync();
+        db.ChangeTracker.Clear();
+        var inconsistent = await service.InspectAsync(PureRuntimeHost(data.Setup),
+            new(data.Candidate.CandidateId, data.Candidate.Revision));
+        Assert.Contains("APPLICATION_CANDIDATE_VALIDATION_EVIDENCE_INCONSISTENT", inconsistent.DataJson);
+    }
+
+    [Fact]
+    public async Task Authoring_retains_runtime_mismatch_as_invalid_and_current_revocation_blocks_replay()
+    {
+        await using var db = fixture.CreateContext();
+        var data = await PureRuntimeFixtureAsync(db,
+            "return { data: { count: ctx.input.count } };");
+        var service = Service(db, data.Setup, PureRuntimeValidator(db, data.Setup));
+        var request = new ApplicationCandidateValidationRequest(data.Candidate,
+            [new(data.Definition, "{\"count\":1}", "{\"count\":2}")]);
+
+        var first = await service.ValidateAsync(request, PureRuntimeHost(data.Setup, operations: 2));
+
+        Assert.Equal(InteractionInvocationResultTag.Committed, first.Tag);
+        var row = await db.Set<ApplicationCandidateValidationRecord>().AsNoTracking().SingleAsync();
+        var operation = await db.Operations.AsNoTracking().SingleAsync(value => value.Id == row.OperationId);
+        Assert.Equal("invalid", row.Outcome);
+        Assert.True(ApplicationCandidateOperationProof.TryReadRuntimeReport(operation, row,
+            data.Candidate, data.Definitions, out var report));
+        Assert.Equal(ApplicationCandidateRuntimeStatus.Invalid, report!.Status);
+        Assert.Equal("PURE_RUNTIME_DATA_MISMATCH", Assert.Single(report.Diagnostics).Code);
+
+        await RevokeGrantAsync(db);
+        db.ChangeTracker.Clear();
+        var replay = await service.ValidateAsync(request, PureRuntimeHost(data.Setup, operations: 2));
+        Assert.NotEqual(InteractionInvocationResultTag.Committed, replay.Tag);
+        Assert.Null(replay.Receipt);
+    }
 
     [Fact]
     public async Task Pure_runtime_cancellation_after_engine_admission_keeps_the_attempt_and_consumed_allowance()

@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using DantesRoleplay.Applications;
+using DantesRoleplay.ApplicationExecution;
 using DantesRoleplay.Authorization;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.Interactions;
@@ -37,9 +38,11 @@ internal static class ApplicationCandidateOperationProof
             host.CommandId, candidate, grantReference, definitions, commandFingerprint, null);
 
     internal static string ValidationGuard(InteractionInvocationHost host, ApplicationCandidateReference candidate,
-        ApplicationCandidateValidationRecord row, IReadOnlyList<StandingGrantDefinitionReference> definitions, string commandFingerprint) =>
+        ApplicationCandidateValidationRecord row, IReadOnlyList<StandingGrantDefinitionReference> definitions,
+        string commandFingerprint, ApplicationCandidateRuntimeReport? runtimeReport = null) =>
         Guard(host.Principal.PrincipalId, host.Principal.AuthenticationMethod, candidate.ApplicationId.Value,
-            host.CommandId, candidate, row.GrantReference, definitions, commandFingerprint, ValidationFingerprint(row));
+            host.CommandId, candidate, row.GrantReference, definitions, commandFingerprint,
+            ValidationFingerprint(row), runtimeReport);
 
     internal static bool WriteMatches(Operation operation, ApplicationCandidateRetainedMetadata metadata,
         IReadOnlyList<StandingGrantDefinitionReference> actualDefinitions, out ApplicationCandidateOriginalCommand? original)
@@ -87,13 +90,180 @@ internal static class ApplicationCandidateOperationProof
             || applicationId != candidate.ApplicationId.Value || command.CanonicalCommand != operation.ProjectionJson
             || InteractionCanonicalJson.Fingerprint("dantes-roleplay/application-candidate-validation/v1", command.CanonicalCommand) != row.CanonicalCommandFingerprint)
             return false;
+        if (row.PreparedEvidenceReference is not null || row.PreparationVersion is not null)
+            return TryReadRuntimeReport(operation, row, candidate, actualDefinitions, out _);
         return operation.GuardEvidenceJson == Guard(principal, authenticationMethod, applicationId,
-            commandId, candidate, row.GrantReference, actualDefinitions, row.CanonicalCommandFingerprint, ValidationFingerprint(row));
+            commandId, candidate, row.GrantReference, actualDefinitions, row.CanonicalCommandFingerprint,
+            ValidationFingerprint(row), null);
     }
 
     internal static string ValidationFingerprint(ApplicationCandidateValidationRecord row) =>
         InteractionCanonicalJson.Fingerprint("dantes-roleplay/application-candidate-validation-outcome/v1",
             InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(row)));
+
+    internal static string RuntimeReportFingerprint(ApplicationCandidateRuntimeReport report) =>
+        InteractionCanonicalJson.Fingerprint("dantes-roleplay/application-candidate-runtime-report/v1",
+            InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(report)));
+
+    internal static string RuntimeEvidenceReference(string operationId, string reportFingerprint) =>
+        operationId + "#runtime-report." + reportFingerprint;
+
+    internal static bool TryValidateRuntimeReport(ApplicationCandidateRuntimeReport? report,
+        ApplicationCandidateValidationRequest request, out string canonical, out string fingerprint)
+    {
+        canonical = string.Empty;
+        fingerprint = string.Empty;
+        try
+        {
+            if (report is null || report.Candidate != request.Candidate
+                || !Enum.IsDefined(report.Status) || report.Samples is null || report.Diagnostics is null
+                || report.Samples.Count > request.Samples.Count
+                || report.Diagnostics.Count > ApplicationAuthoringLimits.Diagnostics)
+                return false;
+            if (report.SelectionEvidenceFingerprint is null)
+            {
+                if (report.RuntimePolicyVersion is not null || report.RuntimePolicyFingerprint is not null
+                    || report.Samples.Count != 0) return false;
+            }
+            else if (!Hash(report.SelectionEvidenceFingerprint)
+                || report.RuntimePolicyVersion != ApplicationCandidateRuntimeValidator.RuntimePolicyVersion
+                || report.RuntimePolicyFingerprint != ApplicationCandidateRuntimeValidator.RuntimePolicyFingerprint)
+                return false;
+            if (report.Status == ApplicationCandidateRuntimeStatus.Completed
+                && (report.Samples.Count != request.Samples.Count || report.Diagnostics.Count != 0)) return false;
+            if (report.Status != ApplicationCandidateRuntimeStatus.Completed && report.Diagnostics.Count == 0) return false;
+            if (report.Diagnostics.Any(value => value is null || string.IsNullOrWhiteSpace(value.Code)
+                    || string.IsNullOrWhiteSpace(value.Target) || string.IsNullOrWhiteSpace(value.Message)
+                    || value.Code.Length > ApplicationAuthoringLimits.DiagnosticCharacters
+                    || value.Target.Length > ApplicationAuthoringLimits.DiagnosticCharacters
+                    || value.Message.Length > ApplicationAuthoringLimits.DiagnosticCharacters)) return false;
+            for (var index = 0; index < report.Samples.Count; index++)
+            {
+                var actual = report.Samples[index];
+                var expected = request.Samples[index];
+                if (actual is null || actual.SampleIndex != index || actual.Definition != expected.Definition
+                    || !Enum.IsDefined(actual.Outcome)
+                    || actual.InputFingerprint != RuntimeDataFingerprint(expected.InputJson)
+                    || actual.ExpectedDataFingerprint != RuntimeDataFingerprint(expected.ExpectedDataJson)
+                    || actual.ActualDataFingerprint is { } actualFingerprint && !Hash(actualFingerprint)
+                    || !actual.Attempted && actual.ActualDataFingerprint is not null
+                    || actual.Outcome == ApplicationCandidateRuntimeStatus.Completed
+                        && (!actual.Attempted || actual.ActualDataFingerprint != actual.ExpectedDataFingerprint)
+                    || index < report.Samples.Count - 1
+                        && actual.Outcome != ApplicationCandidateRuntimeStatus.Completed)
+                    return false;
+            }
+            if (report.Status == ApplicationCandidateRuntimeStatus.Completed
+                && report.Samples.Any(value => value.Outcome != ApplicationCandidateRuntimeStatus.Completed)) return false;
+            canonical = InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(report));
+            if (Encoding.UTF8.GetByteCount(canonical) > InteractionContractLimits.JsonBytes) return false;
+            fingerprint = InteractionCanonicalJson.Fingerprint(
+                "dantes-roleplay/application-candidate-runtime-report/v1", canonical);
+            return true;
+        }
+        catch (Exception exception) when (exception is JsonException or InteractionContractException
+            or ArgumentException or InvalidOperationException or NotSupportedException) { return false; }
+    }
+
+    internal static bool TryReadRuntimeReport(Operation operation, ApplicationCandidateValidationRecord row,
+        ApplicationCandidateReference candidate, IReadOnlyList<StandingGrantDefinitionReference> actualDefinitions,
+        out ApplicationCandidateRuntimeReport? report)
+    {
+        report = null;
+        try
+        {
+            if (operation.Tool != ValidationTool || !operation.Success || operation.Subject != candidate.ApplicationId.Value
+                || operation.Id != row.OperationId || row.ApplicationId != candidate.ApplicationId.Value
+                || row.CandidateId != candidate.CandidateId || row.Revision != candidate.Revision
+                || row.CandidateFingerprint != candidate.ContentFingerprint
+                || !TryValidationCommand(operation.ProjectionJson, candidate, out var command) || command is null
+                || command.applicationId != candidate.ApplicationId.Value
+                || !ValidOriginalIdentity(command.principal, command.authenticationMethod, command.CommandId)
+                || command.Samples.Any(sample => !actualDefinitions.Contains(sample.Definition))
+                || InteractionCanonicalJson.Fingerprint("dantes-roleplay/application-candidate-validation/v1",
+                    command.CanonicalCommand) != row.CanonicalCommandFingerprint)
+                return false;
+            using var guardDocument = JsonDocument.Parse(operation.GuardEvidenceJson);
+            if (!guardDocument.RootElement.TryGetProperty("runtimeReport", out var reportElement)
+                || !guardDocument.RootElement.TryGetProperty("runtimeReportFingerprint", out var fingerprintElement)
+                || fingerprintElement.ValueKind != JsonValueKind.String)
+                return false;
+            if (!TryParseRuntimeReport(reportElement, candidate, out var parsed) || parsed is null) return false;
+            var request = new ApplicationCandidateValidationRequest(candidate, command.Samples);
+            var preparationVersion = parsed is { RuntimePolicyVersion: not null, RuntimePolicyFingerprint: not null }
+                ? parsed.RuntimePolicyVersion + "@" + parsed.RuntimePolicyFingerprint : null;
+            if (!TryValidateRuntimeReport(parsed, request, out _, out var reportFingerprint)
+                || parsed.Status == ApplicationCandidateRuntimeStatus.Invalid && row.Outcome != "invalid"
+                || parsed.Status == ApplicationCandidateRuntimeStatus.Unavailable && row.Outcome != "unavailable"
+                || parsed.Status == ApplicationCandidateRuntimeStatus.Completed
+                    && row.Outcome is not ("unavailable" or "valid")
+                || fingerprintElement.GetString() != reportFingerprint
+                || row.PreparedEvidenceReference != RuntimeEvidenceReference(operation.Id, reportFingerprint)
+                || row.PreparationVersion != preparationVersion
+                || operation.GuardEvidenceJson != Guard(command.principal!, command.authenticationMethod!,
+                    command.applicationId!, command.CommandId!, candidate, row.GrantReference, actualDefinitions,
+                    row.CanonicalCommandFingerprint, ValidationFingerprint(row), parsed))
+                return false;
+            report = parsed;
+            return true;
+        }
+        catch (Exception exception) when (exception is JsonException or InteractionContractException
+            or ArgumentException or InvalidOperationException or NotSupportedException) { return false; }
+    }
+
+    private static bool TryParseRuntimeReport(JsonElement element, ApplicationCandidateReference candidate,
+        out ApplicationCandidateRuntimeReport? report)
+    {
+        report = null;
+        try
+        {
+            if (element.ValueKind != JsonValueKind.Object
+                || InteractionCanonicalJson.CanonicalizeObject(element.GetProperty("Candidate").GetRawText())
+                    != InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(candidate))
+                || !NullableString(element, "SelectionEvidenceFingerprint", out var selectionFingerprint)
+                || !NullableString(element, "RuntimePolicyVersion", out var runtimePolicyVersion)
+                || !NullableString(element, "RuntimePolicyFingerprint", out var runtimePolicyFingerprint)
+                || element.GetProperty("Samples").ValueKind != JsonValueKind.Array
+                || element.GetProperty("Diagnostics").ValueKind != JsonValueKind.Array)
+                return false;
+            var status = (ApplicationCandidateRuntimeStatus)element.GetProperty("Status").GetInt32();
+            var samples = new List<ApplicationCandidateRuntimeSampleResult>();
+            foreach (var value in element.GetProperty("Samples").EnumerateArray())
+            {
+                var definitionElement = value.GetProperty("Definition");
+                var definition = new StandingGrantDefinitionReference(
+                    definitionElement.GetProperty("DefinitionId").GetString()!,
+                    definitionElement.GetProperty("Kind").GetString()!,
+                    definitionElement.GetProperty("Revision").GetInt32(),
+                    definitionElement.GetProperty("ContentFingerprint").GetString()!);
+                if (!NullableString(value, "ActualDataFingerprint", out var actualFingerprint)) return false;
+                samples.Add(new(definition, value.GetProperty("SampleIndex").GetInt32(),
+                    (ApplicationCandidateRuntimeStatus)value.GetProperty("Outcome").GetInt32(),
+                    value.GetProperty("Attempted").GetBoolean(),
+                    value.GetProperty("InputFingerprint").GetString()!,
+                    value.GetProperty("ExpectedDataFingerprint").GetString()!, actualFingerprint));
+            }
+            var diagnostics = new List<ApplicationCandidateDiagnostic>();
+            foreach (var value in element.GetProperty("Diagnostics").EnumerateArray())
+                diagnostics.Add(new(value.GetProperty("Code").GetString()!,
+                    value.GetProperty("Target").GetString()!, value.GetProperty("Message").GetString()!));
+            report = new(status, candidate, selectionFingerprint, runtimePolicyVersion,
+                runtimePolicyFingerprint, samples.AsReadOnly(), diagnostics.AsReadOnly());
+            return true;
+        }
+        catch (Exception exception) when (exception is JsonException or InteractionContractException
+            or ArgumentException or InvalidOperationException or NotSupportedException) { return false; }
+    }
+
+    private static bool NullableString(JsonElement parent, string name, out string? value)
+    {
+        value = null;
+        if (!parent.TryGetProperty(name, out var property)) return false;
+        if (property.ValueKind == JsonValueKind.Null) return true;
+        if (property.ValueKind != JsonValueKind.String) return false;
+        value = property.GetString();
+        return value is not null;
+    }
 
     private static bool TryWriteCommand(string json, out ApplicationCandidateOriginalCommand? command)
     {
@@ -137,7 +307,7 @@ internal static class ApplicationCandidateOperationProof
             var normalized = SqliteApplicationAuthoringService.NormalizeSamples(samples);
             var canonical = CanonicalValidation(principal, authenticationMethod, applicationId, commandId, expectedCandidate, normalized);
             if (canonical != json) return false;
-            command = new(principal, authenticationMethod, applicationId, commandId, canonical);
+            command = new(principal, authenticationMethod, applicationId, commandId, canonical, normalized);
             return true;
         }
         catch (Exception exception) when (exception is JsonException or InteractionContractException or ApplicationActivationException or ArgumentException
@@ -171,7 +341,7 @@ internal static class ApplicationCandidateOperationProof
 
     private static string Guard(string principal, string authenticationMethod, string applicationId, string commandId,
         ApplicationCandidateReference candidate, string grantReference, IReadOnlyList<StandingGrantDefinitionReference> definitions,
-        string commandFingerprint, string? validationFingerprint)
+        string commandFingerprint, string? validationFingerprint, ApplicationCandidateRuntimeReport? runtimeReport = null)
     {
         var authorization = new AuthorizationAuditEvidence(principal, authenticationMethod, "standing-grant", applicationId,
             commandId, true, "STANDING_GRANT_ALLOWED");
@@ -179,12 +349,24 @@ internal static class ApplicationCandidateOperationProof
             .ThenBy(value => value.Kind, StringComparer.Ordinal).ThenBy(value => value.Revision)
             .ThenBy(value => value.ContentFingerprint, StringComparer.Ordinal)
             .Select(value => new { value.DefinitionId, value.Kind, value.Revision, value.ContentFingerprint }).ToArray();
-        return validationFingerprint is null
-            ? InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
-            { authorization, commandFingerprint, candidate, grantReference, selectedDefinitions }))
-            : InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
+        if (validationFingerprint is null)
+            return InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
+            { authorization, commandFingerprint, candidate, grantReference, selectedDefinitions }));
+        if (runtimeReport is null)
+            return InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
             { authorization, commandFingerprint, candidate, grantReference, selectedDefinitions, validationFingerprint }));
+        var runtimeReportFingerprint = RuntimeReportFingerprint(runtimeReport);
+        return InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
+        { authorization, commandFingerprint, candidate, grantReference, selectedDefinitions, validationFingerprint,
+            runtimeReportFingerprint, runtimeReport }));
     }
+
+    private static string RuntimeDataFingerprint(string json) =>
+        InteractionCanonicalJson.Fingerprint("dantes-roleplay/application-candidate-runtime-data/v1",
+            InteractionCanonicalJson.CanonicalizeObject(json));
+
+    private static bool Hash(string value) => value.Length == 64
+        && value.All(character => char.IsAsciiDigit(character) || character is >= 'A' and <= 'F');
 
     private static bool ValidOriginalIdentity(string? principal, string? method, string? commandId)
     {
@@ -204,5 +386,6 @@ internal static class ApplicationCandidateOperationProof
     private sealed record WriteCommand(string? principal, string? authenticationMethod, string? applicationId,
         string? CommandId, string? candidateId, ApplicationCandidateWriteRequest? request);
     private sealed record ValidationCommand(string? principal, string? authenticationMethod, string? applicationId,
-        string? CommandId, string CanonicalCommand = "");
+        string? CommandId, string CanonicalCommand,
+        IReadOnlyList<ApplicationCandidateValidationSample> Samples);
 }

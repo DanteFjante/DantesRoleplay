@@ -704,10 +704,12 @@ public sealed partial class SqliteStandingGrantTargetResolverTests : IDisposable
         - Preserve it.
         """;
 
-    private static SqliteApplicationAuthoringService Service(DantesRoleplayDbContext db, SetupState setup)
+    private static SqliteApplicationAuthoringService Service(DantesRoleplayDbContext db, SetupState setup,
+        IApplicationCandidatePreparation? preparation = null)
     {
         var policy = new SqliteStandingGrantPolicy(db, setup.Resolver);
-        return new(db, setup.Applications, setup.Activation, setup.Activation, setup.Sources, policy, setup.Resolver, new OperationLog(db));
+        return new(db, setup.Applications, setup.Activation, setup.Activation, setup.Sources, policy,
+            setup.Resolver, new OperationLog(db), preparation);
     }
 
     private static async Task SeedGrantAsync(DantesRoleplayDbContext db, IReadOnlyList<StandingGrantCapability> capabilities)

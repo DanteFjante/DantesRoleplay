@@ -1,10 +1,16 @@
 using Microsoft.Extensions.DependencyInjection;
+using DantesRoleplay.ApplicationActivation;
 
 namespace DantesRoleplay.ApplicationExecution;
 
 public static class ApplicationExecutionComponentRegistration
 {
     public static IServiceCollection AddApplicationExecutionComponent(this IServiceCollection services) => services
+        .AddScoped<ApplicationCandidatePureMechanicClassifier>()
+        .AddScoped<ApplicationCandidatePureRuntimeClosureReader>()
+        .AddScoped<ApplicationCandidateRuntimeValidator>()
+        .AddScoped<IApplicationCandidatePreparation>(provider =>
+            provider.GetRequiredService<ApplicationCandidateRuntimeValidator>())
         .AddScoped<IApplicationMechanicProjectionResolver, ApplicationMechanicProjectionResolver>()
         .AddScoped<IApplicationGraphSnapshotReader, ApplicationGraphSnapshotReader>()
         .AddScoped<IApplicationMechanicObjectProjectionResolver, ApplicationMechanicObjectProjectionResolver>()

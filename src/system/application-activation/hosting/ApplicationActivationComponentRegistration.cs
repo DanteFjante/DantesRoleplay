@@ -16,6 +16,9 @@ internal static class ApplicationActivationComponentRegistration
         services.AddScoped<IApplicationDefinitionChangeReader>(provider =>
             provider.GetRequiredService<ApplicationActivationService>());
         services.AddScoped<IActivatedApplicationDocumentReader, ActivatedApplicationDocumentReader>();
+        services.AddScoped<SqliteApplicationAuthoringService>();
+        services.AddScoped<IApplicationAuthoringService>(provider =>
+            provider.GetRequiredService<SqliteApplicationAuthoringService>());
         return services;
     }
 }
