@@ -14,6 +14,7 @@ namespace DantesRoleplay.SystemTasks.Persistence;
 internal sealed partial class SqliteSystemTaskLifecycleStore
 {
     private const string FingerprintDomain = "dantes-roleplay/system-task-durable-payload/v1";
+    private const string ValidationFingerprintDomain = "dantes-roleplay/system-task-durable-payload/application-validation/v1";
     private const string HostCallFingerprintDomain = "dantes-roleplay/system-task-host-call/v1";
     private const string PendingHostCallCode = "SYSTEM_TASK_HOST_CALL_PENDING";
     private const string PendingHostCallMessage = "A host call has an uncertain commit and must be reconciled before recovery.";
@@ -772,21 +773,58 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
             reader.GetString(reader.GetOrdinal("principal_reference")), reader.GetString(reader.GetOrdinal("authentication_method")),
             reader.GetString(reader.GetOrdinal("application_id")), reader.GetInt32(reader.GetOrdinal("application_revision")),
             reader.GetString(reader.GetOrdinal("application_fingerprint")), reader.GetString(reader.GetOrdinal("base_applications_json")),
-            reader.GetString(reader.GetOrdinal("state_space_id")), reader.GetString(reader.GetOrdinal("grant_reference")),
-            reader.GetString(reader.GetOrdinal("state_revision")), ParseProfile(reader.GetString(reader.GetOrdinal("execution_profile"))),
+            NullableString(reader, "state_space_id"), reader.GetString(reader.GetOrdinal("grant_reference")),
+            NullableString(reader, "state_revision"), ParseProfile(reader.GetString(reader.GetOrdinal("execution_profile"))),
             commandId, NullableString(reader, "parent_command_id"), reader.GetInt32(reader.GetOrdinal("admitted_operations")),
             ParseDb(reader.GetString(reader.GetOrdinal("deadline_utc"))));
-        var definition = new SystemTaskSelectedDefinition(reader.GetString(reader.GetOrdinal("definition_id")),
-            reader.GetInt32(reader.GetOrdinal("definition_version")), reader.GetString(reader.GetOrdinal("definition_fingerprint")));
+        var purpose = SystemTaskPurposeNames.Parse(reader.GetString(reader.GetOrdinal("purpose")));
+        var definitionId = NullableString(reader, "definition_id");
+        var definitionVersionOrdinal = reader.GetOrdinal("definition_version");
+        var definitionFingerprint = NullableString(reader, "definition_fingerprint");
+        var definitionVersion = reader.IsDBNull(definitionVersionOrdinal) ? (int?)null : reader.GetInt32(definitionVersionOrdinal);
+        if ((definitionId is null) != (definitionVersion is null) || (definitionId is null) != (definitionFingerprint is null))
+            throw new InvalidDataException("The retained task definition identity is incomplete.");
+        var definition = definitionId is null ? null : new SystemTaskSelectedDefinition(definitionId,
+            definitionVersion!.Value, definitionFingerprint!);
+        var candidateId = NullableString(reader, "candidate_id");
+        var candidateRevisionOrdinal = reader.GetOrdinal("candidate_revision");
+        var candidateFingerprint = NullableString(reader, "candidate_fingerprint");
+        var candidateRevision = reader.IsDBNull(candidateRevisionOrdinal) ? (int?)null : reader.GetInt32(candidateRevisionOrdinal);
+        if ((candidateId is null) != (candidateRevision is null) || (candidateId is null) != (candidateFingerprint is null))
+            throw new InvalidDataException("The retained validation candidate identity is incomplete.");
+        var candidate = candidateId is null ? null : new DantesRoleplay.ApplicationActivation.ApplicationCandidateReference(
+            DantesRoleplay.Applications.ApplicationIdentifier.Parse(invocation.ApplicationId), candidateId,
+            candidateRevision!.Value, candidateFingerprint!);
+        var causationOperationId = NullableString(reader, "causation_operation_id");
+        var purposeShapeValid = purpose switch
+        {
+            SystemTaskPurpose.ProcedureWorkflow => definition is not null && candidate is null
+                && causationOperationId is null && invocation.StateSpaceId is not null
+                && invocation.StateRevision is not null && invocation.Profile == InteractionExecutionProfile.Workflow,
+            SystemTaskPurpose.ApplicationValidation => definition is null && candidate is not null
+                && invocation.StateSpaceId is null && invocation.StateRevision is null
+                && invocation.Profile == InteractionExecutionProfile.ReadOnly,
+            _ => false
+        };
+        if (!purposeShapeValid)
+            throw new InvalidDataException("The retained task does not match its closed purpose shape.");
         var checkpointName = NullableString(reader, "checkpoint_name");
         var checkpoint = checkpointName is null ? null : new SystemTaskCheckpoint(checkpointName,
             reader.GetString(reader.GetOrdinal("completion_handler")), reader.GetString(reader.GetOrdinal("correlation_id")),
             reader.GetString(reader.GetOrdinal("checkpoint_state_json")));
         var dependencies = await ReadDependenciesAsync(connection, transaction, taskId, cancellationToken);
-        var activationOrigin = ReadActivationOrigin(reader, invocation, definition, dependencies);
+        var activationOrigin = purpose == SystemTaskPurpose.ProcedureWorkflow
+            ? ReadActivationOrigin(reader, invocation, definition
+                ?? throw new InvalidDataException("A workflow task is missing its selected definition."), dependencies)
+            : ReadValidationActivationOrigin(reader);
+        var causation = purpose == SystemTaskPurpose.ApplicationValidation
+            ? VerifyValidationAdmission(reader, invocation, candidate
+                ?? throw new InvalidDataException("A validation task is missing its candidate."), dependencies)
+            : null;
         var request = new SystemTaskStoredRequest(handle, invocation, definition,
             reader.GetString(reader.GetOrdinal("input_json")), dependencies,
-            reader.GetInt64(reader.GetOrdinal("propagate_cancellation")) != 0, activationOrigin);
+            reader.GetInt64(reader.GetOrdinal("propagate_cancellation")) != 0, activationOrigin,
+            candidate, causation, purpose);
         return new(request, ParseState(reader.GetString(reader.GetOrdinal("state"))), checkpoint,
             NullableString(reader, "wake_json"), reader.GetInt32(reader.GetOrdinal("attempt_count")),
             reader.GetInt64(reader.GetOrdinal("fencing_counter")), reader.GetInt64(reader.GetOrdinal("cancel_requested")) != 0,
@@ -1129,6 +1167,16 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
             throw new InvalidDataException("The stored retained activation origin is invalid or does not match the admitted application revision.");
         VerifyActivationAdmission(reader, invocation, definition, dependencies, origin);
         return origin;
+    }
+
+    private static StandingGrantActivationOrigin? ReadValidationActivationOrigin(SqliteDataReader reader)
+    {
+        if (!reader.IsDBNull(reader.GetOrdinal("activation_revision"))
+            || !reader.IsDBNull(reader.GetOrdinal("activation_fingerprint"))
+            || !reader.IsDBNull(reader.GetOrdinal("activation_application_revision"))
+            || !reader.IsDBNull(reader.GetOrdinal("activation_application_fingerprint")))
+            throw new InvalidDataException("A validation task cannot retain workflow activation provenance.");
+        return null;
     }
 
     private static string Required(string value, int maximum, string parameter) =>

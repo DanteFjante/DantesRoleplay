@@ -52,6 +52,28 @@ reference the task and its purpose together. These schema boundaries do not enab
 admission or execution; those require the shared application host, current Read/Validate authority,
 candidate receipt rehydration when causation is supplied, and the INNER subject contract.
 
+The internal validation core now retains and verifies its own original admission commitment,
+including candidate, reviewer/schema/context, both grant provenance references, and AI budget.
+Equivalent command replay precedes a fresh-root allowance transfer; durable children use the
+existing persisted ancestor ledger. Validation enrollment must match that original commitment.
+Workflow admission and enrollment fingerprints remain unchanged. Readback requires current
+application Read; cancellation requires current Read and Validate for every affected candidate.
+Neither operation borrows state-workflow permissions or exposes a semantic validation result.
+
+The internal AI lifecycle factory opens a fresh service scope and short transaction for each
+admission or observation. It rehydrates the actual task, original proof, enrollment, fenced attempt,
+current candidate, and current Read/Validate authority before reserving and recording dispatch.
+Dispatch commits before the provider receives its scope. Late accounting uses an independent
+bounded scope and cannot restore execution authority. Hard-cap mode remains unavailable without
+an owner-supplied total-token bound. The factory and validation service have no production registration.
+
+Production validation submission deliberately returns unavailable before allowance transfer,
+enqueue, Pending, or provider dispatch: the actual candidate reader's broader dependency coverage
+is incomplete. A narrower pure-runtime closure cannot satisfy this requirement. Even complete
+coverage also needs the actual selected-source/manual-context/reviewer binding; a caller-created
+profile or V2 DTO is not that proof. Internal staging fixtures establish lifecycle mechanics only,
+and tests against the real application/grant owners establish denial and unavailable paths only.
+
 AI accounting uses the same task/attempt history. Host-resolved enrollment and dispatch
 reservations debit every persisted ancestor; provider and tool observations are separate,
 bounded evidence. Enrolled and per-reservation deadlines are retained independently and cannot

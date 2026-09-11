@@ -1,6 +1,7 @@
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Authorization;
 using DantesRoleplay.SystemTasks;
+using DantesRoleplay.ApplicationActivation;
 
 namespace DantesRoleplay.SystemTasks.Persistence;
 
@@ -29,6 +30,25 @@ internal enum SystemTaskLifecycleState
 
 internal enum SystemTaskEnqueueDisposition { Created, Existing, Conflict, Rejected }
 
+internal enum SystemTaskPurpose { ProcedureWorkflow, ApplicationValidation }
+
+internal static class SystemTaskPurposeNames
+{
+    internal static string Get(SystemTaskPurpose value) => value switch
+    {
+        SystemTaskPurpose.ProcedureWorkflow => "procedure-workflow",
+        SystemTaskPurpose.ApplicationValidation => "application-validation",
+        _ => throw new InvalidDataException("The stored task purpose is invalid.")
+    };
+
+    internal static SystemTaskPurpose Parse(string value) => value switch
+    {
+        "procedure-workflow" => SystemTaskPurpose.ProcedureWorkflow,
+        "application-validation" => SystemTaskPurpose.ApplicationValidation,
+        _ => throw new InvalidDataException("The stored task purpose is invalid.")
+    };
+}
+
 internal sealed record SystemTaskEnqueueResult(
     SystemTaskEnqueueDisposition Disposition,
     SystemTaskDurableHandle? Handle,
@@ -46,9 +66,9 @@ internal sealed record SystemTaskStoredInvocation(
     int ApplicationRevision,
     string ApplicationFingerprint,
     string BaseApplicationsJson,
-    string StateSpaceId,
+    string? StateSpaceId,
     string GrantReference,
-    string StateRevision,
+    string? StateRevision,
     InteractionExecutionProfile Profile,
     string CommandId,
     string? ParentCommandId,
@@ -58,11 +78,22 @@ internal sealed record SystemTaskStoredInvocation(
 internal sealed record SystemTaskStoredRequest(
     SystemTaskDurableHandle Handle,
     SystemTaskStoredInvocation Invocation,
-    SystemTaskSelectedDefinition SelectedDefinition,
+    SystemTaskSelectedDefinition? SelectedDefinition,
     string InputJson,
     IReadOnlyList<SystemTaskDurableHandle> Dependencies,
     bool PropagateCancellation,
-    StandingGrantActivationOrigin? ActivationOrigin = null);
+    StandingGrantActivationOrigin? ActivationOrigin = null,
+    ApplicationCandidateReference? Candidate = null,
+    SystemTaskValidationCausation? Causation = null,
+    SystemTaskPurpose Purpose = SystemTaskPurpose.ProcedureWorkflow)
+{
+    internal SystemTaskSelectedDefinition WorkflowDefinition =>
+        Purpose == SystemTaskPurpose.ProcedureWorkflow && SelectedDefinition is not null
+            ? SelectedDefinition
+            : throw new InvalidDataException("The retained task is not a procedure workflow.");
+}
+
+internal sealed record SystemTaskValidationCausation(string OperationId, string CausalCommandId);
 
 internal sealed record SystemTaskLease(
     SystemTaskStoredRequest Request,

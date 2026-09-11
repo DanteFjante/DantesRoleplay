@@ -49,7 +49,7 @@ internal sealed partial class SqliteSystemTaskDurableService(
         {
             var snapshot = await store.ReadInTransactionAsync(handle, connection, transaction, cancellationToken);
             if (snapshot is null || !TaskScopeMatches(invocationHost, snapshot.Request)) return NotAuthorized();
-            var denied = await AuthorizeAsync(invocationHost, snapshot.Request.SelectedDefinition,
+            var denied = await AuthorizeAsync(invocationHost, snapshot.Request.WorkflowDefinition,
                 StandingGrantCapability.ReadTask, TaskTarget(snapshot.Request), cancellationToken, snapshot.Request.ActivationOrigin);
             if (denied is not null) return denied;
 
@@ -75,14 +75,14 @@ internal sealed partial class SqliteSystemTaskDurableService(
         {
             var snapshot = await store.ReadInTransactionAsync(handle, connection, transaction, cancellationToken);
             if (snapshot is null || !TaskScopeMatches(invocationHost, snapshot.Request)) return NotAuthorized();
-            var denied = await AuthorizeAsync(invocationHost, snapshot.Request.SelectedDefinition,
+            var denied = await AuthorizeAsync(invocationHost, snapshot.Request.WorkflowDefinition,
                 StandingGrantCapability.CancelTask, TaskTarget(snapshot.Request), cancellationToken, snapshot.Request.ActivationOrigin);
             if (denied is not null) return denied;
             var affected = await store.ReadCancellationTargetsAsync(handle, true, connection, transaction, cancellationToken);
             foreach (var child in affected.Where(value => value.Request.Handle != handle))
             {
                 if (!TaskScopeMatches(invocationHost, child.Request)) return NotAuthorized();
-                denied = await AuthorizeAsync(invocationHost, child.Request.SelectedDefinition,
+                denied = await AuthorizeAsync(invocationHost, child.Request.WorkflowDefinition,
                     StandingGrantCapability.CancelTask, TaskTarget(child.Request), cancellationToken, child.Request.ActivationOrigin);
                 if (denied is not null) return denied;
             }
@@ -228,7 +228,8 @@ internal sealed partial class SqliteSystemTaskDurableService(
 
     private static StandingGrantTaskTarget TaskTarget(SystemTaskStoredRequest task) => new(task.Handle,
         task.Invocation.PrincipalReference, ApplicationIdentifier.Parse(task.Invocation.ApplicationId),
-        task.Invocation.StateSpaceId, task.SelectedDefinition);
+        task.Invocation.StateSpaceId ?? throw new InvalidDataException("A workflow task is missing its state scope."),
+        task.WorkflowDefinition);
 
     private static async Task<bool> HasHostCallsAsync(SystemTaskDurableHandle handle, SqliteConnection connection,
         SqliteTransaction transaction, CancellationToken cancellationToken)

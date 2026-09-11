@@ -35,14 +35,19 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
                 WHERE $propagate = 1 AND child.propagate_cancellation = 1)
             SELECT target.task_id,
                 target.principal_reference = root.principal_reference
+                AND target.authentication_method = root.authentication_method
                 AND target.application_id = root.application_id
                 AND target.application_revision = root.application_revision
                 AND target.application_fingerprint = root.application_fingerprint
                 AND target.base_applications_json = root.base_applications_json
-                AND target.state_space_id = root.state_space_id
-                AND target.state_revision = root.state_revision
+                AND target.state_space_id IS root.state_space_id
+                AND target.state_revision IS root.state_revision
                 AND target.grant_reference = root.grant_reference
-                AND target.execution_profile = root.execution_profile AS scope_matches
+                AND target.execution_profile = root.execution_profile
+                AND target.purpose = root.purpose
+                AND target.candidate_id IS root.candidate_id
+                AND target.candidate_revision IS root.candidate_revision
+                AND target.candidate_fingerprint IS root.candidate_fingerprint AS scope_matches
             FROM targets JOIN system_task_lifecycle AS target ON target.task_id = targets.task_id
             JOIN system_task_lifecycle AS root ON root.task_id = $task AND root.command_id = $command
             ORDER BY target.task_id

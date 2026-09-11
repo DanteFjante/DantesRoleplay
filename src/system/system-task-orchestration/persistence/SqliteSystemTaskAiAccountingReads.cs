@@ -5,7 +5,7 @@ namespace DantesRoleplay.SystemTasks.Persistence;
 
 internal sealed partial class SqliteSystemTaskLifecycleStore
 {
-    private sealed record AiCeilingRow(string Fingerprint, SystemInnerWorkerAiBudget Budget,
+    private sealed record AiCeilingRow(string Purpose, string Fingerprint, SystemInnerWorkerAiBudget Budget,
         string ProfileFingerprint, string SchemaFingerprint, DateTime DeadlineUtc);
     private sealed record AiReservationRow(string Fingerprint, SystemInnerWorkerAiReservationEvidence Evidence,
         string State, long ChargedTokens, long ChargedTools, int? SettledSequence, DateTime DeadlineUtc);
@@ -16,15 +16,15 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
         string taskId, CancellationToken cancellationToken)
     {
         await using var command = Command(connection, transaction, """
-            SELECT enrollment_fingerprint,maximum_provider_tokens,maximum_tool_calls,mode,
+            SELECT task_purpose,enrollment_fingerprint,maximum_provider_tokens,maximum_tool_calls,mode,
                 maximum_concurrent_provider_requests,profile_fingerprint,output_schema_fingerprint,deadline_utc
             FROM system_task_ai_ceiling WHERE task_id=$task
             """, ("$task", taskId));
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         return await reader.ReadAsync(cancellationToken)
-            ? new(reader.GetString(0), new(reader.GetInt32(1), reader.GetInt32(2),
-                SystemInnerWorkerTokenBudgetModeNames.Parse(reader.GetString(3)), reader.GetInt32(4)), reader.GetString(5), reader.GetString(6),
-                ParseDb(reader.GetString(7)))
+            ? new(reader.GetString(0), reader.GetString(1), new(reader.GetInt32(2), reader.GetInt32(3),
+                SystemInnerWorkerTokenBudgetModeNames.Parse(reader.GetString(4)), reader.GetInt32(5)), reader.GetString(6), reader.GetString(7),
+                ParseDb(reader.GetString(8)))
             : null;
     }
 

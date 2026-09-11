@@ -17,7 +17,7 @@ internal sealed partial class SqliteSystemTaskDurableService : ISystemTaskDurabl
         {
             var snapshot = await store.ReadInTransactionAsync(handle, connection, transaction, cancellationToken);
             if (snapshot is null || !TaskScopeMatches(invocationHost, snapshot.Request)) return NotAuthorized();
-            var denied = await AuthorizeAsync(invocationHost, snapshot.Request.SelectedDefinition,
+            var denied = await AuthorizeAsync(invocationHost, snapshot.Request.WorkflowDefinition,
                 StandingGrantCapability.ReadTask, TaskTarget(snapshot.Request), cancellationToken, snapshot.Request.ActivationOrigin);
             if (denied is not null) return denied;
             var status = await ToReadbackAsync(snapshot, connection, transaction, cancellationToken);
@@ -33,7 +33,7 @@ internal sealed partial class SqliteSystemTaskDurableService : ISystemTaskDurabl
         {
             var root = await store.ReadInTransactionAsync(parent, connection, transaction, cancellationToken);
             if (root is null || !TaskScopeMatches(invocationHost, root.Request)) return NotAuthorized();
-            var denied = await AuthorizeAsync(invocationHost, root.Request.SelectedDefinition,
+            var denied = await AuthorizeAsync(invocationHost, root.Request.WorkflowDefinition,
                 StandingGrantCapability.ReadTask, TaskTarget(root.Request), cancellationToken, root.Request.ActivationOrigin);
             if (denied is not null) return denied;
             var handles = new List<SystemTaskDurableHandle>();
@@ -57,7 +57,7 @@ internal sealed partial class SqliteSystemTaskDurableService : ISystemTaskDurabl
                 if (child is null)
                     return InteractionInvocationResult.Unavailable("SYSTEM_TASK_GRAPH_UNAVAILABLE", "The task graph cannot currently be resolved.");
                 if (!TaskScopeMatches(invocationHost, child.Request)) continue;
-                denied = await AuthorizeAsync(invocationHost, child.Request.SelectedDefinition,
+                denied = await AuthorizeAsync(invocationHost, child.Request.WorkflowDefinition,
                     StandingGrantCapability.ReadTask, TaskTarget(child.Request), cancellationToken, child.Request.ActivationOrigin);
                 // A denied child's metadata is omitted. Missing owner support is explicit rather
                 // than silently claiming that a historical child no longer exists.
@@ -78,7 +78,7 @@ internal sealed partial class SqliteSystemTaskDurableService : ISystemTaskDurabl
         // Reuse actual result construction/validation, not just the lifecycle's state flag.
         var completionAvailable = !hasCalls && !pendingAi && PollResult(snapshot).Tag == InteractionInvocationResultTag.Completed;
         return new(snapshot.Request.Handle, snapshot.State.ToString().ToLowerInvariant(), snapshot.AttemptCount,
-            snapshot.CancellationRequested, snapshot.CancellationAcknowledged, snapshot.Request.SelectedDefinition,
+            snapshot.CancellationRequested, snapshot.CancellationAcknowledged, snapshot.Request.WorkflowDefinition,
             snapshot.CreatedAtUtc, snapshot.UpdatedAtUtc, snapshot.CompletedAtUtc, snapshot.Checkpoint?.Checkpoint,
             completionAvailable, hasCalls ? "SYSTEM_TASK_COMMIT_EVIDENCE_UNAVAILABLE" : pendingAi ? "INNER_AI_RECONCILIATION_REQUIRED" : snapshot.ErrorCode,
             hasCalls || pendingAi || snapshot.State == SystemTaskLifecycleState.Indeterminate,

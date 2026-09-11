@@ -55,7 +55,9 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
         if (reservation is null || reservation.Evidence.Attempt != attempt) return AiRejected("INNER_AI_DISPATCH_IDENTITY_MISMATCH");
         var task = await ReadSnapshotAsync(connection, transaction, reservation.Evidence.Task, cancellationToken);
         var ceiling = await ReadAiCeilingAsync(connection, transaction, reservation.Evidence.Task.TaskId, cancellationToken);
-        if (task is null || ceiling is null || !AiScopeMatches(profile.Worker.InvocationHost, task.Request)
+        if (task is null || ceiling is null || ceiling.Purpose != SystemTaskPurposeNames.Get(task.Request.Purpose)
+            || !AiScopeMatches(profile.Worker.InvocationHost, task.Request) || !AiSubjectMatches(profile, task.Request)
+            || task.Request.InputJson != profile.Worker.InputJson
             || ceiling.Fingerprint != AiEnrollmentFingerprint(profile)) return AiRejected("INNER_AI_DISPATCH_SCOPE_MISMATCH");
         if ((kind == "provider") != (reservation.Evidence.ProviderTokens > 0)) return AiRejected("INNER_AI_DISPATCH_KIND_MISMATCH");
         if (provider is not null && (Required(provider, 200, nameof(provider)) != provider || provider.Any(char.IsControl)))

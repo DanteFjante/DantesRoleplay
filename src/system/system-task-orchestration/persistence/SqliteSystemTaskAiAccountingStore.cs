@@ -15,6 +15,8 @@ internal sealed record SystemTaskAiAccountingResult(bool Accepted, string Code,
 
 internal sealed partial class SqliteSystemTaskLifecycleStore
 {
+    private const string ValidationAiEnrollmentFingerprintDomain =
+        "dantes-roleplay/system-task-ai-enrollment/application-validation/v1";
     private static readonly JsonSerializerOptions AiJson = new(JsonSerializerDefaults.Web);
 
     /// <summary>
@@ -38,15 +40,19 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(profile);
-        if (profile.Worker.Subject is not SystemInnerWorkerSubject.ProcedureWorkflow workflow)
-            return AiRejected("INNER_AI_SUBJECT_UNSUPPORTED");
         var task = await ReadSnapshotAsync(connection, transaction, handle, cancellationToken);
-        if (task is null || !AiScopeMatches(profile.Worker.InvocationHost, task.Request)
-            || task.Request.SelectedDefinition != workflow.ProcedureVersion
+        if (task is null) return AiRejected("INNER_AI_ENROLLMENT_SCOPE_MISMATCH");
+        if (!AiSubjectPurposeMatches(profile.Worker.Subject, task.Request.Purpose))
+            return AiRejected("INNER_AI_SUBJECT_UNSUPPORTED");
+        if (!AiScopeMatches(profile.Worker.InvocationHost, task.Request)
+            || !AiSubjectMatches(profile, task.Request)
             || task.Request.InputJson != profile.Worker.InputJson) return AiRejected("INNER_AI_ENROLLMENT_SCOPE_MISMATCH");
-        var fingerprint = AiEnrollmentFingerprint(profile, workflow.ProcedureVersion);
+        if (!await ValidationAdmissionMatchesProfileAsync(connection, transaction, task.Request, profile, cancellationToken))
+            return AiRejected("INNER_AI_ENROLLMENT_ADMISSION_MISMATCH");
+        var fingerprint = AiEnrollmentFingerprint(profile);
         var existing = await ReadAiCeilingAsync(connection, transaction, handle.TaskId, cancellationToken);
-        if (existing is not null) return existing.Fingerprint == fingerprint
+        if (existing is not null) return existing.Purpose == SystemTaskPurposeNames.Get(task.Request.Purpose)
+            && existing.Fingerprint == fingerprint
             ? new(true, "INNER_AI_ENROLLMENT_EXISTING") : AiRejected("INNER_AI_ENROLLMENT_CONFLICT");
         if (task.State != SystemTaskLifecycleState.Queued || task.AttemptCount != 0)
             return AiRejected("INNER_AI_ENROLLMENT_TOO_LATE");
@@ -55,24 +61,27 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
         foreach (var ancestor in ancestry.Skip(1))
         {
             var ceiling = await ReadAiCeilingAsync(connection, transaction, ancestor, cancellationToken);
-            if (ceiling is null) return AiRejected("INNER_AI_ANCESTOR_NOT_ENROLLED");
+            if (ceiling is null || ceiling.Purpose != SystemTaskPurposeNames.Get(task.Request.Purpose))
+                return AiRejected("INNER_AI_ANCESTOR_NOT_ENROLLED");
             if (profile.Worker.InvocationHost.Budget.DeadlineUtc > ceiling.DeadlineUtc)
                 return AiRejected("INNER_AI_DEADLINE_EXPANDED");
             ceiling.Budget.NarrowTo(profile.AiBudget);
         }
         await ExecuteAsync(connection, transaction, """
-            INSERT INTO system_task_ai_ceiling(task_id,enrollment_fingerprint,profile_id,profile_version,
+            INSERT INTO system_task_ai_ceiling(task_id,task_purpose,enrollment_fingerprint,profile_id,profile_version,
                 profile_fingerprint,grant_reference,grant_revision,grant_fingerprint,definition_id,
                 definition_version,definition_fingerprint,output_schema_fingerprint,mode,maximum_provider_tokens,
                 maximum_tool_calls,maximum_concurrent_provider_requests,deadline_utc,created_at_utc)
-            VALUES($task,$fingerprint,$profile,$profileVersion,$profileHash,$grant,$grantRevision,$grantHash,
+            VALUES($task,$purpose,$fingerprint,$profile,$profileVersion,$profileHash,$grant,$grantRevision,$grantHash,
                 $definition,$definitionVersion,$definitionHash,$schema,$mode,$tokens,$tools,$concurrency,$deadline,$now)
             """, cancellationToken, ("$task", handle.TaskId), ("$fingerprint", fingerprint),
+            ("$purpose", SystemTaskPurposeNames.Get(task.Request.Purpose)),
             ("$profile", profile.ProfileVersion.ExactDefinitionId), ("$profileVersion", profile.ProfileVersion.Version),
             ("$profileHash", profile.ProfileVersion.Fingerprint), ("$grant", profile.Worker.InvocationHost.GrantReference),
             ("$grantRevision", profile.AuthorityProvenance.GrantRevision), ("$grantHash", profile.AuthorityProvenance.GrantFingerprint),
-            ("$definition", workflow.ProcedureVersion.ExactDefinitionId), ("$definitionVersion", workflow.ProcedureVersion.Version),
-            ("$definitionHash", workflow.ProcedureVersion.Fingerprint), ("$schema", profile.OutputSchemaFingerprint),
+            ("$definition", task.Request.SelectedDefinition?.ExactDefinitionId),
+            ("$definitionVersion", task.Request.SelectedDefinition?.Version),
+            ("$definitionHash", task.Request.SelectedDefinition?.Fingerprint), ("$schema", profile.OutputSchemaFingerprint),
             ("$mode", SystemInnerWorkerTokenBudgetModeNames.Get(profile.AiBudget.Mode)), ("$tokens", profile.AiBudget.ProviderTokens),
             ("$tools", profile.AiBudget.ToolCalls), ("$concurrency", profile.AiBudget.MaxConcurrentProviderRequests),
             ("$deadline", ToDb(profile.Worker.InvocationHost.Budget.DeadlineUtc)), ("$now", ToDb(UtcNow())));
@@ -102,14 +111,16 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
             return AiRejected("INNER_AI_LEASE_STALE");
         var ancestry = await ReadAiAncestryAsync(connection, transaction, request.Task.TaskId, cancellationToken);
         var own = await ReadAiCeilingAsync(connection, transaction, request.Task.TaskId, cancellationToken);
-        if (own is null) return AiRejected("INNER_AI_TASK_NOT_ENROLLED");
+        if (own is null || own.Purpose != SystemTaskPurposeNames.Get(task.Request.Purpose))
+            return AiRejected("INNER_AI_TASK_NOT_ENROLLED");
         if (own.Budget != request.Ceiling) return AiRejected("INNER_AI_CEILING_CHANGED");
         await NormalizeAiReservationsAsync(connection, transaction, cancellationToken);
         var heldTokens = request.ProviderTokens;
         foreach (var ancestor in ancestry)
         {
             var ceiling = await ReadAiCeilingAsync(connection, transaction, ancestor, cancellationToken);
-            if (ceiling is null) return AiRejected("INNER_AI_ANCESTOR_NOT_ENROLLED");
+            if (ceiling is null || ceiling.Purpose != SystemTaskPurposeNames.Get(task.Request.Purpose))
+                return AiRejected("INNER_AI_ANCESTOR_NOT_ENROLLED");
             if (request.Host.Budget.DeadlineUtc > ceiling.DeadlineUtc)
                 return AiRejected("INNER_AI_DEADLINE_EXPANDED");
             ceiling.Budget.NarrowTo(own.Budget);
@@ -152,8 +163,30 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
         && host.ApplicationRevision.Fingerprint == task.Invocation.ApplicationFingerprint
         && InteractionCanonicalJson.Canonicalize(JsonSerializer.Serialize(host.ApplicationRevision.BaseApplications.Select(value => value.ToString()))) == task.Invocation.BaseApplicationsJson
         && host.StateSpaceId == task.Invocation.StateSpaceId && host.StateRevision == task.Invocation.StateRevision
-        && host.GrantReference == task.Invocation.GrantReference && host.Profile == InteractionExecutionProfile.Workflow
-        && host.Budget.DeadlineUtc <= task.Invocation.DeadlineUtc;
+        && host.GrantReference == task.Invocation.GrantReference && host.Profile == task.Invocation.Profile
+        && host.Budget.DeadlineUtc <= task.Invocation.DeadlineUtc
+        && (task.Purpose switch
+        {
+            SystemTaskPurpose.ProcedureWorkflow => host.Profile == InteractionExecutionProfile.Workflow
+                && host.StateSpaceId is not null && host.StateRevision is not null,
+            SystemTaskPurpose.ApplicationValidation => host.Profile == InteractionExecutionProfile.ReadOnly
+                && host.StateSpaceId is null && host.StateRevision is null,
+            _ => false
+        });
+
+    private static bool AiSubjectMatches(SystemInnerWorkerResolvedProfile profile, SystemTaskStoredRequest task) =>
+        (profile.Worker.Subject, task.Purpose) switch
+        {
+            (SystemInnerWorkerSubject.ProcedureWorkflow workflow, SystemTaskPurpose.ProcedureWorkflow) =>
+                task.SelectedDefinition == workflow.ProcedureVersion && task.Candidate is null,
+            (SystemInnerWorkerSubject.ApplicationCandidateValidation validation, SystemTaskPurpose.ApplicationValidation) =>
+                task.SelectedDefinition is null && task.Candidate == validation.Candidate,
+            _ => false
+        };
+
+    private static bool AiSubjectPurposeMatches(SystemInnerWorkerSubject subject, SystemTaskPurpose purpose) =>
+        (subject, purpose) is (SystemInnerWorkerSubject.ProcedureWorkflow, SystemTaskPurpose.ProcedureWorkflow)
+            or (SystemInnerWorkerSubject.ApplicationCandidateValidation, SystemTaskPurpose.ApplicationValidation);
 
     private async Task<bool> AiOwnsAttemptAsync(SqliteConnection connection, SqliteTransaction transaction,
         SystemTaskLifecycleSnapshot task, SystemTaskAttemptIdentity attempt, CancellationToken cancellationToken)
@@ -169,11 +202,31 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
             ("$fence", attempt.FencingCounter), ("$token", attempt.LeaseToken), ("$now", ToDb(UtcNow()))) == 1;
     }
 
-    private static string AiEnrollmentFingerprint(SystemInnerWorkerResolvedProfile profile) =>
-        profile.Worker.Subject is SystemInnerWorkerSubject.ProcedureWorkflow workflow
-            ? AiEnrollmentFingerprint(profile, workflow.ProcedureVersion)
-            : throw new InteractionContractException("INNER_AI_SUBJECT_UNSUPPORTED",
-                "AI accounting does not support this worker subject.");
+    internal static string AiEnrollmentFingerprint(SystemInnerWorkerResolvedProfile profile) =>
+        profile.Worker.Subject switch
+        {
+            SystemInnerWorkerSubject.ProcedureWorkflow workflow => AiEnrollmentFingerprint(profile, workflow.ProcedureVersion),
+            SystemInnerWorkerSubject.ApplicationCandidateValidation validation =>
+                InteractionCanonicalJson.Fingerprint(ValidationAiEnrollmentFingerprintDomain,
+                    InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
+                    {
+                        purpose = "application-validation",
+                        candidate = validation.Candidate,
+                        profile.ProfileVersion,
+                        profileDefinition = profile.Profile,
+                        profile.OutputSchemaFingerprint,
+                        inputFingerprint = AiHash(profile.Worker.InputJson),
+                        profile.ManualContext,
+                        profile.RequiredContextReferences,
+                        validateAuthorityProvenance = profile.AuthorityProvenance,
+                        readAuthorityProvenance = profile.ReadAuthorityProvenance,
+                        profile.Worker.InvocationHost.GrantReference,
+                        profile.Worker.InvocationHost.Budget.DeadlineUtc,
+                        profile.AiBudget
+                    }, AiJson))),
+            _ => throw new InteractionContractException("INNER_AI_SUBJECT_UNSUPPORTED",
+                "AI accounting does not support this worker subject.")
+        };
 
     private static string AiEnrollmentFingerprint(SystemInnerWorkerResolvedProfile profile,
         SystemTaskSelectedDefinition procedureVersion) => AiHash(
