@@ -4,6 +4,7 @@ using System.Text.Json;
 using DantesRoleplay.Applications;
 using DantesRoleplay.Authorization;
 using DantesRoleplay.DataAccess;
+using DantesRoleplay.DataAccess.Catalog;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.LocalAI;
 using DantesRoleplay.Operations;
@@ -27,22 +28,27 @@ public sealed partial class SqliteApplicationAuthoringService : IApplicationAuth
     private readonly IApplicationCandidatePreparation? preparation;
     private readonly IInteractionManualContextService? manuals;
     private readonly ApplicationCandidateReviewedPureUpdateReader? reviewedPureUpdates;
+    private readonly IApplicationCatalogSynchronizationEvidenceReader? synchronization;
 
     public SqliteApplicationAuthoringService(DantesRoleplayDbContext db, IApplicationRegistry applications,
         IApplicationActivationReader activations, IActivatedApplicationEvidenceReader evidence, ISourceRegistry sources,
         IStandingGrantPolicy grants, IStandingGrantTargetResolver targets, IOperationLog operations,
-        IApplicationCandidatePreparation? preparation = null, IInteractionManualContextService? manuals = null)
-        : this(db, applications, activations, evidence, sources, grants, targets, operations, preparation, manuals, null) { }
+        IApplicationCandidatePreparation? preparation = null, IInteractionManualContextService? manuals = null,
+        IApplicationCatalogSynchronizationEvidenceReader? synchronization = null)
+        : this(db, applications, activations, evidence, sources, grants, targets, operations, preparation, manuals,
+            reviewedPureUpdates: null, synchronization: synchronization) { }
 
     internal SqliteApplicationAuthoringService(DantesRoleplayDbContext db, IApplicationRegistry applications,
         IApplicationActivationReader activations, IActivatedApplicationEvidenceReader evidence, ISourceRegistry sources,
         IStandingGrantPolicy grants, IStandingGrantTargetResolver targets, IOperationLog operations,
         IApplicationCandidatePreparation? preparation, IInteractionManualContextService? manuals,
-        ApplicationCandidateReviewedPureUpdateReader? reviewedPureUpdates)
+        ApplicationCandidateReviewedPureUpdateReader? reviewedPureUpdates,
+        IApplicationCatalogSynchronizationEvidenceReader? synchronization = null)
     {
         this.db = db; this.applications = applications; this.activations = activations; this.evidence = evidence;
         this.sources = sources; this.grants = grants; this.targets = targets; this.operations = operations;
         this.preparation = preparation; this.manuals = manuals; this.reviewedPureUpdates = reviewedPureUpdates;
+        this.synchronization = synchronization;
     }
 
     private const string Tool = "application-candidate";
@@ -60,7 +66,8 @@ public sealed partial class SqliteApplicationAuthoringService : IApplicationAuth
             Validate(request);
             var app = host.ApplicationRevision.ApplicationId;
             if (app.IsSystem) return Failed("APPLICATION_CANDIDATE_SYSTEM_UNAVAILABLE");
-            if (request.Origin != "runtime") return InteractionInvocationResult.Unavailable("APPLICATION_CANDIDATE_SYNC_UNAVAILABLE", "Catalog synchronization needs its export receipt owner.");
+            if (request.Origin == "catalog-sync" && synchronization is null)
+                return InteractionInvocationResult.Unavailable("APPLICATION_CANDIDATE_SYNC_UNAVAILABLE", "Catalog synchronization needs its compare receipt owner.");
 
             var derived = Id(host, app);
             var id = request.ExpectedCandidateRevision == 0 ? derived : request.CandidateId!;
@@ -112,6 +119,11 @@ public sealed partial class SqliteApplicationAuthoringService : IApplicationAuth
 
             var active = activations.Current(app);
             if (!string.Equals(active?.ActivationFingerprint, request.ExpectedActiveFingerprint, StringComparison.Ordinal)) return Failed("APPLICATION_CANDIDATE_ACTIVE_STALE");
+            if (request.Origin == "catalog-sync"
+                && await synchronization!.ValidateCandidateAsync(host, request, cancellationToken) is { } syncError)
+                return syncError.EndsWith("UNAVAILABLE", StringComparison.Ordinal)
+                    ? InteractionInvocationResult.Unavailable(syncError, "Catalog synchronization evidence is unavailable.")
+                    : Failed(syncError);
             var latest = await db.Set<ApplicationCandidateRevisionRecord>().AsNoTracking().Where(x => x.ApplicationId == app.Value && x.CandidateId == id).MaxAsync(x => (int?)x.Revision, cancellationToken) ?? 0;
             if (latest != request.ExpectedCandidateRevision) return Failed("APPLICATION_CANDIDATE_CAS_MISMATCH");
             var effective = Effective(app, active, request.Documents);
@@ -124,7 +136,8 @@ public sealed partial class SqliteApplicationAuthoringService : IApplicationAuth
                 cancellationToken: cancellationToken);
             var row = new ApplicationCandidateRevisionRecord { ApplicationId = app.Value, CandidateId = id, Revision = next,
                 ApplicationRevision = registered.Revision, ExpectedActiveFingerprint = request.ExpectedActiveFingerprint,
-                Origin = request.Origin, SynchronizationEvidenceReference = null, NewImplementationReason = request.NewImplementationReason.Trim(),
+                Origin = request.Origin, SynchronizationEvidenceReference = request.SynchronizationEvidenceReference,
+                NewImplementationReason = request.NewImplementationReason.Trim(),
                 AuthorGrantReference = host.GrantReference, SourceOperationId = operationId, CanonicalCommandFingerprint = commandFingerprint,
                 ContentFingerprint = new string('0', 64) };
             row.ContentFingerprint = ApplicationCandidateRetainedReader.MetadataFingerprint(row, registered,
@@ -339,6 +352,8 @@ public sealed partial class SqliteApplicationAuthoringService : IApplicationAuth
             || request.NewImplementationReason.Length > ApplicationAuthoringLimits.ReasonCharacters
             || request.Origin is not ("runtime" or "catalog-sync")
             || request.Origin == "runtime" && request.SynchronizationEvidenceReference is not null
+            || request.Origin == "catalog-sync" && (request.SynchronizationEvidenceReference is null
+                || !CandidateId(request.SynchronizationEvidenceReference))
             || request.ExpectedActiveFingerprint is not null && !Hash(request.ExpectedActiveFingerprint)
             || request.CandidateId is { } supplied && !CandidateId(supplied))
             throw new ApplicationActivationException("INVALID_PAYLOAD", "Candidate request is invalid.");

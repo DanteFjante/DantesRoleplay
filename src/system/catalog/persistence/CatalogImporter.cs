@@ -150,6 +150,116 @@ public sealed class CatalogImporter(
             entries.OrderBy(e => e.Kind).ThenBy(e => e.Id, StringComparer.Ordinal).ToList());
     }
 
+    internal async Task<CatalogSynchronizationPlanEvidence> CompareSelectedAsync(
+        string root,
+        string allowedRootId,
+        IReadOnlyList<CatalogSynchronizationRecordSelection> selections,
+        CancellationToken cancellationToken = default)
+    {
+        var contents = await CatalogReader.ReadAsync(root, cancellationToken);
+        var catalogCount = contents.Mechanics.Count + contents.Procedures.Count + contents.Components.Count
+            + contents.EventTypes.Count + contents.Subscriptions.Count + contents.Entities.Count
+            + (contents.Relationships is null ? 0 : 1);
+        var complete = catalogCount <= 4096 && (contents.Manifest?.Records.Count ?? 0) <= 4096;
+        var selected = new List<CatalogSynchronizationRecordEvidence>(selections.Count);
+        foreach (var selection in selections.OrderBy(value => value.Kind).ThenBy(value => value.Id, StringComparer.Ordinal))
+        {
+            var file = FileFingerprint(contents, selection);
+            var stored = await StoredFingerprintAsync(selection.Kind, selection.Id, cancellationToken);
+            var ancestor = contents.Manifest?.FingerprintOf(selection.Kind, selection.Id);
+            var change = Decide(file is not null, file, stored is not null, stored, ancestor).Change;
+            selected.Add(new(selection.Kind, selection.Id, change, file, stored, ancestor,
+                SelectedPaths(root, contents, selection)));
+        }
+        return new(allowedRootId,
+            contents.Manifest is null ? null : ContentHash.Of(contents.Manifest.ToJson()), complete, selected);
+    }
+
+    private async Task<string?> StoredFingerprintAsync(CatalogRecordKind kind, string id,
+        CancellationToken cancellationToken)
+    {
+        switch (kind)
+        {
+            case CatalogRecordKind.Mechanic:
+                return await _db.Mechanics.AsNoTracking().Where(value => value.Id == id)
+                    .Join(_db.MechanicVersions.AsNoTracking(), value => new { MechanicId = value.Id, Version = value.CurrentVersion },
+                        value => new { value.MechanicId, value.Version }, (_, value) => value.SourceHash)
+                    .SingleOrDefaultAsync(cancellationToken);
+            case CatalogRecordKind.Procedure:
+                return await _db.ProcedureContracts.AsNoTracking().Where(value => value.Id == id)
+                    .Join(_db.ProcedureContractVersions.AsNoTracking(), value => new { ContractId = value.Id, Version = value.CurrentVersion },
+                        value => new { value.ContractId, value.Version }, (_, value) => value.SourceHash)
+                    .SingleOrDefaultAsync(cancellationToken);
+            case CatalogRecordKind.ComponentDefinition:
+                var component = await _db.ComponentDefinitions.AsNoTracking()
+                    .SingleOrDefaultAsync(value => value.Id == id, cancellationToken);
+                return component is null ? null : ContentHash.ForComponentDefinition(
+                    component.Name, component.Description, component.Schema);
+            case CatalogRecordKind.EventType when _eventTypes is not null:
+                return await _db.EventTypes.AsNoTracking().Where(value => value.Id == id)
+                    .Join(_db.EventTypeVersions.AsNoTracking(), value => new { EventTypeId = value.Id, Version = value.CurrentVersion },
+                        value => new { value.EventTypeId, value.Version }, (_, value) => value.SourceHash)
+                    .SingleOrDefaultAsync(cancellationToken);
+            case CatalogRecordKind.Subscription when _subscriptions is not null:
+                return await _db.Subscriptions.AsNoTracking().Where(value => value.Id == id)
+                    .Join(_db.SubscriptionVersions.AsNoTracking(), value => new { SubscriptionId = value.Id, Version = value.CurrentVersion },
+                        value => new { value.SubscriptionId, value.Version }, (_, value) => value.SourceHash)
+                    .SingleOrDefaultAsync(cancellationToken);
+            default:
+                throw new InvalidOperationException($"Catalog record kind '{kind}' is unavailable for application synchronization.");
+        }
+    }
+
+    private static string? FileFingerprint(CatalogContents contents, CatalogSynchronizationRecordSelection selection) =>
+        selection.Kind switch
+        {
+            CatalogRecordKind.Mechanic => contents.Mechanics.SingleOrDefault(value => value.Id == selection.Id)?.ContentHash,
+            CatalogRecordKind.Procedure => contents.Procedures.SingleOrDefault(value => value.Id == selection.Id)?.ContentHash,
+            CatalogRecordKind.ComponentDefinition => contents.Components.SingleOrDefault(value => value.Id == selection.Id)?.ContentHash,
+            CatalogRecordKind.EventType => contents.EventTypes.SingleOrDefault(value => value.Id == selection.Id)?.ContentHash,
+            CatalogRecordKind.Subscription => contents.Subscriptions.SingleOrDefault(value => value.Id == selection.Id)?.ContentHash,
+            _ => null
+        };
+
+    private static IReadOnlyList<string> SelectedPaths(string root, CatalogContents contents,
+        CatalogSynchronizationRecordSelection selection)
+    {
+        var paths = selection.Kind switch
+        {
+            CatalogRecordKind.Mechanic => MechanicPaths(root,
+                contents.Mechanics.SingleOrDefault(value => value.Id == selection.Id)),
+            CatalogRecordKind.Procedure => One(contents.Procedures.SingleOrDefault(value => value.Id == selection.Id) is { } value
+                ? CatalogLayout.ProcedureMarkdown(value.Category, value.Id) : null),
+            CatalogRecordKind.ComponentDefinition => SidecarPaths(root,
+                contents.Components.SingleOrDefault(value => value.Id == selection.Id) is { } value
+                    ? CatalogLayout.Component(value.Id) : null, ".schema.json"),
+            CatalogRecordKind.EventType => SidecarPaths(root,
+                contents.EventTypes.SingleOrDefault(value => value.Id == selection.Id) is { } value
+                    ? CatalogLayout.EventType(value.Id) : null, ".schema.json"),
+            CatalogRecordKind.Subscription => One(contents.Subscriptions.SingleOrDefault(value => value.Id == selection.Id) is { } value
+                ? CatalogLayout.Subscription(value.Id) : null),
+            _ => []
+        };
+        return paths.Order(StringComparer.Ordinal).ToArray();
+    }
+
+    private static IReadOnlyList<string> MechanicPaths(string root, MechanicFile? value)
+    {
+        if (value is null) return [];
+        var markdown = CatalogLayout.MechanicMarkdown(value.Category, value.Id);
+        var source = CatalogLayout.MechanicSource(value.Category, value.Id);
+        return File.Exists(CatalogLayout.ToFileSystemPath(root, source)) ? [markdown, source] : [markdown];
+    }
+
+    private static IReadOnlyList<string> SidecarPaths(string root, string? primary, string sidecarExtension)
+    {
+        if (primary is null) return [];
+        var sidecar = primary[..^Path.GetExtension(primary).Length] + sidecarExtension;
+        return File.Exists(CatalogLayout.ToFileSystemPath(root, sidecar)) ? [primary, sidecar] : [primary];
+    }
+
+    private static IReadOnlyList<string> One(string? value) => value is null ? [] : [value];
+
     /// <summary>
     /// The drift table. Everything this feature is for is decided here.
     /// </summary>

@@ -705,11 +705,12 @@ public sealed partial class SqliteStandingGrantTargetResolverTests : IDisposable
         """;
 
     private static SqliteApplicationAuthoringService Service(DantesRoleplayDbContext db, SetupState setup,
-        IApplicationCandidatePreparation? preparation = null)
+        IApplicationCandidatePreparation? preparation = null,
+        IApplicationCatalogSynchronizationEvidenceReader? synchronization = null)
     {
         var policy = new SqliteStandingGrantPolicy(db, setup.Resolver);
         return new(db, setup.Applications, setup.Activation, setup.Activation, setup.Sources, policy,
-            setup.Resolver, new OperationLog(db), preparation);
+            setup.Resolver, new OperationLog(db), preparation, synchronization: synchronization);
     }
 
     private static async Task SeedGrantAsync(DantesRoleplayDbContext db, IReadOnlyList<StandingGrantCapability> capabilities)

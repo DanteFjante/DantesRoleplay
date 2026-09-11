@@ -29,7 +29,8 @@ internal static class ApplicationActivationComponentRegistration
             provider.GetRequiredService<Operations.IOperationLog>(),
             provider.GetService<IApplicationCandidatePreparation>(),
             provider.GetService<Interactions.IInteractionManualContextService>(),
-            provider.GetRequiredService<ApplicationCandidateReviewedPureUpdateReader>()));
+            provider.GetRequiredService<ApplicationCandidateReviewedPureUpdateReader>(),
+            provider.GetRequiredService<DataAccess.Catalog.IApplicationCatalogSynchronizationEvidenceReader>()));
         services.AddScoped<IApplicationAuthoringService>(provider =>
             provider.GetRequiredService<SqliteApplicationAuthoringService>());
         return services;
