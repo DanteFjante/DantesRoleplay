@@ -46,6 +46,7 @@ public sealed record TriggerFireLease(
     public TriggerScheduleKind ScheduleKind { get; init; } = TriggerScheduleKind.OneTime;
     public string? ChangeOperationId { get; init; }
     public string? ObservationId { get; init; }
+    public DateTimeOffset? AdmittedAt { get; init; }
 }
 
 public sealed record TriggerFireAttemptResult(

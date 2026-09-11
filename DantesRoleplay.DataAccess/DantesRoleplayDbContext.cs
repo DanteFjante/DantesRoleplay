@@ -117,6 +117,7 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
     public DbSet<TriggerObservationSourcePrincipalRecord> TriggerObservationSourcePrincipals => Set<TriggerObservationSourcePrincipalRecord>();
     public DbSet<OneTimeTriggerRecord> OneTimeTriggers => Set<OneTimeTriggerRecord>();
     public DbSet<OneTimeTriggerNotificationEntityRecord> OneTimeTriggerNotificationEntities => Set<OneTimeTriggerNotificationEntityRecord>();
+    public DbSet<OneTimeTriggerWorkflowBindingRecord> OneTimeTriggerWorkflowBindings => Set<OneTimeTriggerWorkflowBindingRecord>();
     public DbSet<OneTimeTriggerCurrentRecord> OneTimeTriggerCurrent => Set<OneTimeTriggerCurrentRecord>();
     public DbSet<TriggerObservationRecord> TriggerObservations => Set<TriggerObservationRecord>();
     public DbSet<TriggerFireReceiptRecord> TriggerFireReceipts => Set<TriggerFireReceiptRecord>();
@@ -139,6 +140,7 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
     public DbSet<ConditionalTriggerNotificationLinkRecord> ConditionalTriggerNotificationLinks => Set<ConditionalTriggerNotificationLinkRecord>();
     public DbSet<ObservationTriggerRecord> ObservationTriggers => Set<ObservationTriggerRecord>();
     public DbSet<ObservationTriggerNotificationEntityRecord> ObservationTriggerNotificationEntities => Set<ObservationTriggerNotificationEntityRecord>();
+    public DbSet<ObservationTriggerWorkflowBindingRecord> ObservationTriggerWorkflowBindings => Set<ObservationTriggerWorkflowBindingRecord>();
     public DbSet<ObservationTriggerCurrentRecord> ObservationTriggerCurrent => Set<ObservationTriggerCurrentRecord>();
     public DbSet<ObservationTriggerMatchWorkRecord> ObservationTriggerMatchWork => Set<ObservationTriggerMatchWorkRecord>();
     public DbSet<ObservationTriggerMatchReceiptRecord> ObservationTriggerMatchReceipts => Set<ObservationTriggerMatchReceiptRecord>();
@@ -1605,6 +1607,7 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
                 TriggerObservationSourcePrincipalRecord or
                 OneTimeTriggerRecord or
                 OneTimeTriggerNotificationEntityRecord or
+                OneTimeTriggerWorkflowBindingRecord or
                 TriggerObservationRecord or
                 TriggerFireReceiptRecord or
                 TriggerNotificationLinkRecord or
@@ -1619,6 +1622,7 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
                 ConditionalTriggerNotificationLinkRecord or
                 ObservationTriggerRecord or
                 ObservationTriggerNotificationEntityRecord or
+                ObservationTriggerWorkflowBindingRecord or
                 ObservationTriggerMatchReceiptRecord or
                 ObservationTriggerNotificationLinkRecord or
                 PhoneCompanionDeviceRecord or

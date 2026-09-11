@@ -68,13 +68,21 @@ public sealed class SqliteObservationTriggerWorker(
                 .Select(value => value.AttemptCount).SingleAsync(cancellationToken);
             var observedAt = await db.TriggerObservations.AsNoTracking().Where(value => value.Id == work.ObservationId)
                 .Select(value => value.ObservedAtUtc).SingleAsync(cancellationToken);
+            var target = await db.ObservationTriggers.AsNoTracking().Where(value =>
+                    value.ApplicationId == work.ApplicationId && value.Id == work.TriggerId &&
+                    value.Version == work.TriggerVersion)
+                .Select(value => value.Target).SingleAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             return new TriggerFireLease(work.FireId, ApplicationIdentifier.Parse(work.ApplicationId),
                 work.TriggerId, work.TriggerVersion,
                 new DateTimeOffset(DateTime.SpecifyKind(observedAt, DateTimeKind.Utc)),
-                TriggerMisfirePolicy.FireOnce, TriggerFireTarget.NotificationOnly, attempt,
+                TriggerMisfirePolicy.FireOnce, SqliteTriggerSchedulingStore.ParseTarget(target), attempt,
                 workerId, token, expires)
-            { ScheduleKind = TriggerScheduleKind.Observation, ObservationId = work.ObservationId };
+            {
+                ScheduleKind = TriggerScheduleKind.Observation,
+                ObservationId = work.ObservationId,
+                AdmittedAt = new DateTimeOffset(DateTime.SpecifyKind(work.CreatedAtUtc, DateTimeKind.Utc))
+            };
         }
         catch { await RollbackAndClearAsync(transaction); throw; }
     }

@@ -3,6 +3,8 @@ using System.Text;
 using DantesRoleplay.Applications;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.Ecs;
+using DantesRoleplay.SystemTasks;
+using DantesRoleplay.SystemTasks.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace DantesRoleplay.TriggerScheduling;
@@ -12,7 +14,8 @@ public sealed class SqliteObservationTriggerStore(
     IStateSpaceRegistry stateSpaces,
     IEntityComponentStore components,
     IEnumerable<IObservationMatchAdapter> adapters,
-    ITriggerClock clock) : IObservationTriggerStore
+    ITriggerClock clock,
+    ISystemTaskDurableService? durableTasks = null) : IObservationTriggerStore
 {
     public async Task<TriggerSchedulingWriteResult<StoredObservationTrigger>> AppendAsync(
         ObservationTriggerDefinition definition, CancellationToken cancellationToken = default)
@@ -23,7 +26,7 @@ public sealed class SqliteObservationTriggerStore(
         if (existing is not null)
         {
             var projected = Project(existing);
-            return Same(definition, projected)
+            return Same(definition, existing)
                 ? TriggerSchedulingWriteResult<StoredObservationTrigger>.Replay(projected)
                 : TriggerSchedulingWriteResult<StoredObservationTrigger>.Conflict();
         }
@@ -33,6 +36,17 @@ public sealed class SqliteObservationTriggerStore(
             ? await db.Database.BeginTransactionAsync(cancellationToken) : null;
         try
         {
+            if (definition.Target == TriggerFireTarget.ProcedureWorkflow)
+            {
+                var workflow = definition.ProcedureWorkflow!;
+                var admission = durableTasks is SqliteSystemTaskDurableService durable
+                    ? await durable.AuthorizeTriggerBindingAsync(workflow.InvocationHost,
+                        workflow.SelectedDefinition, definition.ApplicationId, cancellationToken)
+                    : SystemTaskTriggerAdmissionDecision.Deny("SYSTEM_TASK_TRIGGER_UNAVAILABLE", true);
+                if (!admission.Accepted)
+                    throw new TriggerSchedulingContractException(admission.Code,
+                        "The observation workflow trigger could not be authorized for this exact revision.");
+            }
             var current = await db.ObservationTriggerCurrent.SingleOrDefaultAsync(value =>
                 value.ApplicationId == definition.ApplicationId.Value && value.Id == definition.Id,
                 cancellationToken);
@@ -58,7 +72,7 @@ public sealed class SqliteObservationTriggerStore(
             existing = await ExistingAsync(definition, CancellationToken.None);
             if (existing is null) throw;
             var projected = Project(existing);
-            return Same(definition, projected)
+            return Same(definition, existing)
                 ? TriggerSchedulingWriteResult<StoredObservationTrigger>.Replay(projected)
                 : TriggerSchedulingWriteResult<StoredObservationTrigger>.Conflict();
         }
@@ -112,6 +126,7 @@ public sealed class SqliteObservationTriggerStore(
         if (structure is null || structure.Status != "active" || structure.SchemaHash != definition.StructureHash)
             throw new TriggerSchedulingContractException("OBSERVATION_TRIGGER_STRUCTURE_STALE",
                 "The trigger structure is missing, retired, or has a different exact hash.");
+        if (definition.Target == TriggerFireTarget.ProcedureWorkflow) return;
         if (definition.Notification.StateSpaceId is null)
         {
             if (definition.Notification.EntityIds.Count != 0) throw new TriggerSchedulingContractException(
@@ -131,7 +146,7 @@ public sealed class SqliteObservationTriggerStore(
 
     private Task<ObservationTriggerRecord?> ExistingAsync(ObservationTriggerDefinition definition,
         CancellationToken cancellationToken) => db.ObservationTriggers.AsNoTracking()
-        .Include(value => value.NotificationEntities).SingleOrDefaultAsync(value =>
+        .Include(value => value.NotificationEntities).Include(value => value.WorkflowBinding).SingleOrDefaultAsync(value =>
             value.ApplicationId == definition.ApplicationId.Value && value.Id == definition.Id &&
             value.Version == definition.Version, cancellationToken);
 
@@ -145,12 +160,15 @@ public sealed class SqliteObservationTriggerStore(
             StructureVersion = definition.StructureVersion, StructureHash = definition.StructureHash,
             AdapterId = definition.Adapter.Id, AdapterVersion = definition.Adapter.Version,
             AdapterConfigurationJson = definition.AdapterConfiguration.Json,
-            AdapterConfigurationHash = definition.AdapterConfiguration.Hash, Target = "notification-only",
+            AdapterConfigurationHash = definition.AdapterConfiguration.Hash,
+            Target = SqliteTriggerSchedulingStore.Target(definition.Target),
             NotificationTopic = definition.Notification.Topic, NotificationSubject = definition.Notification.Subject,
             NotificationBody = definition.Notification.Body,
             NotificationStateSpaceId = definition.Notification.StateSpaceId, RecordedAtUtc = now.UtcDateTime
         };
-        for (var ordinal = 0; ordinal < definition.Notification.EntityIds.Count; ordinal++)
+        if (definition.Target == TriggerFireTarget.ProcedureWorkflow)
+            row.WorkflowBinding = TriggerProcedureWorkflowBindingPersistence.Observation(definition);
+        for (var ordinal = 0; definition.Target == TriggerFireTarget.NotificationOnly && ordinal < definition.Notification.EntityIds.Count; ordinal++)
             row.NotificationEntities.Add(new ObservationTriggerNotificationEntityRecord
             {
                 ApplicationId = definition.ApplicationId.Value, TriggerId = definition.Id,
@@ -162,11 +180,11 @@ public sealed class SqliteObservationTriggerStore(
     }
 
     internal static ObservationTriggerDefinition Definition(ObservationTriggerRecord row) =>
-        ObservationTriggerDefinition.Create(ApplicationIdentifier.Parse(row.ApplicationId), row.Id, row.Version,
+        ObservationTriggerDefinition.Stored(ApplicationIdentifier.Parse(row.ApplicationId), row.Id, row.Version,
             ParseLifecycle(row.Lifecycle), row.SourceId, row.SourceVersion, row.StructureId,
             row.StructureVersion, row.StructureHash,
             ObservationMatchAdapterReference.Create(row.AdapterId, row.AdapterVersion),
-            row.AdapterConfigurationJson, TriggerFireTarget.NotificationOnly,
+            row.AdapterConfigurationJson, SqliteTriggerSchedulingStore.ParseTarget(row.Target),
             TriggerNotificationTarget.Create(row.NotificationTopic, row.NotificationSubject,
                 row.NotificationBody, row.NotificationStateSpaceId,
                 row.NotificationEntities.OrderBy(value => value.Ordinal).Select(value => value.EntityId).ToArray()));
@@ -177,18 +195,24 @@ public sealed class SqliteObservationTriggerStore(
         return new(definition.ApplicationId, definition.Id, definition.Version, definition.Lifecycle,
             definition.SourceId, definition.SourceVersion, definition.StructureId, definition.StructureVersion,
             definition.StructureHash, definition.Adapter, definition.AdapterConfiguration,
-            definition.Notification, new DateTimeOffset(DateTime.SpecifyKind(row.RecordedAtUtc, DateTimeKind.Utc)));
+            definition.Target, definition.Notification, new DateTimeOffset(DateTime.SpecifyKind(row.RecordedAtUtc, DateTimeKind.Utc)));
     }
 
-    private static bool Same(ObservationTriggerDefinition value, StoredObservationTrigger stored) =>
+    private static bool Same(ObservationTriggerDefinition value, ObservationTriggerRecord row)
+    {
+        var stored = Project(row);
+        return
         value.ApplicationId == stored.ApplicationId && value.Id == stored.Id && value.Version == stored.Version &&
         value.Lifecycle == stored.Lifecycle && value.SourceId == stored.SourceId &&
         value.SourceVersion == stored.SourceVersion && value.StructureId == stored.StructureId &&
         value.StructureVersion == stored.StructureVersion && value.StructureHash == stored.StructureHash &&
         value.Adapter == stored.Adapter && value.AdapterConfiguration.Hash == stored.AdapterConfiguration.Hash &&
+        value.Target == stored.Target &&
         value.Notification.Topic == stored.Notification.Topic && value.Notification.Subject == stored.Notification.Subject &&
         value.Notification.Body == stored.Notification.Body && value.Notification.StateSpaceId == stored.Notification.StateSpaceId &&
-        value.Notification.EntityIds.SequenceEqual(stored.Notification.EntityIds);
+        value.Notification.EntityIds.SequenceEqual(stored.Notification.EntityIds) &&
+        TriggerProcedureWorkflowBindingPersistence.Same(row.WorkflowBinding, value.ProcedureWorkflow);
+    }
 
     internal static string FireId(string applicationId, string triggerId, int version, string observationId)
     {

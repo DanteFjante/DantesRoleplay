@@ -15,7 +15,8 @@ internal static class TriggerSchedulingComponentRegistration
         services.TryAddSingleton<IConditionalTriggerAdapter, ClosedScalarConditionalTriggerAdapter>();
         services.TryAddSingleton<IObservationMatchAdapter, ClosedScalarsObservationMatchAdapter>();
         services.TryAddSingleton<IPhoneCompanionCredentialGenerator, RandomPhoneCompanionCredentialGenerator>();
-        services.TryAddScoped<ITriggerFireTransactionParticipant, TriggerNotificationTransactionParticipant>();
+        services.AddScoped<TriggerNotificationTransactionParticipant>();
+        services.AddScoped<ITriggerFireTransactionParticipant, SystemTaskTriggerTransactionParticipant>();
         services.AddScoped<SqliteConditionalTriggerStore>();
         services.AddScoped<IConditionalTriggerStore>(provider =>
             provider.GetRequiredService<SqliteConditionalTriggerStore>());

@@ -6,7 +6,7 @@ public sealed record StoredObservationTrigger(
     ApplicationIdentifier ApplicationId, string Id, int Version, ObservationTriggerLifecycle Lifecycle,
     string SourceId, int SourceVersion, string StructureId, int StructureVersion, string StructureHash,
     ObservationMatchAdapterReference Adapter, CanonicalObservationData AdapterConfiguration,
-    TriggerNotificationTarget Notification, DateTimeOffset RecordedAt);
+    TriggerFireTarget Target, TriggerNotificationTarget Notification, DateTimeOffset RecordedAt);
 
 public interface IObservationTriggerStore
 {
