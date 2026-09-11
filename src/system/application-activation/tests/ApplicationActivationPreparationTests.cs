@@ -6,6 +6,7 @@ using DantesRoleplay.Authorization;
 using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.LocalAI;
+using DantesRoleplay.Mechanics;
 using DantesRoleplay.Operations;
 using DantesRoleplay.Projections;
 using DantesRoleplay.Sources;
@@ -28,7 +29,7 @@ public sealed class ApplicationActivationPreparationTests : IDisposable
         Write(relativePath, firstText);
 
         var first = await ActivateAsync(setup, null, "0123456789abcdef0123456789abcdef");
-        Assert.Equal("retained-mechanic-body-v1", first.PreparationVersion);
+        Assert.Equal("retained-mechanic-body-v2", first.PreparationVersion);
 
         var secondText = Procedure("Inspect the revised fixture.");
         Write(relativePath, secondText);
@@ -83,6 +84,47 @@ public sealed class ApplicationActivationPreparationTests : IDisposable
         Assert.Equal("EXECUTABLE_PREPARATION_FAILED", exception.Code);
         Assert.Equal(first.ActivationFingerprint, setup.Service.Current(setup.App)!.ActivationFingerprint);
         Assert.Single(setup.Service.ChangesAfter(setup.App, 0, 10));
+    }
+
+    [Fact]
+    public async Task Retained_activation_rejects_source_that_breaks_out_of_the_mechanic_wrapper()
+    {
+        await using var db = _fixture.CreateContext();
+        var setup = Setup(db, "prepared-wrapper-breakout");
+        const string markdownPath = "content/mechanics/check/mechanic.fixture.check.md";
+        const string sourcePath = "content/mechanics/check/mechanic.fixture.check.js";
+        Write(markdownPath, Mechanic());
+        Write(sourcePath, """
+            return { narration: 'inside' };
+            }); globalThis.wrapperEscaped = true; (function (ctx) {
+            return { narration: 'outside' };
+            """);
+
+        var exception = await Assert.ThrowsAsync<ApplicationActivationException>(() =>
+            ActivateAsync(setup, null, "3223456789abcdef0123456789abcdef"));
+
+        Assert.Equal("EXECUTABLE_PREPARATION_FAILED", exception.Code);
+        Assert.Null(setup.Service.Current(setup.App));
+        Assert.Empty(db.Operations);
+    }
+
+    [Fact]
+    public async Task Retained_activation_enforces_mechanic_parser_resource_fences()
+    {
+        await using var db = _fixture.CreateContext();
+        var setup = Setup(db, "prepared-resource-fence");
+        const string markdownPath = "content/mechanics/check/mechanic.fixture.check.md";
+        const string sourcePath = "content/mechanics/check/mechanic.fixture.check.js";
+        Write(markdownPath, Mechanic());
+        Write(sourcePath, string.Concat(Enumerable.Repeat(
+            "0;", JintMechanicEngine.MaximumMechanicTokens / 2 + 1)));
+
+        var exception = await Assert.ThrowsAsync<ApplicationActivationException>(() =>
+            ActivateAsync(setup, null, "3323456789abcdef0123456789abcdef"));
+
+        Assert.Equal("EXECUTABLE_PREPARATION_FAILED", exception.Code);
+        Assert.Null(setup.Service.Current(setup.App));
+        Assert.Empty(db.Operations);
     }
 
     [Fact]

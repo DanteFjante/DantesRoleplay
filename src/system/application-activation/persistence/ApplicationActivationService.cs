@@ -5,10 +5,10 @@ using DantesRoleplay.ApplicationPreview;
 using DantesRoleplay.Applications;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.DataAccess.Bootstrap;
+using DantesRoleplay.Mechanics;
 using DantesRoleplay.Operations;
 using DantesRoleplay.Projections;
 using DantesRoleplay.Sources;
-using Jint;
 using Microsoft.EntityFrameworkCore;
 
 namespace DantesRoleplay.ApplicationActivation;
@@ -82,7 +82,7 @@ public sealed class ApplicationActivationService : IApplicationActivationService
 
     private const string Kind = "system.application.activate";
     private const string CoverageVersion = "declared-component-field-projection-v1";
-    private const string CurrentPreparationVersion = "retained-mechanic-body-v1";
+    private const string CurrentPreparationVersion = "retained-mechanic-body-v2";
     private const long MaximumDocumentBytes = 10L * 1024 * 1024;
     private const long MaximumActivationBytes = 256L * 1024 * 1024;
     private static readonly UTF8Encoding StrictUtf8 = new(false, true);
@@ -406,8 +406,8 @@ public sealed class ApplicationActivationService : IApplicationActivationService
             {
                 var markdown = DecodeText(markdownWinner, retainedBytes[markdownWinner.LogicalIdentity]);
                 var source = DecodeText(sourceWinner, retainedBytes[sourceWinner.LogicalIdentity]);
-                _ = MechanicFile.Parse(markdown, markdownWinner.RelativePath, source);
-                Engine.PrepareScript("(function (ctx) {\n" + source + "\n});", strict: true);
+                var mechanic = MechanicFile.Parse(markdown, markdownWinner.RelativePath, source);
+                _ = JintMechanicEngine.PrepareMechanicProgram(mechanic.Source);
             }
             catch (Exception exception) when (exception is not OperationCanceledException)
             {
