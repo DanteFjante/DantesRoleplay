@@ -56,7 +56,7 @@ $cursor = [IO.DirectoryInfo]([IO.Path]::GetDirectoryName($runtimeBase))
 while ($cursor) {
     $insideWorktree = $cursor.FullName.Equals($root, [StringComparison]::OrdinalIgnoreCase) -or $cursor.FullName.StartsWith($worktreePrefix, [StringComparison]::OrdinalIgnoreCase)
     if (-not $insideWorktree) { break }
-    if ($cursor.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+    if ($cursor.Exists -and ($cursor.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
         throw "Runtime path contains a reparse point: $($cursor.FullName)"
     }
     $cursor = $cursor.Parent
