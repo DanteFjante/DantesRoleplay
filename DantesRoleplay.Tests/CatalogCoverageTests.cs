@@ -145,6 +145,9 @@ public sealed class CatalogCoverageTests : IDisposable
         ["system_application_candidate_publication"] = "Immutable runtime evidence linking a validated candidate to its activation, never authored by catalog import.",
 
         ["system_information_content_revision"] = "Immutable live MCP-authored information-content history, preserved by database backup and never bootstrap catalog content.",
+        ["system_information_source_target_identity"] = "Immutable runtime information-source target identity, preserved by database backup and never authored by catalog import.",
+        ["system_information_source_owner_revision"] = "Append-only runtime information-source ownership history, preserved by database backup and never authored by catalog import.",
+        ["system_information_source_owner_current"] = "Live pointer to the effective information-source owner revision, never authored by catalog import.",
 
         ["system_standing_grant_revision"] = "Immutable operator-issued standing-grant authority and audit evidence, never authored by catalog import.",
         ["system_standing_grant_current"] = "Live pointer to an effective standing-grant revision, never authored by catalog import.",
@@ -385,6 +388,20 @@ public sealed class CatalogCoverageTests : IDisposable
         ["system_information_content_revision.ContentFingerprint"] = "Information-content integrity evidence, not carried by the bootstrap catalog.",
         ["system_information_content_revision.Origin"] = "Closed live information-content origin, not carried by the bootstrap catalog.",
         ["system_information_content_revision.RetainedByOperationId"] = "Operation receipt retaining live information content, not carried by the bootstrap catalog.",
+
+        ["system_information_source_target_identity.QualifiedTargetId"] = "Immutable qualified information target identity, not carried by the catalog.",
+        ["system_information_source_target_identity.SourceId"] = "Information source owning the immutable target identity, not carried by the catalog.",
+        ["system_information_source_target_identity.CreatedByOperationId"] = "Operation provenance for the immutable target identity, not carried by the catalog.",
+        ["system_information_source_owner_revision.SourceId"] = "Information source owning this retained ownership revision, not carried by the catalog.",
+        ["system_information_source_owner_revision.Revision"] = "Append-only information-source ownership revision number, not carried by the catalog.",
+        ["system_information_source_owner_revision.ApplicationId"] = "Application owning the information target at this revision, not carried by the catalog.",
+        ["system_information_source_owner_revision.QualifiedTargetId"] = "Immutable qualified target identity for this ownership revision, not carried by the catalog.",
+        ["system_information_source_owner_revision.ContentFingerprint"] = "Retained information-owner content fingerprint, not carried by the catalog.",
+        ["system_information_source_owner_revision.PreviousFingerprint"] = "Prior ownership fingerprint chain evidence, not carried by the catalog.",
+        ["system_information_source_owner_revision.BoundByOperationId"] = "Operation provenance binding this ownership revision, not carried by the catalog.",
+        ["system_information_source_owner_current.SourceId"] = "Information source owning the live ownership pointer, not carried by the catalog.",
+        ["system_information_source_owner_current.Revision"] = "Effective retained ownership revision pointer, not carried by the catalog.",
+        ["system_information_source_owner_current.QualifiedTargetId"] = "Effective immutable information target identity, not carried by the catalog.",
 
         ["system_standing_grant_revision.GrantId"] = "Runtime standing-grant identity, not carried by the catalog.",
         ["system_standing_grant_revision.Revision"] = "Immutable standing-grant revision, not carried by the catalog.",

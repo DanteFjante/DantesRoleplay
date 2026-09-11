@@ -105,5 +105,7 @@ public sealed class WebContentDbContext(DbContextOptions<WebContentDbContext> op
             entity.Property(report => report.ReportJson).IsRequired();
             entity.Property(report => report.UpdatedAtUtc).IsRequired();
         });
+
+        modelBuilder.ApplyConfiguration(new WebPageResourceIdentityConfiguration());
     }
 }

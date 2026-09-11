@@ -11,6 +11,40 @@ namespace DantesRoleplay.Tests;
 public sealed class WebCompositionMigrationTests
 {
     private const string DurableAssetMigration = "20260907023758_DurableWebAssetContent";
+    private const string ResourceIdentityPrevious = "20260911175529_RetainedWebCompositionDrafts";
+
+    [Fact]
+    public async Task Resource_identity_upgrade_preserves_pages_and_rejects_immutable_retained_identity_downgrade()
+    {
+        await using var connection = new SqliteConnection("Filename=:memory:");
+        await connection.OpenAsync();
+        await using var db = CreateContext(connection);
+        await db.GetService<IMigrator>().MigrateAsync(ResourceIdentityPrevious);
+        var created = DateTime.UtcNow;
+        await db.Database.ExecuteSqlInterpolatedAsync($"INSERT INTO web_page (Id, ActiveRevision, UpdatedAt) VALUES ({"page"}, 0, {created})");
+
+        await db.Database.MigrateAsync();
+        Assert.Equal(0, (await db.Pages.SingleAsync(page => page.Id == "page")).ActiveRevision);
+        await db.Database.ExecuteSqlRawAsync("""
+            INSERT INTO web_page_resource_identity
+                (ContentPageId, QualifiedTargetId, OwnerApplicationId, SourceOperationId, CreatedAtUtc)
+            VALUES ('page', 'target.page', 'application.page', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', CURRENT_TIMESTAMP)
+            """);
+        await Assert.ThrowsAsync<SqliteException>(() => db.Database.ExecuteSqlRawAsync(
+            "UPDATE web_page_resource_identity SET OwnerApplicationId = 'other' WHERE ContentPageId = 'page'"));
+        await Assert.ThrowsAsync<SqliteException>(() => db.Database.ExecuteSqlRawAsync(
+            "DELETE FROM web_page_resource_identity WHERE ContentPageId = 'page'"));
+        await Assert.ThrowsAsync<DbUpdateException>(async () =>
+        {
+            db.Pages.Remove(await db.Pages.SingleAsync(page => page.Id == "page"));
+            await db.SaveChangesAsync();
+        });
+        var rejected = await Assert.ThrowsAsync<SqliteException>(() =>
+            db.GetService<IMigrator>().MigrateAsync(ResourceIdentityPrevious));
+        Assert.Contains("retained_web_page_resource_identity_prevents_downgrade", rejected.Message);
+        Assert.Equal("target.page", await db.Database.SqlQueryRaw<string>(
+            "SELECT QualifiedTargetId AS Value FROM web_page_resource_identity").SingleAsync());
+    }
 
     [Fact]
     public async Task Forward_migration_preserves_legacy_html_revisions_assets_and_active_pointer_while_supporting_compositions_and_inert_drafts()

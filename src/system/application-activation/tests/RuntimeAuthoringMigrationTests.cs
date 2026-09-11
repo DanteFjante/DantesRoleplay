@@ -15,6 +15,7 @@ public sealed class RuntimeAuthoringMigrationTests
 {
     private const string Previous = "20260911162616_RetainedApplicationActivationEvidence";
     private const string AiAccountingPrevious = "20260911180721_RuntimeAuthoringAndDurableTasks";
+    private const string InformationOwnershipPrevious = "20260911191531_SystemTaskAiAccounting";
     private const string Hash = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 
     [Fact]
@@ -132,12 +133,74 @@ public sealed class RuntimeAuthoringMigrationTests
             new("migration-platform.work", 1, Hash), "{\"value\":1}"))).Handle!;
         await InsertAiCeilingAsync(connection, handle.TaskId);
         var before = (await db.Database.GetAppliedMigrationsAsync()).ToArray();
-
         var rejectedDowngrade = await Assert.ThrowsAsync<SqliteException>(() =>
             db.GetService<IMigrator>().MigrateAsync(AiAccountingPrevious));
         Assert.Contains("retained_task_ai_accounting_prevents_downgrade", rejectedDowngrade.Message);
-        Assert.Equal(before, (await db.Database.GetAppliedMigrationsAsync()).ToArray());
+        Assert.Equal(before.Where(value => value != "20260911193950_InformationSourceOwnership"),
+            await db.Database.GetAppliedMigrationsAsync());
         Assert.Equal(1L, await ScalarAsync(connection, "SELECT COUNT(*) FROM system_task_ai_ceiling"));
+    }
+
+    [Fact]
+    public async Task Information_source_ownership_migration_enforces_foreign_keys_and_preserves_immutable_identity()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        await using var db = Context(connection);
+        await db.GetService<IMigrator>().MigrateAsync(InformationOwnershipPrevious);
+        await db.Database.MigrateAsync();
+        Assert.Equal(2L, await ScalarAsync(connection,
+            "SELECT COUNT(*) FROM pragma_foreign_key_list('system_information_source_target_identity')"));
+        Assert.Equal(5L, await ScalarAsync(connection,
+            "SELECT COUNT(*) FROM pragma_foreign_key_list('system_information_source_owner_revision')"));
+        Assert.Equal(4L, await ScalarAsync(connection,
+            "SELECT COUNT(*) FROM pragma_foreign_key_list('system_information_source_owner_current')"));
+
+        var foreignKey = await Assert.ThrowsAsync<SqliteException>(() => db.Database.ExecuteSqlRawAsync("""
+            INSERT INTO system_information_source_target_identity
+                (QualifiedTargetId, SourceId, CreatedByOperationId)
+            VALUES ('target.fixture', 'source.missing', 'operation.missing')
+            """));
+        Assert.Equal(19, foreignKey.SqliteErrorCode);
+        var application = ApplicationIdentifier.Parse("fixtureapp");
+        new SqliteApplicationRegistry(db).Register(new(application, "Fixture", "Ownership migration fixture.", []));
+        db.Operations.Add(new DantesRoleplay.Operations.Operation
+        {
+            Id = new string('a', 32), Timestamp = DateTime.UtcNow, Tool = "fixture"
+        });
+        db.Set<DantesRoleplay.Information.InformationSource>().Add(new()
+        {
+            Id = "source.fixture", ScopeId = "fixture", Name = "Fixture", ContentHash = Hash,
+            Revision = 1, CreatedAtUtc = DateTime.UtcNow, UpdatedAtUtc = DateTime.UtcNow
+        });
+        await db.SaveChangesAsync();
+        await db.Database.ExecuteSqlRawAsync("""
+            INSERT INTO system_information_source_target_identity
+                (QualifiedTargetId, SourceId, CreatedByOperationId)
+            VALUES ('target.fixture', 'source.fixture', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
+            """);
+        await db.Database.ExecuteSqlRawAsync("""
+            INSERT INTO system_information_source_owner_revision
+                (SourceId, Revision, ApplicationId, QualifiedTargetId, ContentFingerprint, PreviousFingerprint, BoundByOperationId)
+            VALUES ('source.fixture', 1, 'fixtureapp', 'target.fixture', 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', NULL, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'),
+                   ('source.fixture', 2, 'fixtureapp', 'target.fixture', 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB', 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
+            INSERT INTO system_information_source_owner_current (SourceId, Revision, QualifiedTargetId)
+            VALUES ('source.fixture', 1, 'target.fixture');
+            UPDATE system_information_source_owner_current SET Revision = 2 WHERE SourceId = 'source.fixture';
+            """);
+        await Assert.ThrowsAsync<SqliteException>(() => db.Database.ExecuteSqlRawAsync(
+            "UPDATE system_information_source_target_identity SET SourceId = 'other' WHERE QualifiedTargetId = 'target.fixture'"));
+        await Assert.ThrowsAsync<SqliteException>(() => db.Database.ExecuteSqlRawAsync(
+            "DELETE FROM system_information_source_target_identity WHERE QualifiedTargetId = 'target.fixture'"));
+        await Assert.ThrowsAsync<SqliteException>(() => db.Database.ExecuteSqlRawAsync(
+            "UPDATE system_information_source_owner_revision SET ApplicationId = 'other' WHERE SourceId = 'source.fixture' AND Revision = 1"));
+        await Assert.ThrowsAsync<SqliteException>(() => db.Database.ExecuteSqlRawAsync(
+            "DELETE FROM system_information_source_owner_revision WHERE SourceId = 'source.fixture' AND Revision = 1"));
+        var rejected = await Assert.ThrowsAsync<SqliteException>(() =>
+            db.GetService<IMigrator>().MigrateAsync(InformationOwnershipPrevious));
+        Assert.Contains("retained_information_source_ownership_prevents_downgrade", rejected.Message);
+        Assert.Equal(2L, await ScalarAsync(connection,
+            "SELECT Revision FROM system_information_source_owner_current WHERE SourceId = 'source.fixture'"));
     }
 
     private static async Task InsertAiCeilingAsync(SqliteConnection connection, string taskId)
