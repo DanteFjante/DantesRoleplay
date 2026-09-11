@@ -33,6 +33,8 @@ public sealed class WebStartupTests
         var targets = scoped.GetRequiredService<IStandingGrantTargetResolver>();
         Assert.IsType<ResourceStandingGrantTargetResolver>(targets);
         Assert.IsType<SqliteStandingGrantTargetResolver>(scoped.GetRequiredService<SqliteStandingGrantTargetResolver>());
+        Assert.IsType<SqliteStandingGrantReadCandidateReader>(
+            scoped.GetRequiredService<IStandingGrantReadCandidateReader>());
         Assert.IsType<WebPageStandingGrantResourceTargetOwner>(
             Assert.Single(scoped.GetServices<IStandingGrantResourceTargetOwner>()));
         Assert.IsType<WebPagePermissionedReader>(scoped.GetRequiredService<WebPagePermissionedReader>());

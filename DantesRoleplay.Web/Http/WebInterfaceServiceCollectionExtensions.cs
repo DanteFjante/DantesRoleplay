@@ -48,6 +48,7 @@ public static class WebInterfaceServiceCollectionExtensions
         services.AddScoped<IWebPageStore, WebPageStore>();
         services.AddScoped<IStandingGrantResourceTargetOwner, WebPageStandingGrantResourceTargetOwner>();
         services.AddScoped<WebPagePermissionedReader>();
+        services.AddScoped<WebPermissionedPageRouteAdapter>();
         services.AddSingleton<WebPageIdentityMigrationState>();
         services.AddScoped<WebPagePublicationService>();
         services.AddScoped<IWebPagePublicationDirectory>(provider =>
