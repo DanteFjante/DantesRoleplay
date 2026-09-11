@@ -278,7 +278,10 @@ public sealed class InteractionFeatureRetrievalTests : IDisposable
             new("inspect target", 1), (reference, _) => Task.FromResult(reference.QualifiedId == allowed.QualifiedId));
         var hit = Assert.Single(result.Hits);
         Assert.Equal(allowed.QualifiedId, hit.Reference.QualifiedId);
-        Assert.Equal(1, hit.LexicalRank);
+        var baseline = await new InteractionFeatureRetriever(new MutableSnapshots(Snapshot([allowed])))
+            .SearchAuthorizedAsync(new(Application, InteractionRetrievalLane.TrustedFeature), new("inspect target", 1),
+                (_, _) => Task.FromResult(true));
+        Assert.Equal(Assert.Single(baseline.Hits).LexicalRank, hit.LexicalRank);
         Assert.Null(hit.VectorRank);
         Assert.False(hit.Exact);
         Assert.Equal("AUTHORIZED_VIEW_LEXICAL_ONLY", result.AvailabilityCode);

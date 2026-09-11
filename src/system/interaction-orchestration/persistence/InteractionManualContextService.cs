@@ -1,7 +1,9 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using DantesRoleplay.ApplicationActivation;
-using DantesRoleplay.Ecs;
+using DantesRoleplay.Authorization;
+using DantesRoleplay.DataAccess;
 using DantesRoleplay.Procedures;
 
 namespace DantesRoleplay.Interactions;
@@ -13,15 +15,19 @@ namespace DantesRoleplay.Interactions;
 public sealed class InteractionManualContextService(
     IProcedureStore procedures,
     IInteractionFeatureRetriever features,
-    IInteractionAuthorizationPolicy authorization,
-    IStateSpaceRegistry stateSpaces,
+    IStandingGrantPolicy grants,
+    IStandingGrantTargetResolver targets,
     IApplicationDefinitionChangeReader changes,
     IReadOnlyCollection<string> permittedGlobalCategories,
     IInteractionRecipeStore? recipes = null) : IInteractionManualContextService
 {
     private const int MaximumSources = 128;
     private readonly string[] _globalCategories = CopyCategories(permittedGlobalCategories);
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        Converters = { new JsonStringEnumConverter<InteractionRetrievalLane>(JsonNamingPolicy.CamelCase) }
+    };
 
     public Task<InteractionInvocationResult> DiscoverAsync(InteractionManualContextRequest request,
         CancellationToken cancellationToken = default)
@@ -44,8 +50,8 @@ public sealed class InteractionManualContextService(
                 return InteractionInvocationResult.Cancelled("INVOCATION_DEADLINE_EXCEEDED", "The discovery deadline elapsed.");
             if (!host.Budget.TryConsumeOperation())
                 return InteractionInvocationResult.Failed("INVOCATION_BUDGET_EXHAUSTED", "The discovery operation budget is exhausted.");
-            var denied = ValidateAuthority(host);
-            if (denied is not null) return denied;
+            if (features is not InteractionFeatureRetriever retriever || procedures is not ProcedureStore manualStore)
+                return InteractionInvocationResult.Unavailable("MANUAL_ADAPTER_UNAVAILABLE", "The authorized discovery owners are unavailable.");
             if (maximumCharacters is < 4000 or > 24_000)
                 return InteractionInvocationResult.Failed("MANUAL_CONTEXT_LIMIT", "The context size must be between 4000 and 24000 characters.");
             if (expectedResolutionFingerprint is not null && (expectedResolutionFingerprint.Length != 64
@@ -61,49 +67,38 @@ public sealed class InteractionManualContextService(
             else if (remaining.TotalMilliseconds <= int.MaxValue) deadline.CancelAfter(remaining);
             var token = deadline.Token;
             var change = changes.CurrentChange(host.ApplicationRevision.ApplicationId);
-            var featureResult = await features.SearchAsync(new(host.ApplicationRevision.ApplicationId,
-                InteractionRetrievalLane.TrustedFeature), search, token);
+            var featureResult = await retriever.SearchAuthorizedAsync(new(host.ApplicationRevision.ApplicationId,
+                InteractionRetrievalLane.TrustedFeature), search,
+                (reference, cancellation) => CanReadAsync(host, Selection(reference), cancellation), token);
+            var selectedTargets = new Dictionary<string, StandingGrantDefinitionReference>(StringComparer.Ordinal);
             var candidates = new JsonArray();
             var sections = new List<ManualCandidate>();
             var sourceEvidence = new List<string>();
             var globalSources = new Dictionary<string, string>(StringComparer.Ordinal);
             var exact = new List<string>();
-            var sourceCount = 0;
             var bounded = false;
-            foreach (var category in _globalCategories)
+            var globalManual = await manualStore.ReadOperationalManualAsync(_globalCategories, MaximumSources + 1, token);
+            bounded = globalManual.Count > MaximumSources;
+            foreach (var detail in globalManual.Take(MaximumSources))
             {
-                if (sourceCount >= MaximumSources) { bounded = true; break; }
-                // Filter at the store before any global instruction text is read. This allow-list
-                // is trusted host configuration and cannot be supplied in discovery JSON.
-                var remainingSources = MaximumSources - sourceCount;
-                var summaries = await procedures.FindAsync(category: category, includeInactive: false,
-                    limit: remainingSources, cancellationToken: token);
-                bounded |= summaries.Count == remainingSources;
-                foreach (var summary in summaries.Where(value => value.Status == ProcedureStatus.Active))
-                {
-                    if (globalSources.ContainsKey(summary.Id)) continue;
-                    if (++sourceCount > MaximumSources) { bounded = true; break; }
-                    var detail = await procedures.GetAsync(summary.Id, cancellationToken: token);
-                    if (detail is null || detail.Status != ProcedureStatus.Active
-                        || !_globalCategories.Any(value => InCategory(detail.Category, value))) continue;
-                    var sourceFingerprint = ProcedureManualSections.Fingerprint(detail);
-                    globalSources.Add(detail.Id, sourceFingerprint);
-                    sourceEvidence.Add(sourceFingerprint);
-                    var isExact = PhraseMatches(search.Query, detail.Id, detail.Matches);
-                    if (isExact) exact.Add(detail.Id);
-                    AddSections(detail.Id, detail.Version, sourceFingerprint, detail.Governs, detail.Instructions,
-                        detail.Constraints, detail.Name + " " + detail.Description + " " + detail.Matches, isExact,
-                        string.IsNullOrEmpty(detail.SourceHash) ? null : detail.SourceHash,
-                        ProcedureManualSections.Hash(detail.Matches));
-                }
+                var sourceFingerprint = ProcedureManualSections.Fingerprint(detail);
+                globalSources.Add(detail.Id, sourceFingerprint);
+                sourceEvidence.Add(sourceFingerprint);
+                var isExact = PhraseMatches(search.Query, detail.Id, detail.Matches);
+                if (isExact) exact.Add(detail.Id);
+                AddSections(detail.Id, detail.Version, sourceFingerprint, detail.Governs, detail.Instructions,
+                    detail.Constraints, detail.Name + " " + detail.Description + " " + detail.Matches, isExact,
+                    string.IsNullOrEmpty(detail.SourceHash) ? null : detail.SourceHash,
+                    ProcedureManualSections.Hash(detail.Matches));
             }
             foreach (var hit in featureResult.Hits)
             {
+                selectedTargets[hit.Reference.QualifiedId] = Selection(hit.Reference);
                 using var document = JsonDocument.Parse(hit.ContractJson);
                 var root = document.RootElement;
                 candidates.Add(JsonSerializer.SerializeToNode(new
                 {
-                    reference = hit.Reference, hit.Name, reason = hit.Exact ? "exact-authored-match" : "retrieval-candidate",
+                    reference = InteractionManualTargetReference.From(hit.Reference), hit.Name, reason = hit.Exact ? "exact-authored-match" : "retrieval-candidate",
                     prerequisites = Text(root, "requirements"),
                     missingInputs = MissingInputs(root, canonicalInput),
                     inputValidation = "required-at-execution"
@@ -115,27 +110,28 @@ public sealed class InteractionManualContextService(
                         hit.Name + " " + hit.Description, hit.Exact, null, ProcedureManualSections.Hash(Text(root, "matches")));
             }
             var reusable = new JsonArray();
-            if (recipes is not null)
+            if (recipes is InteractionRecipeStore recipeStore)
             {
-                foreach (var recipe in await recipes.SearchAsync(host.ApplicationRevision.ApplicationId,
-                    search.Query, InteractionRecipeStatus.Verified, 4, token))
+                foreach (var recipe in await recipeStore.SearchAuthorizedAsync(host.ApplicationRevision.ApplicationId,
+                    search.Query, async (candidate, cancellation) =>
+                    {
+                        foreach (var step in candidate.Template.Steps)
+                            if (!await CanReadAsync(host, Selection(step), cancellation)) return false;
+                        return true;
+                    }, 4, token))
                 {
                     // A verified recipe remains merely a candidate until every exact step is revalidated.
-                    var compatible = recipe.ApplicationRevision == host.ApplicationRevision.Revision
-                        && recipe.ApplicationFingerprint == host.ApplicationRevision.Fingerprint
-                        && change is not null && recipe.EffectiveSetFingerprint == change.Fingerprint;
+                    foreach (var step in recipe.Template.Steps) selectedTargets[step.QualifiedId] = Selection(step);
                     reusable.Add(JsonSerializer.SerializeToNode(new
                     {
-                        reference = recipe.Reference, compatible,
-                        resolution = compatible ? "validate-bindings-and-steps" : "refresh-required",
+                        reference = recipe.Reference, compatible = true,
+                        resolution = "validate-bindings-and-steps",
                         steps = recipe.Template.Steps.Select(step => new
                         { step.QualifiedId, step.ContractVersion, step.ContractFingerprint, step.InputBindings })
                     }, JsonOptions));
                 }
             }
             token.ThrowIfCancellationRequested();
-            denied = ValidateAuthority(host);
-            if (denied is not null) return denied;
             var currentChange = changes.CurrentChange(host.ApplicationRevision.ApplicationId);
             if (currentChange?.Fingerprint != change?.Fingerprint || currentChange?.Revision != change?.Revision)
                 return InteractionInvocationResult.Failed("MANUAL_DEFINITION_CHANGED", "The active definition changed during discovery; resolve again.");
@@ -147,8 +143,9 @@ public sealed class InteractionManualContextService(
                 if (current is null || ProcedureManualSections.Fingerprint(current) != source.Value)
                     return InteractionInvocationResult.Failed("MANUAL_DEFINITION_CHANGED", "A manual source changed during discovery; resolve again.");
             }
-            denied = ValidateAuthority(host);
-            if (denied is not null) return denied;
+            foreach (var selected in selectedTargets.Values)
+                if (!await CanReadAsync(host, selected, token))
+                    return InteractionInvocationResult.Failed("MANUAL_AUTHORITY_CHANGED", "Discovery authority changed; resolve again.");
             token.ThrowIfCancellationRequested();
             currentChange = changes.CurrentChange(host.ApplicationRevision.ApplicationId);
             if (currentChange?.Fingerprint != change?.Fingerprint || currentChange?.Revision != change?.Revision)
@@ -158,8 +155,8 @@ public sealed class InteractionManualContextService(
             bounded |= sections.Count > selectedSections.Count;
             var fingerprint = ProcedureManualSections.Hash(JsonSerializer.Serialize(new
             {
-                format = ProcedureManualSections.Format, host.Principal.PrincipalId, host.StateSpaceId,
-                host.StateRevision, host.GrantReference, host.ApplicationRevision, change?.Fingerprint,
+                format = ProcedureManualSections.Format, host.Principal.PrincipalId, host.GrantReference,
+                applicationId = host.ApplicationRevision.ApplicationId.Value,
                 intent = search.Query, canonicalInput,
                 sources = sourceEvidence.Order(StringComparer.Ordinal),
                 candidates, reusable, sections = selectedSections.Select(value => new
@@ -231,23 +228,33 @@ public sealed class InteractionManualContextService(
         { return InteractionInvocationResult.Unavailable("MANUAL_CONTEXT_UNAVAILABLE", "An authoritative discovery dependency is unavailable; retry exact manual inspection."); }
     }
 
-    private InteractionInvocationResult? ValidateAuthority(InteractionInvocationHost host)
+    private async Task<bool> CanReadAsync(InteractionInvocationHost host, StandingGrantDefinitionReference selection,
+        CancellationToken cancellationToken)
     {
-        var decision = authorization.Evaluate(new(host.Principal, host.ApplicationRevision.ApplicationId,
-            host.StateSpaceId, InteractionCapability.Read, host.CommandId));
-        if (!decision.Allowed || decision.Capability != InteractionCapability.Read
-            || decision.PrincipalReference != host.Principal.PrincipalId || decision.ApplicationId != host.ApplicationRevision.ApplicationId
-            || decision.StateSpaceId != host.StateSpaceId || decision.EvidenceReference != host.GrantReference)
-            return InteractionInvocationResult.Failed("INVOCATION_NOT_AUTHORIZED", "Manual discovery is not authorized for this scope.");
-        var state = stateSpaces.Get(host.StateSpaceId);
-        if (state is null || state.ApplicationRevision.ApplicationId != host.ApplicationRevision.ApplicationId
-            || state.ApplicationRevision.Revision != host.ApplicationRevision.Revision
-            || state.ApplicationRevision.Fingerprint != host.ApplicationRevision.Fingerprint
-            || !state.ApplicationRevision.BaseApplications.SequenceEqual(host.ApplicationRevision.BaseApplications)
-            || InteractionStateRevision.From(state) != host.StateRevision)
-            return InteractionInvocationResult.Failed("INVOCATION_SCOPE_STALE", "The requested manual scope is no longer current.");
-        return null;
+        try
+        {
+            var resolution = await targets.ResolveAsync(host, selection, cancellationToken);
+            var target = resolution.Target;
+            if (resolution.Status != StandingGrantTargetResolutionStatus.Available || target is null
+                || target.DefinitionId != selection.DefinitionId || target.Kind != selection.Kind
+                || target.Revision != selection.Revision || target.ContentFingerprint != selection.ContentFingerprint
+                || target.OwnerApplicationId != host.ApplicationRevision.ApplicationId) return false;
+            var decision = await grants.EvaluateAsync(host,
+                new(StandingGrantCapability.Read, StandingGrantScope.Application, [target], []), cancellationToken);
+            var grant = decision.Grant;
+            return decision.Allowed && grant is not null && grant.GrantReference == host.GrantReference
+                && grant.PrincipalReference == host.Principal.PrincipalId && grant.ApplicationId == host.ApplicationRevision.ApplicationId
+                && grant.Scope == StandingGrantScope.Application && grant.StateSpaceId is null
+                && grant.Capabilities.Contains(StandingGrantCapability.Read) && !grant.Revoked && grant.ExpiresAtUtc > DateTime.UtcNow;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+        catch { return false; } // Unsupported/denied targets are indistinguishable from absent targets.
     }
+
+    private static StandingGrantDefinitionReference Selection(InteractionFeatureReference reference) =>
+        new(reference.QualifiedId, reference.Kind, reference.Version, reference.ContentFingerprint);
+    private static StandingGrantDefinitionReference Selection(InteractionRecipeTemplateStep step) =>
+        new(step.QualifiedId, step.Kind == InteractionPlanStepKind.Query ? "query" : "mechanic", step.ContractVersion, step.ContractFingerprint);
 
     private static string[] CopyCategories(IReadOnlyCollection<string> categories)
     {
@@ -256,7 +263,6 @@ public sealed class InteractionManualContextService(
             throw new ArgumentException("Global manual categories require a bounded explicit host allow-list.");
         return categories.Distinct(StringComparer.Ordinal).ToArray();
     }
-    private static bool InCategory(string value, string category) => value == category || value.StartsWith(category + ".", StringComparison.Ordinal);
     private static string Text(JsonElement root, string name) => root.TryGetProperty(name, out var value)
         && value.ValueKind == JsonValueKind.String ? value.GetString()! : "";
     private static bool PhraseMatches(string query, string id, string matches) => id == query

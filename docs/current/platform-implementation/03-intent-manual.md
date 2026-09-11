@@ -7,15 +7,22 @@ MCP; other protocols remain extension points. Discovery creates no runtime autho
 ## Implemented owner boundary
 
 `InteractionManualContextService` derives read-only context through the existing procedure store,
-feature retriever and optional recipe store. It checks trusted invocation authority and state binding
-before reading content and again before returning it, consumes the shared budget/deadline, and returns
+feature retriever and optional recipe store. It resolves exact current definition ownership through
+`IStandingGrantTargetResolver` and checks `IStandingGrantPolicy` with the full invocation host and
+`Read/Application` before selection and again before returning selected content. A state-space read
+grant does not authorize definition discovery, and definition discovery does not authorize state queries.
+It consumes one operation from the shared budget and observes its deadline, and returns
 the existing `CompletedComputation` envelope. The packet is inert discovery evidence: it never selects
 or executes a write, proves implementation equivalence, or publishes an association. Exact contract,
 input, binding and grant validation remain required at execution.
 
 Operational manual selection includes only active procedures. Global categories require an explicit,
-copied host allow-list; an empty list exposes none. Application content retains the retriever's trust
-and namespace filtering. Global procedures retain their actual IDs rather than being fabricated as
+copied host allow-list with exact category equality before limits; the host default is `["system"]`,
+and an empty list exposes none. This is host-selected orientation, not application authoring authority.
+Application content retains the retriever's trust and namespace filtering, then exact target authorization
+before exact matching, ranking, limits or disclosure. Every recipe step must pass the same check before
+its recipe can influence selection. Unsupported target resolution hides the candidate. Global procedures
+retain their actual IDs rather than being fabricated as
 application features. Historical procedure reads remain available through the existing store.
 
 Manual sections retain heading ancestry, a derived section reference, source revision and content
@@ -29,6 +36,11 @@ omitted constraints have not been validated. Result hashes are computed over can
 with `resultFingerprint` replaced by 64 zeroes.
 Completion evidence names that final result hash; the separate resolution hash detects source and
 candidate drift even when a caller chooses a different output budget.
+Compact candidate references retain application, lane, ID, kind, revision and content fingerprint.
+Whole catalog and activation generation pins remain host-only for freshness checks; they never enter
+the returned packet or its hashes. Denied definitions cannot alter visible alternatives, ranks, fallback
+modes or fingerprints. Authorized discovery uses exact/lexical retrieval until the vector owner supports
+an authorized subset before ranking; it does not send restricted candidates to embeddings.
 
 The existing activation change reader can invalidate cached catalog snapshots and reject stale
 retrieval generations. Derived index failures preserve lexical discovery and cannot gate activation.
@@ -39,7 +51,9 @@ caller or fall back after five seconds. The owner performs awaited work within i
 pins the requested generation, and releases capacity on failure/cancellation. No background work
 captures scoped services. Without host injection, coordination is limited to one retriever instance.
 The accepted context seam is `IInteractionManualContextService` with `InteractionManualContextRequest`.
-Coordinator integration owns constructor registration and MCP/website mapping. Section-level vector identity/index support, standing grants and publication,
+Coordinator integration owns constructor registration and MCP/website mapping. Production standing
+grant policy/ownership resolution and publication are supplied by plan 02; consumer fixtures do not
+prove issuance or production authorization. Section-level vector identity/index support,
 candidate-bound equivalence review and end-to-end invocation through plans 01/05/06 remain separate
 integration dependencies; discovery tests do not prove those dependent scenarios.
 

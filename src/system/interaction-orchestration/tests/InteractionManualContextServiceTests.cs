@@ -14,7 +14,7 @@ using DantesRoleplay.Sources;
 
 namespace DantesRoleplay.Tests;
 
-/// <summary>Scope fixtures supply host authority, state, activation and catalog snapshots only.</summary>
+/// <summary>Grant/ownership fixtures test consumer admission, not production issuance or resolution.</summary>
 public sealed class InteractionManualContextServiceTests : IDisposable
 {
     private readonly SqliteFixture _fixture = new();
@@ -28,10 +28,11 @@ public sealed class InteractionManualContextServiceTests : IDisposable
     {
         await using var db = _fixture.CreateContext();
         var procedures = new ProcedureStore(db);
-        await procedures.WriteAsync(Request("procedure.system.allowed", "system.operations", "inspect scope", "## Inspect\nRead state."));
+        await procedures.WriteAsync(Request("procedure.system.allowed", "system", "inspect scope", "## Inspect\nRead state."));
+        await procedures.WriteAsync(Request("procedure.system.nested", "system.private", "inspect scope", "nested private instructions"));
         await procedures.WriteAsync(Request("procedure.secret.hidden", "secret", "inspect scope", "secret instructions"));
-        await procedures.WriteAsync(Request("procedure.system.retired", "system.operations", "old scope", "old instructions"));
-        await procedures.WriteAsync(Request("procedure.system.retired", "system.operations", "old scope", "retired instructions",
+        await procedures.WriteAsync(Request("procedure.system.retired", "system", "old scope", "old instructions"));
+        await procedures.WriteAsync(Request("procedure.system.retired", "system", "old scope", "retired instructions",
             status: ProcedureStatus.Archived));
         var service = Service(procedures, new Changes(App, HashA), "system");
 
@@ -43,6 +44,7 @@ public sealed class InteractionManualContextServiceTests : IDisposable
         Assert.Equal(InteractionInvocationResultTag.Completed, result.Tag);
         Assert.Contains("procedure.system.allowed", manual, StringComparison.Ordinal);
         Assert.DoesNotContain("secret instructions", result.DataJson!, StringComparison.Ordinal);
+        Assert.DoesNotContain("nested private instructions", result.DataJson!, StringComparison.Ordinal);
         Assert.DoesNotContain("retired instructions", result.DataJson!, StringComparison.Ordinal);
         Assert.Equal("old instructions", (await procedures.GetAsync("procedure.system.retired", 1))!.Instructions);
         Assert.Equal(2, (await procedures.GetVersionsAsync("procedure.system.retired")).Count);
@@ -94,19 +96,23 @@ public sealed class InteractionManualContextServiceTests : IDisposable
     }
 
     private static InteractionManualContextService Service(IProcedureStore procedures, IApplicationDefinitionChangeReader changes,
-        params string[] categories) => new(procedures, new InteractionFeatureRetriever(new Snapshots()), new Allow(),
-        new Spaces(State()), changes, categories);
+        params string[] categories) => new(procedures, new InteractionFeatureRetriever(new Snapshots()), new FixtureGrants(),
+        new FixtureTargets(), changes, categories);
 
     [Fact]
-    public async Task Denied_grant_stops_before_even_reading_the_procedure_store()
+    public async Task Invalid_grant_never_discloses_application_content_while_orientation_is_host_selected()
     {
-        var db = _fixture.CreateContext();
+        await using var db = _fixture.CreateContext();
         var store = new ProcedureStore(db);
-        var service = Service(store, new Changes(App, HashA), "system");
-        await db.DisposeAsync(); // Any attempted store read would fail with an unavailable dependency.
+        await store.WriteAsync(Request("procedure.system.orientation", "system", "inspect", "Host selected orientation."));
+        var record = AppRecord("sample-app.query.secret", "Secret definition details", "inspect");
+        var service = new InteractionManualContextService(store, new InteractionFeatureRetriever(new Snapshots(AppSnapshot("one", record))),
+            new FixtureGrants(), new FixtureTargets(), new Changes(App, HashA), ["system"]);
         var result = await service.DiscoverAsync(Host(grant: "revoked.grant"), "inspect");
-        Assert.Equal("INVOCATION_NOT_AUTHORIZED", result.Code);
-        Assert.Null(result.DataJson);
+        Assert.Equal(InteractionInvocationResultTag.Completed, result.Tag);
+        Assert.DoesNotContain("Secret definition", result.DataJson!);
+        Assert.Contains("Host selected orientation", result.DataJson!);
+        Assert.Empty(JsonNode.Parse(result.DataJson!)!["candidates"]!.AsArray());
     }
 
     [Fact]
@@ -175,7 +181,7 @@ public sealed class InteractionManualContextServiceTests : IDisposable
             [new("sample", "Sample", "Fixture")], [new("sample", "", "Sample", "Fixture", CatalogDescriptionStatus.Authored)], [record]),
             [new(record, SourceTrust.Trusted)]) { EffectiveSetFingerprint = HashA };
         var service = new InteractionManualContextService(new ProcedureStore(db),
-            new InteractionFeatureRetriever(new Snapshots(snapshot)), new Allow(), new Spaces(State()), new Changes(App, HashA), []);
+            new InteractionFeatureRetriever(new Snapshots(snapshot)), new FixtureGrants(), new FixtureTargets(), new Changes(App, HashA), []);
         var first = await service.DiscoverAsync(Host(), "inspect target");
         var second = await service.DiscoverAsync(Host(), "show target", "{\"target\":\"one\"}");
         var a = JsonNode.Parse(first.DataJson!)!;
@@ -188,11 +194,130 @@ public sealed class InteractionManualContextServiceTests : IDisposable
         Assert.Null(second.Receipt);
     }
 
-    private static InteractionInvocationHost Host(string command = "command.1", InteractionInvocationBudget? budget = null, bool consume = false, string grant = "grant.1")
+    [Fact]
+    public async Task Denied_content_and_whole_catalog_changes_do_not_change_visible_context_or_hashes()
+    {
+        await using var db = _fixture.CreateContext();
+        var store = new ProcedureStore(db);
+        var allowed = AppRecord("sample-app.query.allowed", "Visible instructions", "inspect");
+        var grants = new FixtureGrants { AllowedIds = [allowed.QualifiedId] };
+        async Task<InteractionInvocationResult> Discover(string generation, string secret)
+        {
+            var hidden = AppRecord("sample-app.query.secret", secret, "inspect");
+            var service = new InteractionManualContextService(store,
+                new InteractionFeatureRetriever(new Snapshots(AppSnapshot(generation, allowed, hidden))),
+                grants, new FixtureTargets(), new Changes(App, Hash(generation)), []);
+            return await service.DiscoverAsync(Host(revision: new(App, 1, Hash(generation), [])), "inspect");
+        }
+        var before = await Discover("generation.one", "Secret before");
+        var after = await Discover("generation.two", "Secret after");
+        Assert.Equal(InteractionInvocationResultTag.Completed, before.Tag);
+        Assert.Equal(InteractionInvocationResultTag.Completed, after.Tag);
+        Assert.Equal(before.DataJson, after.DataJson);
+        Assert.Equal(before.CompletionEvidenceReference, after.CompletionEvidenceReference);
+        Assert.DoesNotContain("Secret", after.DataJson!);
+        Assert.DoesNotContain(Hash("generation.two"), after.DataJson!);
+        Assert.Equal("unresolved", JsonNode.Parse(after.DataJson!)!["resolution"]!.GetValue<string>());
+        Assert.Single(JsonNode.Parse(after.DataJson!)!["candidates"]!.AsArray());
+    }
+
+    [Fact]
+    public async Task Discovery_requires_application_read_and_consumes_one_host_operation()
+    {
+        await using var db = _fixture.CreateContext();
+        var record = AppRecord("sample-app.query.allowed", "Visible instructions", "inspect");
+        var grants = new FixtureGrants();
+        var service = new InteractionManualContextService(new ProcedureStore(db),
+            new InteractionFeatureRetriever(new Snapshots(AppSnapshot("one", record))), grants,
+            new FixtureTargets(), new Changes(App, HashA), []);
+        var budget = new InteractionInvocationBudget(1, DateTime.UtcNow.AddMinutes(1));
+        var result = await service.DiscoverAsync(Host(budget: budget), "inspect");
+        Assert.Equal(InteractionInvocationResultTag.Completed, result.Tag);
+        Assert.Single(JsonNode.Parse(result.DataJson!)!["candidates"]!.AsArray());
+        Assert.Equal(0, budget.RemainingOperations);
+        Assert.Null(result.Receipt);
+        Assert.True(grants.Requirements.Count >= 2);
+        Assert.All(grants.Requirements, requirement =>
+        {
+            Assert.Equal(StandingGrantCapability.Read, requirement.Capability);
+            Assert.Equal(StandingGrantScope.Application, requirement.Scope);
+            Assert.Empty(requirement.EffectKinds);
+            Assert.Null(requirement.Task);
+        });
+        grants.Scope = StandingGrantScope.StateSpace;
+        var wrongScope = await service.DiscoverAsync(Host(), "inspect");
+        Assert.Empty(JsonNode.Parse(wrongScope.DataJson!)!["candidates"]!.AsArray());
+    }
+
+    [Fact]
+    public async Task Missing_ownership_and_revocation_never_emit_definition_data()
+    {
+        await using var db = _fixture.CreateContext();
+        var record = AppRecord("sample-app.query.allowed", "Visible instructions", "inspect");
+        var grants = new FixtureGrants();
+        var targets = new FixtureTargets { Unavailable = true };
+        var service = new InteractionManualContextService(new ProcedureStore(db),
+            new InteractionFeatureRetriever(new Snapshots(AppSnapshot("one", record))), grants,
+            targets, new Changes(App, HashA), []);
+        var unavailable = await service.DiscoverAsync(Host(), "inspect");
+        Assert.Empty(JsonNode.Parse(unavailable.DataJson!)!["candidates"]!.AsArray());
+        Assert.Empty(grants.Requirements);
+        targets.Unavailable = false;
+        grants.RevokeAfterCalls = 1;
+        var revoked = await service.DiscoverAsync(Host(), "inspect");
+        Assert.Equal("MANUAL_AUTHORITY_CHANGED", revoked.Code);
+        Assert.Null(revoked.DataJson);
+    }
+
+    [Fact]
+    public async Task Recipe_with_one_denied_step_is_hidden_before_selection_and_digesting()
+    {
+        await using var db = _fixture.CreateContext();
+        var allowed = AppRecord("sample-app.query.inspect", "Visible instructions", "inspect");
+        var denied = AppRecord("sample-app.query.secret", "Secret instructions", "inspect");
+        var allowedRecipe = SeedRecipe(allowed);
+        db.InteractionRecipes.Add(allowedRecipe);
+        await db.SaveChangesAsync();
+        var grants = new FixtureGrants { AllowedIds = [allowed.QualifiedId] };
+        var service = new InteractionManualContextService(new ProcedureStore(db),
+            new InteractionFeatureRetriever(new Snapshots(AppSnapshot("one", allowed, denied))), grants,
+            new FixtureTargets(), new Changes(App, HashA), [], new InteractionRecipeStore(db));
+        var before = await service.DiscoverAsync(Host(), "inspect");
+        var deniedRecipe = SeedRecipe(allowed, denied);
+        db.InteractionRecipes.Add(deniedRecipe);
+        await db.SaveChangesAsync();
+        var after = await service.DiscoverAsync(Host(), "inspect");
+        Assert.Equal(InteractionInvocationResultTag.Completed, before.Tag);
+        Assert.Equal(InteractionInvocationResultTag.Completed, after.Tag);
+        Assert.Equal(before.DataJson, after.DataJson);
+        Assert.Single(JsonNode.Parse(after.DataJson!)!["reusableTasks"]!.AsArray());
+        Assert.DoesNotContain(deniedRecipe.Id, after.DataJson!);
+        Assert.DoesNotContain(deniedRecipe.TemplateFingerprint, after.DataJson!);
+        Assert.Contains(grants.Requirements, requirement => requirement.Definitions.Any(target => target.DefinitionId == denied.QualifiedId));
+
+        // Seed retained verified rows directly: this checks discovery, not publication or provenance acceptance.
+        static InteractionRecipe SeedRecipe(params CatalogRecordDefinition[] records)
+        {
+            var template = InteractionRecipeTemplate.FromProposal(App, new InteractionPlannerProposalCommand(
+                records.Select((record, index) => new InteractionPlannerDraftStep("step." + index,
+                    InteractionPlanStepKind.Query, record.QualifiedId, record.Version, record.ContentFingerprint,
+                    [], new Dictionary<string, string>(), "{}")).ToArray()));
+            var id = InteractionRecipeIds.Create(App, template.Fingerprint);
+            var row = new InteractionRecipe { Id = id, ApplicationId = App.Value, TemplateFingerprint = template.Fingerprint,
+                TemplateJson = template.CanonicalJson, CreatedAtUtc = DateTime.UnixEpoch };
+            row.Revisions.Add(new InteractionRecipeRevision { RecipeId = id, Version = 1, Status = "verified",
+                ApplicationRevision = 1, ApplicationFingerprint = Hash("application"), EffectiveSetFingerprint = HashA,
+                RequestToken = "fixture." + template.Fingerprint, RequestFingerprint = template.Fingerprint,
+                CreatedAtUtc = DateTime.UnixEpoch });
+            return row;
+        }
+    }
+
+    private static InteractionInvocationHost Host(string command = "command.1", InteractionInvocationBudget? budget = null, bool consume = false, string grant = "grant.1", ApplicationRevision? revision = null)
     {
         budget ??= new(2, DateTime.UtcNow.AddMinutes(1));
         if (consume) Assert.True(budget.TryConsumeOperation());
-        return new(TrustedPrincipalContext.VerifiedPrincipal("principal." + new string('a', 64), "test"), Revision(),
+        return new(TrustedPrincipalContext.VerifiedPrincipal("principal." + new string('a', 64), "test"), revision ?? Revision(),
             "state.1", grant, command, InteractionStateRevision.From(State()), InteractionExecutionProfile.ReadOnly, budget);
     }
 
@@ -214,10 +339,49 @@ public sealed class InteractionManualContextServiceTests : IDisposable
         public bool TryGetSnapshot(ApplicationIdentifier applicationId, out ActiveCatalogFeatureSnapshot snapshot)
         { snapshot = supplied ?? _snapshot; return applicationId == App; }
     }
-    private sealed class Allow : IInteractionAuthorizationPolicy
-    { public InteractionAuthorizationDecision Evaluate(InteractionAuthorizationRequest request) => InteractionAuthorizationDecision.Allow(request, "grant.1"); }
-    private sealed class Spaces(StateSpaceView state) : IStateSpaceRegistry
-    { public StateSpaceView? Get(string id) => id == state.StateSpaceId ? state : null; public StateSpaceView Create(StateSpaceBinding binding) => throw new NotSupportedException(); public StateSpaceDiscoveryPage ListPage(ApplicationIdentifier app, string? after, int limit) => new([state], null); }
+    private static CatalogRecordDefinition AppRecord(string id, string description, string phrase)
+    {
+        var content = JsonSerializer.Serialize(new { description, inputSchema = new { type = "object", required = new[] { "target" } } });
+        return new("sample", "query", id, "Inspect", description, [], [phrase], "", "active", 1, content, Hash(content), "fixture", "queries/inspect.json");
+    }
+    private static ActiveCatalogFeatureSnapshot AppSnapshot(string generation, params CatalogRecordDefinition[] records) =>
+        new(CatalogNavigationManifest.Create(App, Hash(generation), "fixture", [new("sample", "Sample", "Fixture")],
+            [new("sample", "", "Sample", "Fixture", CatalogDescriptionStatus.Authored)], records),
+            records.Select(record => new ActiveCatalogFeatureDocument(record, SourceTrust.Trusted)).ToArray()) { EffectiveSetFingerprint = HashA };
+
+    private sealed class FixtureGrants : IStandingGrantPolicy
+    {
+        internal HashSet<string>? AllowedIds;
+        internal bool Revoked;
+        internal int RevokeAfterCalls = int.MaxValue;
+        internal StandingGrantScope Scope = StandingGrantScope.Application;
+        internal readonly List<StandingGrantRequirement> Requirements = [];
+        public Task<StandingGrantDecision> EvaluateAsync(InteractionInvocationHost host, StandingGrantRequirement requirement,
+            CancellationToken cancellationToken = default)
+        {
+            Requirements.Add(requirement);
+            Revoked |= Requirements.Count > RevokeAfterCalls;
+            var allowed = host.GrantReference == "grant.1" && !Revoked
+                && (AllowedIds is null || requirement.Definitions.All(target => AllowedIds.Contains(target.DefinitionId)));
+            var grant = new StandingGrantRevision(host.GrantReference, "fixture.grant", 1, Hash("grant"), host.Principal.PrincipalId,
+                App, Scope, Scope == StandingGrantScope.Application ? null : host.StateSpaceId, [StandingGrantCapability.Read],
+                new(StandingGrantDefinitionMode.ExactIds, requirement.Definitions.Select(value => value.DefinitionId).ToArray(), []),
+                [], 16, DateTime.UtcNow.AddHours(1), Revoked, "fixture.issuance");
+            return Task.FromResult(new StandingGrantDecision(allowed, allowed ? "FIXTURE_ALLOWED" : "FIXTURE_DENIED", grant,
+                new(host.Principal.PrincipalId, "fixture", "read", "application", host.CommandId, allowed, "fixture")));
+        }
+    }
+    private sealed class FixtureTargets : IStandingGrantTargetResolver
+    {
+        internal bool Unavailable;
+        public Task<StandingGrantTargetResolution> ResolveAsync(InteractionInvocationHost host, StandingGrantDefinitionReference selection,
+            CancellationToken cancellationToken = default) => Task.FromResult(Unavailable
+            ? new StandingGrantTargetResolution(StandingGrantTargetResolutionStatus.Unavailable, "FIXTURE_UNAVAILABLE", null)
+            : new StandingGrantTargetResolution(StandingGrantTargetResolutionStatus.Available, "FIXTURE_RESOLVED",
+                new(selection.DefinitionId, selection.Kind, App, "sample-app.query", "fixture.owner", selection.Revision, selection.ContentFingerprint)));
+        public Task<StandingGrantTargetResolution> ResolveCandidateAsync(InteractionInvocationHost host, ApplicationCandidateSnapshot candidate,
+            StandingGrantDefinitionReference selection, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+    }
     private sealed class Changes(ApplicationIdentifier app, string fingerprint) : IApplicationDefinitionChangeReader
     { public ApplicationDefinitionChange? CurrentChange(ApplicationIdentifier id) => id == app ? new(app, 1, fingerprint, "operation.1", DateTime.UnixEpoch, new([], []), new(Hash("dependencies"), "fixture", true), new("rebuildable", false, false)) : null; public ApplicationDefinitionChange? RevisionChange(ApplicationIdentifier id, int revision) => CurrentChange(id); public IReadOnlyList<ApplicationDefinitionChange> ChangesAfter(ApplicationIdentifier id, int after, int limit) => []; }
 }
