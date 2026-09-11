@@ -194,7 +194,8 @@ internal sealed class ApplicationCandidateRuntimeValidator(
                         "PURE_RUNTIME_AUTHORITY_CHANGED",
                         "Current candidate authority changed during execution.", attempted: true);
 
-                var pureData = TryReadPureData(run, out var actualJson, out var actualFingerprint);
+                var pureData = ApplicationPureMechanicOutput.TryReadData(
+                    run, out var actualJson, out var actualFingerprint);
                 CheckTime(host, cancellationToken);
                 if (!pureData)
                 {
@@ -365,36 +366,6 @@ internal sealed class ApplicationCandidateRuntimeValidator(
                 || character is >= 'A' and <= 'F')))
             throw new InteractionContractException(
                 "INVALID_SHA256", $"{parameter} must be an uppercase SHA-256 value.", parameter);
-    }
-
-    private static bool TryReadPureData(
-        MechanicRunResult run,
-        out string? actualJson,
-        out string? actualFingerprint)
-    {
-        actualJson = null;
-        actualFingerprint = null;
-        if (!run.Ok || run.Output is not { HasData: true } output
-            || output.Effects is null || output.Effects.Count != 0
-            || output.Events is null || output.Events.Count != 0
-            || output.Notifications is null || output.Notifications.Count != 0
-            || !string.IsNullOrEmpty(output.Narration)
-            || !string.IsNullOrEmpty(output.Decision)
-            || !string.IsNullOrEmpty(output.Code)
-            || !string.IsNullOrEmpty(output.Reason))
-            return false;
-        try
-        {
-            actualJson = InteractionCanonicalJson.CanonicalizeObject(output.Data);
-            if (Encoding.UTF8.GetByteCount(actualJson) > InteractionContractLimits.JsonBytes)
-                return false;
-            actualFingerprint = DataFingerprint(actualJson);
-            return true;
-        }
-        catch (ArgumentException)
-        {
-            return false;
-        }
     }
 
     private static ApplicationCandidateRuntimeSampleResult Sample(

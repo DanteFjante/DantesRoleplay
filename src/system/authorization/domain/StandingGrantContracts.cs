@@ -162,10 +162,12 @@ public interface IStandingGrantPolicy
     /// retries. A commit owner repeats authorization in its write transaction without consuming twice
     /// or rejecting its already-reserved final allowance merely because RemainingOperations is zero.
     /// Never cache a decision or grant additional budget from this check.
-    /// Application scope requires null StateSpaceId and is required for global definition publication.
-    /// StateSpace scope requires the exact host state space. Scope kinds never imply one another:
-    /// a narrow execution grant cannot publish global definitions, nor can an application authoring
-    /// grant execute in arbitrary states. The operation owner determines the actual mutation scope.
+    /// Application scope requires null StateSpaceId and is required for global definition publication
+    /// and state-free pure execution. Pure execution also requires Read, permits no effect kinds and
+    /// creates no world-state commit. StateSpace scope requires the exact host state space. Scope
+    /// kinds never imply one another: a state execution grant cannot publish global definitions,
+    /// nor can an application authoring grant execute in arbitrary states. The operation owner
+    /// determines the actual mutation scope.
     /// Neither scope grants global system procedure authoring. That remains operator-only or
     /// unavailable until a separate system-level policy exists; ApplicationIdentifier.System is
     /// not an installed application grant target.

@@ -68,7 +68,10 @@ public static class StandingGrantContractRules
             Fail("INVALID_STANDING_GRANT_TARGETS", "Definition targets must have distinct identities.");
         var effects = Distinct(requirement.EffectKinds, StandingGrantLimits.EffectKinds, "INVALID_STANDING_GRANT_EFFECTS");
         foreach (var effect in effects) Id(effect, "INVALID_STANDING_GRANT_EFFECTS");
-        if (requirement.Capability is StandingGrantCapability.Read or StandingGrantCapability.ReadTask or StandingGrantCapability.CancelTask && effects.Count != 0) Fail("INVALID_STANDING_GRANT_EFFECTS", "Pure reads and task reads/cancellation cannot request effects.");
+        if ((requirement.Capability is StandingGrantCapability.Read or StandingGrantCapability.ReadTask or StandingGrantCapability.CancelTask
+             || requirement is { Capability: StandingGrantCapability.Execute, Scope: StandingGrantScope.Application })
+            && effects.Count != 0)
+            Fail("INVALID_STANDING_GRANT_EFFECTS", "Pure application execution, reads and task control cannot request effects.");
         var taskCapability = requirement.Capability is StandingGrantCapability.ReadTask or StandingGrantCapability.CancelTask;
         if (taskCapability != (requirement.Task is not null)) Fail("INVALID_STANDING_GRANT_TASK", "Task target presence must match the task capability.");
         if (requirement.Task is not null) ValidateTask(host, requirement.Task, targets);
@@ -145,7 +148,7 @@ public static class StandingGrantContractRules
             || task.SelectedDefinition.Fingerprint != targets[0].ContentFingerprint)
             Fail("INVALID_STANDING_GRANT_TASK", "The stored task tuple does not match the host and exact target.");
     }
-    private static bool ScopeAllows(StandingGrantCapability cap, StandingGrantScope scope) => cap switch { StandingGrantCapability.Author or StandingGrantCapability.Validate or StandingGrantCapability.Activate => scope == StandingGrantScope.Application, StandingGrantCapability.Execute or StandingGrantCapability.ReadTask or StandingGrantCapability.CancelTask => scope == StandingGrantScope.StateSpace, StandingGrantCapability.Read => true, _ => false };
+    private static bool ScopeAllows(StandingGrantCapability cap, StandingGrantScope scope) => cap switch { StandingGrantCapability.Author or StandingGrantCapability.Validate or StandingGrantCapability.Activate => scope == StandingGrantScope.Application, StandingGrantCapability.Execute or StandingGrantCapability.Read => true, StandingGrantCapability.ReadTask or StandingGrantCapability.CancelTask => scope == StandingGrantScope.StateSpace, _ => false };
     private static void ScopePair(StandingGrantScope scope, string? state)
     {
         if (scope == StandingGrantScope.Application && state is null) return;

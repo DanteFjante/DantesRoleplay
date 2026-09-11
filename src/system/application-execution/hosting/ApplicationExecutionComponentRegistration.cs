@@ -17,6 +17,7 @@ public static class ApplicationExecutionComponentRegistration
         .AddScoped<IApplicationMechanicProjectionMappingResolver, ApplicationMechanicProjectionMappingResolver>()
         .AddScoped<IApplicationMechanicEvaluator, ApplicationMechanicEvaluator>()
         .AddScoped<IApplicationEcsEffectBatchBuilder, ApplicationEcsEffectBatchBuilder>()
+        .AddScoped<IApplicationPureActionExecutor, ApplicationPureActionExecutor>()
         .AddScoped<IApplicationActionInvocationAdapter, ApplicationActionInvocationAdapter>()
         .AddScoped<IApplicationReadOnlyServiceDefinitionReader, ApplicationReadOnlyServiceDefinitionReader>()
         .AddScoped<IApplicationReadOnlyServiceInvocationAdapter, ApplicationReadOnlyServiceInvocationAdapter>()

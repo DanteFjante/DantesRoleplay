@@ -6,12 +6,13 @@ using DantesRoleplay.Operations;
 
 namespace DantesRoleplay.ApplicationExecution;
 
-/// <summary>Host-facing root-atomic action adapter; child and workflow execution are not implicit.</summary>
+/// <summary>Host-facing atomic action adapter for state commits and application-scoped pure computation.</summary>
 internal sealed class ApplicationActionInvocationAdapter(
     IInteractionAuthorizationPolicy authorization,
     IStateSpaceRegistry stateSpaces,
     IApplicationActionRunner actions,
-    IOperationLog operations) : IApplicationActionInvocationAdapter
+    IOperationLog operations,
+    IApplicationPureActionExecutor? pureActions = null) : IApplicationActionInvocationAdapter
 {
     public async Task<InteractionInvocationResult> ExecuteAsync(ApplicationActionInvocationRequest request,
         CancellationToken cancellationToken = default)
@@ -24,6 +25,11 @@ internal sealed class ApplicationActionInvocationAdapter(
                 return InteractionInvocationResult.Unavailable("ACTION_PROFILE_UNSUPPORTED", "The requested action profile is unavailable.");
             if (request.Host.ParentCommandId is not null)
                 return InteractionInvocationResult.Unavailable("ATOMIC_CHILD_UNSUPPORTED", "Atomic child proposals are not executable in this adapter.");
+            if (request.Host.StateSpaceId is null && request.Host.StateRevision is null)
+                return pureActions is null
+                    ? InteractionInvocationResult.Failed(
+                        "INVOCATION_STATE_SCOPE_REQUIRED", "The action requires a state scope.")
+                    : await pureActions.ExecuteAsync(request, cancellationToken);
             if (request.Host.StateSpaceId is not { } stateSpaceId || request.Host.StateRevision is not { } stateRevision)
                 return InteractionInvocationResult.Failed(
                     "INVOCATION_STATE_SCOPE_REQUIRED", "The action requires a state scope.");

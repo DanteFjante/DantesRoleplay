@@ -91,7 +91,6 @@ public sealed class StandingGrantContractRulesTests
 
     [Theory]
     [InlineData(StandingGrantCapability.Author, StandingGrantScope.StateSpace)]
-    [InlineData(StandingGrantCapability.Execute, StandingGrantScope.Application)]
     [InlineData(StandingGrantCapability.ReadTask, StandingGrantScope.Application)]
     [InlineData(StandingGrantCapability.CancelTask, StandingGrantScope.Application)]
     public void Invalid_capability_scope_is_rejected(StandingGrantCapability capability, StandingGrantScope scope)
@@ -136,6 +135,30 @@ public sealed class StandingGrantContractRulesTests
         var error = Assert.Throws<InteractionContractException>(() => StandingGrantContractRules.ValidateRequirement(
             host, requirement with { EffectKinds = ["component.set"] }));
         Assert.Equal("INVALID_STANDING_GRANT_EFFECTS", error.Code);
+    }
+
+    [Fact]
+    public void Application_execute_is_pure_and_state_space_execute_retains_effect_authority()
+    {
+        var applicationHost = InteractionInvocationHost.ForApplication(
+            Host().Principal, Host().ApplicationRevision, "grant", "command",
+            InteractionExecutionProfile.Atomic, new(1, DateTime.UtcNow.AddMinutes(1)));
+        var target = Target();
+        StandingGrantContractRules.ValidateConfiguration(new(
+            "grant", "family", 1, Hash, "principal", App, StandingGrantScope.Application, null,
+            [StandingGrantCapability.Read, StandingGrantCapability.Execute],
+            new(StandingGrantDefinitionMode.ExactIds, [], []), [], 1, DateTime.UtcNow, false, "operation"));
+        StandingGrantContractRules.ValidateRequirement(applicationHost,
+            new(StandingGrantCapability.Execute, StandingGrantScope.Application, [target], []));
+        var pureEffect = Assert.Throws<InteractionContractException>(() =>
+            StandingGrantContractRules.ValidateRequirement(applicationHost,
+                new(StandingGrantCapability.Execute, StandingGrantScope.Application,
+                    [target], ["component.set"])));
+        Assert.Equal("INVALID_STANDING_GRANT_EFFECTS", pureEffect.Code);
+
+        StandingGrantContractRules.ValidateRequirement(Host(),
+            new(StandingGrantCapability.Execute, StandingGrantScope.StateSpace,
+                [target], ["component.set"]));
     }
 
     [Theory]
