@@ -44,8 +44,11 @@ with its stable code. Results cannot be deserialized as new authority.
 Completed reads retain state-space, resolution, schema, result and source-revision fingerprints.
 Computation/AI output instead names its validated runner/task result evidence. A committed result
 requires an authoritative operation receipt; audit-only recovery marks `EffectDetailsAvailable`
-false instead of implying that no effects occurred. Failed/cancelled workflows can retain explicitly
-labelled previous commits. An unresolved execution carries `RecoveryIdentity` separately from its
+false instead of implying that no effects occurred. Completed computations, pending tasks and
+failed/cancelled workflows can retain explicitly labelled previous commits through the optional
+`previousCommits` argument. Completion still needs result evidence, and pending still needs a durable
+handle; earlier commits do not prove remaining work succeeded. Read results, proposals, root commit
+receipts and unavailable results do not carry prior workflow commits. An unresolved execution carries `RecoveryIdentity` separately from its
 stable error code; reconcile that identity before deciding whether to retry. No model report is a
 commit receipt. Command identity remains stable across attempts; changing a canonical command
 payload conflicts with a previously committed command.

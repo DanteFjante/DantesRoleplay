@@ -63,6 +63,46 @@ public sealed class InteractionInvocationWireTests
     }
 
     [Fact]
+    public void Completed_computation_retains_prior_commits_without_changing_its_evidence_contract()
+    {
+        var effects = new List<ApplicationEcsEffectReceipt> { new(0, "component.set", "entity.1", "fixture.value", 2) };
+        var result = InteractionInvocationResult.CompletedComputation("{\"answer\":42}", "runner.result.1",
+            [new(Operation, Hash, effects)]);
+        effects.Clear();
+
+        Assert.Equal("runner.result.1", result.CompletionEvidenceReference);
+        Assert.Null(result.ReadEvidence);
+        Assert.Single(result.PreviousCommits.Single().Effects);
+        using var document = JsonDocument.Parse(result.ToJson());
+        Assert.Equal(Operation, document.RootElement.GetProperty("previousCommits")[0].GetProperty("operationId").GetString());
+    }
+
+    [Fact]
+    public void Pending_workflow_retains_prior_commits_without_claiming_completion()
+    {
+        var result = InteractionInvocationResult.Pending(new SystemTaskDurableHandle("task.1", "command.1"),
+            [new(Operation, Hash, [])]);
+
+        Assert.NotNull(result.TaskHandle);
+        Assert.Null(result.CompletionEvidenceReference);
+        Assert.Single(result.PreviousCommits);
+        Assert.Equal("pending", result.WireTag);
+    }
+
+    [Fact]
+    public void Workflow_prior_commits_remain_bounded()
+    {
+        var commits = Enumerable.Range(0, InteractionContractLimits.EvidenceItems + 1)
+            .Select(_ => new InteractionInvocationCommitReceipt(Operation, Hash, []))
+            .ToArray();
+
+        Assert.Throws<InteractionContractException>(() =>
+            InteractionInvocationResult.CompletedComputation("{\"answer\":42}", "runner.result.1", commits));
+        Assert.Throws<InteractionContractException>(() =>
+            InteractionInvocationResult.Pending(new SystemTaskDurableHandle("task.1", "command.1"), commits));
+    }
+
+    [Fact]
     public void A_recovered_commit_distinguishes_unavailable_effect_details_from_an_empty_effect_batch()
     {
         var recovered = InteractionInvocationResult.Committed(new(Operation, Hash, [], EffectDetailsAvailable: false));

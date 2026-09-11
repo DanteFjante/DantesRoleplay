@@ -210,18 +210,20 @@ public sealed record InteractionInvocationResult
     public static InteractionInvocationResult Completed(string dataJson, InteractionInvocationReadEvidence evidence) =>
         new(InteractionInvocationResultTag.Completed, "INVOCATION_COMPLETED", "The invocation completed.",
             dataJson, evidence, null, null, null, null, null);
-    public static InteractionInvocationResult CompletedComputation(string dataJson, string evidenceReference) =>
+    public static InteractionInvocationResult CompletedComputation(string dataJson, string evidenceReference,
+        IReadOnlyList<InteractionInvocationCommitReceipt>? previousCommits = null) =>
         new(InteractionInvocationResultTag.Completed, "INVOCATION_COMPLETED", "The invocation completed.",
-            dataJson, null, null, null, null, evidenceReference, null);
+            dataJson, null, null, null, null, evidenceReference, previousCommits);
     public static InteractionInvocationResult Proposed(InteractionProposalProjection proposal) =>
         new(InteractionInvocationResultTag.Proposed, "INVOCATION_PROPOSED", "The invocation produced a proposal.",
             null, null, null, proposal, null, null, null);
     public static InteractionInvocationResult Committed(InteractionInvocationCommitReceipt receipt) =>
         new(InteractionInvocationResultTag.Committed, "INVOCATION_COMMITTED", "The invocation committed.",
             null, null, receipt, null, null, null, null);
-    public static InteractionInvocationResult Pending(SystemTaskDurableHandle handle) =>
+    public static InteractionInvocationResult Pending(SystemTaskDurableHandle handle,
+        IReadOnlyList<InteractionInvocationCommitReceipt>? previousCommits = null) =>
         new(InteractionInvocationResultTag.Pending, "INVOCATION_PENDING", "The invocation is pending.",
-            null, null, null, null, handle, null, null);
+            null, null, null, null, handle, null, previousCommits);
     public static InteractionInvocationResult Failed(string code, string message,
         IReadOnlyList<InteractionInvocationCommitReceipt>? previousCommits = null,
         ApplicationEcsExecutionIdentity? recoveryIdentity = null) =>
@@ -253,8 +255,10 @@ public sealed record InteractionInvocationResult
             _ => DataJson is null && ReadEvidence is null && Receipt is null && Proposal is null && TaskHandle is null && CompletionEvidenceReference is null
         };
         if (!shape) throw new InteractionContractException("INVALID_INVOCATION_RESULT", "The invocation result carries fields outside its tag.");
-        if (Tag is not (InteractionInvocationResultTag.Failed or InteractionInvocationResultTag.Cancelled) && PreviousCommits.Count != 0)
-            throw new InteractionContractException("INVALID_INVOCATION_RESULT", "Only failed or cancelled results may retain prior commits.");
+        var permitsPriorCommits = Tag is InteractionInvocationResultTag.Pending or InteractionInvocationResultTag.Failed or InteractionInvocationResultTag.Cancelled
+            || (Tag == InteractionInvocationResultTag.Completed && CompletionEvidenceReference is not null);
+        if (!permitsPriorCommits && PreviousCommits.Count != 0)
+            throw new InteractionContractException("INVALID_INVOCATION_RESULT", "Only completed computations, pending, failed, or cancelled results may retain prior commits.");
         if (PreviousCommits.Count > InteractionContractLimits.EvidenceItems)
             throw new InteractionContractException("INVALID_INVOCATION_RESULT", "The prior commit collection exceeds its bound.");
         if (RecoveryIdentity is not null)
