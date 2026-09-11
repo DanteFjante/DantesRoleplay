@@ -281,13 +281,18 @@ public sealed record SystemInnerWorkerAiUsageReport
 {
     [JsonConstructor]
     public SystemInnerWorkerAiUsageReport(string reservationRecordReference, SystemTaskAttemptIdentity attempt,
-        long? inputTokens, long? outputTokens, long toolCalls)
+        long? inputTokens, long? outputTokens, long toolCalls, long? totalTokens = null, bool isComplete = false)
     {
         ReservationRecordReference = InteractionGuard.Identifier(reservationRecordReference, nameof(reservationRecordReference));
         Attempt = attempt ?? throw new ArgumentNullException(nameof(attempt));
-        if (inputTokens < 0 || outputTokens < 0 || toolCalls < 0)
+        if (inputTokens < 0 || outputTokens < 0 || toolCalls < 0 || totalTokens < 0)
             throw new InteractionContractException("INNER_AI_USAGE_INVALID", "Reported usage cannot be negative.");
-        try { _ = checked(inputTokens.GetValueOrDefault() + outputTokens.GetValueOrDefault()); }
+        try
+        {
+            var observedComponents = checked(inputTokens.GetValueOrDefault() + outputTokens.GetValueOrDefault());
+            if (totalTokens.HasValue && observedComponents > totalTokens.Value)
+                throw new InteractionContractException("INNER_AI_USAGE_INVALID", "Observed components exceed total-token evidence.");
+        }
         catch (OverflowException)
         {
             throw new InteractionContractException("INNER_AI_USAGE_INVALID", "Reported token usage cannot fit the accounting counter.");
@@ -295,6 +300,8 @@ public sealed record SystemInnerWorkerAiUsageReport
         InputTokens = inputTokens;
         OutputTokens = outputTokens;
         ToolCalls = toolCalls;
+        TotalTokens = totalTokens;
+        IsComplete = isComplete;
     }
 
     public string ReservationRecordReference { get; }
@@ -302,6 +309,8 @@ public sealed record SystemInnerWorkerAiUsageReport
     public long? InputTokens { get; }
     public long? OutputTokens { get; }
     public long ToolCalls { get; }
+    public long? TotalTokens { get; }
+    public bool IsComplete { get; }
 }
 
 /// <summary>
@@ -325,8 +334,8 @@ public sealed record SystemInnerWorkerAiUsageReconciliation(
         ArgumentNullException.ThrowIfNull(report);
         if (reservation.RecordReference != report.ReservationRecordReference || reservation.Attempt != report.Attempt)
             throw new InteractionContractException("INNER_AI_USAGE_IDENTITY_MISMATCH", "Usage does not refer to the reserved attempt and fence.");
-        var known = report.InputTokens.HasValue && report.OutputTokens.HasValue;
-        var observed = checked(report.InputTokens.GetValueOrDefault() + report.OutputTokens.GetValueOrDefault());
+        var known = report.IsComplete && report.TotalTokens.HasValue;
+        var observed = report.TotalTokens ?? checked(report.InputTokens.GetValueOrDefault() + report.OutputTokens.GetValueOrDefault());
         var tokens = known ? observed : Math.Max(reservation.ProviderTokens, observed);
         var calls = known ? report.ToolCalls : Math.Max(reservation.ToolCalls, report.ToolCalls);
         var exceeded = observed > reservation.ProviderTokens || report.ToolCalls > reservation.ToolCalls;

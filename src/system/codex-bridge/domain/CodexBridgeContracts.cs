@@ -96,7 +96,9 @@ public sealed record CodexProtocolEvent(
     string Status = "",
     string ErrorCode = "",
     string ErrorMessage = "",
-    CodexProtocolTokenUsage? Usage = null);
+    CodexProtocolTokenUsage? Usage = null,
+    string ThreadId = "",
+    string TurnId = "");
 
 public interface ICodexAppServerSession : IAsyncDisposable
 {
