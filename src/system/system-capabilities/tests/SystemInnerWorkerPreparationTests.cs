@@ -114,6 +114,20 @@ public sealed class SystemInnerWorkerPreparationTests
     }
 
     [Fact]
+    public async Task Host_restrictive_provider_limits_are_preserved_and_invalid_additions_fail()
+    {
+        var configuration = new AiRequest("provider", "model", [new(AiMessageRole.User, "ignored")],
+            MaximumToolCalls: 0, MaximumResponseBytes: 17, MaximumDuration: TimeSpan.FromSeconds(2));
+        var prepared = await PrepareAsync(configuration: configuration);
+        Assert.Equal(0, prepared.Request.MaximumToolCalls);
+        Assert.Equal(17, prepared.Request.MaximumResponseBytes);
+        Assert.Equal(TimeSpan.FromSeconds(2), prepared.Request.MaximumDuration);
+        await Assert.ThrowsAsync<InteractionContractException>(() => PrepareAsync(configuration: configuration with { MaximumResponseBytes = 0 }));
+        await Assert.ThrowsAsync<InteractionContractException>(() => PrepareAsync(configuration: configuration with { MaximumToolCalls = 17 }));
+        await Assert.ThrowsAsync<InteractionContractException>(() => PrepareAsync(configuration: configuration with { MaximumDuration = TimeSpan.Zero }));
+    }
+
+    [Fact]
     public async Task Oversized_combined_prompt_is_rejected()
     {
         var hugeInput = "{\"text\":\"" + new string('x', InteractionContractLimits.JsonBytes - 20) + "\"}";
@@ -185,7 +199,8 @@ public sealed class SystemInnerWorkerPreparationTests
         DateTime? deadline = null,
         bool exhaustBudget = false,
         bool scopeMismatch = false,
-        IReadOnlyList<ProcedureDetail>? procedures = null)
+        IReadOnlyList<ProcedureDetail>? procedures = null,
+        AiRequest? configuration = null)
     {
         var host = Host(profile, deadline ?? DateTime.UtcNow.AddMinutes(1));
         if (exhaustBudget)
@@ -198,7 +213,7 @@ public sealed class SystemInnerWorkerPreparationTests
             new ContextMaterializerStub(pack ?? Pack(("scope:one", "one"), ("capability:two", "two"), ("knowledge:three", "three"))));
         return await adapter.PrepareAsync(new(request,
             new("host.profile", "Host profile", "Host identity", "host instructions must not survive"),
-            new("provider", "model", [new(AiMessageRole.System, "caller system text")], AiRequestKind.Message,
+            configuration ?? new("provider", "model", [new(AiMessageRole.System, "caller system text")], AiRequestKind.Message,
                 AiReasoningEffort.Low, "{\"type\":\"string\"}", ["caller.tool"], 99, 200_000),
             envelope, scopeMismatch
                 ? new InteractionAuthorizationRequest(host.Principal, host.ApplicationRevision.ApplicationId, "state.2", InteractionCapability.Plan, "correlation.1")

@@ -130,11 +130,18 @@ internal sealed class SystemInnerWorkerPreparation(
     {
         if (string.IsNullOrWhiteSpace(configuration.Provider) || string.IsNullOrWhiteSpace(configuration.Model)
             || !Enum.IsDefined(configuration.Reasoning)
-            || configuration.MaximumToolRounds < 0 || configuration.MaximumOutputTokens < 1)
+            || configuration.MaximumToolRounds < 0 || configuration.MaximumOutputTokens < 1
+            || configuration.MaximumToolCalls is < 0 or > 16
+            || configuration.MaximumResponseBytes is < 1 or > 1_048_576
+            || configuration.MaximumDuration is { } duration && (duration <= TimeSpan.Zero || duration > TimeSpan.FromMinutes(10)))
             throw Failure("WORKER_HOST_CONFIGURATION_INVALID", "The host AI configuration is invalid.");
-        return new AiRequest(configuration.Provider, configuration.Model,
-            [new AiMessage(AiMessageRole.User, prompt)], AiRequestKind.Task, configuration.Reasoning,
-            schema, tools, Math.Min(configuration.MaximumToolRounds, 16), Math.Min(configuration.MaximumOutputTokens, 131_072));
+        return configuration with
+        {
+            Messages = [new AiMessage(AiMessageRole.User, prompt)], Kind = AiRequestKind.Task,
+            ResponseSchemaJson = schema, AllowedTools = tools,
+            MaximumToolRounds = Math.Min(configuration.MaximumToolRounds, 16),
+            MaximumOutputTokens = Math.Min(configuration.MaximumOutputTokens, 131_072)
+        };
     }
 
     private static string BuildPrompt(string inputJson, IReadOnlyList<SelectedContextItem> context)
