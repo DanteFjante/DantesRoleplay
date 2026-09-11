@@ -282,20 +282,31 @@ internal static class ApplicationCandidateCapabilityHost
         CancellationToken cancellationToken) => CreateAsync(db, applications, context, applicationId,
             [capability], commandId, profile, 1, cancellationToken, TimeSpan.FromSeconds(10));
 
-    internal static async Task<(IReadOnlyList<InteractionInvocationHost> Hosts, string Code)> CreateAsync(
+    internal static Task<(IReadOnlyList<InteractionInvocationHost> Hosts, string Code)> CreateAsync(
         DantesRoleplayDbContext db, IApplicationRegistry applications,
         SystemCapabilityInvocationContext context, ApplicationIdentifier applicationId,
         StandingGrantCapability capability, string commandId, InteractionExecutionProfile profile,
         int requiredOperations, CancellationToken cancellationToken)
-        => await CreateAsync(db, applications, context, applicationId, [capability], commandId,
+        => CreateAsync(db, applications, context, applicationId, [capability], commandId,
             profile, requiredOperations, cancellationToken, TimeSpan.FromSeconds(10));
+
+    internal static Task<(IReadOnlyList<InteractionInvocationHost> Hosts, string Code)> CreateAsync(
+        DantesRoleplayDbContext db, IApplicationRegistry applications,
+        SystemCapabilityInvocationContext context, ApplicationIdentifier applicationId,
+        IReadOnlyCollection<StandingGrantCapability> capabilities, string commandId,
+        InteractionExecutionProfile profile, int requiredOperations,
+        Func<StandingGrantRevision, bool> eligibleGrant,
+        CancellationToken cancellationToken) => CreateAsync(db, applications, context,
+            applicationId, capabilities, commandId, profile, requiredOperations, cancellationToken,
+            TimeSpan.FromSeconds(10), eligibleGrant);
 
     internal static async Task<(IReadOnlyList<InteractionInvocationHost> Hosts, string Code)> CreateAsync(
         DantesRoleplayDbContext db, IApplicationRegistry applications,
         SystemCapabilityInvocationContext context, ApplicationIdentifier applicationId,
         IReadOnlyCollection<StandingGrantCapability> capabilities, string commandId,
         InteractionExecutionProfile profile, int requiredOperations, CancellationToken cancellationToken,
-        TimeSpan? maximumDuration = null)
+        TimeSpan? maximumDuration = null,
+        Func<StandingGrantRevision, bool>? eligibleGrant = null)
     {
         if (context is null || !context.Principal.Verified
             || context.ApplicationId is not null && context.ApplicationId != applicationId)
@@ -310,6 +321,7 @@ internal static class ApplicationCandidateCapabilityHost
         if (required.Length == 0) return ([], "STANDING_GRANT_DENIED");
         var capable = grants.Where(value => required.All(value.Capabilities.Contains)).ToArray();
         var eligible = capable.Where(value => value.MaximumOperations >= requiredOperations)
+            .Where(value => eligibleGrant is null || eligibleGrant(value))
             .OrderBy(value => value.Definitions.Mode == StandingGrantDefinitionMode.ExactIds ? 0 : 1)
             .ThenBy(value => value.GrantId, StringComparer.Ordinal).ThenBy(value => value.Revision)
             .ToArray();
@@ -334,8 +346,12 @@ internal static class ApplicationCandidateCapabilityHost
         "STANDING_GRANT_NOT_CURRENT" or "STANDING_GRANT_INVALID";
 
     internal static string ReadCommand(SystemCapabilityInvocationContext context, JsonElement input) =>
+        ReadCommand(SystemCapabilityIds.ApplicationCandidateInspect, context, input);
+
+    internal static string ReadCommand(string capabilityId,
+        SystemCapabilityInvocationContext context, JsonElement input) =>
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
-            "system.application-candidate.inspect\n" + context.Principal.PrincipalId + "\n"
+            capabilityId + "\n" + context.Principal.PrincipalId + "\n"
             + context.CorrelationId + "\n" + ApplicationCandidateCapabilitySchemas.Fingerprint(input))))[..32]
             .ToLowerInvariant();
 

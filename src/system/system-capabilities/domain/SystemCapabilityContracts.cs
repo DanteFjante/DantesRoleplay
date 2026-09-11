@@ -22,6 +22,7 @@ public static class SystemCapabilityIds
     public const string ApplicationActivate = "system.application.activate";
     public const string ApplicationCandidateInspect = "system.application-candidate.inspect";
     public const string ApplicationCandidateIntentUpdate = "system.application-candidate.intent-update";
+    public const string ApplicationCandidateCatalogCompare = "system.application-candidate.catalog-compare";
     public const string ApplicationCandidateWrite = "system.application-candidate.write";
     public const string ApplicationCandidateValidate = "system.application-candidate.validate";
     public const string ApplicationCandidateActivate = "system.application-candidate.activate";
@@ -54,6 +55,7 @@ public static class ApplicationCandidateCapabilityAccess
     public static bool Supports(string? capabilityId) => capabilityId is
         SystemCapabilityIds.ApplicationCandidateInspect or
         SystemCapabilityIds.ApplicationCandidateIntentUpdate or
+        SystemCapabilityIds.ApplicationCandidateCatalogCompare or
         SystemCapabilityIds.ApplicationCandidateWrite or
         SystemCapabilityIds.ApplicationCandidateValidate or
         SystemCapabilityIds.ApplicationCandidateActivate or

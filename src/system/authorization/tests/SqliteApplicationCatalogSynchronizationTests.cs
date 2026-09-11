@@ -1,5 +1,7 @@
 using System.Text.Json;
 using DantesRoleplay.ApplicationActivation;
+using DantesRoleplay.Applications;
+using DantesRoleplay.CatalogNamespaces;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.DataAccess.Bootstrap;
 using DantesRoleplay.DataAccess.Catalog;
@@ -134,6 +136,31 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
     }
 
     [Fact]
+    public async Task Catalog_comparison_evidence_can_be_used_by_another_currently_authorized_author()
+    {
+        await using var db = fixture.CreateContext();
+        var setup = Setup(db); await ActivateAsync(setup);
+        await SeedGrantAsync(db, [StandingGrantCapability.Author, StandingGrantCapability.Read]);
+        var prepared = await PrepareSynchronizationAsync(db, setup, "Reviewed catalog edit.");
+        var comparison = await prepared.Service.CompareAsync(
+            ApplicationHost(setup, "catalog-shared-evidence"), prepared.CompareRequest);
+        const string secondPrincipal = "principal.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+        await SeedAdditionalAuthorGrantAsync(db, secondPrincipal);
+        var revision = new ApplicationRevision(Application, 1, setup.Applications.Get(Application)!.Fingerprint, []);
+        var secondHost = InteractionInvocationHost.ForApplication(
+            TrustedPrincipalContext.VerifiedPrincipal(secondPrincipal, "test"), revision, "grant-b@1",
+            "catalog-shared-candidate", InteractionExecutionProfile.Atomic,
+            new InteractionInvocationBudget(1, DateTime.UtcNow.AddMinutes(1)));
+
+        var result = await Service(db, setup, synchronization: prepared.Service).WriteCandidateAsync(
+            secondHost, Candidate(prepared, EvidenceReference(comparison)));
+
+        Assert.Equal(InteractionInvocationResultTag.Committed, result.Tag);
+        var row = Assert.Single(await db.Set<ApplicationCandidateRevisionRecord>().AsNoTracking().ToArrayAsync());
+        Assert.Equal("grant-b@1", row.AuthorGrantReference);
+    }
+
+    [Fact]
     public async Task Catalog_candidate_rejects_bytes_that_differ_from_the_reviewed_selection()
     {
         await using var db = fixture.CreateContext();
@@ -249,6 +276,28 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             Instructions = "1. " + instruction, Constraints = "- Preserve it.",
             Status = ProcedureStatus.Active, CreatedBy = "test", ChangeNote = "Synchronization fixture."
         });
+    }
+
+    private static async Task SeedAdditionalAuthorGrantAsync(
+        DantesRoleplayDbContext db, string principal)
+    {
+        var grant = new StandingGrantRevision("grant-b@1", "grant-b", 1, new string('0', 64), principal,
+            Application, StandingGrantScope.Application, null, [StandingGrantCapability.Author],
+            new(StandingGrantDefinitionMode.ApplicationOwned, [],
+                [new("demo.runtime", true, [CatalogNamespaceKinds.Procedure])]), [], 1,
+            DateTime.UtcNow.AddMinutes(10), false, "grant-b-operation");
+        db.Add(new Operation { Id = grant.IssuedByOperationId, Timestamp = DateTime.UtcNow, Tool = "test" });
+        db.Add(new StandingGrantRevisionRecord
+        {
+            GrantId = grant.GrantId, Revision = grant.Revision, GrantReference = grant.GrantReference,
+            PrincipalReference = grant.PrincipalReference, ApplicationId = grant.ApplicationId.Value,
+            Scope = "application", PermissionsJson = StandingGrantRevisionCanonicalization.PermissionsJson(grant),
+            ContentFingerprint = StandingGrantRevisionCanonicalization.ContentFingerprint(grant),
+            MaximumOperations = grant.MaximumOperations, ExpiresAtUtc = grant.ExpiresAtUtc,
+            IssuedByOperationId = grant.IssuedByOperationId
+        });
+        db.Add(new StandingGrantCurrentRecord { GrantId = grant.GrantId, Revision = grant.Revision });
+        await db.SaveChangesAsync();
     }
 
     private static ApplicationCandidateWriteRequest Candidate(SynchronizationFixture fixture, string reference) =>

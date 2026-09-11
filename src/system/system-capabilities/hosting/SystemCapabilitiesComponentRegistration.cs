@@ -28,6 +28,7 @@ internal static class SystemCapabilitiesComponentRegistration
         services.AddScoped<ISystemReadCapabilityHandler, DependenciesSystemCapabilityHandler>();
         services.AddScoped<ISystemReadCapabilityHandler, ApplicationCandidateInspectCapabilityHandler>();
         services.AddScoped<ISystemReadCapabilityHandler, ApplicationCandidateReviewReadCapabilityHandler>();
+        services.AddScoped<ISystemReadCapabilityHandler, ApplicationCandidateCatalogCompareCapabilityHandler>();
         foreach (var id in new[]
         {
             SystemCapabilityIds.ApplicationRegister,

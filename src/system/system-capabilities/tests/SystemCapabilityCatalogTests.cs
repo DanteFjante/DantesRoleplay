@@ -29,6 +29,7 @@ public sealed class SystemCapabilityCatalogTests
 
         Assert.Equal([
             SystemCapabilityIds.ApplicationCandidateActivate,
+            SystemCapabilityIds.ApplicationCandidateCatalogCompare,
             SystemCapabilityIds.ApplicationCandidateInspect,
             SystemCapabilityIds.ApplicationCandidateIntentUpdate,
             SystemCapabilityIds.ApplicationCandidateRecover,
@@ -58,7 +59,7 @@ public sealed class SystemCapabilityCatalogTests
             SystemCapabilityIds.StateSpaceCreate,
             SystemCapabilityIds.StateSpaceUpgrade
         ], descriptors.Select(value => value.Id).ToArray());
-        Assert.Equal(10, descriptors.Count(value => value.Mode == SystemCapabilityMode.Read));
+        Assert.Equal(11, descriptors.Count(value => value.Mode == SystemCapabilityMode.Read));
         Assert.Equal(19, descriptors.Count(value => value.Mode == SystemCapabilityMode.Write));
         Assert.All(descriptors, descriptor =>
         {

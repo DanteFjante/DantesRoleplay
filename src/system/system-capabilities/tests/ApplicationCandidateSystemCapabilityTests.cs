@@ -229,14 +229,13 @@ public sealed class ApplicationCandidateSystemCapabilityTests
             SystemCapabilityIds.ApplicationCandidateValidate, input, "candidate-validation-2", "web-request");
 
         Assert.True(discovery.Ok, discovery.Error?.Message);
-        Assert.Equal(9, discovery.Capabilities.Count);
+        Assert.Equal(10, discovery.Capabilities.Count);
         Assert.DoesNotContain(discovery.Capabilities, value =>
             value.Id == SystemCapabilityIds.StandingGrantAdmin || value.RequiresConfirmation);
-        Assert.Equal(StandingGrantCapability.Validate, discovery.Capabilities.Single(value =>
-            value.Id == SystemCapabilityIds.ApplicationCandidateValidate).RequiredStandingGrantCapability);
+        Assert.Equal([StandingGrantCapability.Validate], discovery.Capabilities.Single(value =>
+            value.Id == SystemCapabilityIds.ApplicationCandidateValidate).RequiredStandingGrantCapabilities);
         var reviewSubmit = discovery.Capabilities.Single(value =>
             value.Id == SystemCapabilityIds.ApplicationCandidateReviewSubmit);
-        Assert.Equal(StandingGrantCapability.Validate, reviewSubmit.RequiredStandingGrantCapability);
         Assert.Equal([StandingGrantCapability.Read, StandingGrantCapability.Validate],
             reviewSubmit.RequiredStandingGrantCapabilities);
         Assert.True(reviewSubmit.RequiresIdempotencyKey);

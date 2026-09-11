@@ -23,13 +23,9 @@ public sealed record ApplicationCandidateCapabilityDescriptor(
     string InputSchemaJson,
     string OutputSchemaJson,
     IReadOnlyList<string> ProcedureIds,
-    StandingGrantCapability RequiredStandingGrantCapability,
+    IReadOnlyList<StandingGrantCapability> RequiredStandingGrantCapabilities,
     bool RequiresConfirmation,
-    bool RequiresIdempotencyKey)
-{
-    public IReadOnlyList<StandingGrantCapability> RequiredStandingGrantCapabilities { get; init; } =
-        [RequiredStandingGrantCapability];
-}
+    bool RequiresIdempotencyKey);
 
 public sealed record ApplicationCandidateCapabilityDiscoveryResult(
     bool Ok,

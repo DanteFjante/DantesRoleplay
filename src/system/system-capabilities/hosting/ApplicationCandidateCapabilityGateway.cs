@@ -115,17 +115,15 @@ public sealed class ApplicationCandidateCapabilityGateway(ISystemCapabilityCatal
         var required = RequiredCapabilities(descriptor.Id);
         return new(descriptor.Id, descriptor.Version, descriptor.Fingerprint, descriptor.Owner,
             descriptor.Description, descriptor.ModeName, descriptor.InputSchemaJson, descriptor.OutputSchemaJson,
-            Array.AsReadOnly(descriptor.ProcedureIds.ToArray()), required[^1], RequiresConfirmation: false,
-            RequiresIdempotencyKey: descriptor.Mode == SystemCapabilityMode.Write)
-        {
-            RequiredStandingGrantCapabilities = required
-        };
+            Array.AsReadOnly(descriptor.ProcedureIds.ToArray()), required, RequiresConfirmation: false,
+            RequiresIdempotencyKey: descriptor.Mode == SystemCapabilityMode.Write);
     }
 
     private static StandingGrantCapability[] RequiredCapabilities(string id) => id switch
     {
         SystemCapabilityIds.ApplicationCandidateInspect => [StandingGrantCapability.Read],
         SystemCapabilityIds.ApplicationCandidateIntentUpdate => [StandingGrantCapability.Read, StandingGrantCapability.Author],
+        SystemCapabilityIds.ApplicationCandidateCatalogCompare => [StandingGrantCapability.Read, StandingGrantCapability.Author],
         SystemCapabilityIds.ApplicationCandidateWrite => [StandingGrantCapability.Author],
         SystemCapabilityIds.ApplicationCandidateValidate => [StandingGrantCapability.Validate],
         SystemCapabilityIds.ApplicationCandidateActivate => [StandingGrantCapability.Activate],
