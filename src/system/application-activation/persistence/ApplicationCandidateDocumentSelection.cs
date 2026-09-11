@@ -1,10 +1,26 @@
 using DantesRoleplay.CatalogNavigation;
+using DantesRoleplay.Applications;
+using DantesRoleplay.DataAccess;
+using Microsoft.EntityFrameworkCore;
 
 namespace DantesRoleplay.ApplicationActivation;
 
 /// <summary>Derives bounded authoring context from exact candidate/base metadata; never implies complete dependency coverage.</summary>
 internal static class ApplicationCandidateDocumentSelection
 {
+    internal static async Task<ActiveApplicationManifest?> ReadBaseAsync(DantesRoleplayDbContext db,
+        IApplicationActivationReader activations, ApplicationIdentifier applicationId, string? fingerprint, CancellationToken cancellationToken)
+    {
+        if (fingerprint is null) return null;
+        var revision = await db.Set<ApplicationActivationRevisionRecord>().AsNoTracking()
+            .Where(value => value.ApplicationId == applicationId.Value && value.ActivationFingerprint == fingerprint)
+            .Select(value => (int?)value.ActivationRevision).SingleOrDefaultAsync(cancellationToken);
+        var manifest = revision is null ? null : activations.ReadRevision(applicationId, revision.Value);
+        if (manifest is null || manifest.ActivationFingerprint != fingerprint || manifest.ApplicationId != applicationId)
+            throw new ApplicationActivationException("APPLICATION_CANDIDATE_BASE_UNAVAILABLE", "The pinned activation generation is unavailable.");
+        return manifest;
+    }
+
     internal static IReadOnlyList<string> ChangedPaths(IReadOnlyList<ActivatedApplicationDocument> documents,
         ActiveApplicationManifest? basis)
     {

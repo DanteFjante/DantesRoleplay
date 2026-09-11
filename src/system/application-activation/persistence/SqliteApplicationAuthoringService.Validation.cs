@@ -25,10 +25,7 @@ public sealed partial class SqliteApplicationAuthoringService
         var opened = false;
         try
         {
-            var canonical = InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
-            {
-                principal = host.Principal.PrincipalId, applicationId = candidate.ApplicationId.Value, host.CommandId, candidate
-            }));
+            var canonical = ApplicationCandidateOperationProof.CanonicalValidation(host, candidate);
             var commandFingerprint = InteractionCanonicalJson.Fingerprint("dantes-roleplay/application-candidate-validation/v1", canonical);
             var operationId = Id(host, candidate.ApplicationId, "validation");
             await db.Database.OpenConnectionAsync(cancellationToken); opened = true;
@@ -51,7 +48,8 @@ public sealed partial class SqliteApplicationAuthoringService
             var changed = ApplicationCandidateDocumentSelection.ChangedPaths(readback.Documents, basis);
             var changedDocuments = await ReadChangedAsync(readback, changed, cancellationToken);
             var targetsToValidate = new List<StandingGrantDefinitionTarget>();
-            foreach (var definition in Definitions(candidate.ApplicationId, changedDocuments, changed))
+            var definitions = Definitions(candidate.ApplicationId, changedDocuments, changed);
+            foreach (var definition in definitions)
             {
                 var resolved = await targets.ResolveCandidateReferenceAsync(host, candidate, definition, cancellationToken);
                 if (resolved.Status == StandingGrantTargetResolutionStatus.Unavailable) return InteractionInvocationResult.Unavailable(resolved.Code, "Candidate definition ownership is unavailable.");
@@ -68,14 +66,14 @@ public sealed partial class SqliteApplicationAuthoringService
                     && value.CandidateId == candidate.CandidateId && value.Revision == candidate.Revision
                     && value.CandidateFingerprint == candidate.ContentFingerprint && value.CanonicalCommandFingerprint == commandFingerprint,
                     cancellationToken);
-                if (validation is null || !ValidationEvidenceMatches(validation, prior.GuardEvidenceJson))
+                if (validation is null || !ApplicationCandidateOperationProof.ValidationMatches(prior, validation, candidate, definitions))
                     return InteractionInvocationResult.Unavailable("APPLICATION_CANDIDATE_RECEIPT_INCONSISTENT", "The stored validation receipt cannot be reconciled.");
                 await transaction.CommitAsync(cancellationToken);
                 return Receipt(operationId, commandFingerprint);
             }
             var operation = await operations.RecordAsync("application-candidate-validation", "Candidate validation is unavailable pending dependency preparation.",
                 true, subject: candidate.ApplicationId.Value, projectionJson: canonical,
-                guardEvidenceJson: InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(authority.Evidence)), id: operationId,
+                guardEvidenceJson: "{}", id: operationId,
                 cancellationToken: cancellationToken);
             var diagnostics = new[]
             {
@@ -96,11 +94,8 @@ public sealed partial class SqliteApplicationAuthoringService
                 DiagnosticsJson = InteractionCanonicalJson.Canonicalize(JsonSerializer.Serialize(diagnostics)), AlternativesJson = "[]"
             };
             db.Add(validationRow);
-            operation.GuardEvidenceJson = InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
-            {
-                authorization = authority.Evidence,
-                validationFingerprint = ValidationFingerprint(validationRow)
-            }));
+            operation.GuardEvidenceJson = ApplicationCandidateOperationProof.ValidationGuard(host, candidate, validationRow,
+                definitions, commandFingerprint);
             await db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             return Receipt(operationId, commandFingerprint);
@@ -117,21 +112,4 @@ public sealed partial class SqliteApplicationAuthoringService
         }
     }
 
-    internal static bool ValidationEvidenceMatches(ApplicationCandidateValidationRecord row, string? operationGuardJson)
-    {
-        if (string.IsNullOrWhiteSpace(operationGuardJson)) return false;
-        try
-        {
-            using var guard = JsonDocument.Parse(operationGuardJson);
-            return guard.RootElement.ValueKind == JsonValueKind.Object
-                && guard.RootElement.TryGetProperty("validationFingerprint", out var fingerprint)
-                && fingerprint.ValueKind == JsonValueKind.String
-                && string.Equals(fingerprint.GetString(), ValidationFingerprint(row), StringComparison.Ordinal);
-        }
-        catch (JsonException) { return false; }
-    }
-
-    private static string ValidationFingerprint(ApplicationCandidateValidationRecord row) =>
-        InteractionCanonicalJson.Fingerprint("dantes-roleplay/application-candidate-validation-outcome/v1",
-            InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(row)));
 }

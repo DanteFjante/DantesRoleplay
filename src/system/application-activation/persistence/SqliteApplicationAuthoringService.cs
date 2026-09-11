@@ -41,7 +41,7 @@ public sealed partial class SqliteApplicationAuthoringService(
             if (request.ExpectedCandidateRevision == 0 && request.CandidateId is not null && request.CandidateId != derived)
                 return Failed("APPLICATION_CANDIDATE_ID_MISMATCH");
             request = request with { CandidateId = id };
-            var canonical = Canonical(host, request, id);
+            var canonical = ApplicationCandidateOperationProof.CanonicalWrite(host, request, id);
             if (Encoding.UTF8.GetByteCount(canonical) > 64 * 1024) return Failed("APPLICATION_CANDIDATE_REQUEST_LIMIT");
             var commandFingerprint = InteractionCanonicalJson.Fingerprint("dantes-roleplay/application-candidate-command/v1", canonical);
             var operationId = Id(host, app, "operation");
@@ -68,7 +68,8 @@ public sealed partial class SqliteApplicationAuthoringService(
                 var replayBase = await BaseAsync(app, prior.ExpectedActiveFingerprint, cancellationToken);
                 var replayChanged = ApplicationCandidateDocumentSelection.ChangedPaths(retained.Documents, replayBase);
                 var replayDocuments = await ReadChangedAsync(retained, replayChanged, cancellationToken);
-                foreach (var definition in Definitions(app, replayDocuments, replayChanged))
+                var replayDefinitions = Definitions(app, replayDocuments, replayChanged);
+                foreach (var definition in replayDefinitions)
                 {
                     var replayResolved = await targets.ResolveCandidateReferenceAsync(host, new(app, prior.CandidateId, prior.Revision, prior.ContentFingerprint), definition, cancellationToken);
                     if (replayResolved.Status == StandingGrantTargetResolutionStatus.Unavailable) return InteractionInvocationResult.Unavailable(replayResolved.Code, "Candidate definition ownership is unavailable.");
@@ -77,6 +78,8 @@ public sealed partial class SqliteApplicationAuthoringService(
                 }
                 var replayAuthority = await grants.EvaluateAsync(host, new(StandingGrantCapability.Author, StandingGrantScope.Application, replayTargets, []), cancellationToken);
                 if (!replayAuthority.Allowed) return replayAuthority.Code.EndsWith("UNAVAILABLE", StringComparison.Ordinal) ? InteractionInvocationResult.Unavailable(replayAuthority.Code, "Author authority is unavailable.") : Failed(replayAuthority.Code);
+                if (!ApplicationCandidateOperationProof.WriteMatches(replay, retained, replayDefinitions, out _))
+                    return InteractionInvocationResult.Unavailable("APPLICATION_CANDIDATE_RECEIPT_INCONSISTENT", "The stored candidate receipt cannot be reconciled.");
                 await transaction.CommitAsync(cancellationToken);
                 return Receipt(operationId, commandFingerprint);
             }
@@ -118,7 +121,9 @@ public sealed partial class SqliteApplicationAuthoringService(
             }
             var decision = await grants.EvaluateAsync(host, new(StandingGrantCapability.Author, StandingGrantScope.Application, resolved, []), cancellationToken);
             if (!decision.Allowed) return decision.Code.EndsWith("UNAVAILABLE", StringComparison.Ordinal) ? InteractionInvocationResult.Unavailable(decision.Code, "Author authority is unavailable.") : Failed(decision.Code);
-            op.GuardEvidenceJson = InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(decision.Evidence));
+            var candidateReference = new ApplicationCandidateReference(app, id, next, row.ContentFingerprint);
+            op.GuardEvidenceJson = ApplicationCandidateOperationProof.WriteGuard(host, candidateReference,
+                host.GrantReference, definitions, commandFingerprint);
             await db.SaveChangesAsync(cancellationToken);
             var saved = await db.Set<ApplicationCandidateRevisionRecord>().AsNoTracking().SingleOrDefaultAsync(x => x.ApplicationId == app.Value && x.CandidateId == id && x.Revision == next, cancellationToken);
             if (saved is null || saved.ContentFingerprint != row.ContentFingerprint || await operations.GetAsync(operationId, cancellationToken) is null)
@@ -171,7 +176,8 @@ public sealed partial class SqliteApplicationAuthoringService(
             var selectedDocuments = await ReadChangedAsync(readback, changed, cancellationToken);
             var candidateReference = new ApplicationCandidateReference(app, candidate.CandidateId!, candidate.Revision, readback.RevisionRow.ContentFingerprint);
             var resolved = new List<StandingGrantDefinitionTarget>();
-            foreach (var definition in Definitions(app, selectedDocuments, changed))
+            var definitions = Definitions(app, selectedDocuments, changed);
+            foreach (var definition in definitions)
             {
                 var result = await targets.ResolveCandidateReferenceAsync(host, candidateReference, definition, cancellationToken);
                 if (result.Status == StandingGrantTargetResolutionStatus.Unavailable) return InteractionInvocationResult.Unavailable(result.Code, "Candidate definition ownership is unavailable.");
@@ -180,6 +186,9 @@ public sealed partial class SqliteApplicationAuthoringService(
             }
             var decision = await grants.EvaluateAsync(host, new(StandingGrantCapability.Read, StandingGrantScope.Application, resolved, []), cancellationToken);
             if (!decision.Allowed) return decision.Code.EndsWith("UNAVAILABLE", StringComparison.Ordinal) ? InteractionInvocationResult.Unavailable(decision.Code, "Read authority is unavailable.") : Failed(decision.Code);
+            var sourceOperation = await db.Operations.AsNoTracking().SingleOrDefaultAsync(value => value.Id == readback.RevisionRow.SourceOperationId, cancellationToken);
+            if (sourceOperation is null || !ApplicationCandidateOperationProof.WriteMatches(sourceOperation, readback, definitions, out _))
+                return InteractionInvocationResult.Unavailable("APPLICATION_CANDIDATE_RECEIPT_INCONSISTENT", "The stored candidate receipt cannot be reconciled.");
             var items = selectedDocuments.Where(x => changed.Contains(x.Document.RelativePath)).Select(x => new { x.Document.LogicalIdentity, x.Document.SourceId, x.Document.RelativePath, x.Document.MediaType, x.Document.ContentFingerprint, text = x.Document.IsText ? Encoding.UTF8.GetString(x.RetainedBytes) : null }).ToArray();
             var latestValidation = await (from value in db.Set<ApplicationCandidateValidationRecord>().AsNoTracking()
                                     join operation in db.Operations.AsNoTracking() on value.OperationId equals operation.Id
@@ -187,10 +196,11 @@ public sealed partial class SqliteApplicationAuthoringService(
                                         && value.Revision == candidateReference.Revision && value.CandidateFingerprint == candidateReference.ContentFingerprint
                                         && operation.Tool == "application-candidate-validation" && operation.Success && operation.Subject == app.Value
                                     orderby operation.Timestamp descending, operation.Id descending
-                                    select new { Record = value, operation.GuardEvidenceJson }).FirstOrDefaultAsync(cancellationToken);
+                                    select new { Record = value, Operation = operation }).FirstOrDefaultAsync(cancellationToken);
             object? validation = null;
             if (latestValidation is not null)
-                validation = ValidationEvidenceMatches(latestValidation.Record, latestValidation.GuardEvidenceJson)
+                validation = ApplicationCandidateOperationProof.ValidationMatches(latestValidation.Operation, latestValidation.Record,
+                    candidateReference, definitions)
                     ? new { latestValidation.Record.OperationId, latestValidation.Record.Outcome, latestValidation.Record.DiagnosticsJson }
                     : new { OperationId = latestValidation.Record.OperationId, Outcome = "unavailable",
                         DiagnosticsJson = "[{\"Code\":\"APPLICATION_CANDIDATE_VALIDATION_EVIDENCE_INCONSISTENT\",\"Message\":\"Stored validation evidence cannot be reconciled.\"}]" };
@@ -238,10 +248,7 @@ public sealed partial class SqliteApplicationAuthoringService(
 
     private async Task<ActiveApplicationManifest?> BaseAsync(ApplicationIdentifier app, string? fingerprint, CancellationToken ct)
     {
-        if (fingerprint is null) return null;
-        var revision = await db.Set<ApplicationActivationRevisionRecord>().AsNoTracking().Where(x => x.ApplicationId == app.Value && x.ActivationFingerprint == fingerprint).Select(x => (int?)x.ActivationRevision).SingleOrDefaultAsync(ct);
-        if (revision is null) throw new ApplicationActivationException("APPLICATION_CANDIDATE_BASE_UNAVAILABLE", "The pinned activation generation is unavailable.");
-        return activations.ReadRevision(app, revision.Value) ?? throw new ApplicationActivationException("APPLICATION_CANDIDATE_BASE_UNAVAILABLE", "The pinned activation generation is unavailable.");
+        return await ApplicationCandidateDocumentSelection.ReadBaseAsync(db, activations, app, fingerprint, ct);
     }
 
     private async Task<IReadOnlyList<ApplicationRetainedDocumentLink>> RetainEffectiveAsync(ApplicationIdentifier app,
@@ -270,7 +277,7 @@ public sealed partial class SqliteApplicationAuthoringService(
         IReadOnlyList<string> changed, CancellationToken ct) => new ApplicationCandidateRetainedReader(db, applications)
         .ReadSelectedAsync(metadata, ApplicationCandidateDocumentSelection.WithKnownSidecars(metadata.Documents, changed), ct);
 
-    private static IReadOnlyList<StandingGrantDefinitionReference> Definitions(ApplicationIdentifier app, IReadOnlyList<ApplicationCandidateDocument> value, IReadOnlyList<string> changed)
+    internal static IReadOnlyList<StandingGrantDefinitionReference> Definitions(ApplicationIdentifier app, IReadOnlyList<ApplicationCandidateDocument> value, IReadOnlyList<string> changed)
     {
         var winners = value.Where(x => x.Document.IsText).ToDictionary(x => x.Document.RelativePath, x => x.Document, StringComparer.Ordinal);
         var bytes = value.Where(x => x.Document.IsText).ToDictionary(x => x.Document.RelativePath, x => x.RetainedBytes, StringComparer.Ordinal);
@@ -286,7 +293,7 @@ public sealed partial class SqliteApplicationAuthoringService(
         return selected.Select(x => new StandingGrantDefinitionReference(x!.QualifiedId, x.Kind, x.Version, x.ContentFingerprint)).ToArray();
     }
 
-    private static void Validate(ApplicationCandidateWriteRequest request)
+    internal static void Validate(ApplicationCandidateWriteRequest request)
     {
         if (request is null || request.ExpectedCandidateRevision is < 0 or int.MaxValue || request.Documents is null
             || request.Documents.Count is < 1 or > ApplicationAuthoringLimits.DocumentsPerWrite
@@ -301,8 +308,8 @@ public sealed partial class SqliteApplicationAuthoringService(
         foreach (var x in request.Documents) if (x.LogicalIdentity != "file:" + x.RelativePath || !GenericSourceDocument.IsNormalizedRelativePath(x.RelativePath) || string.IsNullOrWhiteSpace(x.SourceId) || string.IsNullOrWhiteSpace(x.MediaType) || x.Text is null || Encoding.UTF8.GetByteCount(x.Text) > 64 * 1024) throw new ApplicationActivationException("INVALID_PAYLOAD", "Candidate document metadata is invalid.");
         if (request.ExpectedCandidateRevision > 0 && request.CandidateId is null) throw new ApplicationActivationException("INVALID_PAYLOAD", "A revision needs its candidate identity.");
     }
-    private static string Id(InteractionInvocationHost host, ApplicationIdentifier app, string suffix = "candidate") => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes("dantes-roleplay/application-candidate/" + suffix + "/v1\n" + host.Principal.PrincipalId + "\n" + app.Value + "\n" + host.CommandId)))[..32].ToLowerInvariant();
-    private static string Canonical(InteractionInvocationHost host, ApplicationCandidateWriteRequest request, string id) => InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new { principal = host.Principal.PrincipalId, applicationId = host.ApplicationRevision.ApplicationId.Value, host.CommandId, candidateId = id, request }));
+    private static string Id(InteractionInvocationHost host, ApplicationIdentifier app, string suffix = "candidate") =>
+        ApplicationCandidateOperationProof.OperationId(host.Principal.PrincipalId, app.Value, host.CommandId, suffix);
     private static InteractionInvocationResult Receipt(string operationId, string fingerprint) => InteractionInvocationResult.Committed(new(operationId, fingerprint, []));
     private static InteractionInvocationResult Failed(string code) => InteractionInvocationResult.Failed(code, "The candidate request was rejected.");
     private static bool CandidateId(string value) => value.Length == 32 && value.All(c => char.IsAsciiDigit(c) || c is >= 'a' and <= 'f');
