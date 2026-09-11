@@ -75,6 +75,18 @@ coverage but do not create an attestation. The host-selected read-only plan 05 w
 plan 04 accounting/worker provenance must be integrated before the host can accept a candidate-bound
 Valid judgment. No-hit retrieval, a nonempty reason, model output or usage counters alone are insufficient.
 
+Alternate-intent preparation is internal and limited to existing application procedures. It accepts
+only a typed candidate lookup, exact definition reference and replacement phrase list; the candidate
+reader rehydrates linked retained rows and bytes. Independent Read and Author checks run before and
+after preparation, with fresh source/target and active-generation evidence. Up to 32 phrases of
+200 characters are trimmed, whitespace-normalized and deduplicated under retrieval matching rules.
+Selected source text and replacement text each have a 32,000-byte UTF-8 bound.
+The editor changes only the `## Matches` section, preserves other source text and parsed fields,
+and rejects ambiguous section/fence layouts. Removing all phrases preserves the canonical target
+and its instructions. Existing synchronization/source hash semantics are unchanged. The result is
+one inert `ApplicationCandidateDocumentInput`; only plan 02's existing candidate lifecycle may write,
+validate or activate it with its expected revision. Global orientation and MCP surfaces are excluded.
+
 Prerequisite: implement [00 — Shared foundation](00-shared-foundation.md) first and have the coordinator supply its accepted foundation revision and contract baseline. This workstream consumes those shared contracts and does not redefine them independently.
 
 ## Outcome and existing owners
