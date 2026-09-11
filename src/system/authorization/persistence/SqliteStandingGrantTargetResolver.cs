@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 namespace DantesRoleplay.Authorization;
 
 /// <summary>Rehydrates grant ownership from retained source provenance without executing or registering content.</summary>
-public sealed class SqliteStandingGrantTargetResolver(
+public sealed partial class SqliteStandingGrantTargetResolver(
     DantesRoleplayDbContext db, IApplicationRegistry applications,
     IApplicationActivationReader activations, IActivatedApplicationEvidenceReader evidence,
     ISourceRegistry sources, IApplicationExtensionRegistry extensions,
@@ -26,10 +26,12 @@ public sealed class SqliteStandingGrantTargetResolver(
         StandingGrantDefinitionTarget target, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(target);
-        if (target.Candidate is not null)
-            return Unavailable("STANDING_GRANT_CANDIDATE_OWNER_UNAVAILABLE");
-        var result = await ResolveAsync(host,
-            new(target.DefinitionId, target.Kind, target.Revision, target.ContentFingerprint), cancellationToken);
+        var selection = new StandingGrantDefinitionReference(target.DefinitionId, target.Kind, target.Revision, target.ContentFingerprint);
+        var result = target.Candidate is { } candidate
+            ? await ResolveCandidateReferenceAsync(host, candidate, selection, cancellationToken)
+            : target.RetainedActivation is { } origin
+            ? await ResolveRetainedAsync(host, origin, selection, cancellationToken)
+            : await ResolveAsync(host, selection, cancellationToken);
         return result.Status == StandingGrantTargetResolutionStatus.Available && result.Target != target
             ? Denied("STANDING_GRANT_OWNER_EVIDENCE_STALE") : result;
     }
@@ -44,8 +46,25 @@ public sealed class SqliteStandingGrantTargetResolver(
             ? Denied("STANDING_GRANT_DEFINITION_STALE") : result;
     }
 
-    public async Task<StandingGrantTargetResolution> ResolveCurrentAsync(InteractionInvocationHost host,
-        string exactDefinitionId, string kind, CancellationToken cancellationToken = default)
+    public Task<StandingGrantTargetResolution> ResolveCurrentAsync(InteractionInvocationHost host,
+        string exactDefinitionId, string kind, CancellationToken cancellationToken = default) =>
+        ResolveGenerationAsync(host, exactDefinitionId, kind, null, cancellationToken);
+
+    public async Task<StandingGrantTargetResolution> ResolveRetainedAsync(InteractionInvocationHost host,
+        StandingGrantActivationOrigin origin, StandingGrantDefinitionReference selection,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(origin);
+        ArgumentNullException.ThrowIfNull(selection);
+        if (selection.Kind != CatalogNamespaceKinds.Procedure)
+            return Denied("STANDING_GRANT_RETAINED_KIND_DENIED");
+        var result = await ResolveGenerationAsync(host, selection.DefinitionId, selection.Kind, origin, cancellationToken);
+        return result.Target is { } target && (target.Revision != selection.Revision || target.ContentFingerprint != selection.ContentFingerprint)
+            ? Denied("STANDING_GRANT_DEFINITION_STALE") : result;
+    }
+
+    private async Task<StandingGrantTargetResolution> ResolveGenerationAsync(InteractionInvocationHost host,
+        string exactDefinitionId, string kind, StandingGrantActivationOrigin? origin, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(host);
         cancellationToken.ThrowIfCancellationRequested();
@@ -62,11 +81,16 @@ public sealed class SqliteStandingGrantTargetResolver(
             // Reuse the caller's transaction. Standalone reads get one consistent owner view.
             await using var read = await StandingGrantReadScope.EnterAsync(db, cancellationToken);
             var registered = applications.Get(app);
-            var activation = activations.Current(app);
+            var activation = origin is null ? activations.Current(app) : activations.ReadRevision(app, origin.ActivationRevision);
             if (registered is null || activation is null || activation.PreparationVersion is null)
                 return Unavailable("STANDING_GRANT_RETAINED_GENERATION_UNAVAILABLE");
+            var actualOrigin = new StandingGrantActivationOrigin(activation.ActivationRevision,
+                activation.ActivationFingerprint, activation.ApplicationRevision, activation.ApplicationFingerprint);
+            if (origin is not null && origin != actualOrigin)
+                return Denied("STANDING_GRANT_RETAINED_ORIGIN_STALE");
             if (registered.Revision != host.ApplicationRevision.Revision
                 || registered.Fingerprint != host.ApplicationRevision.Fingerprint
+                || !registered.BaseApplications.SequenceEqual(host.ApplicationRevision.BaseApplications)
                 || activation.ApplicationRevision != registered.Revision
                 || activation.ApplicationFingerprint != registered.Fingerprint)
                 return Denied("STANDING_GRANT_APPLICATION_STALE");
@@ -142,8 +166,9 @@ public sealed class SqliteStandingGrantTargetResolver(
             }));
             var target = new StandingGrantDefinitionTarget(exactDefinitionId, kind, app, leaf.Id,
                 "active-owner:" + InteractionCanonicalJson.Fingerprint("dantes-roleplay/standing-grant-owner/v1", proof),
-                record.Version, record.ContentFingerprint);
-            return new(StandingGrantTargetResolutionStatus.Available, "STANDING_GRANT_TARGET_AVAILABLE", target);
+                record.Version, record.ContentFingerprint, RetainedActivation: origin);
+            return new(StandingGrantTargetResolutionStatus.Available, "STANDING_GRANT_TARGET_AVAILABLE", target,
+                CurrentActivation: origin is null ? actualOrigin : null);
         }
         catch (OperationCanceledException) { throw; }
         catch (ApplicationActivationException exception) when (exception.Code == "ACTIVATION_EVIDENCE_CORRUPT")
@@ -163,9 +188,9 @@ public sealed class SqliteStandingGrantTargetResolver(
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        // Until the authoring store rehydrates a candidate from durable identity/evidence links,
-        // even a C# snapshot is not sufficient evidence of an owner-materialized candidate.
-        return Task.FromResult(Unavailable("STANDING_GRANT_CANDIDATE_OWNER_UNAVAILABLE"));
+        ArgumentNullException.ThrowIfNull(candidate);
+        // Only the typed lookup survives this boundary; all content is freshly read from SQLite.
+        return ResolveCandidateReferenceAsync(host, candidate.Candidate, selection, cancellationToken);
     }
 
     private static StandingGrantTargetResolution Denied(string code) => new(StandingGrantTargetResolutionStatus.Denied, code, null);

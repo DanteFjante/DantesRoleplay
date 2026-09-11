@@ -151,7 +151,7 @@ public sealed class SqliteStandingGrantTargetResolverTests : IDisposable
     }
 
     [Fact]
-    public async Task Candidate_snapshot_is_unavailable_even_when_its_shape_looks_owner_materialized()
+    public async Task Absent_durable_candidate_is_unavailable_even_when_its_snapshot_shape_looks_owner_materialized()
     {
         await using var db = fixture.CreateContext();
         var setup = Setup(db);
@@ -165,7 +165,134 @@ public sealed class SqliteStandingGrantTargetResolverTests : IDisposable
         var result = await setup.Resolver.ResolveCandidateAsync(Host(setup), candidate, selection);
 
         Assert.Equal(StandingGrantTargetResolutionStatus.Unavailable, result.Status);
+        Assert.Equal("STANDING_GRANT_CANDIDATE_UNAVAILABLE", result.Code);
+    }
+
+    [Fact]
+    public async Task Historical_origin_resolves_its_exact_retained_generation_after_active_content_changes_and_source_deletion()
+    {
+        await using var db = fixture.CreateContext();
+        var setup = Setup(db);
+        await ActivateAsync(setup);
+        var old = await setup.Resolver.ResolveCurrentAsync(Host(setup), "demo.runtime.inspect", CatalogNamespaceKinds.Procedure);
+        var oldTarget = Assert.IsType<StandingGrantDefinitionTarget>(old.Target);
+        var origin = Assert.IsType<StandingGrantActivationOrigin>(old.CurrentActivation);
+        WriteProcedure("Inspect the historical runtime definition.");
+        await ActivateAsync(setup, origin.ActivationFingerprint);
+
+        var current = await setup.Resolver.ResolveAsync(Host(setup), Selection(oldTarget));
+        File.Delete(Path.Combine(root, RelativePath.Replace('/', Path.DirectorySeparatorChar)));
+        var retained = await setup.Resolver.ResolveRetainedAsync(Host(setup), origin, Selection(oldTarget));
+
+        Assert.Equal(StandingGrantTargetResolutionStatus.Denied, current.Status);
+        Assert.Equal("STANDING_GRANT_DEFINITION_STALE", current.Code);
+        var target = Assert.IsType<StandingGrantDefinitionTarget>(retained.Target);
+        Assert.Equal(StandingGrantTargetResolutionStatus.Available, retained.Status);
+        Assert.Equal(oldTarget.DefinitionId, target.DefinitionId);
+        Assert.Equal(origin, target.RetainedActivation);
+        Assert.Null(retained.CurrentActivation);
+    }
+
+    [Theory]
+    [InlineData("forged")]
+    [InlineData("unknown")]
+    public async Task Forged_or_unknown_historical_origins_are_not_backfilled(string state)
+    {
+        await using var db = fixture.CreateContext();
+        var setup = Setup(db);
+        await ActivateAsync(setup);
+        var current = await setup.Resolver.ResolveCurrentAsync(Host(setup), "demo.runtime.inspect", CatalogNamespaceKinds.Procedure);
+        var target = Assert.IsType<StandingGrantDefinitionTarget>(current.Target);
+        var origin = Assert.IsType<StandingGrantActivationOrigin>(current.CurrentActivation);
+        origin = state == "forged"
+            ? origin with { ActivationFingerprint = new string('B', 64) }
+            : origin with { ActivationRevision = 99 };
+
+        var result = await setup.Resolver.ResolveRetainedAsync(Host(setup), origin, Selection(target));
+
+        Assert.Equal(state == "forged" ? StandingGrantTargetResolutionStatus.Denied : StandingGrantTargetResolutionStatus.Unavailable, result.Status);
+        Assert.Equal(state == "forged" ? "STANDING_GRANT_RETAINED_ORIGIN_STALE" : "STANDING_GRANT_RETAINED_GENERATION_UNAVAILABLE", result.Code);
+    }
+
+    [Theory]
+    [InlineData("namespace")]
+    [InlineData("source")]
+    public async Task Historical_origin_rechecks_namespace_and_source_retirement(string drift)
+    {
+        await using var db = fixture.CreateContext();
+        var setup = Setup(db);
+        await ActivateAsync(setup);
+        var current = await setup.Resolver.ResolveCurrentAsync(Host(setup), "demo.runtime.inspect", CatalogNamespaceKinds.Procedure);
+        var target = Assert.IsType<StandingGrantDefinitionTarget>(current.Target);
+        var origin = Assert.IsType<StandingGrantActivationOrigin>(current.CurrentActivation);
+        if (drift == "namespace")
+            setup.Namespaces.SetReview("demo.runtime", CatalogNamespaceReviewStatuses.NeedsReview, "Historical review withdrawn.");
+        else
+            setup.Sources.Retire(Application, "catalog", "Historical source retired.");
+
+        var result = await setup.Resolver.ResolveRetainedAsync(Host(setup), origin, Selection(target));
+
+        Assert.Equal(StandingGrantTargetResolutionStatus.Denied, result.Status);
+        Assert.Equal(drift == "namespace" ? "STANDING_GRANT_NAMESPACE_UNREVIEWED" : "STANDING_GRANT_SOURCE_DRIFT", result.Code);
+    }
+
+    [Fact]
+    public async Task Durable_candidate_ignores_spoofed_snapshot_content_and_survives_source_file_deletion()
+    {
+        await using var db = fixture.CreateContext();
+        var setup = Setup(db);
+        await ActivateAsync(setup);
+        var target = Assert.IsType<StandingGrantDefinitionTarget>((await setup.Resolver.ResolveCurrentAsync(
+            Host(setup), "demo.runtime.inspect", CatalogNamespaceKinds.Procedure)).Target);
+        var candidate = await SeedCandidateAsync(db, setup);
+        File.Delete(Path.Combine(root, RelativePath.Replace('/', Path.DirectorySeparatorChar)));
+
+        var result = await setup.Resolver.ResolveCandidateAsync(Host(setup), candidate, Selection(target));
+
+        var resolved = Assert.IsType<StandingGrantDefinitionTarget>(result.Target);
+        Assert.Equal(StandingGrantTargetResolutionStatus.Available, result.Status);
+        Assert.Equal(target.DefinitionId, resolved.DefinitionId);
+        Assert.Equal(candidate.Candidate, resolved.Candidate);
+    }
+
+    [Fact]
+    public async Task Candidate_fingerprint_tampering_is_not_accepted_from_a_snapshot()
+    {
+        await using var db = fixture.CreateContext();
+        var setup = Setup(db);
+        await ActivateAsync(setup);
+        var target = Assert.IsType<StandingGrantDefinitionTarget>((await setup.Resolver.ResolveCurrentAsync(
+            Host(setup), "demo.runtime.inspect", CatalogNamespaceKinds.Procedure)).Target);
+        var candidate = await SeedCandidateAsync(db, setup);
+        (await db.Set<ApplicationCandidateRevisionRecord>().SingleAsync()).NewImplementationReason = "tampered";
+        await db.SaveChangesAsync();
+
+        var result = await setup.Resolver.ResolveCandidateAsync(Host(setup), candidate, Selection(target));
+
+        Assert.Equal(StandingGrantTargetResolutionStatus.Unavailable, result.Status);
         Assert.Equal("STANDING_GRANT_CANDIDATE_OWNER_UNAVAILABLE", result.Code);
+    }
+
+    [Theory]
+    [InlineData("namespace")]
+    [InlineData("source")]
+    public async Task Candidate_rechecks_namespace_and_source_registration_drift(string drift)
+    {
+        await using var db = fixture.CreateContext();
+        var setup = Setup(db);
+        await ActivateAsync(setup);
+        var target = Assert.IsType<StandingGrantDefinitionTarget>((await setup.Resolver.ResolveCurrentAsync(
+            Host(setup), "demo.runtime.inspect", CatalogNamespaceKinds.Procedure)).Target);
+        var candidate = await SeedCandidateAsync(db, setup);
+        if (drift == "namespace")
+            setup.Namespaces.SetEnabled("demo.runtime", false);
+        else
+            setup.Sources.Retire(Application, "catalog", "Fixture source retired.");
+
+        var result = await setup.Resolver.ResolveCandidateAsync(Host(setup), candidate, Selection(target));
+
+        Assert.Equal(StandingGrantTargetResolutionStatus.Denied, result.Status);
+        Assert.Equal(drift == "namespace" ? "STANDING_GRANT_NAMESPACE_UNREVIEWED" : "STANDING_GRANT_SOURCE_DRIFT", result.Code);
     }
 
     private SetupState Setup(DantesRoleplayDbContext db, bool extension = false)
@@ -193,13 +320,13 @@ public sealed class SqliteStandingGrantTargetResolverTests : IDisposable
             new SqliteStandingGrantTargetResolver(db, applications, activation, activation, sources, extensions, namespaces));
     }
 
-    private async Task ActivateAsync(SetupState setup)
+    private async Task ActivateAsync(SetupState setup, string? expectedActiveFingerprint = null)
     {
         var preview = await new ApplicationPreviewService(setup.Applications, setup.Sources,
             new RegisteredSourceScanner(setup.Sources, new Root(root), new LocalDocumentScanner()), new SourceOverlayResolver())
             .PreviewAsync(Application);
         Assert.True(preview.IsValid, string.Join(';', preview.Problems.Select(problem => problem.Code)));
-        var request = new ApplicationActivationRequest(Application, preview.PreviewFingerprint, null);
+        var request = new ApplicationActivationRequest(Application, preview.PreviewFingerprint, expectedActiveFingerprint);
         var context = new ApplicationActivationContext(Guid.NewGuid().ToString("N"), "Activate resolver fixture.", ["procedure.system.use"],
             new AuthorizationAuditEvidence("principal." + new string('a', 64), "test", "modify", "system.private-host",
                 "resolver-fixture", true, "PRIVATE_OPERATOR_ALLOWED"));
@@ -207,11 +334,58 @@ public sealed class SqliteStandingGrantTargetResolverTests : IDisposable
         _ = await setup.Activation.ActivateAsync(request, context);
     }
 
-    private void WriteProcedure()
+    private static async Task<ApplicationCandidateSnapshot> SeedCandidateAsync(
+        DantesRoleplayDbContext db, SetupState setup)
+    {
+        var activation = setup.Activation.Current(Application)!;
+        var documents = activation.Winners.Select(document => new ApplicationCandidateDocument(document,
+            setup.Activation.ReadDocumentEvidence(Application, activation.ActivationRevision, document.LogicalIdentity)!
+                .RetainedBytes!)).ToArray();
+        var retained = new ApplicationRetainedDocumentStore(db);
+        var links = await retained.RetainAsync(Application, activation.Winners,
+            documents.ToDictionary(value => value.Document.LogicalIdentity, value => value.RetainedBytes, StringComparer.Ordinal),
+            CancellationToken.None);
+        const string candidateId = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        db.Add(new Operation { Id = "candidate-source-operation", Timestamp = DateTime.UtcNow, Tool = "test" });
+        var row = new ApplicationCandidateRevisionRecord
+        {
+            ApplicationId = Application.Value,
+            CandidateId = candidateId,
+            Revision = 1,
+            ApplicationRevision = activation.ApplicationRevision,
+            ContentFingerprint = new string('0', 64),
+            Origin = "runtime",
+            NewImplementationReason = "Fixture candidate.",
+            AuthorGrantReference = "grant@1",
+            SourceOperationId = "candidate-source-operation",
+            CanonicalCommandFingerprint = new string('A', 64)
+        };
+        row.ContentFingerprint = ApplicationCandidateRetainedReader.ContentFingerprint(row,
+            setup.Applications.Get(Application, activation.ApplicationRevision)!, documents);
+        db.Add(row);
+        foreach (var link in links)
+            db.Add(new ApplicationCandidateDocumentRecord
+            {
+                ApplicationId = Application.Value,
+                CandidateId = candidateId,
+                Revision = 1,
+                Ordinal = link.Ordinal,
+                IdentityId = link.IdentityId,
+                EvidenceVersion = link.EvidenceVersion
+            });
+        await db.SaveChangesAsync();
+
+        var spoofed = documents[0] with { Document = documents[0].Document with { ContentFingerprint = new string('B', 64) } };
+        return new(new(Application, candidateId, 1, row.ContentFingerprint), 999, new string('B', 64),
+            new string('B', 64), "spoofed", "spoofed", "Spoofed reason.", "spoofed", "spoofed", [spoofed],
+            [new("demo.runtime.inspect", 99, new string('B', 64))]);
+    }
+
+    private void WriteProcedure(string instruction = "Inspect it.")
     {
         var path = Path.Combine(root, RelativePath.Replace('/', Path.DirectorySeparatorChar));
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        File.WriteAllText(path, """
+        File.WriteAllText(path, $$"""
             ---
             id: demo.runtime.inspect
             category: runtime.inspect
@@ -224,7 +398,7 @@ public sealed class SqliteStandingGrantTargetResolverTests : IDisposable
             Inspect the active runtime definition.
 
             ## Instructions
-            1. Inspect it.
+            1. {{instruction}}
 
             ## Constraints
             - Preserve it.

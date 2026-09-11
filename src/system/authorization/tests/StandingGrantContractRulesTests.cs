@@ -32,6 +32,30 @@ public sealed class StandingGrantContractRulesTests
     }
 
     [Fact]
+    public void Historical_targets_allow_only_exact_task_read_or_cancellation_tuples()
+    {
+        var host = Host();
+        var target = Target() with { RetainedActivation = new(1, Hash, 1, Hash) };
+        foreach (var capability in new[] { StandingGrantCapability.ReadTask, StandingGrantCapability.CancelTask })
+            StandingGrantContractRules.ValidateRequirement(host,
+                new(capability, StandingGrantScope.StateSpace, [target], [], TaskTarget(host, target)));
+        foreach (var capability in new[] { StandingGrantCapability.Read, StandingGrantCapability.Execute, StandingGrantCapability.Author })
+        {
+            var scope = capability == StandingGrantCapability.Author ? StandingGrantScope.Application : StandingGrantScope.StateSpace;
+            var error = Assert.Throws<InteractionContractException>(() => StandingGrantContractRules.ValidateRequirement(host,
+                new(capability, scope, [target], [])));
+            Assert.Equal("STANDING_GRANT_RETAINED_SCOPE_DENIED", error.Code);
+        }
+        var mixed = target with
+        {
+            Candidate = new DantesRoleplay.ApplicationActivation.ApplicationCandidateReference(App, new string('a', 32), 1, Hash)
+        };
+        var invalid = Assert.Throws<InteractionContractException>(() => StandingGrantContractRules.ValidateRequirement(host,
+            new(StandingGrantCapability.ReadTask, StandingGrantScope.StateSpace, [mixed], [], TaskTarget(host, mixed))));
+        Assert.Equal("INVALID_STANDING_GRANT_TARGET", invalid.Code);
+    }
+
+    [Fact]
     public void Issuer_transition_requires_exact_predecessor_and_explicit_revocation()
     {
         var grant = new StandingGrantRevision("grant@1", "grant", 1, Hash, "principal", App,

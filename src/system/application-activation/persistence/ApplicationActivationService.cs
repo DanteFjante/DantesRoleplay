@@ -98,6 +98,15 @@ public sealed class ApplicationActivationService : IApplicationActivationService
         return current is null ? null : Read(applicationId.Value, current.ActivationRevision);
     }
 
+    public ActiveApplicationManifest? ReadRevision(ApplicationIdentifier applicationId, int activationRevision)
+    {
+        ArgumentNullException.ThrowIfNull(applicationId);
+        if (activationRevision < 1) throw new ArgumentOutOfRangeException(nameof(activationRevision));
+        return db.Set<ApplicationActivationRevisionRecord>().AsNoTracking().Any(value =>
+            value.ApplicationId == applicationId.Value && value.ActivationRevision == activationRevision)
+            ? Read(applicationId.Value, activationRevision) : null;
+    }
+
     public ActivatedApplicationDocumentEvidence? ReadDocumentEvidence(
         ApplicationIdentifier applicationId,
         int activationRevision,
