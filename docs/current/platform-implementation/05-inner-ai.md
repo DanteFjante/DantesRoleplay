@@ -127,6 +127,13 @@ must still bound the actual serialized provider descriptor to 64 KiB, including 
 instructions and escaping, before invocation. These adapters remain unregistered pending the real
 selection, authority, durable admission, accounting and result-publication integration.
 
+`SystemInnerWorkerValidationInvoker` consumes the lifecycle callback supplied by plan 04's actual
+lease/profile factory and uses only the required-lifecycle AI overload. Its ephemeral computation
+retains the actual response, usage and activity even when the V2 parser rejects exact alternative
+coverage after schema validation. Callers must check the typed judgment and failure code, not the
+runner's success flag alone. The invoker does not retry, persist, authorize or attest; incomplete
+owner selection still prevents production admission and provider dispatch.
+
 `SystemInnerWorkerAiBudget` defaults to a measured-stop threshold of 32,768 total provider input/output
 tokens including provider overhead, 8 tool dispatches and 2 concurrent provider requests per root. Host ceilings are configurable
 up to 131,072 tokens, 16 tools and 4 concurrent requests. Child ceilings only narrow and preserve the

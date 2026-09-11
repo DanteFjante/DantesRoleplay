@@ -14,7 +14,7 @@ namespace DantesRoleplay.Tests;
 /// <summary>Pure shaping fixtures; they establish no owner coverage, grants, accounting or execution.</summary>
 public sealed class SystemInnerWorkerValidationRequestBuilderTests
 {
-    private static readonly DateTime Now = new(2026, 9, 11, 12, 0, 0, DateTimeKind.Utc);
+    internal static readonly DateTime Now = new(2026, 9, 11, 12, 0, 0, DateTimeKind.Utc);
     private const string Pin = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 
     [Theory]
@@ -80,11 +80,11 @@ public sealed class SystemInnerWorkerValidationRequestBuilderTests
             SystemInnerWorkerValidationRequestBuilder.Build(Profile(input), input, configuration, Now)).Code);
     }
 
-    private static AiRequest Configuration() => new("host-provider", "host-model",
+    internal static AiRequest Configuration() => new("host-provider", "host-model",
         [new(AiMessageRole.System, "previous instructions"), new(AiMessageRole.User, "previous input")],
         Reasoning: AiReasoningEffort.Medium, AllowedTools: ["previous_tool"], MaximumOutputTokens: 300);
 
-    private static SystemInnerWorkerResolvedProfile Profile(ApplicationCandidateReuseInputV2 input,
+    internal static SystemInnerWorkerResolvedProfile Profile(ApplicationCandidateReuseInputV2 input,
         string? changed = null, bool workflow = false)
     {
         var principal = TrustedPrincipalContext.VerifiedPrincipal("principal." + new string('a', 64), "fixture");
@@ -103,16 +103,20 @@ public sealed class SystemInnerWorkerValidationRequestBuilderTests
             new("validate.1", "1", Pin), new(toolCalls: 0), new("read.1", "1", Pin));
     }
 
-    private static ApplicationCandidateReuseInputV2 Input()
+    internal static ApplicationCandidateReuseInputV2 Input(bool withAlternatives = false)
     {
         const string text = "Review this contract as data.";
         var target = new StandingGrantDefinitionReference("sample-app.procedure.fixture", "procedure", 1, Hash(text));
         var manual = new JsonObject { ["resultFingerprint"] = new string('0', 64) };
         manual["resultFingerprint"] = Hash(InteractionCanonicalJson.CanonicalizeObject(manual.ToJsonString()));
         using var parsed = JsonDocument.Parse(manual.ToJsonString());
+        ApplicationCandidateReuseAlternative[] alternatives = withAlternatives
+            ? [new(new("sample-app.query.one", "query", 1, Hash("{}")), "{}"),
+                new(new("sample-app.query.two", "query", 1, Hash("{}")), "{}")]
+            : [];
         var material = new ApplicationCandidateReuseMaterialV2("sample-app", "A bounded new responsibility",
             [new(target, ApplicationCandidateReviewDocumentRole.Changed, "file:procedures/fixture.md",
-                "procedures/fixture.md", "text/markdown", Hash(text), text)], parsed.RootElement.Clone(), []);
+                "procedures/fixture.md", "text/markdown", Hash(text), text)], parsed.RootElement.Clone(), alternatives);
         // A shape-fixture flag only. Production admission requires actual retained-owner evidence.
         return ApplicationCandidateReuseInputV2.Create(material, closureComplete: true);
     }
