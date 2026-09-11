@@ -164,6 +164,13 @@ HTTP routing and response cache policy. This consumer does not provide resource 
 acceptance, publication authorization, or mutation receipts. Existing legacy publish/activate and
 directory paths refuse pinned references rather than changing or reading the compatibility pointer.
 
+The internal `WebPublicationDiscovery.ResolveHostRouteAsync` supplies routing candidates for the
+host without loading content or claiming readiness. It shares existing page inspection and route
+ambiguity/visibility/index checks, preserves the exact content reference, and refuses an incomplete
+bounded state-space scan. The host must still construct current application authority and reselect
+the exact publication through the permissioned reader. Legacy discovery continues to omit pinned
+content; a routing candidate is not a new public discovery record or an authorization token.
+
 `StageContentReferenceAsync` requires the publication owner's exact current transaction, proved by
 `IEcsWriteTransactionFactory.OwnsCurrent`. The generic factory fails closed for unsupported factories
 and recognizes only its own live wrapper and current database transaction. Staging rechecks retained
