@@ -5,6 +5,7 @@ using DantesRoleplay.DataAccess;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Operations;
 using DantesRoleplay.Procedures;
+using DantesRoleplay.Retrieval;
 using DantesRoleplay.SchemaValidation;
 using DantesRoleplay.SystemCapabilities;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +14,72 @@ namespace DantesRoleplay.Authorization.Tests;
 
 public sealed partial class SqliteStandingGrantTargetResolverTests
 {
+    [Fact]
+    public async Task Published_intent_revisions_replace_the_current_semantic_generation_under_grant_filtering()
+    {
+        await using var db = fixture.CreateContext();
+        var setup = Setup(db);
+        setup.Namespaces.Register(new DantesRoleplay.CatalogNamespaces.CatalogNamespaceRegistration(
+            "demo.secret", "human-domain-label",
+            "Denied fixture namespace.", ["procedure"], ReviewStatus: "reviewed",
+            ReviewNote: "Reviewed fixture."));
+        WriteIntentSemanticProcedure("other", "demo.runtime.other", "Fallback constellation marker.");
+        WriteIntentSemanticProcedure("secret", "demo.secret.hidden", "Legacy constellation marker.");
+        await ActivateAsync(setup);
+        await SeedGrantAsync(db, [StandingGrantCapability.Read, StandingGrantCapability.Author,
+            StandingGrantCapability.Validate, StandingGrantCapability.Activate]);
+        await ExpandGrantBudgetAsync(db);
+        var policy = new SqliteStandingGrantPolicy(db, setup.Resolver);
+        var authoring = new SqliteApplicationAuthoringService(db, setup.Applications,
+            setup.Activation, setup.Activation, setup.Sources, policy, setup.Resolver,
+            new OperationLog(db), preparation: null, manuals: Manuals(db, setup, policy));
+        var associations = new IntentMatchAssociationService(setup.Activation,
+            setup.Activation, setup.Resolver, policy, authoring);
+        var target = await CurrentProcedureAsync(setup, "semantic-intent-current-0");
+
+        var firstWrite = await associations.WriteAsync(
+            AssociationHost(setup, "semantic-intent-write-1", InteractionExecutionProfile.Atomic),
+            new(null, 0, target, ["legacy stellar association"]));
+        Assert.Equal(InteractionInvocationResultTag.Committed, firstWrite.Tag);
+        var firstCandidate = await LatestCandidateAsync(db);
+        await ValidateActivateAsync(db, setup, authoring, firstCandidate, "semantic-intent-first");
+
+        var vectorRoot = Path.Combine(root, "intent-semantic-vectors");
+        var embeddings = new IntentAssociationEmbeddings();
+        var first = SemanticManuals(db, setup, policy, embeddings, vectorRoot);
+        var scope = new InteractionFeatureRetrievalScope(Application,
+            InteractionRetrievalLane.TrustedFeature);
+        var firstBuild = await first.Retriever.RebuildAsync(scope);
+        Assert.True(firstBuild.Rebuilt, firstBuild.AvailabilityCode);
+        var firstResult = await first.Service.DiscoverAsync(new(
+            AssociationHost(setup, "semantic-intent-search-1"), "semantic nebula request"));
+        AssertSemanticFirst(firstResult, target.DefinitionId);
+        Assert.DoesNotContain("demo.secret.hidden", firstResult.DataJson!, StringComparison.Ordinal);
+
+        var current = await CurrentProcedureAsync(setup, "semantic-intent-current-1");
+        var secondWrite = await associations.WriteAsync(
+            AssociationHost(setup, "semantic-intent-write-2", InteractionExecutionProfile.Atomic),
+            new(firstCandidate.CandidateId, firstCandidate.Revision, current,
+                ["replacement lunar association"]));
+        Assert.Equal(InteractionInvocationResultTag.Committed, secondWrite.Tag);
+        var secondCandidate = await LatestCandidateAsync(db);
+        await ValidateActivateAsync(db, setup, authoring, secondCandidate, "semantic-intent-second");
+
+        var second = SemanticManuals(db, setup, policy, embeddings, vectorRoot);
+        var secondBuild = await second.Retriever.RebuildAsync(scope);
+        Assert.True(secondBuild.Rebuilt, secondBuild.AvailabilityCode);
+        Assert.NotEqual(firstBuild.GenerationKey, secondBuild.GenerationKey);
+        var secondResult = await second.Service.DiscoverAsync(new(
+            AssociationHost(setup, "semantic-intent-search-2"), "semantic nebula request"));
+        AssertSemanticFirst(secondResult, "demo.runtime.other");
+        Assert.DoesNotContain("demo.secret.hidden", secondResult.DataJson!, StringComparison.Ordinal);
+        var latestDocuments = embeddings.DocumentBatches.Last();
+        Assert.Contains(latestDocuments, value =>
+            value.Contains("replacement lunar association", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(latestDocuments, value =>
+            value.Contains("legacy stellar association", StringComparison.OrdinalIgnoreCase));
+    }
+
     [Fact]
     public async Task Gateway_intent_update_replays_then_validates_activates_and_refreshes_manual_discovery()
     {
@@ -462,4 +529,67 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             new ApplicationCandidateWriteCapabilityHandler(SystemCapabilityIds.ApplicationCandidateActivate,
                 db, setup.Applications, authoring)
         });
+
+    private void WriteIntentSemanticProcedure(string file, string id, string instruction)
+    {
+        var path = Path.Combine(root, "content", "procedures", file + ".md");
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, ProcedureText(instruction)
+            .Replace("demo.runtime.inspect", id, StringComparison.Ordinal)
+            .Replace("Inspect runtime", "Semantic alternative", StringComparison.Ordinal),
+            new System.Text.UTF8Encoding(false));
+    }
+
+    private static (InteractionFeatureRetriever Retriever, InteractionManualContextService Service)
+        SemanticManuals(DantesRoleplayDbContext db, SetupState setup, IStandingGrantPolicy policy,
+            ITextEmbeddingProvider embeddings, string vectorRoot)
+    {
+        var catalogs = new ActivatedApplicationCatalogProvider(
+            new ConfiguredPublicApplicationCatalogPolicy([Application.Value]),
+            new ActivatedApplicationCatalogMaterializer(setup.Applications, setup.Activation,
+                setup.Sources, setup.Roots, setup.Extensions),
+            new CatalogCursorCodec(new byte[32]), setup.Activation);
+        var retriever = new InteractionFeatureRetriever(catalogs, embeddings,
+            new SqliteInteractionDerivedVectorIndex(InteractionDerivedIndexLocation.Create(vectorRoot)),
+            changes: setup.Activation);
+        return (retriever, new(new ProcedureStore(db), retriever, policy, setup.Resolver,
+            setup.Activation, ["system"]));
+    }
+
+    private static void AssertSemanticFirst(InteractionInvocationResult result, string definitionId)
+    {
+        Assert.Equal(InteractionInvocationResultTag.Completed, result.Tag);
+        using var json = JsonDocument.Parse(result.DataJson!);
+        Assert.Equal("Hybrid", json.RootElement.GetProperty("retrievalMode").GetString());
+        var first = json.RootElement.GetProperty("candidates").EnumerateArray().First();
+        Assert.Equal(definitionId, first.GetProperty("reference").GetProperty("qualifiedId").GetString());
+    }
+
+    private sealed class IntentAssociationEmbeddings : ITextEmbeddingProvider
+    {
+        private static readonly EmbeddingProviderIdentity Identity = new(
+            "fixture", "intent-association", "1", 2);
+        internal List<string[]> DocumentBatches { get; } = [];
+
+        public Task<EmbeddingProviderStatus> CheckAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult(new EmbeddingProviderStatus(true, Identity));
+
+        public Task<EmbeddingBatchResult> EmbedAsync(IReadOnlyList<string> inputs,
+            CancellationToken cancellationToken = default)
+        {
+            if (inputs.Count > 1) DocumentBatches.Add(inputs.ToArray());
+            return Task.FromResult(new EmbeddingBatchResult(Identity,
+                inputs.Select(Vector).ToArray()));
+        }
+
+        private static float[] Vector(string text)
+        {
+            if (text.Contains("semantic nebula request", StringComparison.OrdinalIgnoreCase)
+                || text.Contains("legacy stellar association", StringComparison.OrdinalIgnoreCase))
+                return [1f, 0f];
+            if (text.Contains("Fallback constellation marker", StringComparison.OrdinalIgnoreCase))
+                return [0.8f, 0.2f];
+            return [0f, 1f];
+        }
+    }
 }
