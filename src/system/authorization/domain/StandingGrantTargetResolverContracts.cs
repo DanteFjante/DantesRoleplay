@@ -26,6 +26,15 @@ public sealed record StandingGrantTargetResolution(
 /// </summary>
 public interface IStandingGrantTargetResolver
 {
+    /// <summary>
+    /// Rehydrates active evidence or the exact Candidate tuple from owner storage in the current
+    /// transaction, then compares every target field. An evidence string is never origin authority.
+    /// </summary>
+    Task<StandingGrantTargetResolution> RevalidateAsync(InteractionInvocationHost host,
+        StandingGrantDefinitionTarget target, CancellationToken cancellationToken = default) =>
+        Task.FromResult(new StandingGrantTargetResolution(StandingGrantTargetResolutionStatus.Unavailable,
+            "STANDING_GRANT_REVALIDATION_UNAVAILABLE", null));
+
     /// <summary>Exact current ID lookup for owners whose existing query contract has no definition hash.</summary>
     Task<StandingGrantTargetResolution> ResolveCurrentAsync(InteractionInvocationHost host,
         string exactDefinitionId, string kind, CancellationToken cancellationToken = default) =>

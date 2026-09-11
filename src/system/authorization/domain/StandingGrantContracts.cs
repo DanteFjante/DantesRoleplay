@@ -3,6 +3,7 @@ using DantesRoleplay.Applications;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using DantesRoleplay.SystemTasks;
+using DantesRoleplay.ApplicationActivation;
 
 namespace DantesRoleplay.Authorization;
 
@@ -61,7 +62,8 @@ public sealed record StandingGrantDefinitionAllowance(
 /// </summary>
 public sealed record StandingGrantDefinitionTarget(
     string DefinitionId, string Kind, ApplicationIdentifier OwnerApplicationId, string NamespaceId,
-    string OwnershipEvidenceReference, int Revision, string ContentFingerprint);
+    string OwnershipEvidenceReference, int Revision, string ContentFingerprint,
+    ApplicationCandidateReference? Candidate = null);
 
 /// <summary>
 /// Loaded from the durable task owner, not the caller: read/cancel requires its stored principal,
