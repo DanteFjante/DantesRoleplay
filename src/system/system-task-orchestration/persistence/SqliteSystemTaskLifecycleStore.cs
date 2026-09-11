@@ -14,6 +14,8 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
 {
     private const string FingerprintDomain = "dantes-roleplay/system-task-durable-payload/v1";
     private const string HostCallFingerprintDomain = "dantes-roleplay/system-task-host-call/v1";
+    private const string PendingHostCallCode = "SYSTEM_TASK_HOST_CALL_PENDING";
+    private const string PendingHostCallMessage = "A host call has an uncertain commit and must be reconciled before recovery.";
     private readonly string _connectionString;
     private readonly TimeProvider _timeProvider;
 
@@ -31,14 +33,6 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
     {
         ArgumentNullException.ThrowIfNull(request);
         var now = UtcNow();
-        if (request.InvocationHost.Profile != InteractionExecutionProfile.Workflow)
-            return Rejected("SYSTEM_TASK_PROFILE_UNSUPPORTED", "Durable tasks require the workflow execution profile.");
-        if (request.InvocationHost.Budget.DeadlineUtc <= now)
-            return Rejected("SYSTEM_TASK_DEADLINE_EXPIRED", "The task deadline has already expired.");
-        var admitted = Math.Min(request.InvocationHost.Budget.RemainingOperations, SystemTaskLifecycleLimits.MaximumRootOperations);
-        if (admitted < 1)
-            return Rejected("SYSTEM_TASK_BUDGET_EXHAUSTED", "The task has no remaining operation allowance.");
-
         var dependencyPairs = request.DependencyHandles
             .OrderBy(value => value.TaskId, StringComparer.Ordinal)
             .Select(value => new { value.TaskId, value.CommandId }).ToArray();
@@ -58,7 +52,9 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
             profile = InteractionExecutionProfileNames.Get(request.InvocationHost.Profile),
             request.InvocationHost.CommandId,
             request.InvocationHost.ParentCommandId,
-            admittedOperations = admitted,
+            // The requested ceiling is immutable; remaining allowance changes as siblings run.
+            // Admission persists the remaining allowance separately from command equivalence.
+            maximumOperations = request.InvocationHost.Budget.MaximumOperations,
             deadlineUtc = request.InvocationHost.Budget.DeadlineUtc.ToString("O"),
             definitionId = request.SelectedDefinition.ExactDefinitionId,
             definitionVersion = request.SelectedDefinition.Version,
@@ -92,6 +88,16 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
                     : new(SystemTaskEnqueueDisposition.Conflict, null,
                         "SYSTEM_TASK_COMMAND_CONFLICT", "The command identity is already bound to a different durable payload.");
             }
+
+            // Replays only read the existing handle. New work alone is subject to current
+            // admission limits, after the same transaction has resolved command identity.
+            if (request.InvocationHost.Profile != InteractionExecutionProfile.Workflow)
+                return await RollbackRejectedAsync(transaction, "SYSTEM_TASK_PROFILE_UNSUPPORTED", "Durable tasks require the workflow execution profile.", cancellationToken);
+            if (request.InvocationHost.Budget.DeadlineUtc <= now)
+                return await RollbackRejectedAsync(transaction, "SYSTEM_TASK_DEADLINE_EXPIRED", "The task deadline has already expired.", cancellationToken);
+            var admitted = Math.Min(request.InvocationHost.Budget.RemainingOperations, SystemTaskLifecycleLimits.MaximumRootOperations);
+            if (admitted < 1)
+                return await RollbackRejectedAsync(transaction, "SYSTEM_TASK_BUDGET_EXHAUSTED", "The task has no remaining operation allowance.", cancellationToken);
 
             var activeCount = await ScalarLongAsync(connection, transaction,
                 "SELECT COUNT(*) FROM system_task_lifecycle WHERE state IN ('queued','running','waiting','retry')", cancellationToken);
@@ -441,6 +447,11 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
         await using var connection = await OpenAsync(cancellationToken);
         await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
         var pending = await HasPendingHostCallAsync(connection, transaction, lease.Request.Handle.TaskId, cancellationToken);
+        if (pending)
+        {
+            boundedCode = PendingHostCallCode;
+            boundedMessage = PendingHostCallMessage;
+        }
         var failures = await ScalarLongAsync(connection, transaction,
             "SELECT consecutive_failures FROM system_task_lifecycle WHERE task_id = $task", cancellationToken,
             ("$task", lease.Request.Handle.TaskId));
@@ -514,6 +525,13 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
         var now = UtcNow();
         await using var connection = await OpenAsync(cancellationToken);
         await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        if (await HasPendingHostCallAsync(connection, transaction, lease.Request.Handle.TaskId, cancellationToken))
+        {
+            var unresolved = await MarkPendingIndeterminateAsync(connection, transaction, lease, now,
+                cancellationToken, requireCancellation: true);
+            await transaction.CommitAsync(cancellationToken);
+            return unresolved;
+        }
         var changed = await ExecuteFencedAsync(connection, transaction, lease, """
             state = 'cancelled', cancel_acknowledged = 1, error_code = 'SYSTEM_TASK_CANCELLED',
             safe_message = 'Cancellation was acknowledged by the worker.',
@@ -922,19 +940,19 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
         return true;
     }
 
-    private static async Task MarkPendingIndeterminateAsync(SqliteConnection connection, SqliteTransaction transaction,
-        SystemTaskLease lease, DateTime now, CancellationToken cancellationToken)
+    private static async Task<bool> MarkPendingIndeterminateAsync(SqliteConnection connection, SqliteTransaction transaction,
+        SystemTaskLease lease, DateTime now, CancellationToken cancellationToken, bool requireCancellation = false)
     {
         var changed = await ExecuteFencedAsync(connection, transaction, lease, """
-            state = 'indeterminate', error_code = 'SYSTEM_TASK_HOST_CALL_PENDING',
-            safe_message = 'A host call has an uncertain commit and must be reconciled before recovery.',
+            state = 'indeterminate', error_code = $pendingCode, safe_message = $pendingMessage,
             lease_owner = NULL, lease_token = NULL, lease_expires_at_utc = NULL,
             updated_at_utc = $now, completed_at_utc = $now
-            """, now, cancellationToken);
+            """, now, cancellationToken, requireCancellation, true,
+            ("$pendingCode", PendingHostCallCode), ("$pendingMessage", PendingHostCallMessage));
         if (changed == 1)
             await CompleteAttemptAsync(connection, transaction, lease, "indeterminate",
-                "SYSTEM_TASK_HOST_CALL_PENDING",
-                "A host call has an uncertain commit and must be reconciled before recovery.", now, cancellationToken);
+                PendingHostCallCode, PendingHostCallMessage, now, cancellationToken);
+        return changed == 1;
     }
 
     private static async Task CompleteAttemptAsync(SqliteConnection connection, SqliteTransaction transaction,
