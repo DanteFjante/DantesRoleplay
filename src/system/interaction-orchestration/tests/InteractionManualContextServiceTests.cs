@@ -133,6 +133,37 @@ public sealed class InteractionManualContextServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Completion_evidence_pins_each_budgeted_packet_while_resolution_and_input_remain_stable()
+    {
+        await using var db = _fixture.CreateContext();
+        var store = new ProcedureStore(db);
+        await store.WriteAsync(Request("procedure.system.budgets", "system", "inspect",
+            "## Inspect\n" + string.Concat(Enumerable.Repeat("Read the exact target before acting. ", 200)),
+            matches: "inspect"));
+        var service = Service(store, new Changes(App, HashA), "system");
+        const string input = "{\"target\":\"preserve the entire supplied value\"}";
+        var small = await service.DiscoverAsync(Host(), "inspect", input, maximumCharacters: 4000);
+        var large = await service.DiscoverAsync(Host(), "inspect", input, maximumCharacters: 24_000);
+        Assert.Equal(InteractionInvocationResultTag.Completed, small.Tag);
+        Assert.Equal(InteractionInvocationResultTag.Completed, large.Tag);
+        var smallPacket = JsonNode.Parse(small.DataJson!)!;
+        var largePacket = JsonNode.Parse(large.DataJson!)!;
+        Assert.Equal(smallPacket["resolutionFingerprint"]!.GetValue<string>(),
+            largePacket["resolutionFingerprint"]!.GetValue<string>());
+        Assert.NotEqual(small.CompletionEvidenceReference, large.CompletionEvidenceReference);
+        Assert.True(small.DataJson!.Length < large.DataJson!.Length);
+        foreach (var result in new[] { small, large })
+        {
+            var packet = JsonNode.Parse(result.DataJson!)!;
+            Assert.Equal(input, InteractionCanonicalJson.CanonicalizeObject(packet["knownInputs"]!.ToJsonString()));
+            var resultHash = packet["resultFingerprint"]!.GetValue<string>();
+            Assert.Equal("manual.context." + resultHash.ToLowerInvariant(), result.CompletionEvidenceReference);
+            packet["resultFingerprint"] = new string('0', 64);
+            Assert.Equal(resultHash, Hash(InteractionCanonicalJson.CanonicalizeObject(packet.ToJsonString())));
+        }
+    }
+
+    [Fact]
     public async Task Two_authored_intents_find_one_exact_query_and_report_missing_inputs_without_invoking_it()
     {
         await using var db = _fixture.CreateContext();

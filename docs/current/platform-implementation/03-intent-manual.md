@@ -27,6 +27,8 @@ manual resolution hash without changing the catalog synchronization hash. Contex
 verified recipe candidates. A bounded packet explicitly directs callers to exact source reads;
 omitted constraints have not been validated. Result hashes are computed over canonical packet JSON
 with `resultFingerprint` replaced by 64 zeroes.
+Completion evidence names that final result hash; the separate resolution hash detects source and
+candidate drift even when a caller chooses a different output budget.
 
 The existing activation change reader can invalidate cached catalog snapshots and reject stale
 retrieval generations. Derived index failures preserve lexical discovery and cannot gate activation.

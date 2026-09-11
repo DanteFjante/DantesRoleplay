@@ -199,12 +199,13 @@ public sealed class InteractionManualContextService(
             { reusable.RemoveAt(reusable.Count - 1); packet["bounded"] = true; }
             while (packet.ToJsonString().Length > maximumCharacters && candidates.Count > 0)
             { candidates.RemoveAt(candidates.Count - 1); packet["bounded"] = true; }
-            packet["resultFingerprint"] = ProcedureManualSections.Hash(InteractionCanonicalJson.CanonicalizeObject(packet.ToJsonString()));
+            var resultFingerprint = ProcedureManualSections.Hash(InteractionCanonicalJson.CanonicalizeObject(packet.ToJsonString()));
+            packet["resultFingerprint"] = resultFingerprint;
             var json = packet.ToJsonString();
             if (json.Length > maximumCharacters)
                 return InteractionInvocationResult.Failed("MANUAL_CONTEXT_LIMIT", "Use a smaller known input to fit the context budget.");
             token.ThrowIfCancellationRequested();
-            return InteractionInvocationResult.CompletedComputation(json, "manual.context." + fingerprint.ToLowerInvariant());
+            return InteractionInvocationResult.CompletedComputation(json, "manual.context." + resultFingerprint.ToLowerInvariant());
 
             void AddSections(string id, int version, string sourceFingerprint, string governs,
                 string instructions, string constraints, string metadata, bool isExact, string? storedSourceHash,
