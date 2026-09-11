@@ -38,7 +38,24 @@ internal sealed class ApplicationCandidateSelectionReader(DantesRoleplayDbContex
         if (changed.Count is < 1 or > ApplicationAuthoringLimits.DocumentsPerWrite) return null;
         var paths = ApplicationCandidateDocumentSelection.WithKnownSidecars(retained.Documents, changed);
         var documents = await reader.ReadSelectedAsync(retained, paths, cancellationToken);
-        var definitions = SqliteApplicationAuthoringService.Definitions(candidate.ApplicationId, documents, changed);
+        var records = SqliteApplicationAuthoringService.DefinitionRecords(candidate.ApplicationId, documents, changed);
+        var definitions = records.Select(value => new StandingGrantDefinitionReference(value.QualifiedId,
+            value.Kind, value.Version, value.ContentFingerprint)).ToArray();
+        var bindings = new Dictionary<string, StandingGrantDefinitionReference>(StringComparer.Ordinal);
+        foreach (var record in records)
+        {
+            var definition = new StandingGrantDefinitionReference(record.QualifiedId, record.Kind, record.Version, record.ContentFingerprint);
+            if (!bindings.TryAdd(record.SourceLogicalPath, definition)) return null;
+            if (record.Kind != "mechanic") continue;
+            // ParseRetainedRecord has resolved this exact contract and its same-source JavaScript
+            // through the mechanic owner. This binding is to that normalized record, not a new JS ID.
+            var contract = documents.Single(value => value.Document.RelativePath == record.SourceLogicalPath).Document;
+            var sidecarPath = Path.ChangeExtension(record.SourceLogicalPath, ".js").Replace('\\', '/');
+            var sidecar = documents.Single(value => value.Document.RelativePath == sidecarPath).Document;
+            if (contract.SourceId != sidecar.SourceId || contract.Trust != sidecar.Trust || contract.Precedence != sidecar.Precedence
+                || !bindings.TryAdd(sidecarPath, definition)) return null;
+        }
+        if (documents.Any(value => !bindings.ContainsKey(value.Document.RelativePath))) return null;
         var selectedTargets = ImmutableArray.CreateBuilder<StandingGrantDefinitionTarget>();
         foreach (var definition in definitions)
         {
@@ -51,13 +68,15 @@ internal sealed class ApplicationCandidateSelectionReader(DantesRoleplayDbContex
         return new(candidate, origin, changed.Order(StringComparer.Ordinal).ToImmutableArray(),
             documents.OrderBy(value => value.Document.RelativePath, StringComparer.Ordinal).Select(value =>
                 new ApplicationCandidateSelectedDocument(value.Document, value.RetainedBytes.ToImmutableArray(),
-                    changed.Contains(value.Document.RelativePath, StringComparer.Ordinal) ? "changed" : "sidecar")).ToImmutableArray(),
+                    changed.Contains(value.Document.RelativePath, StringComparer.Ordinal) ? "changed" : "sidecar",
+                    bindings[value.Document.RelativePath])).ToImmutableArray(),
             selectedTargets.OrderBy(value => value.DefinitionId, StringComparer.Ordinal).ToImmutableArray());
     }
 }
 
 internal sealed record ApplicationCandidateSelectedDocument(
-    ActivatedApplicationDocument Document, ImmutableArray<byte> RetainedBytes, string Role);
+    ActivatedApplicationDocument Document, ImmutableArray<byte> RetainedBytes, string Role,
+    StandingGrantDefinitionReference Definition);
 
 internal sealed class ApplicationCandidateSelectionEvidence
 {
@@ -70,7 +89,7 @@ internal sealed class ApplicationCandidateSelectionEvidence
             InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
             {
                 candidate, baseOrigin, changedPaths, coverageVersion = CoverageVersion, dependenciesComplete = DependenciesComplete,
-                documents = documents.Select(value => new { value.Document, value.Role }), targets
+                documents = documents.Select(value => new { value.Document, value.Role, value.Definition }), targets
             })));
     }
 

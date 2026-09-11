@@ -278,6 +278,10 @@ public sealed partial class SqliteApplicationAuthoringService(
         .ReadSelectedAsync(metadata, ApplicationCandidateDocumentSelection.WithKnownSidecars(metadata.Documents, changed), ct);
 
     internal static IReadOnlyList<StandingGrantDefinitionReference> Definitions(ApplicationIdentifier app, IReadOnlyList<ApplicationCandidateDocument> value, IReadOnlyList<string> changed)
+        => DefinitionRecords(app, value, changed).Select(x => new StandingGrantDefinitionReference(x.QualifiedId, x.Kind, x.Version, x.ContentFingerprint)).ToArray();
+
+    internal static IReadOnlyList<CatalogNavigation.CatalogRecordDefinition> DefinitionRecords(ApplicationIdentifier app,
+        IReadOnlyList<ApplicationCandidateDocument> value, IReadOnlyList<string> changed)
     {
         var winners = value.Where(x => x.Document.IsText).ToDictionary(x => x.Document.RelativePath, x => x.Document, StringComparer.Ordinal);
         var bytes = value.Where(x => x.Document.IsText).ToDictionary(x => x.Document.RelativePath, x => x.RetainedBytes, StringComparer.Ordinal);
@@ -290,7 +294,7 @@ public sealed partial class SqliteApplicationAuthoringService(
             .ToHashSet(StringComparer.Ordinal);
         if (selected.Length == 0 || selected.Any(x => x is null) || !changedPaths.IsSubsetOf(covered))
             throw new ApplicationActivationException("APPLICATION_CANDIDATE_COVERAGE_UNAVAILABLE", "Every changed document needs one supported definition.");
-        return selected.Select(x => new StandingGrantDefinitionReference(x!.QualifiedId, x.Kind, x.Version, x.ContentFingerprint)).ToArray();
+        return selected.Select(x => x!).ToArray();
     }
 
     internal static void Validate(ApplicationCandidateWriteRequest request)
