@@ -14,8 +14,11 @@ internal sealed class ApplicationRetainedDocumentStore(DantesRoleplayDbContext d
         IReadOnlyDictionary<string, byte[]>? retainedBytes,
         CancellationToken cancellationToken)
     {
+        var logicalIdentities = winners.Select(value => value.LogicalIdentity).Distinct(StringComparer.Ordinal).ToArray();
+        if (logicalIdentities.Length != winners.Count)
+            throw Invalid("ACTIVATION_EVIDENCE_CORRUPT", "Retained document identities must be unique.");
         var identities = await db.Set<ApplicationActivationDocumentIdentityRecord>()
-            .Where(value => value.ApplicationId == applicationId.Value)
+            .Where(value => value.ApplicationId == applicationId.Value && logicalIdentities.Contains(value.LogicalIdentity))
             .ToDictionaryAsync(value => value.LogicalIdentity, StringComparer.Ordinal, cancellationToken);
         foreach (var logicalIdentity in winners.Select(value => value.LogicalIdentity).Distinct(StringComparer.Ordinal))
         {
@@ -30,22 +33,24 @@ internal sealed class ApplicationRetainedDocumentStore(DantesRoleplayDbContext d
         }
         await db.SaveChangesAsync(cancellationToken);
 
-        var identityIds = identities.Values.Select(value => value.Id).ToArray();
-        var evidence = await db.Set<ApplicationActivationDocumentEvidenceRecord>()
-            .Where(value => identityIds.Contains(value.IdentityId))
-            .ToArrayAsync(cancellationToken);
-        var evidenceByIdentity = evidence.GroupBy(value => value.IdentityId)
-            .ToDictionary(value => value.Key, value => value.ToList());
         var links = new List<ApplicationRetainedDocumentLink>(winners.Count);
         foreach (var (document, ordinal) in winners.Select((value, index) => (value, index)))
         {
             var identity = identities[document.LogicalIdentity];
-            if (!evidenceByIdentity.TryGetValue(identity.Id, out var candidates))
-            {
-                candidates = [];
-                evidenceByIdentity.Add(identity.Id, candidates);
-            }
-            var retained = candidates.SingleOrDefault(value => SameEvidence(value, document));
+            // Select the exact evidence version before reading its BLOB. Other revisions and
+            // unrelated application documents are not materialized while retaining this change.
+            var retainedKey = await db.Set<ApplicationActivationDocumentEvidenceRecord>().AsNoTracking()
+                .Where(value => value.IdentityId == identity.Id && value.SourceId == document.SourceId
+                    && value.Trust == (int)document.Trust && value.Precedence == document.Precedence
+                    && value.RelativePath == document.RelativePath && value.MediaType == document.MediaType
+                    && value.ContentFingerprint == document.ContentFingerprint && value.Length == document.Length
+                    && value.IsText == document.IsText)
+                .Select(value => new { value.EvidenceVersion, ByteLength = value.RetainedBytes == null ? (int?)null : value.RetainedBytes.Length })
+                .SingleOrDefaultAsync(cancellationToken);
+            if (retainedKey?.ByteLength is { } length && (length != document.Length || length > 10L * 1024 * 1024))
+                throw Invalid("ACTIVATION_EVIDENCE_CORRUPT", "Retained document bytes exceed their immutable evidence bound.");
+            var retained = retainedKey is null ? null : await db.Set<ApplicationActivationDocumentEvidenceRecord>()
+                .SingleAsync(value => value.IdentityId == identity.Id && value.EvidenceVersion == retainedKey.EvidenceVersion, cancellationToken);
             var bytes = retainedBytes?.GetValueOrDefault(document.LogicalIdentity);
             if (bytes is not null && (bytes.LongLength != document.Length || HashBytes(bytes) != document.ContentFingerprint))
                 throw Invalid("ACTIVATION_EVIDENCE_CORRUPT",
@@ -55,7 +60,8 @@ internal sealed class ApplicationRetainedDocumentStore(DantesRoleplayDbContext d
                 retained = new ApplicationActivationDocumentEvidenceRecord
                 {
                     IdentityId = identity.Id,
-                    EvidenceVersion = candidates.Select(value => value.EvidenceVersion).DefaultIfEmpty().Max() + 1,
+                    EvidenceVersion = (await db.Set<ApplicationActivationDocumentEvidenceRecord>()
+                        .Where(value => value.IdentityId == identity.Id).MaxAsync(value => (int?)value.EvidenceVersion, cancellationToken) ?? 0) + 1,
                     SourceId = document.SourceId,
                     Trust = (int)document.Trust,
                     Precedence = document.Precedence,
@@ -66,7 +72,6 @@ internal sealed class ApplicationRetainedDocumentStore(DantesRoleplayDbContext d
                     IsText = document.IsText,
                     RetainedBytes = bytes?.ToArray()
                 };
-                candidates.Add(retained);
                 db.Add(retained);
             }
             else

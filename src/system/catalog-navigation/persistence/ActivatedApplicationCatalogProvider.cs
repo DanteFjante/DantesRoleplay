@@ -563,7 +563,7 @@ public sealed class ActivatedApplicationCatalogMaterializer(
     private static string Summary(string value) =>
         string.Join(' ', value.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
 
-    private static bool TryRecordKind(string path, out string kind)
+    internal static bool TryRecordKind(string path, out string kind)
     {
         kind = "";
         var segments = path.Split('/');
