@@ -110,6 +110,23 @@ the wrapped invocation. Source-to-profile/tool mapping and current authority mus
 by the resolver; constructing the DTO is not permission. Both profile and invocation authority reject
 JSON import/export. `IInteractionManualContextService` remains the manual source; no packet is copied.
 
+Worker subjects are closed: `ProcedureWorkflow` retains its exact procedure and real state scope;
+`ApplicationCandidateValidation` retains an exact host-only candidate reference, has no executable
+procedure, and requires `InteractionInvocationHost.ForApplication` with the read-only profile and
+absent state pair. The existing host/procedure constructor remains; the new constructor takes the
+subject first. Validation profiles require separate Read and Validate provenance, no tools, a zero
+tool-call budget, and the exact immutable `inner.application-candidate-reuse-review` version-1
+definition and fields. Profile selection never grants authority or makes the reviewer executable.
+
+The built-in reviewer consumes only plan 03's selected-material V2 input and output schema. Its
+model-visible pins describe the authorized selection, not full candidate/base generations; actual
+owner evidence must separately establish complete coverage. `SystemInnerWorkerValidationRequestBuilder`
+checks input/schema/manual agreement and narrows tool calls and rounds to zero, response bytes to
+at most 8,000, and elapsed time to the host deadline. It neither dispatches nor authorizes. Plan 04
+must still bound the actual serialized provider descriptor to 64 KiB, including generated system
+instructions and escaping, before invocation. These adapters remain unregistered pending the real
+selection, authority, durable admission, accounting and result-publication integration.
+
 `SystemInnerWorkerAiBudget` defaults to a measured-stop threshold of 32,768 total provider input/output
 tokens including provider overhead, 8 tool dispatches and 2 concurrent provider requests per root. Host ceilings are configurable
 up to 131,072 tokens, 16 tools and 4 concurrent requests. Child ceilings only narrow and preserve the
