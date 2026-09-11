@@ -73,6 +73,14 @@ public interface IApplicationReadModelInvocationAdapter
         CancellationToken cancellationToken = default);
 }
 
+/// <summary>
+/// Identifies the application read adapter whose authority comes exclusively from a current
+/// standing-grant evaluation. Consumers select it explicitly; it is not a legacy fallback.
+/// </summary>
+public interface IStandingGrantApplicationReadModelInvocationAdapter : IApplicationReadModelInvocationAdapter
+{
+}
+
 /// <summary>Trusted, transport-neutral inputs available while resolving declared query roles.</summary>
 public sealed record ApplicationQueryRoleBindingContext(
     string RouteEntityId,

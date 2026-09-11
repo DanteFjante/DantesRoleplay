@@ -215,7 +215,7 @@ public sealed class InteractionInvocationAdapterTests
         Assert.Equal("{\"value\":2}", stored.ValueJson);
     }
 
-    private sealed class InvocationFixture : IDisposable
+    internal sealed class InvocationFixture : IDisposable
     {
         public const string SpaceId = "foundation-space";
         private static readonly ApplicationIdentifier App = ApplicationIdentifier.Parse("foundation-fixture");
@@ -234,9 +234,10 @@ public sealed class InteractionInvocationAdapterTests
             ApplicationRevision revision, TrustedPrincipalContext principal,
             SqliteStateSpaceRegistry stateSpaces, SqliteEntityComponentStore entities,
             OperationLog operations, RegisteredComponentTypeVersion counterType,
-            CatalogRecordDefinition actionRecord, string activationFingerprint,
+            CatalogRecordDefinition actionRecord, StandingGrantDefinitionTarget queryTarget,
+            string activationFingerprint,
             string resolutionFingerprint, InteractionQueryContractReference queryContract,
-            IApplicationActionRunner runner,
+            IApplicationActionRunner runner, IApplicationReadModelService readModels,
             IApplicationReadModelInvocationAdapter readAdapter,
             IApplicationActionInvocationAdapter actionAdapter)
         {
@@ -249,10 +250,12 @@ public sealed class InteractionInvocationAdapterTests
             Operations = operations;
             CounterType = counterType;
             ActionRecord = actionRecord;
+            QueryTarget = queryTarget;
             ActivationFingerprint = activationFingerprint;
             ResolutionFingerprint = resolutionFingerprint;
             this.queryContract = queryContract;
             Runner = runner;
+            ReadModels = readModels;
             ReadAdapter = readAdapter;
             ActionAdapter = actionAdapter;
         }
@@ -262,9 +265,11 @@ public sealed class InteractionInvocationAdapterTests
         public OperationLog Operations { get; }
         public RegisteredComponentTypeVersion CounterType { get; }
         public CatalogRecordDefinition ActionRecord { get; }
+        public StandingGrantDefinitionTarget QueryTarget { get; }
         public string ActivationFingerprint { get; }
         public string ResolutionFingerprint { get; }
         public IApplicationActionRunner Runner { get; }
+        public IApplicationReadModelService ReadModels { get; }
         public IApplicationReadModelInvocationAdapter ReadAdapter { get; }
         public IApplicationActionInvocationAdapter ActionAdapter { get; }
         public InteractionQueryContractReference QueryContract => queryContract;
@@ -363,8 +368,10 @@ public sealed class InteractionInvocationAdapterTests
             return new(database, db, revision,
                 PrivateOperatorPrincipal.Create("local-loopback", "foundation-invocation-acceptance"),
                 stateSpaces, entities, operations, counterType, actionRecord,
+                new(queryRecord.QualifiedId, "query", App, App.Value + ".query",
+                    "catalog-owner.query.counter", queryRecord.Version, queryRecord.ContentFingerprint),
                 activationFingerprint, resolutionFingerprint, queryContract,
-                runner,
+                runner, readService,
                 new ApplicationReadModelInvocationAdapter(authorization, stateSpaces, readService),
                 new ApplicationActionInvocationAdapter(authorization, stateSpaces, runner, operations));
         }
@@ -375,8 +382,12 @@ public sealed class InteractionInvocationAdapterTests
             new ApplicationActionInvocationAdapter(
                 new PrivateHostInteractionAuthorizationPolicy(StateSpaces), StateSpaces, actions, operationLog);
 
-        public ApplicationReadModelInvocationRequest ReadRequest(string commandId) => new(
-            Host(commandId, InteractionExecutionProfile.ReadOnly, "interaction.private-host.read"),
+        public ApplicationReadModelInvocationRequest ReadRequest(
+            string commandId,
+            string grantReference = "interaction.private-host.read",
+            int maximumOperations = 8) => new(
+            Host(commandId, InteractionExecutionProfile.ReadOnly, grantReference,
+                maximumOperations: maximumOperations),
             App.Value + ".query.counter", queryContract,
             new Dictionary<string, string> { ["subject"] = "subject" });
 
@@ -404,12 +415,13 @@ public sealed class InteractionInvocationAdapterTests
             string grant,
             string stateSpaceId = SpaceId,
             string? stateRevision = null,
-            string? parentCommandId = null)
+            string? parentCommandId = null,
+            int maximumOperations = 8)
         {
             var state = StateSpaces.Get(SpaceId)!;
             return new(principal, revision, stateSpaceId, grant, commandId,
                 stateRevision ?? InteractionStateRevision.From(state), profile,
-                new InteractionInvocationBudget(8, DateTime.UtcNow.AddMinutes(2)), parentCommandId);
+                new InteractionInvocationBudget(maximumOperations, DateTime.UtcNow.AddMinutes(2)), parentCommandId);
         }
 
         public void Dispose()

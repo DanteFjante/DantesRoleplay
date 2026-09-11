@@ -9,36 +9,78 @@ internal sealed class ApplicationReadModelInvocationAdapter(
     IStateSpaceRegistry stateSpaces,
     IApplicationReadModelService reads) : IApplicationReadModelInvocationAdapter
 {
-    public async Task<InteractionInvocationResult> ReadAsync(ApplicationReadModelInvocationRequest request,
+    private readonly ApplicationReadModelInvocationCore core = new(stateSpaces, reads);
+
+    public Task<InteractionInvocationResult> ReadAsync(ApplicationReadModelInvocationRequest request,
+        CancellationToken cancellationToken = default) =>
+        core.ReadAsync(request, AuthorizeAsync, cancellationToken: cancellationToken);
+
+    private Task<InteractionInvocationResult?> AuthorizeAsync(
+        ApplicationReadModelInvocationRequest request,
+        CancellationToken cancellationToken)
+    {
+        var decision = authorization.Evaluate(new(
+            request.Host.Principal,
+            request.Host.ApplicationRevision.ApplicationId,
+            request.Host.StateSpaceId,
+            InteractionCapability.Read,
+            request.Host.CommandId));
+        var allowed = decision.Allowed && decision.Capability == InteractionCapability.Read
+            && decision.PrincipalReference == request.Host.Principal.PrincipalId
+            && decision.ApplicationId == request.Host.ApplicationRevision.ApplicationId
+            && decision.StateSpaceId == request.Host.StateSpaceId
+            && decision.EvidenceReference == request.Host.GrantReference;
+        return Task.FromResult<InteractionInvocationResult?>(allowed
+            ? null
+            : InteractionInvocationResult.Failed(
+                "INVOCATION_NOT_AUTHORIZED",
+                "The read is not authorized for this scope."));
+    }
+}
+
+internal sealed class ApplicationReadModelInvocationCore(
+    IStateSpaceRegistry stateSpaces,
+    IApplicationReadModelService reads)
+{
+    internal async Task<InteractionInvocationResult> ReadAsync(
+        ApplicationReadModelInvocationRequest request,
+        Func<ApplicationReadModelInvocationRequest, CancellationToken, Task<InteractionInvocationResult?>> authorize,
+        Func<ApplicationReadModelInvocationRequest, CancellationToken, Task<InteractionInvocationResult?>>? reauthorize = null,
         CancellationToken cancellationToken = default)
     {
         try
         {
             ArgumentNullException.ThrowIfNull(request);
+            ArgumentNullException.ThrowIfNull(authorize);
             if (request.Host.Profile != InteractionExecutionProfile.ReadOnly)
                 return InteractionInvocationResult.Unavailable("READ_PROFILE_UNSUPPORTED", "The requested read profile is unavailable.");
             if (request.Host.Budget.DeadlineUtc <= DateTime.UtcNow)
                 return InteractionInvocationResult.Cancelled("INVOCATION_DEADLINE_EXCEEDED", "The invocation deadline elapsed before the read started.");
             if (!request.Host.Budget.TryConsumeOperation())
                 return InteractionInvocationResult.Failed("INVOCATION_BUDGET_EXHAUSTED", "The invocation operation budget is exhausted.");
-            var decision = authorization.Evaluate(new(request.Host.Principal, request.Host.ApplicationRevision.ApplicationId,
-                request.Host.StateSpaceId, InteractionCapability.Read, request.Host.CommandId));
-            if (!decision.Allowed || decision.Capability != InteractionCapability.Read
-                || decision.PrincipalReference != request.Host.Principal.PrincipalId
-                || decision.ApplicationId != request.Host.ApplicationRevision.ApplicationId
-                || decision.StateSpaceId != request.Host.StateSpaceId
-                || decision.EvidenceReference != request.Host.GrantReference)
-                return InteractionInvocationResult.Failed("INVOCATION_NOT_AUTHORIZED", "The read is not authorized for this scope.");
+            using var deadline = Deadline(request.Host.Budget, cancellationToken);
+            var denied = await authorize(request, deadline.Token);
+            if (denied is not null) return denied;
             var state = stateSpaces.Get(request.Host.StateSpaceId);
             if (state is null || !ScopeMatches(state, request.Host)
                 || InteractionStateRevision.From(state) != request.Host.StateRevision)
                 return InteractionInvocationResult.Failed("INVOCATION_SCOPE_STALE", "The requested state scope is no longer current.");
             var input = ApplicationReadModelInput.Normalize(request.InputJson);
             var roles = InteractionInvocationRoles.Normalize(request.RoleBindings);
-            using var deadline = Deadline(request.Host.Budget, cancellationToken);
             var result = await reads.ReadAsync(new(request.Host.StateSpaceId, request.Host.ApplicationRevision.ApplicationId,
                 request.QualifiedQueryId, roles, request.Audience, input, request.Cursor, request.PageSize)
             { ExpectedContract = request.ExpectedContract }, deadline.Token);
+            if (reauthorize is not null)
+            {
+                denied = await reauthorize(request, deadline.Token);
+                if (denied is not null) return denied;
+                state = stateSpaces.Get(request.Host.StateSpaceId);
+                if (state is null || !ScopeMatches(state, request.Host)
+                    || InteractionStateRevision.From(state) != request.Host.StateRevision)
+                    return InteractionInvocationResult.Failed(
+                        "INVOCATION_SCOPE_STALE",
+                        "The requested state scope is no longer current.");
+            }
             return InteractionInvocationResult.Completed(result.DataJson, new(result.StateSpaceFingerprint,
                 result.ResolutionFingerprint, result.OutputSchemaHash, result.ResultFingerprint,
                 result.SourceRevisionFingerprint));
