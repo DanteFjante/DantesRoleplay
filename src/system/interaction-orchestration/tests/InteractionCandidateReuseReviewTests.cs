@@ -18,13 +18,18 @@ public sealed class InteractionCandidateReuseReviewTests : IDisposable
     public void Dispose() => _fixture.Dispose();
 
     [Theory]
-    [InlineData(true, true, true, true, "REUSE_EXACT_CONTENT_DUPLICATE", ApplicationCandidateCheckStatus.Invalid)]
-    [InlineData(false, true, true, true, "REUSE_REVIEW_WORKER_UNAVAILABLE", ApplicationCandidateCheckStatus.Unavailable)]
-    [InlineData(true, false, true, true, "REUSE_REVIEW_WORKER_UNAVAILABLE", ApplicationCandidateCheckStatus.Unavailable)]
-    [InlineData(true, true, false, true, "REUSE_CANDIDATE_AUTHORITY", ApplicationCandidateCheckStatus.Unavailable)]
-    [InlineData(true, true, true, false, "REUSE_CANDIDATE_AUTHORITY", ApplicationCandidateCheckStatus.Unavailable)]
+    [InlineData(true, true, true, true, true, "REUSE_EXACT_CONTENT_DUPLICATE", ApplicationCandidateCheckStatus.Invalid)]
+    [InlineData(true, true, true, true, false, "REUSE_EXACT_CONTENT_DUPLICATE", ApplicationCandidateCheckStatus.Invalid)]
+    [InlineData(false, true, true, true, true, "REUSE_REVIEW_WORKER_UNAVAILABLE", ApplicationCandidateCheckStatus.Unavailable)]
+    [InlineData(false, true, true, true, false, "REUSE_REVIEW_WORKER_UNAVAILABLE", ApplicationCandidateCheckStatus.Unavailable)]
+    [InlineData(true, false, true, true, true, "REUSE_REVIEW_WORKER_UNAVAILABLE", ApplicationCandidateCheckStatus.Unavailable)]
+    [InlineData(true, false, true, true, false, "REUSE_REVIEW_WORKER_UNAVAILABLE", ApplicationCandidateCheckStatus.Unavailable)]
+    [InlineData(true, true, false, true, true, "REUSE_CANDIDATE_AUTHORITY", ApplicationCandidateCheckStatus.Unavailable)]
+    [InlineData(true, true, false, true, false, "REUSE_CANDIDATE_AUTHORITY", ApplicationCandidateCheckStatus.Unavailable)]
+    [InlineData(true, true, true, false, true, "REUSE_CANDIDATE_AUTHORITY", ApplicationCandidateCheckStatus.Unavailable)]
+    [InlineData(true, true, true, false, false, "REUSE_CANDIDATE_AUTHORITY", ApplicationCandidateCheckStatus.Unavailable)]
     public async Task Real_discovery_pipeline_rejects_copies_without_fabricating_semantic_review(
-        bool includeAlternative, bool readAlternative, bool candidateMapped, bool hasRead,
+        bool includeAlternative, bool readAlternative, bool candidateMapped, bool hasRead, bool appOnly,
         string code, ApplicationCandidateCheckStatus status)
     {
         await using var db = _fixture.CreateContext();
@@ -53,7 +58,8 @@ public sealed class InteractionCandidateReuseReviewTests : IDisposable
         var manual = new CountingManual(new InteractionManualContextService(new ProcedureStore(db), retriever,
             policy, resolver, new Changes(), []));
         var review = new InteractionCandidateReuseReview(manual, retriever, policy, resolver, new Changes());
-        var result = await review.ReviewAsync(Host(), candidate);
+        var host = Host(appOnly);
+        var result = await review.ReviewAsync(host, candidate);
         Assert.Equal((status, code), Status(result));
         Assert.Null(result.EvidenceReference);
         if (!candidateMapped || !hasRead)
@@ -61,24 +67,37 @@ public sealed class InteractionCandidateReuseReviewTests : IDisposable
             Assert.Equal(0, manual.Calls);
             Assert.Null(result.ManualPacketResultFingerprint);
         }
-        else Assert.NotNull(result.ManualPacketResultFingerprint);
+        else
+        {
+            Assert.NotNull(result.ManualPacketResultFingerprint); Assert.NotNull(manual.Last);
+            var child = manual.Last.Host;
+            Assert.Same(host.Budget, child.Budget);
+            Assert.Equal(host.Principal, child.Principal); Assert.Equal(host.ApplicationRevision.ApplicationId, child.ApplicationRevision.ApplicationId);
+            Assert.Equal(host.ApplicationRevision.Revision, child.ApplicationRevision.Revision); Assert.Equal(host.ApplicationRevision.Fingerprint, child.ApplicationRevision.Fingerprint);
+            Assert.Equal(host.ApplicationRevision.BaseApplications, child.ApplicationRevision.BaseApplications);
+            Assert.Equal(host.GrantReference, child.GrantReference); Assert.Equal(host.CommandId, child.CommandId);
+            Assert.Equal(host.ParentCommandId, child.ParentCommandId); Assert.Equal(InteractionExecutionProfile.ReadOnly, child.Profile);
+            Assert.Equal(host.StateSpaceId, child.StateSpaceId); Assert.Equal(host.StateRevision, child.StateRevision);
+        }
         if (!readAlternative) Assert.Empty(result.Alternatives);
         if (status == ApplicationCandidateCheckStatus.Invalid)
             Assert.Equal(alternative.QualifiedId, Assert.Single(result.Alternatives).DefinitionId);
     }
 
-    [Fact]
-    public async Task Reason_hash_and_retained_bounds_fail_closed_without_evidence_reference()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Reason_hash_and_retained_bounds_fail_closed_without_evidence_reference(bool appOnly)
     {
         var review = new InteractionCandidateReuseReview(null!, null!, null!, null!, new Changes());
-        var missingReason = await review.ReviewAsync(Host(), Snapshot(reason: ""));
-        var spoofedHash = await review.ReviewAsync(Host(), Snapshot(hash: new string('A', 64)));
-        var oversized = await review.ReviewAsync(Host(), Snapshot(bytes: new byte[32_001]));
+        var missingReason = await review.ReviewAsync(Host(appOnly), Snapshot(reason: ""));
+        var spoofedHash = await review.ReviewAsync(Host(appOnly), Snapshot(hash: new string('A', 64)));
+        var oversized = await review.ReviewAsync(Host(appOnly), Snapshot(bytes: new byte[32_001]));
 
         Assert.Equal((ApplicationCandidateCheckStatus.Invalid, "REUSE_REASON_REQUIRED"), Status(missingReason));
         Assert.Equal((ApplicationCandidateCheckStatus.Unavailable, "REUSE_RETAINED_EVIDENCE"), Status(spoofedHash));
         Assert.Equal((ApplicationCandidateCheckStatus.Unavailable, "REUSE_CONTEXT_LIMIT"), Status(oversized));
-        Assert.All([missingReason, spoofedHash, oversized], value => Assert.Null(value.EvidenceReference));
+        Assert.Null(missingReason.EvidenceReference); Assert.Null(spoofedHash.EvidenceReference); Assert.Null(oversized.EvidenceReference);
     }
 
     private static (ApplicationCandidateCheckStatus, string) Status(ApplicationCandidateReuseResult value) =>
@@ -92,9 +111,9 @@ public sealed class InteractionCandidateReuseReviewTests : IDisposable
         return new(new(App, "candidate-identity-0000000000000000", 1, new string('B', 64)), 1, new string('C', 64),
             new string('D', 64), "runtime", null, reason, "grant.1", "operation.1", [new(document, bytes)], []);
     }
-    private static InteractionInvocationHost Host() => new(TrustedPrincipalContext.VerifiedPrincipal("principal." + new string('a', 64), "test"),
-        new(App, 1, new string('C', 64), []), "state.1", "grant.1", "command.1", "revision.1",
-        InteractionExecutionProfile.ReadOnly, new InteractionInvocationBudget(2, DateTime.UtcNow.AddMinutes(1)));
+    private static InteractionInvocationHost Host(bool appOnly = false) => appOnly
+        ? InteractionInvocationHost.ForApplication(TrustedPrincipalContext.VerifiedPrincipal("principal." + new string('a', 64), "test"), new(App, 1, new string('C', 64), []), "grant.1", "command.1", InteractionExecutionProfile.Atomic, new(2, DateTime.UtcNow.AddMinutes(1)), "parent.1")
+        : new(TrustedPrincipalContext.VerifiedPrincipal("principal." + new string('a', 64), "test"), new(App, 1, new string('C', 64), []), "state.1", "grant.1", "command.1", "revision.1", InteractionExecutionProfile.Atomic, new(2, DateTime.UtcNow.AddMinutes(1)), "parent.1");
     private sealed class Changes : IApplicationDefinitionChangeReader
     { public ApplicationDefinitionChange? CurrentChange(ApplicationIdentifier id) => new(App, 1, new string('D', 64), "operation.1", DateTime.UnixEpoch, new([], []), new(new string('E', 64), "fixture", true), new("rebuildable", false, false)); public ApplicationDefinitionChange? RevisionChange(ApplicationIdentifier id, int revision) => CurrentChange(id); public IReadOnlyList<ApplicationDefinitionChange> ChangesAfter(ApplicationIdentifier id, int after, int limit) => []; }
     private sealed class Snapshots(ActiveCatalogFeatureSnapshot snapshot) : IActiveCatalogFeatureSnapshotProvider
@@ -102,8 +121,9 @@ public sealed class InteractionCandidateReuseReviewTests : IDisposable
     private sealed class CountingManual(IInteractionManualContextService actual) : IInteractionManualContextService
     {
         internal int Calls;
+        internal InteractionManualContextRequest? Last;
         public Task<InteractionInvocationResult> DiscoverAsync(InteractionManualContextRequest request, CancellationToken cancellationToken = default)
-        { Calls++; return actual.DiscoverAsync(request, cancellationToken); }
+        { Calls++; Last = request; return actual.DiscoverAsync(request, cancellationToken); }
     }
     // Test-only permission fixtures. Passing this pipeline does not establish production issuance or resolution.
     private sealed class FixturePolicy(bool readAlternative, bool hasRead) : IStandingGrantPolicy

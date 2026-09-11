@@ -49,9 +49,18 @@ public sealed class InteractionCandidateReuseReview(
             var token = deadline.Token;
             token.ThrowIfCancellationRequested();
             // A read-only child preserves identity, grant and the same shared operation ledger.
-            var readHost = new InteractionInvocationHost(host.Principal, host.ApplicationRevision, host.StateSpaceId,
-                host.GrantReference, host.CommandId, host.StateRevision, InteractionExecutionProfile.ReadOnly,
-                host.Budget, host.ParentCommandId);
+            InteractionInvocationHost readHost;
+            if (host.StateSpaceId is { } stateSpaceId && host.StateRevision is { } stateRevision)
+                readHost = new(host.Principal, host.ApplicationRevision, stateSpaceId,
+                    host.GrantReference, host.CommandId, stateRevision, InteractionExecutionProfile.ReadOnly,
+                    host.Budget, host.ParentCommandId);
+            else if (host.StateSpaceId is null && host.StateRevision is null)
+                readHost = InteractionInvocationHost.ForApplication(host.Principal, host.ApplicationRevision,
+                    host.GrantReference, host.CommandId, InteractionExecutionProfile.ReadOnly,
+                    host.Budget, host.ParentCommandId);
+            else
+                return Result(ApplicationCandidateCheckStatus.Unavailable, "REUSE_CANDIDATE_SCOPE",
+                    "Review requires an application invocation or a complete state scope.");
             var generation = changes.CurrentChange(host.ApplicationRevision.ApplicationId);
             if (generation?.Fingerprint != candidate.ExpectedActiveFingerprint)
                 return Result(ApplicationCandidateCheckStatus.Unavailable, "REUSE_ACTIVE_CHANGED", "The expected active generation changed.");

@@ -66,6 +66,9 @@ normalized content. Same-ID revisions and nonidentical content require semantic 
 does not prove behavioral equivalence. Oversized context, unsupported documents, reusable-task
 context without exact review support, missing authority and missing worker evidence remain Unavailable.
 Discovery consumes one shared operation; it never creates a separate invocation budget.
+Read-only review preparation preserves application-only invocations with an absent state-space/revision
+pair, or preserves the caller's complete state pair. Both use the same application-authorized manual
+owner and operation ledger; application-only discovery does not grant state execution authority.
 
 The proposed reuse-judgment input freezes full retained text, the full implementation reason,
 authorized manual packet and exact alternative contracts. It permits at most 16 documents and
