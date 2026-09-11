@@ -16,10 +16,11 @@ Prerequisite: implement [00 — Shared foundation](00-shared-foundation.md) firs
 
 The mechanic engine validates the source body independently before preparing its executable
 wrapper. The mechanic function and trusted harness have separate lexical scopes. Its process-local
-cache retains at most 256 programs and 16 MiB of source text measured as UTF-16 bytes; this is a
-source-retention bound, not a measurement of total interpreter memory. The key includes exact
-source, wrapper text and parser/runtime configuration. Larger programs prepare afresh without
-entering the cache. No engine, JavaScript value, input or random state is shared between calls.
+cache retains at most 256 programs, 16 MiB of UTF-8 source, and one million combined token/node
+work units; these bounds do not measure total interpreter memory. Source is limited to 256 KiB
+before cache indexing. Token, lexical nesting, recursive-expression, syntax-tree size and depth
+checks bound cold preparation. The key includes exact source, wrapper text and parser/runtime
+configuration. No engine, JavaScript value, input or random state is shared between calls.
 
 Set the AppContext switch `DantesRoleplay.Mechanics.DisablePreparedProgramCache` before constructing
 the engine to use fresh preparation for recovery. The existing singleton registration controls the
@@ -27,9 +28,11 @@ cache lifetime. The `DantesRoleplay.Mechanics.JintMechanicEngine` meter reports 
 `dantesroleplay.mechanic.preparation.duration`,
 `dantesroleplay.mechanic.context_construction.duration` and
 `dantesroleplay.mechanic.execution.duration` histograms in milliseconds. Preparation includes cache
-lookup/wait time; cold parsing is synchronous and cancellation is checked around it, not during it.
-Preparation and context time reduce the remaining execution timeout. Diagnostics cannot replace
-the invocation result.
+lookup/wait time. Preparation runs outside the cache lock, with at most two active preparations
+and 32 admitted callers. Same-source waiters share preparation and observe their own cancellation
+and deadline. Tokenization and source parsing check cancellation/deadline; the final synchronous
+Jint preparation is structurally bounded and checked before and after. Preparation and context time
+reduce the remaining execution timeout. Diagnostics cannot replace the invocation result.
 
 The evaluator retains one immutable catalog navigator through its entire parent/child invocation
 tree. A later root invocation resolves its navigator independently; unavailable or stale selected

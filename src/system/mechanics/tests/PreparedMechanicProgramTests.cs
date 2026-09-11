@@ -113,7 +113,9 @@ public sealed class PreparedMechanicProgramTests(ITestOutputHelper output)
         Assert.True(second.Ok, second.Error);
         Assert.Equal(first.Output.Narration, second.Output.Narration);
         Assert.All(measurements, measurement => Assert.False(measurement.PreparationCacheHit));
-        Assert.Equal(default, engine.PreparedProgramCacheStatistics);
+        Assert.Equal(0, engine.PreparedProgramCacheStatistics.EntryCount);
+        Assert.Equal(2, engine.PreparedProgramCacheStatistics.PreparationCount);
+        Assert.Equal(0, engine.PreparedProgramCacheStatistics.CacheHitCount);
     }
 
     [Fact]
@@ -162,16 +164,16 @@ public sealed class PreparedMechanicProgramTests(ITestOutputHelper output)
     [Fact]
     public async Task Cache_evicts_programs_at_its_total_source_byte_bound()
     {
-        const long sourceByteLimit = 256;
+        const long sourceByteLimit = 128;
         var engine = new JintMechanicEngine(
             preparedProgramCacheEnabled: true,
             preparedProgramCountLimit: 10,
             preparedProgramSourceBytesLimit: sourceByteLimit);
         var firstSource = "/*" + new string('a', 48) + "*/ return { narration: 'one' };";
         var secondSource = "/*" + new string('b', 48) + "*/ return { narration: 'two' };";
-        Assert.True(firstSource.Length * sizeof(char) <= sourceByteLimit);
-        Assert.True(secondSource.Length * sizeof(char) <= sourceByteLimit);
-        Assert.True((firstSource.Length + secondSource.Length) * sizeof(char) > sourceByteLimit);
+        Assert.True(System.Text.Encoding.UTF8.GetByteCount(firstSource) <= sourceByteLimit);
+        Assert.True(System.Text.Encoding.UTF8.GetByteCount(secondSource) <= sourceByteLimit);
+        Assert.True(System.Text.Encoding.UTF8.GetByteCount(firstSource + secondSource) > sourceByteLimit);
 
         var first = await engine.RunAsync(firstSource, Projection, ExecutionLimits.Default);
         var second = await engine.RunAsync(secondSource, Projection, ExecutionLimits.Default);
@@ -182,6 +184,300 @@ public sealed class PreparedMechanicProgramTests(ITestOutputHelper output)
         Assert.Equal(1, statistics.EntryCount);
         Assert.True(statistics.RetainedSourceBytes <= sourceByteLimit);
         Assert.Equal(1, statistics.EvictionCount);
+    }
+
+    [Fact]
+    public async Task Cache_bounds_retained_parser_work_independently_of_source_bytes()
+    {
+        var engine = new JintMechanicEngine(
+            preparedProgramCacheEnabled: true,
+            preparedProgramCountLimit: 10,
+            preparedProgramSourceBytesLimit: 4096,
+            preparedProgramComplexityLimit: 1);
+        const string source = "return { narration: 'valid but too complex to retain' };";
+
+        var first = await engine.RunAsync(source, Projection, ExecutionLimits.Default);
+        var second = await engine.RunAsync(source, Projection, ExecutionLimits.Default);
+
+        Assert.True(first.Ok, first.Error);
+        Assert.True(second.Ok, second.Error);
+        var statistics = engine.PreparedProgramCacheStatistics;
+        Assert.Equal(0, statistics.EntryCount);
+        Assert.Equal(0, statistics.RetainedComplexity);
+        Assert.Equal(2, statistics.PreparationCount);
+        Assert.Equal(2, statistics.EvictionCount);
+    }
+
+    [Fact]
+    public async Task Hard_source_and_preparse_complexity_fences_reject_before_retention()
+    {
+        var engine = new JintMechanicEngine(true);
+        var oversized = "/*" + new string('x', JintMechanicEngine.MaximumMechanicSourceBytes) + "*/";
+        var unary = "return { narration: String("
+            + new string('!', JintMechanicEngine.MaximumMechanicExpressionComplexity + 1) + "true) };";
+        var assignment = "var a; "
+            + string.Concat(Enumerable.Repeat("a=", JintMechanicEngine.MaximumMechanicExpressionComplexity + 1))
+            + "1; return { narration: String(a) };";
+        var arrow = "return { narration: String(typeof ("
+            + string.Concat(Enumerable.Repeat("x=>", JintMechanicEngine.MaximumMechanicExpressionComplexity + 1))
+            + "x)) };";
+        var nested = new string('{', JintMechanicEngine.MaximumMechanicLexicalNesting + 1)
+            + "return { narration: 'nested' };"
+            + new string('}', JintMechanicEngine.MaximumMechanicLexicalNesting + 1);
+        var tooManyTokens = string.Concat(Enumerable.Repeat(
+            "0;",
+            JintMechanicEngine.MaximumMechanicTokens / 2 + 1));
+        var deepAst = "var a = {}; return { narration: String(a"
+            + string.Concat(Enumerable.Repeat(".a", JintMechanicEngine.MaximumMechanicAstDepth + 1))
+            + ") };";
+        var labels = string.Concat(Enumerable.Range(
+                0,
+                JintMechanicEngine.MaximumMechanicExpressionComplexity + 1).Select(index => $"label{index}:"))
+            + "return { narration: 'labelled' };";
+        var doStatements = string.Concat(Enumerable.Repeat(
+                "do ",
+                JintMechanicEngine.MaximumMechanicExpressionComplexity + 1))
+            + ";"
+            + string.Concat(Enumerable.Repeat(
+                " while (false);",
+                JintMechanicEngine.MaximumMechanicExpressionComplexity + 1))
+            + " return { narration: 'do' };";
+        var awaits = "async function nested(value) { return "
+            + string.Concat(Enumerable.Repeat(
+                "await ",
+                JintMechanicEngine.MaximumMechanicExpressionComplexity + 1))
+            + "value; } return { narration: 'await' };";
+        var yields = "function* nested(value) { return "
+            + string.Concat(Enumerable.Repeat(
+                "yield ",
+                JintMechanicEngine.MaximumMechanicExpressionComplexity + 1))
+            + "value; } return { narration: 'yield' };";
+
+        var results = new[]
+        {
+            await engine.RunAsync(oversized, Projection, ExecutionLimits.Default),
+            await engine.RunAsync(unary, Projection, ExecutionLimits.Default),
+            await engine.RunAsync(assignment, Projection, ExecutionLimits.Default),
+            await engine.RunAsync(arrow, Projection, ExecutionLimits.Default),
+            await engine.RunAsync(nested, Projection, ExecutionLimits.Default),
+            await engine.RunAsync(tooManyTokens, Projection, ExecutionLimits.Default),
+            await engine.RunAsync(deepAst, Projection, ExecutionLimits.Default),
+            await engine.RunAsync(labels, Projection, ExecutionLimits.Default),
+            await engine.RunAsync(doStatements, Projection, ExecutionLimits.Default),
+            await engine.RunAsync(awaits, Projection, ExecutionLimits.Default),
+            await engine.RunAsync(yields, Projection, ExecutionLimits.Default)
+        };
+
+        Assert.All(results, result => Assert.False(result.Ok));
+        Assert.Contains("source exceeds", results[0].Error, StringComparison.OrdinalIgnoreCase);
+        Assert.All(results.Skip(1).Take(3), result =>
+            Assert.Contains("recursive operators", result.Error, StringComparison.OrdinalIgnoreCase));
+        Assert.Contains("lexical levels", results[4].Error, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("lexical tokens", results[5].Error, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("syntax tree", results[6].Error, StringComparison.OrdinalIgnoreCase);
+        Assert.All(results.Skip(7), result =>
+            Assert.Contains("recursive operators", result.Error, StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(0, engine.PreparedProgramCacheStatistics.EntryCount);
+        Assert.Equal(0, engine.PreparedProgramCacheStatistics.PreparationCount);
+        Assert.Equal(10, engine.PreparedProgramCacheStatistics.PreparationFailureCount);
+    }
+
+    [Fact]
+    public async Task Syntax_like_text_inside_literals_does_not_consume_preparse_recursion_budget()
+    {
+        var engine = new JintMechanicEngine(true);
+        var text = string.Concat(Enumerable.Repeat(
+            "( [ { if else do while await yield = += => ? : ! ~ new typeof ",
+            JintMechanicEngine.MaximumMechanicExpressionComplexity + 1));
+        var source = "return { narration: " + System.Text.Json.JsonSerializer.Serialize(text) + " };";
+
+        var result = await engine.RunAsync(source, Projection, ExecutionLimits.Default);
+
+        Assert.True(result.Ok, result.Error);
+        Assert.Equal(text, result.Output.Narration);
+    }
+
+    [Fact]
+    public async Task Same_key_waiters_observe_their_own_cancellation_and_deadline()
+    {
+        using var leaderStarted = new ManualResetEventSlim();
+        using var releaseLeader = new ManualResetEventSlim();
+        const string source = "return { narration: 'shared' };";
+        var engine = new JintMechanicEngine(
+            true,
+            preparationStarted: candidate =>
+            {
+                if (candidate != source) return;
+                leaderStarted.Set();
+                if (!releaseLeader.Wait(TimeSpan.FromSeconds(5)))
+                    throw new TimeoutException("Test preparation gate was not released.");
+            });
+
+        var leader = Task.Run(() => engine.RunAsync(source, Projection, ExecutionLimits.Default));
+        Assert.True(leaderStarted.Wait(TimeSpan.FromSeconds(2)));
+        try
+        {
+            using var cancelled = new CancellationTokenSource();
+            var cancelledWaiter = Task.Run(() => engine.RunAsync(
+                source,
+                Projection,
+                ExecutionLimits.Default,
+                cancelled.Token));
+            Assert.True(SpinWait.SpinUntil(
+                () => engine.PreparedProgramCacheStatistics.PendingPreparations >= 2,
+                TimeSpan.FromSeconds(2)));
+            cancelled.Cancel();
+            var cancelledResult = await cancelledWaiter;
+            Assert.False(cancelledResult.Ok);
+            Assert.Equal("cancelled", cancelledResult.LimitHit);
+
+            var deadlineResult = await Task.Run(() => engine.RunAsync(
+                source,
+                Projection,
+                ExecutionLimits.Default with { Timeout = TimeSpan.FromMilliseconds(25) }));
+            Assert.False(deadlineResult.Ok);
+            Assert.Equal("timeout", deadlineResult.LimitHit);
+        }
+        finally
+        {
+            releaseLeader.Set();
+        }
+
+        var leaderResult = await leader;
+        Assert.True(leaderResult.Ok, leaderResult.Error);
+    }
+
+    [Fact]
+    public async Task Blocked_cold_key_does_not_hold_cache_lock_or_block_an_unrelated_key()
+    {
+        using var blockedStarted = new ManualResetEventSlim();
+        using var releaseBlocked = new ManualResetEventSlim();
+        const string blockedSource = "return { narration: 'blocked' };";
+        const string unrelatedSource = "return { narration: 'unrelated' };";
+        var engine = new JintMechanicEngine(
+            true,
+            maximumConcurrentPreparations: 2,
+            preparationStarted: candidate =>
+            {
+                if (candidate != blockedSource) return;
+                blockedStarted.Set();
+                if (!releaseBlocked.Wait(TimeSpan.FromSeconds(5)))
+                    throw new TimeoutException("Test preparation gate was not released.");
+            });
+
+        var blocked = Task.Run(() => engine.RunAsync(blockedSource, Projection, ExecutionLimits.Default));
+        Assert.True(blockedStarted.Wait(TimeSpan.FromSeconds(2)));
+        try
+        {
+            var unrelated = await Task.Run(() => engine.RunAsync(
+                unrelatedSource,
+                Projection,
+                ExecutionLimits.Default)).WaitAsync(TimeSpan.FromSeconds(2));
+            Assert.True(unrelated.Ok, unrelated.Error);
+        }
+        finally
+        {
+            releaseBlocked.Set();
+        }
+
+        var blockedResult = await blocked;
+        Assert.True(blockedResult.Ok, blockedResult.Error);
+        Assert.Equal(2, engine.PreparedProgramCacheStatistics.PeakActivePreparations);
+    }
+
+    [Fact]
+    public async Task Pending_preparations_are_bounded_and_failed_leader_can_retry()
+    {
+        using var firstStarted = new ManualResetEventSlim();
+        using var releaseFirst = new ManualResetEventSlim();
+        const string firstSource = "return { narration: 'first' };";
+        var engine = new JintMechanicEngine(
+            true,
+            maximumConcurrentPreparations: 1,
+            maximumPendingPreparations: 2,
+            preparationStarted: candidate =>
+            {
+                if (candidate != firstSource) return;
+                firstStarted.Set();
+                if (!releaseFirst.Wait(TimeSpan.FromSeconds(5)))
+                    throw new TimeoutException("Test preparation gate was not released.");
+            });
+
+        var first = Task.Run(() => engine.RunAsync(firstSource, Projection, ExecutionLimits.Default));
+        Assert.True(firstStarted.Wait(TimeSpan.FromSeconds(2)));
+        var second = Task.Run(() => engine.RunAsync(
+            "return { narration: 'second' };",
+            Projection,
+            ExecutionLimits.Default));
+        try
+        {
+            Assert.True(SpinWait.SpinUntil(
+                () => engine.PreparedProgramCacheStatistics.PendingPreparations == 2,
+                TimeSpan.FromSeconds(2)));
+            var rejected = await engine.RunAsync(
+                "return { narration: 'capacity' };",
+                Projection,
+                ExecutionLimits.Default);
+            Assert.False(rejected.Ok);
+            Assert.Contains("capacity", rejected.Error, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            releaseFirst.Set();
+        }
+        Assert.True((await first).Ok);
+        Assert.True((await second).Ok);
+        Assert.Equal(2, engine.PreparedProgramCacheStatistics.PeakPendingPreparations);
+
+        var failedAttempts = 0;
+        const string retrySource = "return { narration: 'retry' };";
+        var retryEngine = new JintMechanicEngine(
+            true,
+            preparationStarted: candidate =>
+            {
+                if (candidate == retrySource && Interlocked.Increment(ref failedAttempts) == 1)
+                    throw new InvalidOperationException("deterministic preparation failure");
+            });
+        var failed = await retryEngine.RunAsync(retrySource, Projection, ExecutionLimits.Default);
+        var retried = await retryEngine.RunAsync(retrySource, Projection, ExecutionLimits.Default);
+        Assert.False(failed.Ok);
+        Assert.True(retried.Ok, retried.Error);
+        Assert.Equal(1, retryEngine.PreparedProgramCacheStatistics.PreparationFailureCount);
+        Assert.Equal(1, retryEngine.PreparedProgramCacheStatistics.PreparationCount);
+        Assert.Equal(1, retryEngine.PreparedProgramCacheStatistics.EntryCount);
+    }
+
+    [Fact]
+    public void Catalog_mechanics_fit_preparation_resource_fences()
+    {
+        var catalog = Path.GetFullPath(Path.Combine(
+            AppContext.BaseDirectory,
+            "..", "..", "..", "..", "catalog", "mechanics"));
+        var measured = Directory.EnumerateFiles(catalog, "*.js", SearchOption.AllDirectories)
+            .Select(path => (Path: path, Complexity: JintMechanicEngine.InspectMechanicProgramComplexity(
+                File.ReadAllText(path))))
+            .ToArray();
+
+        Assert.NotEmpty(measured);
+        var largest = measured.MaxBy(value => value.Complexity.SourceBytes);
+        var densest = measured.MaxBy(value => value.Complexity.TokenCount);
+        var mostNested = measured.MaxBy(value => value.Complexity.LexicalNesting);
+        var mostRecursive = measured.MaxBy(value => value.Complexity.ExpressionComplexity);
+        var deepest = measured.MaxBy(value => value.Complexity.AstDepth);
+        output.WriteLine(
+            "catalog files={0}; max bytes={1} ({2}); max tokens={3} ({4}); " +
+            "max lexical nesting={5} ({6}); max expression complexity={7} ({8}); max AST depth={9} ({10})",
+            measured.Length,
+            largest.Complexity.SourceBytes,
+            Path.GetFileName(largest.Path),
+            densest.Complexity.TokenCount,
+            Path.GetFileName(densest.Path),
+            mostNested.Complexity.LexicalNesting,
+            Path.GetFileName(mostNested.Path),
+            mostRecursive.Complexity.ExpressionComplexity,
+            Path.GetFileName(mostRecursive.Path),
+            deepest.Complexity.AstDepth,
+            Path.GetFileName(deepest.Path));
     }
 
     [Fact]

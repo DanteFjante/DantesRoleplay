@@ -1,5 +1,7 @@
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
+using System.Runtime.ExceptionServices;
+using System.Text;
 using System.Text.Json;
 using Acornima;
 using Acornima.Ast;
@@ -40,6 +42,17 @@ public sealed class JintMechanicEngine : IMechanicEngine
 
     private const int DefaultPreparedProgramCountLimit = 256;
     private const long DefaultPreparedProgramSourceBytesLimit = 16 * 1024 * 1024;
+    private const long DefaultPreparedProgramComplexityLimit = 1_000_000;
+    private const int DefaultMaximumConcurrentPreparations = 2;
+    private const int DefaultMaximumPendingPreparations = 32;
+    private static readonly TimeSpan StandalonePreparationTimeout = TimeSpan.FromSeconds(5);
+
+    internal const int MaximumMechanicSourceBytes = 256 * 1024;
+    internal const int MaximumMechanicTokens = 50_000;
+    internal const int MaximumMechanicLexicalNesting = 64;
+    internal const int MaximumMechanicExpressionComplexity = 128;
+    internal const int MaximumMechanicAstNodes = 100_000;
+    internal const int MaximumMechanicAstDepth = 128;
 
     private const string MechanicWrapperPrefix =
         "globalThis.__mechanic = (function (ctx) {\n\"use strict\";\n";
@@ -47,7 +60,9 @@ public sealed class JintMechanicEngine : IMechanicEngine
     private const string MechanicWrapperSuffix = "\n});";
 
     private const string ParserConfiguration =
-        "script;strict=true;allow-return-outside-function=true;allow-new-target-outside-function=true";
+        "script;strict=true;allow-return-outside-function=true;allow-new-target-outside-function=true;" +
+        "regex-timeout=100ms;source-bytes=262144;tokens=50000;lexical-depth=64;expression-complexity=128;" +
+        "ast-nodes=100000;ast-depth=128";
 
     private static readonly Meter RuntimeMeter = new("DantesRoleplay.Mechanics.JintMechanicEngine");
     private static readonly Histogram<double> PreparationDuration = RuntimeMeter.CreateHistogram<double>(
@@ -76,7 +91,16 @@ public sealed class JintMechanicEngine : IMechanicEngine
     private static readonly Prepared<Script> PreparedHarness =
         Engine.PrepareScript(Harness, strict: true);
 
-    private readonly PreparedProgramCache? _preparedPrograms;
+    private static readonly PreparedProgramCache StandalonePreparationCoordinator = new(
+        retentionEnabled: false,
+        countLimit: 1,
+        sourceBytesLimit: 1,
+        complexityLimit: 1,
+        maximumConcurrentPreparations: DefaultMaximumConcurrentPreparations,
+        maximumPendingPreparations: DefaultMaximumPendingPreparations,
+        preparationStarted: null);
+
+    private readonly PreparedProgramCache _preparedPrograms;
     private readonly Action<MechanicRunMeasurements>? _measurementObserver;
 
     public JintMechanicEngine()
@@ -88,21 +112,36 @@ public sealed class JintMechanicEngine : IMechanicEngine
         bool preparedProgramCacheEnabled,
         Action<MechanicRunMeasurements>? measurementObserver = null,
         int preparedProgramCountLimit = DefaultPreparedProgramCountLimit,
-        long preparedProgramSourceBytesLimit = DefaultPreparedProgramSourceBytesLimit)
+        long preparedProgramSourceBytesLimit = DefaultPreparedProgramSourceBytesLimit,
+        long preparedProgramComplexityLimit = DefaultPreparedProgramComplexityLimit,
+        int maximumConcurrentPreparations = DefaultMaximumConcurrentPreparations,
+        int maximumPendingPreparations = DefaultMaximumPendingPreparations,
+        Action<string>? preparationStarted = null)
     {
         if (preparedProgramCountLimit <= 0)
             throw new ArgumentOutOfRangeException(nameof(preparedProgramCountLimit));
         if (preparedProgramSourceBytesLimit <= 0)
             throw new ArgumentOutOfRangeException(nameof(preparedProgramSourceBytesLimit));
+        if (preparedProgramComplexityLimit <= 0)
+            throw new ArgumentOutOfRangeException(nameof(preparedProgramComplexityLimit));
+        if (maximumConcurrentPreparations <= 0)
+            throw new ArgumentOutOfRangeException(nameof(maximumConcurrentPreparations));
+        if (maximumPendingPreparations < maximumConcurrentPreparations)
+            throw new ArgumentOutOfRangeException(nameof(maximumPendingPreparations));
 
-        _preparedPrograms = preparedProgramCacheEnabled
-            ? new PreparedProgramCache(preparedProgramCountLimit, preparedProgramSourceBytesLimit)
-            : null;
+        _preparedPrograms = new PreparedProgramCache(
+            preparedProgramCacheEnabled,
+            preparedProgramCountLimit,
+            preparedProgramSourceBytesLimit,
+            preparedProgramComplexityLimit,
+            maximumConcurrentPreparations,
+            maximumPendingPreparations,
+            preparationStarted);
         _measurementObserver = measurementObserver;
     }
 
     internal PreparedProgramCacheStatistics PreparedProgramCacheStatistics =>
-        _preparedPrograms?.Statistics ?? default;
+        _preparedPrograms.Statistics;
 
     public Task<MechanicRunResult> RunAsync(
         string source,
@@ -134,7 +173,10 @@ public sealed class JintMechanicEngine : IMechanicEngine
             var phaseStart = Stopwatch.GetTimestamp();
             try
             {
-                (preparedMechanic, preparationCacheHit) = GetPreparedMechanic(source);
+                (preparedMechanic, preparationCacheHit) = GetPreparedMechanic(
+                    source,
+                    cancellationToken,
+                    limits.Timeout - stopwatch.Elapsed);
             }
             finally
             {
@@ -294,17 +336,24 @@ public sealed class JintMechanicEngine : IMechanicEngine
         if (elapsed >= timeout) throw new TimeoutException();
     }
 
-    private (Prepared<Script> Program, bool CacheHit) GetPreparedMechanic(string source)
+    private (Prepared<Script> Program, bool CacheHit) GetPreparedMechanic(
+        string source,
+        CancellationToken cancellationToken,
+        TimeSpan remaining)
     {
+        if (remaining <= TimeSpan.Zero) throw new TimeoutException();
+        ValidateMechanicSourceSize(source);
         var key = new PreparedProgramKey(
             source,
             MechanicWrapperPrefix,
             MechanicWrapperSuffix,
             PreparationConfigurationKey);
 
-        return _preparedPrograms is null
-            ? (PrepareMechanicProgram(source), false)
-            : _preparedPrograms.GetOrPrepare(key, static cacheKey => PrepareMechanicProgram(cacheKey.Source));
+        var (prepared, cacheHit) = _preparedPrograms.GetOrPrepare(
+            key,
+            new PreparationBudget(cancellationToken, remaining),
+            static (cacheKey, budget) => PrepareMechanicProgramCore(cacheKey.Source, budget));
+        return (prepared.Program, cacheHit);
     }
 
     /// <summary>
@@ -314,23 +363,183 @@ public sealed class JintMechanicEngine : IMechanicEngine
     /// </summary>
     internal static Prepared<Script> PrepareMechanicProgram(string source)
     {
+        ValidateMechanicSourceSize(source);
+        var key = new PreparedProgramKey(
+            source,
+            MechanicWrapperPrefix,
+            MechanicWrapperSuffix,
+            PreparationConfigurationKey);
+        return StandalonePreparationCoordinator.GetOrPrepare(
+            key,
+            new PreparationBudget(CancellationToken.None, StandalonePreparationTimeout),
+            static (cacheKey, budget) => PrepareMechanicProgramCore(cacheKey.Source, budget)).Program.Program;
+    }
+
+    internal static MechanicProgramComplexity InspectMechanicProgramComplexity(string source)
+        => ParseAndMeasure(
+            source,
+            new PreparationBudget(CancellationToken.None, StandalonePreparationTimeout));
+
+    private static PreparedMechanicProgram PrepareMechanicProgramCore(
+        string source,
+        PreparationBudget budget)
+    {
         ArgumentNullException.ThrowIfNull(source);
+        budget.ThrowIfExpired();
+        var complexity = ParseAndMeasure(source, budget);
+        budget.ThrowIfExpired();
 
-        // Parse only attacker-controlled text first. Allowing return/new.target gives this script
-        // parse the relevant function-body grammar without giving a stray brace or comment any
-        // trusted wrapper text to consume. Strict wrapper preparation below remains the final
-        // executable grammar check.
-        var parser = new Parser(new ParserOptions
-        {
-            AllowReturnOutsideFunction = true,
-            AllowNewTargetOutsideFunction = true
-        });
-        parser.ParseScript(source, "mechanic-source.js", strict: true);
-
-        return Engine.PrepareScript(
+        var program = Engine.PrepareScript(
             MechanicWrapperPrefix + source + MechanicWrapperSuffix,
             "prepared-mechanic.js",
             strict: true);
+        budget.ThrowIfExpired();
+        return new PreparedMechanicProgram(program, complexity);
+    }
+
+    private static MechanicProgramComplexity ParseAndMeasure(string source, PreparationBudget budget)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        var sourceBytes = ValidateMechanicSourceSize(source);
+
+        var lexical = PreflightTokens(source, budget);
+        var nodeCount = 0;
+#pragma warning disable CS0618 // Acornima 1.6 still uses this to bound RegExp validation work.
+        var parser = new Parser(new ParserOptions
+        {
+            AllowReturnOutsideFunction = true,
+            AllowNewTargetOutsideFunction = true,
+            RegexTimeout = TimeSpan.FromMilliseconds(100),
+            OnNode = (Node node, in OnNodeContext _) =>
+            {
+                if (++nodeCount > MaximumMechanicAstNodes)
+                    throw new InvalidOperationException(
+                        $"The mechanic syntax tree exceeds {MaximumMechanicAstNodes:N0} nodes.");
+                budget.ThrowIfExpired();
+            }
+        });
+#pragma warning restore CS0618
+        var script = parser.ParseScript(source, "mechanic-source.js", strict: true);
+        var astDepth = MeasureAstDepth(script, budget);
+        return new MechanicProgramComplexity(
+            sourceBytes,
+            lexical.TokenCount,
+            lexical.MaximumNesting,
+            lexical.MaximumExpressionComplexity,
+            nodeCount,
+            astDepth);
+    }
+
+    private static int ValidateMechanicSourceSize(string source)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        if (source.Length > MaximumMechanicSourceBytes)
+            throw new InvalidOperationException(
+                $"The mechanic source exceeds {MaximumMechanicSourceBytes:N0} characters.");
+        var sourceBytes = Encoding.UTF8.GetByteCount(source);
+        if (sourceBytes > MaximumMechanicSourceBytes)
+            throw new InvalidOperationException(
+                $"The mechanic source exceeds {MaximumMechanicSourceBytes:N0} UTF-8 bytes.");
+        return sourceBytes;
+    }
+
+    private static MechanicLexicalComplexity PreflightTokens(string source, PreparationBudget budget)
+    {
+#pragma warning disable CS0618 // Acornima 1.6 still uses this to bound RegExp validation work.
+        var tokenizer = new Tokenizer(
+            source,
+            SourceType.Script,
+            "mechanic-source.js",
+            new TokenizerOptions { RegexTimeout = TimeSpan.FromMilliseconds(100) });
+#pragma warning restore CS0618
+        var context = new TokenizerContext(
+            strict: true,
+            ignoreEscapeSequenceInKeyword: false,
+            requireValidEscapeSequenceInTemplate: false);
+        var count = 0;
+        var nesting = 0;
+        var maximumNesting = 0;
+        var expressionComplexity = 0;
+        var maximumExpressionComplexity = 0;
+        var parentExpressionComplexity = new Stack<int>();
+
+        while (true)
+        {
+            budget.ThrowIfExpired();
+            var token = tokenizer.GetToken(in context);
+            if (token.Kind == TokenKind.EOF)
+                return new MechanicLexicalComplexity(count, maximumNesting, maximumExpressionComplexity);
+            if (++count > MaximumMechanicTokens)
+                throw new InvalidOperationException(
+                    $"The mechanic source exceeds {MaximumMechanicTokens:N0} lexical tokens.");
+            var tokenText = token.Value as string ?? token.KindText;
+            var punctuator = token.Kind == TokenKind.Punctuator;
+            var keyword = token.Kind == TokenKind.Keyword;
+            var contextualUnary = token.Kind == TokenKind.Identifier && tokenText is "await" or "yield";
+
+            switch (punctuator ? tokenText : null)
+            {
+                case "(":
+                case "[":
+                case "{":
+                case "${":
+                    parentExpressionComplexity.Push(expressionComplexity);
+                    if (++nesting > MaximumMechanicLexicalNesting)
+                        throw new InvalidOperationException(
+                            $"The mechanic source nests more than {MaximumMechanicLexicalNesting:N0} lexical levels.");
+                    maximumNesting = Math.Max(maximumNesting, nesting);
+                    break;
+                case ")":
+                case "]":
+                case "}":
+                    nesting = Math.Max(0, nesting - 1);
+                    if (parentExpressionComplexity.TryPop(out var parent))
+                        expressionComplexity = Math.Max(parent, expressionComplexity);
+                    break;
+            }
+
+            // These tokens build recursive expression/statement shapes in ordinary recursive
+            // descent parsers even without brackets (for example !!!!!!!!!x or a=b=c). Bound the
+            // chain before asking either Acornima parse to construct an AST.
+            var recursivePunctuator = punctuator && tokenText is
+                "!" or "~" or "+" or "-" or "=" or "+=" or "-=" or "*=" or "/="
+                or "%=" or "**=" or "&=" or "|=" or "^=" or "<<=" or ">>=" or ">>>="
+                or "&&=" or "||=" or "??=" or "=>" or "?" or ":" or "**";
+            var recursiveKeyword = keyword && tokenText is
+                "new" or "delete" or "typeof" or "void" or "if" or "else" or "do" or "for" or "while" or "with";
+            if (recursivePunctuator || recursiveKeyword || contextualUnary)
+            {
+                if (++expressionComplexity > MaximumMechanicExpressionComplexity)
+                    throw new InvalidOperationException(
+                        $"The mechanic expression exceeds {MaximumMechanicExpressionComplexity:N0} recursive operators.");
+                maximumExpressionComplexity = Math.Max(maximumExpressionComplexity, expressionComplexity);
+            }
+            else if (punctuator && tokenText is ";" or ",")
+            {
+                expressionComplexity = parentExpressionComplexity.TryPeek(out var parent)
+                    ? parent
+                    : 0;
+            }
+        }
+    }
+
+    private static int MeasureAstDepth(Script script, PreparationBudget budget)
+    {
+        var maximum = 0;
+        var pending = new Stack<(Node Node, int Depth)>();
+        pending.Push((script, 1));
+        while (pending.TryPop(out var current))
+        {
+            budget.ThrowIfExpired();
+            if (current.Depth > MaximumMechanicAstDepth)
+                throw new InvalidOperationException(
+                    $"The mechanic syntax tree exceeds {MaximumMechanicAstDepth:N0} levels.");
+            maximum = Math.Max(maximum, current.Depth);
+            foreach (var child in current.Node.ChildNodes)
+                pending.Push((child, current.Depth + 1));
+        }
+
+        return maximum;
     }
 
     private void RecordMeasurements(MechanicRunMeasurements measurements)
@@ -606,33 +815,122 @@ internal readonly record struct MechanicRunMeasurements(
 internal readonly record struct PreparedProgramCacheStatistics(
     int EntryCount,
     long RetainedSourceBytes,
+    long RetainedComplexity,
     long PreparationCount,
+    long PreparationFailureCount,
     long CacheHitCount,
-    long EvictionCount);
+    long EvictionCount,
+    int PendingPreparations,
+    int ActivePreparations,
+    int PeakPendingPreparations,
+    int PeakActivePreparations);
+
+internal readonly record struct MechanicProgramComplexity(
+    int SourceBytes,
+    int TokenCount,
+    int LexicalNesting,
+    int ExpressionComplexity,
+    int NodeCount,
+    int AstDepth)
+{
+    public long RetainedWork => checked((long)TokenCount + NodeCount);
+}
+
+internal readonly record struct MechanicLexicalComplexity(
+    int TokenCount,
+    int MaximumNesting,
+    int MaximumExpressionComplexity);
+
+internal readonly record struct PreparedMechanicProgram(
+    Prepared<Script> Program,
+    MechanicProgramComplexity Complexity);
 
 internal readonly record struct PreparedProgramKey(
     string Source,
     string WrapperPrefix,
     string WrapperSuffix,
-    string ParserRuntimeConfiguration)
+    string ParserRuntimeConfiguration);
+
+internal readonly struct PreparationBudget
 {
-    public long SourceBytes => checked((long)Source.Length * sizeof(char));
+    private readonly long _deadline;
+
+    public PreparationBudget(CancellationToken cancellationToken, TimeSpan timeout)
+    {
+        if (timeout <= TimeSpan.Zero) throw new TimeoutException();
+        CancellationToken = cancellationToken;
+        var availableTicks = timeout.TotalSeconds * Stopwatch.Frequency;
+        var now = Stopwatch.GetTimestamp();
+        _deadline = availableTicks >= long.MaxValue - now
+            ? long.MaxValue
+            : now + (long)availableTicks;
+    }
+
+    public CancellationToken CancellationToken { get; }
+
+    public TimeSpan Remaining
+    {
+        get
+        {
+            var ticks = _deadline - Stopwatch.GetTimestamp();
+            return ticks <= 0 ? TimeSpan.Zero : TimeSpan.FromSeconds(ticks / (double)Stopwatch.Frequency);
+        }
+    }
+
+    public void ThrowIfExpired()
+    {
+        CancellationToken.ThrowIfCancellationRequested();
+        if (Stopwatch.GetTimestamp() >= _deadline) throw new TimeoutException();
+    }
 }
 
 /// <summary>
-/// A small synchronized LRU for immutable, thread-safe Jint prepared programs. Source text is part
-/// of the key so hash collisions cannot select a different executable. Programs larger than the
-/// total source budget still run, but are prepared afresh and never retained.
+/// Coordinates bounded preparation and retains a small LRU of immutable, thread-safe Jint
+/// programs. Cache locks protect only indexes/counters; tokenization, parsing, preparation and test
+/// hooks always run outside them. Source text is part of the key so a hash collision cannot select
+/// a different executable.
 /// </summary>
-internal sealed class PreparedProgramCache(int countLimit, long sourceBytesLimit)
+internal sealed class PreparedProgramCache
 {
     private readonly object _gate = new();
     private readonly Dictionary<PreparedProgramKey, LinkedListNode<Entry>> _entries = [];
     private readonly LinkedList<Entry> _leastRecentlyUsed = [];
+    private readonly Dictionary<PreparedProgramKey, PreparationFlight> _flights = [];
+    private readonly SemaphoreSlim _activeSlots;
+    private readonly bool _retentionEnabled;
+    private readonly int _countLimit;
+    private readonly long _sourceBytesLimit;
+    private readonly long _complexityLimit;
+    private readonly int _pendingLimit;
+    private readonly Action<string>? _preparationStarted;
     private long _retainedSourceBytes;
+    private long _retainedComplexity;
     private long _preparationCount;
+    private long _preparationFailureCount;
     private long _cacheHitCount;
     private long _evictionCount;
+    private int _pendingPreparations;
+    private int _activePreparations;
+    private int _peakPendingPreparations;
+    private int _peakActivePreparations;
+
+    public PreparedProgramCache(
+        bool retentionEnabled,
+        int countLimit,
+        long sourceBytesLimit,
+        long complexityLimit,
+        int maximumConcurrentPreparations,
+        int maximumPendingPreparations,
+        Action<string>? preparationStarted)
+    {
+        _retentionEnabled = retentionEnabled;
+        _countLimit = countLimit;
+        _sourceBytesLimit = sourceBytesLimit;
+        _complexityLimit = complexityLimit;
+        _pendingLimit = maximumPendingPreparations;
+        _preparationStarted = preparationStarted;
+        _activeSlots = new SemaphoreSlim(maximumConcurrentPreparations, maximumConcurrentPreparations);
+    }
 
     public PreparedProgramCacheStatistics Statistics
     {
@@ -643,29 +941,32 @@ internal sealed class PreparedProgramCache(int countLimit, long sourceBytesLimit
                 return new PreparedProgramCacheStatistics(
                     _entries.Count,
                     _retainedSourceBytes,
+                    _retainedComplexity,
                     _preparationCount,
+                    _preparationFailureCount,
                     _cacheHitCount,
-                    _evictionCount);
+                    _evictionCount,
+                    _pendingPreparations,
+                    _activePreparations,
+                    _peakPendingPreparations,
+                    _peakActivePreparations);
             }
         }
     }
 
-    public (Prepared<Script> Program, bool CacheHit) GetOrPrepare(
+    public (PreparedMechanicProgram Program, bool CacheHit) GetOrPrepare(
         PreparedProgramKey key,
-        Func<PreparedProgramKey, Prepared<Script>> prepare)
+        PreparationBudget budget,
+        Func<PreparedProgramKey, PreparationBudget, PreparedMechanicProgram> prepare)
     {
         ArgumentNullException.ThrowIfNull(prepare);
+        budget.ThrowIfExpired();
 
-        if (key.SourceBytes > sourceBytesLimit)
-        {
-            var uncached = prepare(key);
-            lock (_gate) _preparationCount++;
-            return (uncached, false);
-        }
-
+        PreparationFlight flight;
+        bool leader;
         lock (_gate)
         {
-            if (_entries.TryGetValue(key, out var existing))
+            if (_retentionEnabled && _entries.TryGetValue(key, out var existing))
             {
                 _leastRecentlyUsed.Remove(existing);
                 _leastRecentlyUsed.AddFirst(existing);
@@ -673,26 +974,142 @@ internal sealed class PreparedProgramCache(int countLimit, long sourceBytesLimit
                 return (existing.Value.Program, true);
             }
 
-            // Preparation stays inside the lock so concurrent first callers cannot parse and
-            // retain duplicate programs for the same exact source.
-            var program = prepare(key);
-            _preparationCount++;
-            var node = _leastRecentlyUsed.AddFirst(new Entry(key, program));
-            _entries.Add(key, node);
-            _retainedSourceBytes += key.SourceBytes;
+            if (_pendingPreparations >= _pendingLimit)
+                throw new InvalidOperationException("The mechanic preparation queue is at capacity.");
+            _pendingPreparations++;
+            _peakPendingPreparations = Math.Max(_peakPendingPreparations, _pendingPreparations);
 
-            while (_entries.Count > countLimit || _retainedSourceBytes > sourceBytesLimit)
+            if (_retentionEnabled && _flights.TryGetValue(key, out var existingFlight))
             {
-                var victim = _leastRecentlyUsed.Last!;
-                _leastRecentlyUsed.RemoveLast();
-                _entries.Remove(victim.Value.Key);
-                _retainedSourceBytes -= victim.Value.Key.SourceBytes;
-                _evictionCount++;
+                flight = existingFlight;
+                leader = false;
+            }
+            else
+            {
+                flight = new PreparationFlight();
+                leader = true;
+                if (_retentionEnabled) _flights.Add(key, flight);
+            }
+        }
+
+        try
+        {
+            if (!leader)
+            {
+                var shared = flight.Wait(budget);
+                lock (_gate) _cacheHitCount++;
+                return (shared, true);
             }
 
-            return (program, false);
+            try
+            {
+                EnterActiveSlot(budget);
+                PreparedMechanicProgram program;
+                try
+                {
+                    budget.ThrowIfExpired();
+                    _preparationStarted?.Invoke(key.Source);
+                    budget.ThrowIfExpired();
+                    program = prepare(key, budget);
+                }
+                finally
+                {
+                    ExitActiveSlot();
+                }
+
+                lock (_gate)
+                {
+                    _preparationCount++;
+                    if (_retentionEnabled)
+                    {
+                        _flights.Remove(key);
+                        Retain(key, program);
+                    }
+                }
+                flight.Complete(program);
+                return (program, false);
+            }
+            catch (Exception exception)
+            {
+                lock (_gate)
+                {
+                    _preparationFailureCount++;
+                    if (_retentionEnabled) _flights.Remove(key);
+                }
+                flight.Fail(exception);
+                throw;
+            }
+        }
+        finally
+        {
+            lock (_gate) _pendingPreparations--;
         }
     }
 
-    private sealed record Entry(PreparedProgramKey Key, Prepared<Script> Program);
+    private void EnterActiveSlot(PreparationBudget budget)
+    {
+        budget.ThrowIfExpired();
+        if (!_activeSlots.Wait(budget.Remaining, budget.CancellationToken)) throw new TimeoutException();
+        lock (_gate)
+        {
+            _activePreparations++;
+            _peakActivePreparations = Math.Max(_peakActivePreparations, _activePreparations);
+        }
+    }
+
+    private void ExitActiveSlot()
+    {
+        lock (_gate) _activePreparations--;
+        _activeSlots.Release();
+    }
+
+    private void Retain(PreparedProgramKey key, PreparedMechanicProgram program)
+    {
+        var node = _leastRecentlyUsed.AddFirst(new Entry(key, program));
+        _entries.Add(key, node);
+        _retainedSourceBytes += program.Complexity.SourceBytes;
+        _retainedComplexity += program.Complexity.RetainedWork;
+
+        while (_entries.Count > _countLimit
+               || _retainedSourceBytes > _sourceBytesLimit
+               || _retainedComplexity > _complexityLimit)
+        {
+            var victim = _leastRecentlyUsed.Last!;
+            _leastRecentlyUsed.RemoveLast();
+            _entries.Remove(victim.Value.Key);
+            _retainedSourceBytes -= victim.Value.Program.Complexity.SourceBytes;
+            _retainedComplexity -= victim.Value.Program.Complexity.RetainedWork;
+            _evictionCount++;
+        }
+    }
+
+    private sealed record Entry(PreparedProgramKey Key, PreparedMechanicProgram Program);
+
+    private sealed class PreparationFlight
+    {
+        private readonly ManualResetEventSlim _completed = new(false);
+        private PreparedMechanicProgram _program;
+        private ExceptionDispatchInfo? _failure;
+
+        public void Complete(PreparedMechanicProgram program)
+        {
+            _program = program;
+            _completed.Set();
+        }
+
+        public void Fail(Exception exception)
+        {
+            _failure = ExceptionDispatchInfo.Capture(exception);
+            _completed.Set();
+        }
+
+        public PreparedMechanicProgram Wait(PreparationBudget budget)
+        {
+            budget.ThrowIfExpired();
+            if (!_completed.Wait(budget.Remaining, budget.CancellationToken)) throw new TimeoutException();
+            budget.ThrowIfExpired();
+            _failure?.Throw();
+            return _program;
+        }
+    }
 }
