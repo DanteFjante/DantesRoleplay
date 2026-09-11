@@ -36,7 +36,8 @@ public sealed class InteractionFoundationRegistrationTests
         Assert.IsType<PlatformInstallationOperatorMembershipPolicy>(
             services.GetRequiredService<IInstallationOperatorMembershipPolicy>());
         Assert.IsType<PlatformStandingGrantIssuerPolicy>(services.GetRequiredService<IStandingGrantIssuerPolicy>());
-        Assert.IsType<UnavailableSystemTaskDurableService>(services.GetRequiredService<ISystemTaskDurableService>());
+        Assert.IsType<DantesRoleplay.SystemTasks.Persistence.SqliteSystemTaskDurableService>(
+            services.GetRequiredService<ISystemTaskDurableService>());
         Assert.IsType<UnavailableSystemInnerWorkerService>(services.GetRequiredService<ISystemInnerWorkerService>());
         var activation = services.GetRequiredService<IApplicationActivationService>();
         Assert.Same(activation, services.GetRequiredService<IActivatedApplicationEvidenceReader>());
