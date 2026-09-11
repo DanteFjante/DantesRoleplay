@@ -77,6 +77,7 @@ public sealed class WebPageBundleReader
         CancellationToken cancellationToken)
     {
         string? html = null;
+        string? composition = null;
         var assets = new List<WebPageAssetUpload>();
         var paths = new HashSet<string>(StringComparer.Ordinal);
         var entryCount = 0;
@@ -105,10 +106,10 @@ public sealed class WebPageBundleReader
                 throw Invalid("DUPLICATE_ASSET_PATH", $"The ZIP path '{path}' appears more than once.");
             }
 
-            var entryLimit = path == "index.html"
+            var entryLimit = path is "index.html" or "composition.json"
                 ? WebPageBundleLimits.MaximumHtmlBytes
                 : WebPageBundleLimits.MaximumEntryBytes;
-            if (path != "index.html" && !path.StartsWith("assets/", StringComparison.Ordinal))
+            if (path is not "index.html" and not "composition.json" && !path.StartsWith("assets/", StringComparison.Ordinal))
             {
                 throw Invalid(
                     "ASSET_ROOT_REQUIRED",
@@ -127,20 +128,19 @@ public sealed class WebPageBundleReader
             }
 
             var content = await ReadEntryAsync(entry, entryLimit, cancellationToken);
-            if (path == "index.html")
+            if (path is "index.html" or "composition.json")
             {
                 try
                 {
-                    html = StrictUtf8.GetString(content);
+                    var text = StrictUtf8.GetString(content);
+                    if (path == "index.html") html = text;
+                    else composition = text;
                 }
                 catch (DecoderFallbackException exception)
                 {
-                    throw Invalid("INVALID_HTML_ENCODING", "index.html must be valid UTF-8.", exception);
-                }
-
-                if (string.IsNullOrWhiteSpace(html))
-                {
-                    throw Invalid("EMPTY_HTML", "index.html cannot be empty.");
+                    throw path == "index.html"
+                        ? Invalid("INVALID_HTML_ENCODING", "index.html must be valid UTF-8.", exception)
+                        : Invalid("INVALID_COMPOSITION_ENCODING", "composition.json must be valid UTF-8.", exception);
                 }
             }
             else
@@ -149,12 +149,21 @@ public sealed class WebPageBundleReader
             }
         }
 
-        if (html is null)
+        if (html is not null && composition is not null)
         {
-            throw Invalid("MISSING_INDEX", "The ZIP must contain one root index.html file.");
+            throw Invalid("AMBIGUOUS_CONTENT", "A bundle must contain exactly one of index.html or composition.json.");
         }
-
-        return new WebPageBundle(html, assets);
+        if (html is null && composition is null)
+        {
+            throw Invalid("MISSING_INDEX", "The ZIP must contain one root index.html or composition.json file.");
+        }
+        return WebPageContentValidator.Normalize(html is not null
+            ? new WebPageBundle(html, assets)
+            : new WebPageBundle(string.Empty, assets)
+            {
+                ContentFormat = WebPageContentFormat.Composition,
+                CompositionJson = composition
+            });
     }
 
     private static async Task<byte[]> ReadEntryAsync(

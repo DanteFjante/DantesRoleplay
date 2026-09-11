@@ -1,6 +1,6 @@
 # Website composition and operator interface
 
-Status: independent composition/read/presentation library implemented; production publication,
+Status: independent composition/read/presentation library and retained draft storage implemented; production publication,
 transport integration and dependent platform acceptance remain pending. The
 [coordination plan](../PLATFORM-IMPLEMENTATION.md) defines shared contracts and scheduling; the
 coordinator includes the relevant agreement with each assignment. This file owns the website
@@ -15,7 +15,8 @@ Prerequisite: implement [00 — Shared foundation](00-shared-foundation.md) firs
 declarative document into an opaque immutable tree. Component IDs/revisions resolve only inside
 that document; `generation` is an authored label, not proof of an active database revision. The
 coordinator must pin the exact retained document bytes/hash and selected content revision before
-production rendering. No global component registry or persistence format is installed by this library.
+production rendering. There is no global component registry; retained content uses the existing
+versioned page store and asset payload owner.
 
 The renderer permits escaped text/values, allowlisted elements, conditions, loops, required props,
 and caller-scoped slots. It validates references/cycles and rejects duplicate/unknown JSON fields,
@@ -50,7 +51,7 @@ authoritative data; uncertain actions remain fenced without retry. Existing scop
 invalidate reads, reconnect refreshes data, and a page-revision event disposes old controls before
 the host reloads compatible content. No task lifecycle or authorization semantics live in this UI.
 
-Example parser input (preview only; not an accepted upload/publication contract):
+Example composition payload (draft authoring; production publication remains unavailable):
 
 ```json
 {
@@ -78,18 +79,30 @@ exposure/roles), selected application/state revision and trusted caller host. `r
 similarly requires the real action owner to pin mechanic ID/version/content hash and command
 identity. Neither declaration can select authority or advertise availability by itself.
 
-## Coordinator integration proposal (not enabled)
+## Retained content and coordinator integration
 
-- Extend `WebPageBundle`, `WebPageRevision`, `WebPageDocument` and `WebPageRevisionDocument` with
-  explicit `ContentFormat` (`html` by default, proposed `composition-v1`) and nullable
-  `CompositionJson`. Preserve exact composition bytes/hash separately from existing HTML hashes.
-  Extend `WebPageBundleReader` to recognize a root `composition.json` only after this contract is
-  accepted; legacy `index.html` ZIP behavior stays unchanged. The coordinator owns the additive
-  web-content migration and snapshot. Do not hide composition JSON in the legacy HTML field.
-- Extend `IWebPageStore`/`WebPageStore` with first-page inert draft creation and exact-revision
-  asset lookup. First drafts must not activate via `SaveBundleAndActivateAsync`. The coordinator
-  must define the absent-active pointer and expected-revision semantics before creating schema
-  changes. Validate the exact candidate and binding contracts via plan 02 before any active pointer
+- The accepted content model adds `ContentFormat` (`html` by default or `composition-v1`),
+  `CompositionJson` and `CompositionHash` to the existing bundle/revision/read owners. Legacy
+  constructors/defaults and HTML hashes remain compatible; revision summaries expose format/hash
+  without duplicating JSON. `WebPageBundleReader` accepts exactly one root `index.html` or
+  `composition.json`, plus assets, within the existing ZIP/strict UTF-8 bounds. HTML and composition
+  payloads are mutually exclusive. Composition has empty HTML and validated JSON, canonicalized by
+  ordinal property ordering (array order/JSON number tokens preserved), with the uppercase SHA-256
+  of those retained UTF-8 bytes. Both source and canonical JSON are at most 1 MiB; total retained
+  content/assets remain at most 25 MiB. Optional caller hash must match. The accepted coordinator
+  migration `20260911175529_RetainedWebCompositionDrafts` installs format/JSON/hash/size constraints.
+  It refuses downgrade while composition or unpublished (`ActiveRevision=0`) pages exist.
+- `AppendBundleDraftAsync` now accepts `expectedLatestRevision=0` only when the page is absent,
+  creating revision 1 with `ActiveRevision=0`. Positive expectations compare exactly against the
+  current latest revision. An explicit non-deferred SQLite writer reservation precedes reads and
+  writes; a busy reservation returns `PAGE_WRITE_BUSY` without replaying a write. Revision/blob/
+  page creation is one web-content transaction. Active reads never fall back to a first draft.
+  `GetRevisionAssetAsync` reads the requested retained revision, and requires caller-authorized
+  historical/draft access. This creates no public draft asset route. Existing direct HTML editing
+  preserves legacy validation semantics and rejects a composition base instead of implicitly
+  changing its format. `ActivateRevisionAsync` and `SaveBundleAndActivateAsync` refuse composition
+  with `COMPOSITION_ACTIVATION_UNAVAILABLE`; a first HTML draft can activate with expected active 0.
+  Validate the exact candidate and binding contracts via plan 02 before any composition active pointer
   advances. Failed candidates retain previous content/assets; reconcile ECS identity and content
   references explicitly without assuming a transaction spans both owners.
 - In `WebInterfaceEndpoints.GetPageAsync` and the root path, retain publication discovery and
@@ -97,14 +110,17 @@ identity. Neither declaration can select authority or advertise availability by 
   `CompositionPagePreview`. Supply the verified host, exact selected queries and asset base,
   serve audience-specific results without shared HTML caching, and map missing/denied/incompatible
   reads distinctly. Coordinate revision-pinned asset reads and retention with the same publication.
+  The proposed immutable asset base is `/ui/{id}/revisions/{revision}/`; acceptance of its access
+  semantics and transport remains coordinator-owned. It is not a public draft preview URL.
 - Register the read materializer/preview only in the existing coordinator-owned web registration.
   Bind browser actions to the common plan 01 dispatch boundary in
   `WebInterfaceApplicationEndpoints`; preserve stable command identity and reconcile uncertain
   receipts. Plans 02–05 supply authoring/grants, manuals, schedules/observers and child-task readback.
   No proposed downstream contract is consumed before its coordinator freeze.
 
-Library fixtures demonstrate composition and consumer conformance. They do not demonstrate
-production upload/activation, published composition routes, cross-owner failed-publication recovery,
+Library and migrated SQLite fixtures demonstrate composition, inert retention, exact historical
+asset readback, local transaction rollback and consumer conformance. They do not demonstrate
+production composition activation, published composition routes, cross-owner failed-publication recovery,
 Codex-to-page action execution, invited-user grants, scheduled jobs or delegated worker completion.
 Those scenarios wait for real dependencies and coordinator integration; test doubles are confined
 to test projects and cannot satisfy platform acceptance.
