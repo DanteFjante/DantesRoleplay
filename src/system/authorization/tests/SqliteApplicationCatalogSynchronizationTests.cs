@@ -4,6 +4,7 @@ using DantesRoleplay.DataAccess;
 using DantesRoleplay.DataAccess.Bootstrap;
 using DantesRoleplay.DataAccess.Catalog;
 using DantesRoleplay.DataAccess.Composition;
+using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.Events;
 using DantesRoleplay.Information;
 using DantesRoleplay.Interactions;
@@ -65,12 +66,79 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         Assert.Single(await db.Operations.Where(value => value.Tool == "application-candidate").ToArrayAsync());
     }
 
+    [Theory]
+    [InlineData(StandingGrantCapability.Read)]
+    [InlineData(StandingGrantCapability.Author)]
+    public async Task Catalog_comparison_requires_both_current_read_and_author_authority(
+        StandingGrantCapability capability)
+    {
+        await using var db = fixture.CreateContext();
+        var setup = Setup(db); await ActivateAsync(setup);
+        await SeedGrantAsync(db, [capability]);
+        var prepared = await PrepareSynchronizationAsync(db, setup, "Reviewed catalog edit.");
+
+        var result = await prepared.Service.CompareAsync(
+            ApplicationHost(setup, "catalog-permission-" + capability), prepared.CompareRequest);
+
+        Assert.Equal(InteractionInvocationResultTag.Failed, result.Tag);
+        Assert.Equal("STANDING_GRANT_DENIED", result.Code);
+        Assert.Null(result.DataJson);
+        Assert.Empty(await db.Operations.Where(value => value.Tool == "catalog-synchronization-compare").ToArrayAsync());
+    }
+
+    [Fact]
+    public async Task Catalog_comparison_authorizes_a_file_only_identity_through_its_registered_namespace()
+    {
+        await using var db = fixture.CreateContext();
+        var setup = Setup(db); await ActivateAsync(setup);
+        await SeedGrantAsync(db, [StandingGrantCapability.Author, StandingGrantCapability.Read]);
+        var prepared = await PrepareSynchronizationAsync(db, setup, "Reviewed catalog edit.");
+        const string id = "demo.runtime.new-inspect";
+        var relativePath = CatalogLayout.ProcedureMarkdown("", id);
+        var path = CatalogLayout.ToFileSystemPath(Path.Combine(root, "synchronization"), relativePath);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        await File.WriteAllTextAsync(path, ProcedureText("New catalog procedure.")
+            .Replace("demo.runtime.inspect", id, StringComparison.Ordinal));
+        var request = prepared.CompareRequest with
+        {
+            Records = [new(CatalogRecordKind.Procedure, id)]
+        };
+
+        var result = await prepared.Service.CompareAsync(
+            ApplicationHost(setup, "catalog-new-file"), request);
+
+        Assert.Equal(InteractionInvocationResultTag.Completed, result.Tag);
+        Assert.Equal("ready", JsonDocument.Parse(result.DataJson!).RootElement.GetProperty("status").GetString());
+        Assert.Null(await new ProcedureStore(db).GetAsync(id));
+    }
+
+    [Fact]
+    public async Task Catalog_comparison_replay_rechecks_revoked_authority_before_returning_metadata()
+    {
+        await using var db = fixture.CreateContext();
+        var setup = Setup(db); await ActivateAsync(setup);
+        await SeedGrantAsync(db, [StandingGrantCapability.Author, StandingGrantCapability.Read]);
+        var prepared = await PrepareSynchronizationAsync(db, setup, "Reviewed catalog edit.");
+        var first = await prepared.Service.CompareAsync(
+            ApplicationHost(setup, "catalog-revoked-replay"), prepared.CompareRequest);
+        await RevokeGrantAsync(db);
+
+        var replay = await prepared.Service.CompareAsync(
+            ApplicationHost(setup, "catalog-revoked-replay"), prepared.CompareRequest);
+
+        Assert.Equal(InteractionInvocationResultTag.Completed, first.Tag);
+        Assert.Equal(InteractionInvocationResultTag.Failed, replay.Tag);
+        Assert.Equal("STANDING_GRANT_NOT_CURRENT", replay.Code);
+        Assert.Null(replay.DataJson);
+        Assert.Single(await db.Operations.Where(value => value.Tool == "catalog-synchronization-compare").ToArrayAsync());
+    }
+
     [Fact]
     public async Task Catalog_candidate_rejects_bytes_that_differ_from_the_reviewed_selection()
     {
         await using var db = fixture.CreateContext();
         var setup = Setup(db); await ActivateAsync(setup);
-        await SeedGrantAsync(db, [StandingGrantCapability.Author]);
+        await SeedGrantAsync(db, [StandingGrantCapability.Author, StandingGrantCapability.Read]);
         var prepared = await PrepareSynchronizationAsync(db, setup, "Reviewed catalog edit.");
         var comparison = await prepared.Service.CompareAsync(
             ApplicationHost(setup, "catalog-byte-compare"), prepared.CompareRequest);
@@ -90,7 +158,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
     {
         await using var db = fixture.CreateContext();
         var setup = Setup(db); await ActivateAsync(setup);
-        await SeedGrantAsync(db, [StandingGrantCapability.Author]);
+        await SeedGrantAsync(db, [StandingGrantCapability.Author, StandingGrantCapability.Read]);
         var prepared = await PrepareSynchronizationAsync(db, setup, "Reviewed catalog edit.");
         var comparison = await prepared.Service.CompareAsync(
             ApplicationHost(setup, "catalog-stale-compare"), prepared.CompareRequest);
@@ -110,7 +178,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
     {
         await using var db = fixture.CreateContext();
         var setup = Setup(db); await ActivateAsync(setup);
-        await SeedGrantAsync(db, [StandingGrantCapability.Author]);
+        await SeedGrantAsync(db, [StandingGrantCapability.Author, StandingGrantCapability.Read]);
         var prepared = await PrepareSynchronizationAsync(db, setup, "File-side version.");
         var beforeFile = await File.ReadAllTextAsync(prepared.Path);
         var beforeVersion = (await new ProcedureStore(db).GetAsync("demo.runtime.inspect"))!.Version;
@@ -157,9 +225,15 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         var roots = new SynchronizationRoots(synchronizationRoot);
         var importer = new CatalogImporter(db, new MechanicStore(db), new ProcedureStore(db), new WorldStore(db),
             new EventTypeStore(db), new SubscriptionStore(db));
-        var service = new CatalogSynchronizationService(importer, setup.Applications, setup.Activation, setup.Sources,
-            roots, new RegisteredSourceScanner(setup.Sources, roots, new LocalDocumentScanner()),
-            new SourceOverlayResolver(), new OperationLog(db));
+        var scanner = new RegisteredSourceScanner(setup.Sources, roots, new LocalDocumentScanner());
+        var overlays = new SourceOverlayResolver();
+        var targets = new SqliteStandingGrantTargetResolver(db, setup.Applications, setup.Activation,
+            setup.Activation, setup.Sources, setup.Extensions, setup.Namespaces,
+            new ActivatedApplicationCatalogMaterializer(setup.Applications, setup.Activation,
+                setup.Sources, roots, setup.Extensions), scanner, overlays, roots);
+        var service = new CatalogSynchronizationService(db, importer, setup.Applications, setup.Activation,
+            setup.Sources, roots, scanner, overlays, new OperationLog(db),
+            new SqliteStandingGrantPolicy(db, targets), targets);
         var request = new CatalogSynchronizationCompareRequest("synchronization-root",
             setup.Activation.Current(Application)!.ActivationFingerprint,
             [new(CatalogRecordKind.Procedure, "demo.runtime.inspect")]);

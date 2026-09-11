@@ -80,6 +80,18 @@ public sealed class ResourceStandingGrantTargetResolver : IStandingGrantTargetRe
             : _definitions.ResolveCandidateReferenceAsync(host, candidate, selection, cancellationToken);
     }
 
+    public Task<StandingGrantTargetResolution> ResolveCatalogSelectionAsync(
+        InteractionInvocationHost host,
+        StandingGrantCatalogSelectionOrigin origin,
+        string exactDefinitionId,
+        string kind,
+        CancellationToken cancellationToken = default)
+    {
+        return kind == WebPageKind
+            ? Task.FromResult(Unavailable("STANDING_GRANT_RESOURCE_CATALOG_SELECTION_UNAVAILABLE"))
+            : _definitions.ResolveCatalogSelectionAsync(host, origin, exactDefinitionId, kind, cancellationToken);
+    }
+
     public Task<StandingGrantTargetResolution> ResolveRetainedAsync(
         InteractionInvocationHost host,
         StandingGrantActivationOrigin origin,
@@ -100,7 +112,8 @@ public sealed class ResourceStandingGrantTargetResolver : IStandingGrantTargetRe
         ArgumentNullException.ThrowIfNull(target);
         if (target.Kind != WebPageKind)
             return await _definitions.RevalidateAsync(host, target, cancellationToken);
-        if (target.Candidate is not null || target.RetainedActivation is not null)
+        if (target.Candidate is not null || target.RetainedActivation is not null
+            || target.CatalogSelection is not null)
             return Denied("STANDING_GRANT_RESOURCE_OWNER_EVIDENCE_INVALID");
 
         var selection = new StandingGrantDefinitionReference(
@@ -164,6 +177,7 @@ public sealed class ResourceStandingGrantTargetResolver : IStandingGrantTargetRe
         if (result.Target is not { } target)
             return result;
         if (target.Candidate is not null || target.RetainedActivation is not null
+            || target.CatalogSelection is not null
             || target.DefinitionId != exactDefinitionId || target.Kind != kind
             || target.OwnerApplicationId != host.ApplicationRevision.ApplicationId
             || target.Revision < 1 || !UpperSha256(target.ContentFingerprint)

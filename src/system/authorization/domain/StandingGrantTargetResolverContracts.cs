@@ -60,6 +60,16 @@ public interface IStandingGrantTargetResolver
             "STANDING_GRANT_CANDIDATE_OWNER_UNAVAILABLE", null));
 
     /// <summary>
+    /// Resolves one owner-selected definition from its current registered catalog source. The
+    /// implementation rehydrates the source, selected bytes and namespace; the origin is not authority.
+    /// </summary>
+    Task<StandingGrantTargetResolution> ResolveCatalogSelectionAsync(InteractionInvocationHost host,
+        StandingGrantCatalogSelectionOrigin origin, string exactDefinitionId, string kind,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(new StandingGrantTargetResolution(StandingGrantTargetResolutionStatus.Unavailable,
+            "STANDING_GRANT_CATALOG_SELECTION_OWNER_UNAVAILABLE", null));
+
+    /// <summary>
     /// Candidate path resolves the exact owner-materialized retained candidate and its registered
     /// source. It cannot substitute current active bytes or accept a caller-deserialized snapshot.
     /// Unimplemented candidate materialization returns Unavailable, never active-definition evidence.

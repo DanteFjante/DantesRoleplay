@@ -16,7 +16,9 @@ public sealed partial class SqliteStandingGrantTargetResolver(
     DantesRoleplayDbContext db, IApplicationRegistry applications,
     IApplicationActivationReader activations, IActivatedApplicationEvidenceReader evidence,
     ISourceRegistry sources, IApplicationExtensionRegistry extensions,
-    ICatalogNamespaceRegistry namespaces, ActivatedApplicationCatalogMaterializer catalog) : IStandingGrantTargetResolver
+    ICatalogNamespaceRegistry namespaces, ActivatedApplicationCatalogMaterializer catalog,
+    IRegisteredSourceScanner? scanner = null, ISourceOverlayResolver? overlays = null,
+    IAllowedSourceRootResolver? roots = null) : IStandingGrantTargetResolver
 {
     // A lookup is bounded independently of the larger activation retention allowance.
     internal const int MaximumLookupDocuments = 128;
@@ -27,7 +29,9 @@ public sealed partial class SqliteStandingGrantTargetResolver(
     {
         ArgumentNullException.ThrowIfNull(target);
         var selection = new StandingGrantDefinitionReference(target.DefinitionId, target.Kind, target.Revision, target.ContentFingerprint);
-        var result = target.Candidate is { } candidate
+        var result = target.CatalogSelection is { } catalogSelection
+            ? await ResolveCatalogSelectionAsync(host, catalogSelection, selection.DefinitionId, selection.Kind, cancellationToken)
+            : target.Candidate is { } candidate
             ? await ResolveCandidateReferenceAsync(host, candidate, selection, cancellationToken)
             : target.RetainedActivation is { } origin
             ? await ResolveRetainedAsync(host, origin, selection, cancellationToken)

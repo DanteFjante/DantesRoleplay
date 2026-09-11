@@ -3,9 +3,13 @@ using System.Text;
 using System.Text.Json;
 using DantesRoleplay.ApplicationActivation;
 using DantesRoleplay.Applications;
+using DantesRoleplay.Authorization;
+using DantesRoleplay.CatalogNamespaces;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Operations;
 using DantesRoleplay.Sources;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
 
 namespace DantesRoleplay.DataAccess.Catalog;
 
@@ -13,6 +17,7 @@ namespace DantesRoleplay.DataAccess.Catalog;
 /// Records one bounded three-way comparison. It never calls export/import and never writes authored content.
 /// </summary>
 public sealed class CatalogSynchronizationService(
+    DantesRoleplayDbContext db,
     CatalogImporter importer,
     IApplicationRegistry applications,
     IApplicationActivationReader activations,
@@ -20,7 +25,9 @@ public sealed class CatalogSynchronizationService(
     IAllowedSourceRootResolver roots,
     IRegisteredSourceScanner scanner,
     ISourceOverlayResolver overlays,
-    IOperationLog operations) : ICatalogSynchronizationService, IApplicationCatalogSynchronizationEvidenceReader
+    IOperationLog operations,
+    IStandingGrantPolicy grants,
+    IStandingGrantTargetResolver targets) : ICatalogSynchronizationService, IApplicationCatalogSynchronizationEvidenceReader
 {
     private const string Tool = "catalog-synchronization-compare";
     private const int MaximumRecords = 16;
@@ -30,6 +37,9 @@ public sealed class CatalogSynchronizationService(
     public async Task<InteractionInvocationResult> CompareAsync(InteractionInvocationHost host,
         CatalogSynchronizationCompareRequest request, CancellationToken cancellationToken = default)
     {
+        var opened = false;
+        if (db.Database.CurrentTransaction is not null) return Failed("CATALOG_SYNCHRONIZATION_OUTER_TRANSACTION");
+        if (db.ChangeTracker.HasChanges()) return Failed("CATALOG_SYNCHRONIZATION_CONTEXT_HAS_PENDING_WRITES");
         if (!host.Budget.TryConsumeOperation()) return Failed("INVOCATION_BUDGET_EXHAUSTED");
         if (host.Budget.DeadlineUtc <= DateTime.UtcNow) return Failed("INVOCATION_DEADLINE_EXCEEDED");
         if (!Valid(request)) return Failed("CATALOG_SYNCHRONIZATION_INVALID");
@@ -37,6 +47,11 @@ public sealed class CatalogSynchronizationService(
         {
             var app = host.ApplicationRevision.ApplicationId;
             if (app.IsSystem) return Failed("CATALOG_SYNCHRONIZATION_APPLICATION_INVALID");
+            await db.Database.OpenConnectionAsync(cancellationToken);
+            opened = true;
+            var connection = (SqliteConnection)db.Database.GetDbConnection();
+            await using var transaction = connection.BeginTransaction(deferred: false);
+            await using var enlistment = await db.Database.UseTransactionAsync(transaction, cancellationToken);
             var registered = applications.Get(app);
             if (registered is null || registered.Revision != host.ApplicationRevision.Revision
                 || registered.Fingerprint != host.ApplicationRevision.Fingerprint)
@@ -54,10 +69,16 @@ public sealed class CatalogSynchronizationService(
                 if (replay.Tool != Tool || !replay.Success || replay.Subject != app.Value
                     || replay.ProjectionJson != projection || !TryEvidence(replay.GuardEvidenceJson, out var retained))
                     return Failed("CATALOG_SYNCHRONIZATION_COMMAND_CONFLICT");
+                var current = await BuildEvidenceAsync(host, request, canonicalRoot, cancellationToken);
+                if (await AuthorizeAsync(host, current, cancellationToken) is { } replayDenial)
+                    return replayDenial;
+                await transaction.CommitAsync(cancellationToken);
                 return Result(operationId, retained!);
             }
 
             var evidence = await BuildEvidenceAsync(host, request, canonicalRoot, cancellationToken);
+            if (await AuthorizeAsync(host, evidence, cancellationToken) is { } denial)
+                return denial;
             var evidenceJson = EvidenceJson(evidence);
             if (Encoding.UTF8.GetByteCount(projection) > MaximumEvidenceBytes
                 || Encoding.UTF8.GetByteCount(evidenceJson) > MaximumEvidenceBytes)
@@ -66,6 +87,7 @@ public sealed class CatalogSynchronizationService(
             await operations.RecordAsync(Tool, "Compared a bounded catalog synchronization selection.", true,
                 subject: app.Value, projectionJson: projection, guardEvidenceJson: evidenceJson,
                 id: operationId, cancellationToken: cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
             return Result(operationId, evidence);
         }
         catch (OperationCanceledException) { throw; }
@@ -74,7 +96,59 @@ public sealed class CatalogSynchronizationService(
             return InteractionInvocationResult.Unavailable("CATALOG_SYNCHRONIZATION_UNAVAILABLE",
                 "The catalog comparison is unavailable.");
         }
+        finally
+        {
+            db.ChangeTracker.Clear();
+            if (opened) await db.Database.CloseConnectionAsync();
+        }
     }
+
+    private async Task<InteractionInvocationResult?> AuthorizeAsync(InteractionInvocationHost host,
+        CatalogSynchronizationEvidence evidence, CancellationToken cancellationToken)
+    {
+        var resolved = new List<StandingGrantDefinitionTarget>(evidence.Records.Count);
+        foreach (var record in evidence.Records)
+        {
+            var kind = record.Kind switch
+            {
+                CatalogRecordKind.Mechanic => CatalogNamespaceKinds.Mechanic,
+                CatalogRecordKind.Procedure => CatalogNamespaceKinds.Procedure,
+                _ => null
+            };
+            if (kind is null) return Failed("CATALOG_SYNCHRONIZATION_KIND_UNAVAILABLE");
+            StandingGrantTargetResolution resolution;
+            var primary = record.RelativePaths.SingleOrDefault(path => path.EndsWith(".md", StringComparison.Ordinal));
+            var document = primary is null ? null
+                : evidence.Documents.SingleOrDefault(value => value.RelativePath == primary);
+            if (document is not null)
+            {
+                var origin = new StandingGrantCatalogSelectionOrigin(evidence.AllowedRootId,
+                    document.SourceId, document.SourceRegistrationFingerprint, document.RelativePath);
+                resolution = await targets.ResolveCatalogSelectionAsync(host, origin, record.Id, kind, cancellationToken);
+            }
+            else
+            {
+                resolution = await targets.ResolveCurrentAsync(host, record.Id, kind, cancellationToken);
+            }
+            if (resolution.Status == StandingGrantTargetResolutionStatus.Unavailable)
+                return InteractionInvocationResult.Unavailable(resolution.Code,
+                    "Catalog selection ownership is unavailable.");
+            if (resolution.Status != StandingGrantTargetResolutionStatus.Available || resolution.Target is null)
+                return Failed(resolution.Code);
+            resolved.Add(resolution.Target);
+        }
+        var read = await grants.EvaluateAsync(host,
+            new(StandingGrantCapability.Read, StandingGrantScope.Application, resolved, []), cancellationToken);
+        if (!read.Allowed) return AuthorizationFailure(read.Code, "Read");
+        var author = await grants.EvaluateAsync(host,
+            new(StandingGrantCapability.Author, StandingGrantScope.Application, resolved, []), cancellationToken);
+        return author.Allowed ? null : AuthorizationFailure(author.Code, "Author");
+    }
+
+    private static InteractionInvocationResult AuthorizationFailure(string code, string capability) =>
+        code.EndsWith("UNAVAILABLE", StringComparison.Ordinal)
+            ? InteractionInvocationResult.Unavailable(code, $"{capability} authority is unavailable.")
+            : Failed(code);
 
     public async Task<string?> ValidateCandidateAsync(InteractionInvocationHost host,
         ApplicationCandidateWriteRequest request, CancellationToken cancellationToken = default)
@@ -198,7 +272,7 @@ public sealed class CatalogSynchronizationService(
             || request.Records.Count is < 1 or > MaximumRecords
             || request.ExpectedActiveFingerprint is { } fingerprint && !Hash(fingerprint)
             || request.Records.Any(value => value is null || !Enum.IsDefined(value.Kind)
-                || value.Kind is CatalogRecordKind.Entity or CatalogRecordKind.Relationships
+                || value.Kind is not (CatalogRecordKind.Mechanic or CatalogRecordKind.Procedure)
                 || string.IsNullOrWhiteSpace(value.Id))) return false;
         try { foreach (var value in request.Records) CatalogNamespaces.CatalogNamespaceIdentity.ValidateRecordId(value.Id); }
         catch (ArgumentException) { return false; }

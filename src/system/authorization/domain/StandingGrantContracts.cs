@@ -66,11 +66,20 @@ public sealed record StandingGrantDefinitionTarget(
     string DefinitionId, string Kind, ApplicationIdentifier OwnerApplicationId, string NamespaceId,
     string OwnershipEvidenceReference, int Revision, string ContentFingerprint,
     ApplicationCandidateReference? Candidate = null,
-    StandingGrantActivationOrigin? RetainedActivation = null);
+    StandingGrantActivationOrigin? RetainedActivation = null,
+    StandingGrantCatalogSelectionOrigin? CatalogSelection = null);
 
 /// <summary>Owner-produced retained activation provenance captured at task admission, never inferred for legacy tasks.</summary>
 public sealed record StandingGrantActivationOrigin(
     int ActivationRevision, string ActivationFingerprint, int ApplicationRevision, string ApplicationFingerprint);
+
+/// <summary>
+/// Owner-produced provenance for a definition selected from a current registered catalog source
+/// before it has been retained as a candidate. The opaque root and source registration are
+/// rehydrated by the standing-grant resolver; this record never carries a host filesystem path.
+/// </summary>
+public sealed record StandingGrantCatalogSelectionOrigin(
+    string AllowedRootId, string SourceId, string SourceRegistrationFingerprint, string RelativePath);
 
 /// <summary>
 /// Loaded from the durable task owner, not the caller: read/cancel requires its stored principal,

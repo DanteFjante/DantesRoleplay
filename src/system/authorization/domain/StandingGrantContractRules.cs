@@ -60,6 +60,10 @@ public static class StandingGrantContractRules
                 || requirement.Capability is not (StandingGrantCapability.Author or StandingGrantCapability.Validate
                     or StandingGrantCapability.Activate or StandingGrantCapability.Read)))
             Fail("STANDING_GRANT_CANDIDATE_SCOPE_DENIED", "Candidate targets authorize application authoring or inspection only.");
+        if (targets.Any(target => target.CatalogSelection is not null)
+            && (requirement.Scope != StandingGrantScope.Application
+                || requirement.Capability is not (StandingGrantCapability.Author or StandingGrantCapability.Read)))
+            Fail("STANDING_GRANT_CATALOG_SELECTION_SCOPE_DENIED", "Catalog selections authorize application comparison and authoring only.");
         if (targets.Any(target => target.RetainedActivation is not null)
             && (requirement.Scope != StandingGrantScope.StateSpace
                 || requirement.Capability is not (StandingGrantCapability.ReadTask or StandingGrantCapability.CancelTask)))
@@ -121,18 +125,29 @@ public static class StandingGrantContractRules
         Hash(target.ContentFingerprint);
         if (target.RetainedActivation is { } origin)
         {
-            if (target.Candidate is not null || origin.ActivationRevision < 1 || origin.ApplicationRevision < 1)
+            if (target.Candidate is not null || target.CatalogSelection is not null
+                || origin.ActivationRevision < 1 || origin.ApplicationRevision < 1)
                 Fail("INVALID_STANDING_GRANT_TARGET", "The retained activation origin is invalid.");
             Hash(origin.ActivationFingerprint);
             Hash(origin.ApplicationFingerprint);
         }
         if (target.Candidate is { } candidate)
         {
-            if (candidate.ApplicationId != app || candidate.Revision < 1
+            if (target.CatalogSelection is not null || candidate.ApplicationId != app || candidate.Revision < 1
                 || candidate.CandidateId is not { Length: 32 }
                 || candidate.CandidateId.Any(c => !(char.IsAsciiDigit(c) || c is >= 'a' and <= 'f')))
                 Fail("INVALID_STANDING_GRANT_TARGET", "The candidate origin is invalid or cross-application.");
             Hash(candidate.ContentFingerprint);
+        }
+        if (target.CatalogSelection is { } catalog)
+        {
+            if (!Id(catalog.AllowedRootId, "INVALID_STANDING_GRANT_TARGET")
+                || !Id(catalog.SourceId, "INVALID_STANDING_GRANT_TARGET")
+                || catalog.RelativePath != catalog.RelativePath.Replace('\\', '/')
+                || catalog.RelativePath.StartsWith("/", StringComparison.Ordinal)
+                || catalog.RelativePath.Split('/').Any(segment => segment is "" or "." or ".."))
+                Fail("INVALID_STANDING_GRANT_TARGET", "The catalog selection origin is invalid.");
+            Hash(catalog.SourceRegistrationFingerprint);
         }
         if (CatalogNamespaceIdentity.NamespaceOf(target.DefinitionId) != target.NamespaceId) Fail("INVALID_STANDING_GRANT_TARGET", "Definition identity is outside its namespace.");
     }
