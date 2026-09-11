@@ -62,7 +62,8 @@ public sealed class JintMechanicEngine : IMechanicEngine
     private const string ParserConfiguration =
         "script;strict=true;allow-return-outside-function=true;allow-new-target-outside-function=true;" +
         "regex-timeout=100ms;source-bytes=262144;tokens=50000;lexical-depth=64;expression-complexity=128;" +
-        "ast-nodes=100000;ast-depth=128";
+        "ast-nodes=100000;ast-depth=128;fold-constants=false;compile-regex=false;" +
+        "tolerant=false;flat-control-block-reset=true";
 
     private static readonly Meter RuntimeMeter = new("DantesRoleplay.Mechanics.JintMechanicEngine");
     private static readonly Histogram<double> PreparationDuration = RuntimeMeter.CreateHistogram<double>(
@@ -392,7 +393,20 @@ public sealed class JintMechanicEngine : IMechanicEngine
         var program = Engine.PrepareScript(
             MechanicWrapperPrefix + source + MechanicWrapperSuffix,
             "prepared-mechanic.js",
-            strict: true);
+            strict: true,
+            new ScriptPreparationOptions
+            {
+                // Constant folding runs before a constrained engine exists. A tiny literal
+                // BigInt shift can otherwise allocate and retain an enormous cached value here.
+                FoldConstants = false,
+                ParsingOptions = new ScriptParsingOptions
+                {
+                    AllowReturnOutsideFunction = false,
+                    CompileRegex = false,
+                    RegexTimeout = TimeSpan.FromMilliseconds(100),
+                    Tolerant = false
+                }
+            });
         budget.ThrowIfExpired();
         return new PreparedMechanicProgram(program, complexity);
     }
@@ -462,6 +476,7 @@ public sealed class JintMechanicEngine : IMechanicEngine
         var expressionComplexity = 0;
         var maximumExpressionComplexity = 0;
         var parentExpressionComplexity = new Stack<int>();
+        int? completedBlockBaseline = null;
 
         while (true)
         {
@@ -476,6 +491,14 @@ public sealed class JintMechanicEngine : IMechanicEngine
             var punctuator = token.Kind == TokenKind.Punctuator;
             var keyword = token.Kind == TokenKind.Keyword;
             var contextualUnary = token.Kind == TokenKind.Identifier && tokenText is "await" or "yield";
+
+            // A new control statement after a completed block is a sibling, not another parser
+            // recursion level. Preserve the count through `else` so deep else-if chains remain
+            // bounded before parsing, and retain every enclosing lexical scope's baseline.
+            if (completedBlockBaseline is { } baseline && keyword
+                && tokenText is "if" or "for" or "while" or "do")
+                expressionComplexity = baseline;
+            completedBlockBaseline = null;
 
             switch (punctuator ? tokenText : null)
             {
@@ -495,6 +518,8 @@ public sealed class JintMechanicEngine : IMechanicEngine
                     nesting = Math.Max(0, nesting - 1);
                     if (parentExpressionComplexity.TryPop(out var parent))
                         expressionComplexity = Math.Max(parent, expressionComplexity);
+                    if (tokenText == "}")
+                        completedBlockBaseline = parentExpressionComplexity.TryPeek(out var enclosing) ? enclosing : 0;
                     break;
             }
 
@@ -959,6 +984,23 @@ internal sealed class PreparedProgramCache
         PreparationBudget budget,
         Func<PreparedProgramKey, PreparationBudget, PreparedMechanicProgram> prepare)
     {
+        while (true)
+        {
+            try { return GetOrPrepareAttempt(key, budget, prepare); }
+            catch (PreparationLeaderAbortedException)
+            {
+                // A leader's cancellation/deadline is personal. Healthy followers rejoin or
+                // become the next leader under their original budgets and bounded admission.
+                budget.ThrowIfExpired();
+            }
+        }
+    }
+
+    private (PreparedMechanicProgram Program, bool CacheHit) GetOrPrepareAttempt(
+        PreparedProgramKey key,
+        PreparationBudget budget,
+        Func<PreparedProgramKey, PreparationBudget, PreparedMechanicProgram> prepare)
+    {
         ArgumentNullException.ThrowIfNull(prepare);
         budget.ThrowIfExpired();
 
@@ -1108,8 +1150,12 @@ internal sealed class PreparedProgramCache
             budget.ThrowIfExpired();
             if (!_completed.Wait(budget.Remaining, budget.CancellationToken)) throw new TimeoutException();
             budget.ThrowIfExpired();
+            if (_failure?.SourceException is OperationCanceledException or TimeoutException)
+                throw new PreparationLeaderAbortedException();
             _failure?.Throw();
             return _program;
         }
     }
+
+    private sealed class PreparationLeaderAbortedException : Exception;
 }

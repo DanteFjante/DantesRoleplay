@@ -1,4 +1,5 @@
 using DantesRoleplay.Mechanics;
+using Acornima.Ast;
 using Xunit.Abstractions;
 
 namespace DantesRoleplay.Tests;
@@ -298,6 +299,73 @@ public sealed class PreparedMechanicProgramTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void Literal_bigint_expressions_are_not_evaluated_during_untrusted_preparation()
+    {
+        // A small shift proves folding is disabled without allocating a hostile folded value.
+        var prepared = JintMechanicEngine.PrepareMechanicProgram("return { data: { value: 1n << 12n } }; ");
+        var pending = new Stack<Node>();
+        pending.Push(Assert.IsType<Script>(prepared.Program));
+        var expressions = new List<BinaryExpression>();
+        while (pending.TryPop(out var node))
+        {
+            if (node is BinaryExpression binary) expressions.Add(binary);
+            foreach (var child in node.ChildNodes) pending.Push(child);
+        }
+        // Jint stores a JintConstantExpression in UserData when folding a literal binary node.
+        Assert.Null(Assert.Single(expressions).UserData);
+    }
+
+    [Fact]
+    public async Task Shallow_sibling_control_blocks_do_not_accumulate_recursive_depth()
+    {
+        var source = string.Concat(Enumerable.Repeat("if (true) { let value = 1; } ", 129))
+            + "return { narration: 'flat' };";
+        var result = await new JintMechanicEngine().RunAsync(source, Projection, ExecutionLimits.Default);
+        Assert.True(result.Ok, result.Error);
+        Assert.Equal("flat", result.Output.Narration);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Healthy_waiter_retries_after_leader_personal_cancellation_or_deadline(bool cancelLeader)
+    {
+        using var leaderStarted = new ManualResetEventSlim();
+        using var releaseLeader = new ManualResetEventSlim();
+        using var cancellation = new CancellationTokenSource();
+        var preparations = 0;
+        var engine = new JintMechanicEngine(true, preparationStarted: _ =>
+        {
+            if (Interlocked.Increment(ref preparations) != 1) return;
+            leaderStarted.Set();
+            if (!releaseLeader.Wait(TimeSpan.FromSeconds(5))) throw new TimeoutException("Test gate expired.");
+        });
+        const string source = "return { narration: 'healthy' };";
+        var leader = Task.Run(() => engine.RunAsync(source, Projection,
+            ExecutionLimits.Default with { Timeout = TimeSpan.FromMilliseconds(cancelLeader ? 5000 : 150) }, cancellation.Token));
+        Assert.True(leaderStarted.Wait(TimeSpan.FromSeconds(2)));
+        var healthy = Task.Run(() => engine.RunAsync(source, Projection,
+            ExecutionLimits.Default with { Timeout = TimeSpan.FromSeconds(5) }));
+        try
+        {
+            Assert.True(SpinWait.SpinUntil(() => engine.PreparedProgramCacheStatistics.PendingPreparations >= 2,
+                TimeSpan.FromSeconds(2)));
+            if (cancelLeader) cancellation.Cancel();
+            else await Task.Delay(200);
+        }
+        finally { releaseLeader.Set(); }
+        var results = await Task.WhenAll(leader, healthy).WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.False(results[0].Ok);
+        Assert.Equal(cancelLeader ? "cancelled" : "timeout", results[0].LimitHit);
+        Assert.True(results[1].Ok, results[1].Error);
+        Assert.Equal("healthy", results[1].Output.Narration);
+        Assert.Equal(1, engine.PreparedProgramCacheStatistics.PreparationFailureCount);
+        Assert.Equal(1, engine.PreparedProgramCacheStatistics.PreparationCount);
+        Assert.Equal(0, engine.PreparedProgramCacheStatistics.PendingPreparations);
+        Assert.Equal(0, engine.PreparedProgramCacheStatistics.ActivePreparations);
+    }
+
+    [Fact]
     public async Task Same_key_waiters_observe_their_own_cancellation_and_deadline()
     {
         using var leaderStarted = new ManualResetEventSlim();
@@ -452,8 +520,11 @@ public sealed class PreparedMechanicProgramTests(ITestOutputHelper output)
     {
         var catalog = Path.GetFullPath(Path.Combine(
             AppContext.BaseDirectory,
-            "..", "..", "..", "..", "catalog", "mechanics"));
-        var measured = Directory.EnumerateFiles(catalog, "*.js", SearchOption.AllDirectories)
+            "..", "..", "..", "..", "catalog"));
+        var roots = new[] { Path.Combine(catalog, "mechanics") }
+            .Concat(Directory.EnumerateDirectories(Path.Combine(catalog, "applications"))
+                .Select(application => Path.Combine(application, "mechanics")).Where(Directory.Exists)).ToArray();
+        var measured = roots.SelectMany(root => Directory.EnumerateFiles(root, "*.js", SearchOption.AllDirectories))
             .Select(path => (Path: path, Complexity: JintMechanicEngine.InspectMechanicProgramComplexity(
                 File.ReadAllText(path))))
             .ToArray();
