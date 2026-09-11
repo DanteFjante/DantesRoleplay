@@ -69,12 +69,12 @@ public sealed record ApplicationCandidateDiagnostic(string Code, string Target, 
 /// Valid requires a durable evidence reference and exact fingerprint/dependency pins. Syntax-only
 /// preparation is insufficient: contracts, services/effects and bounded samples must be validated.
 /// No missing dependency may be represented as an empty successful check.
-/// EvidenceReference must resolve the exact preparation policy version; historical v1 activation
+/// PreparationVersion pins the exact policy independently of its evidence reference; historical v1 activation
 /// metadata is not evidence that the candidate passed a subsequently tightened preparation policy.
 /// </summary>
 public sealed record ApplicationCandidateCheckResult(
     ApplicationCandidateCheckStatus Status, string CandidateFingerprint, string DependencyGraphFingerprint,
-    string? EvidenceReference, IReadOnlyList<ApplicationCandidateDiagnostic> Diagnostics);
+    string? PreparationVersion, string? EvidenceReference, IReadOnlyList<ApplicationCandidateDiagnostic> Diagnostics);
 
 public sealed record ApplicationDefinitionAlternative(
     string DefinitionId, int Revision, string ContentFingerprint, string Reason);
@@ -82,12 +82,12 @@ public sealed record ApplicationDefinitionAlternative(
 /// <summary>
 /// Discovery supplies alternatives, not equivalence or publication approval. Valid additionally
 /// requires the candidate-bound review of those alternatives and NewImplementationReason.
-/// DiscoveryFingerprint pins the accepted InteractionManualContextPacket.ResultFingerprint;
+/// ManualPacketResultFingerprint pins the accepted InteractionManualContextPacket.ResultFingerprint;
 /// neither its SelectedAction nor its ReuseDecision can substitute for this review.
 /// </summary>
 public sealed record ApplicationCandidateReuseResult(
-    ApplicationCandidateCheckStatus Status, string CandidateFingerprint, string DiscoveryFingerprint,
-    string? EvidenceReference, IReadOnlyList<ApplicationDefinitionAlternative> Alternatives,
+    ApplicationCandidateCheckStatus Status, string CandidateFingerprint,
+    string? ManualPacketResultFingerprint, string? EvidenceReference, IReadOnlyList<ApplicationDefinitionAlternative> Alternatives,
     IReadOnlyList<ApplicationCandidateDiagnostic> Diagnostics);
 
 public interface IApplicationCandidatePreparation

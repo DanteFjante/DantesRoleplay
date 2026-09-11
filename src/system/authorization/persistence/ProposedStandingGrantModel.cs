@@ -14,6 +14,23 @@ internal static class ProposedStandingGrantModel
             {
                 table.HasCheckConstraint("CK_proposed_grant_budget", "\"MaximumOperations\" BETWEEN 1 AND 16");
                 table.HasCheckConstraint("CK_proposed_grant_permissions", "json_valid(\"PermissionsJson\") AND length(CAST(\"PermissionsJson\" AS BLOB)) <= 16000");
+                table.HasCheckConstraint("CK_proposed_grant_definition_mode", """
+                    CASE WHEN json_valid("PermissionsJson") THEN COALESCE(
+                        json_type("PermissionsJson") = 'object'
+                        AND json_type("PermissionsJson", '$.capabilities') = 'array'
+                        AND json_type("PermissionsJson", '$.effectKinds') = 'array'
+                        AND json_type("PermissionsJson", '$.definitions') = 'object'
+                        AND json_type("PermissionsJson", '$.definitions.exactIds') = 'array'
+                        AND json_type("PermissionsJson", '$.definitions.applicationOwnedNamespaces') = 'array'
+                        AND json_array_length("PermissionsJson", '$.definitions.exactIds') <= 64
+                        AND json_array_length("PermissionsJson", '$.definitions.applicationOwnedNamespaces') <= 16
+                        AND ((json_extract("PermissionsJson", '$.definitions.mode') = 'exactIds'
+                              AND json_array_length("PermissionsJson", '$.definitions.applicationOwnedNamespaces') = 0)
+                            OR (json_extract("PermissionsJson", '$.definitions.mode') = 'applicationOwned'
+                              AND json_array_length("PermissionsJson", '$.definitions.exactIds') = 0
+                              AND json_array_length("PermissionsJson", '$.definitions.applicationOwnedNamespaces') > 0)), 0)
+                    ELSE 0 END
+                    """);
                 table.HasCheckConstraint("CK_proposed_grant_hash", Hash("ContentFingerprint"));
                 table.HasCheckConstraint("CK_proposed_grant_revision", "\"Revision\" > 0");
                 table.HasCheckConstraint("CK_proposed_grant_scope", "(\"Scope\" = 'application' AND \"StateSpaceId\" IS NULL) OR (\"Scope\" = 'stateSpace' AND \"StateSpaceId\" IS NOT NULL AND length(\"StateSpaceId\") > 0)");
@@ -44,6 +61,7 @@ internal sealed class StandingGrantRevisionRecord
     public required string ApplicationId { get; set; }
     public required string Scope { get; set; }
     public string? StateSpaceId { get; set; }
+    /// <summary>Canonical object with capabilities, definitions (explicit mode and lists), and effectKinds.</summary>
     public required string PermissionsJson { get; set; }
     public required string ContentFingerprint { get; set; }
     public int MaximumOperations { get; set; }
