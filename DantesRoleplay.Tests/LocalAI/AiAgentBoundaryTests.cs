@@ -40,6 +40,7 @@ public sealed class AiAgentBoundaryTests
         Assert.True(result.Ok);
         Assert.Equal(0, global.Calls);
         Assert.Equal(1, scoped.Calls);
+        Assert.Single(result.Activities!, value => value.Kind == "tool-call" && value.Status == "requested");
     }
 
     [Fact]
@@ -59,15 +60,19 @@ public sealed class AiAgentBoundaryTests
     {
         var provider = new QueueProvider(
             new(true, null, "", "", [new("call.1", "read_value", "{}")], PromptTokens: 11, OutputTokens: 3),
-            new(false, null, "", "", [], PromptTokens: 7, OutputTokens: 2, ErrorCode: "PROVIDER_LOST", ErrorMessage: "Lost connection."));
-        var result = await new AiService([provider], [new Tool("read_value")]).SendRequestAsync(Request(["read_value"]));
+            new(false, null, "", "", [new("call.2", "read_value", "{}")], PromptTokens: 7, OutputTokens: 2, ErrorCode: "PROVIDER_LOST", ErrorMessage: "Lost connection."));
+        var tool = new Tool("read_value");
+        var result = await new AiService([provider], [tool]).SendRequestAsync(Request(["read_value"]));
 
         Assert.False(result.Ok);
         Assert.Equal("PROVIDER_LOST", result.ErrorCode);
         Assert.Equal(18, result.PromptTokens);
         Assert.Equal(5, result.OutputTokens);
-        Assert.Equal("call.1", Assert.Single(result.ToolCalls).Id);
+        Assert.Equal(["call.1", "call.2"], result.ToolCalls.Select(value => value.Id));
+        Assert.Equal(1, tool.Calls);
         Assert.Contains(result.Activities!, value => value.Kind == "tool-call" && value.Status == "completed");
+        Assert.Contains(result.Activities!, value => value.ToolCallId == "call.2" && value.Status == "requested");
+        Assert.DoesNotContain(result.Activities!, value => value.ToolCallId == "call.2" && value.Status == "completed");
         Assert.DoesNotContain(result.Activities!, value => value.Kind == "result" && value.Status == "completed");
     }
 
@@ -94,7 +99,42 @@ public sealed class AiAgentBoundaryTests
         Assert.Equal("AI_TOOL_ROUND_LIMIT", result.ErrorCode);
         Assert.Equal(9, result.PromptTokens);
         Assert.Equal(4, result.OutputTokens);
+        Assert.Equal("call.1", Assert.Single(result.ToolCalls).Id);
         Assert.Equal(0, tool.Calls);
+    }
+
+    [Fact]
+    public async Task Final_round_call_after_a_successful_round_is_observed_but_not_executed()
+    {
+        var provider = new QueueProvider(
+            new(true, null, "", "", [new("call.1", "read_value", "{}")], PromptTokens: 9, OutputTokens: 4),
+            new(true, null, "", "", [new("call.2", "read_value", "{}")], PromptTokens: 7, OutputTokens: 3));
+        var tool = new Tool("read_value");
+        var result = await new AiService([provider], [tool]).SendRequestAsync(Request(["read_value"]) with { MaximumToolRounds = 1 });
+
+        Assert.Equal("AI_TOOL_ROUND_LIMIT", result.ErrorCode);
+        Assert.Equal(["call.1", "call.2"], result.ToolCalls.Select(value => value.Id));
+        Assert.Equal(1, tool.Calls);
+        Assert.Equal(16, result.PromptTokens);
+        Assert.Equal(7, result.OutputTokens);
+        Assert.Contains(result.Activities!, value => value.ToolCallId == "call.2" && value.Status == "requested");
+        Assert.DoesNotContain(result.Activities!, value => value.ToolCallId == "call.2" && value.Status == "completed");
+    }
+
+    [Fact]
+    public async Task Unexpected_call_without_authorized_tools_is_observed_but_not_executed()
+    {
+        var provider = new QueueProvider(new AiProviderResponse(true, null, "", "", [new("call.1", "read_value", "{}")], PromptTokens: 5, OutputTokens: 2));
+        var tool = new Tool("read_value");
+        var result = await new AiService([provider], [tool]).SendRequestAsync(Request([]));
+
+        Assert.Equal("AI_TOOL_CALL_UNEXPECTED", result.ErrorCode);
+        Assert.Equal("call.1", Assert.Single(result.ToolCalls).Id);
+        Assert.Equal(0, tool.Calls);
+        Assert.Equal(5, result.PromptTokens);
+        Assert.Equal(2, result.OutputTokens);
+        Assert.Contains(result.Activities!, value => value.ToolCallId == "call.1" && value.Status == "requested");
+        Assert.DoesNotContain(result.Activities!, value => value.ToolCallId == "call.1" && value.Status == "completed");
     }
 
     private static AiAgentProfile Profile() => new("fixture.worker", "Worker", "Perform the selected task.");

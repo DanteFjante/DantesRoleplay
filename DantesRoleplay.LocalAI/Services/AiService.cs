@@ -139,6 +139,11 @@ public sealed partial class AiService : IAiService
                 ToolCalls = observedCalls.ToArray(), Activities = activities.ToArray()
             };
         }
+        void RejectedCallActivity(IEnumerable<AiToolCall> calls)
+        {
+            foreach (var call in calls)
+                Activity("tool-call", "requested", $"The provider returned direct tool '{call.Name}'.", call);
+        }
         for (var round = 0; round <= request.MaximumToolRounds; round++)
         {
             AiToolExecutor executor = async (call, token) =>
@@ -164,20 +169,32 @@ public sealed partial class AiService : IAiService
                 request.MaximumOutputTokens), cancellationToken);
             promptTokens += result.PromptTokens;
             outputTokens += result.OutputTokens;
+            // Preserve every provider-returned request in evidence, including calls rejected by a
+            // provider failure, an empty authorization set, or the final round fence. Activities
+            // remain owned by the executor so ordinary calls still have one "requested" record.
+            observedCalls.AddRange(result.ToolCalls);
             if (!result.Ok)
+            {
+                RejectedCallActivity(result.ToolCalls);
                 return Failure(
                     string.IsNullOrWhiteSpace(result.ErrorCode) ? "AI_PROVIDER_FAILED" : result.ErrorCode,
                     string.IsNullOrWhiteSpace(result.ErrorMessage) ? "The AI provider did not return a result." : result.ErrorMessage);
+            }
 
             if (result.ToolCalls.Count == 0)
                 return Complete(result, observedCalls, promptTokens, outputTokens, responseSchema,
                     activities, attachedMedia, Activity);
             if (selectedTools.Count == 0)
+            {
+                RejectedCallActivity(result.ToolCalls);
                 return Failure("AI_TOOL_CALL_UNEXPECTED", "The provider returned a tool call when no tools were allowed.");
+            }
             if (round == request.MaximumToolRounds)
+            {
+                RejectedCallActivity(result.ToolCalls);
                 return Failure("AI_TOOL_ROUND_LIMIT", "The AI did not finish within the configured tool-call limit.");
+            }
 
-            observedCalls.AddRange(result.ToolCalls);
             messages.Add(new(AiMessageRole.Assistant, result.Text, ToolCalls: result.ToolCalls));
             foreach (var call in result.ToolCalls)
             {
