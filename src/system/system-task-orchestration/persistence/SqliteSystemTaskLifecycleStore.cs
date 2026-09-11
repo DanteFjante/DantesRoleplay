@@ -229,7 +229,10 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
         try
         {
             await NormalizeBlockedAsync(connection, transaction, now, cancellationToken);
-            var taskId = await ScalarStringAsync(connection, transaction, """
+            var accountingFilter = await HasAiAccountingTablesAsync(connection, transaction, cancellationToken)
+                ? "AND NOT EXISTS (SELECT 1 FROM system_task_ai_reservation_ancestor AS membership JOIN system_task_ai_reservation AS reservation ON reservation.record_reference=membership.record_reference WHERE membership.ancestor_task_id=task.root_task_id AND reservation.status='unknown')"
+                : "";
+            var taskId = await ScalarStringAsync(connection, transaction, $"""
                 SELECT task_id
                 FROM system_task_lifecycle AS task
                 WHERE task.state IN ('queued','retry')
@@ -238,6 +241,7 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
                   AND (task.state <> 'retry' OR task.next_attempt_at_utc <= $now)
                   AND task.attempt_count < $maximumAttempts
                   AND task.consecutive_failures < $maximumFailures
+                  {accountingFilter}
                   AND NOT EXISTS (
                       SELECT 1 FROM system_task_dependency AS edge
                       JOIN system_task_lifecycle AS dependency ON dependency.task_id = edge.dependency_task_id
@@ -328,6 +332,12 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
             await transaction.CommitAsync(cancellationToken);
             return false;
         }
+        if (await HasUnresolvedAiAccountingAsync(connection, transaction, lease.Request.Handle.TaskId, cancellationToken))
+        {
+            await MarkAiIndeterminateAsync(connection, transaction, lease, now, cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return false;
+        }
         var priorCorrelation = await ScalarLongAsync(connection, transaction,
             "SELECT COUNT(*) FROM system_task_checkpoint WHERE task_id = $task AND correlation_id = $correlation",
             cancellationToken, ("$task", lease.Request.Handle.TaskId), ("$correlation", checkpoint.CorrelationId));
@@ -413,6 +423,12 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
             await transaction.CommitAsync(cancellationToken);
             return false;
         }
+        if (await HasUnresolvedAiAccountingAsync(connection, transaction, lease.Request.Handle.TaskId, cancellationToken))
+        {
+            await MarkAiIndeterminateAsync(connection, transaction, lease, now, cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+            return false;
+        }
         var changed = await ExecuteFencedAsync(connection, transaction, lease, """
             state = 'completed', result_json = $result, completion_evidence_reference = $evidenceReference,
             evidence_json = $evidence, error_code = NULL, safe_message = NULL,
@@ -435,18 +451,24 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
         await using var connection = await OpenAsync(cancellationToken);
         await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
         var pending = await HasPendingHostCallAsync(connection, transaction, lease.Request.Handle.TaskId, cancellationToken);
+        var pendingAi = await HasUnresolvedAiAccountingAsync(connection, transaction, lease.Request.Handle.TaskId, cancellationToken);
         if (pending)
         {
             boundedCode = PendingHostCallCode;
             boundedMessage = PendingHostCallMessage;
         }
+        else if (pendingAi)
+        {
+            boundedCode = AiRecoveryCode;
+            boundedMessage = AiRecoveryMessage;
+        }
         var failures = await ScalarLongAsync(connection, transaction,
             "SELECT consecutive_failures FROM system_task_lifecycle WHERE task_id = $task", cancellationToken,
             ("$task", lease.Request.Handle.TaskId));
-        var transientRetry = failureKind == SystemTaskFailureKind.Transient && !pending &&
+        var transientRetry = failureKind == SystemTaskFailureKind.Transient && !pending && !pendingAi &&
             failures + 1 < SystemTaskLifecycleLimits.MaximumAttemptsPerTask &&
             AttemptOrdinal(lease) < SystemTaskLifecycleLimits.MaximumRootOperations && lease.Request.Invocation.DeadlineUtc > now;
-        var state = pending || failureKind == SystemTaskFailureKind.Indeterminate
+        var state = pending || pendingAi || failureKind == SystemTaskFailureKind.Indeterminate
             ? "indeterminate" : transientRetry ? "retry" : "failed";
         var next = transientRetry ? ToDb(now.AddSeconds(failures == 0 ? 5 : 30)) : null;
         var terminal = state is "failed" or "indeterminate" ? ToDb(now) : null;
@@ -459,7 +481,10 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
             ("$state", state), ("$next", next), ("$code", boundedCode),
             ("$message", boundedMessage), ("$terminal", terminal));
         if (changed == 1)
+        {
+            if (pendingAi) await NormalizeAiReservationsAsync(connection, transaction, cancellationToken);
             await CompleteAttemptAsync(connection, transaction, lease, state, boundedCode, boundedMessage, now, cancellationToken);
+        }
         await transaction.CommitAsync(cancellationToken);
         return changed == 1;
     }
@@ -473,6 +498,13 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
         if (await HasPendingHostCallAsync(connection, transaction, lease.Request.Handle.TaskId, cancellationToken))
         {
             var unresolved = await MarkPendingIndeterminateAsync(connection, transaction, lease, now,
+                cancellationToken, requireCancellation: true);
+            await transaction.CommitAsync(cancellationToken);
+            return unresolved;
+        }
+        if (await HasUnresolvedAiAccountingAsync(connection, transaction, lease.Request.Handle.TaskId, cancellationToken))
+        {
+            var unresolved = await MarkAiIndeterminateAsync(connection, transaction, lease, now,
                 cancellationToken, requireCancellation: true);
             await transaction.CommitAsync(cancellationToken);
             return unresolved;
@@ -569,6 +601,8 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
     private async Task NormalizeBlockedAsync(SqliteConnection connection, SqliteTransaction transaction,
         DateTime now, CancellationToken cancellationToken)
     {
+        var hasAiAccounting = await HasAiAccountingTablesAsync(connection, transaction, cancellationToken);
+        if (hasAiAccounting) await NormalizeAiReservationsAsync(connection, transaction, cancellationToken);
         await ExecuteAsync(connection, transaction, """
             UPDATE system_task_attempt
             SET state = 'lease-expired', completed_at_utc = $now,
@@ -578,6 +612,7 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
                 SELECT task_id FROM system_task_lifecycle
                 WHERE state = 'running' AND lease_expires_at_utc <= $now)
             """, cancellationToken, ("$now", ToDb(now)));
+        if (hasAiAccounting) await MarkExpiredAiTasksAsync(connection, transaction, now, cancellationToken);
         await ExecuteAsync(connection, transaction, """
             UPDATE system_task_lifecycle AS task
             SET state = 'indeterminate', completed_at_utc = $now, updated_at_utc = $now,

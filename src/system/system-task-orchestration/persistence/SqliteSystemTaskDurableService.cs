@@ -56,6 +56,8 @@ internal sealed partial class SqliteSystemTaskDurableService(
             if (await HasHostCallsAsync(handle, connection, transaction, cancellationToken))
                 return InteractionInvocationResult.Unavailable("SYSTEM_TASK_COMMIT_EVIDENCE_UNAVAILABLE",
                     "The task requires authoritative host-call receipt reconciliation.");
+            if (await SqliteSystemTaskLifecycleStore.HasUnresolvedAiAccountingAsync(connection, transaction, handle.TaskId, cancellationToken))
+                return InteractionInvocationResult.Unavailable("INNER_AI_RECONCILIATION_REQUIRED", "AI usage must be reconciled before returning a task outcome.");
             return PollResult(snapshot);
         }, cancellationToken);
     }
@@ -87,6 +89,8 @@ internal sealed partial class SqliteSystemTaskDurableService(
             if (await HasHostCallsAsync(handle, connection, transaction, cancellationToken))
                 return InteractionInvocationResult.Unavailable("SYSTEM_TASK_COMMIT_EVIDENCE_UNAVAILABLE",
                     "Cancellation was processed; the task still requires authoritative host-call receipt reconciliation.");
+            if (await SqliteSystemTaskLifecycleStore.HasUnresolvedAiAccountingAsync(connection, transaction, handle.TaskId, cancellationToken))
+                return InteractionInvocationResult.Unavailable("INNER_AI_RECONCILIATION_REQUIRED", "Cancellation was processed; AI usage still requires reconciliation.");
             return updated.State switch
             {
                 SystemTaskLifecycleState.Cancelled => InteractionInvocationResult.Cancelled("SYSTEM_TASK_CANCELLED",

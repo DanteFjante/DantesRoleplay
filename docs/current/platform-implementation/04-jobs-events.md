@@ -30,6 +30,29 @@ Do not serialize a live Jint heap. Plan 01 must provide explicit resumable steps
 
 5. **Close cancellation, retries, and operator recovery.** Expose lifecycle readback through this workstream's services and the coordinator's MCP adapters; plan 03 supplies their discoverable contracts and plan 06 presents progress and cancellation. Stop new steps after cancellation, propagate cancellation to linked child work where declared, and preserve already committed effects. Retry only classified transient failures within limits. A stale input result requires fresh reads and a new planned attempt; an uncertain commit requires receipt reconciliation. Acceptance: dependency failure, cancellation, exhausted retries, and restart yield inspectable outcomes with bounded evidence and no silent duplicate writes.
 
+## Implemented lifecycle boundary
+
+The lifecycle store owns bounded parent/dependency graphs, shared ancestor operation allowances,
+fenced attempts, checkpoints and durable waits, classified retries, cancellation propagation, and
+host-call journals. Internal staging methods join the caller's SQLite writer transaction; the
+caller commits before dispatch. Public submission owns its commit boundary and rechecks current
+scope and grants. Readback exposes bounded diagnostics without returning retained authority,
+lease tokens, raw input, or checkpoint state.
+
+AI accounting uses the same task/attempt history. Host-resolved enrollment and dispatch
+reservations debit every persisted ancestor; provider and tool observations are separate,
+bounded evidence. Enrolled and per-reservation deadlines are retained independently and cannot
+widen. Charged tokens plus outstanding holds gate every new provider/tool admission at each
+ancestor. Unknown usage retains its hold and blocks automatic execution. Complete usage
+settles actual, unclamped charges and releases provider concurrency, including an overrun; it
+does not prevent an otherwise valid terminal result, cancellation, or readback. Late observations
+can settle original usage without restoring an expired lease or permitting stale publication.
+
+These internal owners do not establish a production runtime, provider, schedule, or observer
+route. Coordinator registration/migrations and real runtime/grant integration remain separate
+acceptance boundaries. Host-call JSON is inert; public completion remains unavailable when
+authoritative commit-receipt reconciliation is required.
+
 ## Atomic effects versus orchestration
 
 Keep the atomic root/child effect set and bounded event reactions under the owning effect transaction. Current child mechanics are evaluated before that commit; their proposed effects join the root batch. Adding asynchronous capabilities must not let transactional reactions call AI, wait on time, or hold network operations under the writer lock. Instead, stage a job enqueue in the same transaction as the triggering state change; execute it after commit.

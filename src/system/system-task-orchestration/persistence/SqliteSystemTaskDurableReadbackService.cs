@@ -73,13 +73,15 @@ internal sealed partial class SqliteSystemTaskDurableService : ISystemTaskDurabl
         SqliteConnection connection, SqliteTransaction transaction, CancellationToken cancellationToken)
     {
         var hasCalls = await HasHostCallsAsync(snapshot.Request.Handle, connection, transaction, cancellationToken);
+        var pendingAi = await SqliteSystemTaskLifecycleStore.HasUnresolvedAiAccountingAsync(connection, transaction,
+            snapshot.Request.Handle.TaskId, cancellationToken);
         // Reuse actual result construction/validation, not just the lifecycle's state flag.
-        var completionAvailable = !hasCalls && PollResult(snapshot).Tag == InteractionInvocationResultTag.Completed;
+        var completionAvailable = !hasCalls && !pendingAi && PollResult(snapshot).Tag == InteractionInvocationResultTag.Completed;
         return new(snapshot.Request.Handle, snapshot.State.ToString().ToLowerInvariant(), snapshot.AttemptCount,
             snapshot.CancellationRequested, snapshot.CancellationAcknowledged, snapshot.Request.SelectedDefinition,
             snapshot.CreatedAtUtc, snapshot.UpdatedAtUtc, snapshot.CompletedAtUtc, snapshot.Checkpoint?.Checkpoint,
-            completionAvailable, hasCalls ? "SYSTEM_TASK_COMMIT_EVIDENCE_UNAVAILABLE" : snapshot.ErrorCode,
-            hasCalls || snapshot.State == SystemTaskLifecycleState.Indeterminate,
+            completionAvailable, hasCalls ? "SYSTEM_TASK_COMMIT_EVIDENCE_UNAVAILABLE" : pendingAi ? "INNER_AI_RECONCILIATION_REQUIRED" : snapshot.ErrorCode,
+            hasCalls || pendingAi || snapshot.State == SystemTaskLifecycleState.Indeterminate,
             completionAvailable ? Array.AsReadOnly(new[] { snapshot.CompletionEvidenceReference! }) : Array.Empty<string>());
     }
 
