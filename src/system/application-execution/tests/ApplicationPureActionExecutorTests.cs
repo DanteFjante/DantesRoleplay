@@ -1,14 +1,22 @@
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using DantesRoleplay.AI;
 using DantesRoleplay.ApplicationExecution;
 using DantesRoleplay.Authorization;
 using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.CatalogNamespaces;
 using DantesRoleplay.DataAccess;
+using DantesRoleplay.DataAccess.Composition;
 using DantesRoleplay.Ecs;
+using DantesRoleplay.EcsEffects;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Mechanics;
+using DantesRoleplay.MCPServer;
 using DantesRoleplay.Operations;
 using DantesRoleplay.SchemaValidation;
+using DantesRoleplay.SystemCapabilities;
+using DantesRoleplay.SystemTasks;
 using Microsoft.EntityFrameworkCore;
 
 namespace DantesRoleplay.Authorization.Tests;
@@ -49,6 +57,101 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         Assert.Equal(InteractionInvocationResultTag.Failed, invalid.Tag);
         Assert.Equal("PURE_ACTION_INPUT_INVALID", invalid.Code);
         Assert.Equal(1, invalidHost.Budget.RemainingOperations);
+    }
+
+    [Fact]
+    public async Task Focused_worker_fake_provider_executes_the_exact_selected_application_action()
+    {
+        await using var db = fixture.CreateContext();
+        var setup = Setup(db);
+        setup.Namespaces.Register(new CatalogNamespaceRegistration(
+            "demo.runtime.pure", "human-domain-label", "Pure action fixtures.", [CatalogNamespaceKinds.Mechanic],
+            ReviewStatus: CatalogNamespaceReviewStatuses.Reviewed, ReviewNote: "Reviewed pure action fixture."));
+        WritePureAction("return { data: { answer: ctx.input.value + 3 } };",
+            "{\"inputSchema\":{\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"value\"],\"properties\":{\"value\":{\"type\":\"integer\"}}}}");
+        await ActivateAsync(setup);
+        await SeedInnerWorkerGrantAsync(db);
+        var materializer = new ActivatedApplicationCatalogMaterializer(
+            setup.Applications, setup.Activation, setup.Sources, setup.Roots, setup.Extensions)
+            .UsePreparationCache(new ActivatedApplicationCatalogSnapshotCache(),
+                new ActivatedApplicationCatalogCacheAuthority());
+        var catalogs = new ActivatedApplicationCatalogProvider(
+            new ConfiguredPublicApplicationCatalogPolicy([Application.Value]), materializer,
+            new CatalogCursorCodec(Enumerable.Repeat((byte)0x42, 32).ToArray()), setup.Activation);
+        Assert.True(catalogs.TryGetSnapshot(Application, out var snapshot));
+        var record = snapshot.Documents.Single(value => value.Record.QualifiedId == PureActionId).Record;
+        var active = setup.Activation.Current(Application)!;
+        var stateSpaces = new SqliteStateSpaceRegistry(db, setup.Applications);
+        var state = stateSpaces.Create(new("state", setup.Applications.Get(Application)!,
+            active.ActivationFingerprint, active.ResolutionFingerprint));
+        var host = new InteractionInvocationHost(
+            TrustedPrincipalContext.VerifiedPrincipal("principal." + new string('a', 64), "test"),
+            setup.Applications.Get(Application)!, state.StateSpaceId, "inner-grant@1", "worker-action",
+            InteractionStateRevision.From(state), InteractionExecutionProfile.Workflow,
+            new(2, DateTime.UtcNow.AddMinutes(1)));
+        var contract = ApplicationCapabilityContractAdapter.Create(Application, record, null);
+        var binding = new SystemInnerWorkerToolBinding(
+            SystemInnerWorkerApplicationToolFactory.Definition(SystemInnerWorkerToolKind.ApplicationAction, contract),
+            new(record.QualifiedId, record.Version, record.ContentFingerprint), SystemCapabilityMode.Write,
+            SystemInnerWorkerToolKind.ApplicationAction);
+        const string resultSchema = "{\"type\":\"object\"}";
+        var worker = new SystemInnerWorkerRequest(host, new("demo.runtime.inspect", 1, new string('A', 64)),
+            "{\"instruction\":\"calculate\"}", resultSchema);
+        var profile = new SystemInnerWorkerResolvedProfile(worker, new("fixture.worker", 1, new string('B', 64)),
+            new("fixture.worker", "Worker", "Execute the exact selected action."),
+            Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(resultSchema))), [binding], [],
+            new("manual.fixture", new string('C', 64)), new("authority.fixture", "grant@1", new string('D', 64)),
+            new(providerTokens: 256, toolCalls: 1));
+        var schemas = new BoundedJsonSchemaValidator();
+        var types = new SqliteComponentTypeRegistry(db, schemas);
+        var entities = new SqliteEntityComponentStore(db, types, schemas);
+        var edges = new SqliteStateSpaceEdgeStore(db, stateSpaces);
+        var operations = new OperationLog(db);
+        var mapping = new ApplicationMechanicProjectionMappingResolver(catalogs, stateSpaces, types, edges);
+        var evaluator = new ApplicationMechanicEvaluator(catalogs,
+            new ApplicationMechanicProjectionResolver(db, stateSpaces), new JintMechanicEngine());
+        var runner = new ApplicationActionRunner(catalogs, setup.Activation, stateSpaces, types, entities,
+            edges, mapping, evaluator, new ApplicationEcsEffectApplier(db, entities, stateSpaces, operations, edges), operations);
+        var targets = setup.Resolver;
+        var grants = new SqliteStandingGrantPolicy(db, targets);
+        var actionAdapter = new ApplicationActionInvocationAdapter(new PrivateHostInteractionAuthorizationPolicy(stateSpaces),
+            stateSpaces, runner, operations, null, targets, grants, new SqliteEcsWriteTransactionFactory(db));
+        var factory = new SystemInnerWorkerApplicationToolFactory(actionAdapter, null!);
+        var provider = new ApplicationToolProvider(binding.Definition.Name);
+        var service = new SystemAiAgentService([], new AiService([provider]));
+        var response = await service.SendWithToolsAsync(profile.Profile,
+            new("fixture", "fixture", [new(AiMessageRole.User, "Calculate.")], AiRequestKind.Task,
+                MaximumToolRounds: 1, MaximumToolCalls: 1),
+            new(host.Principal, "application", "worker-action") { ApplicationId = Application },
+            new AdmittingApplicationToolLifecycle(), factory.Create(profile, [new(binding, record)]));
+
+        Assert.True(response.Ok, response.ErrorCode);
+        var toolResult = Assert.Single(response.ToolResults!).Result;
+        Assert.True(toolResult.Ok, toolResult.ErrorCode);
+        Assert.Contains("\"tag\":\"committed\"", toolResult.Content, StringComparison.Ordinal);
+        Assert.Contains("\"receipt\":{", toolResult.Content, StringComparison.Ordinal);
+        Assert.Equal(1, host.Budget.RemainingOperations);
+
+        var current = await db.Set<StandingGrantCurrentRecord>().SingleAsync(value => value.GrantId == "inner-grant");
+        var prior = SqliteStandingGrantPolicy.Parse(await db.Set<StandingGrantRevisionRecord>()
+            .SingleAsync(value => value.GrantId == "inner-grant"));
+        var revokedGrant = prior with { Revision = 2, GrantReference = "inner-grant@2", Revoked = true,
+            IssuedByOperationId = "inner-grant-revoke" };
+        db.Add(new Operation { Id = revokedGrant.IssuedByOperationId, Timestamp = DateTime.UtcNow, Tool = "test" });
+        db.Add(new StandingGrantRevisionRecord { GrantId = revokedGrant.GrantId, Revision = 2,
+            GrantReference = revokedGrant.GrantReference, PrincipalReference = revokedGrant.PrincipalReference,
+            ApplicationId = Application.Value, Scope = "stateSpace", StateSpaceId = "state",
+            PermissionsJson = StandingGrantRevisionCanonicalization.PermissionsJson(revokedGrant),
+            ContentFingerprint = StandingGrantRevisionCanonicalization.ContentFingerprint(revokedGrant),
+            MaximumOperations = revokedGrant.MaximumOperations, ExpiresAtUtc = revokedGrant.ExpiresAtUtc,
+            Revoked = true, IssuedByOperationId = revokedGrant.IssuedByOperationId });
+        current.Revision = 2;
+        await db.SaveChangesAsync();
+        db.ChangeTracker.Clear();
+        var revoked = await factory.Create(profile, [new(binding, record)])[0].InvokeAsync(
+            new("revoked", binding.Definition.Name,
+                JsonDocument.Parse("{\"roles\":{},\"input\":{\"value\":4}}").RootElement.Clone(), AiRequestKind.Task));
+        Assert.Contains("INVOCATION_NOT_AUTHORIZED", revoked.Content, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -259,5 +362,38 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         });
         db.Add(new StandingGrantCurrentRecord { GrantId = grant.GrantId, Revision = 1 });
         await db.SaveChangesAsync();
+    }
+
+    private sealed class ApplicationToolProvider(string toolName) : IAiProvider
+    {
+        private int round;
+        public AiProviderInfo Info => new("fixture", "Fixture");
+        public Task<IReadOnlyList<AiModel>> ListModelsAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<AiModel>>([]);
+        public Task<AiProviderResponse> SendAsync(AiProviderRequest request,
+            CancellationToken cancellationToken = default) => Task.FromResult<AiProviderResponse>(round++ == 0
+            ? new(true, null, "", "", [new("call.1", toolName, "{\"roles\":{},\"input\":{\"value\":4}}")])
+            : new(true, null, "done", "{}", []));
+    }
+
+    [JsonConverter(typeof(AiHostOnlyLifecycleJsonConverterFactory))]
+    private sealed class AdmittingApplicationToolLifecycle : IAiInvocationLifecycle
+    {
+        public ValueTask<IAiProviderCallScope> AdmitProviderCallAsync(AiProviderCallDescriptor call,
+            CancellationToken cancellationToken) => ValueTask.FromResult<IAiProviderCallScope>(new ProviderScope());
+
+        [JsonConverter(typeof(AiHostOnlyLifecycleJsonConverterFactory))]
+        private sealed class ProviderScope : IAiProviderCallScope
+        {
+            public ValueTask RecordProviderOutcomeAsync(AiProviderCallObservation outcome) => ValueTask.CompletedTask;
+            public ValueTask<IAiToolDispatchScope> AdmitToolDispatchAsync(AiToolDispatchDescriptor dispatch,
+                CancellationToken cancellationToken) => ValueTask.FromResult<IAiToolDispatchScope>(new ToolScope());
+        }
+
+        [JsonConverter(typeof(AiHostOnlyLifecycleJsonConverterFactory))]
+        private sealed class ToolScope : IAiToolDispatchScope
+        {
+            public ValueTask RecordToolOutcomeAsync(AiToolDispatchObservation outcome) => ValueTask.CompletedTask;
+        }
     }
 }

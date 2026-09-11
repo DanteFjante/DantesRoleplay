@@ -33,7 +33,8 @@ internal sealed class SystemInnerWorkerWriteApprovalGate(
             return SystemCapabilityAiApprovalDecision.Denied();
         var binding = profile.ToolBindings.SingleOrDefault(value =>
             value.CapabilityVersion.ExactDefinitionId == request.Capability.Id);
-        if (binding is null || binding.CapabilityVersion.Version != request.Capability.Version
+        if (binding is null || binding.Kind != SystemInnerWorkerToolKind.SystemCapability
+            || binding.CapabilityVersion.Version != request.Capability.Version
             || binding.CapabilityVersion.Fingerprint != request.Capability.Fingerprint
             || !TryConsume(request, binding, out var dispatch))
             return SystemCapabilityAiApprovalDecision.Denied();
@@ -44,6 +45,7 @@ internal sealed class SystemInnerWorkerWriteApprovalGate(
             "dantes-roleplay/inner-worker-write/v1\n" + lease.Request.Handle.TaskId + "\n"
             + lease.Request.Handle.CommandId + "\n" + lease.Attempt.AttemptId + "\n"
             + lease.Attempt.FencingCounter + "\n" + dispatch.DispatchOrdinal + "\n"
+            + binding.Kind + "\n" + binding.Mode + "\n"
             + request.Capability.Id + "\n" + request.Capability.Fingerprint + "\n"
             + request.Preflight.PreconditionFingerprint + "\n" + executionEvidence + "\n" + input)))[..32];
         return new(true, token,

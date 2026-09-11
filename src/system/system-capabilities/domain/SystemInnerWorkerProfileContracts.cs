@@ -9,15 +9,21 @@ using DantesRoleplay.SystemTasks;
 
 namespace DantesRoleplay.SystemCapabilities;
 
+[JsonConverter(typeof(JsonStringEnumConverter<SystemInnerWorkerToolKind>))]
+public enum SystemInnerWorkerToolKind { SystemCapability, ApplicationAction, ApplicationQuery }
+
 /// <summary>One host-bound direct tool definition and its exact selected capability revision.</summary>
 public sealed record SystemInnerWorkerToolBinding
 {
     public SystemInnerWorkerToolBinding(AiToolDefinition definition,
-        SystemTaskSelectedDefinition capabilityVersion, SystemCapabilityMode mode)
+        SystemTaskSelectedDefinition capabilityVersion, SystemCapabilityMode mode,
+        SystemInnerWorkerToolKind kind)
     {
         ArgumentNullException.ThrowIfNull(definition);
         CapabilityVersion = capabilityVersion ?? throw new ArgumentNullException(nameof(capabilityVersion));
-        if (!Enum.IsDefined(mode))
+        if (!Enum.IsDefined(mode) || !Enum.IsDefined(kind)
+            || kind == SystemInnerWorkerToolKind.ApplicationAction && mode != SystemCapabilityMode.Write
+            || kind == SystemInnerWorkerToolKind.ApplicationQuery && mode != SystemCapabilityMode.Read)
             throw Failure("INVALID_WORKER_TOOL", "A focused worker tool needs a closed capability mode.");
         if (!ToolName.IsMatch(definition.Name))
             throw Failure("INVALID_WORKER_TOOL", "A focused worker tool needs a valid exact tool name.");
@@ -28,11 +34,14 @@ public sealed record SystemInnerWorkerToolBinding
             InputSchemaJson = InteractionCanonicalJson.CanonicalizeObject(definition.InputSchemaJson)
         };
         Mode = mode;
+        Kind = kind;
     }
 
     public AiToolDefinition Definition { get; }
     public SystemTaskSelectedDefinition CapabilityVersion { get; }
     public SystemCapabilityMode Mode { get; }
+    [JsonRequired]
+    public SystemInnerWorkerToolKind Kind { get; init; }
 
     private static readonly Regex ToolName = new("^[A-Za-z0-9_-]{1,64}$", RegexOptions.CultureInvariant);
     private static InteractionContractException Failure(string code, string message) => new(code, message);
@@ -102,7 +111,7 @@ public sealed record SystemInnerWorkerResolvedProfile
                     .Distinct().Skip(1).Any()))
             throw Failure("INVALID_WORKER_TOOL_BINDINGS", "Focused worker tools must be distinct and within the closed bound.");
         ToolBindings = Array.AsReadOnly(tools.Select(value => new SystemInnerWorkerToolBinding(
-            value.Definition, value.CapabilityVersion, value.Mode)).ToArray());
+            value.Definition, value.CapabilityVersion, value.Mode, value.Kind)).ToArray());
 
         var references = requiredContextReferences?.ToArray() ?? [];
         if (references.Length > 64 || references.Any(value => string.IsNullOrWhiteSpace(value) || value.Length > 1_024)

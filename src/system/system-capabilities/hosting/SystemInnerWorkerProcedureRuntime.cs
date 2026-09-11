@@ -18,12 +18,22 @@ internal sealed record SystemInnerWorkerProcedurePreparationResult(
     IReadOnlyList<SystemInnerWorkerToolBinding> ToolBindings,
     SystemInnerWorkerManualContextEvidence ContextEvidence,
     SystemInnerWorkerAiBudget AiBudget,
-    SystemCapabilityInvocationContext ToolContext)
+    SystemCapabilityInvocationContext ToolContext,
+    IReadOnlyList<SystemInnerWorkerApplicationToolSelection> ApplicationTools)
 {
     internal SystemInnerWorkerResolvedProfile BindAuthority(SystemInnerWorkerAuthorityProvenance authority) => new(
         Worker, ProfileVersion, Prepared.Profile, Prepared.OutputSchemaFingerprint, ToolBindings,
         Prepared.SelectedContextReferences, ContextEvidence, authority, AiBudget);
 }
+
+internal sealed record SystemInnerWorkerApplicationToolSelection(
+    SystemInnerWorkerToolBinding Binding,
+    CatalogRecordDefinition Record);
+
+internal sealed record SystemInnerWorkerProcedureContract(
+    string Fingerprint,
+    string Governs,
+    ActiveCatalogFeatureSnapshot Snapshot);
 
 /// <summary>
 /// The first procedure-worker assignment grammar. It carries only bounded work text. Procedure,
@@ -72,7 +82,8 @@ internal sealed class SystemInnerWorkerHostPolicy(
     private const string InnerProfileId = "web.inner";
 
     internal SystemInnerWorkerHostSelection Resolve(SystemInnerWorkerRequest worker,
-        SystemCapabilityInvocationContext context, DateTime nowUtc)
+        SystemCapabilityInvocationContext context, DateTime nowUtc,
+        IReadOnlyList<SystemInnerWorkerApplicationToolSelection>? applicationTools = null)
     {
         var profile = profiles?.Get(InnerProfileId)
             ?? throw Failure("INNER_WORKER_PROFILE_UNAVAILABLE", "The host has no focused INNER profile configured.");
@@ -85,13 +96,20 @@ internal sealed class SystemInnerWorkerHostPolicy(
                 .OrderBy(value => value.Id, StringComparer.Ordinal)
                 .ToArray()
             : [];
-        var bindings = descriptors.Select(value => new SystemInnerWorkerToolBinding(
+        var systemBindings = descriptors.Select(value => new SystemInnerWorkerToolBinding(
             new(ToolName(value.Id),
                 value.Mode == SystemCapabilityMode.Read
                     ? $"Read the in-process system capability '{value.Contract.Id}'. {value.Contract.Description}"
                     : $"Write through the in-process system capability '{value.Contract.Id}'. Trusted confirmation and an idempotency token are required. {value.Contract.Description}",
                 value.Contract.Input.SchemaJson),
-            new(value.Id, value.Version, value.Fingerprint), value.Mode)).ToArray();
+            new(value.Id, value.Version, value.Fingerprint), value.Mode,
+            SystemInnerWorkerToolKind.SystemCapability)).ToArray();
+        var selectedApplicationTools = applicationTools?.ToArray() ?? [];
+        var bindings = systemBindings.Concat(selectedApplicationTools.Select(value => value.Binding)).ToArray();
+        if (bindings.Length > 16 || bindings.Select(value => value.Definition.Name)
+                .Distinct(StringComparer.Ordinal).Count() != bindings.Length)
+            throw Failure("INNER_WORKER_TOOL_SELECTION_INVALID",
+                "The focused worker tool selection is ambiguous or exceeds its closed bound.");
         var remaining = worker.InvocationHost.Budget.DeadlineUtc - nowUtc;
         if (remaining <= TimeSpan.Zero)
             throw Failure("INNER_WORKER_DEADLINE_EXPIRED", "The focused worker deadline has expired.");
@@ -104,7 +122,7 @@ internal sealed class SystemInnerWorkerHostPolicy(
             MaximumToolCalls: budget.ToolCalls,
             MaximumResponseBytes: InteractionContractLimits.JsonBytes,
             MaximumDuration: remaining > TimeSpan.FromMinutes(10) ? TimeSpan.FromMinutes(10) : remaining);
-        return new(profile, configuration, bindings, budget);
+        return new(profile, configuration, bindings, budget, selectedApplicationTools);
     }
 
     private static string ToolName(string capabilityId)
@@ -121,7 +139,8 @@ internal sealed record SystemInnerWorkerHostSelection(
     AiAgentProfile Profile,
     AiRequest Configuration,
     IReadOnlyList<SystemInnerWorkerToolBinding> ToolBindings,
-    SystemInnerWorkerAiBudget AiBudget);
+    SystemInnerWorkerAiBudget AiBudget,
+    IReadOnlyList<SystemInnerWorkerApplicationToolSelection> ApplicationTools);
 
 internal interface ISystemInnerWorkerProcedureResolver
 {
@@ -164,23 +183,24 @@ internal sealed class SystemInnerWorkerProcedureResolver(
             StateSpaceId = host.StateSpaceId,
             ResolutionFingerprint = envelope.Host.ResolutionFingerprint
         };
-        var selection = policy.Resolve(worker, toolContext, time.GetUtcNow().UtcDateTime);
-        var procedureContractFingerprint = ResolveProcedureContractFingerprint(worker, envelope);
+        var procedureContract = ResolveProcedureContract(worker, envelope);
+        var applicationTools = ResolveApplicationTools(worker, procedureContract);
+        var selection = policy.Resolve(worker, toolContext, time.GetUtcNow().UtcDateTime, applicationTools);
         var context = await contextMaterializer.MaterializeAsync(envelope, authorization, cancellationToken);
         var prepared = await preparation.PrepareAsync(new(worker, selection.Profile, selection.Configuration,
             envelope, authorization, context.SourceReferences,
             selection.ToolBindings.Select(value => value.Definition.Name).ToArray(), worker.ResultSchemaJson,
-            procedureContractFingerprint), cancellationToken);
+            procedureContract.Fingerprint), cancellationToken);
         if (prepared.ContextFingerprint != context.Fingerprint)
             throw Failure("INNER_WORKER_CONTEXT_CHANGED", "The focused worker context changed while its exact selection was prepared.");
         var profileVersion = new SystemTaskSelectedDefinition(selection.Profile.Id, 1, HashProfile(prepared.Profile));
         var contextEvidence = new SystemInnerWorkerManualContextEvidence(
             "task-context." + context.Fingerprint.ToLowerInvariant(), context.Fingerprint);
         return new(worker, prepared, profileVersion, selection.ToolBindings, contextEvidence,
-            selection.AiBudget, toolContext);
+            selection.AiBudget, toolContext, selection.ApplicationTools);
     }
 
-    private string ResolveProcedureContractFingerprint(SystemInnerWorkerRequest worker,
+    private SystemInnerWorkerProcedureContract ResolveProcedureContract(SystemInnerWorkerRequest worker,
         AuthorizedInteractionEnvelope envelope)
     {
         var selected = worker.ProcedureVersion!;
@@ -207,13 +227,48 @@ internal sealed class SystemInnerWorkerProcedureResolver(
                 "archived" => DantesRoleplay.Procedures.ProcedureStatus.Archived,
                 _ => throw new JsonException()
             };
-            return ContentHash.ForProcedure(Required("category"), Required("name"), Required("description"),
-                Required("governs"), Required("instructions"), Required("constraints"), status);
+            var governs = Required("governs");
+            return new(ContentHash.ForProcedure(Required("category"), Required("name"), Required("description"),
+                governs, Required("instructions"), Required("constraints"), status), governs, snapshot);
         }
         catch (Exception error) when (error is JsonException or InvalidOperationException)
         {
             throw Failure("INNER_WORKER_PROCEDURE_INVALID", "The active procedure contract cannot be materialized safely.");
         }
+    }
+
+    private static IReadOnlyList<SystemInnerWorkerApplicationToolSelection> ResolveApplicationTools(
+        SystemInnerWorkerRequest worker, SystemInnerWorkerProcedureContract procedure)
+    {
+        var references = SystemInnerWorkerGovernedReferences.Parse(procedure.Governs);
+        var result = new List<SystemInnerWorkerApplicationToolSelection>();
+        foreach (var reference in references)
+        {
+            var kind = reference.Kind == SystemInnerWorkerGovernedReferenceKind.Action
+                ? "mechanic" : ApplicationQueryContract.CatalogKind;
+            var matches = procedure.Snapshot.Documents.Where(value => value.Trust == SourceTrust.Trusted
+                && value.Record.Kind == kind && value.Record.Status == "active"
+                && value.Record.QualifiedId == reference.QualifiedId).ToArray();
+            if (matches.Length == 0) continue;
+            if (matches.Length != 1)
+                throw Failure("INNER_WORKER_TOOL_SELECTION_AMBIGUOUS",
+                    "The governed application tool does not have one exact active winner.");
+            var record = matches[0].Record;
+            var contract = ApplicationCapabilityContractAdapter.Create(
+                worker.InvocationHost.ApplicationRevision.ApplicationId, record,
+                worker.InvocationHost.StateSpaceId);
+            var toolKind = reference.Kind == SystemInnerWorkerGovernedReferenceKind.Action
+                ? SystemInnerWorkerToolKind.ApplicationAction : SystemInnerWorkerToolKind.ApplicationQuery;
+            var mode = toolKind == SystemInnerWorkerToolKind.ApplicationAction
+                ? SystemCapabilityMode.Write : SystemCapabilityMode.Read;
+            var definition = SystemInnerWorkerApplicationToolFactory.Definition(toolKind, contract);
+            result.Add(new(new(definition, new(record.QualifiedId, record.Version,
+                record.ContentFingerprint), mode, toolKind), record));
+        }
+        if (result.Count > 16)
+            throw Failure("INNER_WORKER_TOOL_SELECTION_INVALID",
+                "The procedure governs more application tools than the focused worker can admit.");
+        return Array.AsReadOnly(result.ToArray());
     }
 
     private static string SessionId(string commandId) => "inner." + Hash(commandId)[..32].ToLowerInvariant();

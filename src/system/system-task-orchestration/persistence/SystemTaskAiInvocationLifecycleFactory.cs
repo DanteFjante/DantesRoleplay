@@ -4,6 +4,7 @@ using DantesRoleplay.ApplicationActivation;
 using DantesRoleplay.Applications;
 using DantesRoleplay.Authorization;
 using DantesRoleplay.DataAccess;
+using DantesRoleplay.EcsEffects;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.SystemCapabilities;
 using Microsoft.Extensions.DependencyInjection;
@@ -163,13 +164,14 @@ internal sealed class SystemTaskAiInvocationLifecycleFactory(IServiceScopeFactor
                     dispatch.Definition,
                     dispatch.Invocation,
                     binding.Mode,
+                    binding.Kind,
                     completionEvidenceReference = terminalEvidence
                 })), cancellationToken);
             if (journal.Disposition != SystemTaskHostCallDisposition.NewPending)
                 throw Failure("INNER_AI_TOOL_RECONCILIATION_REQUIRED");
             session.Approval?.RecordAdmittedTool(dispatch);
             return new ToolScope(this, boundary.Store, lease, reservation.Reservation.RecordReference,
-                operation, journal.RequestFingerprint, terminalEvidence, binding.Mode);
+                operation, journal.RequestFingerprint, terminalEvidence, binding.Mode, binding.Kind);
         }, cancellationToken);
 
     private async Task RecordAsync(string reference, SystemTaskAttemptIdentity attempt, AiProviderCallObservation outcome)
@@ -189,7 +191,7 @@ internal sealed class SystemTaskAiInvocationLifecycleFactory(IServiceScopeFactor
 
     private async Task RecordToolAsync(SqliteSystemTaskLifecycleStore store, SystemTaskLease lease,
         string reference, string operation, string requestFingerprint, string terminalEvidence,
-        SystemCapabilityMode mode, AiToolDispatchObservation outcome)
+        SystemCapabilityMode mode, SystemInnerWorkerToolKind kind, AiToolDispatchObservation outcome)
     {
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
         Exception? journalFailure = null;
@@ -201,7 +203,7 @@ internal sealed class SystemTaskAiInvocationLifecycleFactory(IServiceScopeFactor
                 outcome.Kind,
                 outcome.Result,
                 outcome.FailureCode,
-                commit = CommitEvidence(mode, outcome)
+                commit = CommitEvidence(kind, mode, outcome)
             }));
             if (!await store.CompleteHostCallAsync(lease, operation, requestFingerprint,
                     completion, timeout.Token))
@@ -224,8 +226,18 @@ internal sealed class SystemTaskAiInvocationLifecycleFactory(IServiceScopeFactor
     }
 
     internal static ToolCommitEvidence CommitEvidence(
+        SystemCapabilityMode mode, AiToolDispatchObservation outcome) =>
+        CommitEvidence(SystemInnerWorkerToolKind.SystemCapability, mode, outcome);
+
+    internal static ToolCommitEvidence CommitEvidence(SystemInnerWorkerToolKind kind,
         SystemCapabilityMode mode, AiToolDispatchObservation outcome)
     {
+        if (!Enum.IsDefined(kind)
+            || kind == SystemInnerWorkerToolKind.ApplicationAction && mode != SystemCapabilityMode.Write
+            || kind == SystemInnerWorkerToolKind.ApplicationQuery && mode != SystemCapabilityMode.Read)
+            return new("unresolved", null);
+        if (kind != SystemInnerWorkerToolKind.SystemCapability)
+            return ApplicationCommitEvidence(kind, outcome);
         if (mode == SystemCapabilityMode.Read)
             return new("not-applicable", null);
         if (mode != SystemCapabilityMode.Write)
@@ -267,6 +279,118 @@ internal sealed class SystemTaskAiInvocationLifecycleFactory(IServiceScopeFactor
         }
     }
 
+    private static ToolCommitEvidence ApplicationCommitEvidence(SystemInnerWorkerToolKind kind,
+        AiToolDispatchObservation outcome)
+    {
+        if (outcome.Kind == AiDispatchCompletionKind.NotStarted)
+            return new(kind == SystemInnerWorkerToolKind.ApplicationQuery ? "not-applicable" : "not-committed", null);
+        if (outcome.Kind != AiDispatchCompletionKind.Returned || outcome.Result is not { Ok: true } result)
+            return new(kind == SystemInnerWorkerToolKind.ApplicationQuery ? "not-applicable" : "unresolved", null);
+        try
+        {
+            using var document = JsonDocument.Parse(result.Content);
+            var root = document.RootElement;
+            if (root.ValueKind != JsonValueKind.Object || root.EnumerateObject().Count() != 11)
+                throw new JsonException();
+            var tag = RequiredString(root, "tag");
+            _ = RequiredString(root, "code");
+            _ = RequiredString(root, "message");
+            var receipt = OptionalReceipt(root, "receipt");
+            var previous = Receipts(root.GetProperty("previousCommits"));
+            var recovery = OptionalRecovery(root.GetProperty("recoveryIdentity"));
+            foreach (var property in new[] { "dataJson", "readEvidence", "proposal", "pending", "completionEvidenceReference" })
+                _ = root.GetProperty(property);
+            ValidateInvocationShape(root, tag, receipt, previous, recovery);
+
+            if (kind == SystemInnerWorkerToolKind.ApplicationQuery)
+                return receipt is null && previous.Count == 0 && recovery is null && tag is "completed" or "failed" or "cancelled" or "unavailable"
+                    ? new("not-applicable", null)
+                    : new("unresolved", null, previous, recovery);
+            if (receipt is not null)
+                return tag == "committed"
+                    ? new("committed", receipt, previous, recovery)
+                    : new("unresolved", null, previous, recovery);
+            if (recovery is not null || tag == "pending")
+                return new("unresolved", null, previous, recovery);
+            if (tag is "completed" or "failed" or "cancelled" or "proposed")
+                return new("not-committed", null, previous, null);
+            return new("unresolved", null, previous, null);
+        }
+        catch (Exception error) when (error is JsonException or InteractionContractException
+            or InvalidOperationException or NotSupportedException)
+        {
+            return new("unresolved", null);
+        }
+    }
+
+    private static readonly JsonSerializerOptions InvocationEvidenceJson = new(JsonSerializerDefaults.Web);
+
+    private static string RequiredString(JsonElement root, string property) =>
+        root.GetProperty(property) is { ValueKind: JsonValueKind.String } value && !string.IsNullOrWhiteSpace(value.GetString())
+            ? value.GetString()! : throw new JsonException();
+
+    private static InteractionInvocationCommitReceipt? OptionalReceipt(JsonElement root, string property)
+    {
+        var value = root.GetProperty(property);
+        if (value.ValueKind == JsonValueKind.Null) return null;
+        return (JsonSerializer.Deserialize<InteractionInvocationCommitReceipt>(value.GetRawText(), InvocationEvidenceJson)
+            ?? throw new JsonException()).Validate();
+    }
+
+    private static IReadOnlyList<InteractionInvocationCommitReceipt> Receipts(JsonElement value)
+    {
+        if (value.ValueKind != JsonValueKind.Array || value.GetArrayLength() > InteractionContractLimits.EvidenceItems)
+            throw new JsonException();
+        return Array.AsReadOnly(value.EnumerateArray().Select(item =>
+            (JsonSerializer.Deserialize<InteractionInvocationCommitReceipt>(item.GetRawText(), InvocationEvidenceJson)
+                ?? throw new JsonException()).Validate()).ToArray());
+    }
+
+    private static ApplicationEcsExecutionIdentity? OptionalRecovery(JsonElement value)
+    {
+        if (value.ValueKind == JsonValueKind.Null) return null;
+        var recovery = JsonSerializer.Deserialize<ApplicationEcsExecutionIdentity>(value.GetRawText(), InvocationEvidenceJson)
+            ?? throw new JsonException();
+        new InteractionInvocationCommitReceipt(recovery.OperationId, recovery.RequestFingerprint, []).Validate();
+        return recovery;
+    }
+
+    private static void ValidateInvocationShape(JsonElement root, string tag,
+        InteractionInvocationCommitReceipt? receipt,
+        IReadOnlyList<InteractionInvocationCommitReceipt> previous,
+        ApplicationEcsExecutionIdentity? recovery)
+    {
+        static bool Null(JsonElement owner, string name) => owner.GetProperty(name).ValueKind == JsonValueKind.Null;
+        var data = root.GetProperty("dataJson");
+        var read = root.GetProperty("readEvidence");
+        var proposal = root.GetProperty("proposal");
+        var pending = root.GetProperty("pending");
+        var completion = root.GetProperty("completionEvidenceReference");
+        var valid = tag switch
+        {
+            "completed" => data.ValueKind == JsonValueKind.String
+                && (read.ValueKind == JsonValueKind.Object ^ completion.ValueKind == JsonValueKind.String)
+                && receipt is null && Null(root, "proposal") && Null(root, "pending") && recovery is null,
+            "committed" => receipt is not null && Null(root, "dataJson") && Null(root, "readEvidence")
+                && Null(root, "proposal") && Null(root, "pending") && Null(root, "completionEvidenceReference")
+                && previous.Count == 0 && recovery is null,
+            "proposed" => proposal.ValueKind == JsonValueKind.Object && Null(root, "dataJson")
+                && Null(root, "readEvidence") && receipt is null && Null(root, "pending")
+                && Null(root, "completionEvidenceReference") && previous.Count == 0 && recovery is null,
+            "pending" => pending.ValueKind == JsonValueKind.Object && Null(root, "dataJson")
+                && Null(root, "readEvidence") && receipt is null && Null(root, "proposal")
+                && Null(root, "completionEvidenceReference") && recovery is null,
+            "failed" or "cancelled" => Null(root, "dataJson") && Null(root, "readEvidence")
+                && receipt is null && Null(root, "proposal") && Null(root, "pending")
+                && Null(root, "completionEvidenceReference"),
+            "unavailable" => Null(root, "dataJson") && Null(root, "readEvidence")
+                && receipt is null && Null(root, "proposal") && Null(root, "pending")
+                && Null(root, "completionEvidenceReference") && previous.Count == 0,
+            _ => false
+        };
+        if (!valid) throw new JsonException();
+    }
+
     private static bool DefinitivePreDispatchDenial(string code) => code is
         "SYSTEM_CAPABILITY_PREFLIGHT_FAILED" or
         "SYSTEM_CAPABILITY_NOT_READY" or
@@ -279,7 +403,9 @@ internal sealed class SystemTaskAiInvocationLifecycleFactory(IServiceScopeFactor
             "dantes-roleplay/inner-worker-tool/v1\n" + lease.Request.Handle.TaskId + "\n"
             + lease.Attempt.AttemptId + "\n" + ordinal)))[..32];
 
-    internal sealed record ToolCommitEvidence(string Status, InteractionInvocationCommitReceipt? Receipt);
+    internal sealed record ToolCommitEvidence(string Status, InteractionInvocationCommitReceipt? Receipt,
+        IReadOnlyList<InteractionInvocationCommitReceipt>? PreviousCommits = null,
+        ApplicationEcsExecutionIdentity? RecoveryIdentity = null);
 
     private async Task<T> InScopeAsync<T>(bool write,
         Func<SystemTaskValidationTransaction, SystemTaskApplicationValidationGate?, IServiceProvider, Task<T>> action,
@@ -346,10 +472,10 @@ internal sealed class SystemTaskAiInvocationLifecycleFactory(IServiceScopeFactor
     private sealed class ToolScope(SystemTaskAiInvocationLifecycleFactory owner,
         SqliteSystemTaskLifecycleStore store, SystemTaskLease lease, string reference,
         string operation, string requestFingerprint, string terminalEvidence,
-        SystemCapabilityMode mode) : IAiToolDispatchScope
+        SystemCapabilityMode mode, SystemInnerWorkerToolKind kind) : IAiToolDispatchScope
     {
         public async ValueTask RecordToolOutcomeAsync(AiToolDispatchObservation outcome) =>
             await owner.RecordToolAsync(store, lease, reference, operation, requestFingerprint,
-                terminalEvidence, mode, outcome);
+                terminalEvidence, mode, kind, outcome);
     }
 }

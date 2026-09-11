@@ -430,12 +430,26 @@ internal sealed partial class SqliteSystemTaskDurableService(
                 if (!root.TryGetProperty("commit", out var commit) || commit.ValueKind != JsonValueKind.Object
                     || !commit.TryGetProperty("Status", out var status) || status.ValueKind != JsonValueKind.String)
                     throw new JsonException("The host-call commit disposition is unavailable.");
+                if (commit.TryGetProperty("PreviousCommits", out var previous)
+                    && previous.ValueKind != JsonValueKind.Null)
+                {
+                    if (previous.ValueKind != JsonValueKind.Array
+                        || previous.GetArrayLength() > InteractionContractLimits.EvidenceItems)
+                        throw new JsonException("The host-call prior commit evidence exceeds its bound.");
+                    foreach (var item in previous.EnumerateArray()) AddCommit(commits, ParseReceipt(item));
+                }
+                if (commit.TryGetProperty("RecoveryIdentity", out var retainedRecovery)
+                    && retainedRecovery.ValueKind != JsonValueKind.Null)
+                {
+                    recovery ??= ParseRecovery(retainedRecovery);
+                    reconciled = false;
+                }
                 switch (status.GetString())
                 {
                     case "committed":
                         if (!commit.TryGetProperty("Receipt", out var receipt) || receipt.ValueKind != JsonValueKind.Object)
                             throw new JsonException("The host-call commit receipt is unavailable.");
-                        commits.Add(ParseReceipt(receipt));
+                        AddCommit(commits, ParseReceipt(receipt));
                         break;
                     case "not-applicable":
                     case "not-committed":
@@ -458,13 +472,34 @@ internal sealed partial class SqliteSystemTaskDurableService(
     private static InteractionInvocationCommitReceipt ParseReceipt(JsonElement value)
     {
         if (value.EnumerateObject().Count() != 4
-            || !value.TryGetProperty("OperationId", out var operation) || operation.ValueKind != JsonValueKind.String
-            || !value.TryGetProperty("RequestFingerprint", out var fingerprint) || fingerprint.ValueKind != JsonValueKind.String
-            || !value.TryGetProperty("Effects", out var effects) || effects.ValueKind != JsonValueKind.Array || effects.GetArrayLength() != 0
+            || !value.TryGetProperty("OperationId", out _)
+            || !value.TryGetProperty("RequestFingerprint", out _)
+            || !value.TryGetProperty("Effects", out var effects) || effects.ValueKind != JsonValueKind.Array
             || !value.TryGetProperty("EffectDetailsAvailable", out var available)
-            || available.ValueKind is not (JsonValueKind.True or JsonValueKind.False) || available.GetBoolean())
+            || available.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
             throw new JsonException("The host-call commit receipt is invalid.");
-        return new InteractionInvocationCommitReceipt(operation.GetString()!, fingerprint.GetString()!, [], false).Validate();
+        return (JsonSerializer.Deserialize<InteractionInvocationCommitReceipt>(value.GetRawText())
+            ?? throw new JsonException("The host-call commit receipt is unavailable.")).Validate();
+    }
+
+    private static ApplicationEcsExecutionIdentity ParseRecovery(JsonElement value)
+    {
+        if (value.ValueKind != JsonValueKind.Object || value.EnumerateObject().Count() != 2)
+            throw new JsonException("The host-call recovery identity is invalid.");
+        var recovery = JsonSerializer.Deserialize<ApplicationEcsExecutionIdentity>(value.GetRawText())
+            ?? throw new JsonException("The host-call recovery identity is unavailable.");
+        new InteractionInvocationCommitReceipt(recovery.OperationId, recovery.RequestFingerprint, []).Validate();
+        return recovery;
+    }
+
+    private static void AddCommit(List<InteractionInvocationCommitReceipt> commits,
+        InteractionInvocationCommitReceipt receipt)
+    {
+        if (commits.Any(value => value.OperationId == receipt.OperationId
+            && value.RequestFingerprint == receipt.RequestFingerprint)) return;
+        if (commits.Count >= InteractionContractLimits.EvidenceItems)
+            throw new JsonException("The host-call commit evidence exceeds its bound.");
+        commits.Add(receipt);
     }
 
     private static ApplicationEcsExecutionIdentity? Recovery(string operation, string fingerprint)

@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using DantesRoleplay.ApplicationActivation;
+using DantesRoleplay.DataAccess.Composition;
 
 namespace DantesRoleplay.ApplicationExecution;
 
@@ -24,6 +25,7 @@ public static class ApplicationExecutionComponentRegistration
         .AddScoped<ApplicationActionInvocationAdapter>()
         .AddScoped<IApplicationActionInvocationAdapter>(provider =>
             provider.GetRequiredService<ApplicationActionInvocationAdapter>())
+        .AddScoped<SystemInnerWorkerApplicationToolFactory>()
         .AddScoped<IApplicationReadOnlyServiceDefinitionReader, ApplicationReadOnlyServiceDefinitionReader>()
         .AddScoped<ApplicationReadOnlyServiceInvocationAdapter>()
         .AddScoped<IApplicationReadOnlyServiceInvocationAdapter>(provider =>

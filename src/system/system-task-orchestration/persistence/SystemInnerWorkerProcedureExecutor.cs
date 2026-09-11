@@ -51,7 +51,8 @@ internal sealed class SystemInnerWorkerProcedureExecutor(
             var invocation = await lifecycles.CreateProcedureAsync(
                 lease, profile, preparation.ToolContext, cancellationToken);
             var response = await invoker.InvokeAsync(profile, preparation.Prepared,
-                preparation.ToolContext, invocation.Lifecycle, invocation.WriteApproval, cancellationToken);
+                preparation.ToolContext, invocation.Lifecycle, invocation.WriteApproval,
+                preparation.ApplicationTools, cancellationToken);
             var evidence = SystemInnerWorkerCompletionEvidence.For(lease);
             var mapped = SystemInnerWorkerResultAdapter.MapStoredResult(worker, response,
                 lease.Request.Handle, evidence, currentInvocationEvidenceVerified: true);

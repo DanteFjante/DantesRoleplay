@@ -126,7 +126,8 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
                 {
                     value.Definition,
                     value.CapabilityVersion,
-                    value.Mode
+                    value.Mode,
+                    value.Kind
                 }),
                 innerWorkerProfile.RequiredContextReferences,
                 contextEvidence = innerWorkerProfile.ManualContext,
