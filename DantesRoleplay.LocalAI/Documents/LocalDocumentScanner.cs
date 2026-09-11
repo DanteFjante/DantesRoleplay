@@ -308,7 +308,30 @@ public sealed class LocalDocumentScanner : ILocalDocumentScanner
 
     private static Regex GlobRegex(string fullPattern)
     {
-        var pattern = Normalize(fullPattern);
+        return NormalizedGlobRegex(Normalize(fullPattern));
+    }
+
+    /// <summary>
+    /// Tests an explicit normalized relative glob without expanding or reading the filesystem.
+    /// A non-glob specification matches only that exact path; directory intent is never inferred.
+    /// </summary>
+    public static bool MatchesNormalizedRelativeGlob(string specification, string relativePath)
+    {
+        if (!NormalizedRelative(specification, allowWildcards: true)
+            || !NormalizedRelative(relativePath, allowWildcards: false)) return false;
+        try { return NormalizedGlobRegex(specification).IsMatch(relativePath); }
+        catch (RegexMatchTimeoutException) { return false; }
+    }
+
+    private static bool NormalizedRelative(string? value, bool allowWildcards) =>
+        value is { Length: > 0 and <= 1024 }
+        && !value.Any(character => char.IsControl(character) || character is '\\' or ':'
+            || !allowWildcards && character is '*' or '?')
+        && !Path.IsPathRooted(value)
+        && value.Split('/').All(segment => segment is not ("" or "." or ".."));
+
+    private static Regex NormalizedGlobRegex(string pattern)
+    {
         var expression = new StringBuilder("^");
         for (var index = 0; index < pattern.Length; index++)
         {
