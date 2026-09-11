@@ -68,6 +68,19 @@ public sealed class WebPageStandingGrantResourceTargetOwnerTests
     }
 
     [Fact]
+    public async Task State_scoped_host_cannot_resolve_a_web_page_resource()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        await fixture.Content.SaveBundleAndActivateAsync("page", new("<p>one</p>", []));
+        await fixture.MapAsync("page", "web.pages.example", fixture.App.Value);
+        var host = new InteractionInvocationHost(TrustedPrincipalContext.VerifiedPrincipal("principal." + new string('a', 64), "test"),
+            fixture.Applications.Get(fixture.App)!, "state", "grant@1", "command", "state@1", InteractionExecutionProfile.ReadOnly,
+            new InteractionInvocationBudget(1, DateTime.UtcNow.AddMinutes(1)));
+        Assert.Equal("STANDING_GRANT_WEB_PAGE_SCOPE_DENIED",
+            (await fixture.Owner().ResolveCurrentAsync(host, "web.pages.example")).Code);
+    }
+
+    [Fact]
     public async Task Stale_generation_disabled_namespace_and_changed_namespace_metadata_are_not_reusable_evidence()
     {
         await using var fixture = await Fixture.CreateAsync();
@@ -99,8 +112,9 @@ public sealed class WebPageStandingGrantResourceTargetOwnerTests
         public ApplicationIdentifier App { get; } = ApplicationIdentifier.Parse("example");
 
         public WebPageStandingGrantResourceTargetOwner Owner() => new(Web, Content, Applications, Namespaces);
-        public InteractionInvocationHost Host() => new(TrustedPrincipalContext.VerifiedPrincipal("principal." + new string('a', 64), "test"),
-            Applications.Get(App)!, "state", "grant@1", "command", "state@1", InteractionExecutionProfile.ReadOnly,
+        public InteractionInvocationHost Host() => InteractionInvocationHost.ForApplication(
+            TrustedPrincipalContext.VerifiedPrincipal("principal." + new string('a', 64), "test"),
+            Applications.Get(App)!, "grant@1", "command", InteractionExecutionProfile.ReadOnly,
             new InteractionInvocationBudget(1, DateTime.UtcNow.AddMinutes(1)));
 
         public async Task MapAsync(string page, string target, string app)

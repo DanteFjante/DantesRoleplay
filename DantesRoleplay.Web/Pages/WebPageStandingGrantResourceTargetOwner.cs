@@ -95,6 +95,8 @@ public sealed class WebPageStandingGrantResourceTargetOwner(
 
     private ContextCheck ValidateContext(InteractionInvocationHost host, WebPageResourceIdentity mapping)
     {
+        if (host.StateSpaceId is not null || host.StateRevision is not null)
+            return new(Denied("STANDING_GRANT_WEB_PAGE_SCOPE_DENIED"), null);
         ApplicationIdentifier owner;
         try { owner = ApplicationIdentifier.Parse(mapping.OwnerApplicationId); }
         catch (ArgumentException) { return new(Denied("STANDING_GRANT_WEB_PAGE_OWNER_INVALID"), null); }
