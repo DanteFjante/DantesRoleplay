@@ -27,7 +27,7 @@ internal sealed class SystemInnerWorkerWriteApprovalGate(
         if (profile.Worker.Subject is not SystemInnerWorkerSubject.ProcedureWorkflow workflow
             || request.Capability.Mode != SystemCapabilityMode.Write
             || !request.Capability.RequiresConfirmation || !request.Capability.RequiresIdempotencyKey
-            || !request.Capability.ProcedureIds.Contains(workflow.ProcedureVersion.ExactDefinitionId,
+            || !request.Capability.ProcedureIds.Contains("procedure." + workflow.ProcedureVersion.ExactDefinitionId,
                 StringComparer.Ordinal)
             || !InvocationMatches(request.Invocation))
             return SystemCapabilityAiApprovalDecision.Denied();

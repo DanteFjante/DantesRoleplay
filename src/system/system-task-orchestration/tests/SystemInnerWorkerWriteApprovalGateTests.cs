@@ -87,7 +87,7 @@ public sealed class SystemInnerWorkerWriteApprovalGateTests
         var host = new InteractionInvocationHost(principal, application, "state", "grant@1", "command",
             "state@1", InteractionExecutionProfile.Workflow,
             new InteractionInvocationBudget(16, DateTime.UtcNow.AddMinutes(2)));
-        var procedure = new SystemTaskSelectedDefinition("demo.runtime.inspect", 1, Hash);
+        var procedure = new SystemTaskSelectedDefinition("system.runtime.inspect", 1, Hash);
         const string resultSchema = "{\"type\":\"object\"}";
         var worker = new SystemInnerWorkerRequest(host, procedure, "{}", resultSchema);
         var definition = new AiToolDefinition("system_fixture_write",
@@ -100,7 +100,7 @@ public sealed class SystemInnerWorkerWriteApprovalGateTests
             "fixture", "Write fixture.", SystemCapabilityMode.Write, "write", inputSchema.ProfileId,
             inputSchema.NormalizedSchema, inputSchema.SchemaHash, outputSchema.ProfileId,
             outputSchema.NormalizedSchema, outputSchema.SchemaHash,
-            [procedure.ExactDefinitionId], PrivateOperatorCapability.Modify, "modify",
+            ["procedure." + procedure.ExactDefinitionId], PrivateOperatorCapability.Modify, "modify",
             SystemCapabilitySensitivity.PrivateOperatorMetadata, "private-operator-metadata", true, true);
         var binding = new SystemInnerWorkerToolBinding(definition,
             new(capability.Id, capability.Version, capability.Fingerprint), SystemCapabilityMode.Write);
