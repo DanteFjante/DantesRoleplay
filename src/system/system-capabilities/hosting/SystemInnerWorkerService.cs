@@ -19,7 +19,20 @@ internal sealed class SystemInnerWorkerService(
         durable.CancelAsync(host, handle, cancellationToken);
 
     public async Task<InteractionInvocationResult> SubmitAsync(SystemInnerWorkerRequest request,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) =>
+        await SubmitCoreAsync(request, allowEphemeralParent: false, cancellationToken);
+
+    /// <summary>
+    /// Trusted workflow-service admission. The non-durable parent command remains explicit
+    /// causation while the focused worker owns a new durable root lifecycle and budget.
+    /// </summary>
+    internal async Task<InteractionInvocationResult> SubmitEphemeralRootAsync(
+        SystemInnerWorkerRequest request,
+        CancellationToken cancellationToken = default) =>
+        await SubmitCoreAsync(request, allowEphemeralParent: true, cancellationToken);
+
+    private async Task<InteractionInvocationResult> SubmitCoreAsync(SystemInnerWorkerRequest request,
+        bool allowEphemeralParent, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
         if (cancellationToken.IsCancellationRequested)
@@ -28,7 +41,9 @@ internal sealed class SystemInnerWorkerService(
         try
         {
             var preparation = await resolver.ResolveAsync(request, cancellationToken);
-            return await durable.SubmitInnerWorkerAsync(preparation, cancellationToken);
+            return allowEphemeralParent
+                ? await durable.SubmitEphemeralRootInnerWorkerAsync(preparation, cancellationToken)
+                : await durable.SubmitInnerWorkerAsync(preparation, cancellationToken);
         }
         catch (OperationCanceledException)
         {

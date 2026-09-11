@@ -48,7 +48,9 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             CreatedBy = "fixture", ChangeNote = "Focused worker fixture."
         });
         var deadline = DateTime.UtcNow.AddMinutes(2);
-        var host = InnerWorkerHost(application, state, "inner-worker-command", deadline);
+        const string ephemeralParent = "workflow-service.command";
+        var host = InnerWorkerHost(application, state, "inner-worker-command", deadline,
+            ephemeralParent);
         StandingGrantTargetResolution target;
         await using (var transaction = await db.Database.BeginTransactionAsync())
         {
@@ -87,13 +89,16 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         var lifecycleServices = new ServiceCollection()
             .AddSingleton(db)
             .AddSingleton(durable)
+            .AddSingleton(resolver)
+            .AddSingleton(invoker)
+            .AddSingleton(TimeProvider.System)
+            .AddLogging()
+            .AddSingleton<SystemTaskAiInvocationLifecycleFactory>()
+            .AddScoped<SystemInnerWorkerProcedureExecutor>()
+            .AddSingleton<SystemTaskWorkflowBackgroundWorker>()
             .BuildServiceProvider();
         using (lifecycleServices)
         {
-            var lifecycles = new SystemTaskAiInvocationLifecycleFactory(
-                lifecycleServices.GetRequiredService<IServiceScopeFactory>(), TimeProvider.System);
-            var executor = new SystemInnerWorkerProcedureExecutor(db, durable, resolver, invoker,
-                lifecycles, TimeProvider.System);
             const string schema = """
                 {"additionalProperties":false,"properties":{"answer":{"type":"string"},"summary":{"type":"string"}},"required":["answer","summary"],"type":"object"}
                 """;
@@ -102,15 +107,26 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
                 format = SystemInnerWorkerAssignmentV1.Format,
                 instruction = "Inspect the active runtime definition and return a short answer."
             });
-            var submitted = await service.SubmitAsync(new(host, selected, assignment, schema));
+            var ordinary = await service.SubmitAsync(new(
+                InnerWorkerHost(application, state, "inner-worker-ordinary", deadline,
+                    ephemeralParent), selected, assignment, schema));
+            Assert.Equal(InteractionInvocationResultTag.Failed, ordinary.Tag);
+            Assert.Equal("SYSTEM_TASK_PARENT_UNKNOWN", ordinary.Code);
+
+            var submitted = await service.SubmitEphemeralRootAsync(new(host, selected, assignment, schema));
             Assert.True(submitted.Tag == InteractionInvocationResultTag.Pending,
                 submitted.Code + ": " + submitted.SafeMessage);
             Assert.Equal(15, host.Budget.RemainingOperations);
+            var admitted = await db.Set<SystemTaskLifecycleRecord>().AsNoTracking()
+                .SingleAsync(value => value.TaskId == submitted.TaskHandle!.TaskId);
+            Assert.Null(admitted.ParentTaskId);
+            Assert.Equal(admitted.TaskId, admitted.RootTaskId);
+            Assert.Equal(ephemeralParent, admitted.ParentCommandId);
+            Assert.Contains("\"originatingParentMode\":\"ephemeral-root\"",
+                admitted.AdmissionPayloadJson, StringComparison.Ordinal);
 
-            var store = new SqliteSystemTaskLifecycleStore(db.Database.GetConnectionString()!, TimeProvider.System);
-            var runner = new SqliteSystemTaskLifecycleRunner(store, TimeProvider.System);
-            Assert.True(await runner.RunOnceAsync("inner-worker", executor.ExecuteLeaseAsync,
-                purpose: SystemTaskPurpose.ProcedureWorkflow));
+            var worker = lifecycleServices.GetRequiredService<SystemTaskWorkflowBackgroundWorker>();
+            Assert.True(await worker.RunOnceAsync("inner-worker"));
 
             var readHost = InnerWorkerHost(application, state, "inner-worker-read", deadline);
             var completed = await service.GetAsync(readHost, submitted.TaskHandle!);
@@ -123,11 +139,11 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             Assert.Equal(1L, await db.Set<SystemTaskAiDispatchEvidenceRecord>().LongCountAsync(
                 value => value.Kind == "usage" && value.IsComplete == 1));
 
-            var replay = await service.SubmitAsync(new(
-                InnerWorkerHost(application, state, "inner-worker-command", deadline), selected, assignment, schema));
+            var replay = await service.SubmitEphemeralRootAsync(new(
+                InnerWorkerHost(application, state, "inner-worker-command", deadline,
+                    ephemeralParent), selected, assignment, schema));
             Assert.Equal(submitted.TaskHandle, replay.TaskHandle);
-            Assert.False(await runner.RunOnceAsync("inner-worker", executor.ExecuteLeaseAsync,
-                purpose: SystemTaskPurpose.ProcedureWorkflow));
+            Assert.False(await worker.RunOnceAsync("inner-worker"));
             Assert.Equal(1, provider.Calls);
         }
     }
@@ -146,10 +162,11 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
     }
 
     private static InteractionInvocationHost InnerWorkerHost(ApplicationRevision application,
-        StateSpaceView state, string command, DateTime deadline) => new(
+        StateSpaceView state, string command, DateTime deadline, string? parentCommand = null) => new(
         TrustedPrincipalContext.VerifiedPrincipal("principal." + new string('a', 64), "test"),
         application, state.StateSpaceId, "inner-grant@1", command, InteractionStateRevision.From(state),
-        InteractionExecutionProfile.Workflow, new InteractionInvocationBudget(16, deadline));
+        InteractionExecutionProfile.Workflow, new InteractionInvocationBudget(16, deadline),
+        parentCommand);
 
     private static async Task SeedInnerWorkerGrantAsync(DantesRoleplayDbContext db)
     {

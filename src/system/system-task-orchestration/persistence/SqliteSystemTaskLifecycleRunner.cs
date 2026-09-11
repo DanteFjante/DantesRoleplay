@@ -2,7 +2,7 @@ namespace DantesRoleplay.SystemTasks.Persistence;
 
 /// <summary>
 /// Owner-local execution loop. The callback is a trusted integration seam, not an authorization
-/// adapter. Production registration remains unavailable until runtime and grants are integrated.
+/// adapter. Production workflow registration supplies plan 05's current-authority executor.
 /// Every store call closes its transaction before the callback runs or the loop waits.
 /// </summary>
 internal sealed class SqliteSystemTaskLifecycleRunner

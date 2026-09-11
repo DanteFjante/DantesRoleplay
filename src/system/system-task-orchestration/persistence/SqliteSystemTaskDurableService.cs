@@ -27,13 +27,30 @@ internal sealed partial class SqliteSystemTaskDurableService(
 
     internal Task<InteractionInvocationResult> SubmitInnerWorkerAsync(
         DataAccess.Composition.SystemInnerWorkerProcedurePreparationResult preparation,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) =>
+        SubmitInnerWorkerCoreAsync(preparation, allowEphemeralParent: false, cancellationToken);
+
+    internal Task<InteractionInvocationResult> SubmitEphemeralRootInnerWorkerAsync(
+        DataAccess.Composition.SystemInnerWorkerProcedurePreparationResult preparation,
+        CancellationToken cancellationToken = default) =>
+        SubmitInnerWorkerCoreAsync(preparation, allowEphemeralParent: true, cancellationToken);
+
+    private Task<InteractionInvocationResult> SubmitInnerWorkerCoreAsync(
+        DataAccess.Composition.SystemInnerWorkerProcedurePreparationResult preparation,
+        bool allowEphemeralParent,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(preparation);
         var worker = preparation.Worker;
         if (worker.Subject is not SystemInnerWorkerSubject.ProcedureWorkflow workflow)
             return Task.FromResult(InteractionInvocationResult.Failed("INNER_WORKER_SUBJECT_UNSUPPORTED",
                 "Only exact procedure workflow subjects can be admitted here."));
+        if (allowEphemeralParent && (worker.InvocationHost.ParentCommandId is null
+            || StringComparer.Ordinal.Equals(worker.InvocationHost.ParentCommandId,
+                worker.InvocationHost.CommandId)))
+            return Task.FromResult(InteractionInvocationResult.Failed(
+                "SYSTEM_TASK_EPHEMERAL_PARENT_INVALID",
+                "A trusted ephemeral parent command is required."));
         var request = new SystemTaskDurableSubmissionRequest(worker.InvocationHost, workflow.ProcedureVersion,
             worker.InputJson, dependencyHandles: worker.DependencyHandles);
         return InOwnedTransactionAsync(worker.InvocationHost, write: true, async (store, connection, transaction) =>
@@ -47,7 +64,8 @@ internal sealed partial class SqliteSystemTaskDurableService(
                 grant.GrantReference, grant.Revision.ToString(System.Globalization.CultureInfo.InvariantCulture),
                 grant.ContentFingerprint));
             var staged = await store.StageEnqueueInnerWorkerAsync(request, profile, false,
-                connection, transaction, cancellationToken, authorization.CurrentActivation);
+                connection, transaction, cancellationToken, authorization.CurrentActivation,
+                allowEphemeralParent);
             if (staged.Disposition is not (SystemTaskEnqueueDisposition.Created or SystemTaskEnqueueDisposition.Existing))
                 return InteractionInvocationResult.Failed(staged.Code, staged.SafeMessage);
             var enrollment = await store.StageEnrollAiBudgetAsync(staged.Handle!, profile,
@@ -61,30 +79,6 @@ internal sealed partial class SqliteSystemTaskDurableService(
 
     public Task<InteractionInvocationResult> SubmitAsync(SystemTaskDurableSubmissionRequest request,
         CancellationToken cancellationToken = default)
-        => SubmitCoreAsync(request, allowEphemeralParent: false, cancellationToken);
-
-    /// <summary>
-    /// Trusted workflow-service admission. The non-durable parent command remains explicit
-    /// causation while the admitted task owns a new durable root budget and lifecycle.
-    /// </summary>
-    internal Task<InteractionInvocationResult> SubmitEphemeralRootAsync(
-        SystemTaskDurableSubmissionRequest request,
-        CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(request);
-        if (request.InvocationHost.ParentCommandId is null
-            || StringComparer.Ordinal.Equals(
-                request.InvocationHost.ParentCommandId, request.InvocationHost.CommandId))
-            return Task.FromResult(InteractionInvocationResult.Failed(
-                "SYSTEM_TASK_EPHEMERAL_PARENT_INVALID",
-                "A trusted ephemeral parent command is required."));
-        return SubmitCoreAsync(request, allowEphemeralParent: true, cancellationToken);
-    }
-
-    private Task<InteractionInvocationResult> SubmitCoreAsync(
-        SystemTaskDurableSubmissionRequest request,
-        bool allowEphemeralParent,
-        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
         if (request.InvocationHost.Profile != InteractionExecutionProfile.Workflow)
@@ -96,11 +90,8 @@ internal sealed partial class SqliteSystemTaskDurableService(
                 StandingGrantCapability.Execute, null, null, cancellationToken);
             if (authorization.Failure is not null) return authorization.Failure;
             if (authorization.CurrentActivation is null) return TargetUnavailable();
-            var staged = allowEphemeralParent
-                ? await store.StageEphemeralRootEnqueueAsync(request, false, connection, transaction,
-                    cancellationToken, authorization.CurrentActivation)
-                : await store.StageEnqueueAsync(request, false, connection, transaction, cancellationToken,
-                    authorization.CurrentActivation);
+            var staged = await store.StageEnqueueAsync(request, false, connection, transaction,
+                cancellationToken, authorization.CurrentActivation);
             return staged.Disposition is SystemTaskEnqueueDisposition.Created or SystemTaskEnqueueDisposition.Existing
                 ? InteractionInvocationResult.Pending(staged.Handle!)
                 : InteractionInvocationResult.Failed(staged.Code, staged.SafeMessage);

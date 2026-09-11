@@ -45,6 +45,7 @@ internal static class SystemTaskOrchestrationComponentRegistration
         services.AddScoped<SystemInnerWorkerService>();
         services.Replace(ServiceDescriptor.Scoped<ISystemInnerWorkerService>(provider =>
             provider.GetRequiredService<SystemInnerWorkerService>()));
+        services.AddHostedService<SystemTaskWorkflowBackgroundWorker>();
         services.TryAddSingleton<IPrivateOperatorAuthorizationPolicy, PrivateOperatorAuthorizationPolicy>();
         return services;
     }

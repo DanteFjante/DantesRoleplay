@@ -33,27 +33,11 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
         SqliteConnection connection,
         SqliteTransaction transaction,
         CancellationToken cancellationToken = default,
-        StandingGrantActivationOrigin? activationOrigin = null) =>
+        StandingGrantActivationOrigin? activationOrigin = null,
+        bool allowEphemeralParent = false) =>
         InCallerTransactionAsync(connection, transaction,
             () => EnqueueCoreAsync(request, propagateCancellation, connection, transaction,
-                cancellationToken, activationOrigin, profile),
-            result => result.Disposition is SystemTaskEnqueueDisposition.Created or SystemTaskEnqueueDisposition.Existing,
-            cancellationToken);
-
-    /// <summary>
-    /// Stages a root admitted by a trusted host while retaining the causal command of an
-    /// ephemeral parent. Ordinary enqueue keeps requiring an existing durable parent row.
-    /// </summary>
-    internal Task<SystemTaskEnqueueResult> StageEphemeralRootEnqueueAsync(
-        SystemTaskDurableSubmissionRequest request,
-        bool propagateCancellation,
-        SqliteConnection connection,
-        SqliteTransaction transaction,
-        CancellationToken cancellationToken = default,
-        StandingGrantActivationOrigin? activationOrigin = null) =>
-        InCallerTransactionAsync(connection, transaction,
-            () => EnqueueCoreAsync(request, propagateCancellation, connection, transaction,
-                cancellationToken, activationOrigin, allowEphemeralParent: true),
+                cancellationToken, activationOrigin, profile, allowEphemeralParent),
             result => result.Disposition is SystemTaskEnqueueDisposition.Created or SystemTaskEnqueueDisposition.Existing,
             cancellationToken);
 

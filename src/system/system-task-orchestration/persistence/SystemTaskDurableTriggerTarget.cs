@@ -4,9 +4,9 @@ using DantesRoleplay.Interactions;
 namespace DantesRoleplay.SystemTasks.Persistence;
 
 /// <summary>
-/// Owner-local proposal for the existing schedule/observer transaction participants. This does not
-/// register a new trigger target. Scope and grants come from a freshly authorized host; the selected
-/// definition is pinned before enqueue. A binding replacement affects future occurrences only.
+/// Owner-local admission target for the schedule/observer transaction participants. Scope and grants
+/// come from a freshly authorized host; the selected definition is pinned before enqueue. A binding
+/// replacement affects future occurrences only.
 /// </summary>
 internal sealed class SystemTaskDurableTriggerTarget
 {

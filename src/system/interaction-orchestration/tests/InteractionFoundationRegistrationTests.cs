@@ -1,12 +1,14 @@
 using DantesRoleplay.ApplicationActivation;
 using DantesRoleplay.ApplicationExecution;
 using DantesRoleplay.Authorization;
+using DantesRoleplay.DataAccess.Composition;
 using DantesRoleplay.EcsEffects;
 using DantesRoleplay.MCPServer;
 using DantesRoleplay.SystemCapabilities;
 using DantesRoleplay.SystemTasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace DantesRoleplay.Interactions.Tests;
 
@@ -43,8 +45,9 @@ public sealed class InteractionFoundationRegistrationTests
         Assert.IsType<PlatformStandingGrantIssuerPolicy>(services.GetRequiredService<IStandingGrantIssuerPolicy>());
         Assert.IsType<DantesRoleplay.SystemTasks.Persistence.SqliteSystemTaskDurableService>(
             services.GetRequiredService<ISystemTaskDurableService>());
-        Assert.IsType<DantesRoleplay.DataAccess.Composition.SystemInnerWorkerService>(
-            services.GetRequiredService<ISystemInnerWorkerService>());
+        Assert.IsType<SystemInnerWorkerService>(services.GetRequiredService<ISystemInnerWorkerService>());
+        Assert.Contains(app.Services.GetServices<IHostedService>(),
+            service => service is SystemTaskWorkflowBackgroundWorker);
         var activation = services.GetRequiredService<IApplicationActivationService>();
         Assert.Same(activation, services.GetRequiredService<IActivatedApplicationEvidenceReader>());
         Assert.Same(activation, services.GetRequiredService<IApplicationDefinitionChangeReader>());
