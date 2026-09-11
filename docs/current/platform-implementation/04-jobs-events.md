@@ -1,6 +1,6 @@
 # Durable JavaScript jobs, schedules, and observers
 
-Status: concrete implementation plan, 2026-09-11. This document authorizes no runtime changes. Initial callers are the website, Codex, and runtime JavaScript; additional external integrations remain future extension seams.
+Status: implemented core and trigger integration, 2026-09-12. Initial callers are the website, Codex, and runtime JavaScript; additional external integrations remain future extension seams.
 
 Prerequisite: implement [00 — Shared foundation](00-shared-foundation.md) first and have the coordinator supply its accepted foundation revision and contract baseline. This workstream consumes those shared contracts and does not redefine them independently.
 
@@ -85,10 +85,29 @@ can settle original usage without restoring an expired lease or permitting stale
 Dispatch and usage hashes are checked when rehydrated; admission and result readback verify
 settlement counters against retained observations before treating them as accounted usage.
 
-These internal owners do not establish a production runtime, provider, schedule, or observer
-route. Coordinator registration/migrations and real runtime/grant integration remain separate
-acceptance boundaries. Host-call JSON is inert; public completion remains unavailable when
-authoritative commit-receipt reconciliation is required.
+The production host registers the durable workflow lifecycle, the focused procedure executor,
+and one purpose-filtered background claimant. Each callback runs in its own service scope so a
+cancelled or fenced callback cannot continue through a disposed scoped dependency. The runner
+claims, renews, retries, resumes, and publishes through the persisted fencing token; it never holds
+the SQLite writer transaction while procedure or model work runs.
+
+One-time schedules, recurring schedules, and observation matches may target a procedure workflow.
+Each trigger revision retains an immutable sidecar containing the exact principal, application and
+state revision, grant reference, selected procedure version and fingerprint, canonical assignment,
+canonical result schema and fingerprint, operation allowance, and runtime window. Legacy workflow
+bindings without the result schema pair fail closed until replaced. Every firing derives one stable
+command from the binding revision and exact occurrence, resolves the retained procedure through the
+actual catalog owner, and rechecks current Execute authority. Recurring occurrences retain distinct
+identities while duplicate delivery and registration replay converge on the same durable evidence.
+
+Trigger evidence, lifecycle admission, and AI enrollment share the worker transaction and an
+enclosing savepoint. A denied grant, stale or corrupt binding, failed enrollment, lost lease, or
+superseded trigger leaves no executable task and no success receipt. Notification-only targets keep
+their existing behavior. Focused acceptance covers actual one-time, recurring, and observation
+admission plus controlled-provider execution and durable readback. Application-candidate validation
+remains unavailable in production until its broader dependency closure and exact reviewer/context
+binding are supplied. An uncertain action commit still requires authoritative receipt reconciliation
+before retry.
 
 ## Atomic effects versus orchestration
 
