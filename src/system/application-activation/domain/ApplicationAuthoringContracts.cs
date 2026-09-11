@@ -10,7 +10,9 @@ namespace DantesRoleplay.ApplicationActivation;
 public sealed record ApplicationCandidateReference(
     ApplicationIdentifier ApplicationId, string CandidateId, int Revision, string ContentFingerprint);
 
-public sealed record ApplicationCandidateLookup(string CandidateId, int Revision);
+/// <summary>Exactly one selector: candidate ID/revision, or the source write receipt's operation ID.</summary>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public sealed record ApplicationCandidateLookup(string? CandidateId, int Revision, string? SourceOperationId = null);
 
 public sealed record ApplicationCandidateDocumentInput(
     string LogicalIdentity, string SourceId, string RelativePath, string MediaType, string Text);
