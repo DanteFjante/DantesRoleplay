@@ -201,6 +201,7 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
         StandingGrantModelConfiguration.Configure(modelBuilder);
         InformationHistoryModelConfiguration.Configure(modelBuilder);
         global::DantesRoleplay.SystemTasks.Persistence.SystemTaskLifecycleModelConfiguration.Configure(modelBuilder);
+        global::DantesRoleplay.SystemTasks.Persistence.SystemTaskAiAccountingModelConfiguration.Configure(modelBuilder);
         ConfigureLegacyStateAdoption(modelBuilder);
     }
 
