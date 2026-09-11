@@ -170,7 +170,8 @@ internal sealed class SystemTaskAiInvocationLifecycleFactory(IServiceScopeFactor
                     completionEvidenceReference = terminalEvidence,
                     outcome.Kind,
                     outcome.Result,
-                    outcome.FailureCode
+                    outcome.FailureCode,
+                    commit = CommitEvidence(outcome)
                 }));
                 if (!await store.CompleteHostCallAsync(lease, operation, requestFingerprint,
                         completion, timeout.Token))
@@ -193,9 +194,45 @@ internal sealed class SystemTaskAiInvocationLifecycleFactory(IServiceScopeFactor
             throw Failure("INNER_AI_TOOL_RECONCILIATION_REQUIRED");
     }
 
+    private static ToolCommitEvidence CommitEvidence(AiToolDispatchObservation outcome)
+    {
+        if (outcome.Kind != AiDispatchCompletionKind.Returned || outcome.Result is not { Ok: true } result)
+            return new("not-committed", null);
+        try
+        {
+            using var document = JsonDocument.Parse(result.Content);
+            var root = document.RootElement;
+            if (root.ValueKind != JsonValueKind.Object || root.EnumerateObject().Count() != 4
+                || !root.TryGetProperty("OperationId", out var operation)
+                || operation.ValueKind != JsonValueKind.String
+                || !root.TryGetProperty("requestFingerprint", out var fingerprint)
+                || fingerprint.ValueKind != JsonValueKind.String
+                || !root.TryGetProperty("ReadBackFingerprint", out var readBack)
+                || readBack.ValueKind != JsonValueKind.String
+                || !root.TryGetProperty("data", out _))
+                return new("not-applicable", null);
+            var receipt = new InteractionInvocationCommitReceipt(
+                operation.GetString()!, fingerprint.GetString()!, [], EffectDetailsAvailable: false);
+            receipt.Validate();
+            if (readBack.GetString() is not { Length: 64 } readBackFingerprint
+                || readBackFingerprint.Any(character => !char.IsAsciiDigit(character)
+                    && character is not (>= 'A' and <= 'F')))
+                throw new InteractionContractException("INNER_AI_TOOL_RECEIPT_INVALID",
+                    "The system capability returned invalid read-back evidence.");
+            return new("committed", receipt);
+        }
+        catch (Exception error) when (error is JsonException or InteractionContractException)
+        {
+            return new("unresolved", null);
+        }
+    }
+
     private static string ToolOperation(SystemTaskLease lease, int ordinal) =>
-        "inner-tool." + Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(
-            lease.Request.Handle.TaskId + "\n" + lease.Attempt.AttemptId + "\n" + ordinal)))[..32];
+        Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(
+            "dantes-roleplay/inner-worker-tool/v1\n" + lease.Request.Handle.TaskId + "\n"
+            + lease.Attempt.AttemptId + "\n" + ordinal)))[..32];
+
+    private sealed record ToolCommitEvidence(string Status, InteractionInvocationCommitReceipt? Receipt);
 
     private async Task<T> InScopeAsync<T>(bool write,
         Func<SystemTaskValidationTransaction, SystemTaskApplicationValidationGate?, IServiceProvider, Task<T>> action,

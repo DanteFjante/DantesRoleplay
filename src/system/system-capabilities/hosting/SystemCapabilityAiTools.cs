@@ -140,7 +140,8 @@ public static class SystemCapabilityAiTools
             {
                 data = executed.Data.Value,
                 executed.OperationId,
-                executed.ReadBackFingerprint
+                executed.ReadBackFingerprint,
+                requestFingerprint = checkedWrite.Preflight.PreconditionFingerprint
             }));
         }
 

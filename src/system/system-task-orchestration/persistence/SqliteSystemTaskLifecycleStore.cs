@@ -550,8 +550,11 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
         await using var connection = await OpenAsync(cancellationToken);
         await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
         var pending = await HasPendingHostCallAsync(connection, transaction, lease.Request.Handle.TaskId, cancellationToken);
+        var hostCalls = await CompletedHostCallEvidenceAsync(connection, transaction,
+            lease.Request.Handle.TaskId, cancellationToken);
+        var unreconciledHostCalls = pending || hostCalls.HasCalls && !hostCalls.Reconciled;
         var pendingAi = await HasUnresolvedAiAccountingAsync(connection, transaction, lease.Request.Handle.TaskId, cancellationToken);
-        if (pending)
+        if (unreconciledHostCalls)
         {
             boundedCode = PendingHostCallCode;
             boundedMessage = PendingHostCallMessage;
@@ -564,21 +567,23 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
         var failures = await ScalarLongAsync(connection, transaction,
             "SELECT consecutive_failures FROM system_task_lifecycle WHERE task_id = $task", cancellationToken,
             ("$task", lease.Request.Handle.TaskId));
-        var transientRetry = failureKind == SystemTaskFailureKind.Transient && !pending && !pendingAi &&
+        var transientRetry = failureKind == SystemTaskFailureKind.Transient && !hostCalls.HasCalls && !pendingAi &&
             failures + 1 < SystemTaskLifecycleLimits.MaximumAttemptsPerTask &&
             AttemptOrdinal(lease) < SystemTaskLifecycleLimits.MaximumRootOperations && lease.Request.Invocation.DeadlineUtc > now;
-        var state = pending || pendingAi || failureKind == SystemTaskFailureKind.Indeterminate
+        var state = unreconciledHostCalls || pendingAi || failureKind == SystemTaskFailureKind.Indeterminate
             ? "indeterminate" : transientRetry ? "retry" : "failed";
         var next = transientRetry ? ToDb(now.AddSeconds(failures == 0 ? 5 : 30)) : null;
         var terminal = state is "failed" or "indeterminate" ? ToDb(now) : null;
         var changed = await ExecuteFencedAsync(connection, transaction, lease, """
             state = $state, next_attempt_at_utc = $next, error_code = $code, safe_message = $message,
+            completion_evidence_reference = $completionEvidence,
             consecutive_failures = consecutive_failures + 1,
             lease_owner = NULL, lease_token = NULL, lease_expires_at_utc = NULL,
             updated_at_utc = $now, completed_at_utc = $terminal
             """, now, cancellationToken, false, lease.Request.Invocation.DeadlineUtc <= now,
             ("$state", state), ("$next", next), ("$code", boundedCode),
-            ("$message", boundedMessage), ("$terminal", terminal));
+            ("$message", boundedMessage), ("$terminal", terminal),
+            ("$completionEvidence", hostCalls.Reconciled ? hostCalls.EvidenceReference : null));
         if (changed == 1)
         {
             if (pendingAi) await NormalizeAiReservationsAsync(connection, transaction, cancellationToken);
@@ -608,12 +613,23 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
             await transaction.CommitAsync(cancellationToken);
             return unresolved;
         }
+        var hostCalls = await CompletedHostCallEvidenceAsync(connection, transaction,
+            lease.Request.Handle.TaskId, cancellationToken);
+        if (hostCalls.HasCalls && !hostCalls.Reconciled)
+        {
+            var unresolved = await MarkPendingIndeterminateAsync(connection, transaction, lease, now,
+                cancellationToken, requireCancellation: true);
+            await transaction.CommitAsync(cancellationToken);
+            return unresolved;
+        }
         var changed = await ExecuteFencedAsync(connection, transaction, lease, """
             state = 'cancelled', cancel_acknowledged = 1, error_code = 'SYSTEM_TASK_CANCELLED',
             safe_message = 'Cancellation was acknowledged by the worker.',
+            completion_evidence_reference = $completionEvidence,
             lease_owner = NULL, lease_token = NULL, lease_expires_at_utc = NULL,
             updated_at_utc = $now, completed_at_utc = $now
-            """, now, cancellationToken, true, false);
+            """, now, cancellationToken, true, false,
+            ("$completionEvidence", hostCalls.EvidenceReference));
         if (changed == 1)
             await CompleteAttemptAsync(connection, transaction, lease, "cancelled", "SYSTEM_TASK_CANCELLED",
                 "Cancellation was acknowledged by the worker.", now, cancellationToken);
@@ -1013,6 +1029,42 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
         await ScalarLongAsync(connection, transaction,
             "SELECT COUNT(*) FROM system_task_host_call WHERE task_id = $task AND status = 'pending'", cancellationToken,
             ("$task", taskId)) > 0;
+
+    private static async Task<CompletedHostCallEvidence> CompletedHostCallEvidenceAsync(
+        SqliteConnection connection, SqliteTransaction transaction, string taskId,
+        CancellationToken cancellationToken)
+    {
+        await using var command = Command(connection, transaction, """
+            SELECT status, completion_json FROM system_task_host_call
+            WHERE task_id = $task ORDER BY started_at_utc, operation_id LIMIT 17
+            """, ("$task", taskId));
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        var count = 0;
+        string? evidence = null;
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            count++;
+            if (count > SystemTaskLifecycleLimits.MaximumEvidenceItems
+                || reader.GetString(0) != "completed" || reader.IsDBNull(1))
+                return new(true, false, null);
+            try
+            {
+                var completion = reader.GetString(1);
+                if (InteractionCanonicalJson.CanonicalizeObject(completion) != completion)
+                    return new(true, false, null);
+                using var document = JsonDocument.Parse(completion);
+                if (!document.RootElement.TryGetProperty("completionEvidenceReference", out var property)
+                    || property.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(property.GetString())
+                    || evidence is not null && evidence != property.GetString())
+                    return new(true, false, null);
+                evidence ??= property.GetString();
+            }
+            catch (JsonException) { return new(true, false, null); }
+        }
+        return new(count != 0, true, evidence);
+    }
+
+    private sealed record CompletedHostCallEvidence(bool HasCalls, bool Reconciled, string? EvidenceReference);
 
     private static async Task<bool> ConsumeOperationAsync(SqliteConnection connection,
         SqliteTransaction transaction, string taskId, CancellationToken cancellationToken)

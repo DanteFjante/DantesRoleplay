@@ -372,6 +372,81 @@ public sealed class SystemTaskDurableServiceBoundaryTests
     }
 
     [Fact]
+    public async Task Completed_read_tool_journal_with_matching_terminal_evidence_keeps_result_readable()
+    {
+        await using var fixture = await BoundaryFixture.CreateAsync();
+        var handle = (await fixture.Store.EnqueueAsync(Request(fixture, Host(fixture, "command.read-tool")))).Handle!;
+        var lease = (await fixture.Store.ClaimNextAsync("worker.boundary", TimeSpan.FromMinutes(1)))!;
+        var evidence = "inner-result." + new string('a', 64);
+        var operation = new string('b', 32);
+        var call = await fixture.Store.BeginHostCallAsync(lease, operation, "{}");
+        var completion = InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
+        {
+            completionEvidenceReference = evidence,
+            Kind = 0,
+            Result = new { Ok = true, Content = "{\"value\":1}", ErrorCode = "", ErrorMessage = "", Media = (object?)null },
+            FailureCode = "",
+            commit = new { Status = "not-applicable", Receipt = (object?)null }
+        }));
+        Assert.True(await fixture.Store.CompleteHostCallAsync(lease, operation,
+            call.RequestFingerprint, completion));
+        Assert.True(await fixture.Store.CompleteAsync(lease, new("{\"ok\":true}", evidence)));
+
+        var result = await fixture.Service.GetAsync(Host(fixture, "command.read"), handle);
+
+        Assert.Equal(InteractionInvocationResultTag.Completed, result.Tag);
+        Assert.Equal("{\"ok\":true}", result.DataJson);
+        Assert.Equal(evidence, result.CompletionEvidenceReference);
+        Assert.Empty(result.PreviousCommits);
+    }
+
+    [Fact]
+    public async Task Committed_tool_receipt_survives_later_terminal_provider_failure()
+    {
+        await using var fixture = await BoundaryFixture.CreateAsync();
+        var handle = (await fixture.Store.EnqueueAsync(Request(fixture, Host(fixture, "command.write-tool")))).Handle!;
+        var lease = (await fixture.Store.ClaimNextAsync("worker.boundary", TimeSpan.FromMinutes(1)))!;
+        var evidence = "inner-result." + new string('c', 64);
+        var operation = new string('d', 32);
+        var requestFingerprint = new string('E', 64);
+        var call = await fixture.Store.BeginHostCallAsync(lease, operation, "{}");
+        var completion = InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
+        {
+            completionEvidenceReference = evidence,
+            Kind = 0,
+            Result = new { Ok = true, Content = "{}", ErrorCode = "", ErrorMessage = "", Media = (object?)null },
+            FailureCode = "",
+            commit = new
+            {
+                Status = "committed",
+                Receipt = new
+                {
+                    OperationId = operation,
+                    RequestFingerprint = requestFingerprint,
+                    Effects = Array.Empty<object>(),
+                    EffectDetailsAvailable = false
+                }
+            }
+        }));
+        Assert.True(await fixture.Store.CompleteHostCallAsync(lease, operation,
+            call.RequestFingerprint, completion));
+        Assert.True(await fixture.Store.FailAsync(lease, SystemTaskFailureKind.Permanent,
+            "AI_PROVIDER_FAILED", "The provider failed after the committed tool returned."));
+
+        var snapshot = await fixture.Store.ReadAsync(handle);
+        var result = await fixture.Service.GetAsync(Host(fixture, "command.read"), handle);
+
+        Assert.Equal(evidence, snapshot!.CompletionEvidenceReference);
+        Assert.Equal(InteractionInvocationResultTag.Failed, result.Tag);
+        Assert.Equal("AI_PROVIDER_FAILED", result.Code);
+        var prior = Assert.Single(result.PreviousCommits);
+        Assert.Equal(operation, prior.OperationId);
+        Assert.Equal(requestFingerprint, prior.RequestFingerprint);
+        Assert.False(prior.EffectDetailsAvailable);
+        Assert.Empty(prior.Effects);
+    }
+
+    [Fact]
     public async Task Deadline_elapsing_during_policy_rolls_back_admission()
     {
         await using var fixture = await BoundaryFixture.CreateAsync();
