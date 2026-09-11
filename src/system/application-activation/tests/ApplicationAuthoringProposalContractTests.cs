@@ -45,11 +45,34 @@ public sealed class ApplicationAuthoringProposalContractTests
     }
 
     [Fact]
+    public void Expanding_allowance_requires_explicit_mode_and_descendant_choice()
+    {
+        const string example = """
+            {"mode":"applicationOwned","exactIds":[],"applicationOwnedNamespaces":[
+              {"namespaceId":"demo.rules","includeDescendants":false,"definitionKinds":["mechanic"]}]}
+            """;
+        var allowance = JsonSerializer.Deserialize<StandingGrantDefinitionAllowance>(example, Wire)!;
+        Assert.Equal(StandingGrantDefinitionMode.ApplicationOwned, allowance.Mode);
+        Assert.False(Assert.Single(allowance.ApplicationOwnedNamespaces).IncludeDescendants);
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StandingGrantDefinitionAllowance>(
+            example.Replace("\"mode\":\"applicationOwned\",", ""), Wire));
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StandingGrantDefinitionAllowance>(
+            example.Replace("\"includeDescendants\":false,", ""), Wire));
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StandingGrantDefinitionAllowance>(
+            example.Replace("\"mode\":\"applicationOwned\"", "\"mode\":1"), Wire));
+    }
+
+    [Fact]
     public void Internal_snapshot_cannot_be_supplied_as_json_and_statuses_have_named_wire_values()
     {
         Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ApplicationCandidateSnapshot>("{}", Wire));
         Assert.Equal("\"unavailable\"", JsonSerializer.Serialize(ApplicationCandidateCheckStatus.Unavailable, Wire));
         Assert.Equal("\"activate\"", JsonSerializer.Serialize(StandingGrantCapability.Activate, Wire));
         Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StandingGrantCapability>("2", Wire));
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StandingGrantRequirement>("{}", Wire));
+        Assert.Equal("\"read\"", JsonSerializer.Serialize(StandingGrantCapability.Read, Wire));
+        Assert.Equal("\"readTask\"", JsonSerializer.Serialize(StandingGrantCapability.ReadTask, Wire));
+        Assert.Equal("\"cancelTask\"", JsonSerializer.Serialize(StandingGrantCapability.CancelTask, Wire));
+        Assert.Equal("\"applicationOwned\"", JsonSerializer.Serialize(StandingGrantDefinitionMode.ApplicationOwned, Wire));
     }
 }
