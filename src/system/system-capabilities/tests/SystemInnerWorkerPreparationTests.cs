@@ -196,7 +196,7 @@ public sealed class SystemInnerWorkerPreparationTests
             stateHost.GrantReference, stateHost.CommandId, InteractionExecutionProfile.ReadOnly, stateHost.Budget);
         var subject = new SystemInnerWorkerSubject.ApplicationCandidateValidation(
             new(applicationHost.ApplicationRevision.ApplicationId, new string('a', 32), 1, Hash));
-        var input = Input(stateHost) with { Worker = new(applicationHost, subject, "{}", "{}") };
+        var input = Input(stateHost) with { Worker = new(subject, applicationHost, "{}", "{}") };
         var store = new ProcedureStoreStub(Procedure());
         var materializer = new ContextMaterializerStub(Pack(("scope:one", "one")));
         var error = await Assert.ThrowsAsync<InteractionContractException>(() =>
@@ -244,13 +244,15 @@ public sealed class SystemInnerWorkerPreparationTests
         "revision.1", profile, new InteractionInvocationBudget(2, DateTime.SpecifyKind(deadline, DateTimeKind.Utc)));
 
     private static InteractionAuthorizationRequest Authorization(InteractionInvocationHost host) => new(
-        host.Principal, host.ApplicationRevision.ApplicationId, host.StateSpaceId, InteractionCapability.Plan, "correlation.1");
+        host.Principal, host.ApplicationRevision.ApplicationId,
+        host.StateSpaceId ?? throw new InvalidOperationException("This fixture requires a state host."), InteractionCapability.Plan, "correlation.1");
 
     private static AuthorizedInteractionEnvelope Envelope(InteractionInvocationHost worker)
     {
         var authorization = InteractionAuthorizationDecision.Allow(Authorization(worker), "evidence.1");
-        var context = new InteractionHostContext(worker.Principal, worker.ApplicationRevision, worker.StateSpaceId,
-            "session.1", worker.StateRevision, Hash, InteractionRoleProfile.Inner,
+        var context = new InteractionHostContext(worker.Principal, worker.ApplicationRevision,
+            worker.StateSpaceId ?? throw new InvalidOperationException("This fixture requires a state host."),
+            "session.1", worker.StateRevision ?? throw new InvalidOperationException("This fixture requires a state revision."), Hash, InteractionRoleProfile.Inner,
             new InteractionBudgets(2, 1024, 1024), authorization, resolutionFingerprint: Hash);
         return AuthorizedInteractionEnvelope.Create(InteractionIntent.Parse("""
             {"idempotencyKey":"intent.1","intentText":"inspect","maximumPlanSteps":2}

@@ -162,7 +162,7 @@ public sealed class SystemInnerWorkerResultAdapterTests
     private static SystemTaskDurableHandle Handle() => new("task.1", "command.1");
     private static InteractionInvocationCommitReceipt Receipt() => new(new string('a', 32), Hash, []);
     private static AiResponse Response(string json) => new(true, null, "", JsonSerializer.Deserialize<JsonElement>(json), [], 4, 2);
-    private static SystemInnerWorkerRequest Request() => new(new(
+    private static SystemInnerWorkerRequest Request() => new(new InteractionInvocationHost(
         TrustedPrincipalContext.VerifiedPrincipal("principal." + new string('a', 64), "fixture"),
         new ApplicationRevision(ApplicationIdentifier.Parse("fixture-app"), 1, Hash, []),
         "state.1", "grant.1", "command.1", "revision.1", InteractionExecutionProfile.Workflow,

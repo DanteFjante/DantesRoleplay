@@ -17,17 +17,17 @@ public sealed class SystemInnerWorkerContractTests
     public void Candidate_subject_has_no_executable_definition_and_requires_its_application_scope()
     {
         var subject = CandidateSubject();
-        var request = new SystemInnerWorkerRequest(ApplicationHost(), subject, "{}", "{}");
+        var request = new SystemInnerWorkerRequest(subject, ApplicationHost(), "{}", "{}");
         Assert.Same(subject, request.Subject);
         Assert.Null(request.ProcedureVersion);
         Assert.Null(request.InvocationHost.StateSpaceId);
         Assert.Null(request.InvocationHost.StateRevision);
         Assert.Equal("WORKER_VALIDATION_SCOPE_INVALID", Assert.Throws<InteractionContractException>(() =>
-            new SystemInnerWorkerRequest(Host(), subject, "{}", "{}")).Code);
+            new SystemInnerWorkerRequest(subject, Host(), "{}", "{}")).Code);
         Assert.Equal("WORKER_VALIDATION_SCOPE_INVALID", Assert.Throws<InteractionContractException>(() =>
-            new SystemInnerWorkerRequest(ApplicationHost("other-app"), subject, "{}", "{}")).Code);
+            new SystemInnerWorkerRequest(subject, ApplicationHost("other-app"), "{}", "{}")).Code);
         Assert.Equal("WORKER_VALIDATION_SCOPE_INVALID", Assert.Throws<InteractionContractException>(() =>
-            new SystemInnerWorkerRequest(ApplicationHost(profile: InteractionExecutionProfile.Workflow), subject, "{}", "{}")).Code);
+            new SystemInnerWorkerRequest(subject, ApplicationHost(profile: InteractionExecutionProfile.Workflow), "{}", "{}")).Code);
     }
 
     [Fact]
@@ -36,6 +36,8 @@ public sealed class SystemInnerWorkerContractTests
         var procedure = new SystemTaskSelectedDefinition("procedure.fixture", 1, Hash);
         var legacy = new SystemInnerWorkerRequest(Host(), procedure, "{}", "{}");
         Assert.Same(procedure, legacy.ProcedureVersion);
+        var shorthand = new SystemInnerWorkerRequest(Host(), new("procedure.fixture", 1, Hash), "{}", "{}");
+        Assert.Equal(procedure, shorthand.ProcedureVersion);
         Assert.Same(procedure, Assert.IsType<SystemInnerWorkerSubject.ProcedureWorkflow>(legacy.Subject).ProcedureVersion);
         Assert.Equal("WORKER_STATE_SCOPE_REQUIRED", Assert.Throws<InteractionContractException>(() =>
             new SystemInnerWorkerRequest(ApplicationHost(), procedure, "{}", "{}")).Code);

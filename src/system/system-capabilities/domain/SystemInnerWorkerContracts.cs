@@ -55,10 +55,10 @@ public sealed record SystemInnerWorkerRequest
     public SystemInnerWorkerRequest(InteractionInvocationHost invocationHost,
         SystemTaskSelectedDefinition procedureVersion, string inputJson, string resultSchemaJson,
         IReadOnlyList<SystemTaskDurableHandle>? dependencyHandles = null)
-        : this(invocationHost, new SystemInnerWorkerSubject.ProcedureWorkflow(procedureVersion),
+        : this(new SystemInnerWorkerSubject.ProcedureWorkflow(procedureVersion), invocationHost,
             inputJson, resultSchemaJson, dependencyHandles) { }
 
-    public SystemInnerWorkerRequest(InteractionInvocationHost invocationHost, SystemInnerWorkerSubject subject,
+    public SystemInnerWorkerRequest(SystemInnerWorkerSubject subject, InteractionInvocationHost invocationHost,
         string inputJson, string resultSchemaJson, IReadOnlyList<SystemTaskDurableHandle>? dependencyHandles = null)
     {
         InvocationHost = invocationHost ?? throw new ArgumentNullException(nameof(invocationHost));

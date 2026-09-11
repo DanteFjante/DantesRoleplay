@@ -187,7 +187,7 @@ public sealed class SystemInnerWorkerProfileContractTests
             "grant.1", "command.1", InteractionExecutionProfile.ReadOnly, new InteractionInvocationBudget(2, DateTime.UtcNow.AddMinutes(1)));
         var subject = new SystemInnerWorkerSubject.ApplicationCandidateValidation(
             new(host.ApplicationRevision.ApplicationId, new string('a', 32), 1, Hash));
-        return new(new SystemInnerWorkerRequest(host, subject, "{}", Schema),
+        return new(new SystemInnerWorkerRequest(subject, host, "{}", Schema),
             reviewerVersion ?? SystemInnerWorkerCandidateReviewer.ProfileVersion, reviewer ?? SystemInnerWorkerCandidateReviewer.Profile, HashOf(Schema),
             addTool ? [Binding("read_value", "capability.read")] : [], [], new("manual.1", Hash),
             new("validate.1", "1", Hash), new SystemInnerWorkerAiBudget(toolCalls: toolBudget),
