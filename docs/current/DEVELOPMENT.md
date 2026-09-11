@@ -52,6 +52,10 @@ This evidence does not establish complete dependency coverage or uniqueness agai
 definitions. Unchanged candidate targets remain unavailable until exact dependency selection exists;
 publication must reject collisions against the complete effective generation. Candidate validation
 retains explicit unavailable diagnostics while runtime preparation, samples, or reuse review are absent.
+Sample-bearing validation uses the request-first overload. Its canonical operation retains at most
+four pure-data examples per exact definition and sixteen total, inside the existing aggregate 64 KiB
+request bound. Changing a retained example changes retry identity. A runtime report is evidence for
+the authoring owner to retain; runtime completion alone supplies no publication approval or durable receipt.
 Historical procedure task access requires its exact stored activation origin and current authority;
 unsupported component targets remain unavailable. Invited or AI principals never gain operator issuance from
 `Verified=true`; the coordinator supplies the separate installation-operator attestation.

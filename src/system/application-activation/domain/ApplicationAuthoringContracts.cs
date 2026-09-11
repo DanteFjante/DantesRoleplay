@@ -17,6 +17,33 @@ public sealed record ApplicationCandidateLookup(string? CandidateId, int Revisio
 public sealed record ApplicationCandidateDocumentInput(
     string LogicalIdentity, string SourceId, string RelativePath, string MediaType, string Text);
 
+/// <summary>Pure data examples pinned to an exact selected definition; examples confer no execution permission.</summary>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public sealed record ApplicationCandidateValidationSample(
+    [property: JsonRequired] Authorization.StandingGrantDefinitionReference Definition,
+    [property: JsonRequired] string InputJson,
+    [property: JsonRequired] string ExpectedDataJson);
+
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public sealed record ApplicationCandidateValidationRequest(
+    [property: JsonRequired] ApplicationCandidateReference Candidate,
+    [property: JsonRequired] IReadOnlyList<ApplicationCandidateValidationSample> Samples);
+
+/// <summary>Completed means only the bounded runtime checks completed; it never approves a candidate for publication.</summary>
+public enum ApplicationCandidateRuntimeStatus { Completed, Invalid, Unavailable }
+
+public sealed record ApplicationCandidateRuntimeSampleResult(
+    Authorization.StandingGrantDefinitionReference Definition, int SampleIndex,
+    ApplicationCandidateRuntimeStatus Outcome, bool Attempted,
+    string InputFingerprint, string ExpectedDataFingerprint, string? ActualDataFingerprint);
+
+/// <summary>Runtime evidence to be retained by the authoring owner, never a durable receipt or an authorization token.</summary>
+public sealed record ApplicationCandidateRuntimeReport(
+    ApplicationCandidateRuntimeStatus Status, ApplicationCandidateReference Candidate,
+    string? SelectionEvidenceFingerprint, string? RuntimePolicyVersion, string? RuntimePolicyFingerprint,
+    IReadOnlyList<ApplicationCandidateRuntimeSampleResult> Samples,
+    IReadOnlyList<ApplicationCandidateDiagnostic> Diagnostics);
+
 /// <summary>Exact dependency identity resolved by the owning service, including absent dependencies as invalid evidence.</summary>
 public sealed record ApplicationCandidateDependency(string DefinitionId, int Revision, string ContentFingerprint);
 
@@ -97,6 +124,11 @@ public interface IApplicationCandidatePreparation
 {
     Task<ApplicationCandidateCheckResult> ValidateAsync(InteractionInvocationHost host,
         ApplicationCandidateSnapshot candidate, CancellationToken cancellationToken = default);
+    Task<ApplicationCandidateRuntimeReport> ValidateAsync(ApplicationCandidateValidationRequest request,
+        InteractionInvocationHost host, CancellationToken cancellationToken = default) =>
+        Task.FromResult(new ApplicationCandidateRuntimeReport(ApplicationCandidateRuntimeStatus.Unavailable,
+            request.Candidate, null, null, null, [],
+            [new("RUNTIME_PREPARATION_UNAVAILABLE", request.Candidate.CandidateId, "Retained sample preparation is unavailable.")]));
 }
 
 public interface IApplicationCandidateReuseReview
@@ -120,6 +152,11 @@ public interface IApplicationAuthoringService
         ApplicationCandidateLookup candidate, CancellationToken cancellationToken = default);
     Task<InteractionInvocationResult> ValidateAsync(InteractionInvocationHost host,
         ApplicationCandidateReference candidate, CancellationToken cancellationToken = default);
+    // Request first preserves target-typed legacy (host, new(...)) calls. Implementations must not
+    // silently discard samples by forwarding this overload into the legacy candidate-only path.
+    Task<InteractionInvocationResult> ValidateAsync(ApplicationCandidateValidationRequest request,
+        InteractionInvocationHost host, CancellationToken cancellationToken = default) =>
+        Task.FromResult(InteractionInvocationResult.Unavailable("APPLICATION_CANDIDATE_SAMPLES_UNAVAILABLE", "Retained sample validation is unavailable."));
     Task<InteractionInvocationResult> ActivateAsync(InteractionInvocationHost host,
         ApplicationCandidateActivationRequest request, CancellationToken cancellationToken = default);
     // Recovery selects host.ApplicationRevision.ApplicationId and copies a retained generation
@@ -140,4 +177,6 @@ public static class ApplicationAuthoringLimits
     public const int Diagnostics = 16;
     public const int DiagnosticCharacters = 500;
     public const int ReasonCharacters = 2000;
+    public const int SamplesPerDefinition = 4;
+    public const int SamplesPerValidation = 16;
 }

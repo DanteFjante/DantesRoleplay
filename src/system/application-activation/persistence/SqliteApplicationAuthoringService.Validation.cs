@@ -12,20 +12,26 @@ namespace DantesRoleplay.ApplicationActivation;
 
 public sealed partial class SqliteApplicationAuthoringService
 {
-    public async Task<InteractionInvocationResult> ValidateAsync(InteractionInvocationHost host,
-        ApplicationCandidateReference candidate, CancellationToken cancellationToken = default)
+    public Task<InteractionInvocationResult> ValidateAsync(InteractionInvocationHost host,
+        ApplicationCandidateReference candidate, CancellationToken cancellationToken = default) =>
+        ValidateAsync(new ApplicationCandidateValidationRequest(candidate, []), host, cancellationToken);
+
+    public async Task<InteractionInvocationResult> ValidateAsync(ApplicationCandidateValidationRequest request,
+        InteractionInvocationHost host, CancellationToken cancellationToken = default)
     {
         if (db.Database.CurrentTransaction is not null || db.ChangeTracker.HasChanges()) return Failed("APPLICATION_CANDIDATE_CONTEXT_HAS_PENDING_WRITES");
         if (!host.Budget.TryConsumeOperation()) return Failed("INVOCATION_BUDGET_EXHAUSTED");
         if (host.Budget.DeadlineUtc <= DateTime.UtcNow) return Failed("INVOCATION_DEADLINE_EXCEEDED");
-        if (candidate is null || candidate.ApplicationId is null || candidate.ApplicationId != host.ApplicationRevision.ApplicationId
+        var candidate = request?.Candidate;
+        if (request?.Samples is null || candidate is null || candidate.ApplicationId is null || candidate.ApplicationId != host.ApplicationRevision.ApplicationId
             || candidate.Revision < 1 || candidate.CandidateId is not { } candidateId || !CandidateId(candidateId)
             || candidate.ContentFingerprint is not { } candidateFingerprint || !Hash(candidateFingerprint))
             return Failed("INVALID_PAYLOAD");
         var opened = false;
         try
         {
-            var canonical = ApplicationCandidateOperationProof.CanonicalValidation(host, candidate);
+            var samples = NormalizeSamples(request.Samples);
+            var canonical = ApplicationCandidateOperationProof.CanonicalValidation(host, candidate, samples);
             var commandFingerprint = InteractionCanonicalJson.Fingerprint("dantes-roleplay/application-candidate-validation/v1", canonical);
             var operationId = Id(host, candidate.ApplicationId, "validation");
             await db.Database.OpenConnectionAsync(cancellationToken); opened = true;
@@ -49,6 +55,8 @@ public sealed partial class SqliteApplicationAuthoringService
             var changedDocuments = await ReadChangedAsync(readback, changed, cancellationToken);
             var targetsToValidate = new List<StandingGrantDefinitionTarget>();
             var definitions = Definitions(candidate.ApplicationId, changedDocuments, changed);
+            if (samples.Any(sample => !definitions.Contains(sample.Definition)))
+                return Failed("APPLICATION_CANDIDATE_SAMPLE_TARGET_MISMATCH");
             foreach (var definition in definitions)
             {
                 var resolved = await targets.ResolveCandidateReferenceAsync(host, candidate, definition, cancellationToken);
@@ -75,12 +83,14 @@ public sealed partial class SqliteApplicationAuthoringService
                 true, subject: candidate.ApplicationId.Value, projectionJson: canonical,
                 guardEvidenceJson: "{}", id: operationId,
                 cancellationToken: cancellationToken);
-            var diagnostics = new[]
+            var diagnostics = new List<ApplicationCandidateDiagnostic>
             {
                 new ApplicationCandidateDiagnostic("DEPENDENCY_EXTRACTION_UNAVAILABLE", candidate.CandidateId, "Exact dependency extraction is unavailable."),
                 new ApplicationCandidateDiagnostic("RUNTIME_PREPARATION_UNAVAILABLE", candidate.CandidateId, "Runtime preparation and sample validation are unavailable."),
                 new ApplicationCandidateDiagnostic("REUSE_REVIEW_UNAVAILABLE", candidate.CandidateId, "Reuse review is unavailable.")
             };
+            if (samples.Count == 0)
+                diagnostics.Add(new("RUNTIME_SAMPLES_UNAVAILABLE", candidate.CandidateId, "Retained execution samples are missing."));
             var validationRow = new ApplicationCandidateValidationRecord
             {
                 OperationId = operation.Id, ApplicationId = candidate.ApplicationId.Value, CandidateId = candidate.CandidateId,
@@ -110,6 +120,23 @@ public sealed partial class SqliteApplicationAuthoringService
             foreach (var entry in db.ChangeTracker.Entries().ToArray()) entry.State = EntityState.Detached;
             if (opened) await db.Database.CloseConnectionAsync();
         }
+    }
+
+    internal static IReadOnlyList<ApplicationCandidateValidationSample> NormalizeSamples(IReadOnlyList<ApplicationCandidateValidationSample> samples)
+    {
+        if (samples is null || samples.Count > ApplicationAuthoringLimits.SamplesPerValidation
+            || samples.Any(sample => sample is null || sample.Definition is null
+                || string.IsNullOrWhiteSpace(sample.Definition.DefinitionId) || string.IsNullOrWhiteSpace(sample.Definition.Kind)
+                || sample.Definition.Revision < 1 || sample.Definition.ContentFingerprint is null || !Hash(sample.Definition.ContentFingerprint)
+                || sample.InputJson is null || sample.ExpectedDataJson is null)
+            || samples.GroupBy(sample => sample.Definition.DefinitionId, StringComparer.Ordinal)
+                .Any(group => group.Count() > ApplicationAuthoringLimits.SamplesPerDefinition))
+            throw new ApplicationActivationException("APPLICATION_CANDIDATE_SAMPLES_INVALID", "Validation samples exceed their bounds or lack an exact definition.");
+        return Array.AsReadOnly(samples.Select(sample => sample with
+        {
+            InputJson = InteractionCanonicalJson.Canonicalize(sample.InputJson),
+            ExpectedDataJson = InteractionCanonicalJson.Canonicalize(sample.ExpectedDataJson)
+        }).ToArray());
     }
 
 }

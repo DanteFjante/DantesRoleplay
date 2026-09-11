@@ -22,9 +22,10 @@ internal static class ApplicationCandidateOperationProof
         CanonicalWrite(host.Principal.PrincipalId, host.Principal.AuthenticationMethod, host.ApplicationRevision.ApplicationId.Value,
             host.CommandId, request, id);
 
-    internal static string CanonicalValidation(InteractionInvocationHost host, ApplicationCandidateReference candidate) =>
+    internal static string CanonicalValidation(InteractionInvocationHost host, ApplicationCandidateReference candidate,
+        IReadOnlyList<ApplicationCandidateValidationSample> samples) =>
         CanonicalValidation(host.Principal.PrincipalId, host.Principal.AuthenticationMethod, candidate.ApplicationId.Value,
-            host.CommandId, candidate);
+            host.CommandId, candidate, samples);
 
     internal static string OperationId(string principal, string applicationId, string commandId, string suffix = "candidate") =>
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes("dantes-roleplay/application-candidate/" + suffix
@@ -129,13 +130,17 @@ internal static class ApplicationCandidateOperationProof
                 || !String(root, "authenticationMethod", out var authenticationMethod)
                 || !String(root, "applicationId", out var applicationId)
                 || !String(root, "CommandId", out var commandId)
-                || !root.TryGetProperty("candidate", out _)) return false;
-            var canonical = CanonicalValidation(principal, authenticationMethod, applicationId, commandId, expectedCandidate);
+                || !root.TryGetProperty("candidate", out _)
+                || !root.TryGetProperty("samples", out var sampleElement)) return false;
+            var samples = sampleElement.Deserialize<ApplicationCandidateValidationSample[]>()
+                ?? throw new JsonException("Retained samples are absent.");
+            var normalized = SqliteApplicationAuthoringService.NormalizeSamples(samples);
+            var canonical = CanonicalValidation(principal, authenticationMethod, applicationId, commandId, expectedCandidate, normalized);
             if (canonical != json) return false;
             command = new(principal, authenticationMethod, applicationId, commandId, canonical);
             return true;
         }
-        catch (Exception exception) when (exception is JsonException or InteractionContractException or ArgumentException
+        catch (Exception exception) when (exception is JsonException or InteractionContractException or ApplicationActivationException or ArgumentException
             or InvalidOperationException or NotSupportedException) { return false; }
     }
 
@@ -160,9 +165,9 @@ internal static class ApplicationCandidateOperationProof
             CommandId = commandId, candidateId, request }));
 
     private static string CanonicalValidation(string principal, string authenticationMethod, string applicationId,
-        string commandId, ApplicationCandidateReference candidate) =>
+        string commandId, ApplicationCandidateReference candidate, IReadOnlyList<ApplicationCandidateValidationSample> samples) =>
         InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new { principal, authenticationMethod, applicationId,
-            CommandId = commandId, candidate }));
+            CommandId = commandId, candidate, samples }));
 
     private static string Guard(string principal, string authenticationMethod, string applicationId, string commandId,
         ApplicationCandidateReference candidate, string grantReference, IReadOnlyList<StandingGrantDefinitionReference> definitions,
