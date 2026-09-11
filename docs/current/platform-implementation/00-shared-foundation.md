@@ -22,6 +22,7 @@ coordinated centrally while leads continue independent implementation.
 | Invocation and result | [InteractionInvocationContracts.cs](../../../src/system/interaction-orchestration/domain/InteractionInvocationContracts.cs): `InteractionInvocationHost`, `InteractionInvocationBudget`, `InteractionExecutionProfile`, `InteractionInvocationResult`, `InteractionInvocationIdentity` | Trusted C# host context; authored JSON cannot deserialize authority. Reuse the existing principal and application revision types. |
 | Registered reads | [ApplicationReadModelContracts.cs](../../../src/system/interaction-orchestration/domain/ApplicationReadModelContracts.cs): `IApplicationReadModelInvocationAdapter`, `ApplicationReadModelInvocationRequest` | Real registered reads under the `read-only` profile, current authorization, exact query contract and state binding. |
 | Root atomic actions | [ApplicationActionExecutionContracts.cs](../../../src/system/application-execution/domain/ApplicationActionExecutionContracts.cs): `IApplicationActionInvocationAdapter`, `ApplicationActionInvocationRequest` | Real action/effect execution and authoritative audit receipts. Child proposals and workflow execution return unavailable until their workstreams implement them. |
+| Compact manual context | [InteractionManualContextContracts.cs](../../../src/system/interaction-orchestration/domain/InteractionManualContextContracts.cs): `InteractionManualContextRequest`, `IInteractionManualContextService`, `InteractionManualContextPacket` | Accepted additive request/packet contract. Concrete service, registration and public routes remain plan 03 integration work. |
 | Activation and changes | [ApplicationActivationContracts.cs](../../../src/system/application-activation/domain/ApplicationActivationContracts.cs): `PreparationVersion`, `IActivatedApplicationEvidenceReader`, `IApplicationDefinitionChangeReader` | Accepted bytes, mechanic preparation, old revision reads, and a bounded revision change feed. This feed derives from durable activation history; it is distinct from state-change events. |
 | Durable execution | [SystemTaskDurableContracts.cs](../../../src/system/system-task-orchestration/domain/SystemTaskDurableContracts.cs): `SystemTaskDurableHandle`, `SystemTaskCheckpoint`, `SystemTaskAttemptIdentity`, `SystemTaskSelectedDefinition`, `ISystemTaskDurableService` | Contracts plus registered production `UnavailableSystemTaskDurableService`. No new queue, lease runner, checkpoint persistence or pending handle is claimed. Plan 04 owns that implementation. |
 | Focused inner workers | [SystemInnerWorkerContracts.cs](../../../src/system/system-capabilities/domain/SystemInnerWorkerContracts.cs): `SystemInnerWorkerRequest`, `ISystemInnerWorkerService` | Registered `UnavailableSystemInnerWorkerService`; existing direct AI services remain separate. Plan 05 consumes plan 04's lifecycle. |
@@ -58,6 +59,17 @@ deadlines cannot grow, and retries consume allowance. Input and checkpoint JSON 
 64 KiB/depth-32 canonical JSON limits and reject duplicate keys. Task dependencies are bounded to
 16 unique handles. These are current shared limits; propose coordinated changes when a workstream
 needs more. Durable JSON contracts describe named checkpoints and handlers, not serialized engines.
+
+Manual discovery consumes one operation through the trusted invocation host and returns a completed
+computation with source/result evidence. Its intent is at most 256 characters, canonical object input
+at most 2,000 characters, and serialized packet budget 4,000–24,000 characters (default 16,000).
+`InteractionManualContextPacket.ToJson` supplies bounded camelCase serialization; the existing result
+envelope canonicalizes that JSON. A packet has at most eight features, four recipes and eight manual
+sections of at most 2,000 characters each. An optional selected action is a recommendation and must
+be revalidated before execution. Global procedure IDs remain real global IDs; stored synchronization
+hashes and independent match-phrase evidence remain distinct. The result fingerprint hashes canonical
+packet JSON with `resultFingerprint` set to 64 zeroes. An expected resolution fingerprint detects
+drift; it does not grant authority. These contracts alone do not establish service availability.
 
 Production activation requires source services and retains up to 10 MiB per document and 256 MiB
 per candidate. It validates containment, regular source paths, exact length/hash, and the existing
