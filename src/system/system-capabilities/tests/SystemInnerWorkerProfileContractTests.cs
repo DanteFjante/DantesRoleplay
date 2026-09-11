@@ -154,14 +154,31 @@ public sealed class SystemInnerWorkerProfileContractTests
         Assert.Equal("WORKER_VALIDATION_AUTHORITY_INVALID", error.Code);
     }
 
-    private static SystemInnerWorkerResolvedProfile CandidateProfile(bool omitRead = false, bool addTool = false, int toolBudget = 0)
+    [Fact]
+    public void Candidate_profile_rejects_any_reviewer_identity_or_content_pin_mismatch()
+    {
+        var arbitrary = new AiAgentProfile("valid.profile", "Valid", "Identity", "Instructions");
+        var arbitraryVersion = new SystemTaskSelectedDefinition("valid.profile", 1, Hash);
+        Assert.Equal("WORKER_VALIDATION_REVIEWER_INVALID", Assert.Throws<InteractionContractException>(() =>
+            CandidateProfile(reviewer: arbitrary, reviewerVersion: arbitraryVersion)).Code);
+        Assert.Equal("WORKER_VALIDATION_REVIEWER_INVALID", Assert.Throws<InteractionContractException>(() =>
+            CandidateProfile(reviewer: SystemInnerWorkerCandidateReviewer.Profile with { Instructions = "altered" })).Code);
+        Assert.Equal("WORKER_VALIDATION_REVIEWER_INVALID", Assert.Throws<InteractionContractException>(() =>
+            CandidateProfile(reviewerVersion: new(SystemInnerWorkerCandidateReviewer.Id, 2,
+                SystemInnerWorkerCandidateReviewer.ProfileVersion.Fingerprint))).Code);
+        Assert.Equal("WORKER_VALIDATION_REVIEWER_INVALID", Assert.Throws<InteractionContractException>(() =>
+            CandidateProfile(reviewerVersion: new(SystemInnerWorkerCandidateReviewer.Id, 1, Hash))).Code);
+    }
+
+    private static SystemInnerWorkerResolvedProfile CandidateProfile(bool omitRead = false, bool addTool = false, int toolBudget = 0,
+        AiAgentProfile? reviewer = null, SystemTaskSelectedDefinition? reviewerVersion = null)
     {
         var host = InteractionInvocationHost.ForApplication(Host().Principal, Host().ApplicationRevision,
             "grant.1", "command.1", InteractionExecutionProfile.ReadOnly, new InteractionInvocationBudget(2, DateTime.UtcNow.AddMinutes(1)));
         var subject = new SystemInnerWorkerSubject.ApplicationCandidateValidation(
             new(host.ApplicationRevision.ApplicationId, new string('a', 32), 1, Hash));
         return new(new SystemInnerWorkerRequest(host, subject, "{}", Schema),
-            SystemInnerWorkerCandidateReviewer.ProfileVersion, SystemInnerWorkerCandidateReviewer.Profile, HashOf(Schema),
+            reviewerVersion ?? SystemInnerWorkerCandidateReviewer.ProfileVersion, reviewer ?? SystemInnerWorkerCandidateReviewer.Profile, HashOf(Schema),
             addTool ? [Binding("read_value", "capability.read")] : [], [], new("manual.1", Hash),
             new("validate.1", "1", Hash), new SystemInnerWorkerAiBudget(toolCalls: toolBudget),
             omitRead ? null : new("read.1", "1", Hash));

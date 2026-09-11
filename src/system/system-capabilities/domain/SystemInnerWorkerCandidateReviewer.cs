@@ -9,10 +9,11 @@ namespace DantesRoleplay.SystemCapabilities;
 
 /// <summary>
 /// One immutable host review definition, independent of the candidate and any executable procedure.
+/// Kept with the worker contract so its structural identity check needs no hosting dependency.
 /// Selecting it grants no authority and produces no validation attestation. Changes require a new
 /// version and fingerprint; there is no mutable profile registry or application action behind it.
 /// </summary>
-internal static class SystemInnerWorkerCandidateReviewer
+public static class SystemInnerWorkerCandidateReviewer
 {
     public const string Id = "inner.application-candidate-reuse-review";
     public const int Version = 1;

@@ -109,6 +109,10 @@ public sealed record SystemInnerWorkerResolvedProfile
         ReadAuthorityProvenance = readAuthorityProvenance?.Validate();
         AiBudget = aiBudget ?? new SystemInnerWorkerAiBudget();
         if (Worker.Subject is SystemInnerWorkerSubject.ApplicationCandidateValidation
+            && (ProfileVersion != SystemInnerWorkerCandidateReviewer.ProfileVersion
+                || Profile != SystemInnerWorkerCandidateReviewer.Profile))
+            throw Failure("WORKER_VALIDATION_REVIEWER_INVALID", "Candidate validation requires the exact immutable host reviewer definition and version.");
+        if (Worker.Subject is SystemInnerWorkerSubject.ApplicationCandidateValidation
             && (ReadAuthorityProvenance is null || ToolBindings.Count != 0 || AiBudget.ToolCalls != 0))
             throw Failure("WORKER_VALIDATION_AUTHORITY_INVALID", "Candidate validation requires independent Read evidence, no tools, and a zero tool-call budget.");
     }
