@@ -74,6 +74,55 @@ These are additive integration requests, not new runtime IDs, migrations, wire f
 availability. Adoption requires the coordinator's accepted symbols/revision before this workstream
 can wire or test dependent scenarios.
 
+### Concrete profile and AI accounting proposal
+
+The additive proposal is in `system-capabilities/domain/SystemInnerWorkerProfileContracts.cs` and
+`SystemInnerWorkerBudgetContracts.cs`, with matching contract fixtures under that owner's `tests/`.
+It is not registered or connected to the internal preparation adapter. Coordinator review freezes
+the shared contract; plan 04 owns any persistence additions and the coordinator owns migrations.
+
+`SystemInnerWorkerResolvedProfile` wraps the existing `SystemInnerWorkerRequest` and `AiAgentProfile`.
+It pins a profile revision, output-schema hash, up to 16 named tool bindings with exact capability
+revisions, up to 64 required context references (1,024 characters each), the existing manual packet's
+reference/fingerprint, and authority evidence/grant revision/fingerprint. Host scope comes only from
+the wrapped invocation. Source-to-profile/tool mapping and current authority must still be verified
+by the resolver; constructing the DTO is not permission. Both profile and invocation authority reject
+JSON import/export. `IInteractionManualContextService` remains the manual source; no packet is copied.
+
+`SystemInnerWorkerAiBudget` defaults to 32,768 total provider input/output tokens and 8 tool dispatches,
+with configurable host ceilings up to 131,072/16. Child ceilings only narrow. Existing shared
+operations/deadline limits remain independent. `SystemInnerWorkerAiReservationRequest` supplies the
+trusted host, current task/attempt/fence, stable reservation identity, selected ceiling and reserved
+amounts. Plan 04 resolves root and every ancestor, checks remaining balances and applies all debits
+atomically. A child cannot supply an ancestry list or replace a root balance. Unchanged reservation
+redelivery must not charge twice; changed payload conflicts; retries consume new reservations.
+
+Every provider dispatch must reserve a nonzero total token amount. Without host-verified provider
+upper-bound evidence, `ProviderBoundFailure()` returns `INNER_AI_PROVIDER_BOUND_UNAVAILABLE`; a
+maximum-output setting or estimate is insufficient. Codex's actual accounting/cancellation limits
+have not been established here. A future measured-usage policy must be explicit and cannot claim
+the hard bound offered by this proposal. Tool-only reservations cannot authorize provider calls.
+
+`SystemInnerWorkerAiReservationEvidence` and `SystemInnerWorkerAiUsageReport` are inert host/owner
+data, serialized with `JsonSerializerDefaults.Web` for camelCase. Null token fields mean unknown,
+including provider failures where zero usage cannot be proved. Their source must be verified against
+the original provider response/host dispatch record. Public task readback must not expose lease tokens.
+`SystemInnerWorkerAiUsageReconciliation.Calculate` supplies only bounded arithmetic: known usage
+charges actual counts and releases the unused difference; unknown usage retains the entire reservation
+or a larger observed lower bound, releases nothing and requires explicit reconciliation. Actual
+overruns are retained without clamping. `INNER_AI_USAGE_UNKNOWN` and `INNER_AI_RESERVATION_EXCEEDED`
+are failed accounting outcomes and block new reservations/retries in the affected root until reviewed
+reconciliation. They do not imply rollback of any committed tool action.
+
+`ISystemInnerWorkerAiBudgetAccounting` is an unimplemented proposal for plan 04's existing persisted
+task owner. It must settle once across every ancestor, handle conflicting reports, preserve unknown
+debits after cancellation, and account for late usage without granting stale workers publication
+rights. Contract fixtures prove shapes and arithmetic only, not persistence, concurrent sibling
+reservations, crash recovery, provider guarantees or live-grant enforcement. Consumers are the
+host profile resolver, plan 03's manual service, plan 05's eventual invoker, plan 04's lifecycle and
+accounting implementation, and plan 01/coordinator gateway integration. No runtime activation follows
+from these DTOs or their fixtures.
+
 ## Outcome and existing owners
 
 OUTER Codex coordinates intent and outcomes while focused INNER workers perform bounded repetitive work with only the procedure, context, and tools needed for their assignment. JavaScript can submit the same worker requests. Several independent assignments can run concurrently; dependent assignments wait for accepted prerequisite results.
