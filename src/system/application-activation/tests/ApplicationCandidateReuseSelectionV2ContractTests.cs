@@ -93,6 +93,21 @@ public sealed class ApplicationCandidateReuseSelectionV2ContractTests
             if (input.Alternatives.Count > 0) coverage["assessments"] = new JsonArray();
             else coverage["assessments"]!.AsArray().Add(new JsonObject());
             Assert.Equal(SchemaValueStatus.Invalid, validator.Validate(schema.NormalizedSchema, coverage.ToJsonString()).Status);
+            if (input.Alternatives.Count > 0)
+            {
+                foreach (var invalidId in new[] { "", new string('x', 201) })
+                {
+                    var changed = output.DeepClone().AsObject();
+                    changed["assessments"]![0]!["target"]!["definitionId"] = invalidId;
+                    Assert.Equal(SchemaValueStatus.Invalid, validator.Validate(schema.NormalizedSchema, changed.ToJsonString()).Status);
+                }
+                foreach (var invalidRevision in new[] { 0L, (long)int.MaxValue + 1 })
+                {
+                    var changed = output.DeepClone().AsObject();
+                    changed["assessments"]![0]!["target"]!["revision"] = invalidRevision;
+                    Assert.Equal(SchemaValueStatus.Invalid, validator.Validate(schema.NormalizedSchema, changed.ToJsonString()).Status);
+                }
+            }
         }
     }
 

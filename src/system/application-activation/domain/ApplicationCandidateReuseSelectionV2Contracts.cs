@@ -140,9 +140,9 @@ public sealed record ApplicationCandidateReuseJudgmentOutputV2(
             required = new[] { "definitionId", "kind", "revision", "contentFingerprint" },
             properties = new
             {
-                definitionId = new { type = "string" },
+                definitionId = new { type = "string", minLength = 1, maxLength = 200 },
                 kind = new { type = "string", @enum = new[] { "procedure", "mechanic", "query" } },
-                revision = new { type = "integer", minimum = 1 },
+                revision = new { type = "integer", minimum = 1, maximum = int.MaxValue },
                 contentFingerprint = new { type = "string", pattern = "^[A-F0-9]{64}$" }
             }
         };
