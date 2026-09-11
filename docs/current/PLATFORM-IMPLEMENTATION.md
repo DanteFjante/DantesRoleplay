@@ -1,7 +1,8 @@
 # Platform implementation coordination
 
-Status: separate implementation plans prepared for review and agent assignment. No runtime work,
-migration, release, or completed feature acceptance is implied by these documents.
+Status: the shared foundation is implemented and the six workstreams are being integrated.
+Their guides distinguish delivered components from pending connections and acceptance. A local
+implementation or migration file does not imply deployment or completed platform acceptance.
 
 [PRODUCT-DIRECTION.md](PRODUCT-DIRECTION.md) records the agreed product and working defaults.
 This page coordinates six bounded plans. Plan numbers identify workstreams, not a requirement to
