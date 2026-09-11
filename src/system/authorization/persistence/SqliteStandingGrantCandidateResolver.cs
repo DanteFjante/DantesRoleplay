@@ -65,11 +65,12 @@ public sealed partial class SqliteStandingGrantTargetResolver
             var changedBytes = changedDocuments.ToDictionary(value => value.Document.RelativePath, value => value.RetainedBytes, StringComparer.Ordinal);
             var changedRecords = changedDocuments.Select(value => ActivatedApplicationCatalogMaterializer.ParseRetainedRecord(
                 app, value.Document, changedWinners, changedBytes)).Where(value => value is not null).ToArray();
-            var replacedPaths = changedRecords.Select(value => value!.SourceLogicalPath).ToHashSet(StringComparer.Ordinal);
-            var baseRecords = basis is null ? Array.Empty<CatalogRecordDefinition>() : catalog.BuildPermissionSnapshot(app, basis).Manifest.Records;
-            var matches = changedRecords.Concat(baseRecords.Where(value => !changed.Contains(value.SourceLogicalPath)
-                    && !replacedPaths.Contains(value.SourceLogicalPath)))
-                .Where(value => value?.QualifiedId == selection.DefinitionId).ToArray();
+            // This is ownership of an inert changed definition, not a globally unique catalog
+            // locator or a publication proof. Reading the base catalog here would materialize
+            // every retained definition on a cold cache. Complete compatibility validation must
+            // detect collisions against unchanged definitions before any publication is allowed.
+            // Unchanged candidate targets remain unavailable until dependency selection exists.
+            var matches = changedRecords.Where(value => value?.QualifiedId == selection.DefinitionId).ToArray();
             if (matches.Length == 0) return Unavailable("STANDING_GRANT_DEFINITION_UNAVAILABLE");
             if (matches.Length != 1 || matches[0]!.Kind != selection.Kind)
                 return Denied("STANDING_GRANT_DEFINITION_AMBIGUOUS");
@@ -107,7 +108,8 @@ public sealed partial class SqliteStandingGrantTargetResolver
             }
             var proof = InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
             {
-                candidate, registered.Revision, registered.Fingerprint,
+                candidate, coverage = "changed-definitions-mechanic-sidecars-v1", closureComplete = false,
+                registered.Revision, registered.Fingerprint,
                 sourceFingerprint = SourceRegistrationFingerprint.Compute(source), namespaceChain = chain,
                 definitionId = record.QualifiedId, record.Kind, definitionRevision = record.Version,
                 definitionFingerprint = record.ContentFingerprint, documents = used

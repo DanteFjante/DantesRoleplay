@@ -45,9 +45,15 @@ not introspect writer mode or mutate rows. Standalone permission reads use one d
 Active target resolution reuses the catalog's pure retained-record parser and requires exact source
 registration affiliation plus an enabled, reviewed namespace. Namespace `Owner` is a domain label,
 not an application identity. Definition fingerprints refer to normalized catalog content; the
-separate owner evidence also pins raw retained bytes. Current lookups are limited to 128 text
-documents and 16 MiB. Unsupported candidate, historical, and component targets remain unavailable
-until their owner paths exist. Invited or AI principals never gain operator issuance from
+separate owner evidence also pins raw retained bytes. Selected lookups are limited to 128 text
+documents and 16 MiB. Inert candidate ownership resolves only changed definitions and their
+same-source mechanic sidecars; it never materializes the whole base catalog to authorize a write.
+This evidence does not establish complete dependency coverage or uniqueness against unchanged
+definitions. Unchanged candidate targets remain unavailable until exact dependency selection exists;
+publication must reject collisions against the complete effective generation. Candidate validation
+retains explicit unavailable diagnostics while runtime preparation, samples, or reuse review are absent.
+Historical procedure task access requires its exact stored activation origin and current authority;
+unsupported component targets remain unavailable. Invited or AI principals never gain operator issuance from
 `Verified=true`; the coordinator supplies the separate installation-operator attestation.
 
 Activation may reuse retained document evidence only while its bytes still match their recorded
