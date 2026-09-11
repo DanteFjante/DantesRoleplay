@@ -1,8 +1,16 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Security.Cryptography;
+using System.Text;
+using DantesRoleplay.AI;
+using DantesRoleplay.ApplicationActivation;
+using DantesRoleplay.Applications;
+using DantesRoleplay.Authorization;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.SystemCapabilities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Data.Sqlite;
 
 namespace DantesRoleplay.SystemTasks.Persistence;
 
@@ -28,17 +36,91 @@ internal sealed class SystemTaskApplicationValidationService(
             if (SystemTaskApplicationValidationGate.ExecutionPrerequisite(authority) is { } unavailable) return unavailable;
             // The staging owner performs exact command replay before transferring fresh root
             // allowance. Neither denied/incomplete selection nor an equivalent replay transfers it.
-            var staged = await boundary.Store.StageEnqueueValidationAsync(profile, false,
+            var ownerProfile = authority.Profile!;
+            var staged = await boundary.Store.StageEnqueueValidationAsync(ownerProfile, false,
                 causationOperationId, causalCommandId, boundary.Connection, boundary.Transaction, cancellationToken);
             if (staged.Disposition is not (SystemTaskEnqueueDisposition.Created or SystemTaskEnqueueDisposition.Existing))
                 return InteractionInvocationResult.Failed(staged.Code, staged.SafeMessage);
-            var enrollment = await boundary.Store.StageEnrollAiBudgetAsync(staged.Handle!, profile,
+            var enrollment = await boundary.Store.StageEnrollAiBudgetAsync(staged.Handle!, ownerProfile,
                 boundary.Connection, boundary.Transaction, cancellationToken);
             if (!enrollment.Accepted) return InteractionInvocationResult.Unavailable(enrollment.Code,
                 "The validation accounting could not be admitted.");
             if (!await CommitAsync(host, boundary, cancellationToken)) return DeadlineExpired();
             return InteractionInvocationResult.Pending(staged.Handle!);
         }, cancellationToken);
+    }
+
+    /// <summary>Executes one already-fenced validation lease. The retained request supplies identity only.</summary>
+    internal async Task<SystemTaskRunOutcome> ExecuteLeaseAsync(SystemTaskLease lease,
+        SystemInnerWorkerValidationInvoker invoker, AiRequest providerConfiguration,
+        SystemTaskAiInvocationLifecycleFactory lifecycles, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(lease);
+        ArgumentNullException.ThrowIfNull(invoker);
+        ArgumentNullException.ThrowIfNull(providerConfiguration);
+        ArgumentNullException.ThrowIfNull(lifecycles);
+        if (lease.Request.Purpose != SystemTaskPurpose.ApplicationValidation || lease.Request.Candidate is null)
+            return Failed("INNER_VALIDATION_LEASE_SCOPE_INVALID", "The leased task is not an application validation task.");
+        try
+        {
+            var host = RehydrateHost(lease.Request.Invocation);
+            SystemTaskValidationAuthority authority;
+            await using (var boundary = await SystemTaskValidationTransaction.OpenAsync(db, time, false, cancellationToken))
+            {
+                authority = await gate.CheckAsync(host, lease.Request.Candidate, true,
+                    lease.Request.Causation?.OperationId, lease.Request.Causation?.CausalCommandId, cancellationToken);
+            }
+            if (SystemTaskApplicationValidationGate.ExecutionPrerequisite(authority) is { } unavailable)
+                return Failed(unavailable.Code, unavailable.SafeMessage);
+            if (authority.Profile!.Worker.InputJson != lease.Request.InputJson)
+                return Failed("INNER_VALIDATION_INPUT_CHANGED", "The owner-prepared validation input changed after admission.");
+
+            var lifecycle = await lifecycles.CreateAsync(lease, authority.Profile, cancellationToken);
+            var computation = await invoker.InvokeAsync(authority.Profile, authority.ReviewInput!,
+                providerConfiguration, lifecycle, cancellationToken);
+            if (computation.Judgment is null)
+                return Failed(computation.FailureCode, "The fixed reviewer did not return a valid bounded judgment.");
+            var result = InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
+            {
+                format = "dantes-roleplay/application-candidate-reuse-review-result/v1",
+                task = lease.Request.Handle,
+                attempt = lease.Attempt,
+                candidate = lease.Request.Candidate,
+                closureEvidenceFingerprint = authority.PureClosure!.EvidenceFingerprint,
+                inputFingerprint = authority.ReviewInput!.InputFingerprint,
+                judgment = computation.Judgment
+            }, new JsonSerializerOptions(JsonSerializerDefaults.Web)
+            {
+                Converters = { new JsonStringEnumConverter<ApplicationCandidateReuseJudgment>(JsonNamingPolicy.CamelCase) }
+            }));
+            if (Encoding.UTF8.GetByteCount(result) > 65_536)
+                return Failed("INNER_VALIDATION_RESULT_TOO_LARGE", "The validation result exceeds its retained bound.");
+            var hash = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(result)));
+            return new SystemTaskRunOutcome.Completed(new(result, "validation.result." + hash,
+                [authority.PureClosure.EvidenceFingerprint, authority.Profile.ManualContext.Reference]));
+        }
+        catch (AiLifecycleException error)
+        {
+            return Failed(error.Code, error.Message);
+        }
+        catch (InteractionContractException error)
+        {
+            return Failed(error.Code, error.Message);
+        }
+    }
+
+    internal Task<bool> RunNextAsync(string workerId, SystemInnerWorkerValidationInvoker invoker,
+        AiRequest providerConfiguration, SystemTaskAiInvocationLifecycleFactory lifecycles,
+        CancellationToken cancellationToken = default)
+    {
+        if (db.Database.CurrentTransaction is not null
+            || db.Database.GetDbConnection() is not SqliteConnection connection)
+            throw new InvalidOperationException("The validation worker requires its own SQLite boundaries.");
+        var runner = new SqliteSystemTaskLifecycleRunner(
+            new SqliteSystemTaskLifecycleStore(connection.ConnectionString, time), time);
+        return runner.RunOnceAsync(workerId, (lease, token) => ExecuteLeaseAsync(
+            lease, invoker, providerConfiguration, lifecycles, token), cancellationToken,
+            SystemTaskPurpose.ApplicationValidation);
     }
 
     internal Task<InteractionInvocationResult> ReadAsync(InteractionInvocationHost host, SystemTaskDurableHandle handle,
@@ -121,6 +203,19 @@ internal sealed class SystemTaskApplicationValidationService(
         && task.Invocation.ApplicationId == host.ApplicationRevision.ApplicationId.Value
         && task.Invocation.StateSpaceId is null && task.Invocation.StateRevision is null
         && task.SelectedDefinition is null && task.ActivationOrigin is null;
+    private static InteractionInvocationHost RehydrateHost(SystemTaskStoredInvocation invocation)
+    {
+        var bases = JsonSerializer.Deserialize<string[]>(invocation.BaseApplicationsJson)
+            ?? throw new InvalidDataException("The retained application bases are invalid.");
+        return InteractionInvocationHost.ForApplication(
+            TrustedPrincipalContext.VerifiedPrincipal(invocation.PrincipalReference, invocation.AuthenticationMethod),
+            new(ApplicationIdentifier.Parse(invocation.ApplicationId), invocation.ApplicationRevision,
+                invocation.ApplicationFingerprint, bases.Select(ApplicationIdentifier.Parse).ToArray()),
+            invocation.GrantReference, invocation.CommandId, invocation.Profile,
+            new(invocation.AdmittedOperations, invocation.DeadlineUtc), invocation.ParentCommandId);
+    }
+    private static SystemTaskRunOutcome.Failed Failed(string code, string message) =>
+        new(SystemTaskFailureKind.Permanent, code, message);
     private static InteractionInvocationResult NotAuthorized() => InteractionInvocationResult.Failed(
         "INNER_VALIDATION_NOT_AUTHORIZED", "This application validation task is not available in the current scope.");
     private static InteractionInvocationResult DeadlineExpired() => InteractionInvocationResult.Unavailable(

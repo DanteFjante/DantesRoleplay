@@ -10,7 +10,7 @@ namespace DantesRoleplay.SystemTasks.Persistence;
 internal sealed partial class SqliteSystemTaskLifecycleStore
 {
     private static string ValidationAdmissionPayload(SystemInnerWorkerResolvedProfile profile,
-        bool propagateCancellation, SystemTaskValidationCausation? causation)
+        bool propagateCancellation, SystemTaskValidationCausation? causation, int? admittedOperations = null)
     {
         var host = profile.Worker.InvocationHost;
         var candidate = ((SystemInnerWorkerSubject.ApplicationCandidateValidation)profile.Worker.Subject).Candidate;
@@ -33,7 +33,7 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
             profile = InteractionExecutionProfileNames.Get(host.Profile),
             host.CommandId,
             host.ParentCommandId,
-            maximumOperations = host.Budget.MaximumOperations,
+            maximumOperations = admittedOperations ?? host.Budget.MaximumOperations,
             deadlineUtc = host.Budget.DeadlineUtc.ToString("O"),
             candidate,
             inputFingerprint = InteractionCanonicalJson.Fingerprint(ValidationFingerprintDomain + "/input", profile.Worker.InputJson),
@@ -60,7 +60,8 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
             "SELECT payload_fingerprint FROM system_task_lifecycle WHERE task_id=$task AND purpose='application-validation'",
             cancellationToken, ("$task", task.Handle.TaskId));
         return actual is not null && actual == InteractionCanonicalJson.Fingerprint(ValidationFingerprintDomain,
-            ValidationAdmissionPayload(profile, task.PropagateCancellation, task.Causation));
+            ValidationAdmissionPayload(profile, task.PropagateCancellation, task.Causation,
+                task.Invocation.AdmittedOperations));
     }
 
     private static SystemTaskValidationCausation? VerifyValidationAdmission(SqliteDataReader reader,
@@ -106,7 +107,7 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
                 || !payload.TryGetProperty("maximumOperations", out var maximum)
                 || !maximum.TryGetInt32(out var operations)
                 || operations is < 1 or > SystemTaskLifecycleLimits.MaximumRootOperations
-                || invocation.AdmittedOperations > operations)
+                || invocation.AdmittedOperations != operations)
                 throw new InvalidDataException("The retained validation identity was not committed by its admission payload.");
 
             var operationId = NullableString(reader, "causation_operation_id");

@@ -247,8 +247,15 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
             "SYSTEM_TASK_ENQUEUED", "The durable task was enqueued.");
     }
 
-    internal async Task<SystemTaskLease?> ClaimNextAsync(string workerId, TimeSpan leaseDuration,
-        CancellationToken cancellationToken = default)
+    internal Task<SystemTaskLease?> ClaimNextAsync(string workerId, TimeSpan leaseDuration,
+        CancellationToken cancellationToken = default) => ClaimNextCoreAsync(workerId, leaseDuration, null, cancellationToken);
+
+    internal Task<SystemTaskLease?> ClaimNextValidationAsync(string workerId, TimeSpan leaseDuration,
+        CancellationToken cancellationToken = default) => ClaimNextCoreAsync(workerId, leaseDuration,
+            SystemTaskPurpose.ApplicationValidation, cancellationToken);
+
+    private async Task<SystemTaskLease?> ClaimNextCoreAsync(string workerId, TimeSpan leaseDuration,
+        SystemTaskPurpose? purpose, CancellationToken cancellationToken)
     {
         ValidateWorker(workerId);
         ValidateLeaseDuration(leaseDuration);
@@ -262,6 +269,13 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
             var accountingFilter = await HasAiAccountingTablesAsync(connection, transaction, cancellationToken)
                 ? "AND NOT EXISTS (SELECT 1 FROM system_task_ai_reservation_ancestor AS membership JOIN system_task_ai_reservation AS reservation ON reservation.record_reference=membership.record_reference WHERE membership.ancestor_task_id=task.root_task_id AND reservation.status='unknown')"
                 : "";
+            var purposeFilter = purpose is null ? "" : "AND task.purpose=$purpose";
+            var parameters = new List<(string Name, object? Value)>
+            {
+                ("$now", ToDb(now)), ("$maximumAttempts", SystemTaskLifecycleLimits.MaximumRootOperations),
+                ("$maximumFailures", SystemTaskLifecycleLimits.MaximumAttemptsPerTask)
+            };
+            if (purpose is not null) parameters.Add(("$purpose", SystemTaskPurposeNames.Get(purpose.Value)));
             var taskId = await ScalarStringAsync(connection, transaction, $"""
                 SELECT task_id
                 FROM system_task_lifecycle AS task
@@ -271,6 +285,7 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
                   AND (task.state <> 'retry' OR task.next_attempt_at_utc <= $now)
                   AND task.attempt_count < $maximumAttempts
                   AND task.consecutive_failures < $maximumFailures
+                  {purposeFilter}
                   {accountingFilter}
                   AND NOT EXISTS (
                       SELECT 1 FROM system_task_dependency AS edge
@@ -278,9 +293,7 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
                       WHERE edge.task_id = task.task_id AND dependency.state <> 'completed')
                 ORDER BY task.created_at_utc, task.task_id
                 LIMIT 1
-                """, cancellationToken, ("$now", ToDb(now)),
-                ("$maximumAttempts", SystemTaskLifecycleLimits.MaximumRootOperations),
-                ("$maximumFailures", SystemTaskLifecycleLimits.MaximumAttemptsPerTask));
+                """, cancellationToken, parameters.ToArray());
             if (taskId is null)
             {
                 await transaction.CommitAsync(cancellationToken);

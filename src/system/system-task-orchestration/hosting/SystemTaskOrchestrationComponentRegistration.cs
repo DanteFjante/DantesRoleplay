@@ -1,5 +1,9 @@
 using DantesRoleplay.Authorization;
 using DantesRoleplay.SystemCapabilities;
+using DantesRoleplay.ApplicationActivation;
+using DantesRoleplay.Applications;
+using DantesRoleplay.Interactions;
+using DantesRoleplay.SystemTasks.Persistence;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -13,6 +17,19 @@ internal static class SystemTaskOrchestrationComponentRegistration
         services.AddScoped<ISystemTaskService, SystemTaskService>();
         services.TryAddScoped<ISystemTaskDurableService, UnavailableSystemTaskDurableService>();
         services.AddScoped<ISystemAiToolSource, SystemTaskAiToolSource>();
+        services.AddScoped<SystemTaskApplicationValidationGate>(provider => new(
+            provider.GetRequiredService<DataAccess.DantesRoleplayDbContext>(),
+            provider.GetRequiredService<IApplicationRegistry>(),
+            provider.GetRequiredService<IApplicationActivationReader>(),
+            provider.GetRequiredService<IStandingGrantTargetResolver>(),
+            provider.GetRequiredService<IStandingGrantPolicy>(),
+            provider.GetRequiredService<TimeProvider>(),
+            provider.GetRequiredService<ApplicationCandidatePureRuntimeClosureReader>(),
+            provider.GetRequiredService<IInteractionManualContextService>(),
+            provider.GetRequiredService<IInteractionFeatureRetriever>()));
+        services.AddScoped<SystemTaskApplicationValidationService>();
+        services.AddSingleton<SystemTaskAiInvocationLifecycleFactory>();
+        services.AddScoped<SystemInnerWorkerValidationInvoker>();
         services.TryAddSingleton<IPrivateOperatorAuthorizationPolicy, PrivateOperatorAuthorizationPolicy>();
         return services;
     }

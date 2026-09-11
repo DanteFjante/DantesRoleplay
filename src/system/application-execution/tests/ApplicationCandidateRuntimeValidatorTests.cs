@@ -1,16 +1,24 @@
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using DantesRoleplay.ApplicationActivation;
 using DantesRoleplay.ApplicationExecution;
+using DantesRoleplay.AI;
 using DantesRoleplay.CatalogNamespaces;
+using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.Operations;
+using DantesRoleplay.Procedures;
 using DantesRoleplay.SchemaValidation;
+using DantesRoleplay.SystemTasks;
+using DantesRoleplay.SystemTasks.Persistence;
+using DantesRoleplay.SystemCapabilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Data.Sqlite;
 
 namespace DantesRoleplay.Authorization.Tests;
 
@@ -34,6 +42,89 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             scope.ServiceProvider.GetRequiredService<IApplicationAuthoringService>());
         Assert.IsType<ApplicationCandidateRuntimeValidator>(
             scope.ServiceProvider.GetRequiredService<IApplicationCandidatePreparation>());
+        Assert.NotNull(scope.ServiceProvider.GetRequiredService<SystemTaskApplicationValidationGate>());
+        Assert.NotNull(scope.ServiceProvider.GetRequiredService<SystemTaskApplicationValidationService>());
+        Assert.NotNull(scope.ServiceProvider.GetRequiredService<SystemTaskAiInvocationLifecycleFactory>());
+    }
+
+    [Fact]
+    public async Task Pure_candidate_runs_once_through_actual_durable_ai_lifecycle_and_rechecks_revocation()
+    {
+        var databasePath = Path.Combine(Path.GetTempPath(), $"validation-ai-{Guid.NewGuid():N}.db");
+        DantesRoleplayDbContext? ownedDb = null;
+        ServiceProvider? ownedProvider = null;
+        try
+        {
+            var options = new DbContextOptionsBuilder<DantesRoleplayDbContext>()
+                .UseSqlite("Filename=" + databasePath).Options;
+            var db = ownedDb = new DantesRoleplayDbContext(options);
+            await db.Database.EnsureCreatedAsync();
+            var data = await PureRuntimeFixtureAsync(db,
+                "return { data: { count: ctx.input.count + 1 } };");
+            var gate = PureValidationGate(db, data.Setup);
+            var service = new SystemTaskApplicationValidationService(db, gate, TimeProvider.System);
+            var reviewHost = PureReviewHost(data.Setup, "pure-ai-review");
+            SystemTaskValidationAuthority prepared;
+            await using (var boundary = await SystemTaskValidationTransaction.OpenAsync(db, TimeProvider.System, false, default))
+                prepared = await gate.CheckAsync(PureReviewHost(data.Setup, "input-probe"), data.Candidate, true);
+            Assert.Null(SystemTaskApplicationValidationGate.ExecutionPrerequisite(prepared));
+            var provider = new RetainedReviewProvider(prepared.ReviewInput!);
+            var invoker = new SystemInnerWorkerValidationInvoker(new AiService([provider]), TimeProvider.System);
+            var services = new ServiceCollection();
+            services.AddSingleton(db);
+            services.AddSingleton(gate);
+            services.AddSingleton<TimeProvider>(TimeProvider.System);
+            var serviceProvider = ownedProvider = services.BuildServiceProvider();
+            var lifecycles = new SystemTaskAiInvocationLifecycleFactory(
+                serviceProvider.GetRequiredService<IServiceScopeFactory>(), TimeProvider.System);
+
+            var submitted = await service.SubmitAsync(ValidationProfile(reviewHost, data.Candidate));
+            Assert.Equal(InteractionInvocationResultTag.Pending, submitted.Tag);
+            var handle = submitted.TaskHandle!;
+            var store = new SqliteSystemTaskLifecycleStore("Filename=" + databasePath, TimeProvider.System);
+            Assert.True(await service.RunNextAsync("validation-worker", invoker,
+                ReviewerConfiguration(), lifecycles));
+
+            var completed = await store.ReadAsync(handle);
+            Assert.True(completed!.State == SystemTaskLifecycleState.Completed,
+                completed.ErrorCode + ": " + completed.SafeMessage);
+            Assert.StartsWith("validation.result.", completed.CompletionEvidenceReference, StringComparison.Ordinal);
+            Assert.Contains("application-candidate-reuse-review-result/v1", completed.ResultJson, StringComparison.Ordinal);
+            Assert.Equal(1, provider.Calls);
+            await using (var command = db.Database.GetDbConnection().CreateCommand())
+            {
+                if (command.Connection!.State != System.Data.ConnectionState.Open) await command.Connection.OpenAsync();
+                command.CommandText = "SELECT COUNT(*) FROM system_task_ai_dispatch_evidence WHERE kind='dispatch'";
+                Assert.Equal(1L, (long)(await command.ExecuteScalarAsync())!);
+                command.CommandText = "SELECT COUNT(*) FROM system_task_ai_dispatch_evidence WHERE kind='usage' AND is_complete=1";
+                Assert.Equal(1L, (long)(await command.ExecuteScalarAsync())!);
+            }
+
+            var replay = await service.SubmitAsync(ValidationProfile(
+                PureReviewHost(data.Setup, "pure-ai-review", reviewHost.Budget.DeadlineUtc), data.Candidate));
+            Assert.Equal(handle, replay.TaskHandle);
+            Assert.False(await service.RunNextAsync("validation-worker", invoker,
+                ReviewerConfiguration(), lifecycles));
+            Assert.Equal(1, provider.Calls);
+
+            var revokedSubmission = await service.SubmitAsync(ValidationProfile(
+                PureReviewHost(data.Setup, "pure-ai-review-revoked"), data.Candidate));
+            Assert.Equal(InteractionInvocationResultTag.Pending, revokedSubmission.Tag);
+            await RevokeGrantAsync(db);
+            Assert.True(await service.RunNextAsync("validation-worker", invoker,
+                ReviewerConfiguration(), lifecycles));
+            var denied = await store.ReadAsync(revokedSubmission.TaskHandle!);
+            Assert.Equal(SystemTaskLifecycleState.Failed, denied!.State);
+            Assert.Equal("INNER_VALIDATION_NOT_AUTHORIZED", denied.ErrorCode);
+            Assert.Equal(1, provider.Calls);
+        }
+        finally
+        {
+            ownedProvider?.Dispose();
+            if (ownedDb is not null) await ownedDb.DisposeAsync();
+            SqliteConnection.ClearAllPools();
+            if (File.Exists(databasePath)) File.Delete(databasePath);
+        }
     }
 
     [Fact]
@@ -368,6 +459,55 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             TrustedPrincipalContext.VerifiedPrincipal("principal." + new string('a', 64), "test"),
             new(Application, 1, setup.Applications.Get(Application)!.Fingerprint, []), "grant@1", "pure-runtime",
             InteractionExecutionProfile.Atomic, new(operations, deadline ?? DateTime.UtcNow.AddMinutes(1)));
+
+    private static InteractionInvocationHost PureReviewHost(SetupState setup, string command, DateTime? deadline = null) =>
+        InteractionInvocationHost.ForApplication(
+            TrustedPrincipalContext.VerifiedPrincipal("principal." + new string('a', 64), "test"),
+            new(Application, 1, setup.Applications.Get(Application)!.Fingerprint, []), "grant@1", command,
+            InteractionExecutionProfile.ReadOnly, new(16, deadline ?? DateTime.UtcNow.AddMinutes(2)));
+
+    private static SystemTaskApplicationValidationGate PureValidationGate(
+        DantesRoleplayDbContext db, SetupState setup)
+    {
+        var materializer = new ActivatedApplicationCatalogMaterializer(setup.Applications, setup.Activation,
+            setup.Sources, setup.Roots, setup.Extensions).UsePreparationCache(
+                new ActivatedApplicationCatalogSnapshotCache(), new ActivatedApplicationCatalogCacheAuthority());
+        var snapshots = new ActivatedApplicationCatalogProvider(new ConfiguredPublicApplicationCatalogPolicy([Application.Value]),
+            materializer, new CatalogCursorCodec(RandomNumberGenerator.GetBytes(32)), setup.Activation);
+        var features = new InteractionFeatureRetriever(snapshots, namespaces: setup.Namespaces, changes: setup.Activation);
+        var policy = new SqliteStandingGrantPolicy(db, setup.Resolver);
+        var manuals = new InteractionManualContextService(new ProcedureStore(db), features, policy,
+            setup.Resolver, setup.Activation, ["system"]);
+        return new(db, setup.Applications, setup.Activation, setup.Resolver, policy, TimeProvider.System,
+            PureRuntimeClosure(db, setup), manuals, features);
+    }
+
+    private static AiRequest ReviewerConfiguration() => new("host-provider", "host-model", [],
+        Reasoning: AiReasoningEffort.Medium, AllowedTools: [], MaximumToolRounds: 0,
+        MaximumOutputTokens: 300, MaximumToolCalls: 0);
+
+    private sealed class RetainedReviewProvider(ApplicationCandidateReuseInputV2 input) : IAiProvider
+    {
+        public int Calls { get; private set; }
+        public AiProviderInfo Info => new("host-provider", "Controlled reviewer fixture");
+        public Task<IReadOnlyList<AiModel>> ListModelsAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<AiModel>>([]);
+        public Task<AiProviderResponse> SendAsync(AiProviderRequest request, CancellationToken cancellationToken = default)
+        {
+            Calls++;
+            Assert.Empty(request.Tools);
+            var json = JsonSerializer.Serialize(new
+            {
+                format = ApplicationCandidateReuseJudgmentOutputV2.OutputDomain,
+                input.SelectionFingerprint, input.InputFingerprint, input.ManualResultFingerprint,
+                judgment = "uncertain", reason = "The retained alternatives require owner review.",
+                assessments = input.Alternatives.Select(target => new
+                { target, judgment = "uncertain", reason = "The retained evidence is not decisive." })
+            }, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+            return Task.FromResult(new AiProviderResponse(true, null, "review", json, [],
+                Usage: new(7, 2, 9, true)));
+        }
+    }
 
     private static ApplicationCandidatePureRuntimeClosureReader PureRuntimeClosure(DantesRoleplayDbContext db, SetupState setup) =>
         new(db, setup.Applications, setup.Activation, setup.Resolver, new(new BoundedJsonSchemaValidator()));

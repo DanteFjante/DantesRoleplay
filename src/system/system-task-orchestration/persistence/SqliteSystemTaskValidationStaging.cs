@@ -49,26 +49,36 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
             causation = new(causationOperationId, causalCommandId!);
         }
 
-        var payloadJson = ValidationAdmissionPayload(profile, propagateCancellation, causation);
-        if (System.Text.Encoding.UTF8.GetByteCount(payloadJson) > 65_536)
-            return Rejected("SYSTEM_TASK_VALIDATION_PROOF_TOO_LARGE",
-                "The validation admission proof exceeds its retained evidence bound.");
-        var payloadFingerprint = InteractionCanonicalJson.Fingerprint(ValidationFingerprintDomain, payloadJson);
         var taskId = NewTaskId(host.CommandId);
         var existing = await FindByCommandAsync(connection, transaction, host.CommandId, cancellationToken);
         if (existing is not null)
-            return StringComparer.Ordinal.Equals(existing.Value.PayloadFingerprint, payloadFingerprint)
+        {
+            var retainedAdmitted = await ScalarLongAsync(connection, transaction,
+                "SELECT admitted_operations FROM system_task_lifecycle WHERE task_id=$task", cancellationToken,
+                ("$task", existing.Value.TaskId));
+            if (retainedAdmitted is < 1 or > SystemTaskLifecycleLimits.MaximumRootOperations)
+                return Rejected("SYSTEM_TASK_VALIDATION_PROOF_INVALID", "The retained validation admission proof is invalid.");
+            var replayPayload = ValidationAdmissionPayload(profile, propagateCancellation, causation, (int)retainedAdmitted);
+            var replayFingerprint = InteractionCanonicalJson.Fingerprint(ValidationFingerprintDomain, replayPayload);
+            return StringComparer.Ordinal.Equals(existing.Value.PayloadFingerprint, replayFingerprint)
                 ? new(SystemTaskEnqueueDisposition.Existing, new(existing.Value.TaskId, host.CommandId),
                     "SYSTEM_TASK_ALREADY_ENQUEUED", "The equivalent durable validation task already exists.")
                 : new(SystemTaskEnqueueDisposition.Conflict, null, "SYSTEM_TASK_COMMAND_CONFLICT",
                     "The command identity is already bound to a different durable payload.");
+        }
+
+        var admitted = Math.Min(host.Budget.RemainingOperations, SystemTaskLifecycleLimits.MaximumRootOperations);
+        if (admitted < 1)
+            return Rejected("SYSTEM_TASK_BUDGET_EXHAUSTED", "The task has no remaining operation allowance.");
+        var payloadJson = ValidationAdmissionPayload(profile, propagateCancellation, causation, admitted);
+        if (System.Text.Encoding.UTF8.GetByteCount(payloadJson) > 65_536)
+            return Rejected("SYSTEM_TASK_VALIDATION_PROOF_TOO_LARGE",
+                "The validation admission proof exceeds its retained evidence bound.");
+        var payloadFingerprint = InteractionCanonicalJson.Fingerprint(ValidationFingerprintDomain, payloadJson);
 
         var now = UtcNow();
         if (host.Budget.DeadlineUtc <= now)
             return Rejected("SYSTEM_TASK_DEADLINE_EXPIRED", "The task deadline has already expired.");
-        var admitted = Math.Min(host.Budget.RemainingOperations, SystemTaskLifecycleLimits.MaximumRootOperations);
-        if (admitted < 1)
-            return Rejected("SYSTEM_TASK_BUDGET_EXHAUSTED", "The task has no remaining operation allowance.");
         var activeCount = await ScalarLongAsync(connection, transaction,
             "SELECT COUNT(*) FROM system_task_lifecycle WHERE state IN ('queued','running','waiting','retry')", cancellationToken);
         if (activeCount >= SystemTaskLifecycleLimits.MaximumQueuedTasks)

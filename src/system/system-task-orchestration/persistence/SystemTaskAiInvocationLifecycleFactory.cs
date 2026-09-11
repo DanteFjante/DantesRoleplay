@@ -100,9 +100,7 @@ internal sealed class SystemTaskAiInvocationLifecycleFactory(IServiceScopeFactor
             await using var scope = scopes.CreateAsyncScope();
             var services = scope.ServiceProvider;
             var db = services.GetRequiredService<DantesRoleplayDbContext>();
-            var gate = new SystemTaskApplicationValidationGate(db,
-                services.GetRequiredService<IApplicationRegistry>(), services.GetRequiredService<IApplicationActivationReader>(),
-                services.GetRequiredService<IStandingGrantTargetResolver>(), services.GetRequiredService<IStandingGrantPolicy>(), time);
+            var gate = services.GetRequiredService<SystemTaskApplicationValidationGate>();
             await using var boundary = await SystemTaskValidationTransaction.OpenAsync(db, time, write, cancellationToken);
             return await action(boundary, gate);
         }
