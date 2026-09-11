@@ -30,6 +30,9 @@ public static class SystemCapabilityIds
     public const string ApplicationCandidateReviewSubmit = "system.application-candidate.review-submit";
     public const string ApplicationCandidateReviewRead = "system.application-candidate.review-read";
     public const string ApplicationCandidateReviewCancel = "system.application-candidate.review-cancel";
+    public const string InnerWorkerSubmit = "system.inner-worker.submit";
+    public const string InnerWorkerRead = "system.inner-worker.read";
+    public const string InnerWorkerCancel = "system.inner-worker.cancel";
     public const string StandingGrantAdmin = "system.standing-grant.admin";
     public const string StateSpaceCreate = "system.state-space.create";
     public const string StateSpaceUpgrade = "system.state-space.upgrade";
@@ -44,9 +47,9 @@ public static class SystemCapabilityIds
 }
 
 /// <summary>
-/// Trusted transports use this scope only for the application-candidate capabilities. The
+/// Trusted transports use this scope only for the selected-application capabilities below. The
 /// capability handlers still construct current standing-grant hosts and their owners reauthorize
-/// every exact target; this marker grants no authority by itself.
+/// every exact target or task; this marker grants no authority by itself.
 /// </summary>
 public static class ApplicationCandidateCapabilityAccess
 {
@@ -62,7 +65,10 @@ public static class ApplicationCandidateCapabilityAccess
         SystemCapabilityIds.ApplicationCandidateRecover or
         SystemCapabilityIds.ApplicationCandidateReviewSubmit or
         SystemCapabilityIds.ApplicationCandidateReviewRead or
-        SystemCapabilityIds.ApplicationCandidateReviewCancel;
+        SystemCapabilityIds.ApplicationCandidateReviewCancel or
+        SystemCapabilityIds.InnerWorkerSubmit or
+        SystemCapabilityIds.InnerWorkerRead or
+        SystemCapabilityIds.InnerWorkerCancel;
 
     public static SystemCapabilityInvocationContext Context(
         TrustedPrincipalContext principal,

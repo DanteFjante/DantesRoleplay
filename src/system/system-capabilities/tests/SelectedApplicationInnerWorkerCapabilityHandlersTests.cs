@@ -61,7 +61,8 @@ public sealed class SelectedApplicationInnerWorkerCapabilityHandlersTests
         Assert.Equal("{\"summary\":{\"type\":\"string\"},\"type\":\"object\"}", submitted.ResultSchemaJson);
         Assert.Equal(new SystemTaskDurableHandle("task.prerequisite", "command.prerequisite"),
             Assert.Single(submitted.DependencyHandles));
-        Assert.Equal("{\"instruction\":\"Inspect the bounded assignment.\"}", submitted.AssignmentJson);
+        Assert.Equal("{\"format\":\"dantes-roleplay/inner-procedure-assignment/v1\",\"instruction\":\"Inspect the bounded assignment.\"}", submitted.AssignmentJson);
+        Assert.Equal("0123456789abcdef0123456789abcdef", Assert.Single(owner.SubmitCommands));
         Assert.Equal(owner.SubmitResult!.ToJson(), result.Data!.Value.GetRawText());
     }
 
@@ -77,7 +78,7 @@ public sealed class SelectedApplicationInnerWorkerCapabilityHandlersTests
         var read = new SelectedApplicationInnerWorkerReadCapabilityHandler(owner);
         var cancel = new SelectedApplicationInnerWorkerWriteCapabilityHandler(
             SelectedApplicationInnerWorkerSchemas.CancelCapabilityId, owner);
-        var input = Element("{\"taskId\":\"task.2\",\"commandId\":\"command.2\"}");
+        var input = Element("{\"stateSpaceId\":\"state.1\",\"taskId\":\"task.2\",\"commandId\":\"command.2\"}");
 
         var readResult = await read.ReadAsync(input, Context());
         var preflight = await cancel.PreflightAsync(input, []);
@@ -87,8 +88,8 @@ public sealed class SelectedApplicationInnerWorkerCapabilityHandlersTests
         Assert.Equal(owner.ReadResult!.ToJson(), readResult.Data!.Value.GetRawText());
         Assert.True(cancelResult.Ok);
         Assert.Equal(owner.CancelResult!.ToJson(), cancelResult.Data!.Value.GetRawText());
-        Assert.Equal(handle, Assert.Single(owner.Reads));
-        Assert.Equal(handle, Assert.Single(owner.Cancellations));
+        Assert.Equal(new("state.1", handle), Assert.Single(owner.Reads));
+        Assert.Equal(new("state.1", handle), Assert.Single(owner.Cancellations));
     }
 
     [Fact]
@@ -106,7 +107,7 @@ public sealed class SelectedApplicationInnerWorkerCapabilityHandlersTests
         var invalid = new List<SystemCapabilityWritePreflight>();
         foreach (var field in disallowed)
             invalid.Add(await submit.PreflightAsync(Element("{\"stateSpaceId\":\"state.1\",\"procedure\":{\"definitionId\":\"procedure.fixture\",\"revision\":1,\"contentFingerprint\":\"" + Hash + "\"},\"instruction\":\"Inspect\",\"resultSchema\":\"{}\",\"dependencyHandles\":[],\"" + field + "\":\"untrusted\"}"), []));
-        var large = await read.ReadAsync(Element("{\"taskId\":\"task.1\",\"commandId\":\"command.1\",\"padding\":\"" + new string('x', 17_000) + "\"}"), Context());
+        var large = await read.ReadAsync(Element("{\"stateSpaceId\":\"state.1\",\"taskId\":\"task.1\",\"commandId\":\"command.1\",\"padding\":\"" + new string('x', 66_000) + "\"}"), Context());
 
         Assert.False(noSelection.Ok);
         Assert.Equal("APPLICATION_CONTEXT_REQUIRED", noSelection.Error!.Code);
@@ -147,27 +148,29 @@ public sealed class SelectedApplicationInnerWorkerCapabilityHandlersTests
         public InteractionInvocationResult? ReadResult { get; init; }
         public InteractionInvocationResult? CancelResult { get; init; }
         public List<SelectedApplicationInnerWorkerSubmission> Submissions { get; } = [];
-        public List<SystemTaskDurableHandle> Reads { get; } = [];
-        public List<SystemTaskDurableHandle> Cancellations { get; } = [];
+        public List<string> SubmitCommands { get; } = [];
+        public List<SelectedApplicationInnerWorkerHandle> Reads { get; } = [];
+        public List<SelectedApplicationInnerWorkerHandle> Cancellations { get; } = [];
 
-        public Task<InteractionInvocationResult> SubmitAsync(SystemCapabilityInvocationContext context,
+        public Task<InteractionInvocationResult> SubmitAsync(SystemCapabilityInvocationContext context, string commandId,
             SelectedApplicationInnerWorkerSubmission request, CancellationToken cancellationToken = default)
         {
+            SubmitCommands.Add(commandId);
             Submissions.Add(request);
             return Task.FromResult(SubmitResult ?? InteractionInvocationResult.Unavailable("INNER_WORKER_UNAVAILABLE", "Unavailable."));
         }
 
         public Task<InteractionInvocationResult> ReadAsync(SystemCapabilityInvocationContext context,
-            SystemTaskDurableHandle handle, CancellationToken cancellationToken = default)
+            SelectedApplicationInnerWorkerHandle request, CancellationToken cancellationToken = default)
         {
-            Reads.Add(handle);
+            Reads.Add(request);
             return Task.FromResult(ReadResult ?? InteractionInvocationResult.Unavailable("INNER_WORKER_UNAVAILABLE", "Unavailable."));
         }
 
-        public Task<InteractionInvocationResult> CancelAsync(SystemCapabilityInvocationContext context,
-            SystemTaskDurableHandle handle, CancellationToken cancellationToken = default)
+        public Task<InteractionInvocationResult> CancelAsync(SystemCapabilityInvocationContext context, string commandId,
+            SelectedApplicationInnerWorkerHandle request, CancellationToken cancellationToken = default)
         {
-            Cancellations.Add(handle);
+            Cancellations.Add(request);
             return Task.FromResult(CancelResult ?? InteractionInvocationResult.Unavailable("INNER_WORKER_UNAVAILABLE", "Unavailable."));
         }
     }

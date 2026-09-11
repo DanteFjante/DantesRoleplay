@@ -115,6 +115,18 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         var durable = new SqliteSystemTaskDurableService(db, standingPolicy, setup.Resolver,
             stateSpaces, TimeProvider.System);
         var service = new SystemInnerWorkerService(resolver, durable);
+        var selectedApplicationOwner = new SelectedApplicationInnerWorkerOwner(
+            db, stateSpaces, () => service, TimeProvider.System);
+        var selectedApplicationCatalog = new SystemCapabilityCatalog(
+            [new SelectedApplicationInnerWorkerReadCapabilityHandler(selectedApplicationOwner)],
+            new BoundedJsonSchemaValidator(), new PrivateOperatorAuthorizationPolicy(),
+            [
+                new SelectedApplicationInnerWorkerWriteCapabilityHandler(
+                    SystemCapabilityIds.InnerWorkerSubmit, selectedApplicationOwner),
+                new SelectedApplicationInnerWorkerWriteCapabilityHandler(
+                    SystemCapabilityIds.InnerWorkerCancel, selectedApplicationOwner)
+            ]);
+        var gateway = new ApplicationCandidateCapabilityGateway(selectedApplicationCatalog);
         var provider = new SuccessfulProcedureProvider();
         var systemAi = new SystemAiAgentService([], new AiService([provider]));
         var invoker = new SystemInnerWorkerProcedureInvoker(systemAi);
@@ -145,36 +157,84 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             Assert.Equal(InteractionInvocationResultTag.Failed, ordinary.Tag);
             Assert.Equal("SYSTEM_TASK_PARENT_UNKNOWN", ordinary.Code);
 
-            var submitted = await service.SubmitEphemeralRootAsync(new(host, selected, assignment, schema));
-            Assert.True(submitted.Tag == InteractionInvocationResultTag.Pending,
-                submitted.Code + ": " + submitted.SafeMessage);
-            Assert.Equal(15, host.Budget.RemainingOperations);
+            var transportInput = JsonSerializer.Serialize(new
+            {
+                stateSpaceId = state.StateSpaceId,
+                procedure = new
+                {
+                    definitionId = selected.ExactDefinitionId,
+                    revision = selected.Version,
+                    contentFingerprint = selected.Fingerprint
+                },
+                instruction = "Inspect the active runtime definition and return a short answer.",
+                resultSchema = schema,
+                dependencyHandles = Array.Empty<object>()
+            });
+            var submitted = await gateway.InvokeAsync(host.Principal, Application,
+                SystemCapabilityIds.InnerWorkerSubmit, transportInput, "inner-worker-gateway",
+                "website");
+            Assert.True(submitted.Ok, submitted.Error?.Code + ": " + submitted.Error?.Message);
+            var pending = submitted.Data!.Value;
+            Assert.Equal("pending", pending.GetProperty("tag").GetString());
+            var pendingHandle = pending.GetProperty("pending");
+            var handle = new SystemTaskDurableHandle(
+                pendingHandle.GetProperty("taskId").GetString()!,
+                pendingHandle.GetProperty("commandId").GetString()!);
             var admitted = await db.Set<SystemTaskLifecycleRecord>().AsNoTracking()
-                .SingleAsync(value => value.TaskId == submitted.TaskHandle!.TaskId);
+                .SingleAsync(value => value.TaskId == handle.TaskId);
             Assert.Null(admitted.ParentTaskId);
             Assert.Equal(admitted.TaskId, admitted.RootTaskId);
-            Assert.Equal(ephemeralParent, admitted.ParentCommandId);
+            Assert.Equal(submitted.OperationId, admitted.ParentCommandId);
             Assert.Contains("\"originatingParentMode\":\"ephemeral-root\"",
                 admitted.AdmissionPayloadJson, StringComparison.Ordinal);
+
+            var cancelTarget = await gateway.InvokeAsync(host.Principal, Application,
+                SystemCapabilityIds.InnerWorkerSubmit, transportInput, "inner-worker-cancel-target",
+                "website");
+            Assert.True(cancelTarget.Ok, cancelTarget.Error?.Message);
+            var cancelPending = cancelTarget.Data!.Value.GetProperty("pending");
+            var cancelHandle = new SystemTaskDurableHandle(
+                cancelPending.GetProperty("taskId").GetString()!,
+                cancelPending.GetProperty("commandId").GetString()!);
+            var cancelled = await gateway.InvokeAsync(host.Principal, Application,
+                SystemCapabilityIds.InnerWorkerCancel, JsonSerializer.Serialize(new
+                {
+                    stateSpaceId = state.StateSpaceId,
+                    taskId = cancelHandle.TaskId,
+                    commandId = cancelHandle.CommandId
+                }), "inner-worker-cancel", "website");
+            Assert.True(cancelled.Ok, cancelled.Error?.Message);
+            Assert.Equal("cancelled", cancelled.Data!.Value.GetProperty("tag").GetString());
 
             var worker = lifecycleServices.GetRequiredService<SystemTaskWorkflowBackgroundWorker>();
             Assert.True(await worker.RunOnceAsync("inner-worker"));
 
-            var readHost = InnerWorkerHost(application, state, "inner-worker-read", deadline);
-            var completed = await service.GetAsync(readHost, submitted.TaskHandle!);
-            Assert.Equal(InteractionInvocationResultTag.Completed, completed.Tag);
-            Assert.Contains("\"answer\":\"42\"", completed.DataJson, StringComparison.Ordinal);
-            Assert.StartsWith("inner-result.", completed.CompletionEvidenceReference, StringComparison.Ordinal);
+            var read = await gateway.InvokeAsync(host.Principal, Application,
+                SystemCapabilityIds.InnerWorkerRead, JsonSerializer.Serialize(new
+                {
+                    stateSpaceId = state.StateSpaceId,
+                    taskId = handle.TaskId,
+                    commandId = handle.CommandId
+                }), null, "codex");
+            Assert.True(read.Ok, read.Error?.Code + ": " + read.Error?.Message);
+            var completed = read.Data!.Value;
+            Assert.Equal("completed", completed.GetProperty("tag").GetString());
+            Assert.Contains("\"answer\":\"42\"", completed.GetProperty("dataJson").GetString(),
+                StringComparison.Ordinal);
+            Assert.StartsWith("inner-result.",
+                completed.GetProperty("completionEvidenceReference").GetString(), StringComparison.Ordinal);
             Assert.Equal(1, provider.Calls);
             Assert.Equal(1L, await db.Set<SystemTaskAiDispatchEvidenceRecord>().LongCountAsync(
                 value => value.Kind == "dispatch" && value.DispatchKind == "provider"));
             Assert.Equal(1L, await db.Set<SystemTaskAiDispatchEvidenceRecord>().LongCountAsync(
                 value => value.Kind == "usage" && value.IsComplete == 1));
 
-            var replay = await service.SubmitEphemeralRootAsync(new(
-                InnerWorkerHost(application, state, "inner-worker-command", deadline,
-                    ephemeralParent), selected, assignment, schema));
-            Assert.Equal(submitted.TaskHandle, replay.TaskHandle);
+            var replay = await gateway.InvokeAsync(host.Principal, Application,
+                SystemCapabilityIds.InnerWorkerSubmit, transportInput, "inner-worker-gateway",
+                "website-replay");
+            Assert.True(replay.Ok, replay.Error?.Code + ": " + replay.Error?.Message);
+            Assert.Equal(handle.TaskId,
+                replay.Data!.Value.GetProperty("pending").GetProperty("taskId").GetString());
             Assert.False(await worker.RunOnceAsync("inner-worker"));
             Assert.Equal(1, provider.Calls);
 
@@ -199,11 +259,12 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
 
             Assert.Equal(1, fired.Completed);
             var triggerTask = await db.Set<SystemTaskLifecycleRecord>().AsNoTracking()
-                .SingleAsync(value => value.CommandId != submitted.TaskHandle!.CommandId);
+                .SingleAsync(value => value.CommandId != handle.CommandId
+                    && value.CommandId != cancelHandle.CommandId);
             Assert.NotNull(triggerTask.AdmissionPayloadJson);
             Assert.Contains("\"innerWorker\"", triggerTask.AdmissionPayloadJson,
                 StringComparison.Ordinal);
-            Assert.Equal(2L, await db.Set<SystemTaskAiCeilingRecord>().LongCountAsync());
+            Assert.Equal(3L, await db.Set<SystemTaskAiCeilingRecord>().LongCountAsync());
             Assert.True(await worker.RunOnceAsync("inner-worker-trigger-trigger"));
             var triggerResult = await service.GetAsync(
                 InnerWorkerHost(application, state, "trigger-result-read", deadline),
@@ -243,7 +304,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             Assert.Equal(0, recurringDuplicate.Completed);
             var recurringTask = await db.Set<SystemTaskLifecycleRecord>().AsNoTracking()
                 .SingleAsync(value => !existingTaskIds.Contains(value.TaskId));
-            Assert.Equal(3L, await db.Set<SystemTaskAiCeilingRecord>().LongCountAsync());
+            Assert.Equal(4L, await db.Set<SystemTaskAiCeilingRecord>().LongCountAsync());
             Assert.Single(await db.RecurringTriggerFireReceipts.AsNoTracking().ToArrayAsync());
             Assert.True(await worker.RunOnceAsync("inner-worker-recurring-trigger"));
             var recurringResult = await service.GetAsync(
@@ -252,6 +313,25 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             Assert.Equal(InteractionInvocationResultTag.Completed, recurringResult.Tag);
             Assert.Contains("\"answer\":\"42\"", recurringResult.DataJson,
                 StringComparison.Ordinal);
+            Assert.Equal(3, provider.Calls);
+
+            await RevokeInnerWorkerGrantAsync(db);
+            var revokedRead = await gateway.InvokeAsync(host.Principal, Application,
+                SystemCapabilityIds.InnerWorkerRead, JsonSerializer.Serialize(new
+                {
+                    stateSpaceId = state.StateSpaceId,
+                    taskId = handle.TaskId,
+                    commandId = handle.CommandId
+                }), null, "codex-revoked");
+            Assert.True(revokedRead.Ok, revokedRead.Error?.Message);
+            Assert.Equal("failed", revokedRead.Data!.Value.GetProperty("tag").GetString());
+            Assert.Equal("STANDING_GRANT_DENIED", revokedRead.Data.Value.GetProperty("code").GetString());
+            var revokedReplay = await gateway.InvokeAsync(host.Principal, Application,
+                SystemCapabilityIds.InnerWorkerSubmit, transportInput, "inner-worker-gateway",
+                "website-replay-revoked");
+            Assert.True(revokedReplay.Ok, revokedReplay.Error?.Message);
+            Assert.Equal("failed", revokedReplay.Data!.Value.GetProperty("tag").GetString());
+            Assert.Equal("STANDING_GRANT_DENIED", revokedReplay.Data.Value.GetProperty("code").GetString());
             Assert.Equal(3, provider.Calls);
         }
     }
@@ -298,6 +378,44 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             ExpiresAtUtc = grant.ExpiresAtUtc, Revoked = false, IssuedByOperationId = grant.IssuedByOperationId
         });
         db.Add(new StandingGrantCurrentRecord { GrantId = grant.GrantId, Revision = 1 });
+        await db.SaveChangesAsync();
+    }
+
+    private static async Task RevokeInnerWorkerGrantAsync(DantesRoleplayDbContext db)
+    {
+        var prior = SqliteStandingGrantPolicy.Parse(await db.Set<StandingGrantRevisionRecord>()
+            .SingleAsync(value => value.GrantId == "inner-grant" && value.Revision == 1));
+        var revoked = prior with
+        {
+            Revision = 2,
+            GrantReference = "inner-grant@2",
+            Revoked = true,
+            IssuedByOperationId = "inner-grant-revoke"
+        };
+        db.Add(new Operation
+        {
+            Id = revoked.IssuedByOperationId,
+            Timestamp = DateTime.UtcNow,
+            Tool = "test"
+        });
+        db.Add(new StandingGrantRevisionRecord
+        {
+            GrantId = revoked.GrantId,
+            Revision = revoked.Revision,
+            GrantReference = revoked.GrantReference,
+            PrincipalReference = revoked.PrincipalReference,
+            ApplicationId = revoked.ApplicationId.Value,
+            Scope = "stateSpace",
+            StateSpaceId = revoked.StateSpaceId,
+            PermissionsJson = StandingGrantRevisionCanonicalization.PermissionsJson(revoked),
+            ContentFingerprint = StandingGrantRevisionCanonicalization.ContentFingerprint(revoked),
+            MaximumOperations = revoked.MaximumOperations,
+            ExpiresAtUtc = revoked.ExpiresAtUtc,
+            Revoked = true,
+            IssuedByOperationId = revoked.IssuedByOperationId
+        });
+        (await db.Set<StandingGrantCurrentRecord>()
+            .SingleAsync(value => value.GrantId == "inner-grant")).Revision = 2;
         await db.SaveChangesAsync();
     }
 

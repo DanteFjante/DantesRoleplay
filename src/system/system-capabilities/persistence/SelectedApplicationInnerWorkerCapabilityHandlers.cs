@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using DantesRoleplay.Applications;
 using DantesRoleplay.Authorization;
+using DantesRoleplay.DataAccess.Composition;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.SystemTasks;
 
@@ -15,19 +16,22 @@ namespace DantesRoleplay.SystemCapabilities;
 /// </summary>
 internal interface ISelectedApplicationInnerWorkerOwner
 {
-    Task<InteractionInvocationResult> SubmitAsync(SystemCapabilityInvocationContext context,
+    Task<InteractionInvocationResult> SubmitAsync(SystemCapabilityInvocationContext context, string commandId,
         SelectedApplicationInnerWorkerSubmission request, CancellationToken cancellationToken = default);
 
     Task<InteractionInvocationResult> ReadAsync(SystemCapabilityInvocationContext context,
-        SystemTaskDurableHandle handle, CancellationToken cancellationToken = default);
+        SelectedApplicationInnerWorkerHandle request, CancellationToken cancellationToken = default);
 
-    Task<InteractionInvocationResult> CancelAsync(SystemCapabilityInvocationContext context,
-        SystemTaskDurableHandle handle, CancellationToken cancellationToken = default);
+    Task<InteractionInvocationResult> CancelAsync(SystemCapabilityInvocationContext context, string commandId,
+        SelectedApplicationInnerWorkerHandle request, CancellationToken cancellationToken = default);
 }
 
 internal sealed record SelectedApplicationInnerWorkerSubmission(ApplicationIdentifier ApplicationId,
     string StateSpaceId, SystemTaskSelectedDefinition Procedure, string AssignmentJson,
     string ResultSchemaJson, IReadOnlyList<SystemTaskDurableHandle> DependencyHandles);
+
+internal sealed record SelectedApplicationInnerWorkerHandle(string StateSpaceId,
+    SystemTaskDurableHandle Handle);
 
 internal sealed class SelectedApplicationInnerWorkerReadCapabilityHandler(
     ISelectedApplicationInnerWorkerOwner owner) : ISystemReadCapabilityHandler
@@ -48,8 +52,8 @@ internal sealed class SelectedApplicationInnerWorkerReadCapabilityHandler(
             if (!SelectedApplicationInnerWorkerSchemas.TryApplication(context, out _))
                 return SelectedApplicationInnerWorkerSchemas.Failure("APPLICATION_CONTEXT_REQUIRED",
                     "A current selected application is required.");
-            var handle = SelectedApplicationInnerWorkerSchemas.Handle(input);
-            var result = await owner.ReadAsync(context, handle, cancellationToken);
+            var request = SelectedApplicationInnerWorkerSchemas.Handle(input);
+            var result = await owner.ReadAsync(context, request, cancellationToken);
             return SelectedApplicationInnerWorkerSchemas.Success(result);
         }
         catch (OperationCanceledException) { throw; }
@@ -85,7 +89,7 @@ internal sealed class SelectedApplicationInnerWorkerWriteCapabilityHandler(
                     : "Request cancellation of one selected-application worker handle.",
                 capabilityId == SelectedApplicationInnerWorkerSchemas.SubmitCapabilityId
                     ? ["selected-application"]
-                    : [$"system-task:{SelectedApplicationInnerWorkerSchemas.Handle(input).TaskId}"],
+                    : [$"system-task:{SelectedApplicationInnerWorkerSchemas.Handle(input).Handle.TaskId}"],
                 JsonSerializer.Serialize(new { inputFingerprint = fingerprint })));
         }
         catch (Exception error) when (error is JsonException or InteractionContractException or ArgumentException)
@@ -111,13 +115,13 @@ internal sealed class SelectedApplicationInnerWorkerWriteCapabilityHandler(
             if (capabilityId == SelectedApplicationInnerWorkerSchemas.SubmitCapabilityId)
             {
                 var assignment = SelectedApplicationInnerWorkerSchemas.Assignment(input);
-                result = await owner.SubmitAsync(context.Invocation,
+                result = await owner.SubmitAsync(context.Invocation, context.RequestToken,
                     new(applicationId, assignment.StateSpaceId, assignment.Procedure, assignment.AssignmentJson,
                         assignment.ResultSchemaJson, assignment.DependencyHandles), cancellationToken);
             }
             else
             {
-                result = await owner.CancelAsync(context.Invocation,
+                result = await owner.CancelAsync(context.Invocation, context.RequestToken,
                     SelectedApplicationInnerWorkerSchemas.Handle(input), cancellationToken);
             }
             return SelectedApplicationInnerWorkerSchemas.WriteSuccess(result, context.RequestToken);
@@ -133,9 +137,9 @@ internal sealed class SelectedApplicationInnerWorkerWriteCapabilityHandler(
 
 internal static class SelectedApplicationInnerWorkerSchemas
 {
-    internal const string SubmitCapabilityId = "system.inner-worker.submit";
-    internal const string ReadCapabilityId = "system.inner-worker.read";
-    internal const string CancelCapabilityId = "system.inner-worker.cancel";
+    internal const string SubmitCapabilityId = SystemCapabilityIds.InnerWorkerSubmit;
+    internal const string ReadCapabilityId = SystemCapabilityIds.InnerWorkerRead;
+    internal const string CancelCapabilityId = SystemCapabilityIds.InnerWorkerCancel;
     internal const string Recovery = "Retain the worker handle, select the current application, and retry through the worker owner.";
 
     // Assignment is deliberately closed: profile/model/provider/tool/grant selection is host-owned.
@@ -151,7 +155,8 @@ internal static class SelectedApplicationInnerWorkerSchemas
         """;
     internal const string HandleInput = """
         {"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","additionalProperties":false,
-        "required":["taskId","commandId"],"properties":{"taskId":{"type":"string","minLength":1,"maxLength":128},
+        "required":["stateSpaceId","taskId","commandId"],"properties":{
+        "stateSpaceId":{"type":"string","minLength":1,"maxLength":128},"taskId":{"type":"string","minLength":1,"maxLength":128},
         "commandId":{"type":"string","minLength":1,"maxLength":200}}}
         """;
     internal const string ResultOutput = """
@@ -198,15 +203,22 @@ internal static class SelectedApplicationInnerWorkerSchemas
         if (dependencies.Select(value => value.TaskId).Distinct(StringComparer.Ordinal).Count() != dependencies.Length)
             throw new InteractionContractException("INVALID_WORKER_DEPENDENCIES", "Worker dependency handles must be distinct.");
         return new(wire.StateSpaceId, procedure,
-            InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new { instruction = wire.Instruction })),
+            InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
+            {
+                format = SystemInnerWorkerAssignmentV1.Format,
+                instruction = wire.Instruction
+            })),
             resultSchema, Array.AsReadOnly(dependencies));
     }
 
-    internal static SystemTaskDurableHandle Handle(JsonElement input)
+    internal static SelectedApplicationInnerWorkerHandle Handle(JsonElement input)
     {
         BoundedObject(input);
         var wire = Deserialize<HandleWire>(input);
-        return new SystemTaskDurableHandle(wire.TaskId, wire.CommandId);
+        if (string.IsNullOrWhiteSpace(wire.StateSpaceId) || wire.StateSpaceId.Length > 128
+            || wire.StateSpaceId.Any(char.IsControl))
+            throw new InteractionContractException("INVALID_WORKER_STATE_SPACE", "The worker state-space identity is invalid.");
+        return new(wire.StateSpaceId, new(wire.TaskId, wire.CommandId));
     }
 
     internal static bool TryApplication(SystemCapabilityInvocationContext? context, out ApplicationIdentifier applicationId)
@@ -271,14 +283,19 @@ internal static class SelectedApplicationInnerWorkerSchemas
         [property: JsonRequired] ProcedureWire Procedure,
         [property: JsonRequired] string Instruction,
         [property: JsonRequired] string ResultSchema,
-        [property: JsonRequired] IReadOnlyList<HandleWire> DependencyHandles);
+        [property: JsonRequired] IReadOnlyList<TaskHandleWire> DependencyHandles);
 
     [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
     private sealed record ProcedureWire([property: JsonRequired] string DefinitionId,
         [property: JsonRequired] int Revision, [property: JsonRequired] string ContentFingerprint);
 
     [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
-    private sealed record HandleWire([property: JsonRequired] string TaskId, [property: JsonRequired] string CommandId);
+    private sealed record HandleWire([property: JsonRequired] string StateSpaceId,
+        [property: JsonRequired] string TaskId, [property: JsonRequired] string CommandId);
+
+    [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+    private sealed record TaskHandleWire([property: JsonRequired] string TaskId,
+        [property: JsonRequired] string CommandId);
 
     internal sealed record SelectedApplicationInnerWorkerSubmitWire(string StateSpaceId,
         SystemTaskSelectedDefinition Procedure, string AssignmentJson, string ResultSchemaJson,

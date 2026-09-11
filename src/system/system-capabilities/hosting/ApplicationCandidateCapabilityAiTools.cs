@@ -5,7 +5,7 @@ using DantesRoleplay.AI;
 namespace DantesRoleplay.SystemCapabilities;
 
 /// <summary>
-/// Gives a selected-application AI the same standing-grant-backed candidate surface as the
+/// Gives a selected-application AI the same standing-grant-backed capability surface as the
 /// website. Writes carry their own stable idempotency key and need no per-call operator approval.
 /// </summary>
 public sealed class ApplicationCandidateCapabilityAiToolSource(
@@ -51,7 +51,7 @@ public sealed class ApplicationCandidateCapabilityAiToolSource(
                     || !invocation.Arguments.TryGetProperty("input", out var value)
                     || value.ValueKind != JsonValueKind.Object)
                     return AiToolResult.Failure("APPLICATION_AUTHORING_INPUT_INVALID",
-                        "Candidate writes require idempotencyKey and one input object.");
+                    "Selected-application writes require idempotencyKey and one input object.");
                 idempotencyKey = key.GetString();
                 input = value.GetRawText();
             }

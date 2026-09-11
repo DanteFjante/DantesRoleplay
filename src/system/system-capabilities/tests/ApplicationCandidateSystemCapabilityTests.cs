@@ -236,7 +236,7 @@ public sealed class ApplicationCandidateSystemCapabilityTests
             SystemCapabilityIds.ApplicationCandidateValidate, input, "candidate-validation-2", "web-request");
 
         Assert.True(discovery.Ok, discovery.Error?.Message);
-        Assert.Equal(10, discovery.Capabilities.Count);
+        Assert.Equal(13, discovery.Capabilities.Count);
         Assert.DoesNotContain(discovery.Capabilities, value =>
             value.Id == SystemCapabilityIds.StandingGrantAdmin || value.RequiresConfirmation);
         Assert.Equal([StandingGrantCapability.Validate], discovery.Capabilities.Single(value =>
@@ -250,6 +250,12 @@ public sealed class ApplicationCandidateSystemCapabilityTests
             value.Id == SystemCapabilityIds.ApplicationCandidateReviewRead);
         Assert.Equal([StandingGrantCapability.Read], reviewRead.RequiredStandingGrantCapabilities);
         Assert.False(reviewRead.RequiresIdempotencyKey);
+        Assert.Equal([StandingGrantCapability.Execute], discovery.Capabilities.Single(value =>
+            value.Id == SystemCapabilityIds.InnerWorkerSubmit).RequiredStandingGrantCapabilities);
+        Assert.Equal([StandingGrantCapability.ReadTask], discovery.Capabilities.Single(value =>
+            value.Id == SystemCapabilityIds.InnerWorkerRead).RequiredStandingGrantCapabilities);
+        Assert.Equal([StandingGrantCapability.CancelTask], discovery.Capabilities.Single(value =>
+            value.Id == SystemCapabilityIds.InnerWorkerCancel).RequiredStandingGrantCapabilities);
         Assert.True(allowed.Ok, allowed.Error?.Message);
         Assert.Equal("grant.validate@1", Assert.Single(fixture.Authoring.ValidationCalls).Host.GrantReference);
         Assert.False(unauthenticated.Ok);

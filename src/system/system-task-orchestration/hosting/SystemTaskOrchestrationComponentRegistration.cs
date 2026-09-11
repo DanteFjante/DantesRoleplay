@@ -45,6 +45,21 @@ internal static class SystemTaskOrchestrationComponentRegistration
         services.AddScoped<SystemInnerWorkerProcedureInvoker>();
         services.AddScoped<SystemInnerWorkerProcedureExecutor>();
         services.AddScoped<SystemInnerWorkerService>();
+        services.AddScoped<ISelectedApplicationInnerWorkerOwner>(provider =>
+            new SelectedApplicationInnerWorkerOwner(
+                provider.GetRequiredService<DataAccess.DantesRoleplayDbContext>(),
+                provider.GetRequiredService<DantesRoleplay.Ecs.IStateSpaceRegistry>(),
+                () => provider.GetRequiredService<SystemInnerWorkerService>(),
+                provider.GetRequiredService<TimeProvider>()));
+        services.AddScoped<ISystemReadCapabilityHandler, SelectedApplicationInnerWorkerReadCapabilityHandler>();
+        services.AddScoped<ISystemWriteCapabilityHandler>(provider =>
+            new SelectedApplicationInnerWorkerWriteCapabilityHandler(
+                SystemCapabilityIds.InnerWorkerSubmit,
+                provider.GetRequiredService<ISelectedApplicationInnerWorkerOwner>()));
+        services.AddScoped<ISystemWriteCapabilityHandler>(provider =>
+            new SelectedApplicationInnerWorkerWriteCapabilityHandler(
+                SystemCapabilityIds.InnerWorkerCancel,
+                provider.GetRequiredService<ISelectedApplicationInnerWorkerOwner>()));
         services.Replace(ServiceDescriptor.Scoped<ISystemInnerWorkerService>(provider =>
             provider.GetRequiredService<SystemInnerWorkerService>()));
         services.AddHostedService<SystemTaskWorkflowBackgroundWorker>();

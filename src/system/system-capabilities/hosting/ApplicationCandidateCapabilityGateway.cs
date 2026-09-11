@@ -7,7 +7,7 @@ using DantesRoleplay.Authorization;
 namespace DantesRoleplay.SystemCapabilities;
 
 /// <summary>
-/// Shared website/Codex adapter over the existing candidate handlers. The adapter supplies only
+/// Shared website/Codex adapter over the selected-application handlers. The adapter supplies only
 /// authenticated application context and stable command identity; current standing grants and
 /// exact targets are selected and reauthorized by the handlers and application owners.
 /// </summary>
@@ -59,7 +59,7 @@ public sealed class ApplicationCandidateCapabilityGateway(ISystemCapabilityCatal
         if (!ValidIdempotencyKey(idempotencyKey))
             return Failure(capabilityId, descriptor.ModeName, new(
                 "APPLICATION_AUTHORING_IDEMPOTENCY_REQUIRED",
-                "A bounded stable idempotency key is required for candidate writes.",
+                "A bounded stable idempotency key is required for selected-application writes.",
                 "Retry with the same idempotency key for the same logical command.", []));
         var preflight = await catalog.PreflightWriteAsync(
             capabilityId, descriptor.Fingerprint, inputJson, [], context, cancellationToken);
@@ -131,6 +131,9 @@ public sealed class ApplicationCandidateCapabilityGateway(ISystemCapabilityCatal
         SystemCapabilityIds.ApplicationCandidateReviewSubmit or SystemCapabilityIds.ApplicationCandidateReviewCancel =>
             [StandingGrantCapability.Read, StandingGrantCapability.Validate],
         SystemCapabilityIds.ApplicationCandidateReviewRead => [StandingGrantCapability.Read],
-        _ => throw new InvalidOperationException("The candidate capability set is inconsistent.")
+        SystemCapabilityIds.InnerWorkerSubmit => [StandingGrantCapability.Execute],
+        SystemCapabilityIds.InnerWorkerRead => [StandingGrantCapability.ReadTask],
+        SystemCapabilityIds.InnerWorkerCancel => [StandingGrantCapability.CancelTask],
+        _ => throw new InvalidOperationException("The selected-application capability set is inconsistent.")
     };
 }

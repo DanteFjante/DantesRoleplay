@@ -74,8 +74,8 @@ public sealed class SystemCapabilityCatalog : ISystemCapabilityCatalog
         if (applicationScoped && !ApplicationCandidateCapabilityAccess.Supports(capabilityId))
             return Failure(capabilityId, "", Error(
                 "APPLICATION_AUTHORING_CAPABILITY_DENIED",
-                "Only application-candidate capabilities are available in this scope.",
-                "Use an exact application-candidate capability."), baseline.Evidence);
+                "Only selected-application capabilities are available in this scope.",
+                "Use an exact discovered selected-application capability."), baseline.Evidence);
 
         if (!ValidCapabilityId(capabilityId) || !_entries.TryGetValue(capabilityId, out var entry))
             return Failure(capabilityId, "", Error(
@@ -394,8 +394,8 @@ public sealed class SystemCapabilityCatalog : ISystemCapabilityCatalog
         if (applicationScoped && !ApplicationCandidateCapabilityAccess.Supports(capabilityId))
             return WriteResolution.Failure(id, "", Error(
                 "APPLICATION_AUTHORING_CAPABILITY_DENIED",
-                "Only application-candidate capabilities are available in this scope.",
-                "Use an exact application-candidate capability."), baseline.Evidence);
+                "Only selected-application capabilities are available in this scope.",
+                "Use an exact discovered selected-application capability."), baseline.Evidence);
         if (!ValidCapabilityId(capabilityId) || !_entries.TryGetValue(capabilityId!, out var entry))
             return WriteResolution.Failure(id, "", Error(
                 "SYSTEM_CAPABILITY_UNKNOWN", "The requested system capability is not registered.", Recovery), baseline.Evidence);
