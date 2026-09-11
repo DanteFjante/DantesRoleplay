@@ -22,7 +22,8 @@ before cache indexing. Token, lexical nesting, recursive-expression, syntax-tree
 checks bound cold preparation. Constant folding is disabled for untrusted preparation so literal
 expressions cannot allocate cached values before interpreter limits apply. The key includes exact
 source, wrapper text and parser/runtime configuration. No engine, JavaScript value, input or random
-state is shared between calls.
+state is shared between calls. Interpreter allocation checks are not an OS-enforced process memory
+limit: an individual JavaScript operation can allocate between checks.
 
 Set the AppContext switch `DantesRoleplay.Mechanics.DisablePreparedProgramCache` before constructing
 the engine to use fresh preparation for recovery. The existing singleton registration controls the
@@ -53,7 +54,9 @@ are integrated.
 
 The frozen read-only service contract bounds each JSON exchange to 64 KiB/depth 32 and the root
 exchange total to 1 MiB. The root consumes one shared operation; each registered read consumes one
-through its existing adapter, up to 16 overall. `ComputationLimits` controls the root mechanic.
+through its existing adapter, including authorization denial, up to 16 overall. After a terminal
+read failure, further read callbacks return that failure without dispatch or another operation debit;
+the root statement and deadline limits still bound those attempts. `ComputationLimits` controls the root mechanic.
 Child reads retain the existing host-owned `ExecutionLimits.ReadModel` caps and share the invocation
 deadline; callback waits also observe the root's remaining wall time. Root memory, statement and
 recursion limits do not describe aggregate resource use across child interpreters. Progress is a
@@ -61,7 +64,8 @@ transient channel of eight frames, at most 32 attempts and 16 KiB total, with 2 
 frame; full and closed attempts count, and only accepted frames receive consecutive sequence numbers.
 Reads and progress execute synchronously on the sole engine thread through captured JSON functions;
 CLR capability objects never enter JavaScript. The host resolves and validates the exact retained
-`requirements.service` declaration, rechecks current authority, and validates output before emitting
+`requirements.service` declaration, pins the exact root target and grant identity, rechecks those
+identities and current authority, and validates output before emitting
 process-local computation evidence. That evidence is not a durable task, read receipt or commit.
 
 ## Proposed execution contract

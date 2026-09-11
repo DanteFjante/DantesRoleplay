@@ -58,7 +58,7 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
                 request.SelectedDefinition.Fingerprint);
             var rootAuthorization = await AuthorizeAsync(
                 request.Host, rootSelection, cancellationToken).ConfigureAwait(false);
-            if (rootAuthorization is not null) return rootAuthorization;
+            if (rootAuthorization.Failure is not null) return rootAuthorization.Failure;
 
             var retained = ResolveRetained(request);
             var retainedDefinition = definitionReader.ReadRetained(request.SelectedDefinition, retained.Record);
@@ -92,8 +92,6 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
                 reads,
                 schemas,
                 stateSpaces,
-                grantTargets,
-                standingGrants,
                 progress,
                 exchange);
 
@@ -123,8 +121,8 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
             scope = CurrentScopeFailure(request.Host);
             if (scope is not null) return scope;
             rootAuthorization = await AuthorizeAsync(
-                request.Host, rootSelection, cancellationToken).ConfigureAwait(false);
-            if (rootAuthorization is not null) return rootAuthorization;
+                request.Host, rootSelection, cancellationToken, rootAuthorization.Authorization).ConfigureAwait(false);
+            if (rootAuthorization.Failure is not null) return rootAuthorization.Failure;
             if (!run.Ok)
                 return run.LimitHit is "cancelled" && cancellationToken.IsCancellationRequested
                     ? InteractionInvocationResult.Cancelled(
@@ -235,29 +233,33 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
         return fields.Length != 1 || fields[0] != "service";
     }
 
-    private async Task<InteractionInvocationResult?> AuthorizeAsync(
+    private async Task<ServiceAuthorizationResult> AuthorizeAsync(
         InteractionInvocationHost host,
         StandingGrantDefinitionReference selection,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        ServiceAuthorization? initial = null)
     {
         using var deadline = DeadlineToken(host, cancellationToken);
         var resolution = await grantTargets.ResolveAsync(host, selection, deadline.Token)
             .WaitAsync(deadline.Token).ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
         if (host.Budget.DeadlineUtc <= DateTime.UtcNow) throw new OperationCanceledException();
-        if (resolution.Status == StandingGrantTargetResolutionStatus.Unavailable)
-            return InteractionInvocationResult.Unavailable(
-                "SERVICE_AUTHORITY_UNAVAILABLE", "Current service authority is unavailable.");
+        if (resolution is null || !Enum.IsDefined(resolution.Status)
+            || resolution.Status == StandingGrantTargetResolutionStatus.Unavailable)
+            return new(null, InteractionInvocationResult.Unavailable(
+                "SERVICE_AUTHORITY_UNAVAILABLE", "Current service authority is unavailable."));
         if (resolution.Status != StandingGrantTargetResolutionStatus.Available || resolution.Target is null)
-            return InteractionInvocationResult.Failed(
-                "INVOCATION_NOT_AUTHORIZED", "The service is not authorized for this scope.");
+            return new(null, InteractionInvocationResult.Failed(
+                "INVOCATION_NOT_AUTHORIZED", "The service is not authorized for this scope."));
         if (resolution.Target.DefinitionId != selection.DefinitionId
             || resolution.Target.Kind != selection.Kind
             || resolution.Target.Revision != selection.Revision
             || resolution.Target.ContentFingerprint != selection.ContentFingerprint
             || resolution.Target.OwnerApplicationId != host.ApplicationRevision.ApplicationId)
-            return InteractionInvocationResult.Unavailable(
-                "SERVICE_AUTHORITY_UNAVAILABLE", "The selected service authority is unavailable.");
+            return new(null, InteractionInvocationResult.Unavailable(
+                "SERVICE_AUTHORITY_UNAVAILABLE", "The selected service authority is unavailable."));
+        if (initial is not null && initial.Target != resolution.Target)
+            return AuthorityChanged();
         var requirement = ReadRequirement(host, resolution.Target);
         var decision = await standingGrants.EvaluateAsync(
             host,
@@ -265,10 +267,59 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
             deadline.Token).WaitAsync(deadline.Token).ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
         if (host.Budget.DeadlineUtc <= DateTime.UtcNow) throw new OperationCanceledException();
-        return decision.Allowed
-            ? null
-            : InteractionInvocationResult.Failed(
-                "INVOCATION_NOT_AUTHORIZED", "The service is not authorized for this scope.");
+        if (!ExactAllowedDecision(host, resolution.Target, decision))
+            return new(null, InteractionInvocationResult.Failed(
+                "INVOCATION_NOT_AUTHORIZED", "The service is not authorized for this scope."));
+        var authorized = new ServiceAuthorization(resolution.Target, GrantIdentity.From(decision.Grant!));
+        return initial is not null && initial.Grant != authorized.Grant
+            ? AuthorityChanged()
+            : new(authorized, null);
+    }
+
+    private static bool ExactAllowedDecision(
+        InteractionInvocationHost host,
+        StandingGrantDefinitionTarget target,
+        StandingGrantDecision? decision)
+    {
+        if (decision is not { Allowed: true, Grant: not null, Evidence.Allowed: true }
+            || decision.Evidence.PrincipalReference != host.Principal.PrincipalId
+            || decision.Evidence.AuthenticationMethod != host.Principal.AuthenticationMethod
+            || decision.Evidence.Scope != host.StateSpaceId
+            || decision.Evidence.CorrelationId != host.CommandId)
+            return false;
+        var grant = decision.Grant;
+        try { StandingGrantContractRules.ValidateConfiguration(grant); }
+        catch (InteractionContractException) { return false; }
+        return grant.GrantReference == host.GrantReference
+            && grant.PrincipalReference == host.Principal.PrincipalId
+            && grant.ApplicationId == host.ApplicationRevision.ApplicationId
+            && grant.Scope == StandingGrantScope.StateSpace
+            && grant.StateSpaceId == host.StateSpaceId
+            && !grant.Revoked
+            && grant.ExpiresAtUtc > DateTime.UtcNow
+            && host.Budget.DeadlineUtc <= grant.ExpiresAtUtc
+            && host.Budget.MaximumOperations <= grant.MaximumOperations
+            && grant.Capabilities.Contains(StandingGrantCapability.Read)
+            && StandingGrantContractRules.MatchesDefinitionAllowance(
+                host.ApplicationRevision.ApplicationId, grant.Definitions, target);
+    }
+
+    private static ServiceAuthorizationResult AuthorityChanged() => new(null,
+        InteractionInvocationResult.Failed("INVOCATION_AUTHORITY_CHANGED",
+            "The service authority changed before the result could be returned."));
+
+    private sealed record ServiceAuthorizationResult(
+        ServiceAuthorization? Authorization, InteractionInvocationResult? Failure);
+
+    private sealed record ServiceAuthorization(StandingGrantDefinitionTarget Target, GrantIdentity Grant);
+
+    private sealed record GrantIdentity(
+        string GrantReference, string GrantId, int Revision, string ContentFingerprint,
+        string PrincipalReference, string ApplicationId, StandingGrantScope Scope, string? StateSpaceId)
+    {
+        internal static GrantIdentity From(StandingGrantRevision grant) => new(
+            grant.GrantReference, grant.GrantId, grant.Revision, grant.ContentFingerprint,
+            grant.PrincipalReference, grant.ApplicationId.Value, grant.Scope, grant.StateSpaceId);
     }
 
     private InteractionInvocationResult? CurrentScopeFailure(InteractionInvocationHost host)
@@ -365,8 +416,6 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
         IStandingGrantApplicationReadModelInvocationAdapter reads,
         IBoundedJsonSchemaValidator schemas,
         IStateSpaceRegistry stateSpaces,
-        IStandingGrantTargetResolver grantTargets,
-        IStandingGrantPolicy standingGrants,
         ApplicationServiceProgressChannel progress,
         ExchangedDataBudget exchange) : IApplicationReadOnlyServiceCapabilities,
         IApplicationReadOnlyServiceProgressAttemptSink
@@ -383,6 +432,8 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
             string inputJson,
             CancellationToken cancellationToken = default)
         {
+            // Terminal callbacks return the same failure without dispatch or another operation
+            // debit. They remain bounded by the root interpreter statement/deadline limits.
             if (_terminal is not null) return _terminal;
             try
             {
@@ -395,8 +446,6 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
                 if (scope is not null) return SetTerminal(scope);
                 var input = CanonicalObject(inputJson);
                 exchange.Add(input);
-                var authorization = await AuthorizeQueryAsync(declaration, cancellationToken).ConfigureAwait(false);
-                if (authorization is not null) return SetTerminal(authorization);
 
                 var roles = new SortedDictionary<string, string>(StringComparer.Ordinal);
                 foreach (var (queryRole, hostRole) in declaration.RoleMappings)
@@ -419,8 +468,6 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
                 if (host.Budget.DeadlineUtc <= DateTime.UtcNow) throw new OperationCanceledException();
                 var afterScope = ScopeFailure();
                 if (afterScope is not null) return SetTerminal(afterScope);
-                authorization = await AuthorizeQueryAsync(declaration, cancellationToken).ConfigureAwait(false);
-                if (authorization is not null) return SetTerminal(authorization);
                 if (result.Tag != InteractionInvocationResultTag.Completed)
                     return SetTerminal(result.Tag is InteractionInvocationResultTag.Failed
                             or InteractionInvocationResultTag.Cancelled
@@ -506,42 +553,6 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
                     "SERVICE_PROGRESS_UNAVAILABLE", "Service progress is unavailable."));
                 throw;
             }
-        }
-
-        private async Task<InteractionInvocationResult?> AuthorizeQueryAsync(
-            ApplicationServiceReadDeclaration declaration,
-            CancellationToken cancellationToken)
-        {
-            using var deadline = DeadlineToken(host, cancellationToken);
-            var resolution = await grantTargets.ResolveCurrentAsync(
-                host,
-                declaration.QualifiedQueryId,
-                ApplicationQueryContract.CatalogKind,
-                deadline.Token).WaitAsync(deadline.Token).ConfigureAwait(false);
-            cancellationToken.ThrowIfCancellationRequested();
-            if (host.Budget.DeadlineUtc <= DateTime.UtcNow) throw new OperationCanceledException();
-            if (resolution.Status == StandingGrantTargetResolutionStatus.Unavailable)
-                return InteractionInvocationResult.Unavailable(
-                    "SERVICE_AUTHORITY_UNAVAILABLE", "Current read authority is unavailable.");
-            if (resolution.Status != StandingGrantTargetResolutionStatus.Available || resolution.Target is null)
-                return InteractionInvocationResult.Failed(
-                    "INVOCATION_NOT_AUTHORIZED", "The service read is not authorized for this scope.");
-            if (resolution.Target.DefinitionId != declaration.QualifiedQueryId
-                || resolution.Target.Kind != ApplicationQueryContract.CatalogKind
-                || resolution.Target.OwnerApplicationId != host.ApplicationRevision.ApplicationId)
-                return InteractionInvocationResult.Unavailable(
-                    "SERVICE_QUERY_AUTHORITY_UNAVAILABLE", "The current query definition is unavailable.");
-            var requirement = ReadRequirement(host, resolution.Target);
-            var decision = await standingGrants.EvaluateAsync(
-                host,
-                requirement,
-                deadline.Token).WaitAsync(deadline.Token).ConfigureAwait(false);
-            cancellationToken.ThrowIfCancellationRequested();
-            if (host.Budget.DeadlineUtc <= DateTime.UtcNow) throw new OperationCanceledException();
-            return decision.Allowed
-                ? null
-                : InteractionInvocationResult.Failed(
-                    "INVOCATION_NOT_AUTHORIZED", "The service read is not authorized for this scope.");
         }
 
         private InteractionInvocationResult? ScopeFailure()
