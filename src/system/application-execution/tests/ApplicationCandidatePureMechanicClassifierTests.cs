@@ -135,6 +135,21 @@ public sealed class ApplicationCandidatePureMechanicClassifierTests
         Assert.Equal("PURE_MECHANIC_KIND_UNAVAILABLE", result.Diagnostic!.Code);
     }
 
+    [Theory]
+    [InlineData("other-app.pure")]
+    [InlineData("sample-app..pure")]
+    public void Malformed_or_outside_application_identity_is_invalid(string qualifiedId)
+    {
+        var record = Record("{}");
+        record = record with { Summary = record.Summary with { QualifiedId = qualifiedId } };
+
+        var result = Classifier().Classify(record);
+
+        Assert.Equal(ApplicationCandidatePureMechanicOutcome.Invalid, result.Outcome);
+        Assert.Null(result.Plan);
+        Assert.Equal("PURE_MECHANIC_RECORD_INVALID", result.Diagnostic!.Code);
+    }
+
     [Fact]
     public void Numeric_undefined_mechanic_status_is_invalid()
     {

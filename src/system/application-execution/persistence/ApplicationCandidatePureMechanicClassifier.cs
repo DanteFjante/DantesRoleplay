@@ -2,8 +2,10 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using DantesRoleplay.ApplicationActivation;
+using DantesRoleplay.Applications;
 using DantesRoleplay.Authorization;
 using DantesRoleplay.CatalogNavigation;
+using DantesRoleplay.CatalogNamespaces;
 using DantesRoleplay.DataAccess.Bootstrap;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Mechanics;
@@ -112,14 +114,19 @@ internal sealed class ApplicationCandidatePureMechanicClassifier(IBoundedJsonSch
                     summary.ContentFingerprint, StringComparison.Ordinal))
                 return Invalid(target, "PURE_MECHANIC_RECORD_INVALID",
                     "The exact mechanic identity or content fingerprint is invalid.");
+            var application = ApplicationIdentifier.Parse(summary.Collection);
+            CatalogNamespaceIdentity.ValidateRecordId(summary.QualifiedId);
+            if (!summary.QualifiedId.StartsWith(application.Value + ".", StringComparison.Ordinal))
+                return Invalid(target, "PURE_MECHANIC_RECORD_INVALID",
+                    "The exact mechanic identity is outside its application namespace.");
 
             using var content = JsonDocument.Parse(contentJson,
                 new JsonDocumentOptions { MaxDepth = InteractionContractLimits.JsonDepth });
             RejectDuplicateProperties(content.RootElement, caseInsensitive: false);
             var file = ReadNormalizedMechanic(content.RootElement);
-            var qualifiedId = file.Id.StartsWith(summary.Collection + ".", StringComparison.Ordinal)
+            var qualifiedId = file.Id.StartsWith(application.Value + ".", StringComparison.Ordinal)
                 ? file.Id
-                : summary.Collection + "." + file.Id;
+                : application.Value + "." + file.Id;
             if (qualifiedId != summary.QualifiedId || file.Status.ToString().ToLowerInvariant() != summary.Status
                 || ApplicationCatalogRecordContent.MechanicJson(file) != contentJson)
                 return Invalid(target, "PURE_MECHANIC_RECORD_INVALID",
