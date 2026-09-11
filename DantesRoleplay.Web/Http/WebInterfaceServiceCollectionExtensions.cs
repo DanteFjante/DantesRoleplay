@@ -46,6 +46,8 @@ public static class WebInterfaceServiceCollectionExtensions
                 connectionString,
                 sqlite => sqlite.MigrationsHistoryTable(MigrationHistoryTable)));
         services.AddScoped<IWebPageStore, WebPageStore>();
+        services.AddScoped<IStandingGrantResourceTargetOwner, WebPageStandingGrantResourceTargetOwner>();
+        services.AddScoped<WebPagePermissionedReader>();
         services.AddSingleton<WebPageIdentityMigrationState>();
         services.AddScoped<WebPagePublicationService>();
         services.AddScoped<IWebPagePublicationDirectory>(provider =>

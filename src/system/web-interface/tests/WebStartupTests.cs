@@ -1,6 +1,7 @@
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.MCPServer;
 using DantesRoleplay.SqliteInfrastructure;
+using DantesRoleplay.Authorization;
 using DantesRoleplay.Web.Hosting;
 using DantesRoleplay.Web.Pages;
 using DantesRoleplay.Web.Persistence;
@@ -14,6 +15,25 @@ namespace DantesRoleplay.Tests;
 
 public sealed class WebStartupTests
 {
+    [Fact]
+    public void Startup_registers_the_resource_target_owner_and_reader_around_the_retained_catalog_resolver()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddDantesRoleplayDataAccess($"Data Source=web-resource-registration-{Guid.NewGuid():N};Mode=Memory;Cache=Shared");
+        services.AddDantesRoleplayWeb("Data Source=:memory:", new ConfigurationBuilder().Build());
+
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+        using var scope = provider.CreateScope();
+        var scoped = scope.ServiceProvider;
+
+        Assert.IsType<ResourceStandingGrantTargetResolver>(scoped.GetRequiredService<IStandingGrantTargetResolver>());
+        Assert.IsType<SqliteStandingGrantTargetResolver>(scoped.GetRequiredService<SqliteStandingGrantTargetResolver>());
+        Assert.IsType<WebPageStandingGrantResourceTargetOwner>(
+            Assert.Single(scoped.GetServices<IStandingGrantResourceTargetOwner>()));
+        Assert.IsType<WebPagePermissionedReader>(scoped.GetRequiredService<WebPagePermissionedReader>());
+    }
+
     [Fact]
     public async Task Startup_migrates_web_schema_and_installs_recovery_without_reading_legacy_page_history()
     {

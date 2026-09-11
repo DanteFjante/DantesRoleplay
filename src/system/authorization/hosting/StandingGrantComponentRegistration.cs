@@ -7,7 +7,10 @@ internal static class StandingGrantComponentRegistration
 {
     internal static IServiceCollection AddStandingGrantComponent(this IServiceCollection services)
     {
-        services.TryAddScoped<IStandingGrantTargetResolver, SqliteStandingGrantTargetResolver>();
+        services.TryAddScoped<SqliteStandingGrantTargetResolver>();
+        services.TryAddScoped<IStandingGrantTargetResolver>(provider => new ResourceStandingGrantTargetResolver(
+            provider.GetRequiredService<SqliteStandingGrantTargetResolver>(),
+            provider.GetServices<IStandingGrantResourceTargetOwner>()));
         services.TryAddScoped<IStandingGrantPolicy, SqliteStandingGrantPolicy>();
         return services;
     }
