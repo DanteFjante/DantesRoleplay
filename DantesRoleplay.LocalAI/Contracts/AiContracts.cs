@@ -166,7 +166,17 @@ public sealed record AiProviderRequest(
     string ResponseSchemaJson,
     IReadOnlyList<AiToolDefinition> Tools,
     AiToolExecutor? ToolExecutor,
-    int MaximumOutputTokens);
+    int MaximumOutputTokens,
+    int MaximumToolCalls = 8,
+    int MaximumResponseBytes = 262_144,
+    TimeSpan? MaximumDuration = null);
+
+/// <summary>Provider-observed counts. Incomplete evidence is only a lower bound; null means unknown.</summary>
+public sealed record AiTokenUsageEvidence(
+    long InputTokens,
+    long OutputTokens,
+    long TotalTokens,
+    bool IsComplete = false);
 
 public sealed record AiProviderResponse(
     bool Ok,
@@ -179,7 +189,8 @@ public sealed record AiProviderResponse(
     string ConversationId = "",
     string ErrorCode = "",
     string ErrorMessage = "",
-    string ReasoningSummary = "")
+    string ReasoningSummary = "",
+    AiTokenUsageEvidence? Usage = null)
 {
     public static AiProviderResponse Failure(string code, string message) =>
         new(false, null, "", "", [], ErrorCode: code, ErrorMessage: message);
@@ -206,7 +217,10 @@ public sealed record AiRequest(
     string ResponseSchemaJson = "",
     IReadOnlyList<string>? AllowedTools = null,
     int MaximumToolRounds = 4,
-    int MaximumOutputTokens = 2_048);
+    int MaximumOutputTokens = 2_048,
+    int MaximumToolCalls = 8,
+    int MaximumResponseBytes = 262_144,
+    TimeSpan? MaximumDuration = null);
 
 public sealed record AiExecutionActivity(
     int Sequence,
@@ -231,7 +245,8 @@ public sealed record AiResponse(
     string ErrorMessage = "",
     string ReasoningSummary = "",
     IReadOnlyList<AiExecutionActivity>? Activities = null,
-    IReadOnlyList<AiMediaContent>? Media = null)
+    IReadOnlyList<AiMediaContent>? Media = null,
+    AiTokenUsageEvidence? Usage = null)
 {
     public static AiResponse Failure(string code, string message) =>
         new(false, null, "", null, [], 0, 0, ErrorCode: code, ErrorMessage: message);

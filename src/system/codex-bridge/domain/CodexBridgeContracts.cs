@@ -78,6 +78,14 @@ public sealed record CodexProtocolApprovalRequest(
     DantesRoleplay.Assistants.CodexApprovalDetails Details,
     bool CanAccept);
 
+/// <summary>Untrusted protocol snapshot; the client checks identity, counters and monotonicity.</summary>
+public sealed record CodexProtocolTokenUsage(
+    string ThreadId,
+    string TurnId,
+    long InputTokens,
+    long OutputTokens,
+    long TotalTokens);
+
 public sealed record CodexProtocolEvent(
     string Type,
     string Delta = "",
@@ -87,7 +95,8 @@ public sealed record CodexProtocolEvent(
     string ExternalRequestId = "",
     string Status = "",
     string ErrorCode = "",
-    string ErrorMessage = "");
+    string ErrorMessage = "",
+    CodexProtocolTokenUsage? Usage = null);
 
 public interface ICodexAppServerSession : IAsyncDisposable
 {
