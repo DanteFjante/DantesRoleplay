@@ -3,6 +3,7 @@ namespace DantesRoleplay.SystemTasks.Persistence;
 internal sealed class SystemTaskAiCeilingRecord
 {
     public string TaskId { get; set; } = null!;
+    public string TaskPurpose { get; set; } = "procedure-workflow";
     public string EnrollmentFingerprint { get; set; } = null!;
     public string ProfileId { get; set; } = null!;
     public int ProfileVersion { get; set; }
@@ -10,9 +11,9 @@ internal sealed class SystemTaskAiCeilingRecord
     public string GrantReference { get; set; } = null!;
     public string GrantRevision { get; set; } = null!;
     public string GrantFingerprint { get; set; } = null!;
-    public string DefinitionId { get; set; } = null!;
-    public int DefinitionVersion { get; set; }
-    public string DefinitionFingerprint { get; set; } = null!;
+    public string? DefinitionId { get; set; }
+    public int? DefinitionVersion { get; set; }
+    public string? DefinitionFingerprint { get; set; }
     public string OutputSchemaFingerprint { get; set; } = null!;
     public string Mode { get; set; } = null!;
     public int MaximumProviderTokens { get; set; }

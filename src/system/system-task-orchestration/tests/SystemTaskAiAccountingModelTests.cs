@@ -93,6 +93,100 @@ public sealed class SystemTaskAiAccountingModelTests
         Assert.Equal(19, overflow.SqliteErrorCode);
     }
 
+    [Fact]
+    public async Task Ceiling_purpose_must_match_its_lifecycle_row_and_uses_no_definition_sentinels()
+    {
+        await using var database = await ModelDatabase.CreateAsync();
+        var time = new MutableTimeProvider(new DateTimeOffset(2026, 9, 11, 12, 0, 0, TimeSpan.Zero));
+        var store = new SqliteSystemTaskLifecycleStore(database.ConnectionString, time);
+        var workflow = (await store.EnqueueAsync(Request(time, "command.ai.purpose.workflow"))).Handle!;
+        var workflowNull = (await store.EnqueueAsync(Request(time, "command.ai.purpose.workflow-null"))).Handle!;
+        const string validationTask = "task.ai.validation.fixture";
+        await using var connection = await database.OpenAsync();
+        await ExecuteAsync(connection, """
+            INSERT INTO system_task_root_budget(root_task_id,maximum_operations,consumed_operations)
+            VALUES($task,16,0)
+            """, ("$task", validationTask));
+        await CloneValidationRowAsync(connection, workflow.TaskId, validationTask, "command.ai.purpose.validation");
+
+        await Assert.ThrowsAsync<SqliteException>(() => InsertPurposeCeilingAsync(connection, validationTask,
+            "procedure-workflow", includeDefinition: true));
+        await Assert.ThrowsAsync<SqliteException>(() => InsertPurposeCeilingAsync(connection, validationTask,
+            "application-validation", includeDefinition: true));
+        await Assert.ThrowsAsync<SqliteException>(() => InsertPurposeCeilingAsync(connection, workflowNull.TaskId,
+            "procedure-workflow", includeDefinition: false));
+        await Assert.ThrowsAsync<SqliteException>(() => InsertPurposeCeilingAsync(connection, workflow.TaskId,
+            "application-validation", includeDefinition: false));
+
+        await InsertPurposeCeilingAsync(connection, validationTask,
+            "application-validation", includeDefinition: false);
+        await using var read = connection.CreateCommand();
+        read.CommandText = """
+            SELECT task_purpose,definition_id,definition_version,definition_fingerprint
+            FROM system_task_ai_ceiling WHERE task_id=$task
+            """;
+        read.Parameters.AddWithValue("$task", validationTask);
+        await using var reader = await read.ExecuteReaderAsync();
+        Assert.True(await reader.ReadAsync());
+        Assert.Equal("application-validation", reader.GetString(0));
+        Assert.True(reader.IsDBNull(1));
+        Assert.True(reader.IsDBNull(2));
+        Assert.True(reader.IsDBNull(3));
+    }
+
+    private static SystemTaskDurableSubmissionRequest Request(MutableTimeProvider time, string command) => new(new(
+        TrustedPrincipalContext.VerifiedPrincipal(
+            "principal.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "fixture"),
+        new ApplicationRevision(ApplicationIdentifier.Parse("fixture-app"), 1, Hash, []),
+        "state.1", "grant.1", command, "revision.1", InteractionExecutionProfile.Workflow,
+        new InteractionInvocationBudget(16, time.GetUtcNow().AddHours(1).UtcDateTime)),
+        new("fixture-app.jobs.procedure-one", 1, Hash), "{}");
+
+    private static async Task CloneValidationRowAsync(SqliteConnection connection, string sourceTask,
+        string targetTask, string commandId)
+    {
+        // This bounded object exercises only the schema shape; it is not owner-produced admission proof.
+        var columns = await StringsAsync(connection,
+            "SELECT name FROM pragma_table_info('system_task_lifecycle') ORDER BY cid");
+        var selections = columns.Select(column => column switch
+        {
+            "task_id" or "root_task_id" => "$target",
+            "command_id" => "$command",
+            "purpose" => "'application-validation'",
+            "state_space_id" or "state_revision" or "definition_id" or "definition_version"
+                or "definition_fingerprint" or "activation_revision" or "activation_fingerprint"
+                or "activation_application_revision" or "activation_application_fingerprint" => "NULL",
+            "candidate_id" => "'0123456789abcdef0123456789abcdef'",
+            "candidate_revision" => "4",
+            "candidate_fingerprint" => "$hash",
+            "admission_payload_json" => "'{}'",
+            _ => Quote(column)
+        });
+        await using var command = connection.CreateCommand();
+        command.CommandText = $"INSERT INTO system_task_lifecycle ({string.Join(',', columns.Select(Quote))}) "
+            + $"SELECT {string.Join(',', selections)} FROM system_task_lifecycle WHERE task_id=$source";
+        command.Parameters.AddWithValue("$source", sourceTask);
+        command.Parameters.AddWithValue("$target", targetTask);
+        command.Parameters.AddWithValue("$command", commandId);
+        command.Parameters.AddWithValue("$hash", Hash);
+        await command.ExecuteNonQueryAsync();
+    }
+
+    private static Task InsertPurposeCeilingAsync(SqliteConnection connection, string taskId,
+        string purpose, bool includeDefinition) => ExecuteAsync(connection, """
+            INSERT INTO system_task_ai_ceiling(
+                task_id,task_purpose,enrollment_fingerprint,profile_id,profile_version,profile_fingerprint,
+                grant_reference,grant_revision,grant_fingerprint,definition_id,definition_version,
+                definition_fingerprint,output_schema_fingerprint,mode,maximum_provider_tokens,
+                maximum_tool_calls,maximum_concurrent_provider_requests,deadline_utc,created_at_utc)
+            VALUES($task,$purpose,$hash,'profile.1',1,$hash,'grant.1','revision.1',$hash,
+                $definition,$definitionVersion,$definitionFingerprint,$hash,'hard-cap',4096,4,1,$now,$now)
+            """, ("$task", taskId), ("$purpose", purpose), ("$hash", Hash),
+            ("$definition", includeDefinition ? "fixture-app.jobs.procedure-one" : DBNull.Value),
+            ("$definitionVersion", includeDefinition ? 1 : DBNull.Value),
+            ("$definitionFingerprint", includeDefinition ? Hash : DBNull.Value),
+            ("$now", DateTime.UtcNow.ToString("O")));
+
     private static async Task InsertCeilingAsync(SqliteConnection connection, string taskId) =>
         await ExecuteAsync(connection, """
             INSERT INTO system_task_ai_ceiling(
@@ -126,6 +220,8 @@ public sealed class SystemTaskAiAccountingModelTests
         foreach (var parameter in parameters) command.Parameters.AddWithValue(parameter.Name, parameter.Value);
         await command.ExecuteNonQueryAsync();
     }
+
+    private static string Quote(string value) => '"' + value.Replace("\"", "\"\"") + '"';
 
     private static async Task<IReadOnlyList<string>> ReadColumnsAsync(SqliteConnection connection, string table)
     {
@@ -277,6 +373,12 @@ public sealed class SystemTaskAiAccountingModelTests
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) => optionsBuilder.UseSqlite(connectionString);
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<DantesRoleplay.Operations.Operation>(entity =>
+            {
+                entity.ToTable("operation");
+                entity.HasKey(value => value.Id);
+                entity.Property(value => value.Id).HasMaxLength(40);
+            });
             SystemTaskLifecycleModelConfiguration.Configure(modelBuilder);
             SystemTaskAiAccountingModelConfiguration.Configure(modelBuilder);
         }

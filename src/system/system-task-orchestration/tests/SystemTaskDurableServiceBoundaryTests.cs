@@ -10,6 +10,7 @@ using DantesRoleplay.SystemTasks.Persistence;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace DantesRoleplay.Tests;
 
@@ -79,6 +80,49 @@ public sealed class SystemTaskDurableServiceBoundaryTests
         Assert.All(fixture.Resolver.RetainedOrigins, value => Assert.Equal(origin, value));
         Assert.All(fixture.Policy.HostGrantReferences.Skip(1), value => Assert.Equal("grant.replacement", value));
         Assert.DoesNotContain("activationFingerprint", status.DataJson!, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Legacy_full_origin_quartet_forgery_cannot_upgrade_a_matching_legacy_admission_hash()
+    {
+        await using var fixture = await BoundaryFixture.CreateAsync();
+        var donor = await fixture.Service.SubmitAsync(Request(fixture, Host(fixture, "command.origin-proof")));
+        var legacy = (await fixture.Store.EnqueueAsync(Request(fixture, Host(fixture, "command.legacy-forgery")))).Handle!;
+        await using var connection = await fixture.OpenSecondConnectionAsync();
+        var donorPayload = await ScalarTextAsync(connection,
+            "SELECT admission_payload_json FROM system_task_lifecycle WHERE task_id=$task", ("$task", donor.TaskHandle!.TaskId));
+        var payload = JsonNode.Parse(donorPayload!)!.AsObject();
+        payload.Remove("activationOrigin");
+        payload["CommandId"] = legacy.CommandId;
+        var legacyPayload = InteractionCanonicalJson.CanonicalizeObject(payload.ToJsonString());
+        var originalHash = await ScalarTextAsync(connection,
+            "SELECT payload_fingerprint FROM system_task_lifecycle WHERE task_id=$task", ("$task", legacy.TaskId));
+        Assert.Equal(originalHash, InteractionCanonicalJson.Fingerprint("dantes-roleplay/system-task-durable-payload/v1", legacyPayload));
+
+        // A valid quartet and even matching original admission bytes are insufficient: the
+        // original legacy commitment did not contain this claimed activation origin.
+        await using (var command = connection.CreateCommand())
+        {
+            command.CommandText = """
+                UPDATE system_task_lifecycle SET activation_revision=7,activation_fingerprint=$hash,
+                    activation_application_revision=1,activation_application_fingerprint=$hash,
+                    admission_payload_json=$payload WHERE task_id=$task
+                """;
+            command.Parameters.AddWithValue("$hash", Hash);
+            command.Parameters.AddWithValue("$payload", legacyPayload);
+            command.Parameters.AddWithValue("$task", legacy.TaskId);
+            Assert.Equal(1, await command.ExecuteNonQueryAsync());
+        }
+        var get = await fixture.Service.GetAsync(Host(fixture, "command.forged-get"), legacy);
+        var cancel = await fixture.Service.CancelAsync(Host(fixture, "command.forged-cancel"), legacy);
+        Assert.Equal(InteractionInvocationResultTag.Unavailable, get.Tag);
+        Assert.Equal(InteractionInvocationResultTag.Unavailable, cancel.Tag);
+        Assert.Empty(fixture.Resolver.RetainedOrigins);
+        Assert.Equal(1, fixture.Resolver.CallCount);
+        Assert.Equal(0L, await ScalarAsync(connection,
+            "SELECT cancel_requested FROM system_task_lifecycle WHERE task_id=$task", ("$task", legacy.TaskId)));
+        Assert.Equal(originalHash, await ScalarTextAsync(connection,
+            "SELECT payload_fingerprint FROM system_task_lifecycle WHERE task_id=$task", ("$task", legacy.TaskId)));
     }
 
     [Theory]
@@ -501,6 +545,15 @@ public sealed class SystemTaskDurableServiceBoundaryTests
         command.CommandText = sql;
         foreach (var parameter in parameters) command.Parameters.AddWithValue(parameter.Name, parameter.Value);
         return Convert.ToInt64(await command.ExecuteScalarAsync());
+    }
+
+    private static async Task<string?> ScalarTextAsync(SqliteConnection connection, string sql,
+        params (string Name, object Value)[] parameters)
+    {
+        await using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        foreach (var parameter in parameters) command.Parameters.AddWithValue(parameter.Name, parameter.Value);
+        return await command.ExecuteScalarAsync() as string;
     }
 
     private static async Task CloneLifecycleRowAsync(SqliteConnection connection,

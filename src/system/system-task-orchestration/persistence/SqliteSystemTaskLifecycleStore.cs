@@ -196,7 +196,7 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
             request.InvocationHost.ApplicationRevision.BaseApplications.Select(value => value.ToString())));
         await ExecuteAsync(connection, transaction, """
             INSERT INTO system_task_lifecycle(
-                task_id, command_id, payload_fingerprint, parent_task_id, parent_command_id, root_task_id, parent_depth,
+                task_id, command_id, payload_fingerprint, admission_payload_json, parent_task_id, parent_command_id, root_task_id, parent_depth,
                 propagate_cancellation, state, principal_reference, authentication_method,
                 application_id, application_revision, application_fingerprint, base_applications_json,
                 activation_revision, activation_fingerprint, activation_application_revision,
@@ -208,7 +208,7 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
                 consumed_operations, fencing_counter,
                 cancel_requested, cancel_acknowledged, created_at_utc, updated_at_utc)
             VALUES (
-                $task, $command, $payload, $parent, $parentCommand, $root, $depth, $propagate, 'queued',
+                $task, $command, $payload, $admissionPayload, $parent, $parentCommand, $root, $depth, $propagate, 'queued',
                 $principal, $authentication, $application, $applicationRevision, $applicationFingerprint,
                 $bases, $activationRevision, $activationFingerprint, $activationApplicationRevision,
                 $activationApplicationFingerprint, $stateSpace, $grant, $stateRevision, $profile, $admitted, $deadline,
@@ -216,6 +216,7 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
                 $checkpoint, $handler, $correlation, $checkpointState, NULL, 0, 0, 0, 0, 0, 0, $now, $now)
             """, cancellationToken,
             ("$task", taskId), ("$command", request.InvocationHost.CommandId), ("$payload", payloadFingerprint),
+            ("$admissionPayload", activationOrigin is null ? null : payloadJson),
             ("$parent", parentTaskId), ("$parentCommand", request.InvocationHost.ParentCommandId),
             ("$root", rootTaskId), ("$depth", parentDepth), ("$propagate", propagateCancellation ? 1 : 0),
             ("$principal", request.InvocationHost.Principal.PrincipalId), ("$authentication", request.InvocationHost.Principal.AuthenticationMethod),
@@ -774,12 +775,12 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
             ParseDb(reader.GetString(reader.GetOrdinal("deadline_utc"))));
         var definition = new SystemTaskSelectedDefinition(reader.GetString(reader.GetOrdinal("definition_id")),
             reader.GetInt32(reader.GetOrdinal("definition_version")), reader.GetString(reader.GetOrdinal("definition_fingerprint")));
-        var activationOrigin = ReadActivationOrigin(reader, invocation);
         var checkpointName = NullableString(reader, "checkpoint_name");
         var checkpoint = checkpointName is null ? null : new SystemTaskCheckpoint(checkpointName,
             reader.GetString(reader.GetOrdinal("completion_handler")), reader.GetString(reader.GetOrdinal("correlation_id")),
             reader.GetString(reader.GetOrdinal("checkpoint_state_json")));
         var dependencies = await ReadDependenciesAsync(connection, transaction, taskId, cancellationToken);
+        var activationOrigin = ReadActivationOrigin(reader, invocation, definition, dependencies);
         var request = new SystemTaskStoredRequest(handle, invocation, definition,
             reader.GetString(reader.GetOrdinal("input_json")), dependencies,
             reader.GetInt64(reader.GetOrdinal("propagate_cancellation")) != 0, activationOrigin);
@@ -1100,7 +1101,8 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
         && value.All(char.IsAsciiHexDigitUpper);
 
     private static StandingGrantActivationOrigin? ReadActivationOrigin(SqliteDataReader reader,
-        SystemTaskStoredInvocation invocation)
+        SystemTaskStoredInvocation invocation, SystemTaskSelectedDefinition definition,
+        IReadOnlyList<SystemTaskDurableHandle> dependencies)
     {
         var activationRevisionOrdinal = reader.GetOrdinal("activation_revision");
         var activationFingerprintOrdinal = reader.GetOrdinal("activation_fingerprint");
@@ -1108,7 +1110,12 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
         var applicationFingerprintOrdinal = reader.GetOrdinal("activation_application_fingerprint");
         var absent = reader.IsDBNull(activationRevisionOrdinal) && reader.IsDBNull(activationFingerprintOrdinal)
             && reader.IsDBNull(applicationRevisionOrdinal) && reader.IsDBNull(applicationFingerprintOrdinal);
-        if (absent) return null;
+        if (absent)
+        {
+            if (NullableString(reader, "admission_payload_json") is not null)
+                throw new InvalidDataException("A legacy workflow cannot acquire admission provenance after creation.");
+            return null;
+        }
         if (reader.IsDBNull(activationRevisionOrdinal) || reader.IsDBNull(activationFingerprintOrdinal)
             || reader.IsDBNull(applicationRevisionOrdinal) || reader.IsDBNull(applicationFingerprintOrdinal))
             throw new InvalidDataException("The stored retained activation origin is incomplete.");
@@ -1117,6 +1124,7 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
             reader.GetString(applicationFingerprintOrdinal));
         if (!ValidActivationOrigin(invocation.ApplicationRevision, invocation.ApplicationFingerprint, origin))
             throw new InvalidDataException("The stored retained activation origin is invalid or does not match the admitted application revision.");
+        VerifyActivationAdmission(reader, invocation, definition, dependencies, origin);
         return origin;
     }
 

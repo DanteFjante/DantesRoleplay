@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using DantesRoleplay.Operations;
 
 namespace DantesRoleplay.SystemTasks.Persistence;
 
@@ -42,6 +43,7 @@ internal static class SystemTaskLifecycleModelConfiguration
                 table.HasCheckConstraint("CK_system_task_lifecycle_parent_depth", "\"parent_depth\" BETWEEN 0 AND 16");
                 table.HasCheckConstraint("CK_system_task_lifecycle_propagate", "\"propagate_cancellation\" IN (0, 1)");
                 table.HasCheckConstraint("CK_system_task_lifecycle_state", "\"state\" IN ('queued','running','waiting','retry','completed','failed','cancelled','indeterminate')");
+                table.HasCheckConstraint("CK_system_task_lifecycle_purpose", "\"purpose\" IN ('procedure-workflow','application-validation')");
                 table.HasCheckConstraint("CK_system_task_lifecycle_profile", "\"execution_profile\" IN ('read-only','atomic','workflow')");
                 table.HasCheckConstraint("CK_system_task_lifecycle_admitted", "\"admitted_operations\" BETWEEN 1 AND 16");
                 table.HasCheckConstraint("CK_system_task_lifecycle_attempts", "\"attempt_count\" BETWEEN 0 AND 16");
@@ -51,12 +53,16 @@ internal static class SystemTaskLifecycleModelConfiguration
                 table.HasCheckConstraint("CK_system_task_lifecycle_cancel_requested", "\"cancel_requested\" IN (0, 1)");
                 table.HasCheckConstraint("CK_system_task_lifecycle_cancel_acknowledged", "\"cancel_acknowledged\" IN (0, 1)");
                 table.HasCheckConstraint("CK_system_task_lifecycle_activation_origin", "((\"activation_revision\" IS NULL AND \"activation_fingerprint\" IS NULL AND \"activation_application_revision\" IS NULL AND \"activation_application_fingerprint\" IS NULL) OR (\"activation_revision\" IS NOT NULL AND \"activation_revision\" > 0 AND \"activation_fingerprint\" IS NOT NULL AND length(\"activation_fingerprint\") = 64 AND \"activation_application_revision\" IS NOT NULL AND \"activation_application_revision\" > 0 AND \"activation_application_fingerprint\" IS NOT NULL AND length(\"activation_application_fingerprint\") = 64))");
+                table.HasCheckConstraint("CK_system_task_lifecycle_admission_payload", "(\"admission_payload_json\" IS NULL OR (json_valid(\"admission_payload_json\") = 1 AND json_type(\"admission_payload_json\") = 'object' AND length(CAST(\"admission_payload_json\" AS BLOB)) <= 65536))");
+                table.HasCheckConstraint("CK_system_task_lifecycle_admission_payload_shape", "((\"purpose\" = 'procedure-workflow' AND ((\"activation_revision\" IS NULL AND \"admission_payload_json\" IS NULL) OR (\"activation_revision\" IS NOT NULL AND \"admission_payload_json\" IS NOT NULL))) OR (\"purpose\" = 'application-validation' AND \"activation_revision\" IS NULL AND \"admission_payload_json\" IS NOT NULL))");
+                table.HasCheckConstraint("CK_system_task_lifecycle_purpose_shape", "((\"purpose\" = 'procedure-workflow' AND \"state_space_id\" IS NOT NULL AND length(trim(\"state_space_id\")) BETWEEN 1 AND 200 AND \"state_revision\" IS NOT NULL AND length(trim(\"state_revision\")) BETWEEN 1 AND 200 AND \"definition_id\" IS NOT NULL AND length(\"definition_id\") BETWEEN 1 AND 200 AND \"definition_version\" IS NOT NULL AND \"definition_version\" > 0 AND \"definition_fingerprint\" IS NOT NULL AND length(\"definition_fingerprint\") = 64 AND \"definition_fingerprint\" NOT GLOB '*[^0-9A-F]*' AND \"candidate_id\" IS NULL AND \"candidate_revision\" IS NULL AND \"candidate_fingerprint\" IS NULL AND \"causation_operation_id\" IS NULL) OR (\"purpose\" = 'application-validation' AND \"state_space_id\" IS NULL AND \"state_revision\" IS NULL AND \"definition_id\" IS NULL AND \"definition_version\" IS NULL AND \"definition_fingerprint\" IS NULL AND \"activation_revision\" IS NULL AND \"activation_fingerprint\" IS NULL AND \"activation_application_revision\" IS NULL AND \"activation_application_fingerprint\" IS NULL AND \"candidate_id\" IS NOT NULL AND length(\"candidate_id\") = 32 AND \"candidate_id\" NOT GLOB '*[^0-9a-f]*' AND \"candidate_revision\" IS NOT NULL AND \"candidate_revision\" > 0 AND \"candidate_fingerprint\" IS NOT NULL AND length(\"candidate_fingerprint\") = 64 AND \"candidate_fingerprint\" NOT GLOB '*[^0-9A-F]*' AND (\"causation_operation_id\" IS NULL OR (length(\"causation_operation_id\") = 32 AND \"causation_operation_id\" NOT GLOB '*[^0-9a-f]*'))))");
                 table.HasCheckConstraint("CK_system_task_lifecycle_parent", "((\"parent_task_id\" IS NULL AND \"parent_depth\" = 0 AND \"task_id\" = \"root_task_id\") OR (\"parent_task_id\" IS NOT NULL AND \"parent_depth\" > 0 AND \"task_id\" <> \"root_task_id\"))");
                 table.HasCheckConstraint("CK_system_task_lifecycle_checkpoint", "((\"checkpoint_name\" IS NULL AND \"completion_handler\" IS NULL AND \"correlation_id\" IS NULL AND \"checkpoint_state_json\" IS NULL) OR (\"checkpoint_name\" IS NOT NULL AND \"completion_handler\" IS NOT NULL AND \"correlation_id\" IS NOT NULL AND \"checkpoint_state_json\" IS NOT NULL))");
                 table.HasCheckConstraint("CK_system_task_lifecycle_lease", "((\"state\" = 'running' AND \"lease_owner\" IS NOT NULL AND \"lease_token\" IS NOT NULL AND \"lease_expires_at_utc\" IS NOT NULL) OR (\"state\" <> 'running' AND \"lease_owner\" IS NULL AND \"lease_token\" IS NULL AND \"lease_expires_at_utc\" IS NULL))");
             });
             entity.HasKey(value => value.TaskId);
             entity.HasAlternateKey(value => value.CommandId);
+            entity.HasAlternateKey(value => new { value.TaskId, value.Purpose });
             Text(entity.Property(value => value.TaskId), "task_id");
             Text(entity.Property(value => value.CommandId), "command_id");
             Text(entity.Property(value => value.PayloadFingerprint), "payload_fingerprint");
@@ -66,6 +72,7 @@ internal static class SystemTaskLifecycleModelConfiguration
             Integer(entity.Property(value => value.ParentDepth), "parent_depth");
             Integer(entity.Property(value => value.PropagateCancellation), "propagate_cancellation");
             Text(entity.Property(value => value.State), "state");
+            Text(entity.Property(value => value.Purpose), "purpose").HasDefaultValue("procedure-workflow");
             Text(entity.Property(value => value.PrincipalReference), "principal_reference");
             Text(entity.Property(value => value.AuthenticationMethod), "authentication_method");
             Text(entity.Property(value => value.ApplicationId), "application_id");
@@ -75,16 +82,21 @@ internal static class SystemTaskLifecycleModelConfiguration
             Text(entity.Property(value => value.ActivationFingerprint), "activation_fingerprint", required: false);
             entity.Property(value => value.ActivationApplicationRevision).HasColumnName("activation_application_revision").HasColumnType("INTEGER").IsRequired(false);
             Text(entity.Property(value => value.ActivationApplicationFingerprint), "activation_application_fingerprint", required: false);
+            Text(entity.Property(value => value.AdmissionPayloadJson), "admission_payload_json", required: false);
             Text(entity.Property(value => value.BaseApplicationsJson), "base_applications_json");
-            Text(entity.Property(value => value.StateSpaceId), "state_space_id");
+            Text(entity.Property(value => value.StateSpaceId), "state_space_id", required: false);
             Text(entity.Property(value => value.GrantReference), "grant_reference");
-            Text(entity.Property(value => value.StateRevision), "state_revision");
+            Text(entity.Property(value => value.StateRevision), "state_revision", required: false);
             Text(entity.Property(value => value.ExecutionProfile), "execution_profile");
             Integer(entity.Property(value => value.AdmittedOperations), "admitted_operations");
             Text(entity.Property(value => value.DeadlineUtc), "deadline_utc");
-            Text(entity.Property(value => value.DefinitionId), "definition_id");
-            Integer(entity.Property(value => value.DefinitionVersion), "definition_version");
-            Text(entity.Property(value => value.DefinitionFingerprint), "definition_fingerprint");
+            Text(entity.Property(value => value.DefinitionId), "definition_id", required: false);
+            entity.Property(value => value.DefinitionVersion).HasColumnName("definition_version").HasColumnType("INTEGER").IsRequired(false);
+            Text(entity.Property(value => value.DefinitionFingerprint), "definition_fingerprint", required: false);
+            Text(entity.Property(value => value.CandidateId), "candidate_id", required: false);
+            entity.Property(value => value.CandidateRevision).HasColumnName("candidate_revision").HasColumnType("INTEGER").IsRequired(false);
+            Text(entity.Property(value => value.CandidateFingerprint), "candidate_fingerprint", required: false);
+            Text(entity.Property(value => value.CausationOperationId), "causation_operation_id", required: false);
             Text(entity.Property(value => value.InputJson), "input_json");
             Text(entity.Property(value => value.CheckpointName), "checkpoint_name", required: false);
             Text(entity.Property(value => value.CompletionHandler), "completion_handler", required: false);
@@ -115,9 +127,12 @@ internal static class SystemTaskLifecycleModelConfiguration
             entity.HasIndex(value => value.ParentTaskId).HasDatabaseName("ix_system_task_lifecycle_parent");
             entity.HasIndex(value => value.RootTaskId).HasDatabaseName("ix_system_task_lifecycle_root");
             entity.HasIndex(value => new { value.CorrelationId, value.State }).HasDatabaseName("ix_system_task_lifecycle_correlation");
+            entity.HasIndex(value => value.CausationOperationId).HasDatabaseName("ix_system_task_lifecycle_causation_operation");
             entity.HasOne<SystemTaskLifecycleRecord>().WithMany().HasForeignKey(value => value.ParentTaskId)
                 .OnDelete(DeleteBehavior.Restrict);
             entity.HasOne<SystemTaskRootBudgetRecord>().WithMany().HasForeignKey(value => value.RootTaskId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<Operation>().WithMany().HasForeignKey(value => value.CausationOperationId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
     }

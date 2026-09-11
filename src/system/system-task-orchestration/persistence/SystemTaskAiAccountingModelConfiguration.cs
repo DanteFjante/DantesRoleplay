@@ -20,6 +20,7 @@ internal static class SystemTaskAiAccountingModelConfiguration
             entity.ToTable("system_task_ai_ceiling", table =>
             {
                 table.HasCheckConstraint("CK_system_task_ai_ceiling_task_id", "length(\"task_id\") BETWEEN 1 AND 200");
+                table.HasCheckConstraint("CK_system_task_ai_ceiling_task_purpose", "\"task_purpose\" IN ('procedure-workflow','application-validation')");
                 table.HasCheckConstraint("CK_system_task_ai_ceiling_enrollment_fingerprint", "length(\"enrollment_fingerprint\") = 64");
                 table.HasCheckConstraint("CK_system_task_ai_ceiling_profile_id", "length(\"profile_id\") BETWEEN 1 AND 200");
                 table.HasCheckConstraint("CK_system_task_ai_ceiling_profile_version", "\"profile_version\" > 0");
@@ -30,6 +31,7 @@ internal static class SystemTaskAiAccountingModelConfiguration
                 table.HasCheckConstraint("CK_system_task_ai_ceiling_definition_id", "length(\"definition_id\") BETWEEN 1 AND 200");
                 table.HasCheckConstraint("CK_system_task_ai_ceiling_definition_version", "\"definition_version\" > 0");
                 table.HasCheckConstraint("CK_system_task_ai_ceiling_definition_fingerprint", "length(\"definition_fingerprint\") = 64");
+                table.HasCheckConstraint("CK_system_task_ai_ceiling_purpose_shape", "((\"task_purpose\" = 'procedure-workflow' AND \"definition_id\" IS NOT NULL AND \"definition_version\" IS NOT NULL AND \"definition_fingerprint\" IS NOT NULL AND \"definition_fingerprint\" NOT GLOB '*[^0-9A-F]*') OR (\"task_purpose\" = 'application-validation' AND \"definition_id\" IS NULL AND \"definition_version\" IS NULL AND \"definition_fingerprint\" IS NULL))");
                 table.HasCheckConstraint("CK_system_task_ai_ceiling_schema_fingerprint", "length(\"output_schema_fingerprint\") = 64");
                 table.HasCheckConstraint("CK_system_task_ai_ceiling_mode",
                     "\"mode\" IN ('measured-stop','hard-cap')");
@@ -41,6 +43,7 @@ internal static class SystemTaskAiAccountingModelConfiguration
             });
             entity.HasKey(value => value.TaskId);
             Text(entity.Property(value => value.TaskId), "task_id");
+            Text(entity.Property(value => value.TaskPurpose), "task_purpose").HasDefaultValue("procedure-workflow");
             Text(entity.Property(value => value.EnrollmentFingerprint), "enrollment_fingerprint");
             Text(entity.Property(value => value.ProfileId), "profile_id");
             Integer(entity.Property(value => value.ProfileVersion), "profile_version");
@@ -48,9 +51,9 @@ internal static class SystemTaskAiAccountingModelConfiguration
             Text(entity.Property(value => value.GrantReference), "grant_reference");
             Text(entity.Property(value => value.GrantRevision), "grant_revision");
             Text(entity.Property(value => value.GrantFingerprint), "grant_fingerprint");
-            Text(entity.Property(value => value.DefinitionId), "definition_id");
-            Integer(entity.Property(value => value.DefinitionVersion), "definition_version");
-            Text(entity.Property(value => value.DefinitionFingerprint), "definition_fingerprint");
+            Text(entity.Property(value => value.DefinitionId), "definition_id", required: false);
+            entity.Property(value => value.DefinitionVersion).HasColumnName("definition_version").HasColumnType("INTEGER").IsRequired(false);
+            Text(entity.Property(value => value.DefinitionFingerprint), "definition_fingerprint", required: false);
             Text(entity.Property(value => value.OutputSchemaFingerprint), "output_schema_fingerprint");
             Text(entity.Property(value => value.Mode), "mode");
             Integer(entity.Property(value => value.MaximumProviderTokens), "maximum_provider_tokens");
@@ -58,7 +61,11 @@ internal static class SystemTaskAiAccountingModelConfiguration
             Integer(entity.Property(value => value.MaximumConcurrentProviderRequests), "maximum_concurrent_provider_requests");
             Text(entity.Property(value => value.DeadlineUtc), "deadline_utc");
             Text(entity.Property(value => value.CreatedAtUtc), "created_at_utc");
-            entity.HasOne<SystemTaskLifecycleRecord>().WithOne().HasForeignKey<SystemTaskAiCeilingRecord>(value => value.TaskId)
+            entity.HasIndex(value => new { value.TaskId, value.TaskPurpose })
+                .HasDatabaseName("ix_system_task_ai_ceiling_task_purpose");
+            entity.HasOne<SystemTaskLifecycleRecord>().WithMany()
+                .HasForeignKey(value => new { value.TaskId, value.TaskPurpose })
+                .HasPrincipalKey(value => new { value.TaskId, value.Purpose })
                 .OnDelete(DeleteBehavior.Restrict);
         });
     }

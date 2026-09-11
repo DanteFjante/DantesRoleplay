@@ -6,6 +6,12 @@ namespace DantesRoleplay.Tests;
 internal sealed class SystemTaskLifecycleSchemaFixture : IAsyncDisposable
 {
     internal const string Sql = """
+        -- Test-only FK principal key. The operation owner retains the full ledger and receipt semantics;
+        -- lifecycle fixture conformance makes no claim over that schema.
+        CREATE TABLE operation (
+            Id TEXT NOT NULL PRIMARY KEY
+        );
+
         CREATE TABLE system_task_root_budget (
             root_task_id TEXT NOT NULL PRIMARY KEY,
             maximum_operations INTEGER NOT NULL CHECK (maximum_operations BETWEEN 1 AND 16),
@@ -22,6 +28,7 @@ internal sealed class SystemTaskLifecycleSchemaFixture : IAsyncDisposable
             parent_depth INTEGER NOT NULL CHECK (parent_depth BETWEEN 0 AND 16),
             propagate_cancellation INTEGER NOT NULL CHECK (propagate_cancellation IN (0, 1)),
             state TEXT NOT NULL CHECK (state IN ('queued','running','waiting','retry','completed','failed','cancelled','indeterminate')),
+            purpose TEXT NOT NULL DEFAULT 'procedure-workflow' CHECK (purpose IN ('procedure-workflow','application-validation')),
             principal_reference TEXT NOT NULL,
             authentication_method TEXT NOT NULL,
             application_id TEXT NOT NULL,
@@ -31,16 +38,21 @@ internal sealed class SystemTaskLifecycleSchemaFixture : IAsyncDisposable
             activation_fingerprint TEXT NULL,
             activation_application_revision INTEGER NULL,
             activation_application_fingerprint TEXT NULL,
+            admission_payload_json TEXT NULL,
             base_applications_json TEXT NOT NULL,
-            state_space_id TEXT NOT NULL,
+            state_space_id TEXT NULL,
             grant_reference TEXT NOT NULL,
-            state_revision TEXT NOT NULL,
+            state_revision TEXT NULL,
             execution_profile TEXT NOT NULL CHECK (execution_profile IN ('read-only','atomic','workflow')),
             admitted_operations INTEGER NOT NULL CHECK (admitted_operations BETWEEN 1 AND 16),
             deadline_utc TEXT NOT NULL,
-            definition_id TEXT NOT NULL,
-            definition_version INTEGER NOT NULL,
-            definition_fingerprint TEXT NOT NULL,
+            definition_id TEXT NULL,
+            definition_version INTEGER NULL,
+            definition_fingerprint TEXT NULL,
+            candidate_id TEXT NULL,
+            candidate_revision INTEGER NULL,
+            candidate_fingerprint TEXT NULL,
+            causation_operation_id TEXT NULL REFERENCES operation(Id) ON DELETE RESTRICT,
             input_json TEXT NOT NULL,
             checkpoint_name TEXT NULL,
             completion_handler TEXT NULL,
@@ -65,12 +77,42 @@ internal sealed class SystemTaskLifecycleSchemaFixture : IAsyncDisposable
             created_at_utc TEXT NOT NULL,
             updated_at_utc TEXT NOT NULL,
             completed_at_utc TEXT NULL,
+            UNIQUE (task_id, purpose),
             CHECK ((activation_revision IS NULL AND activation_fingerprint IS NULL
                     AND activation_application_revision IS NULL AND activation_application_fingerprint IS NULL)
                 OR (activation_revision IS NOT NULL AND activation_revision > 0
                     AND activation_fingerprint IS NOT NULL AND length(activation_fingerprint) = 64
                     AND activation_application_revision IS NOT NULL AND activation_application_revision > 0
                     AND activation_application_fingerprint IS NOT NULL AND length(activation_application_fingerprint) = 64)),
+            CHECK (admission_payload_json IS NULL OR (json_valid(admission_payload_json) = 1
+                AND json_type(admission_payload_json) = 'object'
+                AND length(CAST(admission_payload_json AS BLOB)) <= 65536)),
+            CHECK ((purpose = 'procedure-workflow'
+                    AND ((activation_revision IS NULL AND admission_payload_json IS NULL)
+                        OR (activation_revision IS NOT NULL AND admission_payload_json IS NOT NULL)))
+                OR (purpose = 'application-validation'
+                    AND activation_revision IS NULL AND admission_payload_json IS NOT NULL)),
+            CHECK ((purpose = 'procedure-workflow'
+                    AND state_space_id IS NOT NULL AND length(trim(state_space_id)) BETWEEN 1 AND 200
+                    AND state_revision IS NOT NULL AND length(trim(state_revision)) BETWEEN 1 AND 200
+                    AND definition_id IS NOT NULL AND length(definition_id) BETWEEN 1 AND 200
+                    AND definition_version IS NOT NULL AND definition_version > 0
+                    AND definition_fingerprint IS NOT NULL AND length(definition_fingerprint) = 64
+                    AND definition_fingerprint NOT GLOB '*[^0-9A-F]*'
+                    AND candidate_id IS NULL AND candidate_revision IS NULL AND candidate_fingerprint IS NULL
+                    AND causation_operation_id IS NULL)
+                OR (purpose = 'application-validation'
+                    AND state_space_id IS NULL AND state_revision IS NULL
+                    AND definition_id IS NULL AND definition_version IS NULL AND definition_fingerprint IS NULL
+                    AND activation_revision IS NULL AND activation_fingerprint IS NULL
+                    AND activation_application_revision IS NULL AND activation_application_fingerprint IS NULL
+                    AND candidate_id IS NOT NULL AND length(candidate_id) = 32
+                    AND candidate_id NOT GLOB '*[^0-9a-f]*'
+                    AND candidate_revision IS NOT NULL AND candidate_revision > 0
+                    AND candidate_fingerprint IS NOT NULL AND length(candidate_fingerprint) = 64
+                    AND candidate_fingerprint NOT GLOB '*[^0-9A-F]*'
+                    AND (causation_operation_id IS NULL OR (length(causation_operation_id) = 32
+                        AND causation_operation_id NOT GLOB '*[^0-9a-f]*')))),
             CHECK ((parent_task_id IS NULL AND parent_depth = 0 AND task_id = root_task_id)
                 OR (parent_task_id IS NOT NULL AND parent_depth > 0 AND task_id <> root_task_id)),
             CHECK ((checkpoint_name IS NULL AND completion_handler IS NULL AND correlation_id IS NULL AND checkpoint_state_json IS NULL)
@@ -83,6 +125,7 @@ internal sealed class SystemTaskLifecycleSchemaFixture : IAsyncDisposable
         CREATE INDEX ix_system_task_lifecycle_parent ON system_task_lifecycle(parent_task_id);
         CREATE INDEX ix_system_task_lifecycle_root ON system_task_lifecycle(root_task_id);
         CREATE INDEX ix_system_task_lifecycle_correlation ON system_task_lifecycle(correlation_id, state);
+        CREATE INDEX ix_system_task_lifecycle_causation_operation ON system_task_lifecycle(causation_operation_id);
 
         CREATE TABLE system_task_dependency (
             task_id TEXT NOT NULL REFERENCES system_task_lifecycle(task_id) ON DELETE CASCADE,

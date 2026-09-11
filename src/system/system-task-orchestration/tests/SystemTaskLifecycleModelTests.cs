@@ -2,6 +2,7 @@ using System.Text;
 using DantesRoleplay.Applications;
 using DantesRoleplay.Authorization;
 using DantesRoleplay.Interactions;
+using DantesRoleplay.Operations;
 using DantesRoleplay.SystemTasks;
 using DantesRoleplay.SystemTasks.Persistence;
 using Microsoft.Data.Sqlite;
@@ -25,13 +26,16 @@ public sealed class SystemTaskLifecycleModelTests
             [
                 "task_id:T:1::1", "command_id:T:1::0", "payload_fingerprint:T:1::0", "parent_task_id:T:0::0",
                 "parent_command_id:T:0::0", "root_task_id:T:1::0", "parent_depth:I:1::0", "propagate_cancellation:I:1::0",
-                "state:T:1::0", "principal_reference:T:1::0", "authentication_method:T:1::0", "application_id:T:1::0",
+                "state:T:1::0", "purpose:T:1:'procedure-workflow':0", "principal_reference:T:1::0", "authentication_method:T:1::0", "application_id:T:1::0",
                 "application_revision:I:1::0", "application_fingerprint:T:1::0", "activation_revision:I:0::0",
                 "activation_fingerprint:T:0::0", "activation_application_revision:I:0::0",
-                "activation_application_fingerprint:T:0::0", "base_applications_json:T:1::0",
-                "state_space_id:T:1::0", "grant_reference:T:1::0", "state_revision:T:1::0", "execution_profile:T:1::0",
-                "admitted_operations:I:1::0", "deadline_utc:T:1::0", "definition_id:T:1::0", "definition_version:I:1::0",
-                "definition_fingerprint:T:1::0", "input_json:T:1::0", "checkpoint_name:T:0::0", "completion_handler:T:0::0",
+                "activation_application_fingerprint:T:0::0", "admission_payload_json:T:0::0",
+                "base_applications_json:T:1::0",
+                "state_space_id:T:0::0", "grant_reference:T:1::0", "state_revision:T:0::0", "execution_profile:T:1::0",
+                "admitted_operations:I:1::0", "deadline_utc:T:1::0", "definition_id:T:0::0", "definition_version:I:0::0",
+                "definition_fingerprint:T:0::0", "candidate_id:T:0::0", "candidate_revision:I:0::0",
+                "candidate_fingerprint:T:0::0", "causation_operation_id:T:0::0", "input_json:T:1::0",
+                "checkpoint_name:T:0::0", "completion_handler:T:0::0",
                 "correlation_id:T:0::0", "checkpoint_state_json:T:0::0", "wake_json:T:0::0", "attempt_count:I:1:0:0",
                 "consecutive_failures:I:1:0:0", "consumed_operations:I:1:0:0", "fencing_counter:I:1:0:0",
                 "lease_owner:T:0::0", "lease_token:T:0::0", "lease_expires_at_utc:T:0::0", "next_attempt_at_utc:T:0::0",
@@ -65,8 +69,11 @@ public sealed class SystemTaskLifecycleModelTests
         Assert.Contains("ix_system_task_lifecycle_parent:0:parent_task_id", indexes);
         Assert.Contains("ix_system_task_lifecycle_root:0:root_task_id", indexes);
         Assert.Contains("ix_system_task_lifecycle_correlation:0:correlation_id,state", indexes);
+        Assert.Contains("ix_system_task_lifecycle_causation_operation:0:causation_operation_id", indexes);
         Assert.Contains(indexes, value => value.StartsWith("sqlite_autoindex_system_task_lifecycle_", StringComparison.Ordinal)
             && value.EndsWith(":1:command_id", StringComparison.Ordinal));
+        Assert.Contains(indexes, value => value.StartsWith("sqlite_autoindex_system_task_lifecycle_", StringComparison.Ordinal)
+            && value.EndsWith(":1:task_id,purpose", StringComparison.Ordinal));
         Assert.Contains("ix_system_task_dependency_target:0:dependency_task_id",
             await ReadIndexesAsync(connection, "system_task_dependency"));
         Assert.Contains(await ReadIndexesAsync(connection, "system_task_attempt"),
@@ -86,6 +93,7 @@ public sealed class SystemTaskLifecycleModelTests
             "system_task_dependency:dependency_task_id>system_task_lifecycle.task_id:RESTRICT",
             "system_task_dependency:task_id>system_task_lifecycle.task_id:CASCADE",
             "system_task_host_call:task_id>system_task_lifecycle.task_id:CASCADE",
+            "system_task_lifecycle:causation_operation_id>operation.Id:RESTRICT",
             "system_task_lifecycle:parent_task_id>system_task_lifecycle.task_id:RESTRICT",
             "system_task_lifecycle:root_task_id>system_task_root_budget.root_task_id:RESTRICT"
         }, foreignKeys.OrderBy(value => value, StringComparer.Ordinal));
@@ -142,16 +150,105 @@ public sealed class SystemTaskLifecycleModelTests
         Assert.EndsWith("Z", snapshot.CreatedAtUtc.ToString("O"), StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task Purpose_shapes_store_real_workflow_or_validation_identity_without_sentinels()
+    {
+        await using var database = await ModelDatabase.CreateAsync();
+        var time = new MutableTimeProvider(new DateTimeOffset(2026, 9, 11, 12, 0, 0, TimeSpan.Zero));
+        var store = new SqliteSystemTaskLifecycleStore(database.ConnectionString, time);
+        var request = new SystemTaskDurableSubmissionRequest(new(
+            TrustedPrincipalContext.VerifiedPrincipal(Principal, "fixture"),
+            new ApplicationRevision(ApplicationIdentifier.Parse("fixture-app"), 1, Hash, []),
+            "state.1", "grant.1", "command.shape.workflow", "revision.1", InteractionExecutionProfile.Workflow,
+            new InteractionInvocationBudget(16, time.GetUtcNow().AddHours(1).UtcDateTime)),
+            new("procedure.fixture", 1, Hash), "{}");
+        var workflow = (await store.EnqueueAsync(request)).Handle!;
+
+        await using var connection = await database.OpenAsync();
+        const string validationTask = "task.validation.fixture";
+        await ExecuteAsync(connection, """
+            INSERT INTO system_task_root_budget(root_task_id,maximum_operations,consumed_operations)
+            VALUES($task,16,0)
+            """, ("$task", validationTask));
+        await CloneValidationRowAsync(connection, workflow.TaskId, validationTask,
+            "command.shape.validation", "0123456789abcdef0123456789abcdef");
+
+        Assert.Equal("procedure-workflow", await ScalarStringAsync(connection,
+            "SELECT purpose FROM system_task_lifecycle WHERE task_id=$task", ("$task", workflow.TaskId)));
+        Assert.Equal("application-validation|<null>|<null>|<null>|<null>|<null>|0123456789abcdef0123456789abcdef|4|" + Hash,
+            await ScalarStringAsync(connection, """
+                SELECT purpose || '|' || coalesce(state_space_id,'<null>') || '|'
+                    || coalesce(state_revision,'<null>') || '|' || coalesce(definition_id,'<null>') || '|'
+                    || coalesce(CAST(definition_version AS TEXT),'<null>') || '|'
+                    || coalesce(definition_fingerprint,'<null>') || '|' || candidate_id || '|'
+                    || candidate_revision || '|' || candidate_fingerprint
+                FROM system_task_lifecycle WHERE task_id=$task
+                """, ("$task", validationTask)));
+
+        await AssertSqlRejectedAsync(connection,
+            "UPDATE system_task_lifecycle SET candidate_id='0123456789abcdef0123456789abcdef' WHERE task_id=$task",
+            workflow.TaskId);
+        await AssertSqlRejectedAsync(connection,
+            "UPDATE system_task_lifecycle SET purpose='unsupported' WHERE task_id=$task", validationTask);
+        await AssertSqlRejectedAsync(connection,
+            "UPDATE system_task_lifecycle SET candidate_id=NULL WHERE task_id=$task", validationTask);
+        await AssertSqlRejectedAsync(connection,
+            "UPDATE system_task_lifecycle SET admission_payload_json=NULL WHERE task_id=$task", validationTask);
+        await AssertSqlRejectedAsync(connection,
+            "UPDATE system_task_lifecycle SET admission_payload_json='[]' WHERE task_id=$task", validationTask);
+        await AssertSqlRejectedAsync(connection,
+            "UPDATE system_task_lifecycle SET admission_payload_json='{}' WHERE task_id=$task", workflow.TaskId);
+        await AssertSqlRejectedAsync(connection,
+            "UPDATE system_task_lifecycle SET admission_payload_json=$proof WHERE task_id=$task", validationTask,
+            ("$proof", "{\"value\":\"" + new string('x', 65_536) + "\"}"));
+        await AssertSqlRejectedAsync(connection,
+            "UPDATE system_task_lifecycle SET state_space_id='state.sentinel' WHERE task_id=$task", validationTask);
+        await AssertSqlRejectedAsync(connection, """
+            UPDATE system_task_lifecycle
+            SET activation_revision=1,activation_fingerprint=$hash,
+                activation_application_revision=1,activation_application_fingerprint=$hash
+            WHERE task_id=$task
+            """, validationTask, ("$hash", Hash));
+        await AssertSqlRejectedAsync(connection, """
+            UPDATE system_task_lifecycle
+            SET definition_id=NULL,definition_version=NULL,definition_fingerprint=NULL
+            WHERE task_id=$task
+            """, workflow.TaskId);
+
+        var operationId = Operation.NewId();
+        await database.SeedOperationAsync(operationId);
+        await ExecuteAsync(connection,
+            "UPDATE system_task_lifecycle SET causation_operation_id=$operation WHERE task_id=$task",
+            ("$operation", operationId), ("$task", validationTask));
+        Assert.Equal(operationId, await ScalarStringAsync(connection,
+            "SELECT causation_operation_id FROM system_task_lifecycle WHERE task_id=$task",
+            ("$task", validationTask)));
+        await AssertSqlRejectedAsync(connection,
+            "UPDATE system_task_lifecycle SET causation_operation_id=$operation WHERE task_id=$task",
+            validationTask, ("$operation", Operation.NewId()));
+        await AssertSqlRejectedAsync(connection,
+            "UPDATE system_task_lifecycle SET causation_operation_id=$operation WHERE task_id=$task",
+            workflow.TaskId, ("$operation", operationId));
+        await using var deleteOperation = connection.CreateCommand();
+        deleteOperation.CommandText = "DELETE FROM operation WHERE Id=$operation";
+        deleteOperation.Parameters.AddWithValue("$operation", operationId);
+        await Assert.ThrowsAsync<SqliteException>(() => deleteOperation.ExecuteNonQueryAsync());
+    }
+
     private static IEnumerable<string> ExpectedChecks() =>
     [
         "maximum_operations BETWEEN 1 AND 16", "consumed_operations BETWEEN 0 AND maximum_operations",
         "parent_depth BETWEEN 0 AND 16", "propagate_cancellation IN (0, 1)",
         "state IN ('queued','running','waiting','retry','completed','failed','cancelled','indeterminate')",
+        "purpose IN ('procedure-workflow','application-validation')",
         "execution_profile IN ('read-only','atomic','workflow')", "admitted_operations BETWEEN 1 AND 16",
         "attempt_count BETWEEN 0 AND 16", "consecutive_failures BETWEEN 0 AND 3",
         "consumed_operations BETWEEN 0 AND admitted_operations", "fencing_counter >= 0",
         "cancel_requested IN (0, 1)", "cancel_acknowledged IN (0, 1)",
         "((activation_revision IS NULL AND activation_fingerprint IS NULL AND activation_application_revision IS NULL AND activation_application_fingerprint IS NULL) OR (activation_revision IS NOT NULL AND activation_revision > 0 AND activation_fingerprint IS NOT NULL AND length(activation_fingerprint) = 64 AND activation_application_revision IS NOT NULL AND activation_application_revision > 0 AND activation_application_fingerprint IS NOT NULL AND length(activation_application_fingerprint) = 64))",
+        "(admission_payload_json IS NULL OR (json_valid(admission_payload_json) = 1 AND json_type(admission_payload_json) = 'object' AND length(CAST(admission_payload_json AS BLOB)) <= 65536))",
+        "((purpose = 'procedure-workflow' AND ((activation_revision IS NULL AND admission_payload_json IS NULL) OR (activation_revision IS NOT NULL AND admission_payload_json IS NOT NULL))) OR (purpose = 'application-validation' AND activation_revision IS NULL AND admission_payload_json IS NOT NULL))",
+        "((purpose = 'procedure-workflow' AND state_space_id IS NOT NULL AND length(trim(state_space_id)) BETWEEN 1 AND 200 AND state_revision IS NOT NULL AND length(trim(state_revision)) BETWEEN 1 AND 200 AND definition_id IS NOT NULL AND length(definition_id) BETWEEN 1 AND 200 AND definition_version IS NOT NULL AND definition_version > 0 AND definition_fingerprint IS NOT NULL AND length(definition_fingerprint) = 64 AND definition_fingerprint NOT GLOB '*[^0-9A-F]*' AND candidate_id IS NULL AND candidate_revision IS NULL AND candidate_fingerprint IS NULL AND causation_operation_id IS NULL) OR (purpose = 'application-validation' AND state_space_id IS NULL AND state_revision IS NULL AND definition_id IS NULL AND definition_version IS NULL AND definition_fingerprint IS NULL AND activation_revision IS NULL AND activation_fingerprint IS NULL AND activation_application_revision IS NULL AND activation_application_fingerprint IS NULL AND candidate_id IS NOT NULL AND length(candidate_id) = 32 AND candidate_id NOT GLOB '*[^0-9a-f]*' AND candidate_revision IS NOT NULL AND candidate_revision > 0 AND candidate_fingerprint IS NOT NULL AND length(candidate_fingerprint) = 64 AND candidate_fingerprint NOT GLOB '*[^0-9A-F]*' AND (causation_operation_id IS NULL OR (length(causation_operation_id) = 32 AND causation_operation_id NOT GLOB '*[^0-9a-f]*'))))",
         "((parent_task_id IS NULL AND parent_depth = 0 AND task_id = root_task_id) OR (parent_task_id IS NOT NULL AND parent_depth > 0 AND task_id <> root_task_id))",
         "((checkpoint_name IS NULL AND completion_handler IS NULL AND correlation_id IS NULL AND checkpoint_state_json IS NULL) OR (checkpoint_name IS NOT NULL AND completion_handler IS NOT NULL AND correlation_id IS NOT NULL AND checkpoint_state_json IS NOT NULL))",
         "((state = 'running' AND lease_owner IS NOT NULL AND lease_token IS NOT NULL AND lease_expires_at_utc IS NOT NULL) OR (state <> 'running' AND lease_owner IS NULL AND lease_token IS NULL AND lease_expires_at_utc IS NULL))",
@@ -162,6 +259,68 @@ public sealed class SystemTaskLifecycleModelTests
         "status IN ('pending','completed')",
         "((status = 'pending' AND completion_json IS NULL AND completed_at_utc IS NULL) OR (status = 'completed' AND completion_json IS NOT NULL AND completed_at_utc IS NOT NULL))"
     ];
+
+    private static async Task CloneValidationRowAsync(SqliteConnection connection, string sourceTask,
+        string targetTask, string commandId, string candidateId)
+    {
+        // This bounded object exercises only the schema shape; it is not owner-produced admission proof.
+        var columns = await StringsAsync(connection,
+            "SELECT name FROM pragma_table_info('system_task_lifecycle') ORDER BY cid");
+        var selections = columns.Select(column => column switch
+        {
+            "task_id" or "root_task_id" => "$target",
+            "command_id" => "$command",
+            "purpose" => "'application-validation'",
+            "state_space_id" or "state_revision" or "definition_id" or "definition_version"
+                or "definition_fingerprint" or "activation_revision" or "activation_fingerprint"
+                or "activation_application_revision" or "activation_application_fingerprint" => "NULL",
+            "candidate_id" => "$candidate",
+            "candidate_revision" => "4",
+            "candidate_fingerprint" => "$hash",
+            "causation_operation_id" => "NULL",
+            "admission_payload_json" => "'{}'",
+            _ => Quote(column)
+        });
+        await using var command = connection.CreateCommand();
+        command.CommandText = $"INSERT INTO system_task_lifecycle ({string.Join(',', columns.Select(Quote))}) "
+            + $"SELECT {string.Join(',', selections)} FROM system_task_lifecycle WHERE task_id=$source";
+        command.Parameters.AddWithValue("$source", sourceTask);
+        command.Parameters.AddWithValue("$target", targetTask);
+        command.Parameters.AddWithValue("$command", commandId);
+        command.Parameters.AddWithValue("$candidate", candidateId);
+        command.Parameters.AddWithValue("$hash", Hash);
+        await command.ExecuteNonQueryAsync();
+    }
+
+    private static async Task AssertSqlRejectedAsync(SqliteConnection connection, string sql, string taskId,
+        params (string Name, object Value)[] parameters)
+    {
+        await using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        command.Parameters.AddWithValue("$task", taskId);
+        foreach (var parameter in parameters) command.Parameters.AddWithValue(parameter.Name, parameter.Value);
+        await Assert.ThrowsAsync<SqliteException>(() => command.ExecuteNonQueryAsync());
+    }
+
+    private static async Task ExecuteAsync(SqliteConnection connection, string sql,
+        params (string Name, object Value)[] parameters)
+    {
+        await using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        foreach (var parameter in parameters) command.Parameters.AddWithValue(parameter.Name, parameter.Value);
+        await command.ExecuteNonQueryAsync();
+    }
+
+    private static async Task<string?> ScalarStringAsync(SqliteConnection connection, string sql,
+        params (string Name, object Value)[] parameters)
+    {
+        await using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        foreach (var parameter in parameters) command.Parameters.AddWithValue(parameter.Name, parameter.Value);
+        return await command.ExecuteScalarAsync() as string;
+    }
+
+    private static string Quote(string value) => '"' + value.Replace("\"", "\"\"") + '"';
 
     private static async Task<IReadOnlyList<string>> ReadColumnsAsync(SqliteConnection connection, string table)
     {
@@ -310,6 +469,18 @@ public sealed class SystemTaskLifecycleModelTests
             return connection;
         }
 
+        internal async Task SeedOperationAsync(string operationId)
+        {
+            await using var context = new ModelContext(ConnectionString);
+            context.Add(new Operation
+            {
+                Id = operationId,
+                Timestamp = DateTime.SpecifyKind(new DateTime(2026, 9, 11, 12, 0, 0), DateTimeKind.Utc),
+                Tool = "fixture"
+            });
+            await context.SaveChangesAsync();
+        }
+
         public ValueTask DisposeAsync()
         {
             SqliteConnection.ClearAllPools();
@@ -321,6 +492,20 @@ public sealed class SystemTaskLifecycleModelTests
     private sealed class ModelContext(string connectionString) : DbContext
     {
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) => optionsBuilder.UseSqlite(connectionString);
-        protected override void OnModelCreating(ModelBuilder modelBuilder) => SystemTaskLifecycleModelConfiguration.Configure(modelBuilder);
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            ConfigureOperationPrincipal(modelBuilder);
+            SystemTaskLifecycleModelConfiguration.Configure(modelBuilder);
+        }
+
+        private static void ConfigureOperationPrincipal(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Operation>(entity =>
+            {
+                entity.ToTable("operation");
+                entity.HasKey(value => value.Id);
+                entity.Property(value => value.Id).HasMaxLength(40);
+            });
+        }
     }
 }

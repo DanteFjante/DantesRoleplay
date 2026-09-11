@@ -6,7 +6,8 @@ internal sealed class SystemTaskAiAccountingSchemaFixture : IAsyncDisposable
 {
     internal const string Sql = """
         CREATE TABLE system_task_ai_ceiling (
-            task_id TEXT NOT NULL PRIMARY KEY REFERENCES system_task_lifecycle(task_id) ON DELETE RESTRICT CHECK (length(task_id) BETWEEN 1 AND 200),
+            task_id TEXT NOT NULL PRIMARY KEY CHECK (length(task_id) BETWEEN 1 AND 200),
+            task_purpose TEXT NOT NULL DEFAULT 'procedure-workflow' CHECK (task_purpose IN ('procedure-workflow','application-validation')),
             enrollment_fingerprint TEXT NOT NULL CHECK (length(enrollment_fingerprint) = 64),
             profile_id TEXT NOT NULL CHECK (length(profile_id) BETWEEN 1 AND 200),
             profile_version INTEGER NOT NULL CHECK (profile_version > 0),
@@ -14,17 +15,26 @@ internal sealed class SystemTaskAiAccountingSchemaFixture : IAsyncDisposable
             grant_reference TEXT NOT NULL CHECK (length(grant_reference) BETWEEN 1 AND 200),
             grant_revision TEXT NOT NULL CHECK (length(grant_revision) BETWEEN 1 AND 1024),
             grant_fingerprint TEXT NOT NULL CHECK (length(grant_fingerprint) = 64),
-            definition_id TEXT NOT NULL CHECK (length(definition_id) BETWEEN 1 AND 200),
-            definition_version INTEGER NOT NULL CHECK (definition_version > 0),
-            definition_fingerprint TEXT NOT NULL CHECK (length(definition_fingerprint) = 64),
+            definition_id TEXT NULL CHECK (length(definition_id) BETWEEN 1 AND 200),
+            definition_version INTEGER NULL CHECK (definition_version > 0),
+            definition_fingerprint TEXT NULL CHECK (length(definition_fingerprint) = 64),
             output_schema_fingerprint TEXT NOT NULL CHECK (length(output_schema_fingerprint) = 64),
             mode TEXT NOT NULL CHECK (mode IN ('measured-stop','hard-cap')),
             maximum_provider_tokens INTEGER NOT NULL CHECK (maximum_provider_tokens BETWEEN 1 AND 131072),
             maximum_tool_calls INTEGER NOT NULL CHECK (maximum_tool_calls BETWEEN 0 AND 16),
             maximum_concurrent_provider_requests INTEGER NOT NULL CHECK (maximum_concurrent_provider_requests BETWEEN 1 AND 4),
             deadline_utc TEXT NOT NULL CHECK (length(deadline_utc) BETWEEN 1 AND 40),
-            created_at_utc TEXT NOT NULL CHECK (length(created_at_utc) BETWEEN 1 AND 40)
+            created_at_utc TEXT NOT NULL CHECK (length(created_at_utc) BETWEEN 1 AND 40),
+            FOREIGN KEY (task_id, task_purpose) REFERENCES system_task_lifecycle(task_id, purpose) ON DELETE RESTRICT,
+            CHECK ((task_purpose = 'procedure-workflow'
+                    AND definition_id IS NOT NULL AND definition_version IS NOT NULL
+                    AND definition_fingerprint IS NOT NULL
+                    AND definition_fingerprint NOT GLOB '*[^0-9A-F]*')
+                OR (task_purpose = 'application-validation'
+                    AND definition_id IS NULL AND definition_version IS NULL AND definition_fingerprint IS NULL))
         );
+        CREATE INDEX ix_system_task_ai_ceiling_task_purpose
+            ON system_task_ai_ceiling(task_id, task_purpose);
 
         CREATE TABLE system_task_ai_reservation (
             record_reference TEXT NOT NULL PRIMARY KEY CHECK (length(record_reference) BETWEEN 1 AND 200),

@@ -39,8 +39,18 @@ caller commits before dispatch. Public submission owns its commit boundary and r
 scope and grants. Submission retains the resolver's exact activation origin; read and cancellation
 resolve that retained origin under current authority. Legacy rows without provenance can resolve
 only their exact current selection, with no inferred historical origin or lookup fallback.
+Origin-bearing workflow rows retain the original bounded canonical admission payload; readback
+verifies its hash and immutable identity before using the origin. Legacy admission fingerprints
+remain unchanged and cannot acquire historical authority by adding provenance columns later.
 Readback exposes bounded diagnostics without returning retained authority,
 lease tokens, raw input, or checkpoint state.
+
+The persistence model distinguishes procedure workflows from application-candidate validation.
+Validation has an exact candidate reference and no state or executable-definition identity;
+its optional causation reference restricts deletion of the existing operation record. AI ceilings
+reference the task and its purpose together. These schema boundaries do not enable validation
+admission or execution; those require the shared application host, current Read/Validate authority,
+candidate receipt rehydration when causation is supplied, and the INNER subject contract.
 
 AI accounting uses the same task/attempt history. Host-resolved enrollment and dispatch
 reservations debit every persisted ancestor; provider and tool observations are separate,
