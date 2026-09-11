@@ -1,8 +1,74 @@
 # Focused INNER AI workers
 
-Status: concrete implementation plan, 2026-09-11. Documentation only; implementation requires its assigned execution task. Initial integration is the existing Codex provider and website, with runtime JavaScript as another caller.
+Status: independent preparation and result-adapter implementation, 2026-09-11. Full worker execution remains unavailable pending accepted runtime, grant, context-profile and durable-lifecycle integration from plans 01–04. Initial external integration remains Codex and the website, with runtime JavaScript as another caller.
 
 Prerequisite: implement [00 — Shared foundation](00-shared-foundation.md) first and have the coordinator supply its accepted foundation revision and contract baseline. This workstream consumes those shared contracts and does not redefine them independently.
+
+## Implemented boundary and integration requirements
+
+`SystemInnerWorkerPreparation` in `system-capabilities/hosting` resolves and rechecks the selected
+active procedure through `IProcedureStore`, requests fresh context through the existing
+`IInteractionTaskContextMaterializer`, and selects only explicitly required references from the
+bounded version-2 packet. It rejects stale procedures, scope mismatch, missing context, expired or
+exhausted operation budgets, atomic work, malformed packets, and output-contract mismatch. The
+combined assignment/context JSON is capped at 64 KiB; the source context packet keeps its existing
+32 KiB/64-item bound. Host profile identity and model configuration remain separate from assignment
+data; procedure instructions replace prior profile instructions. Tool names are an explicit host
+allowlist. These internal preparation types are not a new public profile/authority contract.
+
+Preparation does not authorize standing grants, consume operation allowance, execute AI, resolve
+dependencies, or persist evidence. Its `PromptBytes` measures the assignment/context message only;
+it excludes the AI runner's system prompt, tool schemas and provider overhead. Existing per-request
+tool-round/output limits are preserved, but are not an aggregate token or descendant budget.
+
+`SystemInnerWorkerResultAdapter.MapStoredResult` is an internal readback projection for a terminal
+AI response already persisted by the lifecycle owner. It validates the command identity and typed
+output, requires an existing result-evidence reference, and returns compact computation data with
+the task handle, procedure/output-contract identity, summary and earlier commit references. Detailed
+activity remains in the existing AI response/task record. Model text and tool-success activity are
+never commit evidence. Unresolved operation identity produces a reconciliation-required failure;
+this mapper neither checks leases nor proves that the supplied evidence was persisted.
+
+`AiService.SendAgentRequestAsync` restricts agent tools to the host-materialized instances, including
+when a static tool has the same name. Direct requests retain their explicitly selected static tools.
+Failed provider rounds, tool-round exhaustion and invalid structured output retain measured tokens
+and earlier observed tool calls. These fields describe runner activity, not committed effects.
+
+Both worker adapters remain internal and unregistered. `ISystemInnerWorkerService` still resolves
+to the foundation's unavailable service. No worker can submit, self-confirm, or execute through
+these helpers. Real provider execution, crash/reconnect recovery, linked cancellation, expired-lease
+publication, dependency ordering, script/OUTER follow-up and cost comparisons are not established
+by their deterministic adapter tests.
+
+Coordinator proposals (not adopted shared contracts):
+
+- Freeze the host-owned procedure profile alongside `SystemInnerWorkerRequest`: exact procedure
+  revision/fingerprint, existing `AiAgentProfile` identity, allowed operation/tool references,
+  required context references, output schema/fingerprint, and narrowed budgets. Plans 02/03 must
+  resolve this from current authorized definitions; assignment JSON must not populate authority.
+  Existing consumers are the runtime gateway, context materializer and future INNER executor.
+- Add the plan-04 execution/readback binding using `SystemTaskAttemptIdentity`,
+  `SystemTaskSelectedDefinition`, `SystemTaskDurableHandle` and `InteractionInvocationHost`.
+  The lifecycle owner must reserve shared allowances across descendants/retries, reauthorize at
+  execution and tool invocation, validate procedure freshness, and fence persistence/notification.
+  Bind the result evidence to principal, application/state scope, grant revision, stable command,
+  attempt/fencing counter, selected procedure/schema fingerprints and the actual provider response.
+  `SystemInnerWorkerResultAdapter` checks only the command and output portion of this binding;
+  it must not be exposed as an evidence-verification service.
+  Persist AI input/evidence/results in those task records, without a second history. Current
+  `InteractionInvocationBudget` has operations/deadline only; aggregate provider-token and tool-call
+  accounting requires a coordinated budget extension before execution can be enabled.
+- Extend the existing durable service for bounded list/wait readback, then expose submit/get/list/
+  wait/cancel through `ISystemInnerWorkerService` or the common task gateway. Reuse its existing
+  submit/get/cancel identities; list should be scoped to the authorized parent with at most 16
+  handles per page. Wait must use named checkpoints and release execution resources. For example,
+  a pending response retains `{ "taskId": "task.1", "commandId": "command.1" }`; a completed
+  computation cites the existing terminal result record, never the provider conversation ID.
+  Coordinator-owned transport and registration connect OUTER/JavaScript; plan 06 owns display.
+
+These are additive integration requests, not new runtime IDs, migrations, wire fields or capability
+availability. Adoption requires the coordinator's accepted symbols/revision before this workstream
+can wire or test dependent scenarios.
 
 ## Outcome and existing owners
 
