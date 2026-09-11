@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace DantesRoleplay.Interactions;
 
@@ -27,8 +28,10 @@ public interface IInteractionManualContextService
 /// adapter remain responsible for binding/schema/grant checks. No durable task or receipt is created.
 ///
 /// ResultFingerprint is SHA-256 of canonical packet JSON with that field set to 64 zeroes.
-/// ResolutionFingerprint binds host scope/grant, intent/input, definition and source revisions,
-/// associations and candidate references. It is opaque to callers; resubmit it for drift detection.
+/// ResolutionFingerprint binds host identity/grant, intent/input and only authorized packet targets,
+/// manual evidence and associations. Whole catalog/activation hashes and denied source
+/// hashes are not model-facing evidence. Raw generation pins remain internal for freshness checks.
+/// It is opaque to callers; resubmit it for authorized-view drift detection.
 /// Bounds: intent 256 chars, known input 2000 chars, result 4000..24000 chars (default 16000),
 /// at most 8 feature candidates, 4 recipes and 8 sections, each section at most 2000 chars.
 /// Bounded means content was omitted; exact source reads are required before relying on constraints.
@@ -51,7 +54,11 @@ public sealed record InteractionManualContextPacket(
     bool Bounded,
     IReadOnlyList<string> NextSteps)
 {
-    private static readonly JsonSerializerOptions Wire = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+    private static readonly JsonSerializerOptions Wire = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        Converters = { new JsonStringEnumConverter<InteractionRetrievalLane>(JsonNamingPolicy.CamelCase) }
+    };
 
     /// <summary>Explicit bounded camelCase wire serialization; input JSON is never truncated.</summary>
     public string ToJson(int maximumCharacters = 16_000)
@@ -69,7 +76,24 @@ public sealed record InteractionManualContextPacket(
     }
 }
 
-public sealed record InteractionManualFeatureCandidate(InteractionFeatureReference Reference, string Name,
+/// <summary>
+/// Exact authorized target evidence for compact manual packets. ApplicationId is the canonical
+/// application identifier value; Lane uses its camelCase enum name in packet JSON. This omits the
+/// whole-catalog fingerprint retained by InteractionFeatureReference, which must remain host-only
+/// for restricted discovery. It does not confer execution or state-query permission.
+/// </summary>
+public sealed record InteractionManualTargetReference(string ApplicationId, InteractionRetrievalLane Lane,
+    string QualifiedId, string Kind, int Version, string ContentFingerprint)
+{
+    public static InteractionManualTargetReference From(InteractionFeatureReference reference)
+    {
+        ArgumentNullException.ThrowIfNull(reference);
+        return new(reference.ApplicationId.Value, reference.Lane, reference.QualifiedId, reference.Kind,
+            reference.Version, reference.ContentFingerprint);
+    }
+}
+
+public sealed record InteractionManualFeatureCandidate(InteractionManualTargetReference Reference, string Name,
     string Reason, string Prerequisites, IReadOnlyList<string> MissingInputs, string InputValidation);
 
 public sealed record InteractionManualRecipeCandidate(InteractionRecipeReference Reference, bool Compatible,

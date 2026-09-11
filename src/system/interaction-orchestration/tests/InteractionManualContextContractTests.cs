@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using DantesRoleplay.Interactions;
+using DantesRoleplay.Applications;
 
 namespace DantesRoleplay.Tests;
 
@@ -27,6 +28,32 @@ public sealed class InteractionManualContextContractTests
         wire["resultFingerprint"] = new string('0', 64);
         Assert.Equal(actual, Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
             InteractionCanonicalJson.CanonicalizeObject(wire.ToJsonString())))));
+    }
+
+    [Fact]
+    public void Compact_target_retains_exact_authorized_identity_without_catalog_generation_disclosure()
+    {
+        var raw = new InteractionFeatureReference(ApplicationIdentifier.Parse("sample-app"),
+            InteractionRetrievalLane.TrustedFeature, new string('A', 64), "query", "sample-app.query.inspect", 3,
+            new string('B', 64));
+        var target = InteractionManualTargetReference.From(raw);
+        Assert.Equal(target, InteractionManualTargetReference.From(raw with { CatalogFingerprint = new string('C', 64) }));
+        Assert.NotEqual(target, InteractionManualTargetReference.From(raw with { Version = 4 }));
+        using var known = JsonDocument.Parse("{}");
+        var packet = new InteractionManualContextPacket("unresolved", new string('D', 64), new string('0', 64),
+            "inspect", known.RootElement, [new(target, "Inspect", "exact-authored-match", "", [], "required-at-execution")],
+            [], null, [], "inspect-existing", "unavailable", "Lexical", "", false, []);
+        using var wire = JsonDocument.Parse(packet.ToJson());
+        var reference = wire.RootElement.GetProperty("candidates")[0].GetProperty("reference");
+        Assert.Equal(6, reference.EnumerateObject().Count());
+        Assert.Equal("sample-app", reference.GetProperty("applicationId").GetString());
+        Assert.Equal("trustedFeature", reference.GetProperty("lane").GetString());
+        Assert.Equal("sample-app.query.inspect", reference.GetProperty("qualifiedId").GetString());
+        Assert.Equal("query", reference.GetProperty("kind").GetString());
+        Assert.Equal(3, reference.GetProperty("version").GetInt32());
+        Assert.Equal(raw.ContentFingerprint, reference.GetProperty("contentFingerprint").GetString());
+        Assert.False(reference.TryGetProperty("catalogFingerprint", out _));
+        Assert.Equal(new string('A', 64), raw.CatalogFingerprint);
     }
 
     [Fact]
