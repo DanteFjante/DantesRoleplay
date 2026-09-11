@@ -1,11 +1,46 @@
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.Information;
 using Microsoft.EntityFrameworkCore;
+using DantesRoleplay.DataAccess.Composition;
+using DantesRoleplay.SchemaValidation;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DantesRoleplay.Tests;
 
 public sealed class InformationStoreMetadataValidationTests
 {
+    [Fact]
+    public async Task Production_registration_reuses_the_singleton_schema_graph_across_store_scopes()
+    {
+        using var fixture = new SqliteFixture();
+        var services = new ServiceCollection();
+        services.AddScoped(_ => fixture.CreateContext());
+        services.AddSchemaValidationComponent();
+        services.AddInformationComponent();
+        await using var provider = services.BuildServiceProvider();
+        var validator = Assert.IsType<BoundedJsonSchemaValidator>(provider.GetRequiredService<IBoundedJsonSchemaValidator>());
+        const string schema = "{\"type\":\"object\",\"required\":[\"rank\"]}";
+        Assert.Equal(0, validator.CacheUsage.Count);
+        using (var scope = provider.CreateScope())
+        {
+            var source = await scope.ServiceProvider.GetRequiredService<IInformationStore>()
+                .WriteSourceAsync(new("source.one", "local.rules", "One", MetadataSchemaJson: schema));
+            Assert.Equal("created", source.Status);
+        }
+        Assert.Equal(1, validator.CacheUsage.Count);
+        var graph = validator.ObserveCachedSchemaGraph(schema).Target;
+        using (var scope = provider.CreateScope())
+        {
+            var store = scope.ServiceProvider.GetRequiredService<IInformationStore>();
+            Assert.Same(validator, scope.ServiceProvider.GetRequiredService<IBoundedJsonSchemaValidator>());
+            Assert.Equal("created", (await store.WriteSourceAsync(
+                new("source.two", "local.rules", "Two", MetadataSchemaJson: schema))).Status);
+            Assert.Equal("INFORMATION_RECORD_METADATA_INVALID", (await store.WriteRecordAsync(
+                new("record.invalid", "source.two", "Invalid", "Content", "{}"))).ErrorCode);
+        }
+        Assert.Same(graph, validator.ObserveCachedSchemaGraph(schema).Target);
+    }
+
     [Fact]
     public async Task Default_metadata_schema_accepts_an_empty_object()
     {

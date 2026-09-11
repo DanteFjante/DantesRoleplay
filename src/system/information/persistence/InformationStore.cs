@@ -12,14 +12,17 @@ using Microsoft.EntityFrameworkCore.Storage;
 namespace DantesRoleplay.DataAccess;
 
 /// <summary>Neutral persistence and bounded lexical ranking for user-defined information.</summary>
-public sealed class InformationStore(DantesRoleplayDbContext db) : IInformationStore
+public sealed class InformationStore(DantesRoleplayDbContext db, IBoundedJsonSchemaValidator schemas) : IInformationStore
 {
+    /// <summary>Compatibility for direct test fixtures; production DI uses the registered validator.</summary>
+    internal InformationStore(DantesRoleplayDbContext db) : this(db, new BoundedJsonSchemaValidator()) { }
+
     private const int MaximumMetadataBytes = 8_000;
     private const int MaximumCompatibilityEvidence = 3;
     private const int MaximumCompatibilityRecords = 500;
     private const int MaximumCompatibilityMetadataBytes = 1_000_000;
     private readonly DantesRoleplayDbContext _db = db;
-    private readonly IBoundedJsonSchemaValidator _schemas = new BoundedJsonSchemaValidator();
+    private readonly IBoundedJsonSchemaValidator _schemas = schemas ?? throw new ArgumentNullException(nameof(schemas));
 
     public async Task<InformationSourceWriteResult> WriteSourceAsync(InformationSourceWriteRequest request, CancellationToken cancellationToken = default)
     {
