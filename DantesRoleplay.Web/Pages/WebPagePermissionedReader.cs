@@ -29,8 +29,6 @@ public sealed class WebPagePermissionedReader(
         string entityId, string? contentPageId, int? revision, string? path, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(host);
-        if (host.StateSpaceId is not null || host.StateRevision is not null)
-            return Failed("WEB_APPLICATION_SCOPE_REQUIRED");
         if (host.Profile != InteractionExecutionProfile.ReadOnly)
             return Failed("WEB_READ_ONLY_REQUIRED");
         if (host.Budget.DeadlineUtc <= DateTime.UtcNow)

@@ -104,18 +104,30 @@ public sealed class WebPagePermissionedReaderTests
         Assert.Equal("<p>Legacy active</p>", html.Html);
     }
 
-    [Fact]
-    public async Task State_scoped_host_is_rejected_before_consuming_the_read_budget()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task A_host_with_state_context_requires_an_actual_application_grant(bool stateSpaceGrant)
     {
         await using var fixture = await Fixture.CreateAsync();
-        var reader = await PrepareAsync(fixture);
+        var reader = await PrepareAsync(fixture, stateSpaceGrant ? "scope" : null);
         var host = new InteractionInvocationHost(TrustedPrincipalContext.VerifiedPrincipal(Principal, "test"),
             fixture.Applications.Get(fixture.ApplicationId)!, Fixture.PublicationSpace, "web-read@1", Guid.NewGuid().ToString("N"),
             "publication@1", InteractionExecutionProfile.ReadOnly, new(1, DateTime.UtcNow.AddMinutes(1)));
         var result = await reader.ReadPageAsync(host, Fixture.EntityId);
-        Assert.Equal("WEB_APPLICATION_SCOPE_REQUIRED", result.Failure!.Code);
-        Assert.Null(result.Html);
-        Assert.Equal(1, host.Budget.RemainingOperations);
+        if (stateSpaceGrant)
+        {
+            Assert.Equal("WEB_RESOURCE_NOT_AUTHORIZED", result.Failure!.Code);
+            Assert.Null(result.Html);
+            Assert.Null(result.Content);
+        }
+        else
+        {
+            Assert.Null(result.Failure);
+            Assert.NotNull(result.Html);
+            Assert.Equal(2, result.Content!.Revision);
+        }
+        Assert.Equal(0, host.Budget.RemainingOperations);
     }
 
     private static InteractionInvocationHost Host(Fixture fixture, string principal = Principal) =>

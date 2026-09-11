@@ -68,7 +68,7 @@ public sealed class WebPageStandingGrantResourceTargetOwnerTests
     }
 
     [Fact]
-    public async Task State_scoped_host_cannot_resolve_a_web_page_resource()
+    public async Task State_context_does_not_change_resource_ownership_evidence()
     {
         await using var fixture = await Fixture.CreateAsync();
         await fixture.Content.SaveBundleAndActivateAsync("page", new("<p>one</p>", []));
@@ -76,8 +76,10 @@ public sealed class WebPageStandingGrantResourceTargetOwnerTests
         var host = new InteractionInvocationHost(TrustedPrincipalContext.VerifiedPrincipal("principal." + new string('a', 64), "test"),
             fixture.Applications.Get(fixture.App)!, "state", "grant@1", "command", "state@1", InteractionExecutionProfile.ReadOnly,
             new InteractionInvocationBudget(1, DateTime.UtcNow.AddMinutes(1)));
-        Assert.Equal("STANDING_GRANT_WEB_PAGE_SCOPE_DENIED",
-            (await fixture.Owner().ResolveCurrentAsync(host, "web.pages.example")).Code);
+        var applicationOnly = await fixture.Owner().ResolveCurrentAsync(fixture.Host(), "web.pages.example");
+        var withState = await fixture.Owner().ResolveCurrentAsync(host, "web.pages.example");
+        Assert.Equal(StandingGrantTargetResolutionStatus.Available, withState.Status);
+        Assert.Equal(applicationOnly.Target, withState.Target);
     }
 
     [Fact]

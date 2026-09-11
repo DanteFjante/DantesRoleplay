@@ -154,9 +154,10 @@ ECS publication link. `ResolveCurrentAsync` selects the latest retained revision
 authoring only; it never selects what a published route serves.
 
 `WebPagePermissionedReader` is an unregistered serving consumer. It accepts a host-created read-only
-`InteractionInvocationHost.ForApplication` invocation with no state-space authority, selects the live
-ECS publication pin, resolves that exact retained resource, and requires its current Application-scoped
-Read grant. It consumes one shared operation and rechecks authority
+invocation, normally created with `InteractionInvocationHost.ForApplication`. Existing trusted hosts
+may also carry state context; that context never substitutes for the required Application-scoped
+Read grant. The reader selects the live ECS publication pin and resolves that exact retained resource.
+It consumes one shared operation and rechecks authority
 and the publication before returning HTML or exact revision assets. Failures return no content;
 query/action compositions remain unavailable. The coordinator owns host construction, registration,
 HTTP routing and response cache policy. This consumer does not provide resource adoption, candidate
