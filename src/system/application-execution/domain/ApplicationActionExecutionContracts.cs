@@ -2,6 +2,7 @@ using DantesRoleplay.Applications;
 using DantesRoleplay.Ecs;
 using DantesRoleplay.EcsEffects;
 using DantesRoleplay.Mechanics;
+using DantesRoleplay.Interactions;
 
 namespace DantesRoleplay.ApplicationExecution;
 
@@ -79,5 +80,15 @@ public interface IApplicationActionRunner
 {
     Task<ApplicationActionExecutionResult> RunAsync(
         ApplicationActionExecutionRequest request,
+        CancellationToken cancellationToken = default);
+}
+
+public sealed record ApplicationActionInvocationRequest(
+    InteractionInvocationHost Host, string QualifiedMechanicId, int MechanicVersion, string ContentFingerprint,
+    IReadOnlyDictionary<string, string> RoleEntityIds, string InputJson = "{}");
+
+public interface IApplicationActionInvocationAdapter
+{
+    Task<InteractionInvocationResult> ExecuteAsync(ApplicationActionInvocationRequest request,
         CancellationToken cancellationToken = default);
 }

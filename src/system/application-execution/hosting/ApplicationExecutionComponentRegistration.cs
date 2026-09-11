@@ -11,6 +11,7 @@ public static class ApplicationExecutionComponentRegistration
         .AddScoped<IApplicationMechanicProjectionMappingResolver, ApplicationMechanicProjectionMappingResolver>()
         .AddScoped<IApplicationMechanicEvaluator, ApplicationMechanicEvaluator>()
         .AddScoped<IApplicationEcsEffectBatchBuilder, ApplicationEcsEffectBatchBuilder>()
+        .AddScoped<IApplicationActionInvocationAdapter, ApplicationActionInvocationAdapter>()
         // Keep the concrete runner available to the generic event adapter so both paths reuse its
         // exact typed-effect translation and expectation builder.
         .AddScoped<ApplicationActionRunner>()

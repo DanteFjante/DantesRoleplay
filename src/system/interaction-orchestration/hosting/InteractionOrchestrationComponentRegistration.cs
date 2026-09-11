@@ -87,6 +87,7 @@ internal static class InteractionOrchestrationComponentRegistration
         services.TryAddEnumerable(ServiceDescriptor.Scoped<IInteractionQueryExecutor, MechanicProjectionInteractionQueryExecutor>());
         services.TryAddScoped<IInteractionQueryExecutorRegistry, InteractionQueryExecutorRegistry>();
         services.TryAddScoped<IApplicationReadModelService, ApplicationReadModelService>();
+        services.TryAddScoped<IApplicationReadModelInvocationAdapter, ApplicationReadModelInvocationAdapter>();
         services.TryAddScoped<IApplicationQueryRoleBindingResolver, ApplicationQueryRoleBindingResolver>();
         services.TryAddScoped<IInteractionTaskContextMaterializer>(provider =>
             new InteractionTaskContextMaterializer(

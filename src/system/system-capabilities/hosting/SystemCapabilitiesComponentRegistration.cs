@@ -43,6 +43,7 @@ internal static class SystemCapabilitiesComponentRegistration
         services.AddScoped<ISystemAiToolSource, SystemCapabilityAiToolSource>();
         services.AddScoped<ISystemAiToolSource, EcsLifecycleAiToolSource>();
         services.AddScoped<ISystemAiAgentService, SystemAiAgentService>();
+        services.TryAddScoped<ISystemInnerWorkerService, UnavailableSystemInnerWorkerService>();
         services.TryAddSingleton<IPrivateOperatorAuthorizationPolicy, PrivateOperatorAuthorizationPolicy>();
         return services;
     }

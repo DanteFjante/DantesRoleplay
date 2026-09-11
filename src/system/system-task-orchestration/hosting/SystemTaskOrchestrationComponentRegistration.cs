@@ -11,6 +11,7 @@ internal static class SystemTaskOrchestrationComponentRegistration
     {
         services.AddScoped<ISystemTaskContextMaterializer, SystemTaskContextMaterializer>();
         services.AddScoped<ISystemTaskService, SystemTaskService>();
+        services.TryAddScoped<ISystemTaskDurableService, UnavailableSystemTaskDurableService>();
         services.AddScoped<ISystemAiToolSource, SystemTaskAiToolSource>();
         services.TryAddSingleton<IPrivateOperatorAuthorizationPolicy, PrivateOperatorAuthorizationPolicy>();
         return services;
