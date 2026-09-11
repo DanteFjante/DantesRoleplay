@@ -30,10 +30,29 @@ public sealed class InteractionFeatureRetriever(
     private readonly IApplicationDefinitionChangeReader? _changes = changes;
     private readonly InteractionRetrievalRefreshCoordinator _refresh = refresh ?? new();
 
-    public async Task<InteractionFeatureSearchResult> SearchAsync(
+    public Task<InteractionFeatureSearchResult> SearchAsync(
         InteractionFeatureRetrievalScope scope,
         InteractionFeatureSearchInput input,
+        CancellationToken cancellationToken = default) => SearchCoreAsync(scope, input, null, cancellationToken);
+
+    /// <summary>
+    /// Owner-internal seam: the adapter must resolve and authorize each exact target using the full
+    /// invocation host. No public request or caller JSON supplies this predicate. Restricted views
+    /// use lexical retrieval because the vector interface cannot rank an authorized subset.
+    /// </summary>
+    internal Task<InteractionFeatureSearchResult> SearchAuthorizedAsync(InteractionFeatureRetrievalScope scope,
+        InteractionFeatureSearchInput input,
+        Func<InteractionFeatureReference, CancellationToken, Task<bool>> authorize,
         CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(authorize);
+        return SearchCoreAsync(scope, input, authorize, cancellationToken);
+    }
+
+    private async Task<InteractionFeatureSearchResult> SearchCoreAsync(
+        InteractionFeatureRetrievalScope scope, InteractionFeatureSearchInput input,
+        Func<InteractionFeatureReference, CancellationToken, Task<bool>>? authorize,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(scope);
         ArgumentNullException.ThrowIfNull(input);
@@ -57,8 +76,21 @@ public sealed class InteractionFeatureRetriever(
         current = (FilterNamespaces(current.Documents, scope.ApplicationId, input.NamespaceId), "", "");
         var resolved = Resolve(snapshot, current.Documents, input.IncludeShadowed);
         current = (resolved.Records, "", "");
+        if (authorize is not null)
+        {
+            var permitted = new List<ActiveCatalogFeatureDocument>();
+            foreach (var document in current.Documents)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (await authorize(Reference(snapshot, scope, document.Record), cancellationToken)) permitted.Add(document);
+            }
+            current = (permitted, "", "");
+            if (!MatchesCurrentDefinition(scope.ApplicationId, snapshot))
+                return Unavailable("CATALOG_GENERATION_STALE", "The definition changed during authorization; retry discovery.");
+        }
         if (current.Documents.Count == 0)
-            return InteractionFeatureSearchResult.Create(InteractionRetrievalMode.Lexical, []);
+            return authorize is null ? InteractionFeatureSearchResult.Create(InteractionRetrievalMode.Lexical, [])
+                : RestrictedLexical(snapshot, scope, [], input);
 
         // An exact qualified id, or an exact authored phrase. Phrases are the alternative keys a
         // record declares for itself -- "what does a location need to be playable" naming the
@@ -70,8 +102,8 @@ public sealed class InteractionFeatureRetriever(
         if (exact is not null)
             return InteractionFeatureSearchResult.Create(InteractionRetrievalMode.Exact,
                 [Hit(snapshot, scope, exact, null, null, true)],
-                resolutionDiagnostics: DiagnosticsForHits(resolved.Diagnostics,
-                    [Hit(snapshot, scope, exact, null, null, true)]));
+                resolutionDiagnostics: authorize is null ? DiagnosticsForHits(resolved.Diagnostics,
+                    [Hit(snapshot, scope, exact, null, null, true)]) : null);
 
         IReadOnlyList<(ActiveCatalogFeatureDocument Document, int Rank)> lexical;
         try
@@ -83,6 +115,7 @@ public sealed class InteractionFeatureRetriever(
             return Unavailable("CATALOG_SEARCH_INVALID", "The host-bound catalog could not search the bounded request.");
         }
 
+        if (authorize is not null) return RestrictedLexical(snapshot, scope, lexical, input);
         if (_embeddings is null || _vectors is null)
             return LexicalFallback(snapshot, scope, lexical, input, "VECTOR_INDEX_DISABLED",
                 "Vector retrieval is not configured; lexical retrieval remains available.");
@@ -410,6 +443,11 @@ public sealed class InteractionFeatureRetriever(
             return false;
         }
     }
+
+    private InteractionFeatureSearchResult RestrictedLexical(ActiveCatalogFeatureSnapshot snapshot,
+        InteractionFeatureRetrievalScope scope, IReadOnlyList<(ActiveCatalogFeatureDocument Document, int Rank)> lexical,
+        InteractionFeatureSearchInput input) => LexicalFallback(snapshot, scope, lexical, input,
+            "AUTHORIZED_VIEW_LEXICAL_ONLY", "Restricted discovery uses authorized exact and lexical candidates; subset vector ranking is unavailable.");
 
     private static InteractionRetrievalGeneration Generation(
         InteractionFeatureRetrievalScope scope,
