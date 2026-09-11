@@ -12,6 +12,88 @@ namespace DantesRoleplay.Authorization.Tests;
 
 public sealed partial class SqliteStandingGrantTargetResolverTests
 {
+    [Fact]
+    public async Task Compatible_body_publication_executes_the_new_active_javascript_and_revocation_denies_it()
+    {
+        await using var db = fixture.CreateContext();
+        var data = await PureRuntimeFixtureAsync(db,
+            "return { data: { count: ctx.input.count + 7 } };");
+        await AllowPurePublicationAsync(db, execute: true);
+        db.ChangeTracker.Clear();
+        var before = data.Setup.Activation.Current(Application)!;
+        var catalogs = new ActivatedApplicationCatalogProvider(
+            new ConfiguredPublicApplicationCatalogPolicy([Application.Value]),
+            new ActivatedApplicationCatalogMaterializer(data.Setup.Applications,
+                data.Setup.Activation, data.Setup.Sources, data.Setup.Roots, data.Setup.Extensions),
+            new CatalogCursorCodec(new byte[32]), data.Setup.Activation);
+        Assert.True(catalogs.TryGet(Application, out var oldCatalog));
+        var oldRecord = oldCatalog.Inspect(new(Application, Application.Value,
+            data.Definition.DefinitionId)).Summary;
+        var manuals = new InteractionManualContextService(
+            new ProcedureStore(db), new InteractionFeatureRetriever(catalogs),
+            new SqliteStandingGrantPolicy(db, data.Setup.Resolver), data.Setup.Resolver,
+            data.Setup.Activation, ["system"]);
+        var service = new SqliteApplicationAuthoringService(
+            db, data.Setup.Applications, data.Setup.Activation, data.Setup.Activation,
+            data.Setup.Sources, new SqliteStandingGrantPolicy(db, data.Setup.Resolver),
+            data.Setup.Resolver, new OperationLog(db), PureRuntimeValidator(db, data.Setup), manuals);
+        var validationHost = PureRuntimeHost(data.Setup, operations: 3);
+        var validated = await service.ValidateAsync(new ApplicationCandidateValidationRequest(
+            data.Candidate,
+            [new(data.Definition, "{\"count\":1}", "{\"count\":8}")]), validationHost);
+        Assert.Equal(InteractionInvocationResultTag.Committed, validated.Tag);
+        var validation = await db.Set<ApplicationCandidateValidationRecord>()
+            .AsNoTracking().SingleAsync();
+        Assert.Equal("valid", validation.Outcome);
+        Assert.True(validation.DependenciesComplete);
+        Assert.NotNull(validation.ManualPacketResultFingerprint);
+
+        var activationRequest = new ApplicationCandidateActivationRequest(
+            data.Candidate, validation.OperationId);
+        var activated = await service.ActivateAsync(
+            PureRuntimeHost(data.Setup), activationRequest);
+        Assert.Equal(InteractionInvocationResultTag.Committed, activated.Tag);
+        var published = data.Setup.Activation.Current(Application)!;
+        Assert.Equal(before.ActivationRevision + 1, published.ActivationRevision);
+        Assert.True(catalogs.TryGet(Application, out var activeCatalog));
+        var activeRecord = activeCatalog.Inspect(new(Application, Application.Value,
+            data.Definition.DefinitionId)).Summary;
+        Assert.NotEqual(oldRecord.ContentFingerprint, activeRecord.ContentFingerprint);
+        Assert.Equal(data.Definition.ContentFingerprint, activeRecord.ContentFingerprint);
+
+        var action = PureActionAdapter(db, data.Setup, catalogs);
+        var executionHost = PureRuntimeHost(data.Setup);
+        var executed = await action.ExecuteAsync(new(
+            executionHost, activeRecord.QualifiedId, activeRecord.Version,
+            activeRecord.ContentFingerprint, new Dictionary<string, string>(),
+            "{\"count\":5}"));
+        Assert.Equal(InteractionInvocationResultTag.Completed, executed.Tag);
+        Assert.Equal("{\"count\":12}", executed.DataJson);
+        Assert.Null(executed.Receipt);
+
+        var replay = await service.ActivateAsync(
+            PureRuntimeHost(data.Setup), activationRequest);
+        Assert.Equal(activated.Receipt, replay.Receipt);
+        Assert.Equal(published.ActivationRevision,
+            data.Setup.Activation.Current(Application)!.ActivationRevision);
+        Assert.Single(await db.Set<ApplicationCandidatePublicationRecord>()
+            .AsNoTracking().ToArrayAsync());
+        Assert.Single(await db.Operations.AsNoTracking()
+            .Where(value => value.Tool == "application-candidate-activation")
+            .ToArrayAsync());
+
+        await RevokeGrantAsync(db);
+        db.ChangeTracker.Clear();
+        var revokedHost = PureRuntimeHost(data.Setup);
+        var denied = await action.ExecuteAsync(new(
+            revokedHost, activeRecord.QualifiedId, activeRecord.Version,
+            activeRecord.ContentFingerprint, new Dictionary<string, string>(),
+            "{\"count\":5}"));
+        Assert.Equal(InteractionInvocationResultTag.Failed, denied.Tag);
+        Assert.Equal("INVOCATION_NOT_AUTHORIZED", denied.Code);
+        Assert.Equal(1, revokedHost.Budget.RemainingOperations);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -90,11 +172,18 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         Assert.Equal(current.ActivationFingerprint, data.Setup.Activation.Current(Application)!.ActivationFingerprint);
     }
 
-    private static async Task AllowPurePublicationAsync(DantesRoleplayDbContext db)
+    private static async Task AllowPurePublicationAsync(
+        DantesRoleplayDbContext db,
+        bool execute = false)
     {
         var row = await db.Set<StandingGrantRevisionRecord>().SingleAsync(value => value.GrantId == "grant");
         var grant = SqliteStandingGrantPolicy.Parse(row);
-        grant = grant with { Capabilities = [.. grant.Capabilities, StandingGrantCapability.Activate] };
+        grant = grant with
+        {
+            Capabilities = execute
+                ? [.. grant.Capabilities, StandingGrantCapability.Activate, StandingGrantCapability.Execute]
+                : [.. grant.Capabilities, StandingGrantCapability.Activate]
+        };
         row.PermissionsJson = StandingGrantRevisionCanonicalization.PermissionsJson(grant);
         row.ContentFingerprint = StandingGrantRevisionCanonicalization.ContentFingerprint(grant);
         await db.SaveChangesAsync();

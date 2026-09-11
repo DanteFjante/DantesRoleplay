@@ -196,13 +196,21 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             setup.Activation);
         Assert.True(catalogs.TryGet(Application, out var catalog));
         var record = catalog.Inspect(new(Application, Application.Value, PureActionId)).Summary;
+        return (PureActionAdapter(db, setup, catalogs), record);
+    }
+
+    private static ApplicationActionInvocationAdapter PureActionAdapter(
+        DantesRoleplayDbContext db,
+        SetupState setup,
+        IPublicApplicationCatalogProvider catalogs)
+    {
         var schemas = new BoundedJsonSchemaValidator();
         var executor = new ApplicationPureActionExecutor(
             catalogs, new(schemas), new JintMechanicEngine(), schemas,
             setup.Resolver, new SqliteStandingGrantPolicy(db, setup.Resolver),
             new SqliteEcsWriteTransactionFactory(db));
-        return (new ApplicationActionInvocationAdapter(
-            null!, null!, null!, new OperationLog(db), executor), record);
+        return new ApplicationActionInvocationAdapter(
+            null!, null!, null!, new OperationLog(db), executor);
     }
 
     private static ApplicationActionInvocationRequest Request(
