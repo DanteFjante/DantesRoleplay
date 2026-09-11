@@ -144,6 +144,9 @@ public sealed record SystemInnerWorkerAiProviderTokenBound
 /// the shared operation/deadline budget. ReservationId identifies one dispatch across redelivery.
 /// Every provider dispatch requires a nonzero provider-token reservation; a tool-only reservation
 /// cannot authorize it. The future host executor must enforce this at the actual dispatch boundary.
+/// Tool-only reservations still require all ancestor provider thresholds (charged plus held usage)
+/// and applicable tool allowances to permit new dispatch; zero tokens exempt only provider-bound
+/// evidence. Settlement, terminal publication, cleanup, cancel and readback are not new dispatches.
 /// Plan 04 derives root/ancestors from its records; the caller supplies no ancestry or balance.
 /// </summary>
 public sealed record SystemInnerWorkerAiReservationRequest

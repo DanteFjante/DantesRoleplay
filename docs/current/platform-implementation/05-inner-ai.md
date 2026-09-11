@@ -130,7 +130,12 @@ in-flight requests may overrun; actual usage is retained without clamping. No ne
 when known charges/holds exhaust the threshold, usage is unknown, or configured concurrency is full.
 The pure `ProviderReservationAmount` calculation does not reserve anything: plan 04 must apply it
 atomically across the root and every ancestor. Independent root concurrency remains host policy.
-Tool-only reservations cannot authorize provider calls.
+Tool-only reservations cannot authorize provider calls. Their zero-provider-token amount exempts only
+provider-bound evidence, not common admission checks: every ancestor must remain below its provider
+threshold after charged usage and outstanding holds, and the applicable independent tool allowance
+must remain available, before any new provider or tool dispatch. Evidence recording, settlement,
+valid terminal publication, cleanup, cancellation and readback are lifecycle actions rather than new
+AI dispatches; ordinary authority and fencing still apply to them.
 
 Local inspection of Codex CLI 0.153.4's generated app-server schema established the implemented usage
 and terminal field names. The existing repository pin remains 0.149.1. `CodexAiClient` always starts a
