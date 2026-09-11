@@ -106,7 +106,7 @@ public sealed class ApplicationCandidateRetainedReaderTests
                 })
             })));
 
-        Assert.Equal(oldFormula, ApplicationCandidateRetainedReader.ContentFingerprint(
+        Assert.Equal(oldFormula, ApplicationCandidateRetainedReader.MetadataFingerprint(
             metadata.RevisionRow, metadata.ApplicationRevision, metadata.Documents));
     }
 
@@ -200,7 +200,7 @@ public sealed class ApplicationCandidateRetainedReaderTests
             ApplicationRevision = applicationRevision.Revision, ContentFingerprint = new string('0', 64), Origin = "runtime",
             NewImplementationReason = "Large retained candidate.", AuthorGrantReference = "grant@1",
             SourceOperationId = "candidate-source-operation", CanonicalCommandFingerprint = new string('A', 64) };
-        row.ContentFingerprint = ApplicationCandidateRetainedReader.ContentFingerprint(row, applicationRevision,
+        row.ContentFingerprint = ApplicationCandidateRetainedReader.MetadataFingerprint(row, applicationRevision,
             documents.Select(value => value.Document).ToArray());
         db.Add(row);
         foreach (var link in links) db.Add(new ApplicationCandidateDocumentRecord { ApplicationId = Application.Value,

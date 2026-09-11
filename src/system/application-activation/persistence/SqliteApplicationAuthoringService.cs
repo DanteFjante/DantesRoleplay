@@ -98,7 +98,7 @@ public sealed partial class SqliteApplicationAuthoringService(
                 Origin = request.Origin, SynchronizationEvidenceReference = null, NewImplementationReason = request.NewImplementationReason.Trim(),
                 AuthorGrantReference = host.GrantReference, SourceOperationId = operationId, CanonicalCommandFingerprint = commandFingerprint,
                 ContentFingerprint = new string('0', 64) };
-            row.ContentFingerprint = ApplicationCandidateRetainedReader.ContentFingerprint(row, registered,
+            row.ContentFingerprint = ApplicationCandidateRetainedReader.MetadataFingerprint(row, registered,
                 effective.Select(x => x.Document).ToArray());
             db.Add(row);
             var links = await RetainEffectiveAsync(app, active, effective, cancellationToken);

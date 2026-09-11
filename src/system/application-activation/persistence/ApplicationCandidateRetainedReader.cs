@@ -52,7 +52,7 @@ internal sealed class ApplicationCandidateRetainedReader(
                 value.MediaType, value.ContentFingerprint, value.Length, value.IsText));
         }
         var metadata = new ApplicationCandidateRetainedMetadata(row, applicationRevision, Array.AsReadOnly(documents.ToArray()));
-        if (row.ContentFingerprint != ContentFingerprint(row, applicationRevision, metadata.Documents))
+        if (row.ContentFingerprint != MetadataFingerprint(row, applicationRevision, metadata.Documents))
             throw Invalid("APPLICATION_CANDIDATE_FINGERPRINT_MISMATCH", "Candidate metadata does not match its immutable content fingerprint.");
         return metadata;
     }
@@ -130,9 +130,9 @@ internal sealed class ApplicationCandidateRetainedReader(
         ApplicationCandidateRevisionRecord row,
         ApplicationRevision applicationRevision,
         IReadOnlyList<ApplicationCandidateDocument> documents) =>
-        ContentFingerprint(row, applicationRevision, documents.Select(value => value.Document).ToArray());
+        MetadataFingerprint(row, applicationRevision, documents.Select(value => value.Document).ToArray());
 
-    internal static string ContentFingerprint(ApplicationCandidateRevisionRecord row, ApplicationRevision applicationRevision,
+    internal static string MetadataFingerprint(ApplicationCandidateRevisionRecord row, ApplicationRevision applicationRevision,
         IReadOnlyList<ActivatedApplicationDocument> documents)
     {
         var header = InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
