@@ -52,6 +52,12 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
     [InlineData("total")]
     [InlineData("aggregate-bytes")]
     [InlineData("wrong-target")]
+    [InlineData("input-array")]
+    [InlineData("input-scalar")]
+    [InlineData("input-null")]
+    [InlineData("expected-array")]
+    [InlineData("expected-scalar")]
+    [InlineData("expected-null")]
     public async Task Invalid_sample_bounds_or_targets_do_not_retain_validation_operations(string invalid)
     {
         await using var db = fixture.CreateContext();
@@ -69,7 +75,13 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         {
             "per-definition" => Enumerable.Repeat(sample, 5).ToArray(),
             "total" => Enumerable.Repeat(sample, 17).ToArray(),
-            "aggregate-bytes" => Enumerable.Repeat(sample with { InputJson = JsonSerializer.Serialize(new string('x', 17000)) }, 4).ToArray(),
+            "aggregate-bytes" => Enumerable.Repeat(sample with { InputJson = JsonSerializer.Serialize(new { value = new string('x', 17000) }) }, 4).ToArray(),
+            "input-array" => [sample with { InputJson = "[]" }],
+            "input-scalar" => [sample with { InputJson = "1" }],
+            "input-null" => [sample with { InputJson = "null" }],
+            "expected-array" => [sample with { ExpectedDataJson = "[]" }],
+            "expected-scalar" => [sample with { ExpectedDataJson = "1" }],
+            "expected-null" => [sample with { ExpectedDataJson = "null" }],
             _ => [sample with { Definition = sample.Definition with { ContentFingerprint = new string('A', 64) } }]
         };
 

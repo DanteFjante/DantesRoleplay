@@ -113,6 +113,7 @@ public sealed partial class SqliteApplicationAuthoringService
         catch (ApplicationActivationException exception) when (exception.Code.EndsWith("UNAVAILABLE", StringComparison.Ordinal))
         { return InteractionInvocationResult.Unavailable(exception.Code, "Candidate validation is unavailable."); }
         catch (ApplicationActivationException exception) { return Failed(exception.Code); }
+        catch (InteractionContractException exception) { return Failed(exception.Code); }
         catch (OperationCanceledException) { throw; }
         catch (Exception) { return InteractionInvocationResult.Unavailable("APPLICATION_CANDIDATE_VALIDATE_UNAVAILABLE", "Candidate validation is unavailable."); }
         finally
@@ -134,8 +135,8 @@ public sealed partial class SqliteApplicationAuthoringService
             throw new ApplicationActivationException("APPLICATION_CANDIDATE_SAMPLES_INVALID", "Validation samples exceed their bounds or lack an exact definition.");
         return Array.AsReadOnly(samples.Select(sample => sample with
         {
-            InputJson = InteractionCanonicalJson.Canonicalize(sample.InputJson),
-            ExpectedDataJson = InteractionCanonicalJson.Canonicalize(sample.ExpectedDataJson)
+            InputJson = InteractionCanonicalJson.CanonicalizeObject(sample.InputJson),
+            ExpectedDataJson = InteractionCanonicalJson.CanonicalizeObject(sample.ExpectedDataJson)
         }).ToArray());
     }
 
