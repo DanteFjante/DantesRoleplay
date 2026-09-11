@@ -219,6 +219,9 @@ public sealed class JintMechanicEngine : IMechanicEngine
             ThrowIfTimeoutElapsed(stopwatch.Elapsed, limits.Timeout);
 
             Engine engine;
+            ServiceTerminalConstraint? serviceTerminal = serviceCapabilities is IApplicationJobServiceCapabilities { JobsEnabled: true }
+                ? new ServiceTerminalConstraint()
+                : null;
             string payload;
             phaseStart = Stopwatch.GetTimestamp();
             try
@@ -264,6 +267,7 @@ public sealed class JintMechanicEngine : IMechanicEngine
                     options.MaxStatements(limits.MaxStatements);
                     options.LimitRecursion(limits.MaxRecursionDepth);
                     options.CancellationToken(cancellationToken);
+                    if (serviceTerminal is not null) options.Constraint(serviceTerminal);
 
                     // Strict mode, so `total = 5` without a declaration is an error rather than a
                     // silent global. The author is an LLM and the error message is how it learns.
@@ -288,7 +292,7 @@ public sealed class JintMechanicEngine : IMechanicEngine
                 engine.Execute(preparedMechanic);
                 if (serviceCapabilities is not null)
                     BindServiceCapabilities(engine, serviceCapabilities, stopwatch, limits.Timeout,
-                        cancellationToken);
+                        cancellationToken, serviceTerminal);
                 completion = engine.Evaluate(PreparedHarness).AsString();
             }
             finally
@@ -368,13 +372,19 @@ public sealed class JintMechanicEngine : IMechanicEngine
         IApplicationReadOnlyServiceCapabilities capabilities,
         Stopwatch invocation,
         TimeSpan timeout,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        ServiceTerminalConstraint? terminalConstraint)
     {
-        var bridge = new ServiceCallbackBridge(capabilities, invocation, timeout, cancellationToken);
+        var bridge = new ServiceCallbackBridge(
+            capabilities, invocation, timeout, cancellationToken, terminalConstraint);
         var read = new ClrFunction(engine, "serviceRead", (_, arguments) =>
             (JsValue)bridge.Read(RequiredString(arguments, 0), RequiredString(arguments, 1)), 2);
         var action = new ClrFunction(engine, "serviceAction", (_, arguments) =>
             (JsValue)bridge.Action(RequiredString(arguments, 0), RequiredString(arguments, 1)), 2);
+        var job = new ClrFunction(engine, "serviceJob", (_, arguments) =>
+            (JsValue)bridge.Job(RequiredString(arguments, 0), RequiredString(arguments, 1)), 2);
+        var jobStatus = new ClrFunction(engine, "serviceJobStatus", (_, arguments) =>
+            (JsValue)bridge.JobStatus(RequiredString(arguments, 0)), 1);
         var progressAttempt = new ClrFunction(engine, "serviceProgressAttempt", (_, arguments) =>
             (JsValue)bridge.ProgressAttempt(RequiredString(arguments, 0)), 1);
         var progress = new ClrFunction(engine, "serviceProgress", (_, arguments) =>
@@ -384,8 +394,10 @@ public sealed class JintMechanicEngine : IMechanicEngine
             "This service capability is unavailable in the read-only runtime.").ToJson();
 
         var binder = engine.Evaluate(PreparedServiceBindingHarness);
-        engine.Invoke(binder, read, action, progressAttempt, progress,
-            capabilities is IApplicationActionServiceCapabilities, (JsValue)unavailable);
+        engine.Invoke(binder, read, action, job, jobStatus, progressAttempt, progress,
+            capabilities is IApplicationActionServiceCapabilities { ActionsEnabled: true },
+            capabilities is IApplicationJobServiceCapabilities { JobsEnabled: true },
+            (JsValue)unavailable);
     }
 
     private static string RequiredString(JsValue[] arguments, int index)
@@ -399,7 +411,8 @@ public sealed class JintMechanicEngine : IMechanicEngine
         IApplicationReadOnlyServiceCapabilities capabilities,
         Stopwatch invocation,
         TimeSpan timeout,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        ServiceTerminalConstraint? terminalConstraint)
     {
         public string Read(string alias, string inputJson)
         {
@@ -423,6 +436,28 @@ public sealed class JintMechanicEngine : IMechanicEngine
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfTimeoutElapsed(invocation.Elapsed, timeout);
             return result.ToJson();
+        }
+
+        public string Job(string alias, string inputJson)
+        {
+            if (capabilities is not IApplicationJobServiceCapabilities jobs)
+                throw new InvalidOperationException("The durable job service capability is unavailable.");
+            using var wait = RemainingWait();
+            var result = jobs.SubmitJobAsync(alias, inputJson, wait.Token)
+                .ConfigureAwait(false).GetAwaiter().GetResult();
+            CheckAfterWait();
+            return Terminalize(result);
+        }
+
+        public string JobStatus(string handleJson)
+        {
+            if (capabilities is not IApplicationJobServiceCapabilities jobs)
+                throw new InvalidOperationException("The durable job status capability is unavailable.");
+            using var wait = RemainingWait();
+            var result = jobs.ReadJobStatusAsync(handleJson, wait.Token)
+                .ConfigureAwait(false).GetAwaiter().GetResult();
+            CheckAfterWait();
+            return Terminalize(result);
         }
 
         public string Progress(string dataJson)
@@ -463,6 +498,34 @@ public sealed class JintMechanicEngine : IMechanicEngine
             if (remaining <= TimeSpan.FromMilliseconds(int.MaxValue)) source.CancelAfter(remaining);
             return source;
         }
+
+        private void CheckAfterWait()
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfTimeoutElapsed(invocation.Elapsed, timeout);
+        }
+
+        private string Terminalize(InteractionInvocationResult result)
+        {
+            var json = result.ToJson();
+            if (capabilities is IApplicationTerminalServiceCapabilities terminal && terminal.IsTerminal)
+                terminalConstraint?.Terminate();
+            return json;
+        }
+    }
+
+    private sealed class ServiceTerminalConstraint : Constraint
+    {
+        private bool _terminated;
+
+        internal void Terminate() => _terminated = true;
+
+        public override void Check()
+        {
+            if (_terminated) throw new OperationCanceledException();
+        }
+
+        public override void Reset() => _terminated = false;
     }
 
     private static bool IsPreparedProgramCacheDisabled() =>
@@ -878,7 +941,7 @@ public sealed class JintMechanicEngine : IMechanicEngine
     /// object. JSON and other intrinsics are captured before authored code can replace them.
     /// </summary>
     private const string ServiceBindingHarness = """
-        (function (readNative, actionNative, progressAttemptNative, progressNative, actionEnabled, unavailableJson) {
+        (function (readNative, actionNative, jobNative, jobStatusNative, progressAttemptNative, progressNative, actionEnabled, jobEnabled, unavailableJson) {
           var safeParse = JSON.parse;
           var safeStringify = JSON.stringify;
           var safeString = String;
@@ -910,6 +973,17 @@ public sealed class JintMechanicEngine : IMechanicEngine
             if (typeof alias !== 'string') throw new TypeError('services.action alias must be a string.');
             return freezeDeep(safeParse(actionNative(safeString(alias), inputJson(input, 'services.action'))));
           } : unsupported;
+          var job = jobEnabled ? function (alias, input) {
+            if (typeof alias !== 'string') throw new TypeError('services.job alias must be a string.');
+            return freezeDeep(safeParse(jobNative(safeString(alias), inputJson(input, 'services.job'))));
+          } : unsupported;
+          Object.defineProperty(job, 'status', {
+            value: jobEnabled ? function (handle) {
+              return freezeDeep(safeParse(jobStatusNative(inputJson(handle, 'services.job.status'))));
+            } : unsupported,
+            writable: false, configurable: false, enumerable: true
+          });
+          safeFreeze(job);
           var services = {
             read: function (alias, input) {
               if (typeof alias !== 'string') throw new TypeError('services.read alias must be a string.');
@@ -924,7 +998,7 @@ public sealed class JintMechanicEngine : IMechanicEngine
             action: action,
             workflow: unsupported,
             wait: unsupported,
-            job: unsupported,
+            job: job,
             ai: unsupported
           };
           safeFreeze(services);
@@ -1059,10 +1133,31 @@ internal interface IApplicationReadOnlyServiceProgressAttemptSink
 
 internal interface IApplicationActionServiceCapabilities : IApplicationReadOnlyServiceCapabilities
 {
+    bool ActionsEnabled { get; }
+
     Task<InteractionInvocationResult> ActionAsync(
         string alias,
         string inputJson,
         CancellationToken cancellationToken = default);
+}
+
+internal interface IApplicationJobServiceCapabilities : IApplicationReadOnlyServiceCapabilities
+{
+    bool JobsEnabled { get; }
+
+    Task<InteractionInvocationResult> SubmitJobAsync(
+        string alias,
+        string inputJson,
+        CancellationToken cancellationToken = default);
+
+    Task<InteractionInvocationResult> ReadJobStatusAsync(
+        string handleJson,
+        CancellationToken cancellationToken = default);
+}
+
+internal interface IApplicationTerminalServiceCapabilities
+{
+    bool IsTerminal { get; }
 }
 
 internal readonly record struct MechanicRunMeasurements(

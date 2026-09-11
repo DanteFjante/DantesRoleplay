@@ -3,11 +3,14 @@ using System.Text.Json;
 using DantesRoleplay.ApplicationActivation;
 using DantesRoleplay.ApplicationPreview;
 using DantesRoleplay.Applications;
+using DantesRoleplay.AI;
 using DantesRoleplay.Authorization;
 using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.CatalogNamespaces;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.DataAccess.Catalog;
+using DantesRoleplay.DataAccess.Composition;
+using DantesRoleplay.DataAccess.Bootstrap;
 using DantesRoleplay.Ecs;
 using DantesRoleplay.EcsEffects;
 using DantesRoleplay.Interactions;
@@ -16,9 +19,12 @@ using DantesRoleplay.Mechanics;
 using DantesRoleplay.MCPServer;
 using DantesRoleplay.Operations;
 using DantesRoleplay.Projections;
+using DantesRoleplay.Procedures;
 using DantesRoleplay.SchemaValidation;
 using DantesRoleplay.Sources;
 using DantesRoleplay.SystemTasks;
+using DantesRoleplay.SystemTasks.Persistence;
+using DantesRoleplay.SystemCapabilities;
 using DantesRoleplay.Tests;
 using Microsoft.EntityFrameworkCore;
 
@@ -164,6 +170,194 @@ public sealed class ApplicationReadOnlyServiceAuthorizationTests
     }
 
     [Fact]
+    public async Task Workflow_job_submits_once_with_transferred_remaining_budget_and_replays_handle()
+    {
+        await using var fixture = await Fixture.CreateAsync(
+            workflow: true,
+            durableJob: true,
+            includeActionDeclaration: false,
+            workflowSource: "ctx.services.job('inspect',{format:'dantes-roleplay/inner-procedure-assignment/v1',instruction:'Inspect value '+ctx.input.value});return {data:{entityId:'subject',value:ctx.input.value}};");
+        Assert.True(await fixture.DurableTaskCountAsync() == 0,
+            string.Join(';', await fixture.DurableCommandsAsync()));
+        var firstRequest = fixture.WorkflowRequest("command.workflow.job", "{\"value\":21}");
+
+        var first = await fixture.WorkflowService.InvokeAsync(firstRequest);
+
+        Assert.True(first.Tag == InteractionInvocationResultTag.Pending,
+            first.ToJson() + " rows=" + string.Join(';', await fixture.DurableTaskDetailsAsync()));
+        Assert.NotNull(first.TaskHandle);
+        Assert.Equal(0, firstRequest.Host.Budget.RemainingOperations);
+        var stored = await fixture.DurableTaskAsync(first.TaskHandle!);
+        Assert.Equal(14, stored.AdmittedOperations); // root consumed one, then submit consumed one from transferred 15
+        Assert.Equal("command.workflow.job", stored.ParentCommandId);
+        Assert.Null(stored.ParentTaskId);
+        Assert.Equal(first.TaskHandle.TaskId, stored.RootTaskId);
+        Assert.Contains("\"originatingParentMode\":\"ephemeral-root\"", stored.AdmissionPayloadJson,
+            StringComparison.Ordinal);
+        Assert.Contains("\"innerWorker\"", stored.AdmissionPayloadJson, StringComparison.Ordinal);
+        Assert.Equal(1, await fixture.InnerWorkerEnrollmentCountAsync(first.TaskHandle.TaskId));
+
+        var replayRequest = fixture.WorkflowRequest(
+            "command.workflow.job", "{\"value\":21}", firstRequest.Host.Budget.DeadlineUtc);
+        var replay = await fixture.WorkflowService.InvokeAsync(replayRequest);
+
+        Assert.True(replay.Tag == InteractionInvocationResultTag.Pending, replay.ToJson());
+        Assert.Equal(first.TaskHandle, replay.TaskHandle);
+        Assert.Equal(0, replayRequest.Host.Budget.RemainingOperations);
+        Assert.Equal(1, await fixture.DurableTaskCountAsync());
+        Assert.Equal(14, (await fixture.DurableTaskAsync(replay.TaskHandle!)).AdmittedOperations);
+    }
+
+    [Fact]
+    public async Task Undeclared_job_is_terminal_without_transfer_or_durable_row()
+    {
+        await using var fixture = await Fixture.CreateAsync(
+            workflow: true,
+            durableJob: true,
+            workflowSource: "ctx.services.job('undeclared',{format:'dantes-roleplay/inner-procedure-assignment/v1',instruction:'Inspect value '+ctx.input.value});return {data:{entityId:'subject',value:ctx.input.value}};");
+        var request = fixture.WorkflowRequest("command.workflow.job-undeclared", "{\"value\":22}");
+
+        var result = await fixture.WorkflowService.InvokeAsync(request);
+
+        Assert.Equal(InteractionInvocationResultTag.Failed, result.Tag);
+        Assert.Equal("SERVICE_JOB_ALIAS_INVALID", result.Code);
+        Assert.Equal(15, request.Host.Budget.RemainingOperations);
+        Assert.Equal(0, await fixture.DurableTaskCountAsync());
+    }
+
+    [Fact]
+    public async Task Declared_job_rechecks_current_exact_procedure_grant_before_admission()
+    {
+        await using var fixture = await Fixture.CreateAsync(
+            workflow: true,
+            durableJob: true,
+            includeProcedureInGrant: false,
+            workflowSource: "ctx.services.job('inspect',{format:'dantes-roleplay/inner-procedure-assignment/v1',instruction:'Inspect value '+ctx.input.value});return {data:{entityId:'subject',value:ctx.input.value}};");
+        var request = fixture.WorkflowRequest("command.workflow.job-denied", "{\"value\":25}");
+
+        var result = await fixture.WorkflowService.InvokeAsync(request);
+
+        Assert.Equal(InteractionInvocationResultTag.Failed, result.Tag);
+        Assert.Equal("SYSTEM_TASK_NOT_AUTHORIZED", result.Code);
+        Assert.Equal(0, request.Host.Budget.RemainingOperations);
+        Assert.Equal(0, await fixture.DurableTaskCountAsync());
+    }
+
+    [Fact]
+    public async Task Declared_job_rejects_unsupported_assignment_grammar_before_admission()
+    {
+        await using var fixture = await Fixture.CreateAsync(
+            workflow: true,
+            durableJob: true,
+            workflowSource: "ctx.services.job('inspect',{value:ctx.input.value});return {data:{entityId:'subject',value:ctx.input.value}};");
+        var request = fixture.WorkflowRequest("command.workflow.job-invalid", "{\"value\":27}");
+
+        var result = await fixture.WorkflowService.InvokeAsync(request);
+
+        Assert.Equal(InteractionInvocationResultTag.Failed, result.Tag);
+        Assert.Equal("INNER_WORKER_ASSIGNMENT_UNSUPPORTED", result.Code);
+        Assert.Equal(0, request.Host.Budget.RemainingOperations);
+        Assert.Equal(0, await fixture.DurableTaskCountAsync());
+    }
+
+    [Fact]
+    public async Task Workflow_job_status_uses_real_authorized_readback()
+    {
+        const string source = """
+            if (ctx.input.mode === 'status') {
+              var status = ctx.services.job.status(ctx.input.handle);
+              return {data:{entityId:'subject',value:status.tag === 'completed' ? 1 : 0}};
+            }
+            ctx.services.job('inspect',{format:'dantes-roleplay/inner-procedure-assignment/v1',instruction:'Inspect value '+ctx.input.value});
+            return {data:{entityId:'subject',value:ctx.input.value}};
+            """;
+        await using var fixture = await Fixture.CreateAsync(
+            workflow: true, durableJob: true, workflowSource: source);
+        var submitted = await fixture.WorkflowService.InvokeAsync(fixture.WorkflowRequest(
+            "command.workflow.status-submit", "{\"mode\":\"submit\",\"value\":23}"));
+        var handle = Assert.IsType<SystemTaskDurableHandle>(submitted.TaskHandle);
+        var statusRequest = fixture.WorkflowRequest("command.workflow.status-read", JsonSerializer.Serialize(new
+        {
+            mode = "status",
+            handle = new { taskId = handle.TaskId, commandId = handle.CommandId }
+        }));
+
+        var status = await fixture.WorkflowService.InvokeAsync(statusRequest);
+
+        Assert.True(status.Tag == InteractionInvocationResultTag.Completed, status.ToJson());
+        Assert.Equal("{\"entityId\":\"subject\",\"value\":1}", status.DataJson);
+        Assert.Equal(14, statusRequest.Host.Budget.RemainingOperations); // service root + real task readback
+    }
+
+    [Fact]
+    public async Task Forged_job_status_handle_returns_no_task_metadata()
+    {
+        await using var fixture = await Fixture.CreateAsync(
+            workflow: true,
+            durableJob: true,
+            workflowSource: "ctx.services.job.status({taskId:'task.missing',commandId:'command.missing'});return {data:{entityId:'subject',value:99}};");
+        var request = fixture.WorkflowRequest("command.workflow.status-forged", "{}");
+
+        var result = await fixture.WorkflowService.InvokeAsync(request);
+
+        Assert.Equal(InteractionInvocationResultTag.Failed, result.Tag);
+        Assert.Equal("SYSTEM_TASK_NOT_AUTHORIZED", result.Code);
+        AssertNoData(result);
+        Assert.Equal(14, request.Host.Budget.RemainingOperations);
+        Assert.Equal(0, await fixture.DurableTaskCountAsync());
+    }
+
+    [Fact]
+    public async Task Job_status_rechecks_current_read_task_grant()
+    {
+        const string source = """
+            if (ctx.input.mode === 'status') {
+              ctx.services.job.status(ctx.input.handle);
+              return {data:{entityId:'subject',value:99}};
+            }
+            ctx.services.job('inspect',{format:'dantes-roleplay/inner-procedure-assignment/v1',instruction:'Inspect value '+ctx.input.value});
+            return {data:{entityId:'subject',value:ctx.input.value}};
+            """;
+        await using var fixture = await Fixture.CreateAsync(
+            workflow: true, durableJob: true, includeReadTaskInGrant: false, workflowSource: source);
+        var submitted = await fixture.WorkflowService.InvokeAsync(fixture.WorkflowRequest(
+            "command.workflow.status-denied-submit", "{\"mode\":\"submit\",\"value\":26}"));
+        var handle = Assert.IsType<SystemTaskDurableHandle>(submitted.TaskHandle);
+        var request = fixture.WorkflowRequest("command.workflow.status-denied", JsonSerializer.Serialize(new
+        {
+            mode = "status",
+            handle = new { taskId = handle.TaskId, commandId = handle.CommandId }
+        }));
+
+        var result = await fixture.WorkflowService.InvokeAsync(request);
+
+        Assert.Equal(InteractionInvocationResultTag.Failed, result.Tag);
+        Assert.Equal("SYSTEM_TASK_NOT_AUTHORIZED", result.Code);
+        AssertNoData(result);
+        Assert.Equal(14, request.Host.Budget.RemainingOperations);
+    }
+
+    [Fact]
+    public async Task Pending_job_preserves_prior_commit_and_cannot_be_caught_to_continue()
+    {
+        await using var fixture = await Fixture.CreateAsync(
+            workflow: true,
+            durableJob: true,
+            workflowSource: "ctx.services.action('setCounter',{value:ctx.input.value});try{ctx.services.job('inspect',{format:'dantes-roleplay/inner-procedure-assignment/v1',instruction:'Inspect value '+ctx.input.value});}catch(_){}ctx.services.action('setCounter',{value:99});return {data:{entityId:'subject',value:99}};");
+        var request = fixture.WorkflowRequest("command.workflow.action-job", "{\"value\":24}");
+
+        var result = await fixture.WorkflowService.InvokeAsync(request);
+
+        Assert.Equal(InteractionInvocationResultTag.Pending, result.Tag);
+        Assert.Single(result.PreviousCommits);
+        Assert.Equal(0, request.Host.Budget.RemainingOperations);
+        Assert.Equal(13, (await fixture.DurableTaskAsync(result.TaskHandle!)).AdmittedOperations);
+        var component = (await fixture.Entities.GetComponentAsync(
+            Fixture.SpaceId, "subject", fixture.CounterType.QualifiedId))!;
+        Assert.Equal("{\"value\":24}", component.ValueJson);
+    }
+
+    [Fact]
     public async Task Retained_service_completes_through_real_standing_authority_and_sqlite_read()
     {
         await using var fixture = await Fixture.CreateAsync();
@@ -268,6 +462,7 @@ public sealed class ApplicationReadOnlyServiceAuthorizationTests
         private const string QueryId = "service-fixture.runtime.counter-query";
         private const string ServiceId = "service-fixture.runtime.counter-service";
         private const string ActionId = "service-fixture.runtime.set-counter";
+        private const string ProcedureId = "service-fixture.runtime.inspect";
         private const string OutputSchema =
             "{\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"entityId\",\"value\"],\"properties\":{\"entityId\":{\"type\":\"string\"},\"value\":{\"type\":\"integer\"}}}";
         private const string CounterSchema =
@@ -322,7 +517,11 @@ public sealed class ApplicationReadOnlyServiceAuthorizationTests
             string? workflowSource = null,
             bool includeActionInGrant = true,
             bool includeActionEffectInGrant = true,
-            bool revokeAfterEvaluation = false)
+            bool revokeAfterEvaluation = false,
+            bool durableJob = false,
+            bool includeProcedureInGrant = true,
+            bool includeReadTaskInGrant = true,
+            bool includeActionDeclaration = true)
         {
             var sqlite = new SqliteFixture();
             var db = sqlite.CreateContext();
@@ -341,7 +540,8 @@ public sealed class ApplicationReadOnlyServiceAuthorizationTests
                 {
                     CatalogNamespaceKinds.Mechanic,
                     CatalogNamespaceKinds.Query,
-                    CatalogNamespaceKinds.ComponentType
+                    CatalogNamespaceKinds.ComponentType,
+                    CatalogNamespaceKinds.Procedure
                 };
                 namespaces.Register(new CatalogNamespaceRegistration(
                     "service-fixture", "fixture-domain", "Service fixture root.", kinds,
@@ -363,11 +563,35 @@ public sealed class ApplicationReadOnlyServiceAuthorizationTests
                 WriteMechanic(root, "set-counter", ActionId,
                     "{\"roles\":{\"subject\":{\"components\":[\"counter\"]}},\"inputSchema\":" + CounterSchema + "}",
                     "return {effects:[{type:'component.set',entityId:ctx.roles.subject.id,definitionId:'counter',data:JSON.stringify({value:ctx.input.value})}]};");
+                WriteProcedure(root);
                 var first = await ActivateAsync(previews, activation, expected: null);
+                if (durableJob)
+                {
+                    const string relativeProcedure = "content/procedures/inspect.md";
+                    var procedureFile = ProcedureFile.Parse(
+                        File.ReadAllText(Path.Combine(root,
+                            relativeProcedure.Replace('/', Path.DirectorySeparatorChar))),
+                        relativeProcedure);
+                    _ = await new ProcedureStore(db).WriteAsync(new WriteProcedureRequest
+                    {
+                        Id = procedureFile.Id,
+                        Category = procedureFile.Category,
+                        Name = procedureFile.Name,
+                        Description = procedureFile.Description,
+                        Governs = procedureFile.Governs,
+                        Matches = procedureFile.Matches,
+                        Instructions = procedureFile.Instructions,
+                        Constraints = procedureFile.Constraints,
+                        Status = procedureFile.Status,
+                        CreatedBy = "fixture",
+                        ChangeNote = "Workflow service procedure fixture."
+                    });
+                }
                 var materializer = new ActivatedApplicationCatalogMaterializer(
                     applications, activation, sources, roots, extensions);
                 var readRecord = materializer.Build(Application).Records.Single(record => record.QualifiedId == ReadId);
                 var actionRecord = materializer.Build(Application).Records.Single(record => record.QualifiedId == ActionId);
+                var procedureRecord = materializer.Build(Application).Records.Single(record => record.QualifiedId == ProcedureId);
 
                 var schemas = new BoundedJsonSchemaValidator();
                 var output = schemas.Compile(OutputSchema);
@@ -398,16 +622,20 @@ public sealed class ApplicationReadOnlyServiceAuthorizationTests
                     query.ProjectionContentHash, query.OutputSchemaHash, query.OutputSchemaJson,
                     query.Exposure, query.Roles.Keys);
                 var input = schemas.Compile(workflow
-                    ? CounterSchema
+                    ? durableJob ? DurableInputSchema : CounterSchema
                     : "{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{}}");
                 var definition = new ApplicationReadOnlyServiceDefinition(
                     input.SchemaHash, input.NormalizedSchema, output.SchemaHash, output.NormalizedSchema,
                     [new("counter", QueryId, queryReference,
                         new Dictionary<string, string> { ["subject"] = "subject" },
                         schemas, output.NormalizedSchema)], schemas,
-                    workflow
+                    workflow && includeActionDeclaration
                         ? [new("setCounter", ActionId, actionRecord.Version, actionRecord.ContentFingerprint,
                             new Dictionary<string, string> { ["subject"] = "subject" })]
+                        : [],
+                    durableJob
+                        ? [new("inspect", ProcedureId, procedureRecord.Version, procedureRecord.ContentFingerprint,
+                            output.SchemaHash, output.NormalizedSchema, schemas)]
                         : []);
                 WriteMechanic(root, "counter-service", ServiceId,
                     "{\"service\":" + definition.ToJson() + "}",
@@ -449,6 +677,27 @@ public sealed class ApplicationReadOnlyServiceAuthorizationTests
                 var targets = new SqliteStandingGrantTargetResolver(
                     db, applications, activation, activation, sources, extensions, namespaces, materializer);
                 var policy = new SqliteStandingGrantPolicy(db, targets);
+                var durable = new SqliteSystemTaskDurableService(
+                    db, policy, targets, stateSpaces, TimeProvider.System);
+                SystemInnerWorkerService? innerWorker = null;
+                if (durableJob)
+                {
+                    var authority = new PrivateHostInteractionAuthorizationPolicy(stateSpaces);
+                    var retrieval = new InteractionFeatureRetriever(
+                        catalogs, namespaces: namespaces, changes: activation);
+                    var contexts = new InteractionTaskContextMaterializer(
+                        authority, retrieval, catalogs, readModels);
+                    var resolver = new SystemInnerWorkerProcedureResolver(
+                        new InteractionEnvelopeFactory(applications, activation, stateSpaces, authority),
+                        contexts,
+                        catalogs,
+                        new SystemInnerWorkerPreparation(new ProcedureStore(db), contexts),
+                        new SystemInnerWorkerHostPolicy(new AiAgentProfileRegistry([
+                            new("web.inner", "Inner AI", "Perform the bounded host-selected procedure.")
+                        ])),
+                        TimeProvider.System);
+                    innerWorker = new SystemInnerWorkerService(resolver, durable);
+                }
                 var principal = PrivateOperatorPrincipal.Create("test", "service-fixture-operator");
                 var standingReads = new StandingGrantApplicationReadModelInvocationAdapter(
                     policy, targets, stateSpaces, readModels);
@@ -476,16 +725,21 @@ public sealed class ApplicationReadOnlyServiceAuthorizationTests
                     null, targets, policy, transactions);
                 var service = new ApplicationReadOnlyServiceInvocationAdapter(
                     catalogs, new ApplicationReadOnlyServiceDefinitionReader(schemas), standingReads,
-                    schemas, engine, stateSpaces, targets, policy, actionAdapter, transactions);
-                IReadOnlyList<string> exactIds = workflow
-                    ? includeActionInGrant ? [ServiceId, ActionId] : [ServiceId]
-                    : includeQueryInGrant ? [ServiceId, QueryId] : [ServiceId];
+                    schemas, engine, stateSpaces, targets, policy, actionAdapter, transactions,
+                    innerWorker, durableJob ? durable : null);
+                var exactIds = new List<string> { ServiceId };
+                if (workflow && includeActionDeclaration && includeActionInGrant) exactIds.Add(ActionId);
+                if (workflow && durableJob && includeProcedureInGrant) exactIds.Add(ProcedureId);
+                if (!workflow && includeQueryInGrant) exactIds.Add(QueryId);
+                IReadOnlyList<StandingGrantCapability> capabilities = workflow
+                    ? durableJob && includeReadTaskInGrant
+                        ? [StandingGrantCapability.Read, StandingGrantCapability.Execute, StandingGrantCapability.ReadTask]
+                        : [StandingGrantCapability.Read, StandingGrantCapability.Execute]
+                    : [StandingGrantCapability.Read];
                 await SeedGrantAsync(db, principal, exactIds, 1,
                     GrantReference, revoked: false,
-                    capabilities: workflow
-                        ? [StandingGrantCapability.Read, StandingGrantCapability.Execute]
-                        : [StandingGrantCapability.Read],
-                    effectKinds: workflow && includeActionEffectInGrant
+                    capabilities: capabilities,
+                    effectKinds: workflow && includeActionDeclaration && includeActionEffectInGrant
                         ? [ApplicationEcsEffectType.ComponentSet]
                         : []);
                 return new(sqlite, db, root, revision, principal, stateSpaces, entities, counterType,
@@ -526,13 +780,37 @@ public sealed class ApplicationReadOnlyServiceAuthorizationTests
                 progress);
         }
 
-        public ApplicationWorkflowServiceInvocationRequest WorkflowRequest(string commandId, string inputJson)
+        public Task<int> DurableTaskCountAsync() =>
+            Db.Set<SystemTaskLifecycleRecord>().CountAsync();
+
+        public Task<string[]> DurableCommandsAsync() =>
+            Db.Set<SystemTaskLifecycleRecord>().Select(value => value.CommandId).ToArrayAsync();
+
+        public Task<string[]> DurableTaskDetailsAsync() =>
+            Db.Set<SystemTaskLifecycleRecord>().Select(value =>
+                value.CommandId + ":" + value.PayloadFingerprint + ":" + value.AdmissionPayloadJson).ToArrayAsync();
+
+        public Task<int> InnerWorkerEnrollmentCountAsync(string taskId) =>
+            Db.Set<SystemTaskAiCeilingRecord>().CountAsync(value => value.TaskId == taskId);
+
+        public async Task<(int AdmittedOperations, string? ParentCommandId, string? ParentTaskId,
+            string RootTaskId, string? AdmissionPayloadJson)> DurableTaskAsync(
+            SystemTaskDurableHandle handle)
+        {
+            var row = await Db.Set<SystemTaskLifecycleRecord>().SingleAsync(value =>
+                value.TaskId == handle.TaskId && value.CommandId == handle.CommandId);
+            return (row.AdmittedOperations, row.ParentCommandId, row.ParentTaskId,
+                row.RootTaskId, row.AdmissionPayloadJson);
+        }
+
+        public ApplicationWorkflowServiceInvocationRequest WorkflowRequest(
+            string commandId, string inputJson, DateTime? deadlineUtc = null)
         {
             var state = stateSpaces.Get(SpaceId)!;
             var host = new InteractionInvocationHost(
                 principal, revision, SpaceId, GrantReference, commandId,
                 InteractionStateRevision.From(state), InteractionExecutionProfile.Workflow,
-                new InteractionInvocationBudget(16, DateTime.UtcNow.AddMinutes(5)));
+                new InteractionInvocationBudget(16, deadlineUtc ?? DateTime.UtcNow.AddMinutes(5)));
             return new(host,
                 new(serviceRecord.Summary.QualifiedId, serviceRecord.Summary.Version,
                     serviceRecord.Summary.ContentFingerprint),
@@ -653,6 +931,28 @@ public sealed class ApplicationReadOnlyServiceAuthorizationTests
                 return allowedRootId == RootId;
             }
         }
+
+        private const string DurableInputSchema =
+            "{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{\"value\":{\"type\":\"integer\"},\"mode\":{\"type\":\"string\"},\"handle\":{\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"taskId\",\"commandId\"],\"properties\":{\"taskId\":{\"type\":\"string\"},\"commandId\":{\"type\":\"string\"}}}}}";
+
+        private static void WriteProcedure(string root) => Write(root, "content/procedures/inspect.md", """
+            ---
+            id: service-fixture.runtime.inspect
+            category: runtime.service.fixture
+            name: Inspect fixture
+            governs: service fixture inspection
+            status: active
+            ---
+
+            ## Description
+            Inspect the generic service fixture.
+
+            ## Instructions
+            1. Inspect the supplied input.
+
+            ## Constraints
+            - Preserve the fixture.
+            """);
 
         private sealed class AfterBuildBatchBuilder(
             IApplicationEcsEffectBatchBuilder inner,

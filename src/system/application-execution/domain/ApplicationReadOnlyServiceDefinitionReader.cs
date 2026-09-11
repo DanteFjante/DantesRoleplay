@@ -44,17 +44,34 @@ public sealed class ApplicationReadOnlyServiceDefinitionReader(IBoundedJsonSchem
             if (actions.ValueKind != JsonValueKind.Undefined
                 && (actions.ValueKind != JsonValueKind.Array || actions.GetArrayLength() > ApplicationReadOnlyServiceLimits.MaximumActions))
                 throw Invalid();
+            var jobs = value.TryGetProperty("jobs", out var declaredJobs) ? declaredJobs : default;
+            if (jobs.ValueKind != JsonValueKind.Undefined
+                && (jobs.ValueKind != JsonValueKind.Array || jobs.GetArrayLength() > ApplicationReadOnlyServiceLimits.MaximumJobs))
+                throw Invalid();
             return new(String(value, "inputSchemaHash"), String(value, "inputSchemaJson"),
                 String(value, "outputSchemaHash"), String(value, "outputSchemaJson"),
                 reads.EnumerateArray().Select(ReadDeclaration).ToArray(), schemas,
                 actions.ValueKind == JsonValueKind.Array
                     ? actions.EnumerateArray().Select(ActionDeclaration).ToArray()
+                    : [],
+                jobs.ValueKind == JsonValueKind.Array
+                    ? jobs.EnumerateArray().Select(JobDeclaration).ToArray()
                     : []);
         }
         catch (Exception exception) when (exception is JsonException or InvalidOperationException or KeyNotFoundException)
         {
             throw Invalid();
         }
+    }
+
+    private ApplicationServiceJobDeclaration JobDeclaration(JsonElement value)
+    {
+        Exact(value, "alias", "qualifiedProcedureId", "procedureVersion", "contentFingerprint",
+            "resultSchemaFingerprint", "resultSchemaJson");
+        if (!value.GetProperty("procedureVersion").TryGetInt32(out var version)) throw Invalid();
+        return new(String(value, "alias"), String(value, "qualifiedProcedureId"), version,
+            String(value, "contentFingerprint"), String(value, "resultSchemaFingerprint"),
+            String(value, "resultSchemaJson"), schemas);
     }
 
     private static ApplicationServiceActionDeclaration ActionDeclaration(JsonElement value)
@@ -72,10 +89,11 @@ public sealed class ApplicationReadOnlyServiceDefinitionReader(IBoundedJsonSchem
     {
         if (value.ValueKind != JsonValueKind.Object) throw Invalid();
         var names = value.EnumerateObject().Select(property => property.Name).ToArray();
-        var expected = new[] { "inputSchemaHash", "inputSchemaJson", "outputSchemaHash", "outputSchemaJson", "reads" };
-        if (names.Length == expected.Length && !names.Except(expected, StringComparer.Ordinal).Any()) return;
-        var withActions = expected.Append("actions").ToArray();
-        if (names.Length != withActions.Length || names.Except(withActions, StringComparer.Ordinal).Any()) throw Invalid();
+        var required = new[] { "inputSchemaHash", "inputSchemaJson", "outputSchemaHash", "outputSchemaJson", "reads" };
+        var allowed = required.Concat(["actions", "jobs"]).ToArray();
+        if (names.Length < required.Length || names.Length > allowed.Length
+            || required.Except(names, StringComparer.Ordinal).Any()
+            || names.Except(allowed, StringComparer.Ordinal).Any()) throw Invalid();
     }
 
     private ApplicationServiceReadDeclaration ReadDeclaration(JsonElement value)

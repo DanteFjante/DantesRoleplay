@@ -9,6 +9,8 @@ using DantesRoleplay.Interactions;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.SchemaValidation;
 using DantesRoleplay.SystemTasks;
+using DantesRoleplay.SystemCapabilities;
+using DantesRoleplay.DataAccess.Composition;
 
 namespace DantesRoleplay.ApplicationExecution;
 
@@ -56,7 +58,8 @@ internal interface IApplicationWorkflowServiceInvocationAdapter
 
 /// <summary>
 /// Executes one exact retained service mechanic. Read-only calls expose declared reads; the
-/// registered workflow boundary additionally exposes independently committed declared actions.
+/// registered workflow boundary additionally exposes independently committed declared actions and
+/// durable focused-worker jobs for exact declared procedures.
 /// </summary>
 internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
     IPublicApplicationCatalogProvider catalogs,
@@ -68,7 +71,9 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
     IStandingGrantTargetResolver grantTargets,
     IStandingGrantPolicy standingGrants,
     ApplicationActionInvocationAdapter? actions = null,
-    IEcsWriteTransactionFactory? transactions = null) : IApplicationReadOnlyServiceInvocationAdapter,
+    IEcsWriteTransactionFactory? transactions = null,
+    SystemInnerWorkerService? innerWorkers = null,
+    ISystemTaskDurableReadbackService? taskReadbacks = null) : IApplicationReadOnlyServiceInvocationAdapter,
     IApplicationWorkflowServiceInvocationAdapter
 {
     public async Task<InteractionInvocationResult> InvokeAsync(
@@ -106,7 +111,7 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
                 || (workflow && request.Host.Profile != InteractionExecutionProfile.Workflow))
                 return InteractionInvocationResult.Unavailable(
                     "SERVICE_PROFILE_UNAVAILABLE", "The requested service profile is unavailable.");
-            if (workflow && (actions is null || transactions is null))
+            if (workflow && transactions is null)
                 return InteractionInvocationResult.Unavailable(
                     "WORKFLOW_SERVICE_UNAVAILABLE", "The state-changing service runtime is unavailable.");
             var deadline = DeadlineFailure(request.Host, cancellationToken);
@@ -133,9 +138,16 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
             if (!string.Equals(retainedDefinition.ToJson(), request.Definition.ToJson(), StringComparison.Ordinal))
                 return InteractionInvocationResult.Failed(
                     "SERVICE_DECLARATION_STALE", "The service declaration is no longer current.");
-            if (workflow && retainedDefinition.Actions.Count == 0)
+            if (workflow && retainedDefinition.Actions.Count == 0 && retainedDefinition.Jobs.Count == 0)
                 return InteractionInvocationResult.Unavailable(
-                    "WORKFLOW_ACTIONS_UNAVAILABLE", "The selected service declares no state-changing actions.");
+                    "WORKFLOW_CAPABILITIES_UNAVAILABLE", "The selected service declares no workflow capabilities.");
+            if (workflow && retainedDefinition.Actions.Count != 0 && actions is null)
+                return InteractionInvocationResult.Unavailable(
+                    "WORKFLOW_ACTIONS_UNAVAILABLE", "The state-changing action runtime is unavailable.");
+            if (workflow && retainedDefinition.Jobs.Count != 0
+                && (innerWorkers is null || taskReadbacks is null))
+                return InteractionInvocationResult.Unavailable(
+                    "WORKFLOW_JOBS_UNAVAILABLE", "The durable procedure job runtime is unavailable.");
             if (HasUnsupportedRequirements(retained.RequirementsJson))
                 return InteractionInvocationResult.Unavailable(
                     "SERVICE_REQUIREMENTS_UNAVAILABLE",
@@ -172,7 +184,9 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
                     request.SelectedDefinition,
                     retainedDefinition,
                     request.HostRoleBindings,
-                    actions!,
+                    actions,
+                    innerWorkers,
+                    taskReadbacks,
                     exchange)
                 : readCapabilities;
             var state = capabilities as IInvocationCapabilityState ?? readCapabilities;
@@ -253,7 +267,8 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
                     outputFingerprint = InteractionCanonicalJson.Fingerprint(
                         "dantes-roleplay/application-read-only-service/output/v1", output),
                     reads = state.ReadEvidence,
-                    actions = state.ActionEvidence
+                    actions = state.ActionEvidence,
+                    jobs = state.JobEvidence
                 })));
             return InteractionInvocationResult.CompletedComputation(
                 output, "service-process-local." + evidence.ToLowerInvariant(), state.PreviousCommits);
@@ -541,6 +556,7 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
         InteractionInvocationResult? TerminalResult { get; }
         IReadOnlyList<object> ReadEvidence { get; }
         IReadOnlyList<object> ActionEvidence { get; }
+        IReadOnlyList<object> JobEvidence { get; }
         IReadOnlyList<InteractionInvocationCommitReceipt> PreviousCommits { get; }
     }
 
@@ -562,6 +578,7 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
         public InteractionInvocationResult? TerminalResult => _terminal;
         public IReadOnlyList<object> ReadEvidence => _readEvidence.AsReadOnly();
         public IReadOnlyList<object> ActionEvidence => [];
+        public IReadOnlyList<object> JobEvidence => [];
         public IReadOnlyList<InteractionInvocationCommitReceipt> PreviousCommits => [];
 
         public async Task<InteractionInvocationResult> ReadAsync(
@@ -723,18 +740,29 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
         SystemTaskSelectedDefinition rootDefinition,
         ApplicationReadOnlyServiceDefinition definition,
         IReadOnlyDictionary<string, string> hostRoles,
-        ApplicationActionInvocationAdapter actions,
+        ApplicationActionInvocationAdapter? actions,
+        SystemInnerWorkerService? innerWorkers,
+        ISystemTaskDurableReadbackService? taskReadbacks,
         ExchangedDataBudget exchange) : IApplicationActionServiceCapabilities,
+        IApplicationJobServiceCapabilities, IApplicationTerminalServiceCapabilities,
         IApplicationReadOnlyServiceProgressAttemptSink, IInvocationCapabilityState
     {
         private readonly List<object> _actionEvidence = [];
+        private readonly List<object> _jobEvidence = [];
         private readonly List<InteractionInvocationCommitReceipt> _previousCommits = [];
         private InteractionInvocationResult? _terminal;
         private int _actionAttempts;
+        private int _jobAttempts;
+        private int _statusAttempts;
 
         public InteractionInvocationResult? TerminalResult => _terminal ?? readCapabilities.TerminalResult;
+        public bool IsTerminal => TerminalResult is not null;
+        public bool ActionsEnabled => definition.Actions.Count != 0 && actions is not null;
+        public bool JobsEnabled => definition.Jobs.Count != 0
+            && innerWorkers is not null && taskReadbacks is not null;
         public IReadOnlyList<object> ReadEvidence => readCapabilities.ReadEvidence;
         public IReadOnlyList<object> ActionEvidence => _actionEvidence.AsReadOnly();
+        public IReadOnlyList<object> JobEvidence => _jobEvidence.AsReadOnly();
         public IReadOnlyList<InteractionInvocationCommitReceipt> PreviousCommits => _previousCommits.AsReadOnly();
 
         public Task<InteractionInvocationResult> ReadAsync(
@@ -753,6 +781,9 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
             if (TerminalResult is { } terminal) return terminal;
             try
             {
+                if (actions is null)
+                    return SetTerminal(InteractionInvocationResult.Unavailable(
+                        "WORKFLOW_ACTIONS_UNAVAILABLE", "The state-changing action runtime is unavailable."));
                 if (_actionAttempts >= ApplicationReadOnlyServiceLimits.MaximumActions)
                     return SetTerminal(InteractionInvocationResult.Failed(
                         "SERVICE_ACTION_LIMIT", "The service action attempt allowance is exhausted.", _previousCommits));
@@ -848,6 +879,174 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
             }
         }
 
+        public async Task<InteractionInvocationResult> SubmitJobAsync(
+            string alias,
+            string inputJson,
+            CancellationToken cancellationToken = default)
+        {
+            if (TerminalResult is { } terminal) return terminal;
+            try
+            {
+                if (innerWorkers is null)
+                    return SetTerminal(InteractionInvocationResult.Unavailable(
+                        "WORKFLOW_JOBS_UNAVAILABLE", "The durable procedure job runtime is unavailable."));
+                if (_jobAttempts >= ApplicationReadOnlyServiceLimits.MaximumJobs)
+                    return SetTerminal(InteractionInvocationResult.Failed(
+                        "SERVICE_JOB_LIMIT", "The service job attempt allowance is exhausted.", _previousCommits));
+                _jobAttempts++;
+                var declaration = definition.Jobs.SingleOrDefault(
+                    value => string.Equals(value.Alias, alias, StringComparison.Ordinal));
+                if (declaration is null)
+                    return SetTerminal(InteractionInvocationResult.Failed(
+                        "SERVICE_JOB_ALIAS_INVALID", "The service job alias is not declared.", _previousCommits));
+                var scope = readCapabilities.ScopeFailure();
+                if (scope is not null) return SetTerminal(WithPreviousCommits(scope));
+                var input = CanonicalObject(inputJson);
+                exchange.Add(input);
+                var commandMaterial = InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
+                {
+                    parentCommandId = host.CommandId,
+                    ordinal = _jobAttempts,
+                    rootDefinition.ExactDefinitionId,
+                    rootDefinition.Version,
+                    rootDefinition.Fingerprint,
+                    declaration.QualifiedProcedureId,
+                    declaration.ProcedureVersion,
+                    declaration.ContentFingerprint,
+                    declaration.ResultSchemaFingerprint,
+                    declaration.ResultSchemaJson,
+                    input
+                }));
+                var childCommand = InteractionCanonicalJson.Fingerprint(
+                    "dantes-roleplay/application-workflow-service/job-command/v1", commandMaterial)[..32]
+                    .ToLowerInvariant();
+                var remaining = host.Budget.RemainingOperations;
+                if (remaining < 1 || !host.Budget.TryTransferOperations(remaining, out var transferred))
+                    return SetTerminal(InteractionInvocationResult.Failed(
+                        "INVOCATION_BUDGET_EXHAUSTED", "The invocation operation budget is exhausted.", _previousCommits));
+                var childHost = new InteractionInvocationHost(
+                    host.Principal,
+                    host.ApplicationRevision,
+                    host.StateSpaceId!,
+                    host.GrantReference,
+                    childCommand,
+                    host.StateRevision!,
+                    InteractionExecutionProfile.Workflow,
+                    transferred,
+                    host.CommandId);
+                var result = await innerWorkers.SubmitEphemeralRootAsync(new SystemInnerWorkerRequest(
+                    childHost,
+                    new SystemTaskSelectedDefinition(
+                        declaration.QualifiedProcedureId,
+                        declaration.ProcedureVersion,
+                        declaration.ContentFingerprint),
+                    input,
+                    declaration.ResultSchemaJson), cancellationToken).ConfigureAwait(false);
+                exchange.Add(InteractionCanonicalJson.CanonicalizeObject(result.ToJson()));
+                _jobEvidence.Add(new
+                {
+                    declaration.Alias,
+                    inputFingerprint = InteractionCanonicalJson.Fingerprint(
+                        "dantes-roleplay/application-workflow-service/job-input/v1", input),
+                    result.Tag,
+                    taskId = result.TaskHandle?.TaskId,
+                    commandId = result.TaskHandle?.CommandId
+                });
+                return SetTerminal(WithPreviousCommits(result));
+            }
+            catch (OperationCanceledException)
+            {
+                return SetTerminal(InteractionInvocationResult.Cancelled(
+                    "SERVICE_JOB_CANCELLED", "The service job was cancelled.", _previousCommits));
+            }
+            catch (InteractionContractException exception)
+            {
+                return SetTerminal(InteractionInvocationResult.Failed(
+                    exception.Code, "The service job request is invalid.", _previousCommits));
+            }
+            catch
+            {
+                return SetTerminal(WithPreviousCommits(InteractionInvocationResult.Unavailable(
+                    "SERVICE_JOB_UNAVAILABLE", "The durable procedure job is unavailable.")));
+            }
+        }
+
+        public async Task<InteractionInvocationResult> ReadJobStatusAsync(
+            string handleJson,
+            CancellationToken cancellationToken = default)
+        {
+            if (TerminalResult is { } terminal) return terminal;
+            try
+            {
+                if (taskReadbacks is null)
+                    return SetTerminal(InteractionInvocationResult.Unavailable(
+                        "WORKFLOW_JOBS_UNAVAILABLE", "The durable procedure job runtime is unavailable."));
+                if (_statusAttempts >= ApplicationReadOnlyServiceLimits.MaximumJobs)
+                    return SetTerminal(InteractionInvocationResult.Failed(
+                        "SERVICE_JOB_STATUS_LIMIT", "The service job status attempt allowance is exhausted.", _previousCommits));
+                _statusAttempts++;
+                var handle = ReadHandle(handleJson);
+                exchange.Add(handleJson);
+                var scope = readCapabilities.ScopeFailure();
+                if (scope is not null) return SetTerminal(WithPreviousCommits(scope));
+                var remaining = host.Budget.RemainingOperations;
+                if (remaining < 1)
+                    return SetTerminal(InteractionInvocationResult.Failed(
+                        "INVOCATION_BUDGET_EXHAUSTED", "The invocation operation budget is exhausted.", _previousCommits));
+                var commandMaterial = InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
+                {
+                    parentCommandId = host.CommandId,
+                    ordinal = _statusAttempts,
+                    rootDefinition.ExactDefinitionId,
+                    rootDefinition.Version,
+                    rootDefinition.Fingerprint,
+                    handle.TaskId,
+                    handle.CommandId
+                }));
+                var childCommand = InteractionCanonicalJson.Fingerprint(
+                    "dantes-roleplay/application-workflow-service/job-status-command/v1", commandMaterial)[..32]
+                    .ToLowerInvariant();
+                var childHost = new InteractionInvocationHost(
+                    host.Principal,
+                    host.ApplicationRevision,
+                    host.StateSpaceId!,
+                    host.GrantReference,
+                    childCommand,
+                    host.StateRevision!,
+                    InteractionExecutionProfile.Workflow,
+                    host.Budget.Child(remaining, host.Budget.DeadlineUtc),
+                    host.CommandId);
+                var result = await taskReadbacks.ReadAsync(childHost, handle, cancellationToken).ConfigureAwait(false);
+                exchange.Add(InteractionCanonicalJson.CanonicalizeObject(result.ToJson()));
+                _jobEvidence.Add(new
+                {
+                    operation = "status",
+                    handle.TaskId,
+                    handle.CommandId,
+                    result.Tag,
+                    result.CompletionEvidenceReference
+                });
+                if (result.Tag != InteractionInvocationResultTag.Completed)
+                    return SetTerminal(WithPreviousCommits(result));
+                return result;
+            }
+            catch (OperationCanceledException)
+            {
+                return SetTerminal(InteractionInvocationResult.Cancelled(
+                    "SERVICE_JOB_STATUS_CANCELLED", "The service job status read was cancelled.", _previousCommits));
+            }
+            catch (InteractionContractException exception)
+            {
+                return SetTerminal(InteractionInvocationResult.Failed(
+                    exception.Code, "The service job status request is invalid.", _previousCommits));
+            }
+            catch
+            {
+                return SetTerminal(WithPreviousCommits(InteractionInvocationResult.Unavailable(
+                    "SERVICE_JOB_STATUS_UNAVAILABLE", "The durable procedure job status is unavailable.")));
+            }
+        }
+
         public ApplicationServiceProgressDisposition TryWriteProgress(string dataJson) =>
             TerminalResult is null
                 ? readCapabilities.TryWriteProgress(dataJson)
@@ -869,12 +1068,14 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
                     result.Code, result.SafeMessage, prior, result.RecoveryIdentity),
                 InteractionInvocationResultTag.Cancelled => InteractionInvocationResult.Cancelled(
                     result.Code, result.SafeMessage, prior, result.RecoveryIdentity),
+                InteractionInvocationResultTag.Pending when result.TaskHandle is not null =>
+                    InteractionInvocationResult.Pending(result.TaskHandle, prior),
                 InteractionInvocationResultTag.Unavailable when prior.Length == 0 => result,
                 InteractionInvocationResultTag.Unavailable => InteractionInvocationResult.Failed(
-                    "SERVICE_ACTION_SEQUENCE_INCOMPLETE",
-                    "A workflow action outcome is unavailable after earlier commits.", prior, result.RecoveryIdentity),
+                    "SERVICE_WORKFLOW_SEQUENCE_INCOMPLETE",
+                    "A workflow outcome is unavailable after earlier commits.", prior, result.RecoveryIdentity),
                 _ => InteractionInvocationResult.Failed(
-                    "SERVICE_ACTION_RESULT_INVALID", "The service action returned an invalid result kind.", prior)
+                    "SERVICE_WORKFLOW_RESULT_INVALID", "The workflow capability returned an invalid result kind.", prior)
             };
         }
 
@@ -883,6 +1084,23 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
             _terminal ??= result;
             readCapabilities.SetTerminal(_terminal);
             return _terminal;
+        }
+
+        private static SystemTaskDurableHandle ReadHandle(string handleJson)
+        {
+            var canonical = InteractionCanonicalJson.CanonicalizeObject(handleJson);
+            using var document = JsonDocument.Parse(canonical,
+                new JsonDocumentOptions { MaxDepth = InteractionContractLimits.JsonDepth });
+            var properties = document.RootElement.EnumerateObject().Select(value => value.Name).ToArray();
+            if (properties.Length != 2 || !properties.Contains("taskId", StringComparer.Ordinal)
+                || !properties.Contains("commandId", StringComparer.Ordinal))
+                throw new InteractionContractException(
+                    "INVALID_SERVICE_JOB_HANDLE", "The durable job handle is invalid.");
+            return new(
+                document.RootElement.GetProperty("taskId").GetString()
+                    ?? throw new InteractionContractException("INVALID_SERVICE_JOB_HANDLE", "The durable job handle is invalid."),
+                document.RootElement.GetProperty("commandId").GetString()
+                    ?? throw new InteractionContractException("INVALID_SERVICE_JOB_HANDLE", "The durable job handle is invalid."));
         }
     }
 

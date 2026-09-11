@@ -21,7 +21,8 @@ public sealed record ApplicationReadOnlyServiceDefinition
         string outputSchemaJson,
         IReadOnlyList<ApplicationServiceReadDeclaration> reads,
         IBoundedJsonSchemaValidator schemas,
-        IReadOnlyList<ApplicationServiceActionDeclaration>? actions = null)
+        IReadOnlyList<ApplicationServiceActionDeclaration>? actions = null,
+        IReadOnlyList<ApplicationServiceJobDeclaration>? jobs = null)
     {
         InputSchemaHash = InteractionGuard.UpperSha256(inputSchemaHash, nameof(inputSchemaHash));
         InputSchemaJson = ApplicationServiceSchema.Validate(schemas, inputSchemaJson, InputSchemaHash);
@@ -45,6 +46,17 @@ public sealed record ApplicationReadOnlyServiceDefinition
                 "INVALID_SERVICE_ACTIONS",
                 "The service action declarations are invalid, duplicated, or outside the closed limit.");
         Actions = Array.AsReadOnly(copiedActions);
+        var copiedJobs = jobs?.ToArray() ?? [];
+        var occupiedAliases = copied.Select(read => read.Alias)
+            .Concat(copiedActions.Select(action => action.Alias)).ToArray();
+        if (copiedJobs.Length > ApplicationReadOnlyServiceLimits.MaximumJobs
+            || copiedJobs.Any(job => job is null)
+            || copiedJobs.Select(job => job.Alias).Distinct(StringComparer.Ordinal).Count() != copiedJobs.Length
+            || copiedJobs.Select(job => job.Alias).Intersect(occupiedAliases, StringComparer.Ordinal).Any())
+            throw new InteractionContractException(
+                "INVALID_SERVICE_JOBS",
+                "The service job declarations are invalid, duplicated, or outside the closed limit.");
+        Jobs = Array.AsReadOnly(copiedJobs);
         _ = ToJson(); // Apply the aggregate bound to host construction as well as retained JSON.
     }
 
@@ -66,6 +78,9 @@ public sealed record ApplicationReadOnlyServiceDefinition
     [JsonPropertyName("actions")]
     public IReadOnlyList<ApplicationServiceActionDeclaration> Actions { get; }
 
+    [JsonPropertyName("jobs")]
+    public IReadOnlyList<ApplicationServiceJobDeclaration> Jobs { get; }
+
     public string ToJson() => InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
     {
         InputSchemaHash, InputSchemaJson, OutputSchemaHash, OutputSchemaJson,
@@ -85,9 +100,59 @@ public sealed record ApplicationReadOnlyServiceDefinition
         {
             action.Alias, action.QualifiedMechanicId, action.MechanicVersion,
             action.ContentFingerprint, action.RoleMappings
+        }),
+        Jobs = Jobs.Select(job => new
+        {
+            job.Alias, job.QualifiedProcedureId, job.ProcedureVersion, job.ContentFingerprint,
+            job.ResultSchemaFingerprint, job.ResultSchemaJson
         })
     },
         new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }));
+}
+
+/// <summary>One exact durable procedure exposed to a workflow service.</summary>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public sealed record ApplicationServiceJobDeclaration
+{
+    public ApplicationServiceJobDeclaration(
+        string alias,
+        string qualifiedProcedureId,
+        int procedureVersion,
+        string contentFingerprint,
+        string resultSchemaFingerprint,
+        string resultSchemaJson,
+        IBoundedJsonSchemaValidator schemas)
+    {
+        Alias = InteractionGuard.Identifier(alias, nameof(alias));
+        QualifiedProcedureId = InteractionGuard.Identifier(qualifiedProcedureId, nameof(qualifiedProcedureId));
+        if (procedureVersion <= 0)
+            throw new InteractionContractException(
+                "INVALID_SERVICE_JOB_VERSION", "The service job procedure version must be positive.");
+        ProcedureVersion = procedureVersion;
+        ContentFingerprint = InteractionGuard.UpperSha256(contentFingerprint, nameof(contentFingerprint));
+        ResultSchemaFingerprint = InteractionGuard.UpperSha256(
+            resultSchemaFingerprint, nameof(resultSchemaFingerprint));
+        ResultSchemaJson = ApplicationServiceSchema.Validate(
+            schemas, resultSchemaJson, ResultSchemaFingerprint);
+    }
+
+    [JsonPropertyName("alias")]
+    public string Alias { get; }
+
+    [JsonPropertyName("qualifiedProcedureId")]
+    public string QualifiedProcedureId { get; }
+
+    [JsonPropertyName("procedureVersion")]
+    public int ProcedureVersion { get; }
+
+    [JsonPropertyName("contentFingerprint")]
+    public string ContentFingerprint { get; }
+
+    [JsonPropertyName("resultSchemaFingerprint")]
+    public string ResultSchemaFingerprint { get; }
+
+    [JsonPropertyName("resultSchemaJson")]
+    public string ResultSchemaJson { get; }
 }
 
 /// <summary>
@@ -280,7 +345,8 @@ public sealed record ApplicationReadOnlyServiceInvocationRequest
 /// engine thread. Host waits use a linked deadline bounded by both the invocation deadline and
 /// remaining computation timeout. These waits are not durable. Progress sequence
 /// numbers are assigned by the host. Read-only engine instances return the existing canonical
-/// <c>unavailable</c> shape for action, workflow, wait/job and AI callbacks.
+/// <c>unavailable</c> shape for action, workflow, wait, job and AI callbacks. Registered workflow
+/// instances may expose exact declared jobs through the durable inner-worker owner.
 /// </summary>
 public interface IApplicationReadOnlyServiceCapabilities
 {
@@ -338,7 +404,7 @@ public enum ApplicationServiceProgressDisposition
 /// <summary>
 /// Read-only v1 runtime contract. Until coordinator integration, production callers must return a
 /// truthful <c>unavailable</c> result. Action, atomic service execution, workflow, durable waits,
-/// jobs, and AI callbacks remain unavailable and cannot be represented as pending work.
+/// resumable waits and AI callbacks remain unavailable and cannot be represented as pending work.
 ///
 /// A conforming implementation owns one serialized Jint execution per invocation. Producers may
 /// enqueue progress or complete awaited reads, but never enter a busy engine concurrently. It uses
@@ -390,6 +456,7 @@ public static class ApplicationReadOnlyServiceLimits
 {
     public const int MaximumReads = InteractionContractLimits.ProposalSteps;
     public const int MaximumActions = InteractionContractLimits.ProposalSteps;
+    public const int MaximumJobs = InteractionContractLimits.ProposalSteps;
     public const int MaximumExchangedBytesPerRoot = 1024 * 1024;
     public const int MaximumProgressFrames = 32;
     public const int MaximumProgressFrameBytes = 2 * 1024;

@@ -19,6 +19,8 @@ public sealed class ApplicationReadOnlyServiceEngineTests
             var read = ctx.services.read('inspect', { value: ctx.input.value });
             var progress = ctx.services.progress({ phase: 'read' });
             var unavailable = ctx.services.action('ignored');
+            var unavailableJob = ctx.services.job('ignored', {});
+            var unavailableStatus = ctx.services.job.status({taskId:'task.ignored',commandId:'command.ignored'});
             var mutations = 0;
             try { ctx.services.read = function () {}; } catch (_) { mutations++; }
             try { read.tag = 'forged'; } catch (_) { mutations++; }
@@ -27,6 +29,8 @@ public sealed class ApplicationReadOnlyServiceEngineTests
               readDataJson: read.dataJson,
               progress: progress,
               unavailableTag: unavailable.tag,
+              unavailableJobTag: unavailableJob.tag,
+              unavailableStatusTag: unavailableStatus.tag,
               mutations: mutations,
               nativeHidden: typeof globalThis.__boundServices === 'undefined'
                 && typeof globalThis.serviceRead === 'undefined'
@@ -43,8 +47,28 @@ public sealed class ApplicationReadOnlyServiceEngineTests
         Assert.Equal("{\"value\":8}", output.RootElement.GetProperty("readDataJson").GetString());
         Assert.Equal("accepted", output.RootElement.GetProperty("progress").GetString());
         Assert.Equal("unavailable", output.RootElement.GetProperty("unavailableTag").GetString());
+        Assert.Equal("unavailable", output.RootElement.GetProperty("unavailableJobTag").GetString());
+        Assert.Equal("unavailable", output.RootElement.GetProperty("unavailableStatusTag").GetString());
         Assert.Equal(2, output.RootElement.GetProperty("mutations").GetInt32());
         Assert.True(output.RootElement.GetProperty("nativeHidden").GetBoolean());
+    }
+
+    [Fact]
+    public async Task Terminal_job_releases_the_engine_even_when_authored_code_catches_errors()
+    {
+        var capabilities = new TerminalJobCapabilities();
+
+        var run = await new JintMechanicEngine().RunServiceAsync("""
+            try { ctx.services.job('inspect', { value: 7 }); } catch (_) {}
+            ctx.services.read('must-not-run', {});
+            return {data:{unexpected:true}};
+            """, new MechanicProjection(), ExecutionLimits.ReadModel, capabilities);
+
+        Assert.False(run.Ok);
+        Assert.Equal("cancelled", run.LimitHit);
+        Assert.Equal("inspect", capabilities.Alias);
+        Assert.Equal("{\"value\":7}", capabilities.InputJson);
+        Assert.Equal(0, capabilities.ReadCalls);
     }
 
     [Fact]
@@ -174,5 +198,40 @@ public sealed class ApplicationReadOnlyServiceEngineTests
 
         public void Complete() => _completion.TrySetResult(InteractionInvocationResult.Completed(
             "{}", new(Hash, Hash, Hash, Hash, Hash)));
+    }
+
+    private sealed class TerminalJobCapabilities : IApplicationJobServiceCapabilities,
+        IApplicationTerminalServiceCapabilities
+    {
+        public string Alias { get; private set; } = "";
+        public string InputJson { get; private set; } = "";
+        public int ReadCalls { get; private set; }
+        public bool IsTerminal { get; private set; }
+        public bool JobsEnabled => true;
+
+        public Task<InteractionInvocationResult> ReadAsync(
+            string alias, string inputJson, CancellationToken cancellationToken = default)
+        {
+            ReadCalls++;
+            return Task.FromResult(InteractionInvocationResult.Completed(
+                "{}", new(Hash, Hash, Hash, Hash, Hash)));
+        }
+
+        public Task<InteractionInvocationResult> SubmitJobAsync(
+            string alias, string inputJson, CancellationToken cancellationToken = default)
+        {
+            Alias = alias;
+            InputJson = inputJson;
+            IsTerminal = true;
+            return Task.FromResult(InteractionInvocationResult.Pending(
+                new SystemTasks.SystemTaskDurableHandle("task.fixture", "command.fixture")));
+        }
+
+        public Task<InteractionInvocationResult> ReadJobStatusAsync(
+            string handleJson, CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+        public ApplicationServiceProgressDisposition TryWriteProgress(string dataJson) =>
+            ApplicationServiceProgressDisposition.Closed;
     }
 }

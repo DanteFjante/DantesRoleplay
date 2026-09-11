@@ -47,17 +47,30 @@ The internal `JintMechanicEngine.PrepareMechanicProgram` method is the exact exe
 seam for coordinated activation integration. Existing activation preparation remains separately
 owned until that integration is accepted. The registered read-only service adapter consumes the
 standing-grant read adapter and owner-resolved grant targets, with no legacy permission fallback.
-Its registered workflow profile exposes only exact actions declared by the retained
-`requirements.service.actions` contract. Each action derives a deterministic child command,
+Its registered workflow profile exposes exact actions and durable procedure jobs declared by the
+retained `requirements.service.actions` and `requirements.service.jobs` contracts. Each action
+derives a deterministic child command,
 preserves the parent command, shares the root deadline and operation ledger, rechecks current
 state-scoped Execute authority for the exact action and every actual typed root/reaction effect
 inside the effect applier's writer transaction, and commits through the existing action, effect and
 operation-log owners. A denied commit guard rolls back staged effects without writing an action
-operation. Successful child receipts remain attached to later workflow completion or failure. The
-public root atomic adapter still rejects parented requests, and read-only engine instances still
-return the canonical unavailable result for `ctx.services.action`. Atomic service execution,
-workflow handoff, wait, job and AI callbacks remain unavailable until their real dependencies and
-shared contracts are integrated.
+operation. Successful child receipts remain attached to later workflow completion, failure or durable
+handoff. `ctx.services.job(alias, input)` transfers the workflow root's entire remaining operation
+allowance to the exact declared procedure and submits the supported versioned assignment through the
+real focused inner-worker and SQLite durable-task owners. The job declaration pins its normalized
+result schema and fingerprint. Submission resolves the exact retained inner-worker profile and records
+the task lifecycle, worker admission and AI budget enrollment atomically before returning Pending.
+The deterministic durable command retains the ephemeral service root command as explicit causation;
+the lifecycle remains a durable root with its own transferred ledger. Equivalent retries return the
+existing handle without changing its admitted allowance. Pending terminalizes the service invocation
+and releases the Jint engine through a host constraint, so authored exception handling cannot continue
+calling capabilities after handoff. `ctx.services.job.status(handle)` treats the handle as untrusted
+input and routes it through the durable owner's current state-scope and `ReadTask` authorization before
+returning bounded inert status data. The public root atomic adapter still rejects parented requests,
+and read-only engine instances still
+return the canonical unavailable result for `ctx.services.action` and `ctx.services.job`. Atomic
+service execution, resumable `ctx.services.wait`, JavaScript-stack checkpoints and AI callbacks remain
+unavailable until their real dependencies and shared contracts are integrated.
 
 The internal candidate runtime validator consumes the activation owner's retained pure-mechanic
 closure evidence. That evidence covers every changed Markdown/JavaScript pair through the existing
@@ -87,7 +100,7 @@ deadline; callback waits also observe the root's remaining wall time. Root memor
 recursion limits do not describe aggregate resource use across child interpreters. Progress is a
 transient channel of eight frames, at most 32 attempts and 16 KiB total, with 2 KiB per serialized
 frame; full and closed attempts count, and only accepted frames receive consecutive sequence numbers.
-Reads, actions and progress execute synchronously on the sole engine thread through captured JSON functions;
+Reads, actions, job submission/status and progress execute synchronously on the sole engine thread through captured JSON functions;
 CLR capability objects never enter JavaScript. The host resolves and validates the exact retained
 `requirements.service` declaration, pins the exact root target and grant identity, rechecks those
 identities and current authority, and validates output before emitting

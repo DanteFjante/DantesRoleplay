@@ -24,6 +24,7 @@ public sealed class ApplicationServiceInvocationContractTests
         var (selected, record) = Retained(definition.ToJson());
         var parsed = new ApplicationReadOnlyServiceDefinitionReader(_schemas).ReadRetained(selected, record);
         Assert.Equal(definition.ToJson(), parsed.ToJson());
+
         Assert.Equal(definition.ToJson(), JsonSerializer.Serialize(parsed));
         Assert.Equal(_schemas.Compile(Schema).SchemaHash, parsed.InputSchemaHash);
         var read = Assert.Single(parsed.Reads);
@@ -53,9 +54,50 @@ public sealed class ApplicationServiceInvocationContractTests
 
         var legacy = JsonNode.Parse(Definition().ToJson())!.AsObject();
         legacy.Remove("actions");
+        legacy.Remove("jobs");
         (selected, record) = Retained(legacy.ToJsonString());
-        Assert.Empty(new ApplicationReadOnlyServiceDefinitionReader(_schemas)
-            .ReadRetained(selected, record).Actions);
+        var legacyParsed = new ApplicationReadOnlyServiceDefinitionReader(_schemas)
+            .ReadRetained(selected, record);
+        Assert.Empty(legacyParsed.Actions);
+        Assert.Empty(legacyParsed.Jobs);
+    }
+
+    [Fact]
+    public void Exact_job_declarations_round_trip_and_cannot_collide_with_other_aliases()
+    {
+        var schema = _schemas.Compile(Schema);
+        var definition = new ApplicationReadOnlyServiceDefinition(
+            schema.SchemaHash, schema.NormalizedSchema, schema.SchemaHash, schema.NormalizedSchema,
+            [], _schemas, [],
+            [new("inspect", "procedure.fixture.inspect", 4, Hash("procedure"),
+                schema.SchemaHash, schema.NormalizedSchema, _schemas)]);
+        var (selected, record) = Retained(definition.ToJson());
+
+        var parsed = new ApplicationReadOnlyServiceDefinitionReader(_schemas).ReadRetained(selected, record);
+
+        var job = Assert.Single(parsed.Jobs);
+        Assert.Equal("procedure.fixture.inspect", job.QualifiedProcedureId);
+        Assert.Equal(4, job.ProcedureVersion);
+        Assert.Equal(definition.ToJson(), parsed.ToJson());
+
+        var unknown = JsonNode.Parse(definition.ToJson())!;
+        unknown["jobs"]![0]!["grantReference"] = "invented";
+        (selected, record) = Retained(unknown.ToJsonString());
+        Assert.Equal("INVALID_SERVICE_DECLARATION", Assert.Throws<InteractionContractException>(() =>
+            new ApplicationReadOnlyServiceDefinitionReader(_schemas).ReadRetained(selected, record)).Code);
+
+        Assert.Equal("INVALID_SERVICE_JOBS", Assert.Throws<InteractionContractException>(() =>
+            new ApplicationReadOnlyServiceDefinition(
+                schema.SchemaHash, schema.NormalizedSchema, schema.SchemaHash, schema.NormalizedSchema,
+                [], _schemas,
+                [new("inspect", "fixture.mechanic.inspect", 1, Hash("mechanic"),
+                    new Dictionary<string, string>())],
+                [new("inspect", "procedure.fixture.inspect", 1, Hash("procedure"),
+                    schema.SchemaHash, schema.NormalizedSchema, _schemas)])).Code);
+        Assert.Equal("SERVICE_SCHEMA_MISMATCH", Assert.Throws<InteractionContractException>(() =>
+            new ApplicationServiceJobDeclaration(
+                "inspect", "procedure.fixture.inspect", 1, Hash("procedure"),
+                Hash("wrong-schema"), schema.NormalizedSchema, _schemas)).Code);
     }
 
     [Theory]
