@@ -287,7 +287,7 @@ public sealed class ApplicationReadOnlyServiceAuthorizationTests
                 var readModels = new ApplicationReadModelService(
                     catalogs, activation, stateSpaces, mapping, evaluator, schemas);
                 var targets = new SqliteStandingGrantTargetResolver(
-                    db, applications, activation, activation, sources, extensions, namespaces);
+                    db, applications, activation, activation, sources, extensions, namespaces, materializer);
                 var policy = new SqliteStandingGrantPolicy(db, targets);
                 var standingReads = new StandingGrantApplicationReadModelInvocationAdapter(
                     policy, targets, stateSpaces, readModels);

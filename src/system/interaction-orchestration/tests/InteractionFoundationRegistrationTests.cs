@@ -31,6 +31,8 @@ public sealed class InteractionFoundationRegistrationTests
         Assert.IsType<SqliteStandingGrantTargetResolver>(services.GetRequiredService<IStandingGrantTargetResolver>());
         Assert.IsType<InteractionManualContextService>(services.GetRequiredService<IInteractionManualContextService>());
         Assert.IsType<SqliteStandingGrantAdministration>(services.GetRequiredService<IStandingGrantAdministration>());
+        Assert.IsType<PlatformInstallationOperatorMembershipPolicy>(
+            services.GetRequiredService<IInstallationOperatorMembershipPolicy>());
         Assert.IsType<PlatformStandingGrantIssuerPolicy>(services.GetRequiredService<IStandingGrantIssuerPolicy>());
         Assert.IsType<UnavailableSystemTaskDurableService>(services.GetRequiredService<ISystemTaskDurableService>());
         Assert.IsType<UnavailableSystemInnerWorkerService>(services.GetRequiredService<ISystemInnerWorkerService>());

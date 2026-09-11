@@ -51,6 +51,31 @@ public sealed class PlatformStandingGrantIssuerPolicyTests
     }
 
     [Fact]
+    public async Task Shared_membership_and_issuer_recompute_the_same_host_owned_operator_set()
+    {
+        var monitor = new MutableOptionsMonitor(ValidOptions(allowed: ["operator@example.com"]));
+        var membership = new PlatformInstallationOperatorMembershipPolicy(monitor);
+        var policy = new PlatformStandingGrantIssuerPolicy(membership);
+        var remote = PrivateOperatorPrincipal.Create("tailscale-serve", "operator@example.com");
+        var forged = TrustedPrincipalContext.VerifiedPrincipal(
+            "principal." + new string('b', 64), "local-loopback");
+
+        Assert.Equal(InstallationOperatorMembershipStatus.Member, (await membership.EvaluateAsync(remote)).Status);
+        Assert.True((await policy.EvaluateAsync(remote, Requirement(), "grant.issue.shared")).Allowed);
+        Assert.Equal(InstallationOperatorMembershipStatus.Denied, (await membership.EvaluateAsync(forged)).Status);
+
+        monitor.Set(ValidOptions());
+        Assert.Equal(InstallationOperatorMembershipStatus.Denied, (await membership.EvaluateAsync(remote)).Status);
+        Assert.Equal("STANDING_GRANT_ISSUER_DENIED",
+            (await policy.EvaluateAsync(remote, Requirement(), "grant.issue.shared-removed")).Code);
+
+        monitor.Set(ValidOptions(allowed: ["operator@example.com"], invited: ["Operator@example.com"]));
+        Assert.Equal(InstallationOperatorMembershipStatus.Unavailable, (await membership.EvaluateAsync(remote)).Status);
+        Assert.Equal("STANDING_GRANT_ISSUER_UNAVAILABLE",
+            (await policy.EvaluateAsync(remote, Requirement(), "grant.issue.shared-invalid")).Code);
+    }
+
+    [Fact]
     public async Task Default_disabled_remote_access_keeps_only_explicit_local_operators()
     {
         var policy = new PlatformStandingGrantIssuerPolicy(

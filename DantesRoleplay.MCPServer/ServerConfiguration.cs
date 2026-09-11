@@ -81,8 +81,11 @@ public static class ServerConfiguration
         services.AddHttpContextAccessor();
         services.AddOptions<WebRemoteAccessOptions>();
         services.TryAddSingleton<IPrivateOperatorAuthorizationPolicy, PrivateOperatorAuthorizationPolicy>();
+        services.AddSingleton<IInstallationOperatorMembershipPolicy>(provider =>
+            new PlatformInstallationOperatorMembershipPolicy(
+                provider.GetRequiredService<IOptionsMonitor<WebRemoteAccessOptions>>()));
         services.AddSingleton<IStandingGrantIssuerPolicy>(provider => new PlatformStandingGrantIssuerPolicy(
-            provider.GetRequiredService<IOptionsMonitor<WebRemoteAccessOptions>>()));
+            provider.GetRequiredService<IInstallationOperatorMembershipPolicy>()));
         services.AddScoped<IStandingGrantAdministration, SqliteStandingGrantAdministration>();
         services.AddScoped<IPrivateOperatorRequestAuthorizer, McpPrivateOperatorAuthorizer>();
         services.AddScoped<ISystemAiToolSource, DirectCapabilityAiToolSource>();

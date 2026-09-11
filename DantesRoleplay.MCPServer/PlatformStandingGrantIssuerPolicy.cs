@@ -6,17 +6,22 @@ using Microsoft.Extensions.Options;
 namespace DantesRoleplay.MCPServer;
 
 /// <summary>
-/// Resolves the host's current installation operators for standing-grant issuance. Membership is
-/// reconstructed for every decision so remote-access removal and disablement take effect before a
-/// grant revision can be written.
+/// Applies standing-grant-specific validation and audit around the current installation membership decision.
 /// </summary>
-public sealed class PlatformStandingGrantIssuerPolicy(
-    IOptionsMonitor<WebRemoteAccessOptions> remoteAccess) : IStandingGrantIssuerPolicy
+public sealed class PlatformStandingGrantIssuerPolicy : IStandingGrantIssuerPolicy
 {
     private const int MaximumCommandIdLength = 128;
     private const string Scope = "system.private-host";
+    private readonly IInstallationOperatorMembershipPolicy membership;
 
-    public Task<StandingGrantIssuerDecision> EvaluateAsync(
+    public PlatformStandingGrantIssuerPolicy(IInstallationOperatorMembershipPolicy membership) =>
+        this.membership = membership ?? throw new ArgumentNullException(nameof(membership));
+
+    /// <summary>Compatibility constructor for direct host tests and existing callers.</summary>
+    public PlatformStandingGrantIssuerPolicy(IOptionsMonitor<WebRemoteAccessOptions> remoteAccess)
+        : this(new PlatformInstallationOperatorMembershipPolicy(remoteAccess)) { }
+
+    public async Task<StandingGrantIssuerDecision> EvaluateAsync(
         TrustedPrincipalContext issuer,
         StandingGrantIssuerRequirement requirement,
         string commandId,
@@ -28,23 +33,24 @@ public sealed class PlatformStandingGrantIssuerPolicy(
 
         var correlation = CanonicalCommandId(commandId);
         if (correlation is null)
-            return Task.FromResult(Deny(issuer, requirement.Mutation, "invalid", "INVALID_STANDING_GRANT_COMMAND"));
+            return Deny(issuer, requirement.Mutation, "invalid", "INVALID_STANDING_GRANT_COMMAND");
 
         if (!issuer.Verified)
-            return Task.FromResult(Deny(issuer, requirement.Mutation, correlation, "STANDING_GRANT_ISSUER_UNAUTHENTICATED"));
+            return Deny(issuer, requirement.Mutation, correlation, "STANDING_GRANT_ISSUER_UNAUTHENTICATED");
 
-        HashSet<string> operators;
+        InstallationOperatorMembershipDecision decision;
         try
         {
-            operators = CurrentOperators(remoteAccess.CurrentValue);
+            decision = await membership.EvaluateAsync(issuer, cancellationToken);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            return Task.FromResult(Deny(issuer, requirement.Mutation, correlation, "STANDING_GRANT_ISSUER_UNAVAILABLE"));
+            return Deny(issuer, requirement.Mutation, correlation, "STANDING_GRANT_ISSUER_UNAVAILABLE");
         }
-
-        if (!operators.Contains(issuer.PrincipalId))
-            return Task.FromResult(Deny(issuer, requirement.Mutation, correlation, "STANDING_GRANT_ISSUER_DENIED"));
+        if (decision.Status == InstallationOperatorMembershipStatus.Unavailable)
+            return Deny(issuer, requirement.Mutation, correlation, "STANDING_GRANT_ISSUER_UNAVAILABLE");
+        if (decision.Status != InstallationOperatorMembershipStatus.Member)
+            return Deny(issuer, requirement.Mutation, correlation, "STANDING_GRANT_ISSUER_DENIED");
 
         try
         {
@@ -52,58 +58,11 @@ public sealed class PlatformStandingGrantIssuerPolicy(
         }
         catch (InteractionContractException exception)
         {
-            return Task.FromResult(Deny(issuer, requirement.Mutation, correlation, exception.Code));
+            return Deny(issuer, requirement.Mutation, correlation, exception.Code);
         }
 
-        return Task.FromResult(new StandingGrantIssuerDecision(true, "STANDING_GRANT_ISSUER_ALLOWED",
-            Evidence(issuer, requirement.Mutation, correlation, true, "STANDING_GRANT_ISSUER_ALLOWED")));
-    }
-
-    private static HashSet<string> CurrentOperators(WebRemoteAccessOptions options)
-    {
-        ArgumentNullException.ThrowIfNull(options);
-        var operators = new HashSet<string>(StringComparer.Ordinal)
-        {
-            PrivateOperatorPrincipal.Create("local-loopback", "local-operator").PrincipalId,
-            PrivateOperatorPrincipal.Create("local-loopback-mcp", "local-operator").PrincipalId
-        };
-        if (!options.Enabled) return operators;
-
-        if (!ValidHost(options.TailscaleHost))
-            throw new OptionsValidationException(WebRemoteAccessOptions.SectionName,
-                typeof(WebRemoteAccessOptions), ["Remote operator access is unavailable."]);
-        var allowed = NormalizeLogins(options.AllowedLogins);
-        var invited = NormalizeLogins(options.InvitedLogins);
-        if (allowed.Overlaps(invited))
-            throw new OptionsValidationException(WebRemoteAccessOptions.SectionName,
-                typeof(WebRemoteAccessOptions), ["Remote operator access is unavailable."]);
-        foreach (var login in allowed)
-            operators.Add(PrivateOperatorPrincipal.Create("tailscale-serve", login).PrincipalId);
-        return operators;
-    }
-
-    private static HashSet<string> NormalizeLogins(IEnumerable<string>? logins)
-    {
-        var normalized = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var login in logins ?? [])
-        {
-            var value = login?.Trim();
-            if (string.IsNullOrWhiteSpace(value) || value.Length > 320 ||
-                value.Any(character => char.IsControl(character) || character == ','))
-                throw new OptionsValidationException(WebRemoteAccessOptions.SectionName,
-                    typeof(WebRemoteAccessOptions), ["Remote operator access is unavailable."]);
-            normalized.Add(value.ToLowerInvariant());
-        }
-        return normalized;
-    }
-
-    private static bool ValidHost(string? host)
-    {
-        var normalized = host?.Trim().TrimEnd('.');
-        return normalized is { Length: > 0 and <= 253 }
-            && normalized.EndsWith(".ts.net", StringComparison.OrdinalIgnoreCase)
-            && !normalized.Any(char.IsControl)
-            && Uri.CheckHostName(normalized) == UriHostNameType.Dns;
+        return new StandingGrantIssuerDecision(true, "STANDING_GRANT_ISSUER_ALLOWED",
+            Evidence(issuer, requirement.Mutation, correlation, true, "STANDING_GRANT_ISSUER_ALLOWED"));
     }
 
     private static string? CanonicalCommandId(string? commandId)
