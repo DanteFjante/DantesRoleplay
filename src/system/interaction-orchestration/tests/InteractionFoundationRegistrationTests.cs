@@ -1,5 +1,6 @@
 using DantesRoleplay.ApplicationActivation;
 using DantesRoleplay.ApplicationExecution;
+using DantesRoleplay.Authorization;
 using DantesRoleplay.MCPServer;
 using DantesRoleplay.SystemCapabilities;
 using DantesRoleplay.SystemTasks;
@@ -21,7 +22,16 @@ public sealed class InteractionFoundationRegistrationTests
         var services = scope.ServiceProvider;
 
         Assert.IsType<ApplicationReadModelInvocationAdapter>(services.GetRequiredService<IApplicationReadModelInvocationAdapter>());
+        Assert.IsType<StandingGrantApplicationReadModelInvocationAdapter>(
+            services.GetRequiredService<IStandingGrantApplicationReadModelInvocationAdapter>());
         Assert.IsType<ApplicationActionInvocationAdapter>(services.GetRequiredService<IApplicationActionInvocationAdapter>());
+        Assert.IsType<ApplicationReadOnlyServiceInvocationAdapter>(
+            services.GetRequiredService<IApplicationReadOnlyServiceInvocationAdapter>());
+        Assert.IsType<SqliteStandingGrantPolicy>(services.GetRequiredService<IStandingGrantPolicy>());
+        Assert.IsType<SqliteStandingGrantTargetResolver>(services.GetRequiredService<IStandingGrantTargetResolver>());
+        Assert.IsType<InteractionManualContextService>(services.GetRequiredService<IInteractionManualContextService>());
+        Assert.IsType<SqliteStandingGrantAdministration>(services.GetRequiredService<IStandingGrantAdministration>());
+        Assert.IsType<PlatformStandingGrantIssuerPolicy>(services.GetRequiredService<IStandingGrantIssuerPolicy>());
         Assert.IsType<UnavailableSystemTaskDurableService>(services.GetRequiredService<ISystemTaskDurableService>());
         Assert.IsType<UnavailableSystemInnerWorkerService>(services.GetRequiredService<ISystemInnerWorkerService>());
         var activation = services.GetRequiredService<IApplicationActivationService>();

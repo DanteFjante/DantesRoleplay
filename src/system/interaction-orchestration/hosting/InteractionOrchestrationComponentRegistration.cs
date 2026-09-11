@@ -1,10 +1,12 @@
 using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.ApplicationActivation;
+using DantesRoleplay.Authorization;
 using DantesRoleplay.CatalogNamespaces;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Knowledge;
 using DantesRoleplay.Play;
 using DantesRoleplay.Projections;
+using DantesRoleplay.Procedures;
 using DantesRoleplay.SystemCapabilities;
 using DantesRoleplay.Retrieval;
 using Microsoft.Extensions.DependencyInjection;
@@ -92,7 +94,17 @@ internal static class InteractionOrchestrationComponentRegistration
         services.TryAddScoped<IInteractionQueryExecutorRegistry, InteractionQueryExecutorRegistry>();
         services.TryAddScoped<IApplicationReadModelService, ApplicationReadModelService>();
         services.TryAddScoped<IApplicationReadModelInvocationAdapter, ApplicationReadModelInvocationAdapter>();
+        services.AddScoped<IStandingGrantApplicationReadModelInvocationAdapter,
+            StandingGrantApplicationReadModelInvocationAdapter>();
         services.TryAddScoped<IApplicationQueryRoleBindingResolver, ApplicationQueryRoleBindingResolver>();
+        services.AddScoped<IInteractionManualContextService>(provider => new InteractionManualContextService(
+            provider.GetRequiredService<IProcedureStore>(),
+            provider.GetRequiredService<IInteractionFeatureRetriever>(),
+            provider.GetRequiredService<IStandingGrantPolicy>(),
+            provider.GetRequiredService<IStandingGrantTargetResolver>(),
+            provider.GetRequiredService<IApplicationDefinitionChangeReader>(),
+            ["system"],
+            provider.GetRequiredService<IInteractionRecipeStore>()));
         services.TryAddScoped<IInteractionTaskContextMaterializer>(provider =>
             new InteractionTaskContextMaterializer(
                 provider.GetRequiredService<IInteractionAuthorizationPolicy>(),

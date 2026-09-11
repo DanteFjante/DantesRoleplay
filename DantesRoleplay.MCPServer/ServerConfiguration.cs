@@ -17,7 +17,9 @@ using DantesRoleplay.Media;
 using DantesRoleplay.SystemCapabilities;
 using DantesRoleplay.Web.Hosting;
 using DantesRoleplay.Web.Live;
+using DantesRoleplay.Web.Security;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using ModelContextProtocol;
 
@@ -77,7 +79,11 @@ public static class ServerConfiguration
         services.Replace(ServiceDescriptor.Singleton<IPublicApplicationCatalogPolicy>(
             new ConfiguredPublicApplicationCatalogPolicy(publishedApplicationCatalogs)));
         services.AddHttpContextAccessor();
+        services.AddOptions<WebRemoteAccessOptions>();
         services.TryAddSingleton<IPrivateOperatorAuthorizationPolicy, PrivateOperatorAuthorizationPolicy>();
+        services.AddSingleton<IStandingGrantIssuerPolicy>(provider => new PlatformStandingGrantIssuerPolicy(
+            provider.GetRequiredService<IOptionsMonitor<WebRemoteAccessOptions>>()));
+        services.AddScoped<IStandingGrantAdministration, SqliteStandingGrantAdministration>();
         services.AddScoped<IPrivateOperatorRequestAuthorizer, McpPrivateOperatorAuthorizer>();
         services.AddScoped<ISystemAiToolSource, DirectCapabilityAiToolSource>();
         services.Replace(ServiceDescriptor.Scoped<IInteractionAuthorizationPolicy, PrivateHostInteractionAuthorizationPolicy>());
@@ -118,7 +124,8 @@ public static class ServerConfiguration
         //
         // Registered here by name rather than behind a helper, so that the one component in this
         // system that executes code an LLM wrote appears in the startup path a reader follows.
-        services.AddSingleton<IMechanicEngine, JintMechanicEngine>();
+        services.AddSingleton<JintMechanicEngine>();
+        services.AddSingleton<IMechanicEngine>(provider => provider.GetRequiredService<JintMechanicEngine>());
 
         services
             .AddMcpServer()

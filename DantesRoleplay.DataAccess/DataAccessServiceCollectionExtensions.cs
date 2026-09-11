@@ -21,6 +21,7 @@ using DantesRoleplay.ComponentTypeAdministration;
 using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.LegacyStateAdoption;
 using DantesRoleplay.ApplicationExecution;
+using DantesRoleplay.Authorization;
 using DantesRoleplay.TriggerScheduling;
 using DantesRoleplay.SystemCapabilities;
 using DantesRoleplay.SystemConversations;
@@ -108,6 +109,7 @@ public static class DataAccessServiceCollectionExtensions
             .AddEcsEffectsComponent()
             .AddProjectionMaterializationComponent()
             .AddApplicationActivationComponent()
+            .AddStandingGrantComponent()
             .AddCatalogNavigationComponent()
             .AddInteractionOrchestrationComponent()
             .AddStateSpaceAdministrationComponent()
