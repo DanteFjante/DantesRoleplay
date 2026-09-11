@@ -1419,7 +1419,7 @@ public sealed class WebInterfaceTests
 
         await db.Database.MigrateAsync();
 
-        Assert.Equal(4, (await db.Database.GetAppliedMigrationsAsync()).Count());
+        Assert.Equal(db.Database.GetMigrations().Count(), (await db.Database.GetAppliedMigrationsAsync()).Count());
         var schemaRows = await db.Database.SqlQueryRaw<string>(
                 "SELECT name AS Value FROM sqlite_schema WHERE type IN ('table', 'index')")
             .ToListAsync();
@@ -1443,8 +1443,7 @@ public sealed class WebInterfaceTests
         await using var connection = new SqliteConnection("Filename=:memory:");
         await connection.OpenAsync();
         await using var db = CreateWebContext(connection);
-        var migrations = db.Database.GetMigrations().ToArray();
-        var previous = migrations[^2];
+        const string previous = "20260831200049_PageIdentityMigrationAudit";
         await db.GetService<IMigrator>().MigrateAsync(previous);
         var content = Encoding.UTF8.GetBytes("shared migration payload");
         var hash = Convert.ToHexString(SHA256.HashData(content));
