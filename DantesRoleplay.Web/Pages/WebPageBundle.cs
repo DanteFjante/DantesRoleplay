@@ -2,7 +2,18 @@ namespace DantesRoleplay.Web.Pages;
 
 public sealed record WebPageBundle(
     string Html,
-    IReadOnlyList<WebPageAssetUpload> Assets);
+    IReadOnlyList<WebPageAssetUpload> Assets)
+{
+    public string ContentFormat { get; init; } = WebPageContentFormat.Html;
+    public string? CompositionJson { get; init; }
+    public string? CompositionHash { get; init; }
+}
+
+public static class WebPageContentFormat
+{
+    public const string Html = "html";
+    public const string Composition = "composition-v1";
+}
 
 public sealed record WebPageAssetUpload(
     string Path,

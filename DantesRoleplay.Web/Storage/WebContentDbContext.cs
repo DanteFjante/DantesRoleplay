@@ -24,7 +24,7 @@ public sealed class WebContentDbContext(DbContextOptions<WebContentDbContext> op
             {
                 table.HasCheckConstraint(
                     "CK_web_page_active_revision",
-                    "\"ActiveRevision\" > 0");
+                    "\"ActiveRevision\" >= 0");
             });
             entity.HasKey(page => page.Id);
             entity.Property(page => page.Id).HasMaxLength(WebPageId.MaximumLength);
@@ -39,6 +39,12 @@ public sealed class WebContentDbContext(DbContextOptions<WebContentDbContext> op
                 table.HasCheckConstraint(
                     "CK_web_page_revision_revision",
                     "\"Revision\" > 0");
+                table.HasCheckConstraint("CK_web_page_revision_content", """
+                    ("ContentFormat" = 'html' AND "CompositionJson" IS NULL AND "CompositionHash" IS NULL)
+                    OR ("ContentFormat" = 'composition-v1' AND "Html" = '' AND "CompositionJson" IS NOT NULL
+                        AND "CompositionHash" IS NOT NULL AND length("CompositionHash") = 64
+                        AND "CompositionHash" NOT GLOB '*[^0-9A-F]*')
+                    """);
             });
             entity.HasKey(revision => revision.Id);
             entity.Property(revision => revision.PageId)
@@ -46,6 +52,10 @@ public sealed class WebContentDbContext(DbContextOptions<WebContentDbContext> op
                 .IsRequired();
             entity.Property(revision => revision.Revision).IsRequired();
             entity.Property(revision => revision.Html).IsRequired();
+            entity.Property(revision => revision.ContentFormat).HasMaxLength(32)
+                .HasDefaultValue(WebPageContentFormat.Html).IsRequired();
+            entity.Property(revision => revision.CompositionJson);
+            entity.Property(revision => revision.CompositionHash).HasMaxLength(64);
             entity.Property(revision => revision.CreatedAt).IsRequired();
             entity.HasOne(revision => revision.Page)
                 .WithMany(page => page.Revisions)
