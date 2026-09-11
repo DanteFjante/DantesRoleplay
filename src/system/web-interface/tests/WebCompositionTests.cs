@@ -121,6 +121,42 @@ public sealed class WebCompositionTests
     }
 
     [Fact]
+    public void Escaping_streams_into_the_output_cap_without_allocating_the_full_expansion()
+    {
+        var parsed = new WebCompositionParser().Parse("""
+            {"formatVersion":1,"generation":"g","queries":[{"name":"value"}],"components":[],
+             "root":{"kind":"value","path":"value"}}
+            """);
+        using var data = JsonDocument.Parse("\"" + new string('&', 600_000) + "\"");
+        var values = new Dictionary<string, JsonElement> { ["value"] = data.RootElement };
+        var renderer = new WebCompositionRenderer();
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        var rendered = renderer.Render(parsed.Document!, values);
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        Assert.Null(rendered.Html);
+        Assert.Equal("RENDER_OUTPUT_LIMIT_EXCEEDED", Assert.Single(rendered.Errors).Code);
+        // A full &amp; string plus the output buffer would allocate over 12 MiB. The cap must
+        // prevent that transient expansion as well as rejecting the final oversized response.
+        Assert.InRange(allocated, 0, 8 * 1024 * 1024);
+    }
+
+    [Theory]
+    [InlineData(0, true)]
+    [InlineData(1, false)]
+    public void Output_budget_includes_markup_and_accepts_the_exact_limit(int extra, bool success)
+    {
+        var parsed = new WebCompositionParser().Parse("""
+            {"formatVersion":1,"generation":"g","queries":[{"name":"value"}],"components":[],
+             "root":{"kind":"element","tag":"p","children":[{"kind":"value","path":"value"}]}}
+            """);
+        using var data = JsonDocument.Parse("\"" + new string('x', WebComposition.MaximumRenderedCharacters - 7 + extra) + "\"");
+        var rendered = new WebCompositionRenderer().Render(parsed.Document!, new Dictionary<string, JsonElement> { ["value"] = data.RootElement });
+        Assert.Equal(success, rendered.IsSuccess);
+        if (success) Assert.Equal(WebComposition.MaximumRenderedCharacters, rendered.Html!.Length);
+        else Assert.Equal("RENDER_OUTPUT_LIMIT_EXCEEDED", Assert.Single(rendered.Errors).Code);
+    }
+
+    [Fact]
     public void Expanded_nodes_are_bounded_even_when_nested_loops_emit_no_text()
     {
         var parsed = new WebCompositionParser().Parse("""

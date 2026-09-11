@@ -565,7 +565,7 @@ public sealed class WebCompositionRenderer
         if (errors.Count != 0) return new(null, errors.AsReadOnly());
         try
         {
-            var output = new StringBuilder();
+            var output = new BoundedHtmlWriter();
             RenderNode(document.Root, new RenderScope(queryValues, EmptyJsonObject(), new Dictionary<string, IReadOnlyList<WebCompositionNode>>(), null, null, assetBasePath), document, output, 0, new RenderBudget());
             return new(output.ToString(), errors.AsReadOnly());
         }
@@ -576,7 +576,7 @@ public sealed class WebCompositionRenderer
         }
     }
 
-    private static void RenderNode(WebCompositionNode node, RenderScope scope, WebCompositionDocument document, StringBuilder output, int depth, RenderBudget budget)
+    private static void RenderNode(WebCompositionNode node, RenderScope scope, WebCompositionDocument document, BoundedHtmlWriter output, int depth, RenderBudget budget)
     {
         if (depth > WebComposition.MaximumDepth) throw Error("$", "RENDER_DEPTH_EXCEEDED", "The render depth limit was exceeded.");
         if (++budget.Nodes > WebComposition.MaximumExpandedRenderNodes)
@@ -630,10 +630,9 @@ public sealed class WebCompositionRenderer
                 RenderNode(definition.Template, new(scope.Queries, Props(component.Props), component.Slots, scope.Locals, scope, scope.AssetBasePath), document, output, depth + 1, budget);
                 break;
         }
-        if (output.Length > WebComposition.MaximumRenderedCharacters) throw Error("$", "RENDER_OUTPUT_LIMIT_EXCEEDED", "Rendered output exceeds its character budget.");
     }
 
-    private static void RenderNodes(IEnumerable<WebCompositionNode> nodes, RenderScope scope, WebCompositionDocument document, StringBuilder output, int depth, RenderBudget budget)
+    private static void RenderNodes(IEnumerable<WebCompositionNode> nodes, RenderScope scope, WebCompositionDocument document, BoundedHtmlWriter output, int depth, RenderBudget budget)
     {
         foreach (var node in nodes) RenderNode(node, scope, document, output, depth, budget);
     }
@@ -673,7 +672,40 @@ public sealed class WebCompositionRenderer
         _ => value.GetRawText()
     };
 
-    private static void AppendEscaped(StringBuilder output, string value) => output.Append(HtmlEncoder.Default.Encode(value));
+    private static void AppendEscaped(BoundedHtmlWriter output, string value) => HtmlEncoder.Default.Encode(output, value);
+
+    // Both markup and the HTML encoder write through this cap. Never build an entire expanded
+    // escaped string first: a small input can expand several times before a node-level check.
+    private sealed class BoundedHtmlWriter : TextWriter
+    {
+        private readonly StringBuilder buffer = new();
+        public override Encoding Encoding => Encoding.UTF8;
+        public override void Write(char value)
+        {
+            RequireSpace(1);
+            buffer.Append(value);
+        }
+        public override void Write(string? value)
+        {
+            if (value is null) return;
+            Write(value.AsSpan());
+        }
+        public override void Write(char[] value, int index, int count) => Write(value.AsSpan(index, count));
+        public override void Write(ReadOnlySpan<char> value)
+        {
+            RequireSpace(value.Length);
+            buffer.Append(value);
+        }
+        public BoundedHtmlWriter Append(char value) { Write(value); return this; }
+        public BoundedHtmlWriter Append(string value) { Write(value); return this; }
+        public override string ToString() => buffer.ToString();
+        private void RequireSpace(int count)
+        {
+            if (count > WebComposition.MaximumRenderedCharacters - buffer.Length)
+                throw Error("$", "RENDER_OUTPUT_LIMIT_EXCEEDED", "Rendered output exceeds its character budget.");
+        }
+    }
+
     private static string ResolveAssetPath(string assetPath, string? assetBasePath)
     {
         if (!TryValidateAssetBasePath(assetBasePath, out var validated))
