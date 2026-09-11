@@ -90,9 +90,11 @@ public sealed partial class SqliteStandingGrantTargetResolver(
                 return Denied("STANDING_GRANT_RETAINED_ORIGIN_STALE");
             if (registered.Revision != host.ApplicationRevision.Revision
                 || registered.Fingerprint != host.ApplicationRevision.Fingerprint
-                || !registered.BaseApplications.SequenceEqual(host.ApplicationRevision.BaseApplications)
-                || activation.ApplicationRevision != registered.Revision
-                || activation.ApplicationFingerprint != registered.Fingerprint)
+                || !registered.BaseApplications.SequenceEqual(host.ApplicationRevision.BaseApplications))
+                return Denied("STANDING_GRANT_APPLICATION_STALE");
+            var selectedApplication = origin is null ? registered : applications.Get(app, activation.ApplicationRevision);
+            if (selectedApplication is null || activation.ApplicationRevision != selectedApplication.Revision
+                || activation.ApplicationFingerprint != selectedApplication.Fingerprint)
                 return Denied("STANDING_GRANT_APPLICATION_STALE");
 
             var chain = CatalogNamespaceIdentity.NamespaceChain(exactDefinitionId)

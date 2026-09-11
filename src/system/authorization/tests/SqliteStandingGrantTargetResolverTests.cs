@@ -17,7 +17,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DantesRoleplay.Authorization.Tests;
 
-public sealed class SqliteStandingGrantTargetResolverTests : IDisposable
+public sealed partial class SqliteStandingGrantTargetResolverTests : IDisposable
 {
     private const string RelativePath = "content/procedures/inspect.md";
     private readonly SqliteFixture fixture = new();
