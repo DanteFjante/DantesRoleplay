@@ -26,21 +26,25 @@ public sealed class ApplicationMechanicEvaluator(
     public Task<ApplicationMechanicEvaluationResult> EvaluateAsync(
         ApplicationMechanicEvaluationRequest request,
         CancellationToken cancellationToken = default) =>
-        EvaluateCoreAsync(request, 0, new HashSet<string>(StringComparer.Ordinal), new CompositionBudget(), cancellationToken);
+        EvaluateCoreAsync(request, null, 0, new HashSet<string>(StringComparer.Ordinal), new CompositionBudget(), cancellationToken);
 
     private async Task<ApplicationMechanicEvaluationResult> EvaluateCoreAsync(
         ApplicationMechanicEvaluationRequest request,
+        ICatalogNavigator? catalog,
         int depth,
         IReadOnlySet<string> ancestors,
         CompositionBudget budget,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
+        cancellationToken.ThrowIfCancellationRequested();
         if (!ValidExecution(request.Execution))
             return Failed(request, "MECHANIC_EXECUTION_INVALID: The host execution identity is invalid.");
         if (request.Audience is not null && !request.Audience.IsValid)
             return Failed(request, "MECHANIC_AUDIENCE_INVALID: The host audience is invalid.");
-        if (!catalogs.TryGet(request.ApplicationId, out var catalog))
+        // Retain one immutable navigator for the complete invocation tree. Resolving the active
+        // provider again after an await could select children from a different generation.
+        if (catalog is null && !catalogs.TryGet(request.ApplicationId, out catalog))
             return Failed(request, "APPLICATION_CATALOG_UNAVAILABLE: The exact active application catalog is unavailable.");
         CatalogRecordView record;
         try { record = catalog.Inspect(new(request.ApplicationId, request.ApplicationId.Value, request.QualifiedMechanicId)); }
@@ -88,7 +92,7 @@ public sealed class ApplicationMechanicEvaluator(
             Audience = request.Audience,
             Event = string.IsNullOrWhiteSpace(request.Event) ? "{}" : request.Event
         };
-        var composed = await ComposeAsync(request, requirements, exactProjection, depth, ancestors, budget, cancellationToken);
+        var composed = await ComposeAsync(request, catalog, requirements, exactProjection, depth, ancestors, budget, cancellationToken);
         if (composed.Projection is null) return Failed(request, composed.Error);
         var limits = request.ReadModelQueryId is null ? ExecutionLimits.Default : ExecutionLimits.ReadModel;
         var run = await engine.RunAsync(document.Source ?? "", composed.Projection, limits, cancellationToken);
@@ -105,6 +109,7 @@ public sealed class ApplicationMechanicEvaluator(
 
     private async Task<(MechanicProjection? Projection, string Error, CompositionProposal Proposal)> ComposeAsync(
         ApplicationMechanicEvaluationRequest parent,
+        ICatalogNavigator catalog,
         MechanicRequirements requirements,
         MechanicProjection projection,
         int depth,
@@ -116,8 +121,6 @@ public sealed class ApplicationMechanicEvaluator(
         if (depth >= MaxDepth) return (null, $"CHILD_DEPTH_LIMIT: Maximum child depth is {MaxDepth}.", CompositionProposal.Empty);
         if (requirements.Children.Count > MaxChildDeclarations)
             return (null, $"CHILD_DECLARATION_LIMIT: At most {MaxChildDeclarations} child declarations are permitted.", CompositionProposal.Empty);
-        if (!catalogs.TryGet(parent.ApplicationId, out var catalog))
-            return (null, "APPLICATION_CATALOG_UNAVAILABLE: The exact active application catalog is unavailable.", CompositionProposal.Empty);
         var lineage = new HashSet<string>(ancestors, StringComparer.Ordinal);
         if (!lineage.Add(parent.QualifiedMechanicId))
             return (null, $"CHILD_CYCLE: '{parent.QualifiedMechanicId}' is already executing.", CompositionProposal.Empty);
@@ -164,7 +167,7 @@ public sealed class ApplicationMechanicEvaluator(
                     childRecord.Summary.QualifiedId, childRecord.Summary.ContentFingerprint, parent.Mapping,
                     invocation.RoleEntityIds, invocation.Input, DeriveSeed(parent.Seed, invocation.Ordinal),
                     childExecution, parent.Audience, ReadModelQueryId: parent.ReadModelQueryId),
-                    depth + 1, lineage, budget, cancellationToken);
+                    catalog, depth + 1, lineage, budget, cancellationToken);
                 if (!child.Ok || child.Projection is null || child.Run is null)
                     return (null, $"CHILD_FAILED ({pair.Key}): " + (child.Problems.FirstOrDefault() ?? child.Run?.Error ?? "Child did not produce a result."), CompositionProposal.Empty);
                 var snapshotProblem = MergeSnapshots(

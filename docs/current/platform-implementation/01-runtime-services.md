@@ -6,11 +6,42 @@ Prerequisite: implement [00 — Shared foundation](00-shared-foundation.md) firs
 
 ## Existing owners to retain
 
-- [JintMechanicEngine](../../../DantesRoleplay.DataAccess/Mechanics/JintMechanicEngine.cs) creates a constrained engine for each invocation. It caches its trusted harness, but the harness constructs the mechanic with `new Function` each time. Current inputs and outputs are JSON; logging is buffered.
+- [JintMechanicEngine](../../../DantesRoleplay.DataAccess/Mechanics/JintMechanicEngine.cs) creates a constrained engine for each invocation. It reuses immutable prepared mechanic programs and the trusted harness. Current inputs and outputs are JSON; logging is buffered.
 - [ApplicationMechanicEvaluator](../../../src/system/application-execution/persistence/ApplicationMechanicEvaluator.cs) resolves exact definitions, materializes projections and evaluates bounded child composition. Its authorized/object/graph snapshot paths currently reject mutation proposals.
 - [ApplicationActionRunner](../../../src/system/application-execution/persistence/ApplicationActionRunner.cs) and [ApplicationEcsEffectBatchBuilder](../../../src/system/application-execution/persistence/ApplicationEcsEffectBatchBuilder.cs) connect exact mechanic evaluation to checked typed effects.
 - [ApplicationEcsEffectApplier](../../../DantesRoleplay.DataAccess/Ecs/ApplicationEcsEffectApplier.cs) owns operation replay, optimistic expectations, atomic effects, reactions and audit. It requires its own writer transaction.
 - [SqliteApplicationScopedEcsStore](../../../DantesRoleplay.DataAccess/Ecs/SqliteApplicationScopedEcsStore.cs) and [SqliteComponentTypeRegistry](../../../DantesRoleplay.DataAccess/Ecs/SqliteComponentTypeRegistry.cs) retain scoped persistence, schema versions and validation. [PrivateOperatorAuthorization](../../../src/system/authorization/domain/PrivateOperatorAuthorization.cs) supplies existing trusted-principal and authorization contracts.
+
+## Prepared execution and invocation pinning
+
+The mechanic engine validates the source body independently before preparing its executable
+wrapper. The mechanic function and trusted harness have separate lexical scopes. Its process-local
+cache retains at most 256 programs and 16 MiB of source text measured as UTF-16 bytes; this is a
+source-retention bound, not a measurement of total interpreter memory. The key includes exact
+source, wrapper text and parser/runtime configuration. Larger programs prepare afresh without
+entering the cache. No engine, JavaScript value, input or random state is shared between calls.
+
+Set the AppContext switch `DantesRoleplay.Mechanics.DisablePreparedProgramCache` before constructing
+the engine to use fresh preparation for recovery. The existing singleton registration controls the
+cache lifetime. The `DantesRoleplay.Mechanics.JintMechanicEngine` meter reports separate
+`dantesroleplay.mechanic.preparation.duration`,
+`dantesroleplay.mechanic.context_construction.duration` and
+`dantesroleplay.mechanic.execution.duration` histograms in milliseconds. Preparation includes cache
+lookup/wait time; cold parsing is synchronous and cancellation is checked around it, not during it.
+Preparation and context time reduce the remaining execution timeout. Diagnostics cannot replace
+the invocation result.
+
+The evaluator retains one immutable catalog navigator through its entire parent/child invocation
+tree. A later root invocation resolves its navigator independently; unavailable or stale selected
+content never falls back to an earlier executable. This pinning does not itself refresh the active
+catalog provider, authorize old-generation commits, or implement activation and rollback.
+
+The internal `JintMechanicEngine.PrepareMechanicProgram` method is the exact executable preparation
+seam for coordinated activation integration. Existing activation preparation remains separately
+owned until that integration is accepted. Service capability declarations/callbacks and workflow
+child execution still require coordinated shared contracts; the existing registered read and root
+atomic action adapters retain their supported profiles. Durable/AI execution remains unavailable
+until the real 04/05 implementations are integrated.
 
 ## Proposed execution contract
 
