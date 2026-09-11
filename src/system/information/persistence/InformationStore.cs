@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 namespace DantesRoleplay.DataAccess;
 
 /// <summary>Neutral persistence and bounded lexical ranking for user-defined information.</summary>
-public sealed class InformationStore(DantesRoleplayDbContext db, IBoundedJsonSchemaValidator schemas) : IInformationStore
+public sealed partial class InformationStore(DantesRoleplayDbContext db, IBoundedJsonSchemaValidator schemas) : IInformationStore
 {
     /// <summary>Compatibility for direct test fixtures; production DI uses the registered validator.</summary>
     internal InformationStore(DantesRoleplayDbContext db) : this(db, new BoundedJsonSchemaValidator()) { }
