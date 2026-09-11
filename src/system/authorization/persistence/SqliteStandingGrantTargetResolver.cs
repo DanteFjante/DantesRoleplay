@@ -48,7 +48,9 @@ public sealed partial class SqliteStandingGrantTargetResolver(
 
     public Task<StandingGrantTargetResolution> ResolveCurrentAsync(InteractionInvocationHost host,
         string exactDefinitionId, string kind, CancellationToken cancellationToken = default) =>
-        ResolveGenerationAsync(host, exactDefinitionId, kind, null, cancellationToken);
+        kind == CatalogNamespaceKinds.InformationSource
+            ? ResolveInformationSourceAsync(host, exactDefinitionId, cancellationToken)
+            : ResolveGenerationAsync(host, exactDefinitionId, kind, null, cancellationToken);
 
     public async Task<StandingGrantTargetResolution> ResolveRetainedAsync(InteractionInvocationHost host,
         StandingGrantActivationOrigin origin, StandingGrantDefinitionReference selection,
