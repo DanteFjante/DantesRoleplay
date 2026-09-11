@@ -305,12 +305,12 @@ public sealed partial class SqliteStandingGrantTargetResolverTests : IDisposable
         var service = Service(db, setup);
         var request = Request(active.ActivationFingerprint);
 
-        var created = await service.WriteCandidateAsync(Host(setup, "write", InteractionExecutionProfile.Atomic), request);
+        var created = await service.WriteCandidateAsync(ApplicationHost(setup, "write", InteractionExecutionProfile.Atomic), request);
         Assert.Equal(InteractionInvocationResultTag.Committed, created.Tag);
         Assert.NotNull(created.Receipt);
         var stored = Assert.Single(await db.Set<ApplicationCandidateRevisionRecord>().ToArrayAsync());
-        var inspected = await service.InspectAsync(Host(setup, "inspect"), new(stored.CandidateId, stored.Revision));
-        var replay = await service.WriteCandidateAsync(Host(setup, "write", InteractionExecutionProfile.Atomic), request);
+        var inspected = await service.InspectAsync(ApplicationHost(setup, "inspect"), new(stored.CandidateId, stored.Revision));
+        var replay = await service.WriteCandidateAsync(ApplicationHost(setup, "write", InteractionExecutionProfile.Atomic), request);
 
         Assert.Equal(InteractionInvocationResultTag.Completed, inspected.Tag);
         Assert.Equal(InteractionInvocationResultTag.Committed, replay.Tag);
@@ -327,11 +327,11 @@ public sealed partial class SqliteStandingGrantTargetResolverTests : IDisposable
         await SeedGrantAsync(db, [StandingGrantCapability.Author, StandingGrantCapability.Read]);
         var service = Service(db, setup);
 
-        var created = await service.WriteCandidateAsync(Host(setup, "receipt-inspect", InteractionExecutionProfile.Atomic),
+        var created = await service.WriteCandidateAsync(ApplicationHost(setup, "receipt-inspect", InteractionExecutionProfile.Atomic),
             Request(setup.Activation.Current(Application)!.ActivationFingerprint));
         Assert.NotNull(created.Receipt);
         var receipt = created.Receipt!;
-        var inspected = await service.InspectAsync(Host(setup, "receipt-read"), new(null, 0, receipt.OperationId));
+        var inspected = await service.InspectAsync(ApplicationHost(setup, "receipt-read"), new(null, 0, receipt.OperationId));
 
         Assert.Equal(InteractionInvocationResultTag.Committed, created.Tag);
         Assert.Equal(InteractionInvocationResultTag.Completed, inspected.Tag);
@@ -346,12 +346,12 @@ public sealed partial class SqliteStandingGrantTargetResolverTests : IDisposable
         var setup = Setup(db); await ActivateAsync(setup);
         await SeedGrantAsync(db, [StandingGrantCapability.Author, StandingGrantCapability.Read]);
         var service = Service(db, setup);
-        var created = await service.WriteCandidateAsync(Host(setup, "mixed-selector", InteractionExecutionProfile.Atomic),
+        var created = await service.WriteCandidateAsync(ApplicationHost(setup, "mixed-selector", InteractionExecutionProfile.Atomic),
             Request(setup.Activation.Current(Application)!.ActivationFingerprint));
         var stored = Assert.Single(await db.Set<ApplicationCandidateRevisionRecord>().ToArrayAsync());
 
         Assert.NotNull(created.Receipt);
-        var inspected = await service.InspectAsync(Host(setup, "mixed-read"),
+        var inspected = await service.InspectAsync(ApplicationHost(setup, "mixed-read"),
             new(stored.CandidateId, stored.Revision, created.Receipt!.OperationId));
 
         Assert.Equal(InteractionInvocationResultTag.Failed, inspected.Tag);
@@ -368,7 +368,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests : IDisposable
         var setup = Setup(db); await ActivateAsync(setup);
         await SeedGrantAsync(db, [StandingGrantCapability.Author, StandingGrantCapability.Read]);
         var service = Service(db, setup);
-        var created = await service.WriteCandidateAsync(Host(setup, "receipt-" + state, InteractionExecutionProfile.Atomic),
+        var created = await service.WriteCandidateAsync(ApplicationHost(setup, "receipt-" + state, InteractionExecutionProfile.Atomic),
             Request(setup.Activation.Current(Application)!.ActivationFingerprint));
         Assert.NotNull(created.Receipt);
         var receipt = created.Receipt!;
@@ -377,7 +377,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests : IDisposable
         else
             await ReplaceGrantCapabilitiesAsync(db, [StandingGrantCapability.Author]);
 
-        var inspected = await service.InspectAsync(Host(setup, "receipt-denied-" + state,
+        var inspected = await service.InspectAsync(ApplicationHost(setup, "receipt-denied-" + state,
             grantReference: "grant@2"), new(null, 0, receipt.OperationId));
 
         Assert.Equal(InteractionInvocationResultTag.Failed, inspected.Tag);
@@ -392,7 +392,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests : IDisposable
         var setup = Setup(db); await ActivateAsync(setup);
         await SeedGrantAsync(db, [StandingGrantCapability.Author, StandingGrantCapability.Read]);
         var service = Service(db, setup);
-        var created = await service.WriteCandidateAsync(Host(setup, "demo-receipt", InteractionExecutionProfile.Atomic),
+        var created = await service.WriteCandidateAsync(ApplicationHost(setup, "demo-receipt", InteractionExecutionProfile.Atomic),
             Request(setup.Activation.Current(Application)!.ActivationFingerprint));
         Assert.NotNull(created.Receipt);
         var receipt = created.Receipt!;
@@ -437,7 +437,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests : IDisposable
         };
 
         var result = await Service(db, setup).WriteCandidateAsync(
-            Host(setup, "invalid-" + invalid, InteractionExecutionProfile.Atomic), request!);
+            ApplicationHost(setup, "invalid-" + invalid, InteractionExecutionProfile.Atomic), request!);
 
         Assert.Equal(InteractionInvocationResultTag.Failed, result.Tag);
         Assert.Equal("INVALID_PAYLOAD", result.Code);
@@ -451,14 +451,14 @@ public sealed partial class SqliteStandingGrantTargetResolverTests : IDisposable
         await using var db = fixture.CreateContext();
         var setup = Setup(db); await ActivateAsync(setup);
         await SeedGrantAsync(db, [StandingGrantCapability.Read]);
-        var result = await Service(db, setup).WriteCandidateAsync(Host(setup, "denied", InteractionExecutionProfile.Atomic), Request(setup.Activation.Current(Application)!.ActivationFingerprint));
+        var result = await Service(db, setup).WriteCandidateAsync(ApplicationHost(setup, "denied", InteractionExecutionProfile.Atomic), Request(setup.Activation.Current(Application)!.ActivationFingerprint));
 
         Assert.Equal(InteractionInvocationResultTag.Failed, result.Tag);
         Assert.Empty(await db.Set<ApplicationCandidateRevisionRecord>().ToArrayAsync());
         Assert.Empty(await db.Operations.Where(x => x.Tool == "application-candidate").ToArrayAsync());
         Assert.False(db.ChangeTracker.HasChanges());
         Assert.Null(db.Database.CurrentTransaction);
-        var absent = await Service(db, setup).InspectAsync(Host(setup), new("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 1));
+        var absent = await Service(db, setup).InspectAsync(ApplicationHost(setup), new("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 1));
         Assert.Equal(InteractionInvocationResultTag.Failed, absent.Tag);
         Assert.Null(absent.DataJson);
     }
@@ -470,11 +470,11 @@ public sealed partial class SqliteStandingGrantTargetResolverTests : IDisposable
         var setup = Setup(db); await ActivateAsync(setup); await SeedGrantAsync(db, [StandingGrantCapability.Author]);
         var request = Request(setup.Activation.Current(Application)!.ActivationFingerprint);
         var service = Service(db, setup);
-        var first = await service.WriteCandidateAsync(Host(setup, "stale-replay", InteractionExecutionProfile.Atomic), request);
+        var first = await service.WriteCandidateAsync(ApplicationHost(setup, "stale-replay", InteractionExecutionProfile.Atomic), request);
         WriteProcedure("A later active generation.");
         await ActivateAsync(setup, setup.Activation.Current(Application)!.ActivationFingerprint);
 
-        var replay = await service.WriteCandidateAsync(Host(setup, "stale-replay", InteractionExecutionProfile.Atomic), request);
+        var replay = await service.WriteCandidateAsync(ApplicationHost(setup, "stale-replay", InteractionExecutionProfile.Atomic), request);
 
         Assert.Equal(InteractionInvocationResultTag.Committed, first.Tag);
         Assert.Equal(first.Receipt, replay.Receipt);
@@ -488,11 +488,11 @@ public sealed partial class SqliteStandingGrantTargetResolverTests : IDisposable
         var setup = Setup(db); await ActivateAsync(setup); await SeedGrantAsync(db, [StandingGrantCapability.Author]);
         var request = Request(setup.Activation.Current(Application)!.ActivationFingerprint);
         var service = Service(db, setup);
-        _ = await service.WriteCandidateAsync(Host(setup, "payload-conflict", InteractionExecutionProfile.Atomic), request);
+        _ = await service.WriteCandidateAsync(ApplicationHost(setup, "payload-conflict", InteractionExecutionProfile.Atomic), request);
         WriteProcedure("A later active generation.");
         await ActivateAsync(setup, setup.Activation.Current(Application)!.ActivationFingerprint);
 
-        var conflict = await service.WriteCandidateAsync(Host(setup, "payload-conflict", InteractionExecutionProfile.Atomic), request with { NewImplementationReason = "Different payload." });
+        var conflict = await service.WriteCandidateAsync(ApplicationHost(setup, "payload-conflict", InteractionExecutionProfile.Atomic), request with { NewImplementationReason = "Different payload." });
 
         Assert.Equal(InteractionInvocationResultTag.Failed, conflict.Tag);
         Assert.Equal("APPLICATION_CANDIDATE_COMMAND_CONFLICT", conflict.Code);
@@ -505,10 +505,10 @@ public sealed partial class SqliteStandingGrantTargetResolverTests : IDisposable
         await using var db = fixture.CreateContext();
         var setup = Setup(db); await ActivateAsync(setup); await SeedGrantAsync(db, [StandingGrantCapability.Author, StandingGrantCapability.Read]);
         var service = Service(db, setup); var fingerprint = setup.Activation.Current(Application)!.ActivationFingerprint;
-        var allowed = await service.WriteCandidateAsync(Host(setup, "new-path", InteractionExecutionProfile.Atomic), NewProcedureRequest(fingerprint, "content/procedures/new.md", "demo.runtime.new"));
+        var allowed = await service.WriteCandidateAsync(ApplicationHost(setup, "new-path", InteractionExecutionProfile.Atomic), NewProcedureRequest(fingerprint, "content/procedures/new.md", "demo.runtime.new"));
         var stored = Assert.Single(await db.Set<ApplicationCandidateRevisionRecord>().ToArrayAsync());
-        var readable = await service.InspectAsync(Host(setup, "new-read"), new(stored.CandidateId, 1));
-        var escaped = await service.WriteCandidateAsync(Host(setup, "escape", InteractionExecutionProfile.Atomic), NewProcedureRequest(fingerprint, "outside/escape.md", "demo.runtime.escape"));
+        var readable = await service.InspectAsync(ApplicationHost(setup, "new-read"), new(stored.CandidateId, 1));
+        var escaped = await service.WriteCandidateAsync(ApplicationHost(setup, "escape", InteractionExecutionProfile.Atomic), NewProcedureRequest(fingerprint, "outside/escape.md", "demo.runtime.escape"));
 
         Assert.Equal(InteractionInvocationResultTag.Committed, allowed.Tag);
         Assert.Equal(InteractionInvocationResultTag.Completed, readable.Tag);
@@ -522,12 +522,12 @@ public sealed partial class SqliteStandingGrantTargetResolverTests : IDisposable
         await using var db = fixture.CreateContext();
         var setup = Setup(db); await ActivateAsync(setup); await SeedGrantAsync(db, [StandingGrantCapability.Author]);
         var fingerprint = setup.Activation.Current(Application)!.ActivationFingerprint; var service = Service(db, setup);
-        _ = await service.WriteCandidateAsync(Host(setup, "rev-one", InteractionExecutionProfile.Atomic), Request(fingerprint));
+        _ = await service.WriteCandidateAsync(ApplicationHost(setup, "rev-one", InteractionExecutionProfile.Atomic), Request(fingerprint));
         var first = Assert.Single(await db.Set<ApplicationCandidateRevisionRecord>().ToArrayAsync());
         var old = (await new ApplicationCandidateRetainedReader(db, setup.Applications).ReadAsync(Application, first.CandidateId, 1))!.Documents.Single().RetainedBytes;
         var secondRequest = Request(fingerprint) with { CandidateId = first.CandidateId, ExpectedCandidateRevision = 1, Documents = [new("file:" + RelativePath, "catalog", RelativePath, "text/markdown", ProcedureText("Revision two."))] };
-        var second = await service.WriteCandidateAsync(Host(setup, "rev-two", InteractionExecutionProfile.Atomic), secondRequest);
-        var stale = await service.WriteCandidateAsync(Host(setup, "rev-three", InteractionExecutionProfile.Atomic), secondRequest);
+        var second = await service.WriteCandidateAsync(ApplicationHost(setup, "rev-two", InteractionExecutionProfile.Atomic), secondRequest);
+        var stale = await service.WriteCandidateAsync(ApplicationHost(setup, "rev-three", InteractionExecutionProfile.Atomic), secondRequest);
         var retainedOld = (await new ApplicationCandidateRetainedReader(db, setup.Applications).ReadAsync(Application, first.CandidateId, 1))!.Documents.Single().RetainedBytes;
 
         Assert.Equal(InteractionInvocationResultTag.Committed, second.Tag);
@@ -543,10 +543,10 @@ public sealed partial class SqliteStandingGrantTargetResolverTests : IDisposable
         await using var db = fixture.CreateContext();
         var setup = Setup(db); await ActivateAsync(setup); await SeedGrantAsync(db, [StandingGrantCapability.Author]);
         var request = Request(setup.Activation.Current(Application)!.ActivationFingerprint); var service = Service(db, setup);
-        _ = await service.WriteCandidateAsync(Host(setup, "revoked-replay", InteractionExecutionProfile.Atomic), request);
+        _ = await service.WriteCandidateAsync(ApplicationHost(setup, "revoked-replay", InteractionExecutionProfile.Atomic), request);
         await RevokeGrantAsync(db);
 
-        var replay = await service.WriteCandidateAsync(Host(setup, "revoked-replay", InteractionExecutionProfile.Atomic), request);
+        var replay = await service.WriteCandidateAsync(ApplicationHost(setup, "revoked-replay", InteractionExecutionProfile.Atomic), request);
 
         Assert.Equal(InteractionInvocationResultTag.Failed, replay.Tag);
         Assert.Equal("STANDING_GRANT_NOT_CURRENT", replay.Code);
@@ -663,6 +663,12 @@ public sealed partial class SqliteStandingGrantTargetResolverTests : IDisposable
             - Preserve it.
             """, new UTF8Encoding(false));
     }
+
+    private static InteractionInvocationHost ApplicationHost(SetupState setup, string command = "command", InteractionExecutionProfile profile = InteractionExecutionProfile.ReadOnly,
+        string grantReference = "grant@1") => InteractionInvocationHost.ForApplication(
+        TrustedPrincipalContext.VerifiedPrincipal("principal." + new string('a', 64), "test"),
+        new ApplicationRevision(Application, 1, setup.Applications.Get(Application)!.Fingerprint, []), grantReference,
+        command, profile, new InteractionInvocationBudget(1, DateTime.UtcNow.AddMinutes(1)));
 
     private static InteractionInvocationHost Host(SetupState setup, string command = "command", InteractionExecutionProfile profile = InteractionExecutionProfile.ReadOnly,
         string grantReference = "grant@1") => new(

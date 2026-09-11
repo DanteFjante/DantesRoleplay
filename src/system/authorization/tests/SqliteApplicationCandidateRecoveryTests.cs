@@ -21,7 +21,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         await SeedGrantAsync(db, [StandingGrantCapability.Author]);
         var service = Service(db, setup);
 
-        var recovered = await service.RecoverAsync(Host(setup, "recover", InteractionExecutionProfile.Atomic),
+        var recovered = await service.RecoverAsync(ApplicationHost(setup, "recover", InteractionExecutionProfile.Atomic),
             historical.ActivationRevision, current.ActivationFingerprint);
         var stored = Assert.Single(await db.Set<ApplicationCandidateRevisionRecord>().ToArrayAsync());
         var readback = await new ApplicationCandidateRetainedReader(db, setup.Applications)
@@ -34,7 +34,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
 
         WriteProcedure("A later current generation.");
         await ActivateAsync(setup, current.ActivationFingerprint);
-        var replay = await service.RecoverAsync(Host(setup, "recover", InteractionExecutionProfile.Atomic),
+        var replay = await service.RecoverAsync(ApplicationHost(setup, "recover", InteractionExecutionProfile.Atomic),
             historical.ActivationRevision, current.ActivationFingerprint);
 
         Assert.Equal(recovered.Receipt, replay.Receipt);
@@ -55,7 +55,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         var current = setup.Activation.Current(Application)!;
         await SeedGrantAsync(db, [StandingGrantCapability.Author]);
 
-        var recovered = await Service(db, setup).RecoverAsync(Host(setup, "recover-extra", InteractionExecutionProfile.Atomic),
+        var recovered = await Service(db, setup).RecoverAsync(ApplicationHost(setup, "recover-extra", InteractionExecutionProfile.Atomic),
             historical.ActivationRevision, current.ActivationFingerprint);
 
         Assert.Equal(InteractionInvocationResultTag.Unavailable, recovered.Tag);
@@ -77,7 +77,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         await SeedGrantAsync(db, [StandingGrantCapability.Author]);
         var service = Service(db, setup);
 
-        var stale = await service.RecoverAsync(Host(setup, "recover-stale", InteractionExecutionProfile.Atomic),
+        var stale = await service.RecoverAsync(ApplicationHost(setup, "recover-stale", InteractionExecutionProfile.Atomic),
             historical.ActivationRevision, new string('A', 64));
         var link = await db.Set<ApplicationActivationDocumentRecord>().SingleAsync(value =>
             value.ActivationRevision == historical.ActivationRevision);
@@ -85,7 +85,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             value.IdentityId == link.IdentityId && value.EvidenceVersion == link.EvidenceVersion);
         evidence.RetainedBytes = null;
         await db.SaveChangesAsync();
-        var missing = await service.RecoverAsync(Host(setup, "recover-missing", InteractionExecutionProfile.Atomic),
+        var missing = await service.RecoverAsync(ApplicationHost(setup, "recover-missing", InteractionExecutionProfile.Atomic),
             historical.ActivationRevision, current.ActivationFingerprint);
 
         Assert.Equal(InteractionInvocationResultTag.Failed, stale.Tag);

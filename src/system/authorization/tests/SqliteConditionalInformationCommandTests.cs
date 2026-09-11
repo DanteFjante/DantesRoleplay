@@ -20,7 +20,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         await SeedInformationGrantAsync(db, ["demo.info"]);
         var service = InformationService(db, setup);
 
-        var result = await service.WriteSourceAsync(Host(setup, "information-create", InteractionExecutionProfile.Atomic),
+        var result = await service.WriteSourceAsync(ApplicationHost(setup, "information-create", InteractionExecutionProfile.Atomic),
             new(new("source.notes", "demo.info", "Notes"), 0, "demo.info.notes"));
 
         Assert.Equal(InteractionInvocationResultTag.Committed, result.Tag);
@@ -40,10 +40,10 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         var setup = Setup(db); AddInformationNamespace(setup, "demo.info");
         await SeedInformationGrantAsync(db, ["demo.info"]);
         var service = InformationService(db, setup);
-        _ = await service.WriteSourceAsync(Host(setup, "information-first", InteractionExecutionProfile.Atomic),
+        _ = await service.WriteSourceAsync(ApplicationHost(setup, "information-first", InteractionExecutionProfile.Atomic),
             new(new("source.notes", "demo.info", "Notes"), 0, "demo.info.notes"));
 
-        var stale = await service.WriteSourceAsync(Host(setup, "information-stale", InteractionExecutionProfile.Atomic),
+        var stale = await service.WriteSourceAsync(ApplicationHost(setup, "information-stale", InteractionExecutionProfile.Atomic),
             new(new("source.notes", "demo.info", "Changed notes"), 0, "demo.info.notes"));
 
         Assert.Equal(InteractionInvocationResultTag.Failed, stale.Tag);
@@ -60,7 +60,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         var raw = new InformationStore(db);
         _ = await raw.WriteSourceAsync(new("source.unmapped", "demo.info", "Unmapped"));
 
-        var result = await InformationService(db, setup).WriteSourceAsync(Host(setup, "information-unmapped", InteractionExecutionProfile.Atomic),
+        var result = await InformationService(db, setup).WriteSourceAsync(ApplicationHost(setup, "information-unmapped", InteractionExecutionProfile.Atomic),
             new(new("source.unmapped", "demo.info", "Changed"), 1, "demo.info.unmapped"));
 
         Assert.Equal(InteractionInvocationResultTag.Unavailable, result.Tag);
@@ -75,7 +75,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         var setup = Setup(db); AddInformationNamespace(setup, "demo.info");
         await SeedInformationGrantAsync(db, ["demo.info"], [StandingGrantCapability.Read]);
 
-        var result = await InformationService(db, setup).WriteSourceAsync(Host(setup, "information-denied", InteractionExecutionProfile.Atomic),
+        var result = await InformationService(db, setup).WriteSourceAsync(ApplicationHost(setup, "information-denied", InteractionExecutionProfile.Atomic),
             new(new("source.denied", "demo.info", "Denied"), 0, "demo.info.denied"));
 
         Assert.Equal(InteractionInvocationResultTag.Failed, result.Tag);
@@ -91,11 +91,11 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         var setup = Setup(db); AddInformationNamespace(setup, "demo.info");
         await SeedInformationGrantAsync(db, ["demo.info"]);
         var service = InformationService(db, setup);
-        _ = await service.WriteSourceAsync(Host(setup, "information-schema-source", InteractionExecutionProfile.Atomic),
+        _ = await service.WriteSourceAsync(ApplicationHost(setup, "information-schema-source", InteractionExecutionProfile.Atomic),
             new(new("source.schema", "demo.info", "Schema"), 0, "demo.info.schema"));
         _ = await new InformationStore(db).WriteRecordAsync(new("record.schema", "source.schema", "Existing", "Keep", "{}"));
 
-        var rejected = await service.WriteSourceAsync(Host(setup, "information-schema-reject", InteractionExecutionProfile.Atomic),
+        var rejected = await service.WriteSourceAsync(ApplicationHost(setup, "information-schema-reject", InteractionExecutionProfile.Atomic),
             new(new("source.schema", "demo.info", "Schema", MetadataSchemaJson: """{"type":"object","required":["rank"]}"""), 1, "demo.info.schema"));
 
         Assert.Equal(InteractionInvocationResultTag.Failed, rejected.Tag);
@@ -111,13 +111,13 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         await SeedInformationGrantAsync(db, ["demo.info"]);
         var service = InformationService(db, setup);
         var firstRequest = new InformationSourceConditionalWriteRequest(new("source.replay", "demo.info", "Original"), 0, "demo.info.replay");
-        var first = await service.WriteSourceAsync(Host(setup, "information-replay", InteractionExecutionProfile.Atomic), firstRequest);
-        _ = await service.WriteSourceAsync(Host(setup, "information-revision", InteractionExecutionProfile.Atomic),
+        var first = await service.WriteSourceAsync(ApplicationHost(setup, "information-replay", InteractionExecutionProfile.Atomic), firstRequest);
+        _ = await service.WriteSourceAsync(ApplicationHost(setup, "information-revision", InteractionExecutionProfile.Atomic),
             new(new("source.replay", "demo.info", "Revision two"), 1, "demo.info.replay"));
 
-        var replay = await service.WriteSourceAsync(Host(setup, "information-replay", InteractionExecutionProfile.Atomic), firstRequest);
+        var replay = await service.WriteSourceAsync(ApplicationHost(setup, "information-replay", InteractionExecutionProfile.Atomic), firstRequest);
         await RevokeGrantAsync(db);
-        var revoked = await service.WriteSourceAsync(Host(setup, "information-replay", InteractionExecutionProfile.Atomic), firstRequest);
+        var revoked = await service.WriteSourceAsync(ApplicationHost(setup, "information-replay", InteractionExecutionProfile.Atomic), firstRequest);
 
         Assert.Equal(first.Receipt, replay.Receipt);
         Assert.Equal(InteractionInvocationResultTag.Failed, revoked.Tag);
@@ -131,14 +131,14 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         var setup = Setup(db); AddInformationNamespace(setup, "demo.alpha"); AddInformationNamespace(setup, "demo.beta");
         await SeedInformationGrantAsync(db, ["demo.alpha", "demo.beta"]);
         var service = InformationService(db, setup);
-        _ = await service.WriteSourceAsync(Host(setup, "source-alpha", InteractionExecutionProfile.Atomic),
+        _ = await service.WriteSourceAsync(ApplicationHost(setup, "source-alpha", InteractionExecutionProfile.Atomic),
             new(new("source.alpha", "demo.alpha", "Alpha"), 0, "demo.alpha.source"));
-        _ = await service.WriteSourceAsync(Host(setup, "source-beta", InteractionExecutionProfile.Atomic),
+        _ = await service.WriteSourceAsync(ApplicationHost(setup, "source-beta", InteractionExecutionProfile.Atomic),
             new(new("source.beta", "demo.beta", "Beta"), 0, "demo.beta.source"));
         _ = await new InformationStore(db).WriteRecordAsync(new("record.move", "source.alpha", "Original", "Keep", "{}"));
         await ReplaceInformationGrantNamespacesAsync(db, ["demo.alpha"]);
 
-        var moved = await service.WriteRecordAsync(Host(setup, "record-move", InteractionExecutionProfile.Atomic,
+        var moved = await service.WriteRecordAsync(ApplicationHost(setup, "record-move", InteractionExecutionProfile.Atomic,
             grantReference: "grant@2"), new(new("record.move", "source.beta", "Moved", "Changed", "{}"), 1));
 
         Assert.Equal(InteractionInvocationResultTag.Failed, moved.Tag);

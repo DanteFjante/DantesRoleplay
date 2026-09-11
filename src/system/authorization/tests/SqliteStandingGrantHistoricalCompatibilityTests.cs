@@ -20,8 +20,10 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         setup.Applications.Register(new(baseApp, "Base", "Unrelated registration evolution fixture.", []));
         var next = setup.Applications.ReviseBaseApplications(Application, [baseApp], oldHost.ApplicationRevision.Revision,
             oldHost.ApplicationRevision.Fingerprint);
-        var host = new InteractionInvocationHost(oldHost.Principal, next, oldHost.StateSpaceId, oldHost.GrantReference,
-            "historical-after-registration", oldHost.StateRevision, InteractionExecutionProfile.ReadOnly,
+        var stateSpaceId = Assert.IsType<string>(oldHost.StateSpaceId);
+        var stateRevision = Assert.IsType<string>(oldHost.StateRevision);
+        var host = new InteractionInvocationHost(oldHost.Principal, next, stateSpaceId, oldHost.GrantReference,
+            "historical-after-registration", stateRevision, InteractionExecutionProfile.ReadOnly,
             new InteractionInvocationBudget(1, DateTime.UtcNow.AddMinutes(1)));
 
         var result = await setup.Resolver.ResolveRetainedAsync(host, origin, Selection(oldTarget));

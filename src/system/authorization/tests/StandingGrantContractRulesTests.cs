@@ -196,7 +196,10 @@ public sealed class StandingGrantContractRulesTests
         new ApplicationRevision(App, 1, Hash, []), "state", "grant@1", "read-command", "state@1",
         InteractionExecutionProfile.ReadOnly, new InteractionInvocationBudget(2, DateTime.UtcNow.AddMinutes(1)));
 
-    private static StandingGrantTaskTarget TaskTarget(InteractionInvocationHost host, StandingGrantDefinitionTarget target) =>
-        new(new SystemTaskDurableHandle("task", "original-command"), host.Principal.PrincipalId, App, host.StateSpaceId,
+    private static StandingGrantTaskTarget TaskTarget(InteractionInvocationHost host, StandingGrantDefinitionTarget target)
+    {
+        var stateSpaceId = Assert.IsType<string>(host.StateSpaceId);
+        return new(new SystemTaskDurableHandle("task", "original-command"), host.Principal.PrincipalId, App, stateSpaceId,
             new SystemTaskSelectedDefinition(target.DefinitionId, target.Revision, target.ContentFingerprint));
+    }
 }
