@@ -90,7 +90,7 @@ public sealed partial class InformationStore(DantesRoleplayDbContext db, IBounde
             return new("rejected", null, "INFORMATION_RECORD_METADATA_INVALID", metadataError);
 
         var hash = InformationContentIdentity.RecordHash(request.Id, request.SourceId, request.Title, request.Content,
-            request.MetadataJson, source.Revision);
+            request.MetadataJson);
         var existing = await _db.Set<InformationRecord>().SingleOrDefaultAsync(x => x.Id == request.Id, cancellationToken);
         if (existing is not null)
         {

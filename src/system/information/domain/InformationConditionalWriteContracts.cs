@@ -17,6 +17,11 @@ public sealed record InformationRecordConditionalWriteRequest(
 public sealed record InformationRecordRevisionReadRequest(
     [property: JsonRequired] string RecordId, int? Revision = null);
 
+/// <summary>
+/// Mode is registered or inline for exact retained bindings. The corresponding *-current-unpinned
+/// modes expose only the live row after validating it against the current source schema; they do
+/// not assert which schema revision originally accepted legacy content.
+/// </summary>
 public sealed record InformationMetadataSchemaBinding(
     string Mode, int SourceRevision, string ProfileId, string SchemaJson, string SchemaHash,
     Ecs.EcsComponentReference? RegisteredSchema);

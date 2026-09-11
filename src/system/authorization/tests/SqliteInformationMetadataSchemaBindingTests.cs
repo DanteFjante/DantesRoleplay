@@ -1,3 +1,4 @@
+using System.Text.Json;
 using DantesRoleplay.Authorization;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.Ecs;
@@ -36,6 +37,50 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         Assert.Null(read.Record.MetadataSchema.RegisteredSchema);
         Assert.Equal(1, read.Record.MetadataSchema.SourceRevision);
         Assert.Equal("{}", read.Record.MetadataSchema.SchemaJson);
+    }
+
+    [Fact]
+    public async Task Legacy_current_record_remains_readable_without_claiming_historical_schema_binding()
+    {
+        await using var db = fixture.CreateContext();
+        var setup = Setup(db); AddInformationNamespace(setup, "demo.info");
+        await SeedInformationGrantAsync(db, ["demo.info"], [StandingGrantCapability.Author, StandingGrantCapability.Read]);
+        var store = new InformationStore(db);
+        var service = InformationService(db, setup, store);
+        await service.WriteSourceAsync(ApplicationHost(setup, "legacy-source", InteractionExecutionProfile.Atomic),
+            new(new("source.legacy", "demo.info", "Legacy"), 0, "demo.info.legacy"));
+        var written = await store.WriteRecordAsync(
+            new("record.legacy", "source.legacy", "Legacy", "Still searchable", "{}"));
+        var record = written.Record!;
+        var legacyJson = InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
+        {
+            kind = "record", record.Id, record.Revision, record.SourceId, record.Title, record.Content,
+            record.MetadataJson, record.ContentHash, record.CreatedAtUtc, record.UpdatedAtUtc
+        }));
+        db.Add(new InformationContentRevisionRecord
+        {
+            Kind = "record", Id = record.Id, Revision = record.Revision, ContentJson = legacyJson,
+            ContentFingerprint = InteractionCanonicalJson.Fingerprint(
+                "dantes-roleplay/information-content-revision/v1", legacyJson),
+            RetainedByOperationId = await db.Set<InformationContentRevisionRecord>()
+                .Where(value => value.Kind == "source" && value.Id == "source.legacy")
+                .Select(value => value.RetainedByOperationId).SingleAsync(),
+            Origin = "baseline-retained"
+        });
+        await db.SaveChangesAsync();
+
+        var current = await service.ReadRecordRevisionAsync(
+            ApplicationHost(setup, "legacy-current-read", grantReference: "grant@1"), new("record.legacy"));
+        var historical = await service.ReadRecordRevisionAsync(
+            ApplicationHost(setup, "legacy-history-read", grantReference: "grant@1"), new("record.legacy", 1));
+        var search = await store.SearchAsync("demo.info", "searchable", null, 5);
+
+        Assert.Equal("completed", current.Status);
+        Assert.Equal("inline-current-unpinned", current.Record!.MetadataSchema.Mode);
+        Assert.Equal(1, current.Record.MetadataSchema.SourceRevision);
+        Assert.Equal("unavailable", historical.Status);
+        Assert.Equal("INFORMATION_SCHEMA_HISTORY_UNAVAILABLE", historical.ErrorCode);
+        Assert.Equal("record.legacy", Assert.Single(search).Id);
     }
 
     [Fact]

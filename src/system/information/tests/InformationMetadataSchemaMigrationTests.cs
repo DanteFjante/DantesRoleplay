@@ -48,6 +48,8 @@ public sealed class InformationMetadataSchemaMigrationTests
             """));
         Assert.Equal(1L, await ScalarAsync(connection,
             "SELECT COUNT(*) FROM pragma_foreign_key_list('information_record') WHERE \"table\"='information_source'"));
+        var legacySearch = await new InformationStore(db).SearchAsync("local.notes", "Preserved", null, 5);
+        Assert.Equal("record.migration", Assert.Single(legacySearch).Id);
         await db.Database.ExecuteSqlRawAsync(
             "UPDATE information_record SET Content=Content WHERE Id='record.migration'");
         Assert.Equal(1L, await ScalarAsync(connection,

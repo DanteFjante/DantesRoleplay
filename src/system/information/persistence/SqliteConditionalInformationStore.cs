@@ -32,22 +32,30 @@ public sealed class SqliteConditionalInformationStore(DantesRoleplayDbContext db
         try
         {
             await using var scope = await StandingGrantReadScope.EnterAsync(db, cancellationToken);
-            var revision = request.Revision ?? await db.Set<InformationRecord>().AsNoTracking()
-                .Where(value => value.Id == request.RecordId).Select(value => (int?)value.Revision)
-                .SingleOrDefaultAsync(cancellationToken);
+            var current = request.Revision is null
+                ? await db.Set<InformationRecord>().AsNoTracking()
+                    .SingleOrDefaultAsync(value => value.Id == request.RecordId, cancellationToken)
+                : null;
+            var revision = request.Revision ?? current?.Revision;
             if (revision is null) return ReadRejected("INFORMATION_RECORD_NOT_FOUND", "The information record was not found.");
             var retained = await db.Set<InformationContentRevisionRecord>().AsNoTracking().SingleOrDefaultAsync(value =>
                 value.Kind == "record" && value.Id == request.RecordId && value.Revision == revision, cancellationToken);
-            if (retained is null || retained.ContentFingerprint != InteractionCanonicalJson.Fingerprint(
+            if (retained is null)
+                return current is null
+                    ? ReadUnavailable("INFORMATION_RECORD_HISTORY_UNAVAILABLE")
+                    : await ReadCurrentUnpinnedAsync(host, current, cancellationToken);
+            if (retained.ContentFingerprint != InteractionCanonicalJson.Fingerprint(
                     "dantes-roleplay/information-content-revision/v1", retained.ContentJson))
                 return ReadUnavailable("INFORMATION_RECORD_HISTORY_UNAVAILABLE");
             var record = ParseRecord(retained.ContentJson);
             if (record is null || record.Id != request.RecordId || record.Revision != revision
                 || record.ContentHash != InformationContentIdentity.RecordHash(record.Id, record.SourceId,
-                    record.Title, record.Content, record.MetadataJson, record.MetadataSchemaSourceRevision))
+                    record.Title, record.Content, record.MetadataJson))
                 return ReadUnavailable("INFORMATION_RECORD_HISTORY_INVALID");
             if (record.MetadataSchemaSourceRevision < 1)
-                return ReadUnavailable("INFORMATION_SCHEMA_HISTORY_UNAVAILABLE");
+                return current is not null && CurrentMatches(record, current)
+                    ? await ReadCurrentUnpinnedAsync(host, current, cancellationToken)
+                    : ReadUnavailable("INFORMATION_SCHEMA_HISTORY_UNAVAILABLE");
             var sourceRetained = await db.Set<InformationContentRevisionRecord>().AsNoTracking().SingleOrDefaultAsync(value =>
                 value.Kind == "source" && value.Id == record.SourceId
                 && value.Revision == record.MetadataSchemaSourceRevision, cancellationToken);
@@ -81,6 +89,43 @@ public sealed class SqliteConditionalInformationStore(DantesRoleplayDbContext db
         catch (OperationCanceledException) { throw; }
         catch (Exception) { return ReadUnavailable("INFORMATION_READ_UNAVAILABLE"); }
     }
+
+    private async Task<InformationRecordRevisionReadResult> ReadCurrentUnpinnedAsync(InteractionInvocationHost host,
+        InformationRecord record, CancellationToken cancellationToken)
+    {
+        if (record.ContentHash != InformationContentIdentity.RecordHash(record.Id, record.SourceId,
+                record.Title, record.Content, record.MetadataJson))
+            return ReadUnavailable("INFORMATION_RECORD_CURRENT_INVALID");
+        var source = await db.Set<InformationSource>().AsNoTracking()
+            .SingleOrDefaultAsync(value => value.Id == record.SourceId, cancellationToken);
+        if (source is null || source.ContentHash != InformationContentIdentity.SourceHash(source.Id, source.ScopeId,
+                source.Name, source.Description, source.MetadataSchemaJson, InformationContentIdentity.Reference(source)))
+            return ReadUnavailable("INFORMATION_SOURCE_CURRENT_INVALID");
+        var owner = await InformationSourceOwnership.ReadAsync(db, record.SourceId, cancellationToken);
+        if (owner is null) return ReadUnavailable("INFORMATION_SOURCE_OWNER_UNAVAILABLE");
+        var target = await targets.ResolveCurrentAsync(host, owner.Owner.QualifiedTargetId,
+            CatalogNamespaceKinds.InformationSource, cancellationToken);
+        if (target.Status != StandingGrantTargetResolutionStatus.Available || target.Target is null)
+            return ReadUnavailable(target.Code);
+        var authority = await grants.EvaluateAsync(host,
+            new(StandingGrantCapability.Read, StandingGrantScope.Application, [target.Target], []), cancellationToken);
+        if (!authority.Allowed)
+            return authority.Code.EndsWith("UNAVAILABLE", StringComparison.Ordinal)
+                ? ReadUnavailable(authority.Code)
+                : ReadRejected(authority.Code, "Current Read authority denied the information record.");
+        var currentBinding = store.ReadMetadataSchemaBinding(source, host.ApplicationRevision.ApplicationId, out var schemaError);
+        if (currentBinding is null) return ReadUnavailable(schemaError);
+        if (!store.ValidateRetainedMetadata(currentBinding, record.MetadataJson, out _))
+            return ReadUnavailable("INFORMATION_RECORD_METADATA_CURRENT_INVALID");
+        var unpinnedBinding = currentBinding with { Mode = currentBinding.Mode + "-current-unpinned" };
+        return new("completed", new(record.Id, record.Revision, record.SourceId, record.Title, record.Content,
+            record.MetadataJson, record.ContentHash, unpinnedBinding));
+    }
+
+    private static bool CurrentMatches(RetainedRecord retained, InformationRecord current) =>
+        retained.Id == current.Id && retained.Revision == current.Revision && retained.SourceId == current.SourceId
+        && retained.Title == current.Title && retained.Content == current.Content
+        && retained.MetadataJson == current.MetadataJson && retained.ContentHash == current.ContentHash;
 
     public Task<InteractionInvocationResult> WriteSourceAsync(InteractionInvocationHost host,
         InformationSourceConditionalWriteRequest request, CancellationToken cancellationToken = default) =>

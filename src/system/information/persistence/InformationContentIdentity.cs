@@ -12,8 +12,10 @@ internal static class InformationContentIdentity
         : ContentHash.Of(id, scopeId, name, description, schemaJson,
             reference.QualifiedTypeId, reference.TypeVersion.ToString(), reference.SchemaHash);
 
+    // Keep the established record identity stable. The retained revision fingerprint, rather than this
+    // legacy current-row hash, binds MetadataSchemaSourceRevision for conditional history.
     internal static string RecordHash(string id, string sourceId, string title, string content,
-        string metadataJson, int schemaSourceRevision) => ContentHash.Of(id, sourceId, title, content, metadataJson);
+        string metadataJson) => ContentHash.Of(id, sourceId, title, content, metadataJson);
 
     internal static EcsComponentReference? Reference(InformationSource source) =>
         source.MetadataSchemaQualifiedId is null ? null : new(source.MetadataSchemaQualifiedId,
