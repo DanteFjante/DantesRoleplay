@@ -19,6 +19,10 @@ namespace DantesRoleplay.SystemTasks.Persistence;
 /// </summary>
 internal sealed class SystemTaskAiInvocationLifecycleFactory(IServiceScopeFactory scopes, TimeProvider time)
 {
+    internal sealed record ProcedureInvocation(
+        IAiInvocationLifecycle Lifecycle,
+        ISystemCapabilityAiWriteApprovalGate WriteApproval);
+
     internal async Task<IAiInvocationLifecycle> CreateAsync(SystemTaskLease lease,
         SystemInnerWorkerResolvedProfile profile, CancellationToken cancellationToken = default)
     {
@@ -29,6 +33,31 @@ internal sealed class SystemTaskAiInvocationLifecycleFactory(IServiceScopeFactor
             return true;
         }, cancellationToken);
         return new Lifecycle(this, lease, profile);
+    }
+
+    internal async Task<ProcedureInvocation> CreateProcedureAsync(SystemTaskLease lease,
+        SystemInnerWorkerResolvedProfile profile, SystemCapabilityInvocationContext toolContext,
+        CancellationToken cancellationToken = default)
+    {
+        RequireSubject(lease, profile);
+        ArgumentNullException.ThrowIfNull(toolContext);
+        if (profile.Worker.Subject is not SystemInnerWorkerSubject.ProcedureWorkflow)
+            throw Failure("INNER_AI_INVOCATION_SCOPE_MISMATCH");
+        await InScopeAsync(false, async (boundary, gate, services) =>
+        {
+            await RequireCurrentAsync(boundary, gate, services, lease, profile, cancellationToken);
+            return true;
+        }, cancellationToken);
+        var approval = new SystemInnerWorkerWriteApprovalGate(lease, profile, toolContext, async token =>
+        {
+            await InScopeAsync(false, async (boundary, gate, services) =>
+            {
+                await RequireCurrentAsync(boundary, gate, services, lease, profile, token);
+                return true;
+            }, token);
+        });
+        var session = new Lifecycle(this, lease, profile, approval);
+        return new(session, approval);
     }
 
     private async Task RequireCurrentAsync(SystemTaskValidationTransaction boundary,
@@ -59,7 +88,8 @@ internal sealed class SystemTaskAiInvocationLifecycleFactory(IServiceScopeFactor
     }
 
     private Task<IAiProviderCallScope> AdmitAsync(SystemTaskLease lease, SystemInnerWorkerResolvedProfile profile,
-        AiProviderCallDescriptor call, CancellationToken cancellationToken) => InScopeAsync<IAiProviderCallScope>(true,
+        Lifecycle session, AiProviderCallDescriptor call,
+        CancellationToken cancellationToken) => InScopeAsync<IAiProviderCallScope>(true,
         async (boundary, gate, services) =>
         {
             await RequireCurrentAsync(boundary, gate, services, lease, profile, cancellationToken);
@@ -90,11 +120,11 @@ internal sealed class SystemTaskAiInvocationLifecycleFactory(IServiceScopeFactor
             if (profile.Worker.InvocationHost.Budget.DeadlineUtc <= time.GetUtcNow().UtcDateTime)
                 throw Failure("INNER_AI_DEADLINE_EXPIRED");
             await boundary.CommitAsync();
-            return new ProviderScope(this, reservation.Reservation.RecordReference, lease, profile);
+            return new ProviderScope(this, reservation.Reservation.RecordReference, lease, profile, session);
         }, cancellationToken);
 
     private Task<IAiToolDispatchScope> AdmitToolAsync(SystemTaskLease lease,
-        SystemInnerWorkerResolvedProfile profile, AiToolDispatchDescriptor dispatch,
+        SystemInnerWorkerResolvedProfile profile, Lifecycle session, AiToolDispatchDescriptor dispatch,
         CancellationToken cancellationToken) => InScopeAsync<IAiToolDispatchScope>(true,
         async (boundary, gate, services) =>
         {
@@ -136,6 +166,7 @@ internal sealed class SystemTaskAiInvocationLifecycleFactory(IServiceScopeFactor
                 })), cancellationToken);
             if (journal.Disposition != SystemTaskHostCallDisposition.NewPending)
                 throw Failure("INNER_AI_TOOL_RECONCILIATION_REQUIRED");
+            session.Approval?.RecordAdmittedTool(dispatch);
             return new ToolScope(this, boundary.Store, lease, reservation.Reservation.RecordReference,
                 operation, journal.RequestFingerprint, terminalEvidence);
         }, cancellationToken);
@@ -274,20 +305,25 @@ internal sealed class SystemTaskAiInvocationLifecycleFactory(IServiceScopeFactor
 
     [JsonConverter(typeof(AiHostOnlyLifecycleJsonConverterFactory))]
     private sealed class Lifecycle(SystemTaskAiInvocationLifecycleFactory owner, SystemTaskLease lease,
-        SystemInnerWorkerResolvedProfile profile) : IAiInvocationLifecycle
+        SystemInnerWorkerResolvedProfile profile, SystemInnerWorkerWriteApprovalGate? approval = null)
+        : IAiInvocationLifecycle
     {
+        internal SystemInnerWorkerWriteApprovalGate? Approval { get; } = approval;
+
         public async ValueTask<IAiProviderCallScope> AdmitProviderCallAsync(AiProviderCallDescriptor call,
-            CancellationToken cancellationToken) => await owner.AdmitAsync(lease, profile, call, cancellationToken);
+            CancellationToken cancellationToken) => await owner.AdmitAsync(lease, profile, this, call, cancellationToken);
+
     }
 
     [JsonConverter(typeof(AiHostOnlyLifecycleJsonConverterFactory))]
     private sealed class ProviderScope(SystemTaskAiInvocationLifecycleFactory owner, string reference,
-        SystemTaskLease lease, SystemInnerWorkerResolvedProfile profile) : IAiProviderCallScope
+        SystemTaskLease lease, SystemInnerWorkerResolvedProfile profile, Lifecycle session) : IAiProviderCallScope
     {
         public async ValueTask RecordProviderOutcomeAsync(AiProviderCallObservation outcome) =>
             await owner.RecordAsync(reference, lease.Attempt, outcome);
         public async ValueTask<IAiToolDispatchScope> AdmitToolDispatchAsync(AiToolDispatchDescriptor dispatch,
-            CancellationToken cancellationToken) => await owner.AdmitToolAsync(lease, profile, dispatch, cancellationToken);
+            CancellationToken cancellationToken) => await owner.AdmitToolAsync(lease, profile,
+                session, dispatch, cancellationToken);
     }
 
     [JsonConverter(typeof(AiHostOnlyLifecycleJsonConverterFactory))]

@@ -11,12 +11,14 @@ internal sealed class SystemInnerWorkerProcedureInvoker(ISystemAiAgentService ai
         SystemInnerWorkerPreparedRequest prepared,
         SystemCapabilityInvocationContext context,
         IAiInvocationLifecycle lifecycle,
+        ISystemCapabilityAiWriteApprovalGate writeApproval,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(profile);
         ArgumentNullException.ThrowIfNull(prepared);
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(lifecycle);
+        ArgumentNullException.ThrowIfNull(writeApproval);
         if (profile.Worker.Subject is not SystemInnerWorkerSubject.ProcedureWorkflow
             || prepared.OutputSchemaFingerprint != profile.OutputSchemaFingerprint
             || prepared.Profile != profile.Profile
@@ -26,6 +28,6 @@ internal sealed class SystemInnerWorkerProcedureInvoker(ISystemAiAgentService ai
             throw new AiLifecycleException("INNER_AI_INVOCATION_SCOPE_MISMATCH",
                 "The focused worker preparation no longer matches its enrolled profile.");
         return ai.SendAsync(profile.Profile, prepared.Request, context, lifecycle,
-            writeApprovalGate: null, toolApprovalGate: null, cancellationToken);
+            writeApprovalGate: writeApproval, toolApprovalGate: null, cancellationToken);
     }
 }

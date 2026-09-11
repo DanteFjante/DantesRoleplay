@@ -48,9 +48,10 @@ internal sealed class SystemInnerWorkerProcedureExecutor(
             if (authority.Failure is { } failure)
                 return Failed(failure.Code, failure.SafeMessage);
             var profile = authority.Profile!;
-            var lifecycle = await lifecycles.CreateAsync(lease, profile, cancellationToken);
+            var invocation = await lifecycles.CreateProcedureAsync(
+                lease, profile, preparation.ToolContext, cancellationToken);
             var response = await invoker.InvokeAsync(profile, preparation.Prepared,
-                preparation.ToolContext, lifecycle, cancellationToken);
+                preparation.ToolContext, invocation.Lifecycle, invocation.WriteApproval, cancellationToken);
             var evidence = SystemInnerWorkerCompletionEvidence.For(lease);
             var mapped = SystemInnerWorkerResultAdapter.MapStoredResult(worker, response,
                 lease.Request.Handle, evidence, currentInvocationEvidenceVerified: true);
