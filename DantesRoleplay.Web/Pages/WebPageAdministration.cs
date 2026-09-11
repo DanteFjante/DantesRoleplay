@@ -258,11 +258,12 @@ public sealed class WebPageAdministration(
         ApplicationIdentifier applicationId,
         string entityId,
         WebPageBundle bundle,
-        CancellationToken cancellationToken = default) =>
-        await content.SaveBundleAndActivateAsync(
-            await ContentIdAsync(applicationId, entityId, cancellationToken),
-            bundle,
-            cancellationToken);
+        CancellationToken cancellationToken = default)
+    {
+        var reference = await ContentReferenceAsync(applicationId, entityId, cancellationToken);
+        RejectPinnedPublication(reference);
+        return await content.SaveBundleAndActivateAsync(reference.PageId, bundle, cancellationToken);
+    }
 
     public async Task<WebPageRevisionDocument> AppendBundleDraftAsync(
         ApplicationIdentifier applicationId,
@@ -298,10 +299,13 @@ public sealed class WebPageAdministration(
         ApplicationIdentifier applicationId,
         string entityId,
         WebPageRevisionActivationRequest request,
-        CancellationToken cancellationToken = default) =>
-        await content.ActivateRevisionAsync(
-            await ContentIdAsync(applicationId, entityId, cancellationToken),
-            request.Revision, request.ExpectedActiveRevision, cancellationToken);
+        CancellationToken cancellationToken = default)
+    {
+        var reference = await ContentReferenceAsync(applicationId, entityId, cancellationToken);
+        RejectPinnedPublication(reference);
+        return await content.ActivateRevisionAsync(
+            reference.PageId, request.Revision, request.ExpectedActiveRevision, cancellationToken);
+    }
 
     public Task<WebPageIdentityMigrationReport> InspectMigrationAsync(
         CancellationToken cancellationToken = default) => migration.InspectAsync(cancellationToken);
@@ -316,13 +320,26 @@ public sealed class WebPageAdministration(
     private async Task<string> ContentIdAsync(
         ApplicationIdentifier applicationId,
         string entityId,
+        CancellationToken cancellationToken) =>
+        (await ContentReferenceAsync(applicationId, entityId, cancellationToken)).PageId;
+
+    private async Task<WebPageContentReference> ContentReferenceAsync(
+        ApplicationIdentifier applicationId,
+        string entityId,
         CancellationToken cancellationToken)
     {
         var publication = Publication(applicationId);
         var page = await lifecycle.GetComponentIncludingDisabledAsync(
             publication.StateSpaceId, entityId, WebPageComponentTypes.Page, cancellationToken)
             ?? throw Error("WEB_PAGE_UNKNOWN", "The page identity does not exist.");
-        return Parse(page.ValueJson).ActiveContentReference.PageId;
+        return Parse(page.ValueJson).ActiveContentReference;
+    }
+
+    private static void RejectPinnedPublication(WebPageContentReference reference)
+    {
+        if (reference.IsPinned)
+            throw Error("WEB_PINNED_PUBLICATION_UNAVAILABLE",
+                "Legacy publication cannot update content pinned to an immutable revision.");
     }
 
     private async Task<WebPageAdministrationView> ViewAsync(

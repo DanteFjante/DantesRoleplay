@@ -2,6 +2,7 @@ using System.Text.Json;
 using DantesRoleplay.Applications;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.Ecs;
+using DantesRoleplay.MCPServer;
 using DantesRoleplay.SchemaValidation;
 using DantesRoleplay.Web.Pages;
 using DantesRoleplay.Web.Persistence;
@@ -115,6 +116,65 @@ public sealed class WebPagePublicationSelectionTests
         var diagnostic = await discovery.GetApplicationAsync(fixture.ApplicationId, diagnostics: true);
         Assert.Contains(diagnostic!.Evidence!, value => value.Code == "PAGE_PERMISSIONED_CONTENT_UNAVAILABLE");
         Assert.NotEqual("ready", (await discovery.ResolvePageRouteAsync("example")).Status);
+    }
+
+    [Fact]
+    public async Task Legacy_publish_and_activation_cannot_mutate_a_pinned_pages_compatibility_pointer()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        await fixture.Publication.CompareExchangeContentReferenceAsync(
+            await fixture.Publication.SelectDraftAsync(fixture.ApplicationId, Fixture.EntityId, 2));
+        // Draft authoring and reads remain allowed; revision 3 is valid HTML so the old format
+        // guard alone cannot prevent an incorrect compatibility-pointer activation.
+        var draft = await fixture.Administration.AppendBundleDraftAsync(fixture.ApplicationId, Fixture.EntityId, 2,
+            new("<p>Next HTML draft</p>", [new("assets/icon.bin", [3])]));
+        Assert.Equal(3, draft.Summary.Revision);
+        Assert.NotNull(await fixture.Administration.GetRevisionAsync(fixture.ApplicationId, Fixture.EntityId, 3));
+        var before = await fixture.Content.GetSummaryAsync(Fixture.ContentId);
+        var pinned = await fixture.Publication.SelectPublishedAsync(fixture.ApplicationId, Fixture.EntityId);
+
+        var publish = await Assert.ThrowsAsync<WebPageAdministrationException>(() =>
+            fixture.Administration.PublishBundleAsync(fixture.ApplicationId, Fixture.EntityId,
+                new("<p>Must not be retained or activated</p>", [new("assets/extra.bin", [4])])));
+        Assert.Equal("WEB_PINNED_PUBLICATION_UNAVAILABLE", publish.Code);
+        var activation = await Assert.ThrowsAsync<WebPageAdministrationException>(() =>
+            fixture.Administration.ActivateRevisionAsync(fixture.ApplicationId, Fixture.EntityId, new(1, 3)));
+        Assert.Equal("WEB_PINNED_PUBLICATION_UNAVAILABLE", activation.Code);
+
+        Assert.Equal(before, await fixture.Content.GetSummaryAsync(Fixture.ContentId));
+        Assert.Null(await fixture.Content.GetRevisionAsync(Fixture.ContentId, 4));
+        Assert.Equal(pinned.Content, (await fixture.Publication.SelectPublishedAsync(fixture.ApplicationId, Fixture.EntityId)).Content);
+        Assert.Equal(new byte[] { 1 }, (await fixture.Content.GetActiveAssetAsync(Fixture.ContentId, "assets/icon.bin"))!.Content);
+        Assert.Equal(new byte[] { 2 }, (await fixture.Publication.ReadSelectedAssetAsync(pinned, "assets/icon.bin"))!.Content);
+    }
+
+    [Fact]
+    public async Task Legacy_readiness_cannot_report_a_pinned_page_current_even_when_all_revision_numbers_agree()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        await fixture.Content.AppendBundleDraftAsync(Fixture.ContentId, 2, new("<p>Current HTML</p>", []));
+        await fixture.Content.ActivateRevisionAsync(Fixture.ContentId, 3, 1);
+        await fixture.Administration.SetIndexAsync(fixture.ApplicationId, Fixture.EntityId, new(true));
+
+        // Only the page owner is under test. Other readiness owners are absent; this does not
+        // demonstrate whole-application readiness or any permissioned composition transport.
+        var readiness = new ApplicationReadinessService(fixture.Data, fixture.Applications,
+            null!, null!, fixture.Publication, fixture.Content, null!, null!, null!, null!);
+        var before = await readiness.ReadAsync(fixture.ApplicationId.Value);
+        Assert.Equal("WEB_INDEX_PAGE_CURRENT", Assert.Single(before.Checks, check => check.Name == "web-page-release").Code);
+
+        await fixture.Publication.CompareExchangeContentReferenceAsync(
+            await fixture.Publication.SelectDraftAsync(fixture.ApplicationId, Fixture.EntityId, 3));
+        var pin = await fixture.Publication.SelectPublishedAsync(fixture.ApplicationId, Fixture.EntityId);
+        var summary = (await fixture.Content.GetSummaryAsync(Fixture.ContentId))!;
+        Assert.Equal(pin.Content.Revision, summary.ActiveRevision);
+        Assert.Equal(summary.ActiveRevision, summary.LatestRevision);
+        Assert.Null(await fixture.Publication.FindIndexAsync(fixture.ApplicationId));
+        Assert.Null(await fixture.Publication.FindBySlugAsync("example"));
+        var after = await readiness.ReadAsync(fixture.ApplicationId.Value);
+        var pageCheck = Assert.Single(after.Checks, check => check.Name == "web-page-release");
+        Assert.Equal("WEB_INDEX_PAGE_UNAVAILABLE", pageCheck.Code);
+        Assert.NotEqual("ready", pageCheck.Status);
     }
 
     [Fact]

@@ -282,7 +282,7 @@ public sealed partial class WebPagePublicationService(
                 PageValue? value;
                 try { value = JsonSerializer.Deserialize<PageValue>(component.ValueJson, Json); }
                 catch (Exception exception) when (exception is JsonException or WebPageStoreException) { continue; }
-                if (value?.ActiveContentReference?.PageId is null) continue;
+                if (value?.ActiveContentReference?.PageId is null || value.ActiveContentReference.IsPinned) continue;
                 var marker = await entities.GetComponentAsync(
                     publication.StateSpaceId, entity.EntityId, WebPageComponentTypes.IndexPage, cancellationToken);
                 var page = new PublishedWebPage(applicationId, publication.StateSpaceId, entity.EntityId,
