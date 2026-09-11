@@ -197,6 +197,10 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
         ConfigureProjectionMaterialization(modelBuilder);
         ConfigureApplicationObjectChanges(modelBuilder);
         ApplicationActivationModelConfiguration.Configure(modelBuilder);
+        ApplicationAuthoringModelConfiguration.Configure(modelBuilder);
+        StandingGrantModelConfiguration.Configure(modelBuilder);
+        InformationHistoryModelConfiguration.Configure(modelBuilder);
+        global::DantesRoleplay.SystemTasks.Persistence.SystemTaskLifecycleModelConfiguration.Configure(modelBuilder);
         ConfigureLegacyStateAdoption(modelBuilder);
     }
 
