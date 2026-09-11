@@ -195,9 +195,6 @@ public sealed partial class SqliteApplicationAuthoringService(
         Task.FromResult(InteractionInvocationResult.Unavailable("APPLICATION_CANDIDATE_VALIDATE_UNAVAILABLE", "Candidate validation is not available."));
     public Task<InteractionInvocationResult> ActivateAsync(InteractionInvocationHost host, ApplicationCandidateActivationRequest request, CancellationToken cancellationToken = default) =>
         Task.FromResult(InteractionInvocationResult.Unavailable("APPLICATION_CANDIDATE_ACTIVATE_UNAVAILABLE", "Candidate activation is not available."));
-    public Task<InteractionInvocationResult> RecoverAsync(InteractionInvocationHost host, int activationRevision, string? expectedActiveFingerprint, CancellationToken cancellationToken = default) =>
-        Task.FromResult(InteractionInvocationResult.Unavailable("APPLICATION_CANDIDATE_RECOVER_UNAVAILABLE", "Candidate recovery is not available."));
-
     private async Task<List<(ActivatedApplicationDocument Document, byte[] Bytes)>> EffectiveAsync(ApplicationIdentifier app, ActiveApplicationManifest? active, IReadOnlyList<ApplicationCandidateDocumentInput> replacements, CancellationToken ct)
     {
         var values = new Dictionary<string, (ActivatedApplicationDocument Document, byte[] Bytes)>(StringComparer.Ordinal);
