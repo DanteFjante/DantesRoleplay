@@ -68,6 +68,18 @@ public sealed class ResourceStandingGrantTargetResolver : IStandingGrantTargetRe
             : _definitions.ResolveCandidateAsync(host, candidate, selection, cancellationToken);
     }
 
+    public Task<StandingGrantTargetResolution> ResolveCandidateReferenceAsync(
+        InteractionInvocationHost host,
+        ApplicationCandidateReference candidate,
+        StandingGrantDefinitionReference selection,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(selection);
+        return selection.Kind == WebPageKind
+            ? Task.FromResult(Unavailable("STANDING_GRANT_RESOURCE_CANDIDATE_UNAVAILABLE"))
+            : _definitions.ResolveCandidateReferenceAsync(host, candidate, selection, cancellationToken);
+    }
+
     public Task<StandingGrantTargetResolution> ResolveRetainedAsync(
         InteractionInvocationHost host,
         StandingGrantActivationOrigin origin,

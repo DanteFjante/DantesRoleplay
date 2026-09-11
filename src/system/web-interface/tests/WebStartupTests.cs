@@ -2,6 +2,9 @@ using DantesRoleplay.DataAccess;
 using DantesRoleplay.MCPServer;
 using DantesRoleplay.SqliteInfrastructure;
 using DantesRoleplay.Authorization;
+using DantesRoleplay.Applications;
+using DantesRoleplay.ApplicationActivation;
+using DantesRoleplay.Interactions;
 using DantesRoleplay.Web.Hosting;
 using DantesRoleplay.Web.Pages;
 using DantesRoleplay.Web.Persistence;
@@ -16,7 +19,7 @@ namespace DantesRoleplay.Tests;
 public sealed class WebStartupTests
 {
     [Fact]
-    public void Startup_registers_the_resource_target_owner_and_reader_around_the_retained_catalog_resolver()
+    public async Task Startup_registers_the_resource_target_owner_and_reader_around_the_retained_catalog_resolver()
     {
         var services = new ServiceCollection();
         services.AddLogging();
@@ -27,11 +30,22 @@ public sealed class WebStartupTests
         using var scope = provider.CreateScope();
         var scoped = scope.ServiceProvider;
 
-        Assert.IsType<ResourceStandingGrantTargetResolver>(scoped.GetRequiredService<IStandingGrantTargetResolver>());
+        var targets = scoped.GetRequiredService<IStandingGrantTargetResolver>();
+        Assert.IsType<ResourceStandingGrantTargetResolver>(targets);
         Assert.IsType<SqliteStandingGrantTargetResolver>(scoped.GetRequiredService<SqliteStandingGrantTargetResolver>());
         Assert.IsType<WebPageStandingGrantResourceTargetOwner>(
             Assert.Single(scoped.GetServices<IStandingGrantResourceTargetOwner>()));
         Assert.IsType<WebPagePermissionedReader>(scoped.GetRequiredService<WebPagePermissionedReader>());
+
+        var application = ApplicationIdentifier.Parse("demo");
+        var hash = new string('A', 64);
+        var typed = await targets.ResolveCandidateReferenceAsync(new(
+            TrustedPrincipalContext.VerifiedPrincipal("principal." + new string('a', 64), "test"),
+            new ApplicationRevision(application, 1, hash, []), "state", "grant@1", "command", "state@1",
+            InteractionExecutionProfile.Atomic, new InteractionInvocationBudget(4, DateTime.UtcNow.AddMinutes(1))),
+            new ApplicationCandidateReference(application, "not-a-candidate-id", 1, hash),
+            new("demo.procedure", "procedure", 1, hash));
+        Assert.Equal("STANDING_GRANT_CANDIDATE_SCOPE", typed.Code);
     }
 
     [Fact]

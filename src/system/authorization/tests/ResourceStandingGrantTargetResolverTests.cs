@@ -112,13 +112,30 @@ public sealed class ResourceStandingGrantTargetResolverTests
         var catalogSelection = Selection with { Kind = "procedure" };
         var catalogTarget = Target with { Kind = "procedure" };
         var origin = new StandingGrantActivationOrigin(1, Hash, 1, Hash);
+        var candidate = new ApplicationCandidateReference(App, new string('a', 32), 1, Hash);
 
         Assert.Same(definitions.ExactResult, await resolver.ResolveAsync(Host(), catalogSelection));
         Assert.Same(definitions.CurrentResult, await resolver.ResolveCurrentAsync(Host(), catalogSelection.DefinitionId, catalogSelection.Kind));
         Assert.Same(definitions.CandidateResult, await resolver.ResolveCandidateAsync(Host(), null!, catalogSelection));
+        Assert.Same(definitions.CandidateReferenceResult,
+            await resolver.ResolveCandidateReferenceAsync(Host(), candidate, catalogSelection));
         Assert.Same(definitions.RetainedResult, await resolver.ResolveRetainedAsync(Host(), origin, catalogSelection));
         Assert.Same(definitions.RevalidateResult, await resolver.RevalidateAsync(Host(), catalogTarget));
-        Assert.Equal(5, definitions.TotalCalls);
+        Assert.Equal(6, definitions.TotalCalls);
+    }
+
+    [Fact]
+    public async Task Typed_candidate_lookup_for_a_resource_remains_unavailable_without_catalog_fallback()
+    {
+        var definitions = new DefinitionResolver();
+        var resolver = new ResourceStandingGrantTargetResolver(definitions, []);
+        var candidate = new ApplicationCandidateReference(App, new string('a', 32), 1, Hash);
+
+        var result = await resolver.ResolveCandidateReferenceAsync(Host(), candidate, Selection);
+
+        Assert.Equal(StandingGrantTargetResolutionStatus.Unavailable, result.Status);
+        Assert.Equal("STANDING_GRANT_RESOURCE_CANDIDATE_UNAVAILABLE", result.Code);
+        Assert.Equal(0, definitions.TotalCalls);
     }
 
     [Fact]
@@ -181,6 +198,8 @@ public sealed class ResourceStandingGrantTargetResolverTests
             new(StandingGrantTargetResolutionStatus.Unavailable, "DEFINITION_CURRENT", null);
         public StandingGrantTargetResolution CandidateResult { get; } =
             new(StandingGrantTargetResolutionStatus.Unavailable, "DEFINITION_CANDIDATE", null);
+        public StandingGrantTargetResolution CandidateReferenceResult { get; } =
+            new(StandingGrantTargetResolutionStatus.Unavailable, "DEFINITION_CANDIDATE_REFERENCE", null);
         public StandingGrantTargetResolution RetainedResult { get; } =
             new(StandingGrantTargetResolutionStatus.Unavailable, "DEFINITION_RETAINED", null);
         public StandingGrantTargetResolution RevalidateResult { get; } =
@@ -198,6 +217,11 @@ public sealed class ResourceStandingGrantTargetResolverTests
             ApplicationCandidateSnapshot candidate, StandingGrantDefinitionReference selection,
             CancellationToken cancellationToken = default)
         { TotalCalls++; return Task.FromResult(CandidateResult); }
+
+        public Task<StandingGrantTargetResolution> ResolveCandidateReferenceAsync(InteractionInvocationHost host,
+            ApplicationCandidateReference candidate, StandingGrantDefinitionReference selection,
+            CancellationToken cancellationToken = default)
+        { TotalCalls++; return Task.FromResult(CandidateReferenceResult); }
 
         public Task<StandingGrantTargetResolution> ResolveRetainedAsync(InteractionInvocationHost host,
             StandingGrantActivationOrigin origin, StandingGrantDefinitionReference selection,
