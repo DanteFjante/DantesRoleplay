@@ -292,4 +292,13 @@ public interface IAiService
         AiRequest request,
         IReadOnlyList<IAiTool> authorizedTools,
         CancellationToken cancellationToken = default);
+
+    /// <summary>Required-lifecycle path. Unsupported implementations fail closed instead of ignoring admission.</summary>
+    Task<AiResponse> SendAgentRequestAsync(
+        AiAgentProfile profile,
+        AiRequest request,
+        IReadOnlyList<IAiTool> authorizedTools,
+        IAiInvocationLifecycle lifecycle,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(AiResponse.Failure("AI_LIFECYCLE_UNAVAILABLE", "This AI service does not support durable dispatch admission."));
 }
