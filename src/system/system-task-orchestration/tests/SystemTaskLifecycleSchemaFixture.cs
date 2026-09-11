@@ -81,6 +81,8 @@ internal sealed class SystemTaskLifecycleSchemaFixture : IAsyncDisposable
             PRIMARY KEY (task_id, dependency_task_id),
             CHECK (task_id <> dependency_task_id)
         );
+        CREATE INDEX ix_system_task_dependency_target
+            ON system_task_dependency(dependency_task_id);
 
         CREATE TABLE system_task_attempt (
             task_id TEXT NOT NULL REFERENCES system_task_lifecycle(task_id) ON DELETE CASCADE,
