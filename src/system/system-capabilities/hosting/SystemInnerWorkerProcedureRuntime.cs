@@ -78,9 +78,10 @@ internal sealed class SystemInnerWorkerHostPolicy(
             ?? throw Failure("INNER_WORKER_PROFILE_UNAVAILABLE", "The host has no focused INNER profile configured.");
         var procedure = worker.ProcedureVersion
             ?? throw Failure("INNER_WORKER_SUBJECT_UNSUPPORTED", "Only exact procedure workflow subjects use this runtime.");
+        var governedProcedureId = "procedure." + procedure.ExactDefinitionId;
         var descriptors = capabilities?.Discover(context) is { Ok: true } discovered
             ? discovered.Capabilities
-                .Where(value => value.ProcedureIds.Contains(procedure.ExactDefinitionId, StringComparer.Ordinal))
+                .Where(value => value.ProcedureIds.Contains(governedProcedureId, StringComparer.Ordinal))
                 .OrderBy(value => value.Id, StringComparer.Ordinal)
                 .ToArray()
             : [];

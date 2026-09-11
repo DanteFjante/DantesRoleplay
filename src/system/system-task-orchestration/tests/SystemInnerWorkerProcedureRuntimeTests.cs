@@ -14,6 +14,7 @@ using DantesRoleplay.Interactions;
 using DantesRoleplay.MCPServer;
 using DantesRoleplay.Operations;
 using DantesRoleplay.Procedures;
+using DantesRoleplay.SchemaValidation;
 using DantesRoleplay.SystemCapabilities;
 using DantesRoleplay.SystemTasks;
 using DantesRoleplay.SystemTasks.Persistence;
@@ -24,6 +25,36 @@ namespace DantesRoleplay.Authorization.Tests;
 
 public sealed partial class SqliteStandingGrantTargetResolverTests
 {
+    [Fact]
+    public void Procedure_worker_host_policy_matches_system_capability_governance_identity()
+    {
+        var applications = new InMemoryApplicationRegistry();
+        var application = applications.Register(new(Application, "Fixture", "Fixture application.", []));
+        var principal = TrustedPrincipalContext.VerifiedPrincipal(
+            "principal." + new string('a', 64), "test");
+        var host = new InteractionInvocationHost(principal, application, "state", "grant@1",
+            "worker-command", "state-revision", InteractionExecutionProfile.Workflow,
+            new InteractionInvocationBudget(1, DateTime.UtcNow.AddMinutes(1)));
+        var request = new SystemInnerWorkerRequest(host,
+            new("system.inspect", 1, new string('A', 64)),
+            "{\"format\":\"dantes-roleplay/inner-procedure-assignment/v1\",\"instruction\":\"Inspect the registry.\"}",
+            "{\"type\":\"object\"}");
+        var catalog = new SystemCapabilityCatalog(
+            [new ApplicationsSystemCapabilityHandler(applications)],
+            new BoundedJsonSchemaValidator(), new PrivateOperatorAuthorizationPolicy());
+        var context = new SystemCapabilityInvocationContext(principal,
+            PrivateOperatorAuthorizationPolicy.PrivateHostScope, "inner-worker-policy");
+
+        var selection = new SystemInnerWorkerHostPolicy(new AiAgentProfileRegistry([
+            new("web.inner", "Inner AI", "Perform the bounded host-selected procedure.")
+        ]), catalog).Resolve(request, context, DateTime.UtcNow);
+
+        var binding = Assert.Single(selection.ToolBindings);
+        Assert.Equal(SystemCapabilityIds.Applications, binding.CapabilityVersion.ExactDefinitionId);
+        Assert.Equal(SystemCapabilityMode.Read, binding.Mode);
+        Assert.Equal("system_applications", binding.Definition.Name);
+    }
+
     [Fact]
     public async Task Procedure_worker_submits_leases_invokes_and_reads_the_same_durable_result()
     {
