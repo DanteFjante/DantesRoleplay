@@ -178,7 +178,9 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             Assert.False(await worker.RunOnceAsync("inner-worker"));
             Assert.Equal(1, provider.Calls);
 
-            var triggerClock = new RuntimeTriggerClock(DateTimeOffset.UtcNow);
+            var triggerNow = DateTimeOffset.UtcNow;
+            var triggerClock = new RuntimeTriggerClock(
+                triggerNow.AddTicks(-(triggerNow.Ticks % TimeSpan.TicksPerSecond)));
             var triggerHost = InnerWorkerHost(application, state, "trigger-binding-command", deadline);
             var triggerTarget = TriggerProcedureWorkflowTarget.Create(triggerHost, selected,
                 assignment, schema, TimeSpan.FromMinutes(2));
@@ -220,7 +222,8 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             var recurringDefinition = RecurringTriggerDefinition.Create(
                 Application, "demo.runtime.recurring-inner-trigger", 1,
                 RecurrencePattern.Daily(1,
-                    TimeOnly.FromDateTime(triggerClock.UtcNow.UtcDateTime), "Etc/UTC"),
+                    new TimeOnly(triggerClock.UtcNow.Hour, triggerClock.UtcNow.Minute,
+                        triggerClock.UtcNow.Second), "Etc/UTC"),
                 misfirePolicy: TriggerMisfirePolicy.FireOnce,
                 target: TriggerFireTarget.ProcedureWorkflow,
                 procedureWorkflow: recurringTarget);

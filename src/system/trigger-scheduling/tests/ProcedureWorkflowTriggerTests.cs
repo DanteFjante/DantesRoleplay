@@ -332,7 +332,7 @@ public sealed class ProcedureWorkflowTriggerTests : IDisposable
                     ApplicationId = worker.InvocationHost.ApplicationRevision.ApplicationId,
                     StateSpaceId = worker.InvocationHost.StateSpaceId!,
                     ResolutionFingerprint = Hash
-                }));
+                }, []));
         }
     }
 
