@@ -113,7 +113,7 @@ public sealed class AiLifecycleException : Exception
     }
     public string Code { get; }
     internal static bool ValidCode(string value) => !string.IsNullOrEmpty(value) && value.Length <= 80
-        && value[0] is >= 'A' and <= 'Z' && value.All(character => character is >= 'A' and <= 'Z' or >= '0' and <= '9' or '_');
+        && value[0] is >= 'A' and <= 'Z' && value.All(symbol => symbol is >= 'A' and <= 'Z' or >= '0' and <= '9' or '_');
     private static string Bound(string message)
     {
         ArgumentNullException.ThrowIfNull(message);

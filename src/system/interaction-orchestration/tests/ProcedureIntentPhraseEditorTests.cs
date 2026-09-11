@@ -58,5 +58,5 @@ public sealed class ProcedureIntentPhraseEditorTests
         ## Constraints
         Do not mutate state.
 
-        """ + "\n" + body;
+        """.Replace("\r\n", "\n", StringComparison.Ordinal) + "\n" + body;
 }

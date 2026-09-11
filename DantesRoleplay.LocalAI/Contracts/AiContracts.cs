@@ -233,7 +233,7 @@ public sealed record AiExecutionActivity(
     string ErrorCode = "");
 
 /// <summary>
-/// Actual host-returned tool data retained by the required-lifecycle path, not proof of a world commit.
+/// Actual host-returned tool data retained by the required-lifecycle path, not proof of a domain commit.
 /// AI_TOOL_RESULT_UNAVAILABLE marks an oversized result whose content could not be retained; its
 /// Call contains bounded identity only and its Result is a diagnostic, never a fabricated receipt.
 /// </summary>

@@ -325,8 +325,8 @@ public sealed class LocalDocumentScanner : ILocalDocumentScanner
 
     private static bool NormalizedRelative(string? value, bool allowWildcards) =>
         value is { Length: > 0 and <= 1024 }
-        && !value.Any(character => char.IsControl(character) || character is '\\' or ':'
-            || !allowWildcards && character is '*' or '?')
+        && !value.Any(symbol => char.IsControl(symbol) || symbol is '\\' or ':'
+            || !allowWildcards && symbol is '*' or '?')
         && !Path.IsPathRooted(value)
         && value.Split('/').All(segment => segment is not ("" or "." or ".."));
 

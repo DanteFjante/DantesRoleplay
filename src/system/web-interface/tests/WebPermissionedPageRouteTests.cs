@@ -25,6 +25,10 @@ using Fixture = DantesRoleplay.Tests.WebPagePublicationSelectionTests.Fixture;
 
 namespace DantesRoleplay.Tests;
 
+[CollectionDefinition(nameof(WebPermissionedPageRouteCollection), DisableParallelization = true)]
+public sealed class WebPermissionedPageRouteCollection;
+
+[Collection(nameof(WebPermissionedPageRouteCollection))]
 public sealed class WebPermissionedPageRouteTests
 {
     private const string Target = "example.pages.home";
