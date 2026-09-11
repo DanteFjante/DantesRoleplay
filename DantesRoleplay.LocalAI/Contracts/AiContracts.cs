@@ -232,6 +232,13 @@ public sealed record AiExecutionActivity(
     bool InputValidated = false,
     string ErrorCode = "");
 
+/// <summary>
+/// Actual host-returned tool data retained by the required-lifecycle path, not proof of a world commit.
+/// AI_TOOL_RESULT_UNAVAILABLE marks an oversized result whose content could not be retained; its
+/// Call contains bounded identity only and its Result is a diagnostic, never a fabricated receipt.
+/// </summary>
+public sealed record AiToolExecutionResult(int DispatchOrdinal, AiToolCall Call, AiToolResult Result);
+
 public sealed record AiResponse(
     bool Ok,
     AiModel? Model,
@@ -246,7 +253,9 @@ public sealed record AiResponse(
     string ReasoningSummary = "",
     IReadOnlyList<AiExecutionActivity>? Activities = null,
     IReadOnlyList<AiMediaContent>? Media = null,
-    AiTokenUsageEvidence? Usage = null)
+    AiTokenUsageEvidence? Usage = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    IReadOnlyList<AiToolExecutionResult>? ToolResults = null)
 {
     public static AiResponse Failure(string code, string message) =>
         new(false, null, "", null, [], 0, 0, ErrorCode: code, ErrorMessage: message);
