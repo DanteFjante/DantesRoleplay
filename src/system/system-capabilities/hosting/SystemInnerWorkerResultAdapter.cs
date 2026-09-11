@@ -10,8 +10,13 @@ using Json.Schema;
 namespace DantesRoleplay.SystemCapabilities;
 
 /// <summary>
-/// Pure readback projection for the lifecycle owner. Call only with the AI response and evidence
-/// read from its fenced, persisted terminal result. This adapter neither records a result nor
+/// Pure readback projection for the lifecycle owner. The response, handle and stored result
+/// reference describe the candidate terminal record. The separately supplied earlier commits and
+/// recovery identity must belong to request.InvocationHost, independently of that candidate.
+/// The lifecycle owner must verify their principal/scope/command ownership before asserting
+/// currentInvocationEvidenceVerified, including when the candidate belongs to another command.
+/// If ownership is unresolved, pass false; no ambiguous evidence will be disclosed.
+/// This adapter neither records a result nor
 /// checks a lease, submits work, creates evidence, or authorizes model-reported mutations.
 /// It is deliberately internal and unregistered until that lifecycle integration exists.
 /// </summary>
@@ -22,15 +27,22 @@ internal static class SystemInnerWorkerResultAdapter
         AiResponse response,
         SystemTaskDurableHandle handle,
         string storedResultEvidenceReference,
-        IReadOnlyList<InteractionInvocationCommitReceipt>? previousCommits = null,
-        ApplicationEcsExecutionIdentity? recoveryIdentity = null)
+        bool currentInvocationEvidenceVerified,
+        IReadOnlyList<InteractionInvocationCommitReceipt>? currentInvocationPreviousCommits = null,
+        ApplicationEcsExecutionIdentity? currentInvocationRecoveryIdentity = null)
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(response);
         ArgumentNullException.ThrowIfNull(handle);
+        if (!currentInvocationEvidenceVerified)
+            return InteractionInvocationResult.Failed("SYSTEM_INNER_WORKER_RECONCILIATION_REQUIRED",
+                "Current-invocation evidence ownership is unresolved; reconcile it before readback or retry.");
+        var previousCommits = currentInvocationPreviousCommits;
+        var recoveryIdentity = currentInvocationRecoveryIdentity;
         if (handle.CommandId != request.InvocationHost.CommandId)
             return InteractionInvocationResult.Failed("SYSTEM_INNER_WORKER_RESULT_IDENTITY_MISMATCH",
-                "The recorded worker result belongs to another command.");
+                "The recorded worker result belongs to another command; reconcile the current invocation before retrying.",
+                previousCommits, recoveryIdentity);
         if (recoveryIdentity is not null)
             return InteractionInvocationResult.Failed("SYSTEM_INNER_WORKER_RECONCILIATION_REQUIRED",
                 "An operation has unresolved completion; reconcile its receipt before retrying.",

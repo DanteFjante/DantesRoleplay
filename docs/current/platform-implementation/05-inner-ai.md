@@ -29,6 +29,9 @@ in the shared result envelope, using the coordinator's accepted additive result 
 activity remains in the existing AI response/task record. Model text and tool-success activity are
 never commit evidence. Unresolved operation identity produces a reconciliation-required failure;
 this mapper neither checks leases nor proves that the supplied evidence was persisted.
+The lifecycle owner separately verifies that supplied prior commits/recovery identity belong to
+the current invocation. A foreign candidate result is rejected while those verified current
+receipts remain visible; unresolved evidence ownership requires reconciliation without disclosure.
 
 `AiService.SendAgentRequestAsync` restricts agent tools to the host-materialized instances, including
 when a static tool has the same name. Direct requests retain their explicitly selected static tools.

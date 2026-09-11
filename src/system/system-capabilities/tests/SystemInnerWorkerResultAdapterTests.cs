@@ -22,9 +22,47 @@ public sealed class SystemInnerWorkerResultAdapterTests
         Assert.Null(unrecorded.TaskHandle);
         Assert.Null(unrecorded.CompletionEvidenceReference);
         var wrongTask = SystemInnerWorkerResultAdapter.MapStoredResult(Request(), Response("{\"summary\":\"ready\"}"),
-            new("task.1", "different.command"), "existing.result.1");
+            new("task.1", "different.command"), "existing.result.1", currentInvocationEvidenceVerified: true);
         Assert.Equal("SYSTEM_INNER_WORKER_RESULT_IDENTITY_MISMATCH", wrongTask.Code);
         Assert.Null(wrongTask.DataJson);
+    }
+
+    [Fact]
+    public void Foreign_result_rejection_retains_only_separately_verified_current_invocation_evidence()
+    {
+        var currentReceipt = Receipt();
+        var currentRecovery = new ApplicationEcsExecutionIdentity(new string('c', 32), Hash);
+        var foreignResponse = Response("""{"summary":"foreign-secret","receipt":{"operationId":"foreign-operation"}}""");
+        var result = SystemInnerWorkerResultAdapter.MapStoredResult(Request(), foreignResponse,
+            new("foreign.task", "foreign.command"), "foreign.result", true, [currentReceipt], currentRecovery);
+
+        Assert.Equal("SYSTEM_INNER_WORKER_RESULT_IDENTITY_MISMATCH", result.Code);
+        Assert.Equal(currentReceipt.OperationId, Assert.Single(result.PreviousCommits).OperationId);
+        Assert.Same(currentRecovery, result.RecoveryIdentity);
+        Assert.Null(result.DataJson);
+        Assert.Null(result.CompletionEvidenceReference);
+        Assert.Null(result.TaskHandle);
+        Assert.DoesNotContain("foreign", result.ToJson(), StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("command.1")]
+    [InlineData("foreign.command")]
+    public void Ambiguous_evidence_ownership_requires_reconciliation_without_disclosing_candidate_evidence(string command)
+    {
+        var unverifiedReceipt = new InteractionInvocationCommitReceipt(new string('b', 32), Hash, []);
+        var unverifiedRecovery = new ApplicationEcsExecutionIdentity(new string('c', 32), Hash);
+        var result = SystemInnerWorkerResultAdapter.MapStoredResult(Request(), Response("{\"summary\":\"foreign-secret\"}"),
+            new("candidate.task", command), "candidate.result", false, [unverifiedReceipt], unverifiedRecovery);
+
+        Assert.Equal("SYSTEM_INNER_WORKER_RECONCILIATION_REQUIRED", result.Code);
+        Assert.Empty(result.PreviousCommits);
+        Assert.Null(result.RecoveryIdentity);
+        Assert.Null(result.DataJson);
+        Assert.Null(result.TaskHandle);
+        Assert.Null(result.CompletionEvidenceReference);
+        Assert.DoesNotContain(unverifiedReceipt.OperationId, result.ToJson(), StringComparison.Ordinal);
+        Assert.DoesNotContain(unverifiedRecovery.OperationId, result.ToJson(), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -71,7 +109,7 @@ public sealed class SystemInnerWorkerResultAdapterTests
     {
         var receipt = Receipt();
         var result = SystemInnerWorkerResultAdapter.MapStoredResult(Request(),
-            AiResponse.Failure("provider-error", "sensitive provider diagnostics"), Handle(), "existing.result.1", [receipt]);
+            AiResponse.Failure("provider-error", "sensitive provider diagnostics"), Handle(), "existing.result.1", true, [receipt]);
         Assert.Equal(InteractionInvocationResultTag.Failed, result.Tag);
         Assert.Equal(receipt.OperationId, Assert.Single(result.PreviousCommits).OperationId);
         Assert.Null(result.Receipt);
@@ -82,7 +120,7 @@ public sealed class SystemInnerWorkerResultAdapterTests
     public void Missing_terminal_record_cannot_erase_earlier_authoritative_commits()
     {
         var result = SystemInnerWorkerResultAdapter.MapStoredResult(Request(),
-            Response("{\"summary\":\"ready\"}"), Handle(), "", [Receipt()]);
+            Response("{\"summary\":\"ready\"}"), Handle(), "", true, [Receipt()]);
         Assert.Equal("SYSTEM_INNER_WORKER_RESULT_UNRECORDED", result.Code);
         Assert.Equal(InteractionInvocationResultTag.Failed, result.Tag);
         Assert.Single(result.PreviousCommits);
@@ -94,7 +132,7 @@ public sealed class SystemInnerWorkerResultAdapterTests
     {
         var identity = new ApplicationEcsExecutionIdentity(new string('a', 32), Hash);
         var result = SystemInnerWorkerResultAdapter.MapStoredResult(Request(), Response("{\"summary\":\"ready\"}"),
-            Handle(), "existing.result.1", [Receipt()], identity);
+            Handle(), "existing.result.1", true, [Receipt()], identity);
         Assert.Equal("SYSTEM_INNER_WORKER_RECONCILIATION_REQUIRED", result.Code);
         Assert.Same(identity, result.RecoveryIdentity);
         Assert.Single(result.PreviousCommits);
@@ -105,7 +143,7 @@ public sealed class SystemInnerWorkerResultAdapterTests
     public void Prior_authoritative_commits_remain_labelled_in_completed_readback()
     {
         var result = SystemInnerWorkerResultAdapter.MapStoredResult(Request(), Response("{\"summary\":\"ready\"}"),
-            Handle(), "existing.result.1", [Receipt()]);
+            Handle(), "existing.result.1", true, [Receipt()]);
         Assert.Equal(InteractionInvocationResultTag.Completed, result.Tag);
         Assert.Null(result.Receipt);
         Assert.Equal(new string('a', 32), Assert.Single(result.PreviousCommits).OperationId);
@@ -120,7 +158,7 @@ public sealed class SystemInnerWorkerResultAdapterTests
     }
 
     private static InteractionInvocationResult Map(AiResponse response, string evidence = "existing.result.1") =>
-        SystemInnerWorkerResultAdapter.MapStoredResult(Request(), response, Handle(), evidence);
+        SystemInnerWorkerResultAdapter.MapStoredResult(Request(), response, Handle(), evidence, currentInvocationEvidenceVerified: true);
     private static SystemTaskDurableHandle Handle() => new("task.1", "command.1");
     private static InteractionInvocationCommitReceipt Receipt() => new(new string('a', 32), Hash, []);
     private static AiResponse Response(string json) => new(true, null, "", JsonSerializer.Deserialize<JsonElement>(json), [], 4, 2);
