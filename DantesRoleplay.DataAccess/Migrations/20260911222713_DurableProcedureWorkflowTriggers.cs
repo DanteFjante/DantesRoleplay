@@ -10,14 +10,6 @@ namespace DantesRoleplay.DataAccess.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropCheckConstraint(
-                name: "CK_trigger_one_time_definition_values",
-                table: "trigger_one_time_definition");
-
-            migrationBuilder.DropCheckConstraint(
-                name: "CK_trigger_observation_match_definition_values",
-                table: "trigger_observation_match_definition");
-
             migrationBuilder.CreateTable(
                 name: "trigger_observation_match_workflow_binding",
                 columns: table => new
@@ -92,43 +84,76 @@ namespace DantesRoleplay.DataAccess.Migrations
                         onDelete: ReferentialAction.Restrict);
                 });
 
-            migrationBuilder.AddCheckConstraint(
-                name: "CK_trigger_one_time_definition_values",
-                table: "trigger_one_time_definition",
-                sql: "length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system' AND length(\"Id\") BETWEEN 3 AND 200 AND \"Version\" > 0 AND \"MisfirePolicy\" IN ('skip', 'fire-once') AND \"Target\" IN ('notification-only', 'procedure-workflow') AND \"Lifecycle\" IN ('active', 'cancelled')");
+            // Editing only the declared CHECK expression avoids EF's SQLite parent-table rebuild,
+            // which can split the migration transaction and discard dependent rows or custom triggers.
+            migrationBuilder.Sql("""
+                PRAGMA writable_schema = ON;
+                UPDATE sqlite_schema SET sql = replace(sql,
+                    '"Target" = ''notification-only''',
+                    '"Target" IN (''notification-only'', ''procedure-workflow'')')
+                    WHERE type = 'table' AND name IN
+                        ('trigger_one_time_definition', 'trigger_observation_match_definition');
+                PRAGMA writable_schema = RESET;
 
-            migrationBuilder.AddCheckConstraint(
-                name: "CK_trigger_observation_match_definition_values",
-                table: "trigger_observation_match_definition",
-                sql: "length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system' AND length(\"Id\") BETWEEN 3 AND 200 AND \"Version\" > 0 AND \"Lifecycle\" IN ('active', 'paused', 'cancelled') AND length(\"SourceId\") BETWEEN 3 AND 200 AND \"SourceVersion\" > 0 AND length(\"StructureId\") BETWEEN 3 AND 200 AND \"StructureVersion\" > 0 AND length(\"AdapterId\") BETWEEN 3 AND 200 AND \"AdapterVersion\" > 0 AND \"Target\" IN ('notification-only', 'procedure-workflow')");
+                CREATE TEMP TABLE __durable_workflow_trigger_upgrade_guard (
+                    blocked INTEGER NOT NULL,
+                    CONSTRAINT durable_workflow_trigger_upgrade_invalid CHECK (blocked = 0));
+                INSERT INTO __durable_workflow_trigger_upgrade_guard (blocked)
+                SELECT 1 WHERE
+                    (SELECT COUNT(*) FROM sqlite_schema WHERE type = 'table'
+                        AND name IN ('trigger_one_time_definition', 'trigger_observation_match_definition')
+                        AND instr(sql, '"Target" IN (''notification-only'', ''procedure-workflow'')') > 0) <> 2
+                    OR (SELECT COUNT(*) FROM pragma_foreign_key_list('trigger_one_time_workflow_binding')
+                        WHERE "table" = 'trigger_one_time_definition') <> 3
+                    OR (SELECT COUNT(*) FROM pragma_foreign_key_list('trigger_observation_match_workflow_binding')
+                        WHERE "table" = 'trigger_observation_match_definition') <> 3
+                    OR EXISTS (SELECT 1 FROM pragma_foreign_key_check);
+                DROP TABLE __durable_workflow_trigger_upgrade_guard;
+                """);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.Sql("""
+                CREATE TEMP TABLE __durable_workflow_trigger_downgrade_guard (
+                    blocked INTEGER NOT NULL,
+                    CONSTRAINT retained_durable_workflow_triggers_prevent_downgrade CHECK (blocked = 0));
+                INSERT INTO __durable_workflow_trigger_downgrade_guard (blocked)
+                SELECT 1 WHERE
+                    EXISTS (SELECT 1 FROM trigger_one_time_definition WHERE "Target" = 'procedure-workflow')
+                    OR EXISTS (SELECT 1 FROM trigger_observation_match_definition WHERE "Target" = 'procedure-workflow')
+                    OR EXISTS (SELECT 1 FROM trigger_one_time_workflow_binding)
+                    OR EXISTS (SELECT 1 FROM trigger_observation_match_workflow_binding);
+                DROP TABLE __durable_workflow_trigger_downgrade_guard;
+                """);
+
             migrationBuilder.DropTable(
                 name: "trigger_observation_match_workflow_binding");
 
             migrationBuilder.DropTable(
                 name: "trigger_one_time_workflow_binding");
 
-            migrationBuilder.DropCheckConstraint(
-                name: "CK_trigger_one_time_definition_values",
-                table: "trigger_one_time_definition");
+            migrationBuilder.Sql("""
+                PRAGMA writable_schema = ON;
+                UPDATE sqlite_schema SET sql = replace(sql,
+                    '"Target" IN (''notification-only'', ''procedure-workflow'')',
+                    '"Target" = ''notification-only''')
+                    WHERE type = 'table' AND name IN
+                        ('trigger_one_time_definition', 'trigger_observation_match_definition');
+                PRAGMA writable_schema = RESET;
 
-            migrationBuilder.DropCheckConstraint(
-                name: "CK_trigger_observation_match_definition_values",
-                table: "trigger_observation_match_definition");
-
-            migrationBuilder.AddCheckConstraint(
-                name: "CK_trigger_one_time_definition_values",
-                table: "trigger_one_time_definition",
-                sql: "length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system' AND length(\"Id\") BETWEEN 3 AND 200 AND \"Version\" > 0 AND \"MisfirePolicy\" IN ('skip', 'fire-once') AND \"Target\" = 'notification-only' AND \"Lifecycle\" IN ('active', 'cancelled')");
-
-            migrationBuilder.AddCheckConstraint(
-                name: "CK_trigger_observation_match_definition_values",
-                table: "trigger_observation_match_definition",
-                sql: "length(\"ApplicationId\") BETWEEN 1 AND 63 AND \"ApplicationId\" <> 'system' AND length(\"Id\") BETWEEN 3 AND 200 AND \"Version\" > 0 AND \"Lifecycle\" IN ('active', 'paused', 'cancelled') AND length(\"SourceId\") BETWEEN 3 AND 200 AND \"SourceVersion\" > 0 AND length(\"StructureId\") BETWEEN 3 AND 200 AND \"StructureVersion\" > 0 AND length(\"AdapterId\") BETWEEN 3 AND 200 AND \"AdapterVersion\" > 0 AND \"Target\" = 'notification-only'");
+                CREATE TEMP TABLE __durable_workflow_trigger_downgrade_schema_guard (
+                    blocked INTEGER NOT NULL,
+                    CONSTRAINT durable_workflow_trigger_downgrade_invalid CHECK (blocked = 0));
+                INSERT INTO __durable_workflow_trigger_downgrade_schema_guard (blocked)
+                SELECT 1 WHERE
+                    (SELECT COUNT(*) FROM sqlite_schema WHERE type = 'table'
+                        AND name IN ('trigger_one_time_definition', 'trigger_observation_match_definition')
+                        AND instr(sql, '"Target" = ''notification-only''') > 0) <> 2
+                    OR EXISTS (SELECT 1 FROM pragma_foreign_key_check);
+                DROP TABLE __durable_workflow_trigger_downgrade_schema_guard;
+                """);
         }
     }
 }

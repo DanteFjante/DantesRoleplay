@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using DantesRoleplay.Applications;
 using DantesRoleplay.Authorization;
 using DantesRoleplay.Interactions;
@@ -110,15 +109,7 @@ internal static class TriggerProcedureWorkflowBindingPersistence
         if (target.Fingerprint != data.BindingFingerprint)
             throw new InvalidDataException("The retained trigger workflow binding fingerprint is invalid.");
         return new SystemTaskDurableTriggerTarget(bindingId, bindingVersion, data.BindingFingerprint,
-            occurrenceId, host, definition, WithIdempotencyKey(data.ExecutionRequestJson, identity.CommandId));
-    }
-
-    private static string WithIdempotencyKey(string requestJson, string commandId)
-    {
-        var node = JsonNode.Parse(requestJson) as JsonObject
-            ?? throw new InvalidDataException("The retained workflow execution request is invalid.");
-        node["idempotencyKey"] = commandId;
-        return InteractionCanonicalJson.CanonicalizeObject(node.ToJsonString());
+            occurrenceId, host, definition, data.ExecutionRequestJson);
     }
 
     private static BindingData Data(TriggerProcedureWorkflowTarget target)

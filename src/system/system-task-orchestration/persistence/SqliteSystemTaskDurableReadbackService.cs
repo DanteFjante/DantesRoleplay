@@ -72,7 +72,7 @@ internal sealed partial class SqliteSystemTaskDurableService : ISystemTaskDurabl
     private static async Task<SystemTaskDurableReadback> ToReadbackAsync(SystemTaskLifecycleSnapshot snapshot,
         SqliteConnection connection, SqliteTransaction transaction, CancellationToken cancellationToken)
     {
-        var hasCalls = await HasHostCallsAsync(snapshot.Request.Handle, connection, transaction, cancellationToken);
+        var hasCalls = await HasUnreconciledHostCallsAsync(snapshot.Request.Handle, connection, transaction, cancellationToken);
         var pendingAi = await SqliteSystemTaskLifecycleStore.HasUnresolvedAiAccountingAsync(connection, transaction,
             snapshot.Request.Handle.TaskId, cancellationToken);
         // Reuse actual result construction/validation, not just the lifecycle's state flag.

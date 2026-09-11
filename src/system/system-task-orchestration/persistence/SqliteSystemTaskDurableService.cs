@@ -55,7 +55,7 @@ internal sealed partial class SqliteSystemTaskDurableService(
 
             // Journal payloads are inert diagnostics. Until the runtime supplies authoritative
             // receipt reconciliation, no outcome may silently drop or promote earlier effects.
-            if (await HasHostCallsAsync(handle, connection, transaction, cancellationToken))
+            if (await HasUnreconciledHostCallsAsync(handle, connection, transaction, cancellationToken))
                 return InteractionInvocationResult.Unavailable("SYSTEM_TASK_COMMIT_EVIDENCE_UNAVAILABLE",
                     "The task requires authoritative host-call receipt reconciliation.");
             if (await SqliteSystemTaskLifecycleStore.HasUnresolvedAiAccountingAsync(connection, transaction, handle.TaskId, cancellationToken))
@@ -88,7 +88,7 @@ internal sealed partial class SqliteSystemTaskDurableService(
             }
             await store.StageCancellationAsync(handle, true, connection, transaction, cancellationToken);
             var updated = (await store.ReadInTransactionAsync(handle, connection, transaction, cancellationToken))!;
-            if (await HasHostCallsAsync(handle, connection, transaction, cancellationToken))
+            if (await HasUnreconciledHostCallsAsync(handle, connection, transaction, cancellationToken))
                 return InteractionInvocationResult.Unavailable("SYSTEM_TASK_COMMIT_EVIDENCE_UNAVAILABLE",
                     "Cancellation was processed; the task still requires authoritative host-call receipt reconciliation.");
             if (await SqliteSystemTaskLifecycleStore.HasUnresolvedAiAccountingAsync(connection, transaction, handle.TaskId, cancellationToken))
@@ -231,12 +231,23 @@ internal sealed partial class SqliteSystemTaskDurableService(
         task.Invocation.StateSpaceId ?? throw new InvalidDataException("A workflow task is missing its state scope."),
         task.WorkflowDefinition);
 
-    private static async Task<bool> HasHostCallsAsync(SystemTaskDurableHandle handle, SqliteConnection connection,
+    private static async Task<bool> HasUnreconciledHostCallsAsync(SystemTaskDurableHandle handle, SqliteConnection connection,
         SqliteTransaction transaction, CancellationToken cancellationToken)
     {
         await using var command = connection.CreateCommand();
         command.Transaction = transaction;
-        command.CommandText = "SELECT EXISTS(SELECT 1 FROM system_task_host_call WHERE task_id = $task)";
+        command.CommandText = """
+            SELECT EXISTS(
+                SELECT 1
+                FROM system_task_host_call AS call
+                JOIN system_task_lifecycle AS task ON task.task_id = call.task_id
+                WHERE call.task_id = $task AND (
+                    call.status <> 'completed' OR call.completion_json IS NULL OR
+                    json_valid(call.completion_json) = 0 OR json_type(call.completion_json) <> 'object' OR
+                    task.completion_evidence_reference IS NULL OR
+                    json_extract(call.completion_json, '$.completionEvidenceReference')
+                        IS NOT task.completion_evidence_reference))
+            """;
         command.Parameters.AddWithValue("$task", handle.TaskId);
         return Convert.ToInt64(await command.ExecuteScalarAsync(cancellationToken)) != 0;
     }
