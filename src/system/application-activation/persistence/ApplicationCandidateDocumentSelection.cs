@@ -8,6 +8,14 @@ namespace DantesRoleplay.ApplicationActivation;
 /// <summary>Derives bounded authoring context from exact candidate/base metadata; never implies complete dependency coverage.</summary>
 internal static class ApplicationCandidateDocumentSelection
 {
+    // Legacy scanners label JavaScript as octet-stream even after verifying its UTF-8 text.
+    // Retained mechanic execution uses the exact .js path and decoded text, not its MIME label.
+    internal static bool SameSourceMediaType(ActivatedApplicationDocument left, ActivatedApplicationDocument right) =>
+        left.MediaType == right.MediaType || left.IsText && right.IsText
+        && left.RelativePath == right.RelativePath && left.RelativePath.EndsWith(".js", StringComparison.Ordinal)
+        && left.MediaType is "application/octet-stream" or "text/plain" or "text/javascript" or "application/javascript"
+        && right.MediaType is "application/octet-stream" or "text/plain" or "text/javascript" or "application/javascript";
+
     internal static async Task<ActiveApplicationManifest?> ReadBaseAsync(DantesRoleplayDbContext db,
         IApplicationActivationReader activations, ApplicationIdentifier applicationId, string? fingerprint, CancellationToken cancellationToken)
     {

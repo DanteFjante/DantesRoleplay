@@ -1,6 +1,6 @@
 # 02 — Runtime authoring and recoverable activation
 
-Status: proposed implementation plan. This document authorizes no runtime change by itself. Initial callers are the website and Codex through MCP, on one user-controlled installation. Other APIs remain extension points; device and provider bridges are excluded.
+Status: implementation in progress. Initial callers are the website and Codex through MCP, on one user-controlled installation. Other APIs remain extension points; device and provider bridges are excluded.
 
 Prerequisite: implement [00 — Shared foundation](00-shared-foundation.md) first and have the coordinator supply its accepted foundation revision and contract baseline. This workstream consumes those shared contracts and does not redefine them independently.
 
@@ -10,7 +10,7 @@ An authorized caller can create or revise information, schemas, queries, and Jav
 
 Reuse [InformationStore](../../../src/system/information/persistence/InformationStore.cs), [MechanicStore](../../../src/system/mechanics/persistence/MechanicStore.cs), [the scoped ECS store](../../../DantesRoleplay.DataAccess/Ecs/SqliteApplicationScopedEcsStore.cs), and [schema validation](../../../src/system/schema-validation/persistence/BoundedJsonSchemaValidator.cs). Information records currently update their stored revision; mechanic definitions retain immutable versions. Neither fact establishes one consistent draft-to-activation lifecycle today. Information metadata currently receives bounded JSON-object checks; schema-declared validation requires explicit work.
 
-[Registry administration](../../../src/system/registry-administration/persistence/RegistryAdministrationService.cs) already records registration and audit together. [Application activation](../../../src/system/application-activation/persistence/ApplicationActivationService.cs) validates an exact preview, expected active fingerprint, dependency evidence, and replay identity in a transaction. Its manifest retains document fingerprints and paths; retaining that manifest alone does not preserve changed source bytes. The proposed lifecycle must make runtime-authored revisions recoverable.
+[Registry administration](../../../src/system/registry-administration/persistence/RegistryAdministrationService.cs) records registration and audit together. [Application activation](../../../src/system/application-activation/persistence/ApplicationActivationService.cs) owns exact previews, retained source bytes, immutable generations, active pointers, and publication receipts. Runtime candidates share its retained document identities and evidence rather than introducing a second active catalog.
 
 Extend these owners rather than create a replacement project: they already own authoritative records, dependencies, transactions, and audit. A parallel authoring registry would introduce competing identities and publication state without removing their responsibilities.
 
@@ -18,7 +18,15 @@ Extend these owners rather than create a replacement project: they already own a
 
 The coordinator establishes shared invocation and permission contracts before implementation. Every command carries trusted principal, scope, grant reference, definition revision, operation/parent identity, and budgets. Results carry outcome, data, commit evidence, and an optional task handle. These fields do not create another audit log.
 
-Standing execute, author, and activate permissions are proposed additions; [current authorization](../../../src/system/authorization/domain/PrivateOperatorAuthorization.cs) has no durable grant store. The coordinator owns shared authorization contracts, database migrations, host registration, and cross-workstream wiring. This workstream owns candidate and activation behavior within existing subsystem files. Workstream 01 supplies execution validation; 03 supplies reuse discovery; 04/05 consume activation and grant evidence; 06 supplies website integration. No permanent runtime IDs are allocated here.
+Durable standing grants separate author, validate, activate, read, and execute capabilities. The coordinator owns shared authorization contracts, database migrations, host registration, and cross-workstream wiring. This workstream owns candidate and activation behavior within existing subsystem files. Workstream 01 supplies execution validation; 03 supplies reuse discovery; 04/05 consume activation and grant evidence; 06 supplies website integration. No permanent runtime IDs are allocated here.
+
+## Implemented publication boundary
+
+`SqliteApplicationAuthoringService` retains inert candidates and invokes the registered JavaScript validator against their exact retained source and supplied samples. Validation stores the canonical runtime report, policy fingerprint, sample outcomes, and report hash in operation evidence. Inspection and replay verify that evidence; successful samples alone do not approve a general candidate.
+
+The first automatic publication path updates existing pure JavaScript mechanic bodies. Every Markdown contract, identity, declared requirement, and other generation document must remain unchanged. The owner verifies the original authoring receipt, the complete selected pure mechanic set, current Read/Validate permissions, bounded execution samples, and current Read authority for the predecessor definitions. It retains a real permissioned manual packet and a deterministic reuse review proving that the existing identities and contracts are reused. This case needs no AI equivalence judgment because it creates no competing identity. New definitions, changed contracts, schema conversions, and mechanics with services/effects still require their broader validation paths.
+
+Publication independently checks current Read/Activate permissions and exact retained validation, compatibility, and policy evidence. The activation owner writes the new generation, active pointer, and both activation and candidate receipts in one SQLite transaction. A failed publication leaves the prior generation and validation intact; an identical retry returns the recorded receipt. Existing change-feed consumers refresh from the new active generation. Recovery creates another inert candidate from retained historical bytes and still requires validation and activation; it does not undo data changes. Legacy scanner MIME labels for decoded JavaScript are treated as equivalent to explicit JavaScript labels when comparing source identity.
 
 ## Deliverable slices
 

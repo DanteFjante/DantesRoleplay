@@ -71,7 +71,8 @@ public sealed partial class SqliteApplicationAuthoringService
 
     private static bool SameDocumentIdentity(ActivatedApplicationDocument left, ActivatedApplicationDocument right) =>
         left.LogicalIdentity == right.LogicalIdentity && left.SourceId == right.SourceId && left.Trust == right.Trust
-        && left.Precedence == right.Precedence && left.RelativePath == right.RelativePath && left.MediaType == right.MediaType
+        && left.Precedence == right.Precedence && left.RelativePath == right.RelativePath
+        && ApplicationCandidateDocumentSelection.SameSourceMediaType(left, right)
         && left.IsText == right.IsText;
 
     private static InteractionInvocationResult Unavailable() =>

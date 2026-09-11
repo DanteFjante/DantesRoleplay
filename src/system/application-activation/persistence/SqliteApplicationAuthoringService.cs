@@ -18,7 +18,8 @@ public sealed partial class SqliteApplicationAuthoringService(
     DantesRoleplayDbContext db, IApplicationRegistry applications, IApplicationActivationReader activations,
     IActivatedApplicationEvidenceReader evidence, ISourceRegistry sources, IStandingGrantPolicy grants,
     IStandingGrantTargetResolver targets, IOperationLog operations,
-    IApplicationCandidatePreparation? preparation = null) : IApplicationAuthoringService
+    IApplicationCandidatePreparation? preparation = null,
+    IInteractionManualContextService? manuals = null) : IApplicationAuthoringService
 {
     private const string Tool = "application-candidate";
 
@@ -222,7 +223,7 @@ public sealed partial class SqliteApplicationAuthoringService(
         catch (Exception) { return InteractionInvocationResult.Unavailable("APPLICATION_CANDIDATE_INSPECT_UNAVAILABLE", "Candidate inspection is unavailable."); }
     }
     public Task<InteractionInvocationResult> ActivateAsync(InteractionInvocationHost host, ApplicationCandidateActivationRequest request, CancellationToken cancellationToken = default) =>
-        Task.FromResult(InteractionInvocationResult.Unavailable("APPLICATION_CANDIDATE_ACTIVATE_UNAVAILABLE", "Candidate activation is not available."));
+        ActivateCompatibleUpdateAsync(host, request, cancellationToken);
     private List<(ActivatedApplicationDocument Document, byte[]? Bytes)> Effective(ApplicationIdentifier app, ActiveApplicationManifest? active, IReadOnlyList<ApplicationCandidateDocumentInput> replacements)
     {
         var values = new Dictionary<string, (ActivatedApplicationDocument Document, byte[]? Bytes)>(StringComparer.Ordinal);

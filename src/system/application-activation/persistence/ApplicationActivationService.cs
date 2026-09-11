@@ -13,7 +13,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DantesRoleplay.ApplicationActivation;
 
-public sealed class ApplicationActivationService : IApplicationActivationService,
+public sealed partial class ApplicationActivationService : IApplicationActivationService,
     IActivatedApplicationEvidenceReader, IApplicationDefinitionChangeReader
 {
     private readonly DantesRoleplayDbContext db;

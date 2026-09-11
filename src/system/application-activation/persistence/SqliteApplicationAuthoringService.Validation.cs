@@ -129,6 +129,13 @@ public sealed partial class SqliteApplicationAuthoringService
                 Outcome = runtimeReport?.Status == ApplicationCandidateRuntimeStatus.Invalid ? "invalid" : "unavailable",
                 DiagnosticsJson = InteractionCanonicalJson.Canonicalize(JsonSerializer.Serialize(diagnostics)), AlternativesJson = "[]"
             };
+            if (runtimeReport is not null && manuals is not null)
+            {
+                var compatible = new ApplicationCandidateCompatibleUpdateValidation(db,
+                    new(db, applications, activations, evidence, targets,
+                        new(new SchemaValidation.BoundedJsonSchemaValidator())), targets, grants, manuals, operations);
+                await compatible.CompleteAsync(host, runtimeReport, validationRow, cancellationToken);
+            }
             db.Add(validationRow);
             operation.GuardEvidenceJson = ApplicationCandidateOperationProof.ValidationGuard(host, candidate, validationRow,
                 definitions, commandFingerprint, runtimeReport);
