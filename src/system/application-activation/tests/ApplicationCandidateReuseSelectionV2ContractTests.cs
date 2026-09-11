@@ -5,6 +5,7 @@ using System.Text;
 using DantesRoleplay.ApplicationActivation;
 using DantesRoleplay.Authorization;
 using DantesRoleplay.Interactions;
+using DantesRoleplay.SchemaValidation;
 
 namespace DantesRoleplay.Tests;
 
@@ -60,6 +61,39 @@ public sealed class ApplicationCandidateReuseSelectionV2ContractTests
     public void Aggregate_oversize_rejects_without_truncation()
     {
         Assert.Throws<InteractionContractException>(() => ApplicationCandidateReuseInputV2.Create(Material(new string('x', 64_001)), true));
+    }
+
+    [Fact]
+    public void Output_schema_is_host_bound_and_strict()
+    {
+        var validator = new BoundedJsonSchemaValidator();
+        foreach (var material in new[] { Material(), Material() with { Alternatives = [] } })
+        {
+            var input = ApplicationCandidateReuseInputV2.Create(material, true);
+            var schema = validator.Compile(ApplicationCandidateReuseJudgmentOutputV2.OutputSchema(input));
+            Assert.True(schema.IsAccepted, string.Join(";", schema.Diagnostics));
+            var output = JsonSerializer.SerializeToNode(new
+            {
+                format = ApplicationCandidateReuseJudgmentOutputV2.OutputDomain,
+                selectionFingerprint = input.SelectionFingerprint,
+                inputFingerprint = input.InputFingerprint,
+                manualResultFingerprint = input.ManualResultFingerprint,
+                judgment = "uncertain", reason = "Needs review.",
+                assessments = input.Alternatives.Select(target => new { target, judgment = "uncertain", reason = "Needs review." })
+            }, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase })!.AsObject();
+            Assert.Equal(SchemaValueStatus.Valid, validator.Validate(schema.NormalizedSchema, output.ToJsonString()).Status);
+            _ = ApplicationCandidateReuseJudgmentOutputV2.Parse(output.ToJsonString(), input);
+            foreach (var field in new[] { "selectionFingerprint", "inputFingerprint", "manualResultFingerprint", "format", "evidenceReference" })
+            {
+                var changed = output.DeepClone().AsObject();
+                changed[field] = "untrusted";
+                Assert.Equal(SchemaValueStatus.Invalid, validator.Validate(schema.NormalizedSchema, changed.ToJsonString()).Status);
+            }
+            var coverage = output.DeepClone().AsObject();
+            if (input.Alternatives.Count > 0) coverage["assessments"] = new JsonArray();
+            else coverage["assessments"]!.AsArray().Add(new JsonObject());
+            Assert.Equal(SchemaValueStatus.Invalid, validator.Validate(schema.NormalizedSchema, coverage.ToJsonString()).Status);
+        }
     }
 
     private static ApplicationCandidateReuseMaterialV2 Material(string text = "read")

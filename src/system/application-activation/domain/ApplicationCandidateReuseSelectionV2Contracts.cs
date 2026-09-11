@@ -130,6 +130,40 @@ public sealed record ApplicationCandidateReuseJudgmentOutputV2(
     [property: JsonRequired] IReadOnlyList<ApplicationCandidateReuseAssessment> Assessments)
 {
     public const string OutputDomain = "dantes-roleplay/application-candidate-reuse-judgment/v2";
+    /// <summary>Host-bound worker output schema; parsing still proves exact unique coverage.</summary>
+    public static string OutputSchema(ApplicationCandidateReuseInputV2 input)
+    {
+        ArgumentNullException.ThrowIfNull(input);
+        var target = new
+        {
+            type = "object", additionalProperties = false,
+            required = new[] { "definitionId", "kind", "revision", "contentFingerprint" },
+            properties = new
+            {
+                definitionId = new { type = "string" },
+                kind = new { type = "string", @enum = new[] { "procedure", "mechanic", "query" } },
+                revision = new { type = "integer", minimum = 1 },
+                contentFingerprint = new { type = "string", pattern = "^[A-F0-9]{64}$" }
+            }
+        };
+        return InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
+        {
+            type = "object", additionalProperties = false,
+            required = new[] { "format", "selectionFingerprint", "inputFingerprint", "manualResultFingerprint", "judgment", "reason", "assessments" },
+            properties = new
+            {
+                format = new { type = "string", @enum = new[] { OutputDomain } },
+                selectionFingerprint = new { type = "string", @enum = new[] { input.SelectionFingerprint } },
+                inputFingerprint = new { type = "string", @enum = new[] { input.InputFingerprint } },
+                manualResultFingerprint = new { type = "string", @enum = new[] { input.ManualResultFingerprint } },
+                judgment = new { type = "string", @enum = new[] { "reuseExisting", "extendExisting", "justifiedNew", "uncertain" } },
+                reason = new { type = "string", minLength = 1, maxLength = ApplicationCandidateReuseJudgmentLimits.ReasonCharacters },
+                assessments = new { type = "array", minItems = input.Alternatives.Count, maxItems = input.Alternatives.Count,
+                    items = new { type = "object", additionalProperties = false, required = new[] { "target", "judgment", "reason" },
+                        properties = new { target, judgment = new { type = "string", @enum = new[] { "reuseExisting", "extendExisting", "justifiedNew", "uncertain" } }, reason = new { type = "string", minLength = 1, maxLength = ApplicationCandidateReuseJudgmentLimits.ReasonCharacters } } } }
+            }
+        }));
+    }
     public static ApplicationCandidateReuseJudgmentOutputV2 Parse(string json, ApplicationCandidateReuseInputV2 input)
     {
         if (Encoding.UTF8.GetByteCount(json) > ApplicationCandidateReuseJudgmentLimits.OutputUtf8Bytes) throw Invalid();

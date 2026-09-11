@@ -75,6 +75,16 @@ coverage but do not create an attestation. The host-selected read-only plan 05 w
 plan 04 accounting/worker provenance must be integrated before the host can accept a candidate-bound
 Valid judgment. No-hit retrieval, a nonempty reason, model output or usage counters alone are insufficient.
 
+The additive V2 selected-context contract keeps the full candidate and base activation references
+host-only. Its selection, input and manual-result fingerprints derive exclusively from authorized
+selected documents, reason, manual and alternatives. The retained owner must separately prove exact
+changed-document, sidecar and declared-dependency coverage against the full candidate and base,
+and the consuming service must revalidate current Read and Validate authority. A structural
+`closureComplete` flag only guards context construction; it is not evidence or permission to dispatch.
+Incomplete coverage remains Unavailable. V1 fingerprint semantics are unchanged. The final serialized
+provider request has its own size check, including prompts and escaping; fitting the model-input
+bound alone does not guarantee that request fits.
+
 Alternate-intent preparation is internal and limited to existing application procedures. It accepts
 only a typed candidate lookup, exact definition reference and replacement phrase list; the candidate
 reader rehydrates linked retained rows and bytes. Independent Read and Author checks run before and
