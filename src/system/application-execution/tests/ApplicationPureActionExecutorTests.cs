@@ -14,9 +14,11 @@ using DantesRoleplay.Interactions;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.MCPServer;
 using DantesRoleplay.Operations;
+using DantesRoleplay.Projections;
 using DantesRoleplay.SchemaValidation;
 using DantesRoleplay.SystemCapabilities;
 using DantesRoleplay.SystemTasks;
+using DantesRoleplay.SystemTasks.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace DantesRoleplay.Authorization.Tests;
@@ -132,25 +134,107 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         Assert.Contains("\"receipt\":{", toolResult.Content, StringComparison.Ordinal);
         Assert.Equal(1, host.Budget.RemainingOperations);
 
-        var current = await db.Set<StandingGrantCurrentRecord>().SingleAsync(value => value.GrantId == "inner-grant");
-        var prior = SqliteStandingGrantPolicy.Parse(await db.Set<StandingGrantRevisionRecord>()
-            .SingleAsync(value => value.GrantId == "inner-grant"));
-        var revokedGrant = prior with { Revision = 2, GrantReference = "inner-grant@2", Revoked = true,
-            IssuedByOperationId = "inner-grant-revoke" };
-        db.Add(new Operation { Id = revokedGrant.IssuedByOperationId, Timestamp = DateTime.UtcNow, Tool = "test" });
-        db.Add(new StandingGrantRevisionRecord { GrantId = revokedGrant.GrantId, Revision = 2,
-            GrantReference = revokedGrant.GrantReference, PrincipalReference = revokedGrant.PrincipalReference,
-            ApplicationId = Application.Value, Scope = "stateSpace", StateSpaceId = "state",
-            PermissionsJson = StandingGrantRevisionCanonicalization.PermissionsJson(revokedGrant),
-            ContentFingerprint = StandingGrantRevisionCanonicalization.ContentFingerprint(revokedGrant),
-            MaximumOperations = revokedGrant.MaximumOperations, ExpiresAtUtc = revokedGrant.ExpiresAtUtc,
-            Revoked = true, IssuedByOperationId = revokedGrant.IssuedByOperationId });
-        current.Revision = 2;
-        await db.SaveChangesAsync();
+        await RevokeInnerWorkerGrantAsync(db);
         db.ChangeTracker.Clear();
         var revoked = await factory.Create(profile, [new(binding, record)])[0].InvokeAsync(
             new("revoked", binding.Definition.Name,
                 JsonDocument.Parse("{\"roles\":{},\"input\":{\"value\":4}}").RootElement.Clone(), AiRequestKind.Task));
+        Assert.Contains("INVOCATION_NOT_AUTHORIZED", revoked.Content, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Focused_worker_fake_provider_reads_the_exact_retained_application_query_and_honors_revocation()
+    {
+        await using var db = fixture.CreateContext();
+        var setup = Setup(db);
+        setup.Namespaces.Register(new CatalogNamespaceRegistration("demo.runtime.pure", "human-domain-label", "Pure query projection.",
+            [CatalogNamespaceKinds.Mechanic], ReviewStatus: CatalogNamespaceReviewStatuses.Reviewed,
+            ReviewNote: "Reviewed query projection."));
+        setup.Namespaces.Register(new CatalogNamespaceRegistration("demo.runtime.query", "human-domain-label", "Query fixture.",
+            [CatalogNamespaceKinds.Query], ReviewStatus: CatalogNamespaceReviewStatuses.Reviewed,
+            ReviewNote: "Reviewed query fixture."));
+        const string inputSchema = "{\"additionalProperties\":false,\"properties\":{\"value\":{\"type\":\"integer\"}},\"required\":[\"value\"],\"type\":\"object\"}";
+        const string outputSchema = "{\"additionalProperties\":false,\"properties\":{\"answer\":{\"type\":\"integer\"}},\"required\":[\"answer\"],\"type\":\"object\"}";
+        WritePureAction("return { data: { answer: ctx.input.value + 3 } };",
+            "{\"inputSchema\":" + inputSchema + "}");
+        await ActivateAsync(setup);
+        var firstCatalogs = Catalogs(setup);
+        Assert.True(firstCatalogs.TryGetSnapshot(Application, out var first));
+        var mechanic = first.Documents.Single(value => value.Record.QualifiedId == PureActionId).Record;
+        var output = new BoundedJsonSchemaValidator().Compile(outputSchema);
+        Assert.True(output.IsAccepted);
+        WriteQuery(mechanic, inputSchema, output.NormalizedSchema, output.SchemaHash);
+        await ActivateAsync(setup, setup.Activation.Current(Application)!.ActivationFingerprint);
+        await SeedInnerWorkerGrantAsync(db);
+
+        var catalogs = Catalogs(setup);
+        Assert.True(catalogs.TryGetSnapshot(Application, out var snapshot));
+        const string queryId = "demo.runtime.query.calculate";
+        var governed = Assert.Single(SystemInnerWorkerGovernedReferences.Parse(
+            "query(kind: \"demo.runtime.query.calculate\")"));
+        Assert.Equal(queryId, governed.QualifiedId);
+        var record = snapshot.Documents.Single(value => value.Record.QualifiedId == queryId).Record;
+        var active = setup.Activation.Current(Application)!;
+        var stateSpaces = new SqliteStateSpaceRegistry(db, setup.Applications);
+        var state = stateSpaces.Create(new("state", setup.Applications.Get(Application)!,
+            active.ActivationFingerprint, active.ResolutionFingerprint));
+        var host = new InteractionInvocationHost(
+            TrustedPrincipalContext.VerifiedPrincipal("principal." + new string('a', 64), "test"),
+            setup.Applications.Get(Application)!, "state", "inner-grant@1", "worker-query",
+            InteractionStateRevision.From(state), InteractionExecutionProfile.Workflow,
+            new(2, DateTime.UtcNow.AddMinutes(1)));
+        var contract = ApplicationCapabilityContractAdapter.Create(Application, record, "state");
+        var binding = new SystemInnerWorkerToolBinding(
+            SystemInnerWorkerApplicationToolFactory.Definition(SystemInnerWorkerToolKind.ApplicationQuery, contract),
+            new(record.QualifiedId, record.Version, record.ContentFingerprint), SystemCapabilityMode.Read,
+            SystemInnerWorkerToolKind.ApplicationQuery);
+        Assert.Equal(SystemInnerWorkerToolKind.ApplicationQuery, binding.Kind);
+        Assert.Equal(SystemCapabilityMode.Read, binding.Mode);
+        const string resultSchema = "{\"type\":\"object\"}";
+        var worker = new SystemInnerWorkerRequest(host, new("demo.runtime.inspect", 1, new string('A', 64)),
+            "{\"instruction\":\"read\"}", resultSchema);
+        var profile = new SystemInnerWorkerResolvedProfile(worker, new("fixture.worker", 1, new string('B', 64)),
+            new("fixture.worker", "Worker", "Read the exact selected query."),
+            Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(resultSchema))),
+            [binding], [], new("manual.fixture", new string('C', 64)),
+            new("authority.fixture", "inner-grant@1", new string('D', 64)), new(256, 1));
+        var schemas = new BoundedJsonSchemaValidator();
+        var types = new SqliteComponentTypeRegistry(db, schemas);
+        var edges = new SqliteStateSpaceEdgeStore(db, stateSpaces);
+        var mapping = new ApplicationMechanicProjectionMappingResolver(catalogs, stateSpaces, types, edges);
+        var readModels = new ApplicationReadModelService(catalogs, setup.Activation, stateSpaces, mapping,
+            new ApplicationMechanicEvaluator(catalogs, new ApplicationMechanicProjectionResolver(db, stateSpaces),
+                new JintMechanicEngine()), schemas);
+        var targets = setup.Resolver;
+        var grants = new SqliteStandingGrantPolicy(db, targets);
+        var reads = new StandingGrantApplicationReadModelInvocationAdapter(grants, targets, stateSpaces, readModels);
+        var factory = new SystemInnerWorkerApplicationToolFactory(null!, reads);
+        var provider = new ApplicationToolProvider(binding.Definition.Name,
+            "{\"roles\":{},\"input\":{\"value\":4}}");
+        var response = await new SystemAiAgentService([], new AiService([provider])).SendWithToolsAsync(
+            profile.Profile, new("fixture", "fixture", [new(AiMessageRole.User, "Read.")], AiRequestKind.Task,
+                MaximumToolRounds: 1, MaximumToolCalls: 1),
+            new(host.Principal, "stateSpace", "worker-query") { ApplicationId = Application, StateSpaceId = "state" },
+            new AdmittingApplicationToolLifecycle(), factory.Create(profile, [new(binding, record)]));
+
+        var returned = Assert.Single(response.ToolResults!).Result;
+        Assert.True(returned.Ok, returned.ErrorCode);
+        using var document = JsonDocument.Parse(returned.Content);
+        Assert.Equal("completed", document.RootElement.GetProperty("tag").GetString());
+        Assert.Equal(7, JsonDocument.Parse(document.RootElement.GetProperty("dataJson").GetString()!)
+            .RootElement.GetProperty("answer").GetInt32());
+        Assert.Equal(JsonValueKind.Null, document.RootElement.GetProperty("receipt").ValueKind);
+        var evidence = SystemTaskAiInvocationLifecycleFactory.CommitEvidence(binding.Kind, binding.Mode,
+            new(AiDispatchCompletionKind.Returned, returned));
+        Assert.Equal("not-applicable", evidence.Status);
+        Assert.Null(evidence.Receipt);
+
+        await RevokeInnerWorkerGrantAsync(db);
+        db.ChangeTracker.Clear();
+        var revoked = await factory.Create(profile, [new(binding, record)])[0].InvokeAsync(
+            new("revoked-query", binding.Definition.Name,
+                JsonDocument.Parse("{\"roles\":{},\"input\":{\"value\":4}}").RootElement.Clone(), AiRequestKind.Task));
+        Assert.DoesNotContain("\\\"answer\\\":7", revoked.Content, StringComparison.Ordinal);
         Assert.Contains("INVOCATION_NOT_AUTHORIZED", revoked.Content, StringComparison.Ordinal);
     }
 
@@ -364,7 +448,62 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         await db.SaveChangesAsync();
     }
 
-    private sealed class ApplicationToolProvider(string toolName) : IAiProvider
+    private ActivatedApplicationCatalogProvider Catalogs(SetupState setup) => new(
+        new ConfiguredPublicApplicationCatalogPolicy([Application.Value]),
+        new ActivatedApplicationCatalogMaterializer(setup.Applications, setup.Activation,
+            setup.Sources, setup.Roots, setup.Extensions).UsePreparationCache(
+                new ActivatedApplicationCatalogSnapshotCache(), new ActivatedApplicationCatalogCacheAuthority()),
+        new CatalogCursorCodec(Enumerable.Repeat((byte)0x42, 32).ToArray()), setup.Activation);
+
+    private void WriteQuery(CatalogRecordDefinition mechanic, string inputSchema,
+        string outputSchema, string outputHash)
+    {
+        var path = Path.Combine(root, "content", "queries", "calculate.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, JsonSerializer.Serialize(new
+        {
+            id = "demo.runtime.query.calculate",
+            category = "runtime.query",
+            name = "Calculate query",
+            description = "Calculate through the retained projection.",
+            matches = new[] { "calculate" },
+            roles = new Dictionary<string, string>(),
+            executor = ApplicationQueryContract.MechanicProjectionExecutor,
+            projection = new
+            {
+                qualifiedId = mechanic.QualifiedId,
+                version = mechanic.Version,
+                contentHash = mechanic.ContentFingerprint,
+                outputSchemaHash = outputHash
+            },
+            inputSchema = JsonSerializer.Deserialize<JsonElement>(inputSchema),
+            outputSchema = JsonSerializer.Deserialize<JsonElement>(outputSchema),
+            exposure = "model-visible",
+            status = "active"
+        }), new UTF8Encoding(false));
+    }
+
+    private static async Task RevokeInnerWorkerGrantAsync(DantesRoleplayDbContext db)
+    {
+        var current = await db.Set<StandingGrantCurrentRecord>().SingleAsync(value => value.GrantId == "inner-grant");
+        var prior = SqliteStandingGrantPolicy.Parse(await db.Set<StandingGrantRevisionRecord>()
+            .SingleAsync(value => value.GrantId == "inner-grant"));
+        var revoked = prior with { Revision = 2, GrantReference = "inner-grant@2", Revoked = true,
+            IssuedByOperationId = "inner-grant-revoke" };
+        db.Add(new Operation { Id = revoked.IssuedByOperationId, Timestamp = DateTime.UtcNow, Tool = "test" });
+        db.Add(new StandingGrantRevisionRecord { GrantId = revoked.GrantId, Revision = 2,
+            GrantReference = revoked.GrantReference, PrincipalReference = revoked.PrincipalReference,
+            ApplicationId = Application.Value, Scope = "stateSpace", StateSpaceId = "state",
+            PermissionsJson = StandingGrantRevisionCanonicalization.PermissionsJson(revoked),
+            ContentFingerprint = StandingGrantRevisionCanonicalization.ContentFingerprint(revoked),
+            MaximumOperations = revoked.MaximumOperations, ExpiresAtUtc = revoked.ExpiresAtUtc,
+            Revoked = true, IssuedByOperationId = revoked.IssuedByOperationId });
+        current.Revision = 2;
+        await db.SaveChangesAsync();
+    }
+
+    private sealed class ApplicationToolProvider(string toolName,
+        string arguments = "{\"roles\":{},\"input\":{\"value\":4}}") : IAiProvider
     {
         private int round;
         public AiProviderInfo Info => new("fixture", "Fixture");
@@ -372,7 +511,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             Task.FromResult<IReadOnlyList<AiModel>>([]);
         public Task<AiProviderResponse> SendAsync(AiProviderRequest request,
             CancellationToken cancellationToken = default) => Task.FromResult<AiProviderResponse>(round++ == 0
-            ? new(true, null, "", "", [new("call.1", toolName, "{\"roles\":{},\"input\":{\"value\":4}}")])
+            ? new(true, null, "", "", [new("call.1", toolName, arguments)])
             : new(true, null, "done", "{}", []));
     }
 

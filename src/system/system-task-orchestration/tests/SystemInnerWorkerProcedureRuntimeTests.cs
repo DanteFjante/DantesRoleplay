@@ -283,7 +283,8 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             [StandingGrantCapability.Read, StandingGrantCapability.Execute, StandingGrantCapability.ReadTask, StandingGrantCapability.CancelTask],
             new(StandingGrantDefinitionMode.ApplicationOwned, [], [
                 new("demo.runtime", true, [CatalogNamespaceKinds.Procedure]),
-                new("demo.runtime.pure", false, [CatalogNamespaceKinds.Mechanic])]),
+                new("demo.runtime.pure", false, [CatalogNamespaceKinds.Mechanic]),
+                new("demo.runtime.query", false, [CatalogNamespaceKinds.Query])]),
             [], 16, DateTime.UtcNow.AddMinutes(10), false, "inner-grant-operation");
         grant = grant with { ContentFingerprint = StandingGrantRevisionCanonicalization.ContentFingerprint(grant) };
         db.Add(new Operation { Id = grant.IssuedByOperationId, Timestamp = DateTime.UtcNow, Tool = "test" });
