@@ -42,6 +42,7 @@ public sealed class WebContentDbContext(DbContextOptions<WebContentDbContext> op
                 table.HasCheckConstraint("CK_web_page_revision_content", """
                     ("ContentFormat" = 'html' AND "CompositionJson" IS NULL AND "CompositionHash" IS NULL)
                     OR ("ContentFormat" = 'composition-v1' AND "Html" = '' AND "CompositionJson" IS NOT NULL
+                        AND json_valid("CompositionJson") AND length(CAST("CompositionJson" AS BLOB)) <= 1048576
                         AND "CompositionHash" IS NOT NULL AND length("CompositionHash") = 64
                         AND "CompositionHash" NOT GLOB '*[^0-9A-F]*')
                     """);
