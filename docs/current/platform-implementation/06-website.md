@@ -1,12 +1,113 @@
 # Website composition and operator interface
 
-Status: implementation plan, not implemented or accepted. The
+Status: independent composition/read/presentation library implemented; production publication,
+transport integration and dependent platform acceptance remain pending. The
 [coordination plan](../PLATFORM-IMPLEMENTATION.md) defines shared contracts and scheduling; the
 coordinator includes the relevant agreement with each assignment. This file owns the website
 workstream. Initial integrations are the website and Codex. Application-specific
 pages and DND2024 behavior are outside this plan.
 
 Prerequisite: implement [00 — Shared foundation](00-shared-foundation.md) first and have the coordinator supply its accepted foundation revision and contract baseline. This workstream consumes those shared contracts and does not redefine them independently.
+
+## Independent implementation boundary
+
+[WebComposition.cs](../../../DantesRoleplay.Web/Pages/WebComposition.cs) parses a closed, page-local
+declarative document into an opaque immutable tree. Component IDs/revisions resolve only inside
+that document; `generation` is an authored label, not proof of an active database revision. The
+coordinator must pin the exact retained document bytes/hash and selected content revision before
+production rendering. No global component registry or persistence format is installed by this library.
+
+The renderer permits escaped text/values, allowlisted elements, conditions, loops, required props,
+and caller-scoped slots. It validates references/cycles and rejects duplicate/unknown JSON fields,
+unsafe URLs and undeclared bindings. Asset references must occur in the host-supplied selected
+revision inventory; render requires the host's `/ui/{slug}/` asset base. The current active-asset
+route does not pin asset reads to the rendered revision. It must be coordinated before claiming
+generation-consistent publication. Action buttons remain disabled until a real dispatcher is attached.
+
+Bounds: 1 MiB document, JSON/node depth 32, 64 component definitions, 4,096 authored nodes,
+16 query/action declarations each, 100 items per loop, 16,384 expanded render nodes, and
+1,048,576 output characters. Binding/property identifiers are ASCII and at most 80 characters.
+`props` is reserved. Missing query data is a render error, never an empty successful result.
+
+[CompositionPagePreview](../../../DantesRoleplay.Web/Pages/CompositionPagePreview.cs) requires exactly
+the declared query names. [CompositionQueryMaterializer](../../../DantesRoleplay.Web/Reads/CompositionQueryMaterializer.cs)
+accepts only host-selected `ApplicationReadModelInvocationRequest` values sharing one read-only
+`InteractionInvocationHost`. It delegates reauthorization, scope checking, exact query contracts,
+and budget consumption to the existing real adapter. Reads are sequential, bounded to one page
+per binding (1–100 items, opaque cursor at most 1,024 characters), and are never cached by this
+consumer. This does not claim all queries share a database snapshot. Any failed read suppresses
+render values; original shared outcomes remain available for diagnostics.
+
+[composition-bindings.js](../../../DantesRoleplay.Web/BrowserComponents/composition-bindings.js)
+provides result/operator presentation and a controller accepting injected read/dispatch functions.
+`bindControls` enables only the host-supplied available binding names, obtains input through the
+host callback, and removes listeners/disables controls on disposal; absent input stays recoverable.
+It declares no new HTTP endpoint and accepts no principal, grant or state authority. The host
+adapter must resolve each binding within its selected generation; browser input is never authority.
+Missing adapters/readback sections report unavailable. It separates read/worker output, proposals,
+pending tasks, current receipts, prior workflow receipts and recovery identities. Commits refresh
+authoritative data; uncertain actions remain fenced without retry. Existing scoped stream events
+invalidate reads, reconnect refreshes data, and a page-revision event disposes old controls before
+the host reloads compatible content. No task lifecycle or authorization semantics live in this UI.
+
+Example parser input (preview only; not an accepted upload/publication contract):
+
+```json
+{
+  "formatVersion": 1,
+  "generation": "example-generation",
+  "queries": [{"name": "records"}],
+  "actions": [{"name": "refresh_record"}],
+  "components": [
+    {"id": "heading", "revision": "1", "requiredProps": ["title"],
+     "template": {"kind": "element", "tag": "h2", "children": [{"kind": "value", "path": "props.title"}]}},
+    {"id": "command", "revision": "1", "template": {"kind": "element", "tag": "button", "action": "refresh_record",
+     "children": [{"kind": "text", "text": "Refresh record"}]}}
+  ],
+  "root": {"kind": "element", "tag": "main", "children": [
+    {"kind": "component", "id": "heading", "revision": "1", "props": {"title": "Records"}},
+    {"kind": "each", "items": "records", "as": "record", "children": [{"kind": "value", "path": "record.name"}]},
+    {"kind": "component", "id": "command", "revision": "1"},
+    {"kind": "component", "id": "heading", "revision": "1", "props": {"title": "Operation results"}}
+  ]}
+```
+
+`records` is only a local binding name. The coordinator-owned resolver must provide its exact
+`InteractionQueryContractReference` (projection ID/version/content hash, schema hash/schema,
+exposure/roles), selected application/state revision and trusted caller host. `refresh_record`
+similarly requires the real action owner to pin mechanic ID/version/content hash and command
+identity. Neither declaration can select authority or advertise availability by itself.
+
+## Coordinator integration proposal (not enabled)
+
+- Extend `WebPageBundle`, `WebPageRevision`, `WebPageDocument` and `WebPageRevisionDocument` with
+  explicit `ContentFormat` (`html` by default, proposed `composition-v1`) and nullable
+  `CompositionJson`. Preserve exact composition bytes/hash separately from existing HTML hashes.
+  Extend `WebPageBundleReader` to recognize a root `composition.json` only after this contract is
+  accepted; legacy `index.html` ZIP behavior stays unchanged. The coordinator owns the additive
+  web-content migration and snapshot. Do not hide composition JSON in the legacy HTML field.
+- Extend `IWebPageStore`/`WebPageStore` with first-page inert draft creation and exact-revision
+  asset lookup. First drafts must not activate via `SaveBundleAndActivateAsync`. The coordinator
+  must define the absent-active pointer and expected-revision semantics before creating schema
+  changes. Validate the exact candidate and binding contracts via plan 02 before any active pointer
+  advances. Failed candidates retain previous content/assets; reconcile ECS identity and content
+  references explicitly without assuming a transaction spans both owners.
+- In `WebInterfaceEndpoints.GetPageAsync` and the root path, retain publication discovery and
+  existing access filters; branch on the selected revision's content format and invoke
+  `CompositionPagePreview`. Supply the verified host, exact selected queries and asset base,
+  serve audience-specific results without shared HTML caching, and map missing/denied/incompatible
+  reads distinctly. Coordinate revision-pinned asset reads and retention with the same publication.
+- Register the read materializer/preview only in the existing coordinator-owned web registration.
+  Bind browser actions to the common plan 01 dispatch boundary in
+  `WebInterfaceApplicationEndpoints`; preserve stable command identity and reconcile uncertain
+  receipts. Plans 02–05 supply authoring/grants, manuals, schedules/observers and child-task readback.
+  No proposed downstream contract is consumed before its coordinator freeze.
+
+Library fixtures demonstrate composition and consumer conformance. They do not demonstrate
+production upload/activation, published composition routes, cross-owner failed-publication recovery,
+Codex-to-page action execution, invited-user grants, scheduled jobs or delegated worker completion.
+Those scenarios wait for real dependencies and coordinator integration; test doubles are confined
+to test projects and cannot satisfy platform acceptance.
 
 ## Outcome and existing owners
 
