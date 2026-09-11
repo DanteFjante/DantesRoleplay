@@ -1,5 +1,5 @@
-using System.Text.Json;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using DantesRoleplay.Applications;
 using DantesRoleplay.DataAccess;
@@ -25,7 +25,7 @@ public sealed class SqliteStandingGrantPolicy(DantesRoleplayDbContext db, IStand
                          where record.GrantReference == host.GrantReference select record).SingleOrDefaultAsync(cancellationToken);
         if (row is null) return Decision(false, "STANDING_GRANT_NOT_CURRENT", null, host);
         StandingGrantRevision grant;
-        try { grant = Parse(row); StandingGrantContractRules.ValidateConfiguration(grant); }
+        try { grant = Parse(row); }
         catch (Exception exception) when (exception is JsonException or ArgumentException or InteractionContractException)
         { return Decision(false, "STANDING_GRANT_INVALID", null, host); }
         if (grant.Revoked || host.Budget.DeadlineUtc <= DateTime.UtcNow || host.Budget.DeadlineUtc > grant.ExpiresAtUtc || grant.PrincipalReference != host.Principal.PrincipalId || grant.ApplicationId != host.ApplicationRevision.ApplicationId || grant.Scope != requirement.Scope || grant.StateSpaceId is not null && grant.StateSpaceId != host.StateSpaceId || !grant.Capabilities.Contains(requirement.Capability) || host.Budget.MaximumOperations > grant.MaximumOperations)
@@ -39,7 +39,7 @@ public sealed class SqliteStandingGrantPolicy(DantesRoleplayDbContext db, IStand
         if (requirement.EffectKinds.Any(effect => !grant.EffectKinds.Contains(effect, StringComparer.Ordinal))) return Decision(false, "STANDING_GRANT_EFFECT_DENIED", grant, host);
         return Decision(true, "STANDING_GRANT_ALLOWED", grant, host);
     }
-    private static StandingGrantRevision Parse(StandingGrantRevisionRecord row)
+    internal static StandingGrantRevision Parse(StandingGrantRevisionRecord row)
     {
         if (Encoding.UTF8.GetByteCount(row.PermissionsJson) > 16000)
             throw new JsonException("Stored grant permissions exceed their bound.");
@@ -53,10 +53,14 @@ public sealed class SqliteStandingGrantPolicy(DantesRoleplayDbContext db, IStand
             _ => throw new JsonException("Stored grant scope is invalid.")
         };
         var expiry = DateTime.SpecifyKind(row.ExpiresAtUtc, DateTimeKind.Utc);
-        return new(row.GrantReference, row.GrantId, row.Revision, row.ContentFingerprint,
+        var grant = new StandingGrantRevision(row.GrantReference, row.GrantId, row.Revision, row.ContentFingerprint,
             row.PrincipalReference, ApplicationIdentifier.Parse(row.ApplicationId), scope, row.StateSpaceId,
             permissions.Capabilities, permissions.Definitions, permissions.EffectKinds,
             row.MaximumOperations, expiry, row.Revoked, row.IssuedByOperationId);
+        StandingGrantContractRules.ValidateConfiguration(grant);
+        if (!string.Equals(row.ContentFingerprint, StandingGrantRevisionCanonicalization.ContentFingerprint(grant), StringComparison.Ordinal))
+            throw new JsonException("Stored grant content fingerprint does not match its canonical revision.");
+        return grant;
     }
 
     private static readonly JsonSerializerOptions Wire = new(JsonSerializerDefaults.Web);
@@ -66,5 +70,5 @@ public sealed class SqliteStandingGrantPolicy(DantesRoleplayDbContext db, IStand
         [property: JsonRequired] IReadOnlyList<StandingGrantCapability> Capabilities,
         [property: JsonRequired] StandingGrantDefinitionAllowance Definitions,
         [property: JsonRequired] IReadOnlyList<string> EffectKinds);
-    private static StandingGrantDecision Decision(bool allowed, string code, StandingGrantRevision? grant, InteractionInvocationHost host) => new(allowed, code, grant, new(host.Principal.PrincipalId, host.Principal.AuthenticationMethod, "standing-grant", host.StateSpaceId, host.CommandId, allowed, code));
+    private static StandingGrantDecision Decision(bool allowed, string code, StandingGrantRevision? grant, InteractionInvocationHost host) => new(allowed, code, allowed ? grant : null, new(host.Principal.PrincipalId, host.Principal.AuthenticationMethod, "standing-grant", host.StateSpaceId, host.CommandId, allowed, code));
 }

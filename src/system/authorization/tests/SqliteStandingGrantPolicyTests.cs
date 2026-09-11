@@ -52,6 +52,34 @@ public sealed class SqliteStandingGrantPolicyTests
         Assert.Equal("STANDING_GRANT_INVALID", decision.Code);
     }
 
+    [Theory]
+    [InlineData("capabilities")]
+    [InlineData("effects")]
+    [InlineData("principal")]
+    [InlineData("expiry")]
+    [InlineData("allowance")]
+    public async Task Valid_json_or_columns_changed_without_a_new_revision_hash_are_invalid(string tamper)
+    {
+        await using var fixture = await PolicyFixture.CreateAsync();
+        await fixture.SeedAsync(capabilities: [StandingGrantCapability.Read]);
+        var grant = await fixture.Db.Set<StandingGrantRevisionRecord>().SingleAsync();
+        switch (tamper)
+        {
+            case "capabilities": grant.PermissionsJson = grant.PermissionsJson.Replace("\"read\"", "\"author\""); break;
+            case "effects": grant.PermissionsJson = grant.PermissionsJson.Replace("\"effectKinds\":[]", "\"effectKinds\":[\"component.set\"]"); break;
+            case "principal": grant.PrincipalReference = "principal.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"; break;
+            case "expiry": grant.ExpiresAtUtc = grant.ExpiresAtUtc.AddMinutes(1); break;
+            case "allowance": grant.PermissionsJson = grant.PermissionsJson.Replace(Target.DefinitionId, "demo.rules.other"); break;
+        }
+        await fixture.Db.SaveChangesAsync();
+
+        var decision = await fixture.Policy.EvaluateAsync(Host(), Requirement(StandingGrantCapability.Read));
+
+        Assert.False(decision.Allowed);
+        Assert.Equal("STANDING_GRANT_INVALID", decision.Code);
+        Assert.Null(decision.Grant);
+    }
+
     [Fact]
     public async Task Old_grant_reference_is_denied_after_current_revision_is_revoked_even_when_old_row_is_tracked()
     {
@@ -89,6 +117,7 @@ public sealed class SqliteStandingGrantPolicyTests
 
         Assert.False(decision.Allowed);
         Assert.Equal(mismatch == "target" ? "STANDING_GRANT_TARGET_DENIED" : "STANDING_GRANT_DENIED", decision.Code);
+        Assert.Null(decision.Grant);
     }
 
     [Fact]
@@ -145,20 +174,26 @@ public sealed class SqliteStandingGrantPolicyTests
 
     private static StandingGrantRevisionRecord GrantRecord(int revision, string reference, bool revoked,
         IReadOnlyList<StandingGrantCapability> capabilities, StandingGrantScope scope = StandingGrantScope.Application,
-        int maximumOperations = 1, IReadOnlyList<string>? effectKinds = null, DateTime? expiresAtUtc = null) => new()
+        int maximumOperations = 1, IReadOnlyList<string>? effectKinds = null, DateTime? expiresAtUtc = null)
     {
-        GrantId = "grant", Revision = revision, GrantReference = reference, PrincipalReference = Principal,
-        ApplicationId = Application.Value, Scope = scope == StandingGrantScope.Application ? "application" : "stateSpace",
-        StateSpaceId = scope == StandingGrantScope.Application ? null : "state", ContentFingerprint = Hash,
-        MaximumOperations = maximumOperations, ExpiresAtUtc = expiresAtUtc ?? DateTime.UtcNow.AddMinutes(30),
-        Revoked = revoked, IssuedByOperationId = "operation",
-        PermissionsJson = System.Text.Json.JsonSerializer.Serialize(new
+        var expiry = expiresAtUtc ?? DateTime.UtcNow.AddMinutes(30);
+        var kinds = effectKinds ?? [];
+        var grant = new StandingGrantRevision(reference, "grant", revision, new string('0', 64), Principal,
+            Application, scope, scope == StandingGrantScope.Application ? null : "state", capabilities,
+            new StandingGrantDefinitionAllowance(StandingGrantDefinitionMode.ExactIds, [Target.DefinitionId], []), kinds,
+            maximumOperations, expiry, revoked, "operation");
+        return new()
         {
-            capabilities = capabilities.Select(value => value.ToString().ToLowerInvariant()),
-            definitions = new { mode = "exactIds", exactIds = new[] { Target.DefinitionId }, applicationOwnedNamespaces = Array.Empty<object>() },
-            effectKinds = effectKinds ?? Array.Empty<string>()
-        })
-    };
+            GrantId = grant.GrantId, Revision = grant.Revision, GrantReference = grant.GrantReference,
+            PrincipalReference = grant.PrincipalReference, ApplicationId = grant.ApplicationId.Value,
+            Scope = grant.Scope == StandingGrantScope.Application ? "application" : "stateSpace",
+            StateSpaceId = grant.StateSpaceId,
+            PermissionsJson = StandingGrantRevisionCanonicalization.PermissionsJson(grant),
+            ContentFingerprint = StandingGrantRevisionCanonicalization.ContentFingerprint(grant),
+            MaximumOperations = grant.MaximumOperations, ExpiresAtUtc = grant.ExpiresAtUtc,
+            Revoked = grant.Revoked, IssuedByOperationId = grant.IssuedByOperationId
+        };
+    }
 
     private sealed class ExactTargetResolver : IStandingGrantTargetResolver
     {
