@@ -703,6 +703,17 @@ public sealed class JintMechanicEngine : IMechanicEngine
         typeof(Engine).Assembly.GetName().FullName,
         Environment.Version.ToString());
 
+    /// <summary>Identity of the actual pure wrapper, harness and preparation configuration.</summary>
+    internal static string PureExecutionPolicyFingerprint => InteractionCanonicalJson.Fingerprint(
+        "dantes-roleplay/jint-pure-execution-policy/v1",
+        InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
+        {
+            preparation = PreparationConfigurationKey,
+            wrapperPrefix = MechanicWrapperPrefix,
+            wrapperSuffix = MechanicWrapperSuffix,
+            harness = Harness
+        })));
+
     private const int MaximumJsonDepth = 64;
 
     private static bool ExceedsJsonDepth(string? json)

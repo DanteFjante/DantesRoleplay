@@ -52,6 +52,24 @@ read and root atomic action adapters retain their supported profiles. Service ac
 wait, job and AI callbacks return unavailable until their real dependencies and shared contracts
 are integrated.
 
+The internal candidate runtime validator consumes the activation owner's retained pure-mechanic
+closure evidence. That evidence covers every changed Markdown/JavaScript pair through the existing
+normalized record and requirements owners. The initial profile permits only empty requirements or
+an input schema; broader dependency completeness remains false. Every selected mechanic needs a
+retained input/expected-data sample, with at most four per definition and sixteen per request. The
+entire request and report each obey the 64 KiB/depth 32 bound.
+
+Runtime checks require current application Read and Validate authority in the authoring owner's
+existing transaction. Each engine attempt consumes one caller operation and shares its deadline;
+the validator creates no transaction, budget, service capability or effect dispatcher. Reports keep
+original sample ordinals, actual attempt status and bounded data fingerprints, including partial
+progress when cancellation or exhaustion stops execution. The selection pin is the pure closure's
+evidence fingerprint; the policy pin includes the actual parser/runtime, harness, schema profile and
+execution limits. Known non-data outputs are rejected. Completed means only that these sample
+checks passed, never global candidate validity or publication approval. This internal validator
+remains unregistered pending coordinator integration with retained validation reports and the
+remaining preparation/reuse/publication gates.
+
 The frozen read-only service contract bounds each JSON exchange to 64 KiB/depth 32 and the root
 exchange total to 1 MiB. The root consumes one shared operation; each registered read consumes one
 through its existing adapter, including authorization denial, up to 16 overall. After a terminal
