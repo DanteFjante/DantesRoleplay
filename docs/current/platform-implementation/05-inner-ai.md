@@ -1,6 +1,6 @@
 # Focused INNER AI workers
 
-Status: independent preparation and result-adapter implementation, 2026-09-11. Full worker execution remains unavailable pending accepted runtime, grant, context-profile and durable-lifecycle integration from plans 01–04. Initial external integration remains Codex and the website, with runtime JavaScript as another caller.
+Status: procedure-workflow workers, durable execution/readback, and selected-application submit/read/cancel capabilities are implemented, 2026-09-12. The website and selected-application AI use the existing capability gateway. Live provider acceptance, list/wait transport, and website progress presentation remain outside this boundary.
 
 Prerequisite: implement [00 — Shared foundation](00-shared-foundation.md) first and have the coordinator supply its accepted foundation revision and contract baseline. This workstream consumes those shared contracts and does not redefine them independently.
 
@@ -59,20 +59,24 @@ allowance and remain bounded by the tool-call limit. Already admitted parallel c
 evidence. Failed persistence stops new work and preserves evidence from actions that already returned;
 late billing evidence never restores a stale worker's permission to publish a result or effect.
 
-Both worker adapters remain internal and unregistered. `ISystemInnerWorkerService` still resolves
-to the foundation's unavailable service. No worker can submit, self-confirm, or execute through
-these helpers. Real provider execution, crash/reconnect recovery, linked cancellation, expired-lease
-publication, dependency ordering, script/OUTER follow-up and cost comparisons are not established
-by their deterministic adapter tests.
+The task-orchestration composition now registers `SystemInnerWorkerService`, its procedure resolver,
+the purpose-filtered durable runner, lifecycle factory, and selected-application capability handlers.
+`system.inner-worker.submit`, `system.inner-worker.read`, and `system.inner-worker.cancel` reuse the
+existing website/Codex gateway. They construct fresh state-scoped hosts from current standing grants;
+caller JSON selects the state, exact procedure, instruction, result schema, and dependency handles,
+while provider, model, tools, grants, budgets, leases, and evidence remain host-owned. Submit and
+cancel use stable idempotency keys. Read and replay query current grants again. Deterministic
+acceptance covers the real gateway, SQLite task lifecycle, hosted runner, cancellation, reconnect
+readback, and grant revocation with a controlled provider. It does not establish a live provider run.
 
-Coordinator proposals (not adopted shared contracts):
+Current integration boundaries:
 
-- Freeze the host-owned procedure profile alongside `SystemInnerWorkerRequest`: exact procedure
+- The host-owned procedure profile retained alongside `SystemInnerWorkerRequest` pins the exact procedure
   revision/fingerprint, existing `AiAgentProfile` identity, allowed operation/tool references,
   required context references, output schema/fingerprint, and narrowed budgets. Plans 02/03 must
   resolve this from current authorized definitions; assignment JSON must not populate authority.
-  Existing consumers are the runtime gateway, context materializer and future INNER executor.
-- Add the plan-04 execution/readback binding using `SystemTaskAttemptIdentity`,
+  Existing consumers are the runtime gateway, context materializer and INNER executor.
+- The execution/readback binding uses `SystemTaskAttemptIdentity`,
   `SystemTaskSelectedDefinition`, `SystemTaskDurableHandle` and `InteractionInvocationHost`.
   The lifecycle owner must reserve shared allowances across descendants/retries, reauthorize at
   execution and tool invocation, validate procedure freshness, and fence persistence/notification.
@@ -80,27 +84,21 @@ Coordinator proposals (not adopted shared contracts):
   attempt/fencing counter, selected procedure/schema fingerprints and the actual provider response.
   `SystemInnerWorkerResultAdapter` checks only the command and output portion of this binding;
   it must not be exposed as an evidence-verification service.
-  Persist AI input/evidence/results in those task records, without a second history. Current
-  `InteractionInvocationBudget` has operations/deadline only; aggregate provider-token and tool-call
-  accounting requires a coordinated budget extension before execution can be enabled.
-- Extend the existing durable service for bounded list/wait readback, then expose submit/get/list/
-  wait/cancel through `ISystemInnerWorkerService` or the common task gateway. Reuse its existing
-  submit/get/cancel identities; list should be scoped to the authorized parent with at most 16
+  AI input/evidence/results stay in those task records without a second history. The durable
+  lifecycle owns aggregate provider-token and tool-call accounting.
+- Bounded list/wait readback remains unavailable. Any later addition should reuse the durable service;
+  list should be scoped to the authorized parent with at most 16
   handles per page. Wait must use named checkpoints and release execution resources. For example,
   a pending response retains `{ "taskId": "task.1", "commandId": "command.1" }`; a completed
   computation cites the existing terminal result record, never the provider conversation ID.
-  Coordinator-owned transport and registration connect OUTER/JavaScript; plan 06 owns display.
+  The selected-application transport currently exposes submit/read/cancel; plan 06 owns display.
 
-These are additive integration requests, not new runtime IDs, migrations, wire fields or capability
-availability. Adoption requires the coordinator's accepted symbols/revision before this workstream
-can wire or test dependent scenarios.
+### Concrete profile and AI accounting contracts
 
-### Concrete profile and AI accounting proposal
-
-The additive proposal is in `system-capabilities/domain/SystemInnerWorkerProfileContracts.cs` and
+The additive contracts are in `system-capabilities/domain/SystemInnerWorkerProfileContracts.cs` and
 `SystemInnerWorkerBudgetContracts.cs`, with matching contract fixtures under that owner's `tests/`.
-It is not registered or connected to the internal preparation adapter. Coordinator review freezes
-the shared contract; plan 04 owns any persistence additions and the coordinator owns migrations.
+They are connected to the procedure resolver and the existing durable lifecycle owner. Plan 04 owns
+their persistence and accounting; no separate worker migration or history is introduced.
 
 `SystemInnerWorkerResolvedProfile` wraps the existing `SystemInnerWorkerRequest` and `AiAgentProfile`.
 It pins a profile revision, output-schema hash, up to 16 named tool bindings with exact capability
@@ -122,10 +120,9 @@ The built-in reviewer consumes only plan 03's selected-material V2 input and out
 model-visible pins describe the authorized selection, not full candidate/base generations; actual
 owner evidence must separately establish complete coverage. `SystemInnerWorkerValidationRequestBuilder`
 checks input/schema/manual agreement and narrows tool calls and rounds to zero, response bytes to
-at most 8,000, and elapsed time to the host deadline. It neither dispatches nor authorizes. Plan 04
-must still bound the actual serialized provider descriptor to 64 KiB, including generated system
-instructions and escaping, before invocation. These adapters remain unregistered pending the real
-selection, authority, durable admission, accounting and result-publication integration.
+at most 8,000, and elapsed time to the host deadline. It neither dispatches nor authorizes. The
+durable lifecycle bounds the actual provider descriptor and owns selection, authority, admission,
+accounting, and result publication.
 
 `SystemInnerWorkerValidationInvoker` consumes the lifecycle callback supplied by plan 04's actual
 lease/profile factory and uses only the required-lifecycle AI overload. Its ephemeral computation
@@ -199,14 +196,11 @@ reconciliation or prevent an otherwise valid terminal result, cleanup, cancellat
 Remaining ancestor balances govern further dispatch. Neither outcome implies rollback of a committed
 tool action, and terminal publication still requires current ownership and authoritative evidence.
 
-`ISystemInnerWorkerAiBudgetAccounting` is an unimplemented proposal for plan 04's existing persisted
-task owner. It must settle once across every ancestor, handle conflicting reports, preserve unknown
-debits after cancellation, and account for late usage without granting stale workers publication
-rights. Contract fixtures prove shapes and arithmetic only, not persistence, concurrent sibling
-reservations, crash recovery, provider guarantees or live-grant enforcement. Consumers are the
-host profile resolver, plan 03's manual service, plan 05's eventual invoker, plan 04's lifecycle and
-accounting implementation, and plan 01/coordinator gateway integration. No runtime activation follows
-from these DTOs or their fixtures.
+The persisted task lifecycle implements the accounting rules directly: it settles once across every
+ancestor, preserves unknown debits after cancellation, and prevents late usage from granting stale
+workers publication rights. The standalone `ISystemInnerWorkerAiBudgetAccounting` contract remains
+unregistered; constructing its DTOs does not grant runtime authority. Deterministic fixtures do not
+establish provider guarantees or a live-provider billing reconciliation run.
 
 ## Outcome and existing owners
 
