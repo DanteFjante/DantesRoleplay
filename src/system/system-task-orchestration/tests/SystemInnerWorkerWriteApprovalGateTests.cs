@@ -103,7 +103,7 @@ public sealed class SystemInnerWorkerWriteApprovalGateTests
             [procedure.ExactDefinitionId], PrivateOperatorCapability.Modify, "modify",
             SystemCapabilitySensitivity.PrivateOperatorMetadata, "private-operator-metadata", true, true);
         var binding = new SystemInnerWorkerToolBinding(definition,
-            new(capability.Id, capability.Version, capability.Fingerprint));
+            new(capability.Id, capability.Version, capability.Fingerprint), SystemCapabilityMode.Write);
         var profileDefinition = new AiAgentProfile("web.inner", "Inner", "Focused worker.");
         var profile = new SystemInnerWorkerResolvedProfile(worker,
             new(profileDefinition.Id, 1, Sha256("profile")), profileDefinition, Sha256(resultSchema),

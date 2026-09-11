@@ -125,7 +125,8 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
                 toolBindings = innerWorkerProfile.ToolBindings.Select(value => new
                 {
                     value.Definition,
-                    value.CapabilityVersion
+                    value.CapabilityVersion,
+                    value.Mode
                 }),
                 innerWorkerProfile.RequiredContextReferences,
                 contextEvidence = innerWorkerProfile.ManualContext,

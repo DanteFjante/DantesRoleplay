@@ -447,6 +447,59 @@ public sealed class SystemTaskDurableServiceBoundaryTests
     }
 
     [Fact]
+    public async Task Earlier_commit_is_preserved_when_a_later_write_outcome_is_unresolved()
+    {
+        await using var fixture = await BoundaryFixture.CreateAsync();
+        var handle = (await fixture.Store.EnqueueAsync(Request(fixture,
+            Host(fixture, "command.write-then-unknown")))).Handle!;
+        var lease = (await fixture.Store.ClaimNextAsync("worker.boundary", TimeSpan.FromMinutes(1)))!;
+        var evidence = "inner-result." + new string('f', 64);
+        var committedOperation = new string('a', 32);
+        var committedFingerprint = new string('B', 64);
+        var first = await fixture.Store.BeginHostCallAsync(lease, committedOperation, "{}");
+        Assert.True(await fixture.Store.CompleteHostCallAsync(lease, committedOperation,
+            first.RequestFingerprint, InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
+            {
+                completionEvidenceReference = evidence,
+                Kind = 0,
+                Result = new { Ok = true, Content = "{}", ErrorCode = "", ErrorMessage = "", Media = (object?)null },
+                FailureCode = "",
+                commit = new
+                {
+                    Status = "committed",
+                    Receipt = new
+                    {
+                        OperationId = committedOperation,
+                        RequestFingerprint = committedFingerprint,
+                        Effects = Array.Empty<object>(),
+                        EffectDetailsAvailable = false
+                    }
+                }
+            }))));
+        var unresolvedOperation = new string('c', 32);
+        var second = await fixture.Store.BeginHostCallAsync(lease, unresolvedOperation, "{}");
+        Assert.True(await fixture.Store.CompleteHostCallAsync(lease, unresolvedOperation,
+            second.RequestFingerprint, InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
+            {
+                completionEvidenceReference = evidence,
+                Kind = 1,
+                Result = (object?)null,
+                FailureCode = "AI_TOOL_FAILED",
+                commit = new { Status = "unresolved", Receipt = (object?)null }
+            }))));
+        Assert.True(await fixture.Store.FailAsync(lease, SystemTaskFailureKind.Permanent,
+            "AI_PROVIDER_FAILED", "The provider failed after tool dispatch."));
+
+        var result = await fixture.Service.GetAsync(Host(fixture, "command.read"), handle);
+
+        Assert.Equal(InteractionInvocationResultTag.Failed, result.Tag);
+        Assert.Equal("SYSTEM_TASK_COMMIT_EVIDENCE_UNAVAILABLE", result.Code);
+        Assert.Equal(committedOperation, Assert.Single(result.PreviousCommits).OperationId);
+        Assert.Equal(unresolvedOperation, result.RecoveryIdentity!.OperationId);
+        Assert.Equal(second.RequestFingerprint, result.RecoveryIdentity.RequestFingerprint);
+    }
+
+    [Fact]
     public async Task Deadline_elapsing_during_policy_rolls_back_admission()
     {
         await using var fixture = await BoundaryFixture.CreateAsync();

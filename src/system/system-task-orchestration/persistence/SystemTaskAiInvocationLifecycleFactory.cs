@@ -162,13 +162,14 @@ internal sealed class SystemTaskAiInvocationLifecycleFactory(IServiceScopeFactor
                     dispatch.DispatchOrdinal,
                     dispatch.Definition,
                     dispatch.Invocation,
+                    binding.Mode,
                     completionEvidenceReference = terminalEvidence
                 })), cancellationToken);
             if (journal.Disposition != SystemTaskHostCallDisposition.NewPending)
                 throw Failure("INNER_AI_TOOL_RECONCILIATION_REQUIRED");
             session.Approval?.RecordAdmittedTool(dispatch);
             return new ToolScope(this, boundary.Store, lease, reservation.Reservation.RecordReference,
-                operation, journal.RequestFingerprint, terminalEvidence);
+                operation, journal.RequestFingerprint, terminalEvidence, binding.Mode);
         }, cancellationToken);
 
     private async Task RecordAsync(string reference, SystemTaskAttemptIdentity attempt, AiProviderCallObservation outcome)
@@ -188,30 +189,27 @@ internal sealed class SystemTaskAiInvocationLifecycleFactory(IServiceScopeFactor
 
     private async Task RecordToolAsync(SqliteSystemTaskLifecycleStore store, SystemTaskLease lease,
         string reference, string operation, string requestFingerprint, string terminalEvidence,
-        AiToolDispatchObservation outcome)
+        SystemCapabilityMode mode, AiToolDispatchObservation outcome)
     {
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
         Exception? journalFailure = null;
-        if (outcome.Kind == AiDispatchCompletionKind.Returned && outcome.Result is not null)
+        try
         {
-            try
+            var completion = InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
             {
-                var completion = InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
-                {
-                    completionEvidenceReference = terminalEvidence,
-                    outcome.Kind,
-                    outcome.Result,
-                    outcome.FailureCode,
-                    commit = CommitEvidence(outcome)
-                }));
-                if (!await store.CompleteHostCallAsync(lease, operation, requestFingerprint,
-                        completion, timeout.Token))
-                    journalFailure = Failure("INNER_AI_TOOL_RECONCILIATION_REQUIRED");
-            }
-            catch (Exception error) when (error is not OutOfMemoryException)
-            {
-                journalFailure = error;
-            }
+                completionEvidenceReference = terminalEvidence,
+                outcome.Kind,
+                outcome.Result,
+                outcome.FailureCode,
+                commit = CommitEvidence(mode, outcome)
+            }));
+            if (!await store.CompleteHostCallAsync(lease, operation, requestFingerprint,
+                    completion, timeout.Token))
+                journalFailure = Failure("INNER_AI_TOOL_RECONCILIATION_REQUIRED");
+        }
+        catch (Exception error) when (error is not OutOfMemoryException)
+        {
+            journalFailure = error;
         }
         await InScopeAsync(true, async (boundary, _, _) =>
         {
@@ -225,10 +223,21 @@ internal sealed class SystemTaskAiInvocationLifecycleFactory(IServiceScopeFactor
             throw Failure("INNER_AI_TOOL_RECONCILIATION_REQUIRED");
     }
 
-    private static ToolCommitEvidence CommitEvidence(AiToolDispatchObservation outcome)
+    internal static ToolCommitEvidence CommitEvidence(
+        SystemCapabilityMode mode, AiToolDispatchObservation outcome)
     {
-        if (outcome.Kind != AiDispatchCompletionKind.Returned || outcome.Result is not { Ok: true } result)
+        if (mode == SystemCapabilityMode.Read)
+            return new("not-applicable", null);
+        if (mode != SystemCapabilityMode.Write)
+            return new("unresolved", null);
+        if (outcome.Kind == AiDispatchCompletionKind.NotStarted)
             return new("not-committed", null);
+        if (outcome.Kind != AiDispatchCompletionKind.Returned || outcome.Result is not { } result)
+            return new("unresolved", null);
+        if (!result.Ok)
+            return DefinitivePreDispatchDenial(result.ErrorCode)
+                ? new("not-committed", null)
+                : new("unresolved", null);
         try
         {
             using var document = JsonDocument.Parse(result.Content);
@@ -241,7 +250,7 @@ internal sealed class SystemTaskAiInvocationLifecycleFactory(IServiceScopeFactor
                 || !root.TryGetProperty("ReadBackFingerprint", out var readBack)
                 || readBack.ValueKind != JsonValueKind.String
                 || !root.TryGetProperty("data", out _))
-                return new("not-applicable", null);
+                return new("unresolved", null);
             var receipt = new InteractionInvocationCommitReceipt(
                 operation.GetString()!, fingerprint.GetString()!, [], EffectDetailsAvailable: false);
             receipt.Validate();
@@ -258,12 +267,19 @@ internal sealed class SystemTaskAiInvocationLifecycleFactory(IServiceScopeFactor
         }
     }
 
+    private static bool DefinitivePreDispatchDenial(string code) => code is
+        "SYSTEM_CAPABILITY_PREFLIGHT_FAILED" or
+        "SYSTEM_CAPABILITY_NOT_READY" or
+        "SYSTEM_CAPABILITY_CONFIRMATION_REQUIRED" or
+        "SYSTEM_CAPABILITY_WRITE_DECLINED" or
+        "SYSTEM_CAPABILITY_APPROVAL_INVALID";
+
     private static string ToolOperation(SystemTaskLease lease, int ordinal) =>
         Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(
             "dantes-roleplay/inner-worker-tool/v1\n" + lease.Request.Handle.TaskId + "\n"
             + lease.Attempt.AttemptId + "\n" + ordinal)))[..32];
 
-    private sealed record ToolCommitEvidence(string Status, InteractionInvocationCommitReceipt? Receipt);
+    internal sealed record ToolCommitEvidence(string Status, InteractionInvocationCommitReceipt? Receipt);
 
     private async Task<T> InScopeAsync<T>(bool write,
         Func<SystemTaskValidationTransaction, SystemTaskApplicationValidationGate?, IServiceProvider, Task<T>> action,
@@ -329,10 +345,11 @@ internal sealed class SystemTaskAiInvocationLifecycleFactory(IServiceScopeFactor
     [JsonConverter(typeof(AiHostOnlyLifecycleJsonConverterFactory))]
     private sealed class ToolScope(SystemTaskAiInvocationLifecycleFactory owner,
         SqliteSystemTaskLifecycleStore store, SystemTaskLease lease, string reference,
-        string operation, string requestFingerprint, string terminalEvidence) : IAiToolDispatchScope
+        string operation, string requestFingerprint, string terminalEvidence,
+        SystemCapabilityMode mode) : IAiToolDispatchScope
     {
         public async ValueTask RecordToolOutcomeAsync(AiToolDispatchObservation outcome) =>
             await owner.RecordToolAsync(store, lease, reference, operation, requestFingerprint,
-                terminalEvidence, outcome);
+                terminalEvidence, mode, outcome);
     }
 }

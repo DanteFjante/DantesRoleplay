@@ -90,7 +90,7 @@ internal sealed class SystemInnerWorkerHostPolicy(
                     ? $"Read the in-process system capability '{value.Contract.Id}'. {value.Contract.Description}"
                     : $"Write through the in-process system capability '{value.Contract.Id}'. Trusted confirmation and an idempotency token are required. {value.Contract.Description}",
                 value.Contract.Input.SchemaJson),
-            new(value.Id, value.Version, value.Fingerprint))).ToArray();
+            new(value.Id, value.Version, value.Fingerprint), value.Mode)).ToArray();
         var remaining = worker.InvocationHost.Budget.DeadlineUtc - nowUtc;
         if (remaining <= TimeSpan.Zero)
             throw Failure("INNER_WORKER_DEADLINE_EXPIRED", "The focused worker deadline has expired.");

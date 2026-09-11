@@ -97,15 +97,15 @@ public sealed class SystemInnerWorkerProfileContractTests
     public void Tool_binding_requires_valid_bounded_canonical_definition()
     {
         var definition = new AiToolDefinition("read_value", "Fixture tool", """{"z":1,"a":2}""");
-        var binding = new SystemInnerWorkerToolBinding(definition, new("capability.read", 1, Hash));
+        var binding = new SystemInnerWorkerToolBinding(definition, new("capability.read", 1, Hash), SystemCapabilityMode.Read);
 
         Assert.Equal("""{"a":2,"z":1}""", binding.Definition.InputSchemaJson);
         Assert.Equal("INVALID_WORKER_TOOL", Assert.Throws<InteractionContractException>(() =>
-            new SystemInnerWorkerToolBinding(new("bad.tool", "Fixture", "{}"), new("capability.read", 1, Hash))).Code);
+            new SystemInnerWorkerToolBinding(new("bad.tool", "Fixture", "{}"), new("capability.read", 1, Hash), SystemCapabilityMode.Read)).Code);
         Assert.Equal("JSON_OBJECT_REQUIRED", Assert.Throws<InteractionContractException>(() =>
-            new SystemInnerWorkerToolBinding(new("read_value", "Fixture", "[]"), new("capability.read", 1, Hash))).Code);
+            new SystemInnerWorkerToolBinding(new("read_value", "Fixture", "[]"), new("capability.read", 1, Hash), SystemCapabilityMode.Read)).Code);
         Assert.Equal("INVALID_WORKER_TOOL", Assert.Throws<InteractionContractException>(() =>
-            new SystemInnerWorkerToolBinding(new("read_value", new string('x', 1_001), "{}"), new("capability.read", 1, Hash))).Code);
+            new SystemInnerWorkerToolBinding(new("read_value", new string('x', 1_001), "{}"), new("capability.read", 1, Hash), SystemCapabilityMode.Read)).Code);
     }
 
     [Fact]
@@ -204,8 +204,9 @@ public sealed class SystemInnerWorkerProfileContractTests
         schemaFingerprint ?? HashOf(Schema), tools ?? [Binding("read_value", "capability.read")], references ?? ["context:a"],
         new("manual.packet.1", Hash), new("authority.1", "grant-revision.1", Hash), aiBudget);
 
-    private static SystemInnerWorkerToolBinding Binding(string name, string capability, int version = 1) =>
-        new(new(name, "Fixture tool", "{\"type\":\"object\"}"), new(capability, version, Hash));
+    private static SystemInnerWorkerToolBinding Binding(string name, string capability, int version = 1,
+        SystemCapabilityMode mode = SystemCapabilityMode.Read) =>
+        new(new(name, "Fixture tool", "{\"type\":\"object\"}"), new(capability, version, Hash), mode);
 
     private static SystemInnerWorkerRequest Worker() => new(Host(), new("procedure.fixture", 1, Hash), "{\"work\":true}", Schema);
 
