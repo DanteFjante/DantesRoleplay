@@ -26,6 +26,12 @@ public sealed record StandingGrantTargetResolution(
 /// </summary>
 public interface IStandingGrantTargetResolver
 {
+    /// <summary>Exact current ID lookup for owners whose existing query contract has no definition hash.</summary>
+    Task<StandingGrantTargetResolution> ResolveCurrentAsync(InteractionInvocationHost host,
+        string exactDefinitionId, string kind, CancellationToken cancellationToken = default) =>
+        Task.FromResult(new StandingGrantTargetResolution(StandingGrantTargetResolutionStatus.Unavailable,
+            "STANDING_GRANT_CURRENT_TARGET_UNAVAILABLE", null));
+
     Task<StandingGrantTargetResolution> ResolveAsync(InteractionInvocationHost host,
         StandingGrantDefinitionReference selection, CancellationToken cancellationToken = default);
 
