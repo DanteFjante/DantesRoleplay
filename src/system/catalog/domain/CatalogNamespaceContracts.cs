@@ -12,9 +12,10 @@ public static class CatalogNamespaceKinds
     public const string Subscription = "subscription";
     public const string Entity = "entity";
     public const string Document = "document";
+    public const string Query = "query";
 
     public static readonly IReadOnlySet<string> All = new HashSet<string>(
-        [Mechanic, Procedure, ComponentDefinition, ComponentType, EventType, Subscription, Entity, Document],
+        [Mechanic, Procedure, ComponentDefinition, ComponentType, EventType, Subscription, Entity, Document, Query],
         StringComparer.Ordinal);
 }
 
