@@ -254,6 +254,10 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
         CancellationToken cancellationToken = default) => ClaimNextCoreAsync(workerId, leaseDuration,
             SystemTaskPurpose.ApplicationValidation, cancellationToken);
 
+    internal Task<SystemTaskLease?> ClaimNextWorkflowAsync(string workerId, TimeSpan leaseDuration,
+        CancellationToken cancellationToken = default) => ClaimNextCoreAsync(workerId, leaseDuration,
+            SystemTaskPurpose.ProcedureWorkflow, cancellationToken);
+
     private async Task<SystemTaskLease?> ClaimNextCoreAsync(string workerId, TimeSpan leaseDuration,
         SystemTaskPurpose? purpose, CancellationToken cancellationToken)
     {

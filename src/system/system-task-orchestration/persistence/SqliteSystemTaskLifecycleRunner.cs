@@ -29,9 +29,12 @@ internal sealed class SqliteSystemTaskLifecycleRunner
         CancellationToken cancellationToken = default, SystemTaskPurpose? purpose = null)
     {
         ArgumentNullException.ThrowIfNull(execute);
-        var lease = purpose == SystemTaskPurpose.ApplicationValidation
-            ? await _store.ClaimNextValidationAsync(workerId, _leaseDuration, cancellationToken)
-            : await _store.ClaimNextAsync(workerId, _leaseDuration, cancellationToken);
+        var lease = purpose switch
+        {
+            SystemTaskPurpose.ApplicationValidation => await _store.ClaimNextValidationAsync(workerId, _leaseDuration, cancellationToken),
+            SystemTaskPurpose.ProcedureWorkflow => await _store.ClaimNextWorkflowAsync(workerId, _leaseDuration, cancellationToken),
+            _ => await _store.ClaimNextAsync(workerId, _leaseDuration, cancellationToken)
+        };
         if (lease is null) return false;
 
         // Shutdown only abandons a lease. It is never converted into a user's durable cancellation.

@@ -15,7 +15,11 @@ internal static class SystemTaskOrchestrationComponentRegistration
     {
         services.AddScoped<ISystemTaskContextMaterializer, SystemTaskContextMaterializer>();
         services.AddScoped<ISystemTaskService, SystemTaskService>();
-        services.TryAddScoped<ISystemTaskDurableService, UnavailableSystemTaskDurableService>();
+        services.AddScoped<SqliteSystemTaskDurableService>();
+        services.Replace(ServiceDescriptor.Scoped<ISystemTaskDurableService>(provider =>
+            provider.GetRequiredService<SqliteSystemTaskDurableService>()));
+        services.AddScoped<ISystemTaskDurableReadbackService>(provider =>
+            provider.GetRequiredService<SqliteSystemTaskDurableService>());
         services.AddScoped<ISystemAiToolSource, SystemTaskAiToolSource>();
         services.AddScoped<SystemTaskApplicationValidationGate>(provider => new(
             provider.GetRequiredService<DataAccess.DantesRoleplayDbContext>(),
