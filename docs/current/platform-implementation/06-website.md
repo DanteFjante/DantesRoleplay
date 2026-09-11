@@ -9,6 +9,31 @@ pages and DND2024 behavior are outside this plan.
 
 Prerequisite: implement [00 — Shared foundation](00-shared-foundation.md) first and have the coordinator supply its accepted foundation revision and contract baseline. This workstream consumes those shared contracts and does not redefine them independently.
 
+## Shared operator gateways
+
+The website and Codex use common generic system-capability catalogs. Authenticated application
+endpoints and the Codex application-authoring source expose application-candidate inspect, write,
+validate, activate, recover, and reuse-review submit/read/cancel operations; the private operator
+catalog exposes current standing-grant administration. These surfaces require no application-specific
+handlers. Candidate descriptors report the required current standing-grant capabilities; reuse-review
+submit and cancel require Read plus Validate, and status read requires Read. The application gateway
+derives command tokens from trusted principal, application, capability, and caller idempotency identity.
+Browser JSON cannot provide a principal, grant, worker profile, provider, tool set, application
+generation, or execution authority.
+
+Reuse-review submit binds one exact candidate to its authoring operation receipt and causal command.
+The task owner rehydrates the immutable reviewer profile and stages an actual durable Pending task.
+Read returns the current lifecycle status and exposes the bounded retained result only after completion
+and AI-accounting reconciliation. Cancel requests cancellation through the same owner. A Pending task,
+worker judgment, or completed result is not candidate validation or publication evidence by itself;
+the authoring owner independently rechecks the exact retained proof and current grants before a reviewed
+pure candidate can validate or activate. Foreign handles and revoked grants fail closed. Live providers
+remain disabled in tests, and provider-dependent operation remains unavailable until configured.
+
+The website presents these shared results without becoming an execution owner. HTTP authorization
+failures preserve the owner code as forbidden, while invalid input, stale/conflicting requests, pending
+tasks, cancellation, unavailable dependencies, and committed receipts remain distinct outcomes.
+
 ## Independent implementation boundary
 
 [WebComposition.cs](../../../DantesRoleplay.Web/Pages/WebComposition.cs) parses a closed, page-local

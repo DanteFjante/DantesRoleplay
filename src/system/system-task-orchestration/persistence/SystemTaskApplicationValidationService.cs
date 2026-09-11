@@ -28,10 +28,23 @@ internal sealed class SystemTaskApplicationValidationService(
         ArgumentNullException.ThrowIfNull(profile);
         if (profile.Worker.Subject is not SystemInnerWorkerSubject.ApplicationCandidateValidation validation)
             return Task.FromResult(NotAuthorized());
-        var host = profile.Worker.InvocationHost;
+        return SubmitAsync(profile.Worker.InvocationHost, validation.Candidate,
+            causationOperationId, causalCommandId, cancellationToken);
+    }
+
+    /// <summary>
+    /// Transport-facing admission accepts only exact host and candidate identities. The owner gate
+    /// rehydrates the immutable reviewer profile, manuals, closure, and current grant provenance.
+    /// </summary>
+    internal Task<InteractionInvocationResult> SubmitAsync(InteractionInvocationHost host,
+        ApplicationCandidateReference candidate, string? causationOperationId, string? causalCommandId,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(host);
+        ArgumentNullException.ThrowIfNull(candidate);
         return RunAsync(host, true, async boundary =>
         {
-            var authority = await gate.CheckAsync(host, validation.Candidate, true,
+            var authority = await gate.CheckAsync(host, candidate, true,
                 causationOperationId, causalCommandId, cancellationToken);
             if (SystemTaskApplicationValidationGate.ExecutionPrerequisite(authority) is { } unavailable) return unavailable;
             // The staging owner performs exact command replay before transferring fresh root
@@ -130,6 +143,14 @@ internal sealed class SystemTaskApplicationValidationService(
         if (task is null || !Matches(host, task.Request)) return NotAuthorized();
         var authority = await gate.CheckAsync(host, task.Request.Candidate!, false, cancellationToken: cancellationToken);
         if (authority.Failure is not null) return authority.Failure;
+        var reconciliationRequired = await SqliteSystemTaskLifecycleStore.HasUnresolvedAiAccountingAsync(
+            boundary.Connection, boundary.Transaction, handle.TaskId, cancellationToken);
+        var completionAvailable = task.State == SystemTaskLifecycleState.Completed
+            && task.ResultJson is not null && task.CompletionEvidenceReference is not null
+            && !reconciliationRequired;
+        JsonElement? result = completionAvailable
+            ? JsonSerializer.Deserialize<JsonElement>(task.ResultJson!)
+            : null;
         // Read only current, bounded lifecycle diagnostics. A computed provider response is not a
         // semantic attestation or world-effect receipt and is not promoted by this readback.
         var json = InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
@@ -138,9 +159,10 @@ internal sealed class SystemTaskApplicationValidationService(
             state = task.State.ToString().ToLowerInvariant(), task.AttemptCount,
             task.CancellationRequested, task.CancellationAcknowledged,
             task.CreatedAtUtc, task.UpdatedAtUtc, task.CompletedAtUtc,
-            completionAvailable = false,
-            reconciliationRequired = await SqliteSystemTaskLifecycleStore.HasUnresolvedAiAccountingAsync(
-                boundary.Connection, boundary.Transaction, handle.TaskId, cancellationToken),
+            completionAvailable,
+            completionEvidenceReference = completionAvailable ? task.CompletionEvidenceReference : null,
+            result,
+            reconciliationRequired,
             task.ErrorCode
         }));
         var fingerprint = InteractionCanonicalJson.Fingerprint("dantes-roleplay/system-task-validation-readback/v1", json);

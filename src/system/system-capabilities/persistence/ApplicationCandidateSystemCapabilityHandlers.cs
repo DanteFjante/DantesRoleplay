@@ -230,7 +230,9 @@ internal sealed class ApplicationCandidateWriteCapabilityHandler(
         var value = ApplicationCandidateCapabilitySchemas.Deserialize<ActivateWire>(input);
         var candidate = new ApplicationCandidateReference(ApplicationIdentifier.Parse(value.ApplicationId),
             value.CandidateId, value.Revision, value.ContentFingerprint);
-        return new(value.ApplicationId, new(candidate, value.ValidationOperationId), 1);
+        // Activation consumes one operation itself. Reviewed pure publication then rechecks the
+        // retained candidate's Read/Validate authority before accepting its durable proof.
+        return new(value.ApplicationId, new(candidate, value.ValidationOperationId), 3);
     }
 
     private static RecoverParsed Recover(JsonElement input)
@@ -278,7 +280,7 @@ internal static class ApplicationCandidateCapabilityHost
         SystemCapabilityInvocationContext context, ApplicationIdentifier applicationId,
         StandingGrantCapability capability, string commandId, InteractionExecutionProfile profile,
         CancellationToken cancellationToken) => CreateAsync(db, applications, context, applicationId,
-            capability, commandId, profile, 1, cancellationToken);
+            [capability], commandId, profile, 1, cancellationToken, TimeSpan.FromSeconds(10));
 
     internal static async Task<(IReadOnlyList<InteractionInvocationHost> Hosts, string Code)> CreateAsync(
         DantesRoleplayDbContext db, IApplicationRegistry applications,
@@ -286,14 +288,14 @@ internal static class ApplicationCandidateCapabilityHost
         StandingGrantCapability capability, string commandId, InteractionExecutionProfile profile,
         int requiredOperations, CancellationToken cancellationToken)
         => await CreateAsync(db, applications, context, applicationId, [capability], commandId,
-            profile, requiredOperations, cancellationToken);
+            profile, requiredOperations, cancellationToken, TimeSpan.FromSeconds(10));
 
     internal static async Task<(IReadOnlyList<InteractionInvocationHost> Hosts, string Code)> CreateAsync(
         DantesRoleplayDbContext db, IApplicationRegistry applications,
         SystemCapabilityInvocationContext context, ApplicationIdentifier applicationId,
         IReadOnlyCollection<StandingGrantCapability> capabilities, string commandId,
-        InteractionExecutionProfile profile, int requiredOperations,
-        CancellationToken cancellationToken)
+        InteractionExecutionProfile profile, int requiredOperations, CancellationToken cancellationToken,
+        TimeSpan? maximumDuration = null)
     {
         if (context is null || !context.Principal.Verified
             || context.ApplicationId is not null && context.ApplicationId != applicationId)
@@ -304,8 +306,9 @@ internal static class ApplicationCandidateCapabilityHost
         if (grants is null) return ([], "STANDING_GRANT_CANDIDATES_UNAVAILABLE");
         if (requiredOperations is < 1 or > StandingGrantLimits.MaximumOperations)
             return ([], "INVOCATION_BUDGET_EXHAUSTED");
-        if (capabilities.Count == 0) return ([], "STANDING_GRANT_DENIED");
-        var capable = grants.Where(value => capabilities.All(value.Capabilities.Contains)).ToArray();
+        var required = capabilities?.Distinct().ToArray() ?? [];
+        if (required.Length == 0) return ([], "STANDING_GRANT_DENIED");
+        var capable = grants.Where(value => required.All(value.Capabilities.Contains)).ToArray();
         var eligible = capable.Where(value => value.MaximumOperations >= requiredOperations)
             .OrderBy(value => value.Definitions.Mode == StandingGrantDefinitionMode.ExactIds ? 0 : 1)
             .ThenBy(value => value.GrantId, StringComparer.Ordinal).ThenBy(value => value.Revision)
@@ -314,7 +317,11 @@ internal static class ApplicationCandidateCapabilityHost
             ? "STANDING_GRANT_DENIED" : "STANDING_GRANT_BUDGET_DENIED");
         var now = DateTime.UtcNow;
         var deadline = eligible.Min(value => value.ExpiresAtUtc);
-        if (deadline > now.AddSeconds(10)) deadline = now.AddSeconds(10);
+        if (maximumDuration is { } duration)
+        {
+            var hostLimit = now.Add(duration);
+            if (deadline > hostLimit) deadline = hostLimit;
+        }
         if (deadline <= now) return ([], "STANDING_GRANT_DENIED");
         var budget = new InteractionInvocationBudget(requiredOperations, deadline);
         return (Array.AsReadOnly(eligible.Select(grant => InteractionInvocationHost.ForApplication(

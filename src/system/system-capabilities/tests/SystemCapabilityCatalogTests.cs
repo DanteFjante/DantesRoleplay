@@ -32,6 +32,9 @@ public sealed class SystemCapabilityCatalogTests
             SystemCapabilityIds.ApplicationCandidateInspect,
             SystemCapabilityIds.ApplicationCandidateIntentUpdate,
             SystemCapabilityIds.ApplicationCandidateRecover,
+            SystemCapabilityIds.ApplicationCandidateReviewCancel,
+            SystemCapabilityIds.ApplicationCandidateReviewRead,
+            SystemCapabilityIds.ApplicationCandidateReviewSubmit,
             SystemCapabilityIds.ApplicationCandidateValidate,
             SystemCapabilityIds.ApplicationCandidateWrite,
             SystemCapabilityIds.ApplicationPreview,
@@ -55,8 +58,8 @@ public sealed class SystemCapabilityCatalogTests
             SystemCapabilityIds.StateSpaceCreate,
             SystemCapabilityIds.StateSpaceUpgrade
         ], descriptors.Select(value => value.Id).ToArray());
-        Assert.Equal(9, descriptors.Count(value => value.Mode == SystemCapabilityMode.Read));
-        Assert.Equal(17, descriptors.Count(value => value.Mode == SystemCapabilityMode.Write));
+        Assert.Equal(10, descriptors.Count(value => value.Mode == SystemCapabilityMode.Read));
+        Assert.Equal(19, descriptors.Count(value => value.Mode == SystemCapabilityMode.Write));
         Assert.All(descriptors, descriptor =>
         {
             var contract = descriptor.Contract;

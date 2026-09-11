@@ -110,26 +110,29 @@ public sealed class ApplicationCandidateCapabilityGateway(ISystemCapabilityCatal
     private static string Correlation(string? value) => value is { Length: > 0 and <= 128 }
         && !value.Any(char.IsControl) ? value : "application-authoring";
 
-    private static ApplicationCandidateCapabilityDescriptor Project(SystemCapabilityDescriptor descriptor) => new(
-        descriptor.Id,
-        descriptor.Version,
-        descriptor.Fingerprint,
-        descriptor.Owner,
-        descriptor.Description,
-        descriptor.ModeName,
-        descriptor.InputSchemaJson,
-        descriptor.OutputSchemaJson,
-        Array.AsReadOnly(descriptor.ProcedureIds.ToArray()),
-        descriptor.Id switch
+    private static ApplicationCandidateCapabilityDescriptor Project(SystemCapabilityDescriptor descriptor)
+    {
+        var required = RequiredCapabilities(descriptor.Id);
+        return new(descriptor.Id, descriptor.Version, descriptor.Fingerprint, descriptor.Owner,
+            descriptor.Description, descriptor.ModeName, descriptor.InputSchemaJson, descriptor.OutputSchemaJson,
+            Array.AsReadOnly(descriptor.ProcedureIds.ToArray()), required[^1], RequiresConfirmation: false,
+            RequiresIdempotencyKey: descriptor.Mode == SystemCapabilityMode.Write)
         {
-            SystemCapabilityIds.ApplicationCandidateInspect => StandingGrantCapability.Read,
-            SystemCapabilityIds.ApplicationCandidateIntentUpdate => StandingGrantCapability.Author,
-            SystemCapabilityIds.ApplicationCandidateWrite => StandingGrantCapability.Author,
-            SystemCapabilityIds.ApplicationCandidateValidate => StandingGrantCapability.Validate,
-            SystemCapabilityIds.ApplicationCandidateActivate => StandingGrantCapability.Activate,
-            SystemCapabilityIds.ApplicationCandidateRecover => StandingGrantCapability.Author,
-            _ => throw new InvalidOperationException("The candidate capability set is inconsistent.")
-        },
-        RequiresConfirmation: false,
-        RequiresIdempotencyKey: descriptor.Mode == SystemCapabilityMode.Write);
+            RequiredStandingGrantCapabilities = required
+        };
+    }
+
+    private static StandingGrantCapability[] RequiredCapabilities(string id) => id switch
+    {
+        SystemCapabilityIds.ApplicationCandidateInspect => [StandingGrantCapability.Read],
+        SystemCapabilityIds.ApplicationCandidateIntentUpdate => [StandingGrantCapability.Read, StandingGrantCapability.Author],
+        SystemCapabilityIds.ApplicationCandidateWrite => [StandingGrantCapability.Author],
+        SystemCapabilityIds.ApplicationCandidateValidate => [StandingGrantCapability.Validate],
+        SystemCapabilityIds.ApplicationCandidateActivate => [StandingGrantCapability.Activate],
+        SystemCapabilityIds.ApplicationCandidateRecover => [StandingGrantCapability.Author],
+        SystemCapabilityIds.ApplicationCandidateReviewSubmit or SystemCapabilityIds.ApplicationCandidateReviewCancel =>
+            [StandingGrantCapability.Read, StandingGrantCapability.Validate],
+        SystemCapabilityIds.ApplicationCandidateReviewRead => [StandingGrantCapability.Read],
+        _ => throw new InvalidOperationException("The candidate capability set is inconsistent.")
+    };
 }

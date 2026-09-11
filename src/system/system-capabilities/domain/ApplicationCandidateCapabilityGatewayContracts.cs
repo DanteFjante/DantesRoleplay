@@ -25,7 +25,11 @@ public sealed record ApplicationCandidateCapabilityDescriptor(
     IReadOnlyList<string> ProcedureIds,
     StandingGrantCapability RequiredStandingGrantCapability,
     bool RequiresConfirmation,
-    bool RequiresIdempotencyKey);
+    bool RequiresIdempotencyKey)
+{
+    public IReadOnlyList<StandingGrantCapability> RequiredStandingGrantCapabilities { get; init; } =
+        [RequiredStandingGrantCapability];
+}
 
 public sealed record ApplicationCandidateCapabilityDiscoveryResult(
     bool Ok,

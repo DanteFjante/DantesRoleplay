@@ -11,6 +11,7 @@ using DantesRoleplay.SchemaValidation;
 using DantesRoleplay.Sources;
 using DantesRoleplay.StateSpaceAdministration;
 using DantesRoleplay.DataAccess.Composition;
+using DantesRoleplay.SystemTasks.Persistence;
 using DantesRoleplay.Interactions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -26,6 +27,7 @@ internal static class SystemCapabilitiesComponentRegistration
         services.AddScoped<ISystemReadCapabilityHandler, ApplicationPreviewSystemCapabilityHandler>();
         services.AddScoped<ISystemReadCapabilityHandler, DependenciesSystemCapabilityHandler>();
         services.AddScoped<ISystemReadCapabilityHandler, ApplicationCandidateInspectCapabilityHandler>();
+        services.AddScoped<ISystemReadCapabilityHandler, ApplicationCandidateReviewReadCapabilityHandler>();
         foreach (var id in new[]
         {
             SystemCapabilityIds.ApplicationRegister,
@@ -38,6 +40,8 @@ internal static class SystemCapabilitiesComponentRegistration
             SystemCapabilityIds.ApplicationCandidateValidate,
             SystemCapabilityIds.ApplicationCandidateActivate,
             SystemCapabilityIds.ApplicationCandidateRecover,
+            SystemCapabilityIds.ApplicationCandidateReviewSubmit,
+            SystemCapabilityIds.ApplicationCandidateReviewCancel,
             SystemCapabilityIds.StandingGrantAdmin,
             SystemCapabilityIds.StateSpaceCreate,
             SystemCapabilityIds.StateSpaceUpgrade,
@@ -77,6 +81,13 @@ internal static class SystemCapabilitiesComponentRegistration
             provider.GetRequiredService<IApplicationAuthoringService>())
         : id == SystemCapabilityIds.StandingGrantAdmin
         ? new StandingGrantAdministrationSystemCapabilityHandler(provider)
+        : id is SystemCapabilityIds.ApplicationCandidateReviewSubmit
+            or SystemCapabilityIds.ApplicationCandidateReviewCancel
+        ? new ApplicationCandidateReviewWriteCapabilityHandler(
+            id,
+            provider.GetRequiredService<DantesRoleplay.DataAccess.DantesRoleplayDbContext>(),
+            provider.GetRequiredService<IApplicationRegistry>(),
+            provider.GetRequiredService<SystemTaskApplicationValidationService>())
         : new SystemAdministrationWriteCapabilityHandler(
             id,
             provider.GetRequiredService<IApplicationRegistry>(),

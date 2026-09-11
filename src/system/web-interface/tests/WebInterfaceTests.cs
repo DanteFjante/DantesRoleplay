@@ -899,6 +899,8 @@ public sealed class WebInterfaceTests
             ("/api/applications/{applicationId}/conversations", HttpMethods.Post),
             ("/api/applications/{applicationId}/conversations/{conversationId}/turns", HttpMethods.Post),
             ("/api/applications/{applicationId}/conversations/{conversationId}/execute", HttpMethods.Post),
+            ("/api/applications/{applicationId}/authoring/capabilities", HttpMethods.Get),
+            ("/api/applications/{applicationId}/authoring/capabilities/{capabilityId}", HttpMethods.Post),
             ("/api/applications/{applicationId}/observations", HttpMethods.Post)
         ], routes);
         var applicationStateReads = ((IEndpointRouteBuilder)application).DataSources

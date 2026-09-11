@@ -181,6 +181,7 @@ public static partial class WebInterfaceEndpoints
         var status = code.Contains("UNAUTHENTICATED", StringComparison.Ordinal)
             ? StatusCodes.Status401Unauthorized
             : code.Contains("DENIED", StringComparison.Ordinal)
+                || code.Contains("NOT_AUTHORIZED", StringComparison.Ordinal)
                 ? StatusCodes.Status403Forbidden
                 : code.Contains("INVALID", StringComparison.Ordinal) || code.EndsWith("REQUIRED", StringComparison.Ordinal)
                     ? StatusCodes.Status400BadRequest

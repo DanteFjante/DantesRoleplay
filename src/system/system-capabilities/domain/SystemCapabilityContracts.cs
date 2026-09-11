@@ -26,6 +26,9 @@ public static class SystemCapabilityIds
     public const string ApplicationCandidateValidate = "system.application-candidate.validate";
     public const string ApplicationCandidateActivate = "system.application-candidate.activate";
     public const string ApplicationCandidateRecover = "system.application-candidate.recover";
+    public const string ApplicationCandidateReviewSubmit = "system.application-candidate.review-submit";
+    public const string ApplicationCandidateReviewRead = "system.application-candidate.review-read";
+    public const string ApplicationCandidateReviewCancel = "system.application-candidate.review-cancel";
     public const string StandingGrantAdmin = "system.standing-grant.admin";
     public const string StateSpaceCreate = "system.state-space.create";
     public const string StateSpaceUpgrade = "system.state-space.upgrade";
@@ -54,7 +57,10 @@ public static class ApplicationCandidateCapabilityAccess
         SystemCapabilityIds.ApplicationCandidateWrite or
         SystemCapabilityIds.ApplicationCandidateValidate or
         SystemCapabilityIds.ApplicationCandidateActivate or
-        SystemCapabilityIds.ApplicationCandidateRecover;
+        SystemCapabilityIds.ApplicationCandidateRecover or
+        SystemCapabilityIds.ApplicationCandidateReviewSubmit or
+        SystemCapabilityIds.ApplicationCandidateReviewRead or
+        SystemCapabilityIds.ApplicationCandidateReviewCancel;
 
     public static SystemCapabilityInvocationContext Context(
         TrustedPrincipalContext principal,
