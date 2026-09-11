@@ -32,6 +32,21 @@ public sealed class ApplicationAuthoringProposalContractTests
     }
 
     [Fact]
+    public void Candidate_creation_can_request_an_owner_derived_identity_but_cannot_omit_the_field()
+    {
+        const string json = """
+            {"candidateId":null,"expectedCandidateRevision":0,"expectedActiveFingerprint":null,
+             "origin":"runtime","synchronizationEvidenceReference":null,"newImplementationReason":"Needed.","documents":[]}
+            """;
+        var request = JsonSerializer.Deserialize<ApplicationCandidateWriteRequest>(json, Wire)!;
+        Assert.Null(request.CandidateId);
+        Assert.Equal(InteractionCanonicalJson.Canonicalize(json),
+            InteractionCanonicalJson.Canonicalize(JsonSerializer.Serialize(request, Wire)));
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ApplicationCandidateWriteRequest>(
+            json.Replace("\"candidateId\":null,", ""), Wire));
+    }
+
+    [Fact]
     public void Conditional_information_precondition_cannot_be_omitted()
     {
         const string example = """

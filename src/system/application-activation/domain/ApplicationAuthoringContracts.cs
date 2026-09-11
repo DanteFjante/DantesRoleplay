@@ -22,14 +22,15 @@ public sealed record ApplicationCandidateDocument(ActivatedApplicationDocument D
 
 /// <summary>
 /// CandidateId is a 32-character lowercase operation-derived identity. ExpectedCandidateRevision=0
-/// creates it; positive appends to that exact latest candidate revision. Null active fingerprint
+/// creates it: a required null ID asks the owner to derive it; a supplied ID must match that identity.
+/// Positive expectations require the exact nonnull ID and append to its latest revision. Null active fingerprint
 /// explicitly expects no active generation. The candidate never changes the active pointer.
 /// Documents are replacements in the pinned base generation; v1 proposes no implicit deletion.
 /// Origin is runtime or catalog-sync; catalog-sync requires an explicit export/compare receipt.
 /// </summary>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record ApplicationCandidateWriteRequest(
-    [property: JsonRequired] string CandidateId,
+    [property: JsonRequired] string? CandidateId,
     [property: JsonRequired] int ExpectedCandidateRevision,
     [property: JsonRequired] string? ExpectedActiveFingerprint,
     string Origin, string? SynchronizationEvidenceReference, string NewImplementationReason,
