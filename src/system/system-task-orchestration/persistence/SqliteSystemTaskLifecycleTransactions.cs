@@ -66,44 +66,12 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
     private async Task<bool> CancelCoreAsync(SystemTaskDurableHandle handle, bool propagate,
         SqliteConnection connection, SqliteTransaction transaction, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(handle);
-        if (!await FindHandleAsync(connection, transaction, handle, cancellationToken)) return false;
-        var targets = new List<string>();
-        await using (var command = Command(connection, transaction, """
-            WITH RECURSIVE targets(task_id) AS (
-                SELECT task_id FROM system_task_lifecycle WHERE task_id = $task
-                UNION
-                SELECT child.task_id FROM system_task_lifecycle AS child
-                JOIN targets AS parent ON child.parent_task_id = parent.task_id
-                WHERE $propagate = 1 AND child.propagate_cancellation = 1)
-            SELECT target.task_id,
-                target.principal_reference = root.principal_reference
-                AND target.application_id = root.application_id
-                AND target.application_revision = root.application_revision
-                AND target.application_fingerprint = root.application_fingerprint
-                AND target.base_applications_json = root.base_applications_json
-                AND target.state_space_id = root.state_space_id
-                AND target.state_revision = root.state_revision
-                AND target.grant_reference = root.grant_reference
-                AND target.execution_profile = root.execution_profile AS scope_matches
-            FROM targets JOIN system_task_lifecycle AS target ON target.task_id = targets.task_id
-            JOIN system_task_lifecycle AS root ON root.task_id = $task
-            LIMIT 66
-            """, ("$task", handle.TaskId), ("$propagate", propagate ? 1 : 0)))
-        await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
-        {
-            while (await reader.ReadAsync(cancellationToken))
-            {
-                if (reader.GetInt32(1) != 1)
-                    throw new SystemTaskException("SYSTEM_TASK_CANCELLATION_SCOPE_MISMATCH", "A cancellation edge crosses the task's retained invocation scope.");
-                targets.Add(reader.GetString(0));
-            }
-        }
-        if (targets.Count > SystemTaskLifecycleLimits.MaximumDescendantsPerRoot + 1)
-            throw new SystemTaskException("SYSTEM_TASK_DESCENDANT_LIMIT", "The cancellation graph exceeds its retained descendant bound.");
+        var snapshots = await ReadCancellationTargetsAsync(handle, propagate, connection, transaction, cancellationToken);
+        if (snapshots.Count == 0) return false;
+        var targets = snapshots.Select(value => value.Request.Handle.TaskId).ToArray();
         var parameters = targets.Select((value, index) => ($"$target{index}", (object?)value)).ToList();
         parameters.Add(("$now", ToDb(UtcNow())));
-        var selection = string.Join(",", Enumerable.Range(0, targets.Count).Select(index => $"$target{index}"));
+        var selection = string.Join(",", Enumerable.Range(0, targets.Length).Select(index => $"$target{index}"));
         await ExecuteAsync(connection, transaction, $"""
             UPDATE system_task_lifecycle SET cancel_requested = 1, updated_at_utc = $now
             WHERE task_id IN ({selection}) AND state IN ('queued','running','waiting','retry')
