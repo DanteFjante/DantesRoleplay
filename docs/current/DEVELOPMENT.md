@@ -33,6 +33,18 @@ one exact schema/profile key share only their in-flight build; distinct keys com
 short LRU lock, and evaluation of one retained schema graph remains serialized. Edited schemas use
 new keys immediately; no time-based expiry can serve an older contract for changed contents.
 
+Information metadata writes validate the source's declared schema through that bounded validator.
+Changing a source schema must also validate its existing records in the same write transaction;
+incompatible values are preserved and reported for explicit correction. These ordinary information
+updates do not provide immutable draft history or executable publication. Runtime candidates and
+standing grants require the coordinated authoring contracts and storage boundary.
+
+Activation may reuse retained document evidence only while its bytes still match their recorded
+length and fingerprint. A new unchanged confirmation checks that evidence too. Missing bytes from
+a prepared revision require recovery; only legacy metadata-only evidence may acquire source bytes
+at a new validated activation. Replaying an already committed command returns its historical receipt
+and does not certify the present health of retained content or refresh derived indexes.
+
 Every repository-authored application mechanic declares a closed `inputSchema` in its requirements.
 Capability discovery exposes that schema plus generated valid and invalid examples; the common
 descriptor also carries the closed output envelope, owner, lifecycle, roles, authorization,

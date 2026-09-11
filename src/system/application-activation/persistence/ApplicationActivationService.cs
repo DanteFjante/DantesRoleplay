@@ -220,6 +220,14 @@ public sealed class ApplicationActivationService : IApplicationActivationService
             var activation = unchanged ? current! : candidate.Manifest with { ActivationRevision = revision };
             var outcome = unchanged ? "unchanged" : "activated";
 
+            // A new confirmation must not endorse a generation whose retained content can no
+            // longer be read. Replays still return the historical receipt before reaching here.
+            if (unchanged)
+                foreach (var document in activation.Winners)
+                    _ = ReadDocumentEvidence(request.ApplicationId, revision, document.LogicalIdentity)
+                        ?? throw Invalid("ACTIVATION_EVIDENCE_MISSING",
+                            "The active revision is missing its retained document evidence.");
+
             await operations.RecordAsync(
                 "commit",
                 unchanged
@@ -557,8 +565,29 @@ public sealed class ApplicationActivationService : IApplicationActivationService
                 candidates.Add(retained);
                 db.Add(retained);
             }
-            else if (bytes is not null && retained.RetainedBytes is null)
-                retained.RetainedBytes = bytes.ToArray();
+            else
+            {
+                if (retained.RetainedBytes is { } existingBytes &&
+                    (existingBytes.LongLength != retained.Length || HashBytes(existingBytes) != retained.ContentFingerprint))
+                    throw Invalid("ACTIVATION_EVIDENCE_CORRUPT",
+                        "Retained activation document bytes do not match their immutable evidence.");
+                if (bytes is not null && retained.RetainedBytes is null)
+                {
+                    var wasPrepared = await (from link in db.Set<ApplicationActivationDocumentRecord>()
+                        join prior in db.Set<ApplicationActivationRevisionRecord>()
+                            on new { link.ApplicationId, link.ActivationRevision }
+                            equals new { prior.ApplicationId, prior.ActivationRevision }
+                        where link.IdentityId == retained.IdentityId
+                            && link.EvidenceVersion == retained.EvidenceVersion
+                            && prior.PreparationVersion != null
+                        select link).AnyAsync(cancellationToken);
+                    if (wasPrepared)
+                        throw Invalid("ACTIVATION_EVIDENCE_MISSING",
+                            "A prepared activation revision is missing its retained document bytes.");
+                    // Only legacy metadata-only evidence may acquire bytes at a new activation.
+                    retained.RetainedBytes = bytes.ToArray();
+                }
+            }
             db.Add(new ApplicationActivationDocumentRecord
             {
                 ApplicationId = activation.ApplicationId.Value,
