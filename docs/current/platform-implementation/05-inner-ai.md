@@ -111,14 +111,26 @@ The pure `ProviderReservationAmount` calculation does not reserve anything: plan
 atomically across the root and every ancestor. Independent root concurrency remains host policy.
 Tool-only reservations cannot authorize provider calls.
 
-Local inspection of Codex CLI 0.153.4's generated app-server schema finds thread/turn-scoped cumulative
-token-usage notifications and no per-turn maximum-output-token parameter. The repository's existing
-pin remains 0.149.1. The current adapter does not yet normalize those usage notifications or forward
-an output-token limit. Default zero counters therefore cannot establish known usage. Provider
-integration must preserve unknown accounting when evidence is missing, bound received output bytes
-and elapsed time at the host, and cap dynamic tool callbacks independently of outer tool rounds.
-Interrupt/disposal is best-effort cancellation, not proof that remote billing stopped. These source
-observations are not live provider acceptance and do not enable INNER execution.
+Local inspection of Codex CLI 0.153.4's generated app-server schema established the implemented usage
+and terminal field names. The existing repository pin remains 0.149.1. `CodexAiClient` always starts a
+fresh thread and retains the latest matching, monotonic cumulative usage snapshot; repeated snapshots
+are not summed. Foreign usage is ignored. Missing, malformed or regressing evidence cannot establish
+complete usage. Completion additionally requires matching terminal thread/turn identities. A failed,
+cancelled or interrupted request retains credible partial usage with `IsComplete=false`; legacy zero
+counters cannot establish known usage. The existing event stream ends at terminal: accounting evidence
+arriving only afterward is unavailable. Live acceptance must verify provider event ordering and totals.
+
+There is no maximum-output-token parameter in the inspected per-turn schema, and the adapter does not
+claim to enforce remote output tokens or a hard total cap. Host request settings instead cap received
+UTF-8 delta/reply bytes (262,144 default, 1,048,576 maximum), total tool callback attempts (8 default,
+16 maximum) and cooperative elapsed time (10 minutes default/maximum, narrowed to the owning deadline
+by integration). Received text is checked before retention, including repeated final text. The AI
+runner applies its tool-attempt limit across provider rounds and concurrent callbacks; the Codex
+client independently bounds direct callbacks. Exact duplicate calls remain separate requested
+activities even when the compact call list deduplicates them. Authority and durable allowance checks
+still belong at each actual tool boundary. Cancellation sends a bounded best-effort interrupt before
+session disposal; it does not prove that remote billing stopped. These deterministic tests do not
+establish live provider acceptance, persistent accounting or INNER runtime availability.
 
 `SystemInnerWorkerAiReservationEvidence` and `SystemInnerWorkerAiUsageReport` are inert host/owner
 data, serialized with `JsonSerializerDefaults.Web` for camelCase. `TotalTokens` preserves independent
