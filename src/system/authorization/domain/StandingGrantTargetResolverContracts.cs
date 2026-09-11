@@ -4,14 +4,14 @@ using DantesRoleplay.Interactions;
 namespace DantesRoleplay.Authorization;
 
 /// <summary>An exact definition selection, not ownership or grant evidence.</summary>
-public sealed record StandingGrantDefinitionSelection(
+public sealed record StandingGrantDefinitionReference(
     string DefinitionId, string Kind, int Revision, string ContentFingerprint);
 
-public enum StandingGrantDefinitionResolutionStatus { Available, Denied, Unavailable }
+public enum StandingGrantTargetResolutionStatus { Available, Denied, Unavailable }
 
 /// <summary>Available requires a target freshly resolved by its owner; other states have no target.</summary>
-public sealed record StandingGrantDefinitionResolution(
-    StandingGrantDefinitionResolutionStatus Status, string Code, StandingGrantDefinitionTarget? Target);
+public sealed record StandingGrantTargetResolution(
+    StandingGrantTargetResolutionStatus Status, string Code, StandingGrantDefinitionTarget? Target);
 
 /// <summary>
 /// Trusted resolution before permission evaluation. Active definitions must match exact retained
@@ -24,17 +24,17 @@ public sealed record StandingGrantDefinitionResolution(
 /// evidence, in the caller's transaction; a previously resolved target is not transferable authority.
 /// Reads/discovery filter unavailable or denied targets before revealing any content or metadata.
 /// </summary>
-public interface IStandingGrantDefinitionResolver
+public interface IStandingGrantTargetResolver
 {
-    Task<StandingGrantDefinitionResolution> ResolveAsync(InteractionInvocationHost host,
-        StandingGrantDefinitionSelection selection, CancellationToken cancellationToken = default);
+    Task<StandingGrantTargetResolution> ResolveAsync(InteractionInvocationHost host,
+        StandingGrantDefinitionReference selection, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Candidate path resolves the exact owner-materialized retained candidate and its registered
     /// source. It cannot substitute current active bytes or accept a caller-deserialized snapshot.
     /// Unimplemented candidate materialization returns Unavailable, never active-definition evidence.
     /// </summary>
-    Task<StandingGrantDefinitionResolution> ResolveCandidateAsync(InteractionInvocationHost host,
-        ApplicationCandidateSnapshot candidate, StandingGrantDefinitionSelection selection,
+    Task<StandingGrantTargetResolution> ResolveCandidateAsync(InteractionInvocationHost host,
+        ApplicationCandidateSnapshot candidate, StandingGrantDefinitionReference selection,
         CancellationToken cancellationToken = default);
 }
