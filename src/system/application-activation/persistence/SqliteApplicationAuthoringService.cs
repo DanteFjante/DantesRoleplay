@@ -14,13 +14,37 @@ using Microsoft.EntityFrameworkCore;
 namespace DantesRoleplay.ApplicationActivation;
 
 /// <summary>Durably retains inert runtime candidates. Publication remains the activation owner's work.</summary>
-public sealed partial class SqliteApplicationAuthoringService(
-    DantesRoleplayDbContext db, IApplicationRegistry applications, IApplicationActivationReader activations,
-    IActivatedApplicationEvidenceReader evidence, ISourceRegistry sources, IStandingGrantPolicy grants,
-    IStandingGrantTargetResolver targets, IOperationLog operations,
-    IApplicationCandidatePreparation? preparation = null,
-    IInteractionManualContextService? manuals = null) : IApplicationAuthoringService
+public sealed partial class SqliteApplicationAuthoringService : IApplicationAuthoringService
 {
+    private readonly DantesRoleplayDbContext db;
+    private readonly IApplicationRegistry applications;
+    private readonly IApplicationActivationReader activations;
+    private readonly IActivatedApplicationEvidenceReader evidence;
+    private readonly ISourceRegistry sources;
+    private readonly IStandingGrantPolicy grants;
+    private readonly IStandingGrantTargetResolver targets;
+    private readonly IOperationLog operations;
+    private readonly IApplicationCandidatePreparation? preparation;
+    private readonly IInteractionManualContextService? manuals;
+    private readonly ApplicationCandidateReviewedPureUpdateReader? reviewedPureUpdates;
+
+    public SqliteApplicationAuthoringService(DantesRoleplayDbContext db, IApplicationRegistry applications,
+        IApplicationActivationReader activations, IActivatedApplicationEvidenceReader evidence, ISourceRegistry sources,
+        IStandingGrantPolicy grants, IStandingGrantTargetResolver targets, IOperationLog operations,
+        IApplicationCandidatePreparation? preparation = null, IInteractionManualContextService? manuals = null)
+        : this(db, applications, activations, evidence, sources, grants, targets, operations, preparation, manuals, null) { }
+
+    internal SqliteApplicationAuthoringService(DantesRoleplayDbContext db, IApplicationRegistry applications,
+        IApplicationActivationReader activations, IActivatedApplicationEvidenceReader evidence, ISourceRegistry sources,
+        IStandingGrantPolicy grants, IStandingGrantTargetResolver targets, IOperationLog operations,
+        IApplicationCandidatePreparation? preparation, IInteractionManualContextService? manuals,
+        ApplicationCandidateReviewedPureUpdateReader? reviewedPureUpdates)
+    {
+        this.db = db; this.applications = applications; this.activations = activations; this.evidence = evidence;
+        this.sources = sources; this.grants = grants; this.targets = targets; this.operations = operations;
+        this.preparation = preparation; this.manuals = manuals; this.reviewedPureUpdates = reviewedPureUpdates;
+    }
+
     private const string Tool = "application-candidate";
 
     public async Task<InteractionInvocationResult> WriteCandidateAsync(InteractionInvocationHost host,

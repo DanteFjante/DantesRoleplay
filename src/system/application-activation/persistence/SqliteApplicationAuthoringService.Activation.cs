@@ -54,12 +54,15 @@ public sealed partial class SqliteApplicationAuthoringService
                 ? await new ApplicationCandidateIntentMatchUpdateReader(db, applications, activations, evidence)
                     .ReadAsync(candidate, token)
                 : null;
-            if (compatibleUpdate is null && intentMatchUpdate is null)
+            var reviewed = compatibleUpdate is null && intentMatchUpdate is null && reviewedPureUpdates is not null
+                ? await reviewedPureUpdates.ReadAsync(host, candidate, token) : null;
+            if (compatibleUpdate is null && intentMatchUpdate is null && reviewed is null)
                 return InteractionInvocationResult.Unavailable("APPLICATION_CANDIDATE_COMPATIBILITY_UNAVAILABLE",
-                    "This publication path requires an exact compatible update to existing definitions.");
+                    "This publication path requires a compatible body update, exact intent metadata update, or independently reviewed closed pure mechanic candidate.");
             var definitions = compatibleUpdate is not null
                 ? compatibleUpdate.Closure.Definitions.Select(value => value.Plan.Definition).ToArray()
-                : new[] { intentMatchUpdate!.Successor };
+                : intentMatchUpdate is not null ? new[] { intentMatchUpdate.Successor }
+                : reviewed!.Closure.Definitions.Select(value => value.Plan.Definition).ToArray();
             var selected = new List<StandingGrantDefinitionTarget>();
             foreach (var definition in definitions)
             {
@@ -78,23 +81,26 @@ public sealed partial class SqliteApplicationAuthoringService
                 .SingleOrDefaultAsync(value => value.Id == request.ValidationOperationId, token);
             if (validation is null || checkedOperation is null)
                 return Failed("APPLICATION_CANDIDATE_VALIDATION_REQUIRED");
-            if (compatibleUpdate is not null)
+            if (intentMatchUpdate is not null)
             {
+                if (!ApplicationCandidateOperationProof.ValidationMatches(checkedOperation, validation, candidate, definitions)
+                    || !await ApplicationCandidateIntentMatchUpdateValidation.VerifyAsync(db, intentMatchUpdate, validation, token))
+                    return Failed("APPLICATION_CANDIDATE_VALIDATION_REQUIRED");
+            }
+            else
+            {
+                var closure = compatibleUpdate?.Closure ?? reviewed!.Closure;
                 if (!ApplicationCandidateOperationProof.TryReadRuntimeReport(checkedOperation, validation,
                         candidate, definitions, out var report)
                     || report?.Status != ApplicationCandidateRuntimeStatus.Completed
-                    || report.SelectionEvidenceFingerprint != compatibleUpdate.Closure.EvidenceFingerprint
+                    || report.SelectionEvidenceFingerprint != closure.EvidenceFingerprint
                     || report.RuntimePolicyVersion != ApplicationCandidateRuntimeValidator.RuntimePolicyVersion
                     || report.RuntimePolicyFingerprint != ApplicationCandidateRuntimeValidator.RuntimePolicyFingerprint
-                    || !await ApplicationCandidateCompatibleUpdateValidation.VerifyAsync(
-                        db, compatibleUpdate, validation, token))
+                    || compatibleUpdate is not null && !await ApplicationCandidateCompatibleUpdateValidation.VerifyAsync(
+                        db, compatibleUpdate, validation, token)
+                    || reviewed is not null && !ApplicationCandidateReviewedPureUpdateValidation.Matches(report, validation, reviewed))
                     return Failed("APPLICATION_CANDIDATE_VALIDATION_REQUIRED");
             }
-            else if (!ApplicationCandidateOperationProof.ValidationMatches(
-                         checkedOperation, validation, candidate, definitions)
-                     || !await ApplicationCandidateIntentMatchUpdateValidation.VerifyAsync(
-                         db, intentMatchUpdate!, validation, token))
-                return Failed("APPLICATION_CANDIDATE_VALIDATION_REQUIRED");
             if (prior is not null)
             {
                 var publication = await db.Set<ApplicationCandidatePublicationRecord>().AsNoTracking()
@@ -113,18 +119,21 @@ public sealed partial class SqliteApplicationAuthoringService
                 await transaction.CommitAsync(token);
                 return Receipt(operationId, commandFingerprint);
             }
-            var basis = compatibleUpdate?.Basis ?? intentMatchUpdate!.Basis;
+            var basis = compatibleUpdate?.Basis ?? intentMatchUpdate?.Basis ?? reviewed!.Basis;
             if (activations.Current(candidate.ApplicationId)?.ActivationFingerprint != basis.ActivationFingerprint)
                 return Failed("APPLICATION_CANDIDATE_ACTIVE_STALE");
             var operation = await operations.RecordAsync("application-candidate-activation",
                 compatibleUpdate is not null
                     ? "Published validated runtime mechanic body updates."
-                    : "Published a validated intent match metadata update.",
+                    : intentMatchUpdate is not null ? "Published a validated intent match metadata update."
+                    : "Published a runtime-tested and independently reviewed pure mechanic candidate.",
                 true, subject: candidate.ApplicationId.Value, projectionJson: canonical, guardEvidenceJson: "{}", id: operationId,
                 cancellationToken: token);
             var activation = compatibleUpdate is not null
                 ? await publisher.StageCompatibleUpdateAsync(compatibleUpdate, validation, operation.Id, token)
-                : await publisher.StageIntentMatchUpdateAsync(intentMatchUpdate!, validation, operation.Id, token);
+                : intentMatchUpdate is not null
+                    ? await publisher.StageIntentMatchUpdateAsync(intentMatchUpdate, validation, operation.Id, token)
+                    : await publisher.StageReviewedPureUpdateAsync(reviewed!, validation, operation.Id, token);
             operation.GuardEvidenceJson = ActivationGuard(candidate, validation.OperationId, activation.ActivationFingerprint);
             await db.SaveChangesAsync(token);
             await transaction.CommitAsync(token);

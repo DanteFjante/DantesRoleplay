@@ -76,6 +76,18 @@ public sealed partial class SqliteApplicationAuthoringService
                     cancellationToken);
                 if (validation is null || !ApplicationCandidateOperationProof.ValidationMatches(prior, validation, candidate, definitions))
                     return InteractionInvocationResult.Unavailable("APPLICATION_CANDIDATE_RECEIPT_INCONSISTENT", "The stored validation receipt cannot be reconciled.");
+                if (validation.Outcome == "valid"
+                    && validation.DependencyEvidenceReference is { } durableReview
+                    && durableReview.StartsWith("validation.result.", StringComparison.Ordinal)
+                    && validation.ReuseEvidenceReference == durableReview
+                    && (reviewedPureUpdates is null
+                        || !ApplicationCandidateOperationProof.TryReadRuntimeReport(
+                            prior, validation, candidate, definitions, out var retainedReport)
+                        || retainedReport is null
+                        || await new ApplicationCandidateReviewedPureUpdateValidation(reviewedPureUpdates)
+                            .VerifyAsync(host, retainedReport, validation, cancellationToken) is null))
+                    return InteractionInvocationResult.Unavailable("APPLICATION_CANDIDATE_VALIDATION_EVIDENCE_INCONSISTENT",
+                        "The retained candidate review is no longer current or cannot be reconciled.");
                 await transaction.CommitAsync(cancellationToken);
                 return Receipt(operationId, commandFingerprint);
             }
@@ -146,6 +158,9 @@ public sealed partial class SqliteApplicationAuthoringService
                         new(new SchemaValidation.BoundedJsonSchemaValidator())), targets, grants, manuals, operations);
                 await compatible.CompleteAsync(host, runtimeReport, validationRow, cancellationToken);
             }
+            if (validationRow.Outcome != "valid" && runtimeReport is not null && reviewedPureUpdates is not null)
+                await new ApplicationCandidateReviewedPureUpdateValidation(reviewedPureUpdates)
+                    .CompleteAsync(host, runtimeReport, validationRow, cancellationToken);
             db.Add(validationRow);
             operation.GuardEvidenceJson = ApplicationCandidateOperationProof.ValidationGuard(host, candidate, validationRow,
                 definitions, commandFingerprint, runtimeReport);

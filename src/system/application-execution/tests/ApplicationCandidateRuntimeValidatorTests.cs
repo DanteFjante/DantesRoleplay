@@ -8,6 +8,7 @@ using DantesRoleplay.AI;
 using DantesRoleplay.CatalogNamespaces;
 using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.DataAccess;
+using DantesRoleplay.Ecs;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.Operations;
@@ -117,6 +118,197 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             Assert.Equal(SystemTaskLifecycleState.Failed, denied!.State);
             Assert.Equal("INNER_VALIDATION_NOT_AUTHORIZED", denied.ErrorCode);
             Assert.Equal(1, provider.Calls);
+        }
+        finally
+        {
+            ownedProvider?.Dispose();
+            if (ownedDb is not null) await ownedDb.DisposeAsync();
+            SqliteConnection.ClearAllPools();
+            if (File.Exists(databasePath)) File.Delete(databasePath);
+        }
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task Reviewed_pure_mechanic_validates_publishes_and_executes_from_retained_durable_proof(
+        bool addDefinition)
+    {
+        var databasePath = Path.Combine(Path.GetTempPath(), $"reviewed-pure-publication-{Guid.NewGuid():N}.db");
+        DantesRoleplayDbContext? ownedDb = null;
+        ServiceProvider? ownedProvider = null;
+        try
+        {
+            var options = new DbContextOptionsBuilder<DantesRoleplayDbContext>()
+                .UseSqlite("Filename=" + databasePath).Options;
+            var db = ownedDb = new DantesRoleplayDbContext(options);
+            await db.Database.EnsureCreatedAsync();
+            var data = await PureRuntimeFixtureAsync(db,
+                "return { data: { count: ctx.input.count + 1 } };");
+            await AllowPurePublicationAsync(db, execute: true);
+            db.ChangeTracker.Clear();
+            var original = data.Setup.Activation.Current(Application)!;
+            var markdownPath = addDefinition ? "content/mechanics/added.md" : PureMarkdownPath;
+            var javascriptPath = addDefinition ? "content/mechanics/added.js" : PureJavaScriptPath;
+            var definitionId = addDefinition ? "demo.runtime.pure.added" : "demo.runtime.pure.sample";
+            var markdown = """
+                ---
+                id: demo.runtime.pure.added
+                category: runtime.pure
+                name: Added pure mechanic
+                status: active
+                ---
+
+                ## Description
+                Calculate a distinct state-free result.
+
+                ## Requirements
+                ```json
+                {"inputSchema":{"type":"object","required":["count"],"properties":{"count":{"type":"integer"}}}}
+                ```
+                """.Replace("demo.runtime.pure.added", definitionId, StringComparison.Ordinal);
+            var written = await Service(db, data.Setup).WriteCandidateAsync(
+                PureAtomicHost(data.Setup, "reviewed-new-write", 1),
+                new(null, 0, original.ActivationFingerprint, "runtime", null,
+                    "Add a separate pure calculation because the existing operation has a different contract.",
+                    [new("file:" + markdownPath, "catalog", markdownPath, "text/markdown", markdown),
+                     new("file:" + javascriptPath, "catalog", javascriptPath, "text/javascript",
+                         "return { data: { count: ctx.input.count + 2 } };")]));
+            Assert.Equal(InteractionInvocationResultTag.Committed, written.Tag);
+            var candidateRow = await db.Set<ApplicationCandidateRevisionRecord>().AsNoTracking()
+                .SingleAsync(value => value.SourceOperationId == written.Receipt!.OperationId);
+            var candidate = new ApplicationCandidateReference(Application, candidateRow.CandidateId,
+                candidateRow.Revision, candidateRow.ContentFingerprint);
+
+            var gate = PureValidationGate(db, data.Setup);
+            SystemTaskValidationAuthority prepared;
+            await using (var boundary = await SystemTaskValidationTransaction.OpenAsync(db, TimeProvider.System, false, default))
+                prepared = await gate.CheckAsync(PureReviewHost(data.Setup, "reviewed-new-probe"), candidate, true);
+            Assert.Null(SystemTaskApplicationValidationGate.ExecutionPrerequisite(prepared));
+            var definition = Assert.Single(prepared.PureClosure!.Definitions).Plan.Definition;
+            Assert.Equal(definitionId, definition.DefinitionId);
+            var provider = new RetainedReviewProvider(prepared.ReviewInput!,
+                addDefinition ? "justifiedNew" : "extendExisting");
+            var invoker = new SystemInnerWorkerValidationInvoker(new AiService([provider]), TimeProvider.System);
+            var validationTasks = new SystemTaskApplicationValidationService(db, gate, TimeProvider.System);
+            var services = new ServiceCollection();
+            services.AddSingleton(db);
+            services.AddSingleton(gate);
+            services.AddSingleton<TimeProvider>(TimeProvider.System);
+            var serviceProvider = ownedProvider = services.BuildServiceProvider();
+            var lifecycles = new SystemTaskAiInvocationLifecycleFactory(
+                serviceProvider.GetRequiredService<IServiceScopeFactory>(), TimeProvider.System);
+            var reviewHost = PureReviewHost(data.Setup, "reviewed-new-task");
+            var submitted = await validationTasks.SubmitAsync(ValidationProfile(reviewHost, candidate),
+                written.Receipt!.OperationId, "reviewed-new-write");
+            Assert.Equal(InteractionInvocationResultTag.Pending, submitted.Tag);
+            var handle = Assert.IsType<SystemTaskDurableHandle>(submitted.TaskHandle);
+            Assert.True(await validationTasks.RunNextAsync("reviewed-new-worker", invoker,
+                ReviewerConfiguration(), lifecycles));
+            var taskStore = new SqliteSystemTaskLifecycleStore("Filename=" + databasePath, TimeProvider.System);
+            var completed = await taskStore.ReadAsync(handle);
+            Assert.Equal(SystemTaskLifecycleState.Completed, completed!.State);
+            Assert.Equal(1, provider.Calls);
+            await using (var proofBoundary = await SystemTaskValidationTransaction.OpenAsync(db, TimeProvider.System, false, default))
+                Assert.NotNull(await proofBoundary.Store.ReadCompletedValidationProofAsync(handle,
+                    proofBoundary.Connection, proofBoundary.Transaction));
+
+            var reviewed = new ApplicationCandidateReviewedPureUpdateReader(db, data.Setup.Applications,
+                data.Setup.Activation, data.Setup.Activation, data.Setup.Resolver, gate);
+            await using (var reviewBoundary = await SystemTaskValidationTransaction.OpenAsync(db, TimeProvider.System, false, default))
+                Assert.NotNull(await reviewed.ReadAsync(PureAtomicHost(data.Setup, "reviewed-new-read", 3), candidate));
+            var usage = await db.Set<SystemTaskAiDispatchEvidenceRecord>()
+                .SingleAsync(value => value.Kind == "usage");
+            usage.ObservedToolCalls = 1;
+            await db.SaveChangesAsync();
+            db.ChangeTracker.Clear();
+            await using (var corruptBoundary = await SystemTaskValidationTransaction.OpenAsync(db, TimeProvider.System, false, default))
+                Assert.Null(await reviewed.ReadAsync(PureAtomicHost(data.Setup, "reviewed-new-accounting", 3), candidate));
+            usage = await db.Set<SystemTaskAiDispatchEvidenceRecord>().SingleAsync(value => value.Kind == "usage");
+            usage.ObservedToolCalls = 0;
+            await db.SaveChangesAsync();
+            db.ChangeTracker.Clear();
+            var authoring = new SqliteApplicationAuthoringService(db, data.Setup.Applications,
+                data.Setup.Activation, data.Setup.Activation, data.Setup.Sources,
+                new SqliteStandingGrantPolicy(db, data.Setup.Resolver), data.Setup.Resolver,
+                new OperationLog(db), PureRuntimeValidator(db, data.Setup), null, reviewed);
+
+            await RevokeGrantAsync(db);
+            db.ChangeTracker.Clear();
+            var revoked = await authoring.ValidateAsync(new ApplicationCandidateValidationRequest(candidate,
+                [new(definition, "{\"count\":1}", "{\"count\":3}")]),
+                PureAtomicHost(data.Setup, "reviewed-new-revoked", 3));
+            Assert.NotEqual(InteractionInvocationResultTag.Committed, revoked.Tag);
+            var currentGrant = await db.Set<StandingGrantCurrentRecord>().SingleAsync(value => value.GrantId == "grant");
+            currentGrant.Revision = 1;
+            db.Remove(await db.Set<StandingGrantRevisionRecord>().SingleAsync(
+                value => value.GrantId == "grant" && value.Revision == 2));
+            db.Remove(await db.Operations.SingleAsync(value => value.Id == "grant-revoke"));
+            await db.SaveChangesAsync();
+            db.ChangeTracker.Clear();
+
+            var validated = await authoring.ValidateAsync(new ApplicationCandidateValidationRequest(candidate,
+                [new(definition, "{\"count\":1}", "{\"count\":3}")]),
+                PureAtomicHost(data.Setup, "reviewed-new-validate", 3));
+            Assert.Equal(InteractionInvocationResultTag.Committed, validated.Tag);
+            var validation = await db.Set<ApplicationCandidateValidationRecord>().AsNoTracking()
+                .SingleAsync(value => value.CandidateId == candidate.CandidateId);
+            Assert.True(validation.Outcome == "valid", validation.DiagnosticsJson);
+            Assert.True(validation.DependenciesComplete);
+            Assert.Equal(completed.CompletionEvidenceReference, validation.ReuseEvidenceReference);
+            var replayedValidation = await authoring.ValidateAsync(new ApplicationCandidateValidationRequest(candidate,
+                [new(definition, "{\"count\":1}", "{\"count\":3}")]),
+                PureAtomicHost(data.Setup, "reviewed-new-validate", 3));
+            Assert.Equal(validated.Receipt, replayedValidation.Receipt);
+            Assert.Equal(1, provider.Calls);
+
+            var catalogs = new ActivatedApplicationCatalogProvider(
+                new ConfiguredPublicApplicationCatalogPolicy([Application.Value]),
+                new ActivatedApplicationCatalogMaterializer(data.Setup.Applications, data.Setup.Activation,
+                    data.Setup.Sources, data.Setup.Roots, data.Setup.Extensions)
+                    .UsePreparationCache(new ActivatedApplicationCatalogSnapshotCache(),
+                        new ActivatedApplicationCatalogCacheAuthority()),
+                new CatalogCursorCodec(Enumerable.Repeat((byte)0x51, 32).ToArray()), data.Setup.Activation);
+            Assert.True(catalogs.TryGetSnapshot(Application, out var before));
+            var lifecycleRow = await db.Set<SystemTaskLifecycleRecord>()
+                .SingleAsync(value => value.TaskId == handle.TaskId);
+            var originalResult = lifecycleRow.ResultJson!;
+            lifecycleRow.ResultJson = "{\"tampered\":true}";
+            await db.SaveChangesAsync();
+            db.ChangeTracker.Clear();
+            var blocked = await authoring.ActivateAsync(PureAtomicHost(data.Setup, "reviewed-new-tampered", 3),
+                new(candidate, validation.OperationId));
+            Assert.NotEqual(InteractionInvocationResultTag.Committed, blocked.Tag);
+            Assert.Equal(original.ActivationFingerprint, data.Setup.Activation.Current(Application)!.ActivationFingerprint);
+            lifecycleRow = await db.Set<SystemTaskLifecycleRecord>()
+                .SingleAsync(value => value.TaskId == handle.TaskId);
+            lifecycleRow.ResultJson = originalResult;
+            await db.SaveChangesAsync();
+            db.ChangeTracker.Clear();
+
+            var activated = await authoring.ActivateAsync(PureAtomicHost(data.Setup, "reviewed-new-activate", 3),
+                new(candidate, validation.OperationId));
+            Assert.Equal(InteractionInvocationResultTag.Committed, activated.Tag);
+            Assert.True(catalogs.TryGetSnapshot(Application, out var after));
+            Assert.NotEqual(before.EffectiveSetFingerprint, after.EffectiveSetFingerprint);
+            Assert.True(catalogs.TryGet(Application, out var catalog));
+            var record = catalog.Inspect(new(Application, Application.Value, definitionId)).Summary;
+            Assert.Equal(definition.ContentFingerprint, record.ContentFingerprint);
+            var activeRevision = data.Setup.Activation.Current(Application)!.ActivationRevision;
+            var replayed = await authoring.ActivateAsync(PureAtomicHost(data.Setup, "reviewed-new-activate", 3),
+                new(candidate, validation.OperationId));
+            Assert.Equal(activated.Receipt, replayed.Receipt);
+            Assert.Equal(activeRevision, data.Setup.Activation.Current(Application)!.ActivationRevision);
+
+            var schemas = new BoundedJsonSchemaValidator();
+            var executor = new ApplicationPureActionExecutor(catalogs, new(schemas), new JintMechanicEngine(), schemas,
+                data.Setup.Resolver, new SqliteStandingGrantPolicy(db, data.Setup.Resolver),
+                new SqliteEcsWriteTransactionFactory(db));
+            var executed = await executor.ExecuteAsync(new(PureAtomicHost(data.Setup, "reviewed-new-execute", 1),
+                record.QualifiedId, record.Version, record.ContentFingerprint,
+                new Dictionary<string, string>(), "{\"count\":3}"));
+            Assert.Equal(InteractionInvocationResultTag.Completed, executed.Tag);
+            Assert.Equal("{\"count\":5}", executed.DataJson);
         }
         finally
         {
@@ -460,6 +652,12 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             new(Application, 1, setup.Applications.Get(Application)!.Fingerprint, []), "grant@1", "pure-runtime",
             InteractionExecutionProfile.Atomic, new(operations, deadline ?? DateTime.UtcNow.AddMinutes(1)));
 
+    private static InteractionInvocationHost PureAtomicHost(SetupState setup, string command, int operations) =>
+        InteractionInvocationHost.ForApplication(
+            TrustedPrincipalContext.VerifiedPrincipal("principal." + new string('a', 64), "test"),
+            new(Application, 1, setup.Applications.Get(Application)!.Fingerprint, []), "grant@1", command,
+            InteractionExecutionProfile.Atomic, new(operations, DateTime.UtcNow.AddMinutes(2)));
+
     private static InteractionInvocationHost PureReviewHost(SetupState setup, string command, DateTime? deadline = null) =>
         InteractionInvocationHost.ForApplication(
             TrustedPrincipalContext.VerifiedPrincipal("principal." + new string('a', 64), "test"),
@@ -486,7 +684,8 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         Reasoning: AiReasoningEffort.Medium, AllowedTools: [], MaximumToolRounds: 0,
         MaximumOutputTokens: 300, MaximumToolCalls: 0);
 
-    private sealed class RetainedReviewProvider(ApplicationCandidateReuseInputV2 input) : IAiProvider
+    private sealed class RetainedReviewProvider(
+        ApplicationCandidateReuseInputV2 input, string judgment = "uncertain") : IAiProvider
     {
         public int Calls { get; private set; }
         public AiProviderInfo Info => new("host-provider", "Controlled reviewer fixture");
@@ -500,9 +699,9 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             {
                 format = ApplicationCandidateReuseJudgmentOutputV2.OutputDomain,
                 input.SelectionFingerprint, input.InputFingerprint, input.ManualResultFingerprint,
-                judgment = "uncertain", reason = "The retained alternatives require owner review.",
+                judgment, reason = "The retained evidence supports the bounded fixture judgment.",
                 assessments = input.Alternatives.Select(target => new
-                { target, judgment = "uncertain", reason = "The retained evidence is not decisive." })
+                { target, judgment, reason = "The exact authorized alternative was assessed." })
             }, new JsonSerializerOptions(JsonSerializerDefaults.Web));
             return Task.FromResult(new AiProviderResponse(true, null, "review", json, [],
                 Usage: new(7, 2, 9, true)));

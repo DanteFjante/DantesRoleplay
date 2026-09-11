@@ -57,6 +57,33 @@ public sealed class ApplicationCandidateReuseSelectionV2ContractTests
         Assert.Throws<InteractionContractException>(() => ApplicationCandidateReuseJudgmentOutputV2.Parse(missing.ToJsonString(), input));
     }
 
+    [Theory]
+    [InlineData(true, "justifiedNew", "justifiedNew", true)]
+    [InlineData(true, "uncertain", "uncertain", false)]
+    [InlineData(true, "reuseExisting", "reuseExisting", false)]
+    [InlineData(true, "justifiedNew", "uncertain", false)]
+    [InlineData(false, "extendExisting", "extendExisting", true)]
+    [InlineData(false, "extendExisting", "uncertain", false)]
+    public void Reviewed_publication_requires_an_explicit_consistent_positive_judgment(
+        bool hasNew, string overall, string assessment, bool expected)
+    {
+        var input = ApplicationCandidateReuseInputV2.Create(Material(), true);
+        var json = JsonSerializer.Serialize(new
+        {
+            format = ApplicationCandidateReuseJudgmentOutputV2.OutputDomain,
+            selectionFingerprint = input.SelectionFingerprint,
+            inputFingerprint = input.InputFingerprint,
+            manualResultFingerprint = input.ManualResultFingerprint,
+            judgment = overall,
+            reason = "Bounded fixture judgment.",
+            assessments = input.Alternatives.Select(target => new
+            { target, judgment = assessment, reason = "Exact alternative assessment." })
+        }, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        var parsed = ApplicationCandidateReuseJudgmentOutputV2.Parse(json, input);
+
+        Assert.Equal(expected, ApplicationCandidateReviewedPureUpdateReader.JudgmentSupports(hasNew, parsed));
+    }
+
     [Fact]
     public void Aggregate_oversize_rejects_without_truncation()
     {
