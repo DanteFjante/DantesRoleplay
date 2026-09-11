@@ -1,5 +1,6 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
+using DantesRoleplay.ApplicationActivation;
 using DantesRoleplay.Applications;
 using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.CatalogNamespaces;
@@ -178,6 +179,38 @@ public sealed class InteractionFeatureRetrievalTests : IDisposable
     }
 
     [Fact]
+    public async Task Retired_records_are_excluded_from_operational_retrieval()
+    {
+        var retired = Record("sample-app.retired", "Retired", "No longer operational.", ["legacy operation"])
+            with { Status = "retired" };
+        var retriever = new InteractionFeatureRetriever(new MutableSnapshots(Snapshot([retired])));
+
+        var result = await retriever.SearchAsync(
+            new(Application, InteractionRetrievalLane.TrustedFeature), new("legacy operation"));
+
+        Assert.Empty(result.Hits);
+    }
+
+    [Fact]
+    public async Task Definition_change_reader_rejects_a_snapshot_from_an_older_activation()
+    {
+        var snapshot = Snapshot();
+        var changes = new MutableDefinitionChanges(Application, snapshot.EffectiveSetFingerprint);
+        var retriever = new InteractionFeatureRetriever(new MutableSnapshots(snapshot), changes: changes);
+        changes.Fingerprint = new string('C', 64);
+
+        var search = await retriever.SearchAsync(
+            new(Application, InteractionRetrievalLane.TrustedFeature), new("find", 10));
+        var rebuild = await retriever.RebuildAsync(
+            new(Application, InteractionRetrievalLane.TrustedFeature));
+
+        Assert.Equal(InteractionRetrievalMode.Unavailable, search.Mode);
+        Assert.Equal("CATALOG_GENERATION_STALE", search.AvailabilityCode);
+        Assert.False(rebuild.Rebuilt);
+        Assert.Equal("CATALOG_GENERATION_STALE", rebuild.AvailabilityCode);
+    }
+
+    [Fact]
     public async Task Rebuild_and_hybrid_search_use_only_current_same_lane_documents()
     {
         var provider = new MutableSnapshots(Snapshot());
@@ -211,6 +244,25 @@ public sealed class InteractionFeatureRetrievalTests : IDisposable
         var alpha = Assert.Single(result.Hits, hit => hit.Reference.QualifiedId == "sample-app.alpha");
         Assert.Equal(Hash("{\"id\":\"sample-app.alpha\",\"description\":\"Current replacement feature.\"}"), alpha.Reference.ContentFingerprint);
         Assert.Contains("Current replacement", alpha.Description, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Current_definition_change_rebuilds_a_missing_disposable_sqlite_generation()
+    {
+        var location = InteractionDerivedIndexLocation.Create(_temporaryRoot);
+        var provider = new MutableSnapshots(Snapshot());
+        var changes = new MutableDefinitionChanges(Application, provider.Snapshot.EffectiveSetFingerprint);
+        var retriever = new InteractionFeatureRetriever(provider, new DeterministicEmbeddings(),
+            new SqliteInteractionDerivedVectorIndex(location), changes: changes);
+        var scope = new InteractionFeatureRetrievalScope(Application, InteractionRetrievalLane.TrustedFeature);
+        Assert.True((await retriever.RebuildAsync(scope)).Rebuilt);
+
+        provider.Snapshot = Snapshot(fingerprintMarker: 'B', alphaDescription: "Fresh sqlite feature.");
+        changes.Fingerprint = provider.Snapshot.EffectiveSetFingerprint;
+        var result = await retriever.SearchAsync(scope, new("alpha current", 10));
+
+        Assert.Equal(InteractionRetrievalMode.Hybrid, result.Mode);
+        Assert.Contains(result.Hits, value => value.Description == "Fresh sqlite feature.");
     }
 
     [Fact]
@@ -367,6 +419,23 @@ public sealed class InteractionFeatureRetrievalTests : IDisposable
             snapshot = Snapshot;
             return applicationId == Snapshot.Manifest.ApplicationId;
         }
+    }
+
+    private sealed class MutableDefinitionChanges(ApplicationIdentifier application, string fingerprint)
+        : IApplicationDefinitionChangeReader
+    {
+        public string Fingerprint { get; set; } = fingerprint;
+
+        public ApplicationDefinitionChange? CurrentChange(ApplicationIdentifier applicationId) => applicationId == application
+            ? new(application, 1, Fingerprint, "fixture-operation", DateTime.UnixEpoch,
+                new([], []), new(new string('A', 64), "fixture", true), new("rebuildable", false, false))
+            : null;
+
+        public ApplicationDefinitionChange? RevisionChange(ApplicationIdentifier applicationId, int activationRevision) =>
+            applicationId == application && activationRevision == 1 ? CurrentChange(applicationId) : null;
+
+        public IReadOnlyList<ApplicationDefinitionChange> ChangesAfter(ApplicationIdentifier applicationId,
+            int afterActivationRevision, int limit) => [];
     }
 
     private sealed class DeterministicEmbeddings : ITextEmbeddingProvider

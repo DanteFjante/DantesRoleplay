@@ -1,6 +1,39 @@
 # 03 — Intent discovery and the operating manual
 
-Status: proposed plan; no runtime authorization or permanent IDs. Initial callers are the website and Codex through MCP; other protocols remain extension points.
+Status: discovery owner implementation with accepted additive context contracts; dependent publication,
+execution and transport integration remain pending. Initial callers are the website and Codex through
+MCP; other protocols remain extension points. Discovery creates no runtime authorization or permanent IDs.
+
+## Implemented owner boundary
+
+`InteractionManualContextService` derives read-only context through the existing procedure store,
+feature retriever and optional recipe store. It checks trusted invocation authority and state binding
+before reading content and again before returning it, consumes the shared budget/deadline, and returns
+the existing `CompletedComputation` envelope. The packet is inert discovery evidence: it never selects
+or executes a write, proves implementation equivalence, or publishes an association. Exact contract,
+input, binding and grant validation remain required at execution.
+
+Operational manual selection includes only active procedures. Global categories require an explicit,
+copied host allow-list; an empty list exposes none. Application content retains the retriever's trust
+and namespace filtering. Global procedures retain their actual IDs rather than being fabricated as
+application features. Historical procedure reads remain available through the existing store.
+
+Manual sections retain heading ancestry, a derived section reference, source revision and content
+hash. References depend on field, heading ancestry/occurrence and chunk position, so callers must
+retain revision evidence across text edits. Stored synchronization hashes remain verbatim and are
+separate from the derived source and match-phrase fingerprints. Match phrases participate in the
+manual resolution hash without changing the catalog synchronization hash. Context defaults to 16,000 characters, with a
+4,000–24,000 range, eight sections of at most 2,000 characters, eight feature candidates and four
+verified recipe candidates. A bounded packet explicitly directs callers to exact source reads;
+omitted constraints have not been validated. Result hashes are computed over canonical packet JSON
+with `resultFingerprint` replaced by 64 zeroes.
+
+The existing activation change reader can invalidate cached catalog snapshots and reject stale
+retrieval generations. Derived index failures preserve lexical discovery and cannot gate activation.
+The accepted context seam is `IInteractionManualContextService` with `InteractionManualContextRequest`.
+Coordinator integration owns constructor registration and MCP/website mapping. Section-level vector identity/index support, standing grants and publication,
+candidate-bound equivalence review and end-to-end invocation through plans 01/05/06 remain separate
+integration dependencies; discovery tests do not prove those dependent scenarios.
 
 Prerequisite: implement [00 — Shared foundation](00-shared-foundation.md) first and have the coordinator supply its accepted foundation revision and contract baseline. This workstream consumes those shared contracts and does not redefine them independently.
 

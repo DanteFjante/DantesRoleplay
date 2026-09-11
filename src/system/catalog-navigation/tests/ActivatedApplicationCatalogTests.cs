@@ -401,6 +401,26 @@ public sealed class ActivatedApplicationCatalogTests : IDisposable
     }
 
     [Fact]
+    public void Definition_change_advancement_rebuilds_the_scoped_active_catalog_snapshot()
+    {
+        var applications = new InMemoryApplicationRegistry();
+        var sources = new InMemorySourceRegistry();
+        var activation = RegisterActivatedFixture(applications, sources, "refresh", 'A');
+        var changes = new MutableDefinitionChanges(activation.ApplicationId, activation.ActivationFingerprint);
+        var provider = new ActivatedApplicationCatalogProvider(
+            new ConfiguredPublicApplicationCatalogPolicy(["refresh"]),
+            new ActivatedApplicationCatalogMaterializer(applications, new StaticActivation(activation), sources,
+                new StaticRoot("fixture-root", _root)),
+            new CatalogCursorCodec(Encoding.UTF8.GetBytes("definition-change-catalog-cursor-key")), changes);
+
+        Assert.True(provider.TryGet(activation.ApplicationId, out var before));
+        changes.Revision = 2;
+        Assert.True(provider.TryGet(activation.ApplicationId, out var after));
+
+        Assert.NotSame(before, after);
+    }
+
+    [Fact]
     public void Repeated_equivalent_maximum_catalog_preparation_profile()
     {
         const int recordCount = CatalogNavigationLimits.MaximumRecords;
@@ -580,6 +600,23 @@ public sealed class ActivatedApplicationCatalogTests : IDisposable
     {
         public ActiveApplicationManifest? Current(ApplicationIdentifier applicationId) =>
             applicationId == activation.ApplicationId ? activation : null;
+    }
+
+    private sealed class MutableDefinitionChanges(ApplicationIdentifier application, string fingerprint)
+        : IApplicationDefinitionChangeReader
+    {
+        public int Revision { get; set; } = 1;
+
+        public ApplicationDefinitionChange? CurrentChange(ApplicationIdentifier applicationId) => applicationId == application
+            ? new(application, Revision, fingerprint, "fixture-operation", DateTime.UnixEpoch,
+                new([], []), new(new string('A', 64), "fixture", true), new("rebuildable", false, false))
+            : null;
+
+        public ApplicationDefinitionChange? RevisionChange(ApplicationIdentifier applicationId, int activationRevision) =>
+            applicationId == application && activationRevision == Revision ? CurrentChange(applicationId) : null;
+
+        public IReadOnlyList<ApplicationDefinitionChange> ChangesAfter(ApplicationIdentifier applicationId,
+            int afterActivationRevision, int limit) => [];
     }
 
     private sealed class StaticActivations(IEnumerable<ActiveApplicationManifest> activations)

@@ -569,13 +569,15 @@ public sealed class ActivatedApplicationCatalogMaterializer(
 public sealed class ActivatedApplicationCatalogProvider(
     IPublicApplicationCatalogPolicy policy,
     ActivatedApplicationCatalogMaterializer materializer,
-    CatalogCursorCodec cursors)
+    CatalogCursorCodec cursors,
+    IApplicationDefinitionChangeReader? changes = null)
     : IPublicApplicationCatalogProvider, IActiveCatalogFeatureSnapshotProvider,
       IPublicApplicationCatalogDiagnostics
 {
     private readonly Dictionary<ApplicationIdentifier, ICatalogNavigator> _cache = [];
     private readonly Dictionary<ApplicationIdentifier, ActiveCatalogFeatureSnapshot> _snapshots = [];
     private readonly Dictionary<ApplicationIdentifier, PublicApplicationCatalogFailure> _failures = [];
+    private readonly Dictionary<ApplicationIdentifier, int> _observedActivationRevisions = [];
 
     public PublicApplicationCatalogFailure? LastFailure(ApplicationIdentifier applicationId)
     {
@@ -588,6 +590,7 @@ public sealed class ActivatedApplicationCatalogProvider(
         ArgumentNullException.ThrowIfNull(applicationId);
         try
         {
+            RefreshForDefinitionChange(applicationId);
             if (!policy.IsPublished(applicationId))
             {
                 _failures[applicationId] = new("APPLICATION_CATALOG_UNPUBLISHED",
@@ -626,5 +629,30 @@ public sealed class ActivatedApplicationCatalogProvider(
             return false;
         }
         return _snapshots.TryGetValue(applicationId, out snapshot!);
+    }
+
+    /// <summary>
+    /// Catalog navigation is scoped, but an activation can advance while the scope remains alive.
+    /// The durable change feed is the authoritative freshness signal, so discard only this
+    /// application's derived navigator and snapshot before rebuilding from active evidence.
+    /// </summary>
+    private void RefreshForDefinitionChange(ApplicationIdentifier applicationId)
+    {
+        if (changes is null) return;
+        var change = changes.CurrentChange(applicationId);
+        if (change is null)
+        {
+            _observedActivationRevisions.Remove(applicationId);
+            _cache.Remove(applicationId);
+            _snapshots.Remove(applicationId);
+            _failures.Remove(applicationId);
+            return;
+        }
+        if (_observedActivationRevisions.TryGetValue(applicationId, out var revision)
+            && revision == change.Revision) return;
+        _observedActivationRevisions[applicationId] = change.Revision;
+        _cache.Remove(applicationId);
+        _snapshots.Remove(applicationId);
+        _failures.Remove(applicationId);
     }
 }
