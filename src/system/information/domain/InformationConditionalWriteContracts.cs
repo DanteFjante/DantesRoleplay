@@ -7,10 +7,23 @@ namespace DantesRoleplay.Information;
 // an expected revision. Nothing implements or registers this interface before storage integration.
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record InformationSourceConditionalWriteRequest(
-    [property: JsonRequired] InformationSourceWriteRequest Value, [property: JsonRequired] int ExpectedRevision);
+    [property: JsonRequired] InformationSourceWriteRequest Value, [property: JsonRequired] int ExpectedRevision,
+    string? QualifiedTargetId = null);
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record InformationRecordConditionalWriteRequest(
     [property: JsonRequired] InformationRecordWriteRequest Value, [property: JsonRequired] int ExpectedRevision);
+
+/// <summary>Explicit installation-operator adoption or movement; never inferred from a source's textual scope.</summary>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public sealed record InformationSourceOwnershipWriteRequest(
+    string SourceId, Applications.ApplicationIdentifier NewApplicationId, string QualifiedTargetId,
+    [property: JsonRequired] int ExpectedOwnershipRevision, [property: JsonRequired] string? ExpectedOwnershipFingerprint);
+
+public interface IInformationSourceOwnershipAdministration
+{
+    Task<InteractionInvocationResult> BindAsync(InteractionInvocationHost host,
+        InformationSourceOwnershipWriteRequest request, CancellationToken cancellationToken = default);
+}
 
 public interface IConditionalInformationStore
 {
