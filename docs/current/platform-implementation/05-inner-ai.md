@@ -24,7 +24,8 @@ tool-round/output limits are preserved, but are not an aggregate token or descen
 `SystemInnerWorkerResultAdapter.MapStoredResult` is an internal readback projection for a terminal
 AI response already persisted by the lifecycle owner. It validates the command identity and typed
 output, requires an existing result-evidence reference, and returns compact computation data with
-the task handle, procedure/output-contract identity, summary and earlier commit references. Detailed
+the task handle, procedure/output-contract identity and summary. Earlier authoritative commits stay
+in the shared result envelope, using the coordinator's accepted additive result contract. Detailed
 activity remains in the existing AI response/task record. Model text and tool-success activity are
 never commit evidence. Unresolved operation identity produces a reconciliation-required failure;
 this mapper neither checks leases nor proves that the supplied evidence was persisted.
