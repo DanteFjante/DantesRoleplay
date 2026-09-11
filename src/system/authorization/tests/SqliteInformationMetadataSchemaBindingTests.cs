@@ -168,9 +168,14 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         await db.SaveChangesAsync();
         db.ChangeTracker.Clear();
 
+        var rejectedWrite = await service.WriteRecordAsync(ApplicationHost(setup, "drift-write", InteractionExecutionProfile.Atomic),
+            new(new("record.after-drift", "source.schema", "After", "Rejected", "{\"rank\":2}"), 0));
+
         var read = await service.ReadRecordRevisionAsync(ApplicationHost(setup, "drift-read", grantReference: "grant@1"),
             new("record.schema", 1));
 
+        Assert.Equal(InteractionInvocationResultTag.Failed, rejectedWrite.Tag);
+        Assert.Equal("INFORMATION_SOURCE_SCHEMA_REFERENCE_DRIFT", rejectedWrite.Code);
         Assert.Equal("unavailable", read.Status);
         Assert.Equal("INFORMATION_SOURCE_SCHEMA_REFERENCE_DRIFT", read.ErrorCode);
         Assert.Equal("Preserved", (await db.Set<InformationRecord>().AsNoTracking().SingleAsync()).Content);

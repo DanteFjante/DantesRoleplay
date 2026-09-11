@@ -151,6 +151,11 @@ public sealed class SqliteConditionalInformationStore(DantesRoleplayDbContext db
                 var retained = await HasOutcomeAsync(operation, "record", value.Id, request.ExpectedRevision, cancellationToken);
                 return retained ? null : Unavailable("INFORMATION_RECEIPT_INCONSISTENT");
             }
+            var source = await db.Set<InformationSource>().AsNoTracking()
+                .SingleOrDefaultAsync(item => item.Id == value.SourceId, cancellationToken);
+            if (source is not null && store.ReadMetadataSchemaBinding(source,
+                    host.ApplicationRevision.ApplicationId, out var schemaError) is null)
+                return Failed(schemaError);
             var result = await store.WriteRecordConditionallyAsync(value, request.ExpectedRevision, operation.Id, cancellationToken);
             if (result.Status == "rejected") return Failed(result.ErrorCode, result.ErrorMessage);
             operation.GuardEvidenceJson = InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(authority.Evidence));
