@@ -1,4 +1,6 @@
 using System.Buffers.Binary;
+using DantesRoleplay.Authorization;
+using DantesRoleplay.CatalogNamespaces;
 using DantesRoleplay.Ecs;
 using DantesRoleplay.EcsEffects;
 using DantesRoleplay.Interactions;
@@ -12,10 +14,24 @@ internal sealed class ApplicationActionInvocationAdapter(
     IStateSpaceRegistry stateSpaces,
     IApplicationActionRunner actions,
     IOperationLog operations,
-    IApplicationPureActionExecutor? pureActions = null) : IApplicationActionInvocationAdapter
+    IApplicationPureActionExecutor? pureActions = null,
+    IStandingGrantTargetResolver? grantTargets = null,
+    IStandingGrantPolicy? standingGrants = null,
+    IEcsWriteTransactionFactory? transactions = null) : IApplicationActionInvocationAdapter
 {
     public async Task<InteractionInvocationResult> ExecuteAsync(ApplicationActionInvocationRequest request,
+        CancellationToken cancellationToken = default) =>
+        await ExecuteAsync(request, trustedWorkflowChild: false, cancellationToken);
+
+    internal async Task<InteractionInvocationResult> ExecuteWorkflowChildAsync(
+        ApplicationActionInvocationRequest request,
         CancellationToken cancellationToken = default)
+        => await ExecuteAsync(request, trustedWorkflowChild: true, cancellationToken);
+
+    private async Task<InteractionInvocationResult> ExecuteAsync(
+        ApplicationActionInvocationRequest request,
+        bool trustedWorkflowChild,
+        CancellationToken cancellationToken)
     {
         ApplicationEcsExecutionIdentity? executionIdentity = null;
         try
@@ -23,8 +39,10 @@ internal sealed class ApplicationActionInvocationAdapter(
             ArgumentNullException.ThrowIfNull(request);
             if (request.Host.Profile != InteractionExecutionProfile.Atomic)
                 return InteractionInvocationResult.Unavailable("ACTION_PROFILE_UNSUPPORTED", "The requested action profile is unavailable.");
-            if (request.Host.ParentCommandId is not null)
+            if (!trustedWorkflowChild && request.Host.ParentCommandId is not null)
                 return InteractionInvocationResult.Unavailable("ATOMIC_CHILD_UNSUPPORTED", "Atomic child proposals are not executable in this adapter.");
+            if (trustedWorkflowChild && request.Host.ParentCommandId is null)
+                return InteractionInvocationResult.Unavailable("WORKFLOW_CHILD_REQUIRED", "The trusted workflow action path requires a parent command.");
             if (request.Host.StateSpaceId is null && request.Host.StateRevision is null)
                 return pureActions is null
                     ? InteractionInvocationResult.Failed(
@@ -37,14 +55,22 @@ internal sealed class ApplicationActionInvocationAdapter(
                 return InteractionInvocationResult.Cancelled("INVOCATION_DEADLINE_EXCEEDED", "The invocation deadline elapsed before the action started.");
             if (!request.Host.Budget.TryConsumeOperation())
                 return InteractionInvocationResult.Failed("INVOCATION_BUDGET_EXHAUSTED", "The invocation operation budget is exhausted.");
-            var decision = authorization.Evaluate(new(request.Host.Principal, request.Host.ApplicationRevision.ApplicationId,
-                stateSpaceId, InteractionCapability.Execute, request.Host.CommandId));
-            if (!decision.Allowed || decision.Capability != InteractionCapability.Execute
-                || decision.PrincipalReference != request.Host.Principal.PrincipalId
-                || decision.ApplicationId != request.Host.ApplicationRevision.ApplicationId
-                || decision.StateSpaceId != request.Host.StateSpaceId
-                || decision.EvidenceReference != request.Host.GrantReference)
-                return InteractionInvocationResult.Failed("INVOCATION_NOT_AUTHORIZED", "The action is not authorized for this scope.");
+            if (trustedWorkflowChild)
+            {
+                var authority = await AuthorizeWorkflowChildAsync(request, cancellationToken);
+                if (authority is not null) return authority;
+            }
+            else
+            {
+                var decision = authorization.Evaluate(new(request.Host.Principal, request.Host.ApplicationRevision.ApplicationId,
+                    stateSpaceId, InteractionCapability.Execute, request.Host.CommandId));
+                if (!decision.Allowed || decision.Capability != InteractionCapability.Execute
+                    || decision.PrincipalReference != request.Host.Principal.PrincipalId
+                    || decision.ApplicationId != request.Host.ApplicationRevision.ApplicationId
+                    || decision.StateSpaceId != request.Host.StateSpaceId
+                    || decision.EvidenceReference != request.Host.GrantReference)
+                    return InteractionInvocationResult.Failed("INVOCATION_NOT_AUTHORIZED", "The action is not authorized for this scope.");
+            }
             var state = stateSpaces.Get(stateSpaceId);
             if (state is null || !ScopeMatches(state, request.Host)
                 || InteractionStateRevision.From(state) != stateRevision)
@@ -91,6 +117,69 @@ internal sealed class ApplicationActionInvocationAdapter(
                 ? InteractionInvocationResult.Unavailable("ACTION_ADAPTER_UNAVAILABLE", "The action adapter is unavailable.")
                 : await ReconcileUnknownAsync(executionIdentity, cancelled: false);
         }
+    }
+
+    private async Task<InteractionInvocationResult?> AuthorizeWorkflowChildAsync(
+        ApplicationActionInvocationRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (grantTargets is null || standingGrants is null || transactions is null)
+            return InteractionInvocationResult.Unavailable(
+                "WORKFLOW_ACTION_AUTHORITY_UNAVAILABLE", "Current workflow action authority is unavailable.");
+        using var deadline = Deadline(request.Host.Budget, cancellationToken);
+        await using var transaction = await transactions.BeginAsync(deadline.Token);
+        if (!transactions.OwnsCurrent(transaction))
+            return InteractionInvocationResult.Unavailable(
+                "WORKFLOW_ACTION_TRANSACTION_UNAVAILABLE", "The workflow action authorization transaction is unavailable.");
+        var selection = new StandingGrantDefinitionReference(request.QualifiedMechanicId,
+            CatalogNamespaceKinds.Mechanic, request.MechanicVersion, request.ContentFingerprint);
+        var resolution = await grantTargets.ResolveAsync(request.Host, selection, deadline.Token);
+        if (resolution is not { Status: StandingGrantTargetResolutionStatus.Available, Target: { } target })
+            return resolution?.Status == StandingGrantTargetResolutionStatus.Denied
+                ? InteractionInvocationResult.Failed("INVOCATION_NOT_AUTHORIZED", "The action is not authorized for this scope.")
+                : InteractionInvocationResult.Unavailable(
+                    "WORKFLOW_ACTION_AUTHORITY_UNAVAILABLE", "Current workflow action authority is unavailable.");
+        if (target.DefinitionId != selection.DefinitionId || target.Kind != selection.Kind
+            || target.Revision != selection.Revision || target.ContentFingerprint != selection.ContentFingerprint
+            || target.OwnerApplicationId != request.Host.ApplicationRevision.ApplicationId
+            || target.Candidate is not null || target.RetainedActivation is not null)
+            return InteractionInvocationResult.Unavailable(
+                "WORKFLOW_ACTION_AUTHORITY_UNAVAILABLE", "Current workflow action authority is unavailable.");
+        var decision = await standingGrants.EvaluateAsync(request.Host,
+            new(StandingGrantCapability.Execute, StandingGrantScope.StateSpace, [target], []), deadline.Token);
+        if (!ExactAllowedDecision(request.Host, target, decision))
+            return InteractionInvocationResult.Failed(
+                "INVOCATION_NOT_AUTHORIZED", "The action is not authorized for this scope.");
+        await transaction.RollbackAsync(CancellationToken.None);
+        return null;
+    }
+
+    private static bool ExactAllowedDecision(
+        InteractionInvocationHost host,
+        StandingGrantDefinitionTarget target,
+        StandingGrantDecision? decision)
+    {
+        if (decision is not { Allowed: true, Grant: not null, Evidence.Allowed: true }
+            || decision.Evidence.PrincipalReference != host.Principal.PrincipalId
+            || decision.Evidence.AuthenticationMethod != host.Principal.AuthenticationMethod
+            || decision.Evidence.Scope != host.StateSpaceId
+            || decision.Evidence.CorrelationId != host.CommandId)
+            return false;
+        var grant = decision.Grant;
+        try { StandingGrantContractRules.ValidateConfiguration(grant); }
+        catch (InteractionContractException) { return false; }
+        return grant.GrantReference == host.GrantReference
+            && grant.PrincipalReference == host.Principal.PrincipalId
+            && grant.ApplicationId == host.ApplicationRevision.ApplicationId
+            && grant.Scope == StandingGrantScope.StateSpace
+            && grant.StateSpaceId == host.StateSpaceId
+            && !grant.Revoked
+            && grant.ExpiresAtUtc > DateTime.UtcNow
+            && host.Budget.DeadlineUtc <= grant.ExpiresAtUtc
+            && host.Budget.MaximumOperations <= grant.MaximumOperations
+            && grant.Capabilities.Contains(StandingGrantCapability.Execute)
+            && StandingGrantContractRules.MatchesDefinitionAllowance(
+                host.ApplicationRevision.ApplicationId, grant.Definitions, target);
     }
 
     private async Task<InteractionInvocationResult> ReconcileUnknownAsync(

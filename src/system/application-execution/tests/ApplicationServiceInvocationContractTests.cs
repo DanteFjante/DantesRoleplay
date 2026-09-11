@@ -32,6 +32,32 @@ public sealed class ApplicationServiceInvocationContractTests
         Assert.Equal("viewer", read.RoleMappings["subject"]);
     }
 
+    [Fact]
+    public void Exact_action_declarations_round_trip_and_legacy_declarations_remain_readable()
+    {
+        var schema = _schemas.Compile(Schema);
+        var definition = new ApplicationReadOnlyServiceDefinition(
+            schema.SchemaHash, schema.NormalizedSchema, schema.SchemaHash, schema.NormalizedSchema,
+            [], _schemas,
+            [new("update", "fixture.mechanic.update", 3, Hash("action"),
+                new Dictionary<string, string> { ["subject"] = "viewer" })]);
+        var (selected, record) = Retained(definition.ToJson());
+
+        var parsed = new ApplicationReadOnlyServiceDefinitionReader(_schemas).ReadRetained(selected, record);
+
+        var action = Assert.Single(parsed.Actions);
+        Assert.Equal("fixture.mechanic.update", action.QualifiedMechanicId);
+        Assert.Equal(3, action.MechanicVersion);
+        Assert.Equal("viewer", action.RoleMappings["subject"]);
+        Assert.Equal(definition.ToJson(), parsed.ToJson());
+
+        var legacy = JsonNode.Parse(Definition().ToJson())!.AsObject();
+        legacy.Remove("actions");
+        (selected, record) = Retained(legacy.ToJsonString());
+        Assert.Empty(new ApplicationReadOnlyServiceDefinitionReader(_schemas)
+            .ReadRetained(selected, record).Actions);
+    }
+
     [Theory]
     [InlineData("root")]
     [InlineData("read")]

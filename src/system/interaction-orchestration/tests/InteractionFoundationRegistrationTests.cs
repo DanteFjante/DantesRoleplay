@@ -27,6 +27,8 @@ public sealed class InteractionFoundationRegistrationTests
         Assert.IsType<ApplicationActionInvocationAdapter>(services.GetRequiredService<IApplicationActionInvocationAdapter>());
         Assert.IsType<ApplicationReadOnlyServiceInvocationAdapter>(
             services.GetRequiredService<IApplicationReadOnlyServiceInvocationAdapter>());
+        Assert.IsType<ApplicationReadOnlyServiceInvocationAdapter>(
+            services.GetRequiredService<IApplicationWorkflowServiceInvocationAdapter>());
         Assert.IsType<SqliteStandingGrantPolicy>(services.GetRequiredService<IStandingGrantPolicy>());
         Assert.IsType<ResourceStandingGrantTargetResolver>(services.GetRequiredService<IStandingGrantTargetResolver>());
         Assert.IsType<SqliteStandingGrantTargetResolver>(services.GetRequiredService<SqliteStandingGrantTargetResolver>());

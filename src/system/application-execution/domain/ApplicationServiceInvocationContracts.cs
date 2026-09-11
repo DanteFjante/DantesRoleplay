@@ -20,7 +20,8 @@ public sealed record ApplicationReadOnlyServiceDefinition
         string outputSchemaHash,
         string outputSchemaJson,
         IReadOnlyList<ApplicationServiceReadDeclaration> reads,
-        IBoundedJsonSchemaValidator schemas)
+        IBoundedJsonSchemaValidator schemas,
+        IReadOnlyList<ApplicationServiceActionDeclaration>? actions = null)
     {
         InputSchemaHash = InteractionGuard.UpperSha256(inputSchemaHash, nameof(inputSchemaHash));
         InputSchemaJson = ApplicationServiceSchema.Validate(schemas, inputSchemaJson, InputSchemaHash);
@@ -35,6 +36,15 @@ public sealed record ApplicationReadOnlyServiceDefinition
                 "INVALID_SERVICE_READS",
                 "The service read declarations are invalid, duplicated, or outside the closed limit.");
         Reads = Array.AsReadOnly(copied);
+        var copiedActions = actions?.ToArray() ?? [];
+        if (copiedActions.Length > ApplicationReadOnlyServiceLimits.MaximumActions
+            || copiedActions.Any(action => action is null)
+            || copiedActions.Select(action => action.Alias).Distinct(StringComparer.Ordinal).Count() != copiedActions.Length
+            || copiedActions.Select(action => action.Alias).Intersect(copied.Select(read => read.Alias), StringComparer.Ordinal).Any())
+            throw new InteractionContractException(
+                "INVALID_SERVICE_ACTIONS",
+                "The service action declarations are invalid, duplicated, or outside the closed limit.");
+        Actions = Array.AsReadOnly(copiedActions);
         _ = ToJson(); // Apply the aggregate bound to host construction as well as retained JSON.
     }
 
@@ -53,6 +63,9 @@ public sealed record ApplicationReadOnlyServiceDefinition
     [JsonPropertyName("reads")]
     public IReadOnlyList<ApplicationServiceReadDeclaration> Reads { get; }
 
+    [JsonPropertyName("actions")]
+    public IReadOnlyList<ApplicationServiceActionDeclaration> Actions { get; }
+
     public string ToJson() => InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
     {
         InputSchemaHash, InputSchemaJson, OutputSchemaHash, OutputSchemaJson,
@@ -67,9 +80,66 @@ public sealed record ApplicationReadOnlyServiceDefinition
                 read.Contract.Exposure, read.Contract.Roles, read.Contract.CollectionId
             },
             read.RoleMappings
+        }),
+        Actions = Actions.Select(action => new
+        {
+            action.Alias, action.QualifiedMechanicId, action.MechanicVersion,
+            action.ContentFingerprint, action.RoleMappings
         })
     },
         new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }));
+}
+
+/// <summary>
+/// One exact state-changing mechanic exposed to a workflow service. Role mappings bind mechanic
+/// roles to entities already present in the trusted service host.
+/// </summary>
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public sealed record ApplicationServiceActionDeclaration
+{
+    public ApplicationServiceActionDeclaration(
+        string alias,
+        string qualifiedMechanicId,
+        int mechanicVersion,
+        string contentFingerprint,
+        IReadOnlyDictionary<string, string> roleMappings)
+    {
+        Alias = InteractionGuard.Identifier(alias, nameof(alias));
+        QualifiedMechanicId = InteractionGuard.Identifier(qualifiedMechanicId, nameof(qualifiedMechanicId));
+        if (mechanicVersion <= 0)
+            throw new InteractionContractException("INVALID_SERVICE_ACTION_VERSION", "The service action version must be positive.");
+        MechanicVersion = mechanicVersion;
+        ContentFingerprint = InteractionGuard.UpperSha256(contentFingerprint, nameof(contentFingerprint));
+        ArgumentNullException.ThrowIfNull(roleMappings);
+        if (roleMappings.Count > InteractionContractLimits.RoleHints)
+            throw new InteractionContractException("INVALID_SERVICE_ROLE_MAPPINGS", "The service role mappings exceed the closed limit.");
+        var copied = new SortedDictionary<string, string>(StringComparer.Ordinal);
+        foreach (var (actionRole, hostRole) in roleMappings)
+        {
+            if (!copied.TryAdd(
+                    InteractionGuard.Identifier(actionRole, "actionRole"),
+                    InteractionGuard.Identifier(hostRole, "hostRole")))
+                throw new InteractionContractException(
+                    "INVALID_SERVICE_ROLE_MAPPINGS",
+                    "The service role mappings contain a duplicate action role.");
+        }
+        RoleMappings = new ReadOnlyDictionary<string, string>(copied);
+    }
+
+    [JsonPropertyName("alias")]
+    public string Alias { get; }
+
+    [JsonPropertyName("qualifiedMechanicId")]
+    public string QualifiedMechanicId { get; }
+
+    [JsonPropertyName("mechanicVersion")]
+    public int MechanicVersion { get; }
+
+    [JsonPropertyName("contentFingerprint")]
+    public string ContentFingerprint { get; }
+
+    [JsonPropertyName("roleMappings")]
+    public IReadOnlyDictionary<string, string> RoleMappings { get; }
 }
 
 /// <summary>
@@ -209,8 +279,8 @@ public sealed record ApplicationReadOnlyServiceInvocationRequest
 /// capability object is never exposed. Reads and progress are synchronous on the sole owning
 /// engine thread. Host waits use a linked deadline bounded by both the invocation deadline and
 /// remaining computation timeout. These waits are not durable. Progress sequence
-/// numbers are assigned by the host. Action, workflow, wait/job and AI callbacks return the
-/// existing canonical <c>unavailable</c> shape and never dispatch in v1.
+/// numbers are assigned by the host. Read-only engine instances return the existing canonical
+/// <c>unavailable</c> shape for action, workflow, wait/job and AI callbacks.
 /// </summary>
 public interface IApplicationReadOnlyServiceCapabilities
 {
@@ -319,6 +389,7 @@ public interface IApplicationReadOnlyServiceDefinitionReader
 public static class ApplicationReadOnlyServiceLimits
 {
     public const int MaximumReads = InteractionContractLimits.ProposalSteps;
+    public const int MaximumActions = InteractionContractLimits.ProposalSteps;
     public const int MaximumExchangedBytesPerRoot = 1024 * 1024;
     public const int MaximumProgressFrames = 32;
     public const int MaximumProgressFrameBytes = 2 * 1024;

@@ -9,9 +9,11 @@ using DantesRoleplay.CatalogNamespaces;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.DataAccess.Catalog;
 using DantesRoleplay.Ecs;
+using DantesRoleplay.EcsEffects;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.LocalAI;
 using DantesRoleplay.Mechanics;
+using DantesRoleplay.MCPServer;
 using DantesRoleplay.Operations;
 using DantesRoleplay.Projections;
 using DantesRoleplay.SchemaValidation;
@@ -24,6 +26,102 @@ namespace DantesRoleplay.ApplicationExecution.Tests;
 
 public sealed class ApplicationReadOnlyServiceAuthorizationTests
 {
+    [Fact]
+    public async Task Workflow_service_commits_real_nested_action_and_replays_its_exact_receipt()
+    {
+        await using var fixture = await Fixture.CreateAsync(workflow: true);
+        var operationCount = await fixture.Db.Set<Operation>().CountAsync();
+        var firstRequest = fixture.WorkflowRequest("command.workflow.set", "{\"value\":11}");
+
+        var first = await fixture.WorkflowService.InvokeAsync(firstRequest);
+
+        Assert.True(first.Tag == InteractionInvocationResultTag.Completed, first.ToJson());
+        Assert.Equal("{\"entityId\":\"subject\",\"value\":11}", first.DataJson);
+        var firstReceipt = Assert.Single(first.PreviousCommits);
+        Assert.Single(firstReceipt.Effects);
+        Assert.Equal(14, firstRequest.Host.Budget.RemainingOperations); // workflow root + child action
+        var committed = (await fixture.Entities.GetComponentAsync(
+            Fixture.SpaceId, "subject", fixture.CounterType.QualifiedId))!;
+        Assert.Equal(2, committed.Revision);
+        Assert.Equal("{\"value\":11}", committed.ValueJson);
+        Assert.Equal(operationCount + 1, await fixture.Db.Set<Operation>().CountAsync());
+
+        var replayRequest = fixture.WorkflowRequest("command.workflow.set", "{\"value\":11}");
+        var replay = await fixture.WorkflowService.InvokeAsync(replayRequest);
+
+        Assert.Equal(InteractionInvocationResultTag.Completed, replay.Tag);
+        Assert.Equal(firstReceipt.OperationId, Assert.Single(replay.PreviousCommits).OperationId);
+        var unchanged = (await fixture.Entities.GetComponentAsync(
+            Fixture.SpaceId, "subject", fixture.CounterType.QualifiedId))!;
+        Assert.Equal(2, unchanged.Revision);
+        Assert.Equal("{\"value\":11}", unchanged.ValueJson);
+        Assert.Equal(operationCount + 1, await fixture.Db.Set<Operation>().CountAsync());
+    }
+
+    [Fact]
+    public async Task Workflow_service_rejects_undeclared_action_without_dispatch_or_mutation()
+    {
+        await using var fixture = await Fixture.CreateAsync(
+            workflow: true,
+            workflowSource: "ctx.services.action('undeclared',{value:ctx.input.value});return {data:{entityId:'subject',value:ctx.input.value}};");
+        var request = fixture.WorkflowRequest("command.workflow.undeclared", "{\"value\":12}");
+        var operationCount = await fixture.Db.Set<Operation>().CountAsync();
+
+        var result = await fixture.WorkflowService.InvokeAsync(request);
+
+        Assert.Equal(InteractionInvocationResultTag.Failed, result.Tag);
+        Assert.Equal("SERVICE_ACTION_ALIAS_INVALID", result.Code);
+        Assert.Empty(result.PreviousCommits);
+        Assert.Equal(15, request.Host.Budget.RemainingOperations); // root only; no child dispatch
+        Assert.Equal(operationCount, await fixture.Db.Set<Operation>().CountAsync());
+        var component = (await fixture.Entities.GetComponentAsync(
+            Fixture.SpaceId, "subject", fixture.CounterType.QualifiedId))!;
+        Assert.Equal(1, component.Revision);
+        Assert.Equal("{\"value\":7}", component.ValueJson);
+    }
+
+    [Fact]
+    public async Task Workflow_child_rechecks_exact_current_execute_grant_before_mutation()
+    {
+        await using var fixture = await Fixture.CreateAsync(workflow: true, includeActionInGrant: false);
+        var request = fixture.WorkflowRequest("command.workflow.denied", "{\"value\":13}");
+        var operationCount = await fixture.Db.Set<Operation>().CountAsync();
+
+        var result = await fixture.WorkflowService.InvokeAsync(request);
+
+        Assert.Equal(InteractionInvocationResultTag.Failed, result.Tag);
+        Assert.Equal("INVOCATION_NOT_AUTHORIZED", result.Code);
+        Assert.Empty(result.PreviousCommits);
+        Assert.Equal(14, request.Host.Budget.RemainingOperations); // root + denied child
+        Assert.Equal(operationCount, await fixture.Db.Set<Operation>().CountAsync());
+        var component = (await fixture.Entities.GetComponentAsync(
+            Fixture.SpaceId, "subject", fixture.CounterType.QualifiedId))!;
+        Assert.Equal(1, component.Revision);
+        Assert.Equal("{\"value\":7}", component.ValueJson);
+    }
+
+    [Fact]
+    public async Task Workflow_failure_after_commit_preserves_the_successful_child_receipt()
+    {
+        await using var fixture = await Fixture.CreateAsync(
+            workflow: true,
+            workflowSource: "ctx.services.action('setCounter',{value:ctx.input.value});ctx.services.action('undeclared',{value:99});return {data:{entityId:'subject',value:ctx.input.value}};");
+        var request = fixture.WorkflowRequest("command.workflow.partial", "{\"value\":14}");
+        var operationCount = await fixture.Db.Set<Operation>().CountAsync();
+
+        var result = await fixture.WorkflowService.InvokeAsync(request);
+
+        Assert.Equal(InteractionInvocationResultTag.Failed, result.Tag);
+        Assert.Equal("SERVICE_ACTION_ALIAS_INVALID", result.Code);
+        Assert.Single(result.PreviousCommits);
+        Assert.Equal(14, request.Host.Budget.RemainingOperations); // root + committed child
+        Assert.Equal(operationCount + 1, await fixture.Db.Set<Operation>().CountAsync());
+        var component = (await fixture.Entities.GetComponentAsync(
+            Fixture.SpaceId, "subject", fixture.CounterType.QualifiedId))!;
+        Assert.Equal(2, component.Revision);
+        Assert.Equal("{\"value\":14}", component.ValueJson);
+    }
+
     [Fact]
     public async Task Retained_service_completes_through_real_standing_authority_and_sqlite_read()
     {
@@ -128,6 +226,7 @@ public sealed class ApplicationReadOnlyServiceAuthorizationTests
         private const string ReadId = "service-fixture.runtime.counter-projection";
         private const string QueryId = "service-fixture.runtime.counter-query";
         private const string ServiceId = "service-fixture.runtime.counter-service";
+        private const string ActionId = "service-fixture.runtime.set-counter";
         private const string OutputSchema =
             "{\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"entityId\",\"value\"],\"properties\":{\"entityId\":{\"type\":\"string\"},\"value\":{\"type\":\"integer\"}}}";
         private const string CounterSchema =
@@ -152,6 +251,7 @@ public sealed class ApplicationReadOnlyServiceAuthorizationTests
             SqliteEntityComponentStore entities,
             RegisteredComponentTypeVersion counterType,
             IApplicationReadOnlyServiceInvocationAdapter service,
+            IApplicationWorkflowServiceInvocationAdapter workflowService,
             CatalogRecordView serviceRecord,
             ApplicationReadOnlyServiceDefinition serviceDefinition)
         {
@@ -164,6 +264,7 @@ public sealed class ApplicationReadOnlyServiceAuthorizationTests
             Entities = entities;
             CounterType = counterType;
             Service = service;
+            WorkflowService = workflowService;
             this.serviceRecord = serviceRecord;
             this.serviceDefinition = serviceDefinition;
         }
@@ -172,8 +273,13 @@ public sealed class ApplicationReadOnlyServiceAuthorizationTests
         public SqliteEntityComponentStore Entities { get; }
         public RegisteredComponentTypeVersion CounterType { get; }
         public IApplicationReadOnlyServiceInvocationAdapter Service { get; }
+        public IApplicationWorkflowServiceInvocationAdapter WorkflowService { get; }
 
-        public static async Task<Fixture> CreateAsync(bool includeQueryInGrant = true)
+        public static async Task<Fixture> CreateAsync(
+            bool includeQueryInGrant = true,
+            bool workflow = false,
+            string? workflowSource = null,
+            bool includeActionInGrant = true)
         {
             var sqlite = new SqliteFixture();
             var db = sqlite.CreateContext();
@@ -211,10 +317,14 @@ public sealed class ApplicationReadOnlyServiceAuthorizationTests
                 WriteMechanic(root, "counter-projection", ReadId,
                     "{\"roles\":{\"subject\":{\"components\":[\"counter\"]}}}",
                     "var c=JSON.parse(ctx.roles.subject.components.counter);return {data:{entityId:ctx.roles.subject.id,value:c.value}};");
+                WriteMechanic(root, "set-counter", ActionId,
+                    "{\"roles\":{\"subject\":{\"components\":[\"counter\"]}},\"inputSchema\":" + CounterSchema + "}",
+                    "return {effects:[{type:'component.set',entityId:ctx.roles.subject.id,definitionId:'counter',data:JSON.stringify({value:ctx.input.value})}]};");
                 var first = await ActivateAsync(previews, activation, expected: null);
                 var materializer = new ActivatedApplicationCatalogMaterializer(
                     applications, activation, sources, roots, extensions);
                 var readRecord = materializer.Build(Application).Records.Single(record => record.QualifiedId == ReadId);
+                var actionRecord = materializer.Build(Application).Records.Single(record => record.QualifiedId == ActionId);
 
                 var schemas = new BoundedJsonSchemaValidator();
                 var output = schemas.Compile(OutputSchema);
@@ -244,16 +354,23 @@ public sealed class ApplicationReadOnlyServiceAuthorizationTests
                     query.Executor, query.ProjectionQualifiedId, query.ProjectionVersion,
                     query.ProjectionContentHash, query.OutputSchemaHash, query.OutputSchemaJson,
                     query.Exposure, query.Roles.Keys);
-                var input = schemas.Compile(
-                    "{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{}}");
+                var input = schemas.Compile(workflow
+                    ? CounterSchema
+                    : "{\"type\":\"object\",\"additionalProperties\":false,\"properties\":{}}");
                 var definition = new ApplicationReadOnlyServiceDefinition(
                     input.SchemaHash, input.NormalizedSchema, output.SchemaHash, output.NormalizedSchema,
                     [new("counter", QueryId, queryReference,
                         new Dictionary<string, string> { ["subject"] = "subject" },
-                        schemas, output.NormalizedSchema)], schemas);
+                        schemas, output.NormalizedSchema)], schemas,
+                    workflow
+                        ? [new("setCounter", ActionId, actionRecord.Version, actionRecord.ContentFingerprint,
+                            new Dictionary<string, string> { ["subject"] = "subject" })]
+                        : []);
                 WriteMechanic(root, "counter-service", ServiceId,
                     "{\"service\":" + definition.ToJson() + "}",
-                    "var r=ctx.services.read('counter',{});ctx.services.progress({phase:'read'});return {data:JSON.parse(r.dataJson)};");
+                    workflow
+                        ? workflowSource ?? "ctx.services.action('setCounter',{value:ctx.input.value});return {data:{entityId:'subject',value:ctx.input.value}};"
+                        : "var r=ctx.services.read('counter',{});ctx.services.progress({phase:'read'});return {data:JSON.parse(r.dataJson)};");
                 _ = await ActivateAsync(previews, activation, first.ActivationFingerprint);
 
                 var catalogs = new ActivatedApplicationCatalogProvider(
@@ -291,14 +408,28 @@ public sealed class ApplicationReadOnlyServiceAuthorizationTests
                 var policy = new SqliteStandingGrantPolicy(db, targets);
                 var standingReads = new StandingGrantApplicationReadModelInvocationAdapter(
                     policy, targets, stateSpaces, readModels);
+                var operations = new OperationLog(db);
+                var effects = new ApplicationEcsEffectApplier(db, entities, stateSpaces, operations, edges);
+                var runner = new ApplicationActionRunner(catalogs, activation, stateSpaces, types, entities, edges,
+                    mapping, evaluator, effects, operations);
+                var transactions = new SqliteEcsWriteTransactionFactory(db);
+                var actionAdapter = new ApplicationActionInvocationAdapter(
+                    new PrivateHostInteractionAuthorizationPolicy(stateSpaces), stateSpaces, runner, operations,
+                    null, targets, policy, transactions);
                 var service = new ApplicationReadOnlyServiceInvocationAdapter(
                     catalogs, new ApplicationReadOnlyServiceDefinitionReader(schemas), standingReads,
-                    schemas, engine, stateSpaces, targets, policy);
+                    schemas, engine, stateSpaces, targets, policy, actionAdapter, transactions);
                 var principal = PrivateOperatorPrincipal.Create("test", "service-fixture-operator");
-                await SeedGrantAsync(db, principal, includeQueryInGrant ? [ServiceId, QueryId] : [ServiceId], 1,
-                    GrantReference, revoked: false);
+                IReadOnlyList<string> exactIds = workflow
+                    ? includeActionInGrant ? [ServiceId, ActionId] : [ServiceId]
+                    : includeQueryInGrant ? [ServiceId, QueryId] : [ServiceId];
+                await SeedGrantAsync(db, principal, exactIds, 1,
+                    GrantReference, revoked: false,
+                    capabilities: workflow
+                        ? [StandingGrantCapability.Read, StandingGrantCapability.Execute]
+                        : [StandingGrantCapability.Read]);
                 return new(sqlite, db, root, revision, principal, stateSpaces, entities, counterType,
-                    service, serviceRecord, retainedDefinition);
+                    service, service, serviceRecord, retainedDefinition);
             }
             catch
             {
@@ -335,6 +466,22 @@ public sealed class ApplicationReadOnlyServiceAuthorizationTests
                 progress);
         }
 
+        public ApplicationWorkflowServiceInvocationRequest WorkflowRequest(string commandId, string inputJson)
+        {
+            var state = stateSpaces.Get(SpaceId)!;
+            var host = new InteractionInvocationHost(
+                principal, revision, SpaceId, GrantReference, commandId,
+                InteractionStateRevision.From(state), InteractionExecutionProfile.Workflow,
+                new InteractionInvocationBudget(16, DateTime.UtcNow.AddMinutes(5)));
+            return new(host,
+                new(serviceRecord.Summary.QualifiedId, serviceRecord.Summary.Version,
+                    serviceRecord.Summary.ContentFingerprint),
+                serviceDefinition,
+                new Dictionary<string, string> { ["subject"] = "subject" },
+                inputJson,
+                ExecutionLimits.ReadModel);
+        }
+
         public async Task RevokeAsync()
         {
             await SeedGrantAsync(Db, principal, [ServiceId, QueryId], 2,
@@ -368,13 +515,15 @@ public sealed class ApplicationReadOnlyServiceAuthorizationTests
             int revision,
             string reference,
             bool revoked,
-            bool addCurrent = true)
+            bool addCurrent = true,
+            IReadOnlyList<StandingGrantCapability>? capabilities = null)
         {
             var operationId = $"grant-seed-{revision}";
             db.Add(new Operation { Id = operationId, Timestamp = DateTime.UtcNow, Tool = "test" });
             var grant = new StandingGrantRevision(
                 reference, "service-grant", revision, new string('0', 64), principal.PrincipalId,
-                Application, StandingGrantScope.StateSpace, SpaceId, [StandingGrantCapability.Read],
+                Application, StandingGrantScope.StateSpace, SpaceId,
+                capabilities ?? [StandingGrantCapability.Read],
                 new StandingGrantDefinitionAllowance(
                     StandingGrantDefinitionMode.ExactIds,
                     exactIds.Order(StringComparer.Ordinal).ToArray(),

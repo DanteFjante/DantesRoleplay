@@ -36,18 +36,46 @@ public sealed class ApplicationReadOnlyServiceDefinitionReader(IBoundedJsonSchem
             // is interpreted here. Canonicalization checks the entire declaration's byte/depth bound.
             using var bounded = JsonDocument.Parse(InteractionCanonicalJson.CanonicalizeObject(declaration.GetRawText()));
             var value = bounded.RootElement;
-            Exact(value, "inputSchemaHash", "inputSchemaJson", "outputSchemaHash", "outputSchemaJson", "reads");
+            ExactService(value);
             var reads = value.GetProperty("reads");
             if (reads.ValueKind != JsonValueKind.Array || reads.GetArrayLength() > ApplicationReadOnlyServiceLimits.MaximumReads)
                 throw Invalid();
+            var actions = value.TryGetProperty("actions", out var declaredActions) ? declaredActions : default;
+            if (actions.ValueKind != JsonValueKind.Undefined
+                && (actions.ValueKind != JsonValueKind.Array || actions.GetArrayLength() > ApplicationReadOnlyServiceLimits.MaximumActions))
+                throw Invalid();
             return new(String(value, "inputSchemaHash"), String(value, "inputSchemaJson"),
                 String(value, "outputSchemaHash"), String(value, "outputSchemaJson"),
-                reads.EnumerateArray().Select(ReadDeclaration).ToArray(), schemas);
+                reads.EnumerateArray().Select(ReadDeclaration).ToArray(), schemas,
+                actions.ValueKind == JsonValueKind.Array
+                    ? actions.EnumerateArray().Select(ActionDeclaration).ToArray()
+                    : []);
         }
         catch (Exception exception) when (exception is JsonException or InvalidOperationException or KeyNotFoundException)
         {
             throw Invalid();
         }
+    }
+
+    private static ApplicationServiceActionDeclaration ActionDeclaration(JsonElement value)
+    {
+        Exact(value, "alias", "qualifiedMechanicId", "mechanicVersion", "contentFingerprint", "roleMappings");
+        if (!value.GetProperty("mechanicVersion").TryGetInt32(out var version)) throw Invalid();
+        var mappings = value.GetProperty("roleMappings");
+        if (mappings.ValueKind != JsonValueKind.Object) throw Invalid();
+        return new(String(value, "alias"), String(value, "qualifiedMechanicId"), version,
+            String(value, "contentFingerprint"), mappings.EnumerateObject().ToDictionary(
+                property => property.Name, property => Text(property.Value), StringComparer.Ordinal));
+    }
+
+    private static void ExactService(JsonElement value)
+    {
+        if (value.ValueKind != JsonValueKind.Object) throw Invalid();
+        var names = value.EnumerateObject().Select(property => property.Name).ToArray();
+        var expected = new[] { "inputSchemaHash", "inputSchemaJson", "outputSchemaHash", "outputSchemaJson", "reads" };
+        if (names.Length == expected.Length && !names.Except(expected, StringComparer.Ordinal).Any()) return;
+        var withActions = expected.Append("actions").ToArray();
+        if (names.Length != withActions.Length || names.Except(withActions, StringComparer.Ordinal).Any()) throw Invalid();
     }
 
     private ApplicationServiceReadDeclaration ReadDeclaration(JsonElement value)

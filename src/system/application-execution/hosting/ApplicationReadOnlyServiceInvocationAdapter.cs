@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Collections.ObjectModel;
 using System.Text;
 using System.Text.Json;
 using DantesRoleplay.Authorization;
@@ -7,12 +8,55 @@ using DantesRoleplay.Ecs;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.SchemaValidation;
+using DantesRoleplay.SystemTasks;
 
 namespace DantesRoleplay.ApplicationExecution;
 
+internal sealed record ApplicationWorkflowServiceInvocationRequest
+{
+    internal ApplicationWorkflowServiceInvocationRequest(
+        InteractionInvocationHost host,
+        SystemTaskSelectedDefinition selectedDefinition,
+        ApplicationReadOnlyServiceDefinition definition,
+        IReadOnlyDictionary<string, string> hostRoleBindings,
+        string inputJson,
+        ExecutionLimits computationLimits,
+        ApplicationServiceProgressChannel? progress = null)
+    {
+        Host = host ?? throw new ArgumentNullException(nameof(host));
+        if (host.Profile != InteractionExecutionProfile.Workflow)
+            throw new InteractionContractException(
+                "SERVICE_PROFILE_UNAVAILABLE", "The workflow service requires the workflow profile.");
+        SelectedDefinition = selectedDefinition ?? throw new ArgumentNullException(nameof(selectedDefinition));
+        Definition = definition ?? throw new ArgumentNullException(nameof(definition));
+        var roles = InteractionInvocationRoles.Normalize(hostRoleBindings);
+        HostRoleBindings = new ReadOnlyDictionary<string, string>(new SortedDictionary<string, string>(
+            roles.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal),
+            StringComparer.Ordinal));
+        InputJson = InteractionCanonicalJson.CanonicalizeObject(inputJson);
+        ComputationLimits = computationLimits ?? throw new ArgumentNullException(nameof(computationLimits));
+        Progress = progress;
+    }
+
+    internal InteractionInvocationHost Host { get; }
+    internal SystemTaskSelectedDefinition SelectedDefinition { get; }
+    internal ApplicationReadOnlyServiceDefinition Definition { get; }
+    internal IReadOnlyDictionary<string, string> HostRoleBindings { get; }
+    internal string InputJson { get; }
+    internal ExecutionLimits ComputationLimits { get; }
+    internal ApplicationServiceProgressChannel? Progress { get; }
+}
+
+internal interface IApplicationWorkflowServiceInvocationAdapter
+{
+    Task<InteractionInvocationResult> InvokeAsync(
+        ApplicationWorkflowServiceInvocationRequest request,
+        CancellationToken cancellationToken = default);
+}
+
 /// <summary>
-/// Executes one exact retained read-only service mechanic. This owner is intentionally unregistered
-/// until the standing-grant read adapter and host integration are accepted together.
+/// Executes one exact retained service mechanic. Read-only calls expose declared reads; the
+/// registered workflow boundary additionally exposes independently committed declared actions.
 /// </summary>
 internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
     IPublicApplicationCatalogProvider catalogs,
@@ -22,14 +66,29 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
     JintMechanicEngine mechanics,
     IStateSpaceRegistry stateSpaces,
     IStandingGrantTargetResolver grantTargets,
-    IStandingGrantPolicy standingGrants) : IApplicationReadOnlyServiceInvocationAdapter
+    IStandingGrantPolicy standingGrants,
+    ApplicationActionInvocationAdapter? actions = null,
+    IEcsWriteTransactionFactory? transactions = null) : IApplicationReadOnlyServiceInvocationAdapter,
+    IApplicationWorkflowServiceInvocationAdapter
 {
     public async Task<InteractionInvocationResult> InvokeAsync(
         ApplicationReadOnlyServiceInvocationRequest request,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) =>
+        await InvokeAsync(ServiceInvocation.From(request), workflow: false, cancellationToken);
+
+    public async Task<InteractionInvocationResult> InvokeAsync(
+        ApplicationWorkflowServiceInvocationRequest request,
+        CancellationToken cancellationToken = default) =>
+        await InvokeAsync(ServiceInvocation.From(request), workflow: true, cancellationToken);
+
+    private async Task<InteractionInvocationResult> InvokeAsync(
+        ServiceInvocation request,
+        bool workflow,
+        CancellationToken cancellationToken)
     {
         ApplicationServiceProgressChannel? progress = null;
         var ownsProgress = false;
+        IInvocationCapabilityState? invocationState = null;
         try
         {
             ArgumentNullException.ThrowIfNull(request);
@@ -43,9 +102,13 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
             ownsProgress = true;
             if (request.Progress is null) progress.Complete();
 
-            if (request.Host.Profile != InteractionExecutionProfile.ReadOnly)
+            if ((!workflow && request.Host.Profile != InteractionExecutionProfile.ReadOnly)
+                || (workflow && request.Host.Profile != InteractionExecutionProfile.Workflow))
                 return InteractionInvocationResult.Unavailable(
                     "SERVICE_PROFILE_UNAVAILABLE", "The requested service profile is unavailable.");
+            if (workflow && (actions is null || transactions is null))
+                return InteractionInvocationResult.Unavailable(
+                    "WORKFLOW_SERVICE_UNAVAILABLE", "The state-changing service runtime is unavailable.");
             var deadline = DeadlineFailure(request.Host, cancellationToken);
             if (deadline is not null) return deadline;
             if (!request.Host.Budget.TryConsumeOperation())
@@ -60,7 +123,9 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
                 request.SelectedDefinition.Version,
                 request.SelectedDefinition.Fingerprint);
             var rootAuthorization = await AuthorizeAsync(
-                request.Host, rootSelection, cancellationToken).ConfigureAwait(false);
+                request.Host, rootSelection,
+                workflow ? StandingGrantCapability.Execute : StandingGrantCapability.Read,
+                cancellationToken).ConfigureAwait(false);
             if (rootAuthorization.Failure is not null) return rootAuthorization.Failure;
 
             var retained = ResolveRetained(request);
@@ -68,6 +133,9 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
             if (!string.Equals(retainedDefinition.ToJson(), request.Definition.ToJson(), StringComparison.Ordinal))
                 return InteractionInvocationResult.Failed(
                     "SERVICE_DECLARATION_STALE", "The service declaration is no longer current.");
+            if (workflow && retainedDefinition.Actions.Count == 0)
+                return InteractionInvocationResult.Unavailable(
+                    "WORKFLOW_ACTIONS_UNAVAILABLE", "The selected service declares no state-changing actions.");
             if (HasUnsupportedRequirements(retained.RequirementsJson))
                 return InteractionInvocationResult.Unavailable(
                     "SERVICE_REQUIREMENTS_UNAVAILABLE",
@@ -88,7 +156,7 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
             var seed = BinaryPrimitives.ReadInt64BigEndian(Convert.FromHexString(invocationFingerprint[..16]));
             var exchange = new ExchangedDataBudget();
             exchange.Add(input);
-            var capabilities = new InvocationCapabilities(
+            var readCapabilities = new InvocationCapabilities(
                 request.Host,
                 retainedDefinition,
                 request.HostRoleBindings,
@@ -97,6 +165,18 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
                 stateSpaces,
                 progress,
                 exchange);
+            IApplicationReadOnlyServiceCapabilities capabilities = workflow
+                ? new WorkflowInvocationCapabilities(
+                    readCapabilities,
+                    request.Host,
+                    request.SelectedDefinition,
+                    retainedDefinition,
+                    request.HostRoleBindings,
+                    actions!,
+                    exchange)
+                : readCapabilities;
+            var state = capabilities as IInvocationCapabilityState ?? readCapabilities;
+            invocationState = state;
 
             MechanicRunResult run;
             var priorContext = SynchronizationContext.Current;
@@ -118,32 +198,35 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
                 SynchronizationContext.SetSynchronizationContext(priorContext);
             }
 
-            if (capabilities.TerminalResult is { } terminal) return terminal;
+            if (state.TerminalResult is { } terminal) return terminal;
             deadline = DeadlineFailure(request.Host, cancellationToken);
-            if (deadline is not null) return deadline;
+            if (deadline is not null) return AttachPrevious(deadline, state.PreviousCommits);
             scope = CurrentScopeFailure(request.Host);
-            if (scope is not null) return scope;
+            if (scope is not null) return AttachPrevious(scope, state.PreviousCommits);
             rootAuthorization = await AuthorizeAsync(
-                request.Host, rootSelection, cancellationToken, rootAuthorization.Authorization).ConfigureAwait(false);
-            if (rootAuthorization.Failure is not null) return rootAuthorization.Failure;
+                request.Host, rootSelection,
+                workflow ? StandingGrantCapability.Execute : StandingGrantCapability.Read,
+                cancellationToken, rootAuthorization.Authorization).ConfigureAwait(false);
+            if (rootAuthorization.Failure is not null)
+                return AttachPrevious(rootAuthorization.Failure, state.PreviousCommits);
             if (!run.Ok)
-                return run.LimitHit is "cancelled" && cancellationToken.IsCancellationRequested
+                return AttachPrevious(run.LimitHit is "cancelled" && cancellationToken.IsCancellationRequested
                     ? InteractionInvocationResult.Cancelled(
                         "INVOCATION_CANCELLED", "The service computation was cancelled.")
                     : InteractionInvocationResult.Failed(
-                        "SERVICE_COMPUTATION_FAILED", "The service computation could not complete.");
+                        "SERVICE_COMPUTATION_FAILED", "The service computation could not complete."), state.PreviousCommits);
             if (run.Output.Effects.Count != 0 || run.Output.Events.Count != 0
                 || run.Output.Notifications.Count != 0)
                 return InteractionInvocationResult.Failed(
-                    "SERVICE_EFFECTS_FORBIDDEN", "A read-only service cannot produce effects or announcements.");
+                    "SERVICE_EFFECTS_FORBIDDEN", "A service cannot produce direct effects or announcements.", state.PreviousCommits);
             if (!run.Output.HasData)
                 return InteractionInvocationResult.Failed(
-                    "SERVICE_OUTPUT_REQUIRED", "The service did not produce data.");
+                    "SERVICE_OUTPUT_REQUIRED", "The service did not produce data.", state.PreviousCommits);
             var output = CanonicalObject(run.Output.Data);
             exchange.Add(output);
             if (schemas.Validate(retainedDefinition.OutputSchemaJson, output).Status != SchemaValueStatus.Valid)
                 return InteractionInvocationResult.Failed(
-                    "SERVICE_OUTPUT_INVALID", "The service output does not match its declared schema.");
+                    "SERVICE_OUTPUT_INVALID", "The service output does not match its declared schema.", state.PreviousCommits);
 
             var evidence = InteractionCanonicalJson.Fingerprint(
                 "dantes-roleplay/application-read-only-service/process-local/v1",
@@ -169,28 +252,35 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
                         "dantes-roleplay/application-read-only-service/input/v1", input),
                     outputFingerprint = InteractionCanonicalJson.Fingerprint(
                         "dantes-roleplay/application-read-only-service/output/v1", output),
-                    reads = capabilities.ReadEvidence
+                    reads = state.ReadEvidence,
+                    actions = state.ActionEvidence
                 })));
             return InteractionInvocationResult.CompletedComputation(
-                output, "service-process-local." + evidence.ToLowerInvariant());
+                output, "service-process-local." + evidence.ToLowerInvariant(), state.PreviousCommits);
         }
         catch (OperationCanceledException)
         {
             return InteractionInvocationResult.Cancelled(
-                "INVOCATION_CANCELLED", "The service invocation was cancelled.");
+                "INVOCATION_CANCELLED", "The service invocation was cancelled.", invocationState?.PreviousCommits);
         }
         catch (InteractionContractException exception)
         {
-            return InteractionInvocationResult.Failed(exception.Code, "The service invocation is invalid.");
+            return InteractionInvocationResult.Failed(
+                exception.Code, "The service invocation is invalid.", invocationState?.PreviousCommits);
         }
         catch (ApplicationReadModelException exception)
         {
-            return InteractionInvocationResult.Failed(exception.Code, "The service read could not complete.");
+            return InteractionInvocationResult.Failed(
+                exception.Code, "The service read could not complete.", invocationState?.PreviousCommits);
         }
         catch
         {
-            return InteractionInvocationResult.Unavailable(
-                "SERVICE_RUNTIME_UNAVAILABLE", "The read-only service runtime is unavailable.");
+            return invocationState is { PreviousCommits.Count: > 0 }
+                ? InteractionInvocationResult.Failed(
+                    "SERVICE_SEQUENCE_INCOMPLETE",
+                    "The service runtime became unavailable after earlier commits.", invocationState.PreviousCommits)
+                : InteractionInvocationResult.Unavailable(
+                    "SERVICE_RUNTIME_UNAVAILABLE", "The service runtime is unavailable.");
         }
         finally
         {
@@ -198,7 +288,7 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
         }
     }
 
-    private RetainedMechanic ResolveRetained(ApplicationReadOnlyServiceInvocationRequest request)
+    private RetainedMechanic ResolveRetained(ServiceInvocation request)
     {
         var application = request.Host.ApplicationRevision.ApplicationId;
         if (!catalogs.TryGet(application, out var catalog))
@@ -239,10 +329,18 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
     private async Task<ServiceAuthorizationResult> AuthorizeAsync(
         InteractionInvocationHost host,
         StandingGrantDefinitionReference selection,
+        StandingGrantCapability capability,
         CancellationToken cancellationToken,
         ServiceAuthorization? initial = null)
     {
         using var deadline = DeadlineToken(host, cancellationToken);
+        await using var transaction = capability == StandingGrantCapability.Execute && transactions is not null
+            ? await transactions.BeginAsync(deadline.Token).ConfigureAwait(false)
+            : null;
+        if (capability == StandingGrantCapability.Execute
+            && (transaction is null || transactions is null || !transactions.OwnsCurrent(transaction)))
+            return new(null, InteractionInvocationResult.Unavailable(
+                "SERVICE_TRANSACTION_UNAVAILABLE", "The workflow service authorization transaction is unavailable."));
         var resolution = await grantTargets.ResolveAsync(host, selection, deadline.Token)
             .WaitAsync(deadline.Token).ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
@@ -258,22 +356,25 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
             || resolution.Target.Kind != selection.Kind
             || resolution.Target.Revision != selection.Revision
             || resolution.Target.ContentFingerprint != selection.ContentFingerprint
-            || resolution.Target.OwnerApplicationId != host.ApplicationRevision.ApplicationId)
+            || resolution.Target.OwnerApplicationId != host.ApplicationRevision.ApplicationId
+            || resolution.Target.Candidate is not null
+            || resolution.Target.RetainedActivation is not null)
             return new(null, InteractionInvocationResult.Unavailable(
                 "SERVICE_AUTHORITY_UNAVAILABLE", "The selected service authority is unavailable."));
         if (initial is not null && initial.Target != resolution.Target)
             return AuthorityChanged();
-        var requirement = ReadRequirement(host, resolution.Target);
+        var requirement = Requirement(host, resolution.Target, capability);
         var decision = await standingGrants.EvaluateAsync(
             host,
             requirement,
             deadline.Token).WaitAsync(deadline.Token).ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
         if (host.Budget.DeadlineUtc <= DateTime.UtcNow) throw new OperationCanceledException();
-        if (!ExactAllowedDecision(host, resolution.Target, decision))
+        if (!ExactAllowedDecision(host, resolution.Target, capability, decision))
             return new(null, InteractionInvocationResult.Failed(
                 "INVOCATION_NOT_AUTHORIZED", "The service is not authorized for this scope."));
         var authorized = new ServiceAuthorization(resolution.Target, GrantIdentity.From(decision.Grant!));
+        if (transaction is not null) await transaction.RollbackAsync(CancellationToken.None).ConfigureAwait(false);
         return initial is not null && initial.Grant != authorized.Grant
             ? AuthorityChanged()
             : new(authorized, null);
@@ -282,6 +383,7 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
     private static bool ExactAllowedDecision(
         InteractionInvocationHost host,
         StandingGrantDefinitionTarget target,
+        StandingGrantCapability capability,
         StandingGrantDecision? decision)
     {
         if (decision is not { Allowed: true, Grant: not null, Evidence.Allowed: true }
@@ -302,7 +404,7 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
             && grant.ExpiresAtUtc > DateTime.UtcNow
             && host.Budget.DeadlineUtc <= grant.ExpiresAtUtc
             && host.Budget.MaximumOperations <= grant.MaximumOperations
-            && grant.Capabilities.Contains(StandingGrantCapability.Read)
+            && grant.Capabilities.Contains(capability)
             && StandingGrantContractRules.MatchesDefinitionAllowance(
                 host.ApplicationRevision.ApplicationId, grant.Definitions, target);
     }
@@ -394,6 +496,25 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
 
     private static string CanonicalObject(string json) => InteractionCanonicalJson.CanonicalizeObject(json);
 
+    private static InteractionInvocationResult AttachPrevious(
+        InteractionInvocationResult result,
+        IReadOnlyList<InteractionInvocationCommitReceipt> previousCommits)
+    {
+        if (previousCommits.Count == 0) return result;
+        return result.Tag switch
+        {
+            InteractionInvocationResultTag.Failed => InteractionInvocationResult.Failed(
+                result.Code, result.SafeMessage, previousCommits.Concat(result.PreviousCommits).ToArray(), result.RecoveryIdentity),
+            InteractionInvocationResultTag.Cancelled => InteractionInvocationResult.Cancelled(
+                result.Code, result.SafeMessage, previousCommits.Concat(result.PreviousCommits).ToArray(), result.RecoveryIdentity),
+            InteractionInvocationResultTag.Unavailable => InteractionInvocationResult.Failed(
+                "SERVICE_SEQUENCE_INCOMPLETE", "The service became unavailable after earlier commits.",
+                previousCommits, result.RecoveryIdentity),
+            _ => InteractionInvocationResult.Failed(
+                "SERVICE_RESULT_INVALID", "The service returned an invalid result after earlier commits.", previousCommits)
+        };
+    }
+
     private sealed record RetainedMechanic(
         CatalogRecordView Record,
         string RequirementsJson,
@@ -415,6 +536,14 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
         }
     }
 
+    private interface IInvocationCapabilityState
+    {
+        InteractionInvocationResult? TerminalResult { get; }
+        IReadOnlyList<object> ReadEvidence { get; }
+        IReadOnlyList<object> ActionEvidence { get; }
+        IReadOnlyList<InteractionInvocationCommitReceipt> PreviousCommits { get; }
+    }
+
     private sealed class InvocationCapabilities(
         InteractionInvocationHost host,
         ApplicationReadOnlyServiceDefinition definition,
@@ -424,7 +553,7 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
         IStateSpaceRegistry stateSpaces,
         ApplicationServiceProgressChannel progress,
         ExchangedDataBudget exchange) : IApplicationReadOnlyServiceCapabilities,
-        IApplicationReadOnlyServiceProgressAttemptSink
+        IApplicationReadOnlyServiceProgressAttemptSink, IInvocationCapabilityState
     {
         private readonly List<object> _readEvidence = [];
         private InteractionInvocationResult? _terminal;
@@ -432,6 +561,8 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
 
         public InteractionInvocationResult? TerminalResult => _terminal;
         public IReadOnlyList<object> ReadEvidence => _readEvidence.AsReadOnly();
+        public IReadOnlyList<object> ActionEvidence => [];
+        public IReadOnlyList<InteractionInvocationCommitReceipt> PreviousCommits => [];
 
         public async Task<InteractionInvocationResult> ReadAsync(
             string alias,
@@ -561,7 +692,7 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
             }
         }
 
-        private InteractionInvocationResult? ScopeFailure()
+        internal InteractionInvocationResult? ScopeFailure()
         {
             if (host.StateSpaceId is not { } stateSpaceId || host.StateRevision is null)
                 return InteractionInvocationResult.Failed(
@@ -578,7 +709,7 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
                     "INVOCATION_SCOPE_STALE", "The requested state scope is no longer current.");
         }
 
-        private InteractionInvocationResult SetTerminal(InteractionInvocationResult result)
+        internal InteractionInvocationResult SetTerminal(InteractionInvocationResult result)
         {
             _terminal ??= result;
             progress.Complete();
@@ -586,12 +717,200 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
         }
     }
 
-    private static StandingGrantRequirement ReadRequirement(
+    private sealed class WorkflowInvocationCapabilities(
+        InvocationCapabilities readCapabilities,
         InteractionInvocationHost host,
-        StandingGrantDefinitionTarget target)
+        SystemTaskSelectedDefinition rootDefinition,
+        ApplicationReadOnlyServiceDefinition definition,
+        IReadOnlyDictionary<string, string> hostRoles,
+        ApplicationActionInvocationAdapter actions,
+        ExchangedDataBudget exchange) : IApplicationActionServiceCapabilities,
+        IApplicationReadOnlyServiceProgressAttemptSink, IInvocationCapabilityState
+    {
+        private readonly List<object> _actionEvidence = [];
+        private readonly List<InteractionInvocationCommitReceipt> _previousCommits = [];
+        private InteractionInvocationResult? _terminal;
+        private int _actionAttempts;
+
+        public InteractionInvocationResult? TerminalResult => _terminal ?? readCapabilities.TerminalResult;
+        public IReadOnlyList<object> ReadEvidence => readCapabilities.ReadEvidence;
+        public IReadOnlyList<object> ActionEvidence => _actionEvidence.AsReadOnly();
+        public IReadOnlyList<InteractionInvocationCommitReceipt> PreviousCommits => _previousCommits.AsReadOnly();
+
+        public Task<InteractionInvocationResult> ReadAsync(
+            string alias,
+            string inputJson,
+            CancellationToken cancellationToken = default) =>
+            TerminalResult is { } terminal
+                ? Task.FromResult(terminal)
+                : readCapabilities.ReadAsync(alias, inputJson, cancellationToken);
+
+        public async Task<InteractionInvocationResult> ActionAsync(
+            string alias,
+            string inputJson,
+            CancellationToken cancellationToken = default)
+        {
+            if (TerminalResult is { } terminal) return terminal;
+            try
+            {
+                if (_actionAttempts >= ApplicationReadOnlyServiceLimits.MaximumActions)
+                    return SetTerminal(InteractionInvocationResult.Failed(
+                        "SERVICE_ACTION_LIMIT", "The service action attempt allowance is exhausted.", _previousCommits));
+                _actionAttempts++;
+                var declaration = definition.Actions.SingleOrDefault(
+                    value => string.Equals(value.Alias, alias, StringComparison.Ordinal));
+                if (declaration is null)
+                    return SetTerminal(InteractionInvocationResult.Failed(
+                        "SERVICE_ACTION_ALIAS_INVALID", "The service action alias is not declared.", _previousCommits));
+                var scope = readCapabilities.ScopeFailure();
+                if (scope is not null) return SetTerminal(WithPreviousCommits(scope));
+                var input = CanonicalObject(inputJson);
+                exchange.Add(input);
+                var roles = new SortedDictionary<string, string>(StringComparer.Ordinal);
+                foreach (var (actionRole, hostRole) in declaration.RoleMappings)
+                {
+                    if (!hostRoles.TryGetValue(hostRole, out var entityId))
+                        return SetTerminal(InteractionInvocationResult.Failed(
+                            "SERVICE_ROLE_BINDING_MISSING", "A trusted service role binding is missing.", _previousCommits));
+                    roles.Add(actionRole, entityId);
+                }
+
+                var commandMaterial = InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
+                {
+                    parentCommandId = host.CommandId,
+                    ordinal = _actionAttempts,
+                    rootDefinition.ExactDefinitionId,
+                    rootDefinition.Version,
+                    rootDefinition.Fingerprint,
+                    declaration.QualifiedMechanicId,
+                    declaration.MechanicVersion,
+                    declaration.ContentFingerprint,
+                    roles,
+                    input
+                }));
+                var childCommand = InteractionCanonicalJson.Fingerprint(
+                    "dantes-roleplay/application-workflow-service/child-command/v1", commandMaterial)[..32]
+                    .ToLowerInvariant();
+                var childHost = new InteractionInvocationHost(
+                    host.Principal,
+                    host.ApplicationRevision,
+                    host.StateSpaceId!,
+                    host.GrantReference,
+                    childCommand,
+                    host.StateRevision!,
+                    InteractionExecutionProfile.Atomic,
+                    host.Budget,
+                    host.CommandId);
+                var result = await actions.ExecuteWorkflowChildAsync(new(
+                    childHost,
+                    declaration.QualifiedMechanicId,
+                    declaration.MechanicVersion,
+                    declaration.ContentFingerprint,
+                    roles,
+                    input), cancellationToken).ConfigureAwait(false);
+                if (result.Tag == InteractionInvocationResultTag.Committed && result.Receipt is not null)
+                {
+                    // Record commit evidence before any subsequent bound/check operation can fail.
+                    _previousCommits.Add(result.Receipt);
+                    _actionEvidence.Add(new
+                    {
+                        declaration.Alias,
+                        inputFingerprint = InteractionCanonicalJson.Fingerprint(
+                            "dantes-roleplay/application-workflow-service/action-input/v1", input),
+                        result.Receipt.OperationId,
+                        result.Receipt.RequestFingerprint,
+                        effectCount = result.Receipt.Effects.Count,
+                        result.Receipt.EffectDetailsAvailable
+                    });
+                    exchange.Add(InteractionCanonicalJson.CanonicalizeObject(result.ToJson()));
+                    var committedScope = readCapabilities.ScopeFailure();
+                    return committedScope is null ? result : SetTerminal(WithPreviousCommits(committedScope));
+                }
+                var afterScope = readCapabilities.ScopeFailure();
+                if (afterScope is not null) return SetTerminal(WithPreviousCommits(afterScope));
+                exchange.Add(InteractionCanonicalJson.CanonicalizeObject(result.ToJson()));
+                return SetTerminal(WithPreviousCommits(result));
+            }
+            catch (OperationCanceledException)
+            {
+                return SetTerminal(InteractionInvocationResult.Cancelled(
+                    "SERVICE_ACTION_CANCELLED", "The service action was cancelled.", _previousCommits));
+            }
+            catch (InteractionContractException exception)
+            {
+                return SetTerminal(InteractionInvocationResult.Failed(
+                    exception.Code, "The service action request is invalid.", _previousCommits));
+            }
+            catch
+            {
+                return SetTerminal(InteractionInvocationResult.Failed(
+                    "SERVICE_ACTION_UNAVAILABLE", "The service action is unavailable.", _previousCommits));
+            }
+        }
+
+        public ApplicationServiceProgressDisposition TryWriteProgress(string dataJson) =>
+            TerminalResult is null
+                ? readCapabilities.TryWriteProgress(dataJson)
+                : ApplicationServiceProgressDisposition.Closed;
+
+        public void BeginProgressAttempt() => readCapabilities.BeginProgressAttempt();
+
+        public ApplicationServiceProgressDisposition WriteProgress(string dataJson) =>
+            TerminalResult is null
+                ? readCapabilities.WriteProgress(dataJson)
+                : ApplicationServiceProgressDisposition.Closed;
+
+        private InteractionInvocationResult WithPreviousCommits(InteractionInvocationResult result)
+        {
+            var prior = _previousCommits.Concat(result.PreviousCommits).ToArray();
+            return result.Tag switch
+            {
+                InteractionInvocationResultTag.Failed => InteractionInvocationResult.Failed(
+                    result.Code, result.SafeMessage, prior, result.RecoveryIdentity),
+                InteractionInvocationResultTag.Cancelled => InteractionInvocationResult.Cancelled(
+                    result.Code, result.SafeMessage, prior, result.RecoveryIdentity),
+                InteractionInvocationResultTag.Unavailable when prior.Length == 0 => result,
+                InteractionInvocationResultTag.Unavailable => InteractionInvocationResult.Failed(
+                    "SERVICE_ACTION_SEQUENCE_INCOMPLETE",
+                    "A workflow action outcome is unavailable after earlier commits.", prior, result.RecoveryIdentity),
+                _ => InteractionInvocationResult.Failed(
+                    "SERVICE_ACTION_RESULT_INVALID", "The service action returned an invalid result kind.", prior)
+            };
+        }
+
+        private InteractionInvocationResult SetTerminal(InteractionInvocationResult result)
+        {
+            _terminal ??= result;
+            readCapabilities.SetTerminal(_terminal);
+            return _terminal;
+        }
+    }
+
+    private sealed record ServiceInvocation(
+        InteractionInvocationHost Host,
+        SystemTaskSelectedDefinition SelectedDefinition,
+        ApplicationReadOnlyServiceDefinition Definition,
+        IReadOnlyDictionary<string, string> HostRoleBindings,
+        string InputJson,
+        ExecutionLimits ComputationLimits,
+        ApplicationServiceProgressChannel? Progress)
+    {
+        internal static ServiceInvocation From(ApplicationReadOnlyServiceInvocationRequest request) =>
+            new(request.Host, request.SelectedDefinition, request.Definition, request.HostRoleBindings,
+                request.InputJson, request.ComputationLimits, request.Progress);
+
+        internal static ServiceInvocation From(ApplicationWorkflowServiceInvocationRequest request) =>
+            new(request.Host, request.SelectedDefinition, request.Definition, request.HostRoleBindings,
+                request.InputJson, request.ComputationLimits, request.Progress);
+    }
+
+    private static StandingGrantRequirement Requirement(
+        InteractionInvocationHost host,
+        StandingGrantDefinitionTarget target,
+        StandingGrantCapability capability)
     {
         var requirement = new StandingGrantRequirement(
-            StandingGrantCapability.Read,
+            capability,
             StandingGrantScope.StateSpace,
             [target],
             []);

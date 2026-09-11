@@ -45,12 +45,17 @@ catalog provider, authorize old-generation commits, or implement activation and 
 
 The internal `JintMechanicEngine.PrepareMechanicProgram` method is the exact executable preparation
 seam for coordinated activation integration. Existing activation preparation remains separately
-owned until that integration is accepted. The internal read-only service adapter consumes the
-standing-grant read adapter and owner-resolved grant targets. It has no legacy permission fallback
-and remains unregistered pending real authorization and host integration. The existing registered
-read and root atomic action adapters retain their supported profiles. Service action, workflow,
-wait, job and AI callbacks return unavailable until their real dependencies and shared contracts
-are integrated.
+owned until that integration is accepted. The registered read-only service adapter consumes the
+standing-grant read adapter and owner-resolved grant targets, with no legacy permission fallback.
+Its registered workflow profile exposes only exact actions declared by the retained
+`requirements.service.actions` contract. Each action derives a deterministic child command,
+preserves the parent command, shares the root deadline and operation ledger, rechecks current
+state-scoped Execute authority, and commits through the existing action, effect and operation-log
+owners. Successful child receipts remain attached to later workflow completion or failure. The
+public root atomic adapter still rejects parented requests, and read-only engine instances still
+return the canonical unavailable result for `ctx.services.action`. Atomic service execution,
+workflow handoff, wait, job and AI callbacks remain unavailable until their real dependencies and
+shared contracts are integrated.
 
 The internal candidate runtime validator consumes the activation owner's retained pure-mechanic
 closure evidence. That evidence covers every changed Markdown/JavaScript pair through the existing
@@ -80,11 +85,13 @@ deadline; callback waits also observe the root's remaining wall time. Root memor
 recursion limits do not describe aggregate resource use across child interpreters. Progress is a
 transient channel of eight frames, at most 32 attempts and 16 KiB total, with 2 KiB per serialized
 frame; full and closed attempts count, and only accepted frames receive consecutive sequence numbers.
-Reads and progress execute synchronously on the sole engine thread through captured JSON functions;
+Reads, actions and progress execute synchronously on the sole engine thread through captured JSON functions;
 CLR capability objects never enter JavaScript. The host resolves and validates the exact retained
 `requirements.service` declaration, pins the exact root target and grant identity, rechecks those
 identities and current authority, and validates output before emitting
-process-local computation evidence. That evidence is not a durable task, read receipt or commit.
+process-local computation evidence. A workflow root uses Execute authority, and every separately
+committed action consumes another operation and returns its independently replayable receipt. That
+evidence is not a durable task or checkpoint.
 
 Trusted application-scoped invocations use `InteractionInvocationHost.ForApplication` with both
 state identity fields absent. The existing constructor, planner context and envelope factory remain

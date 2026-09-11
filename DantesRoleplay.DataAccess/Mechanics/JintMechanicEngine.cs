@@ -373,6 +373,8 @@ public sealed class JintMechanicEngine : IMechanicEngine
         var bridge = new ServiceCallbackBridge(capabilities, invocation, timeout, cancellationToken);
         var read = new ClrFunction(engine, "serviceRead", (_, arguments) =>
             (JsValue)bridge.Read(RequiredString(arguments, 0), RequiredString(arguments, 1)), 2);
+        var action = new ClrFunction(engine, "serviceAction", (_, arguments) =>
+            (JsValue)bridge.Action(RequiredString(arguments, 0), RequiredString(arguments, 1)), 2);
         var progressAttempt = new ClrFunction(engine, "serviceProgressAttempt", (_, arguments) =>
             (JsValue)bridge.ProgressAttempt(RequiredString(arguments, 0)), 1);
         var progress = new ClrFunction(engine, "serviceProgress", (_, arguments) =>
@@ -382,7 +384,8 @@ public sealed class JintMechanicEngine : IMechanicEngine
             "This service capability is unavailable in the read-only runtime.").ToJson();
 
         var binder = engine.Evaluate(PreparedServiceBindingHarness);
-        engine.Invoke(binder, read, progressAttempt, progress, (JsValue)unavailable);
+        engine.Invoke(binder, read, action, progressAttempt, progress,
+            capabilities is IApplicationActionServiceCapabilities, (JsValue)unavailable);
     }
 
     private static string RequiredString(JsValue[] arguments, int index)
@@ -403,6 +406,20 @@ public sealed class JintMechanicEngine : IMechanicEngine
             using var wait = RemainingWait();
             var task = capabilities.ReadAsync(alias, inputJson, wait.Token);
             var result = task.WaitAsync(wait.Token).ConfigureAwait(false).GetAwaiter().GetResult();
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfTimeoutElapsed(invocation.Elapsed, timeout);
+            return result.ToJson();
+        }
+
+        public string Action(string alias, string inputJson)
+        {
+            if (capabilities is not IApplicationActionServiceCapabilities actions)
+                throw new InvalidOperationException("The action service capability is unavailable.");
+            using var wait = RemainingWait();
+            // The state-changing adapter owns cancellation reconciliation. Waiting for that result
+            // prevents an unknown commit from continuing after the engine has returned.
+            var result = actions.ActionAsync(alias, inputJson, wait.Token)
+                .ConfigureAwait(false).GetAwaiter().GetResult();
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfTimeoutElapsed(invocation.Elapsed, timeout);
             return result.ToJson();
@@ -861,7 +878,7 @@ public sealed class JintMechanicEngine : IMechanicEngine
     /// object. JSON and other intrinsics are captured before authored code can replace them.
     /// </summary>
     private const string ServiceBindingHarness = """
-        (function (readNative, progressAttemptNative, progressNative, unavailableJson) {
+        (function (readNative, actionNative, progressAttemptNative, progressNative, actionEnabled, unavailableJson) {
           var safeParse = JSON.parse;
           var safeStringify = JSON.stringify;
           var safeString = String;
@@ -889,6 +906,10 @@ public sealed class JintMechanicEngine : IMechanicEngine
 
           var unavailable = freezeDeep(safeParse(unavailableJson));
           function unsupported() { return unavailable; }
+          var action = actionEnabled ? function (alias, input) {
+            if (typeof alias !== 'string') throw new TypeError('services.action alias must be a string.');
+            return freezeDeep(safeParse(actionNative(safeString(alias), inputJson(input, 'services.action'))));
+          } : unsupported;
           var services = {
             read: function (alias, input) {
               if (typeof alias !== 'string') throw new TypeError('services.read alias must be a string.');
@@ -900,7 +921,7 @@ public sealed class JintMechanicEngine : IMechanicEngine
               if (progressAttempts > 32) throw new RangeError('services.progress attempt limit exceeded.');
               return progressNative(inputJson(data, 'services.progress'));
             },
-            action: unsupported,
+            action: action,
             workflow: unsupported,
             wait: unsupported,
             job: unsupported,
@@ -1034,6 +1055,14 @@ internal interface IApplicationReadOnlyServiceProgressAttemptSink
 {
     void BeginProgressAttempt();
     ApplicationServiceProgressDisposition WriteProgress(string dataJson);
+}
+
+internal interface IApplicationActionServiceCapabilities : IApplicationReadOnlyServiceCapabilities
+{
+    Task<InteractionInvocationResult> ActionAsync(
+        string alias,
+        string inputJson,
+        CancellationToken cancellationToken = default);
 }
 
 internal readonly record struct MechanicRunMeasurements(

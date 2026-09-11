@@ -18,9 +18,15 @@ public static class ApplicationExecutionComponentRegistration
         .AddScoped<IApplicationMechanicEvaluator, ApplicationMechanicEvaluator>()
         .AddScoped<IApplicationEcsEffectBatchBuilder, ApplicationEcsEffectBatchBuilder>()
         .AddScoped<IApplicationPureActionExecutor, ApplicationPureActionExecutor>()
-        .AddScoped<IApplicationActionInvocationAdapter, ApplicationActionInvocationAdapter>()
+        .AddScoped<ApplicationActionInvocationAdapter>()
+        .AddScoped<IApplicationActionInvocationAdapter>(provider =>
+            provider.GetRequiredService<ApplicationActionInvocationAdapter>())
         .AddScoped<IApplicationReadOnlyServiceDefinitionReader, ApplicationReadOnlyServiceDefinitionReader>()
-        .AddScoped<IApplicationReadOnlyServiceInvocationAdapter, ApplicationReadOnlyServiceInvocationAdapter>()
+        .AddScoped<ApplicationReadOnlyServiceInvocationAdapter>()
+        .AddScoped<IApplicationReadOnlyServiceInvocationAdapter>(provider =>
+            provider.GetRequiredService<ApplicationReadOnlyServiceInvocationAdapter>())
+        .AddScoped<IApplicationWorkflowServiceInvocationAdapter>(provider =>
+            provider.GetRequiredService<ApplicationReadOnlyServiceInvocationAdapter>())
         // Keep the concrete runner available to the generic event adapter so both paths reuse its
         // exact typed-effect translation and expectation builder.
         .AddScoped<ApplicationActionRunner>()
