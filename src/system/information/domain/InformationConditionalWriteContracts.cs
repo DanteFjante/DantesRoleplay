@@ -13,6 +13,21 @@ public sealed record InformationSourceConditionalWriteRequest(
 public sealed record InformationRecordConditionalWriteRequest(
     [property: JsonRequired] InformationRecordWriteRequest Value, [property: JsonRequired] int ExpectedRevision);
 
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public sealed record InformationRecordRevisionReadRequest(
+    [property: JsonRequired] string RecordId, int? Revision = null);
+
+public sealed record InformationMetadataSchemaBinding(
+    string Mode, int SourceRevision, string ProfileId, string SchemaJson, string SchemaHash,
+    Ecs.EcsComponentReference? RegisteredSchema);
+
+public sealed record InformationRecordRevisionView(
+    string Id, int Revision, string SourceId, string Title, string Content, string MetadataJson,
+    string ContentHash, InformationMetadataSchemaBinding MetadataSchema);
+
+public sealed record InformationRecordRevisionReadResult(
+    string Status, InformationRecordRevisionView? Record, string ErrorCode = "", string ErrorMessage = "");
+
 /// <summary>Explicit installation-operator adoption or movement; never inferred from a source's textual scope.</summary>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record InformationSourceOwnershipWriteRequest(
@@ -42,4 +57,8 @@ public interface IConditionalInformationStore
 
     Task<InteractionInvocationResult> WriteRecordAsync(InteractionInvocationHost host,
         InformationRecordConditionalWriteRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>Reads a current or retained record only after current Read authority and exact schema verification.</summary>
+    Task<InformationRecordRevisionReadResult> ReadRecordRevisionAsync(InteractionInvocationHost host,
+        InformationRecordRevisionReadRequest request, CancellationToken cancellationToken = default);
 }

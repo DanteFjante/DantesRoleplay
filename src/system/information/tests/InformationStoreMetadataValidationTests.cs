@@ -10,6 +10,20 @@ namespace DantesRoleplay.Tests;
 public sealed class InformationStoreMetadataValidationTests
 {
     [Fact]
+    public void Production_registration_exposes_the_conditional_schema_bound_owner()
+    {
+        var services = new ServiceCollection();
+        services.AddDantesRoleplayDataAccess("Filename=:memory:");
+        using var provider = services.BuildServiceProvider();
+        using var scope = provider.CreateScope();
+
+        Assert.IsType<SqliteConditionalInformationStore>(
+            scope.ServiceProvider.GetRequiredService<IConditionalInformationStore>());
+        Assert.Same(scope.ServiceProvider.GetRequiredService<InformationStore>(),
+            scope.ServiceProvider.GetRequiredService<IInformationStore>());
+    }
+
+    [Fact]
     public async Task Production_registration_reuses_the_singleton_schema_graph_across_store_scopes()
     {
         using var fixture = new SqliteFixture();

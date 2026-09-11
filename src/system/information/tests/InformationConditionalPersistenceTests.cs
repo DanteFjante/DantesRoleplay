@@ -25,7 +25,8 @@ public sealed class InformationConditionalPersistenceTests
         var result = await store.WriteRecordConditionallyAsync(request, 1, operation.Id);
         Assert.Equal("revised", result.Status);
         Assert.Equal("INFORMATION_REVISION_CONFLICT", (await store.WriteRecordConditionallyAsync(request, 1, operation.Id)).ErrorCode);
-        var history = await db.Set<InformationContentRevisionRecord>().AsNoTracking().OrderBy(value => value.Revision).ToArrayAsync();
+        var history = await db.Set<InformationContentRevisionRecord>().AsNoTracking()
+            .Where(value => value.Kind == "record").OrderBy(value => value.Revision).ToArrayAsync();
         Assert.Equal(2, history.Length);
         Assert.Equal("baseline-retained", history[0].Origin);
         Assert.Equal("conditional-write", history[1].Origin);

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using DantesRoleplay.Information;
 using DantesRoleplay.Interactions;
 using Microsoft.EntityFrameworkCore;
@@ -43,6 +44,11 @@ public sealed partial class InformationStore
         if ((before?.Revision ?? 0) != expectedRevision)
             return new("rejected", null, "INFORMATION_REVISION_CONFLICT", "The record revision changed.");
         var previousJson = before is null ? null : RecordJson(before);
+        var source = await _db.Set<InformationSource>().AsNoTracking()
+            .SingleOrDefaultAsync(value => value.Id == request.SourceId, cancellationToken);
+        if (source is not null)
+            await RetainInformationAsync("source", source.Id, source.Revision, SourceJson(source), operationId,
+                "baseline-retained", cancellationToken);
         var result = await WriteRecordAsync(request, cancellationToken);
         if (result.Status == "rejected") return result;
         var after = await _db.Set<InformationRecord>().AsNoTracking()
@@ -78,7 +84,10 @@ public sealed partial class InformationStore
         prior ??= pending;
         if (prior is not null)
         {
-            if (prior.ContentFingerprint != fingerprint || prior.ContentJson != content)
+            var priorFingerprint = InteractionCanonicalJson.Fingerprint(
+                "dantes-roleplay/information-content-revision/v1", prior.ContentJson);
+            if (prior.ContentFingerprint != priorFingerprint
+                || prior.ContentJson != content && !LegacyRecordMatches(prior.ContentJson, content))
                 throw new InvalidOperationException("Information history no longer matches its immutable revision.");
             return;
         }
@@ -89,14 +98,34 @@ public sealed partial class InformationStore
         });
     }
 
-    private static string SourceJson(InformationSource value) => InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
-    {
-        kind = "source", value.Id, value.Revision, value.ScopeId, value.Name, value.Description,
-        value.MetadataSchemaJson, value.ContentHash, value.CreatedAtUtc, value.UpdatedAtUtc
-    }));
+    private static string SourceJson(InformationSource value) => value.MetadataSchemaQualifiedId is null
+        ? InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
+        {
+            kind = "source", value.Id, value.Revision, value.ScopeId, value.Name, value.Description,
+            value.MetadataSchemaJson, value.ContentHash, value.CreatedAtUtc, value.UpdatedAtUtc
+        }))
+        : InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
+        {
+            kind = "source", value.Id, value.Revision, value.ScopeId, value.Name, value.Description,
+            value.MetadataSchemaJson, value.MetadataSchemaQualifiedId, value.MetadataSchemaVersion,
+            value.MetadataSchemaHash, value.ContentHash, value.CreatedAtUtc, value.UpdatedAtUtc
+        }));
     private static string RecordJson(InformationRecord value) => InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
     {
         kind = "record", value.Id, value.Revision, value.SourceId, value.Title, value.Content,
-        value.MetadataJson, value.ContentHash, value.CreatedAtUtc, value.UpdatedAtUtc
+        value.MetadataJson, value.MetadataSchemaSourceRevision, value.ContentHash, value.CreatedAtUtc, value.UpdatedAtUtc
     }));
+
+    private static bool LegacyRecordMatches(string retained, string current)
+    {
+        try
+        {
+            var legacy = JsonNode.Parse(retained) as JsonObject;
+            var proposed = JsonNode.Parse(current) as JsonObject;
+            if (legacy is null || proposed is null || legacy.ContainsKey("MetadataSchemaSourceRevision")) return false;
+            proposed.Remove("MetadataSchemaSourceRevision");
+            return JsonNode.DeepEquals(legacy, proposed);
+        }
+        catch (JsonException) { return false; }
+    }
 }

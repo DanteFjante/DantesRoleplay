@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using DantesRoleplay.Content;
 using DantesRoleplay.Information;
+using DantesRoleplay.Ecs;
 using DantesRoleplay.SchemaValidation;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -12,7 +13,8 @@ using Microsoft.EntityFrameworkCore.Storage;
 namespace DantesRoleplay.DataAccess;
 
 /// <summary>Neutral persistence and bounded lexical ranking for user-defined information.</summary>
-public sealed partial class InformationStore(DantesRoleplayDbContext db, IBoundedJsonSchemaValidator schemas) : IInformationStore
+public sealed partial class InformationStore(DantesRoleplayDbContext db, IBoundedJsonSchemaValidator schemas,
+    IApplicationComponentTypeRegistry? componentTypes = null) : IInformationStore
 {
     /// <summary>Compatibility for direct test fixtures; production DI uses the registered validator.</summary>
     internal InformationStore(DantesRoleplayDbContext db) : this(db, new BoundedJsonSchemaValidator()) { }
@@ -23,17 +25,23 @@ public sealed partial class InformationStore(DantesRoleplayDbContext db, IBounde
     private const int MaximumCompatibilityMetadataBytes = 1_000_000;
     private readonly DantesRoleplayDbContext _db = db;
     private readonly IBoundedJsonSchemaValidator _schemas = schemas ?? throw new ArgumentNullException(nameof(schemas));
+    private readonly IApplicationComponentTypeRegistry? _componentTypes = componentTypes;
 
     public async Task<InformationSourceWriteResult> WriteSourceAsync(InformationSourceWriteRequest request, CancellationToken cancellationToken = default)
     {
-        if (request is null || !Id(request.Id) || !InformationScopes.IsScope(request.ScopeId) || !Text(request.Name, 200) || !TextOrEmpty(request.Description, 1000) || !Object(request.MetadataSchemaJson, MaximumMetadataBytes))
+        if (request is null || !Id(request.Id) || !InformationScopes.IsScope(request.ScopeId) || !Text(request.Name, 200)
+            || !TextOrEmpty(request.Description, 1000) || !Object(request.MetadataSchemaJson, MaximumMetadataBytes))
             return new("rejected", null, "INVALID_INFORMATION_SOURCE", "Source id, scopeId, name, description, or metadataSchema is invalid.");
-        var schema = _schemas.Compile(request.MetadataSchemaJson);
+        var resolved = ResolveMetadataSchema(request);
+        if (resolved.ErrorCode is not null)
+            return new("rejected", null, resolved.ErrorCode, resolved.ErrorMessage!);
+        var schema = resolved.Schema!;
         if (!schema.IsAccepted)
             return new("rejected", null, "INVALID_INFORMATION_SOURCE_SCHEMA", DiagnosticMessage("The metadata schema is invalid.", schema.Diagnostics));
 
         await using var transaction = await BeginWriteTransactionIfNeededAsync(cancellationToken);
-        var hash = ContentHash.Of(request.Id, request.ScopeId, request.Name, request.Description, request.MetadataSchemaJson);
+        var hash = InformationContentIdentity.SourceHash(request.Id, request.ScopeId, request.Name, request.Description,
+            resolved.StoredSchemaJson!, resolved.Reference);
         var existing = await _db.Set<InformationSource>().SingleOrDefaultAsync(x => x.Id == request.Id, cancellationToken);
         if (existing is not null)
         {
@@ -41,7 +49,8 @@ public sealed partial class InformationStore(DantesRoleplayDbContext db, IBounde
             // Reload it after the reservation so compatibility is checked against committed data.
             await _db.Entry(existing).ReloadAsync(cancellationToken);
             if (existing.ContentHash == hash) return new("unchanged", existing);
-            if (!string.Equals(existing.MetadataSchemaJson, request.MetadataSchemaJson, StringComparison.Ordinal))
+            if (!string.Equals(existing.MetadataSchemaJson, resolved.StoredSchemaJson, StringComparison.Ordinal)
+                || !InformationContentIdentity.ReferenceMatches(existing, resolved.Reference))
             {
                 var compatibility = await FindIncompatibleRecordsAsync(existing.Id, schema, cancellationToken);
                 if (!compatibility.Complete)
@@ -51,14 +60,17 @@ public sealed partial class InformationStore(DantesRoleplayDbContext db, IBounde
                     return new("rejected", existing, "INFORMATION_SOURCE_SCHEMA_INCOMPATIBLE",
                         "The metadata schema rejects existing records: " + string.Join("; ", compatibility.Evidence));
             }
-            existing.ScopeId = request.ScopeId; existing.Name = request.Name; existing.Description = request.Description; existing.MetadataSchemaJson = request.MetadataSchemaJson;
+            existing.ScopeId = request.ScopeId; existing.Name = request.Name; existing.Description = request.Description;
+            ApplySchema(existing, resolved.StoredSchemaJson!, resolved.Reference);
             existing.ContentHash = hash; existing.Revision++; existing.UpdatedAtUtc = DateTime.UtcNow;
             await _db.SaveChangesAsync(cancellationToken);
             if (transaction is not null) await transaction.CommitAsync(cancellationToken);
             return new("revised", existing);
         }
         var now = DateTime.UtcNow;
-        var created = new InformationSource { Id = request.Id, ScopeId = request.ScopeId, Name = request.Name, Description = request.Description, MetadataSchemaJson = request.MetadataSchemaJson, ContentHash = hash, Revision = 1, CreatedAtUtc = now, UpdatedAtUtc = now };
+        var created = new InformationSource { Id = request.Id, ScopeId = request.ScopeId, Name = request.Name,
+            Description = request.Description, ContentHash = hash, Revision = 1, CreatedAtUtc = now, UpdatedAtUtc = now };
+        ApplySchema(created, resolved.StoredSchemaJson!, resolved.Reference);
         _db.Set<InformationSource>().Add(created);
         await _db.SaveChangesAsync(cancellationToken);
         if (transaction is not null) await transaction.CommitAsync(cancellationToken);
@@ -77,21 +89,25 @@ public sealed partial class InformationStore(DantesRoleplayDbContext db, IBounde
         if (!TryValidateMetadata(source.MetadataSchemaJson, request.MetadataJson, out var metadataError))
             return new("rejected", null, "INFORMATION_RECORD_METADATA_INVALID", metadataError);
 
-        var hash = ContentHash.Of(request.Id, request.SourceId, request.Title, request.Content, request.MetadataJson);
+        var hash = InformationContentIdentity.RecordHash(request.Id, request.SourceId, request.Title, request.Content,
+            request.MetadataJson, source.Revision);
         var existing = await _db.Set<InformationRecord>().SingleOrDefaultAsync(x => x.Id == request.Id, cancellationToken);
         if (existing is not null)
         {
             // See WriteSourceAsync: compare and revise only the version current at the reservation.
             await _db.Entry(existing).ReloadAsync(cancellationToken);
             if (existing.ContentHash == hash) return new("unchanged", existing);
-            existing.SourceId = request.SourceId; existing.Title = request.Title; existing.Content = request.Content; existing.MetadataJson = request.MetadataJson;
+            existing.SourceId = request.SourceId; existing.Title = request.Title; existing.Content = request.Content;
+            existing.MetadataJson = request.MetadataJson; existing.MetadataSchemaSourceRevision = source.Revision;
             existing.ContentHash = hash; existing.Revision++; existing.UpdatedAtUtc = DateTime.UtcNow;
             await _db.SaveChangesAsync(cancellationToken);
             if (transaction is not null) await transaction.CommitAsync(cancellationToken);
             return new("revised", existing);
         }
         var now = DateTime.UtcNow;
-        var created = new InformationRecord { Id = request.Id, SourceId = request.SourceId, Title = request.Title, Content = request.Content, MetadataJson = request.MetadataJson, ContentHash = hash, Revision = 1, CreatedAtUtc = now, UpdatedAtUtc = now };
+        var created = new InformationRecord { Id = request.Id, SourceId = request.SourceId, Title = request.Title,
+            Content = request.Content, MetadataJson = request.MetadataJson, MetadataSchemaSourceRevision = source.Revision,
+            ContentHash = hash, Revision = 1, CreatedAtUtc = now, UpdatedAtUtc = now };
         _db.Set<InformationRecord>().Add(created);
         await _db.SaveChangesAsync(cancellationToken);
         if (transaction is not null) await transaction.CommitAsync(cancellationToken);
@@ -216,6 +232,112 @@ public sealed partial class InformationStore(DantesRoleplayDbContext db, IBounde
         return false;
     }
 
+    private ResolvedMetadataSchema ResolveMetadataSchema(InformationSourceWriteRequest request)
+    {
+        if (request.MetadataSchema is null)
+            return new(_schemas.Compile(request.MetadataSchemaJson), request.MetadataSchemaJson, null, null, null);
+        try { request.MetadataSchema.Validate(); }
+        catch (ArgumentException exception)
+        {
+            return new(null, null, null, "INFORMATION_SOURCE_SCHEMA_REFERENCE_INVALID", exception.Message);
+        }
+        if (request.MetadataSchemaJson != "{}")
+            return new(null, null, null, "INFORMATION_SOURCE_SCHEMA_REFERENCE_AMBIGUOUS",
+                "A registered metadata schema reference cannot be combined with an inline metadata schema.");
+        if (_componentTypes is null)
+            return new(null, null, null, "INFORMATION_SOURCE_SCHEMA_REFERENCE_UNAVAILABLE",
+                "The registered component schema owner is unavailable.");
+        var registered = _componentTypes.Get(request.MetadataSchema.QualifiedTypeId, request.MetadataSchema.TypeVersion);
+        if (registered is null || registered.SchemaHash != request.MetadataSchema.SchemaHash)
+            return new(null, null, null, "INFORMATION_SOURCE_SCHEMA_REFERENCE_NOT_FOUND",
+                "The exact registered metadata schema version and hash were not found.");
+        if (!Object(registered.SchemaJson, MaximumMetadataBytes))
+            return new(null, null, null, "INFORMATION_SOURCE_SCHEMA_REFERENCE_TOO_LARGE",
+                "The registered metadata schema exceeds the information metadata-schema bound.");
+        var compiled = _schemas.Compile(registered.SchemaJson);
+        if (!compiled.IsAccepted || compiled.ProfileId != registered.ProfileId || compiled.SchemaHash != registered.SchemaHash)
+            return new(null, null, null, "INFORMATION_SOURCE_SCHEMA_REFERENCE_INCONSISTENT",
+                "The registered metadata schema no longer matches its immutable identity.");
+        return new(compiled, registered.SchemaJson, request.MetadataSchema, null, null);
+    }
+
+    internal string? ValidateMetadataSchemaOwner(InformationSourceWriteRequest request,
+        Applications.ApplicationIdentifier applicationId)
+    {
+        var resolved = ResolveMetadataSchema(request);
+        if (resolved.ErrorCode is not null) return resolved.ErrorCode;
+        if (request.MetadataSchema is null) return null;
+        var registered = _componentTypes!.Get(request.MetadataSchema.QualifiedTypeId, request.MetadataSchema.TypeVersion)!;
+        return registered.Owner.IsSystem || registered.Owner == applicationId
+            ? null
+            : "INFORMATION_SOURCE_SCHEMA_OWNER_MISMATCH";
+    }
+
+    internal InformationMetadataSchemaBinding? ReadMetadataSchemaBinding(InformationSource source,
+        Applications.ApplicationIdentifier applicationId, out string error)
+    {
+        if (!Object(source.MetadataSchemaJson, MaximumMetadataBytes))
+        {
+            error = "INFORMATION_SCHEMA_HISTORY_INVALID";
+            return null;
+        }
+        var schema = _schemas.Compile(source.MetadataSchemaJson);
+        if (!schema.IsAccepted)
+        {
+            error = "INFORMATION_SCHEMA_HISTORY_INVALID";
+            return null;
+        }
+        var reference = InformationContentIdentity.Reference(source);
+        if (reference is null)
+        {
+            if (source.MetadataSchemaVersion is not null || source.MetadataSchemaHash is not null)
+            {
+                error = "INFORMATION_SCHEMA_HISTORY_INVALID";
+                return null;
+            }
+            error = "";
+            return new("inline", source.Revision, schema.ProfileId, source.MetadataSchemaJson, schema.SchemaHash, null);
+        }
+        if (_componentTypes is null)
+        {
+            error = "INFORMATION_SOURCE_SCHEMA_REFERENCE_UNAVAILABLE";
+            return null;
+        }
+        RegisteredComponentTypeVersion? registered;
+        try { reference.Validate(); registered = _componentTypes.Get(reference.QualifiedTypeId, reference.TypeVersion); }
+        catch (ArgumentException)
+        {
+            error = "INFORMATION_SCHEMA_HISTORY_INVALID";
+            return null;
+        }
+        if (registered is null || registered.SchemaHash != reference.SchemaHash
+            || registered.SchemaJson != source.MetadataSchemaJson || registered.ProfileId != schema.ProfileId
+            || registered.SchemaHash != schema.SchemaHash)
+        {
+            error = "INFORMATION_SOURCE_SCHEMA_REFERENCE_DRIFT";
+            return null;
+        }
+        if (!registered.Owner.IsSystem && registered.Owner != applicationId)
+        {
+            error = "INFORMATION_SOURCE_SCHEMA_OWNER_MISMATCH";
+            return null;
+        }
+        error = "";
+        return new("registered", source.Revision, registered.ProfileId, registered.SchemaJson,
+            registered.SchemaHash, reference);
+    }
+
+    internal bool ValidateRetainedMetadata(InformationMetadataSchemaBinding binding, string metadataJson,
+        out string error) => TryValidateMetadata(_schemas.Compile(binding.SchemaJson), metadataJson, out error);
+
+    private static void ApplySchema(InformationSource source, string schemaJson, EcsComponentReference? reference)
+    {
+        source.MetadataSchemaJson = schemaJson;
+        source.MetadataSchemaQualifiedId = reference?.QualifiedTypeId;
+        source.MetadataSchemaVersion = reference?.TypeVersion;
+        source.MetadataSchemaHash = reference?.SchemaHash;
+    }
+
     private async Task<InformationWriteTransaction?> BeginWriteTransactionIfNeededAsync(CancellationToken cancellationToken)
     {
         if (_db.Database.CurrentTransaction is not null) return null;
@@ -299,6 +421,8 @@ public sealed partial class InformationStore(DantesRoleplayDbContext db, IBounde
     private static string Truncate(string value, int maximum) => value.Length <= maximum ? value : value[..maximum];
 
     private sealed record SchemaCompatibilityResult(bool Complete, IReadOnlyList<string> Evidence);
+    private sealed record ResolvedMetadataSchema(SchemaCompilationResult? Schema, string? StoredSchemaJson,
+        EcsComponentReference? Reference, string? ErrorCode, string? ErrorMessage);
 
     private sealed class InformationWriteTransaction(
         IDbContextTransaction transaction,

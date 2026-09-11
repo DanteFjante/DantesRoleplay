@@ -1,4 +1,6 @@
 using DantesRoleplay.Retrieval;
+using DantesRoleplay.Ecs;
+using System.Text.Json.Serialization;
 
 namespace DantesRoleplay.Information;
 
@@ -10,6 +12,9 @@ public sealed class InformationSource
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string MetadataSchemaJson { get; set; } = "{}";
+    public string? MetadataSchemaQualifiedId { get; set; }
+    public int? MetadataSchemaVersion { get; set; }
+    public string? MetadataSchemaHash { get; set; }
     public string ContentHash { get; set; } = string.Empty;
     public int Revision { get; set; }
     public DateTime CreatedAtUtc { get; set; }
@@ -25,6 +30,8 @@ public sealed class InformationRecord
     public string Title { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;
     public string MetadataJson { get; set; } = "{}";
+    /// <summary>The retained source revision whose exact schema accepted this metadata.</summary>
+    public int MetadataSchemaSourceRevision { get; set; } = 1;
     public string ContentHash { get; set; } = string.Empty;
     public int Revision { get; set; }
     public DateTime CreatedAtUtc { get; set; }
@@ -48,7 +55,9 @@ public sealed class InformationActionContract
     public DateTime UpdatedAtUtc { get; set; }
 }
 
-public sealed record InformationSourceWriteRequest(string Id, string ScopeId, string Name, string Description = "", string MetadataSchemaJson = "{}");
+public sealed record InformationSourceWriteRequest(string Id, string ScopeId, string Name, string Description = "",
+    string MetadataSchemaJson = "{}",
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] EcsComponentReference? MetadataSchema = null);
 public sealed record InformationRecordWriteRequest(string Id, string SourceId, string Title, string Content, string MetadataJson = "{}");
 public sealed record InformationActionContractWriteRequest(string Id, string ScopeId, string Name, string Description, string ExecutorId, string InputSchemaJson, string RuleRecordIdsJson);
 public sealed record InformationSourceWriteResult(string Status, InformationSource? Source, string ErrorCode = "", string ErrorMessage = "");

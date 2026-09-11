@@ -6,6 +6,8 @@ using DantesRoleplay.DataAccess;
 using DantesRoleplay.Information;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Operations;
+using DantesRoleplay.Ecs;
+using DantesRoleplay.SchemaValidation;
 using Microsoft.EntityFrameworkCore;
 
 namespace DantesRoleplay.Authorization.Tests;
@@ -148,11 +150,12 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         Assert.Equal("Keep", record.Content);
     }
 
-    private static SqliteConditionalInformationStore InformationService(DantesRoleplayDbContext db, SetupState setup)
+    private static SqliteConditionalInformationStore InformationService(DantesRoleplayDbContext db, SetupState setup,
+        InformationStore? store = null)
     {
         var catalog = new ActivatedApplicationCatalogMaterializer(setup.Applications, setup.Activation, setup.Sources, setup.Roots,
             setup.Extensions).UsePreparationCache(new ActivatedApplicationCatalogSnapshotCache(), new ActivatedApplicationCatalogCacheAuthority());
-        return new(db, new InformationStore(db), setup.Applications, setup.Namespaces, setup.Activation, catalog,
+        return new(db, store ?? new InformationStore(db), setup.Applications, setup.Namespaces, setup.Activation, catalog,
             new SqliteStandingGrantPolicy(db, setup.Resolver), setup.Resolver, new OperationLog(db));
     }
 

@@ -934,6 +934,8 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
             {
                 table.HasCheckConstraint("CK_information_source_revision", "\"Revision\" > 0");
                 table.HasCheckConstraint("CK_information_source_metadata_schema", "json_valid(\"MetadataSchemaJson\")");
+                table.HasCheckConstraint("CK_information_source_metadata_schema_reference",
+                    "(\"MetadataSchemaQualifiedId\" IS NULL AND \"MetadataSchemaVersion\" IS NULL AND \"MetadataSchemaHash\" IS NULL) OR (\"MetadataSchemaQualifiedId\" IS NOT NULL AND \"MetadataSchemaVersion\" > 0 AND length(\"MetadataSchemaHash\") = 64 AND \"MetadataSchemaHash\" NOT GLOB '*[^0-9A-F]*')");
             });
             entity.HasKey(x => x.Id);
             entity.Property(x => x.Id).HasMaxLength(200);
@@ -941,6 +943,8 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
             entity.Property(x => x.Name).HasMaxLength(200).IsRequired();
             entity.Property(x => x.Description).HasMaxLength(1000).IsRequired();
             entity.Property(x => x.MetadataSchemaJson).HasMaxLength(8000).IsRequired();
+            entity.Property(x => x.MetadataSchemaQualifiedId).HasMaxLength(200);
+            entity.Property(x => x.MetadataSchemaHash).HasMaxLength(64);
             entity.Property(x => x.ContentHash).HasMaxLength(64).IsRequired();
             entity.Property(x => x.Revision).IsConcurrencyToken().IsRequired();
             entity.HasIndex(x => new { x.ScopeId, x.Id });
@@ -951,6 +955,7 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
             {
                 table.HasCheckConstraint("CK_information_record_revision", "\"Revision\" > 0");
                 table.HasCheckConstraint("CK_information_record_metadata", "json_valid(\"MetadataJson\")");
+                table.HasCheckConstraint("CK_information_record_metadata_schema_source_revision", "\"MetadataSchemaSourceRevision\" > 0");
             });
             entity.HasKey(x => x.Id);
             entity.Property(x => x.Id).HasMaxLength(200);
@@ -958,6 +963,7 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
             entity.Property(x => x.Title).HasMaxLength(500).IsRequired();
             entity.Property(x => x.Content).HasMaxLength(16000).IsRequired();
             entity.Property(x => x.MetadataJson).HasMaxLength(8000).IsRequired();
+            entity.Property(x => x.MetadataSchemaSourceRevision).IsRequired();
             entity.Property(x => x.ContentHash).HasMaxLength(64).IsRequired();
             entity.Property(x => x.Revision).IsConcurrencyToken().IsRequired();
             entity.HasOne(x => x.Source).WithMany(x => x.Records).HasForeignKey(x => x.SourceId).OnDelete(DeleteBehavior.Restrict);

@@ -68,8 +68,9 @@ internal static class InformationSourceOwnership
             .Where(value => value.Id == sourceId && value.Name.Length <= 200 && value.Description.Length <= 1000
                 && value.MetadataSchemaJson.Length <= 8000 && value.ScopeId.Length <= 200)
             .SingleOrDefaultAsync(cancellationToken);
-        if (source is null || source.Revision < 1 || source.ContentHash != ContentHash.Of(source.Id,
-                source.ScopeId, source.Name, source.Description, source.MetadataSchemaJson)) return null;
+        if (source is null || source.Revision < 1 || source.ContentHash != InformationContentIdentity.SourceHash(source.Id,
+                source.ScopeId, source.Name, source.Description, source.MetadataSchemaJson,
+                InformationContentIdentity.Reference(source))) return null;
         return new(owner, source);
     }
 }

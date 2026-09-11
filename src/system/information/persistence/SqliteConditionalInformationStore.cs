@@ -21,6 +21,67 @@ public sealed class SqliteConditionalInformationStore(DantesRoleplayDbContext db
     ActivatedApplicationCatalogMaterializer catalog, IStandingGrantPolicy grants, IStandingGrantTargetResolver targets,
     IOperationLog operations) : IConditionalInformationStore
 {
+    public async Task<InformationRecordRevisionReadResult> ReadRecordRevisionAsync(InteractionInvocationHost host,
+        InformationRecordRevisionReadRequest request, CancellationToken cancellationToken = default)
+    {
+        if (request is null || string.IsNullOrWhiteSpace(request.RecordId) || request.RecordId.Length > 200
+            || request.Revision is <= 0 or int.MaxValue)
+            return ReadRejected("INVALID_PAYLOAD", "A record id and optional positive revision are required.");
+        if (!host.Budget.TryConsumeOperation()) return ReadRejected("INVOCATION_BUDGET_EXHAUSTED", "The invocation budget is exhausted.");
+        if (host.Budget.DeadlineUtc <= DateTime.UtcNow) return ReadRejected("INVOCATION_DEADLINE_EXCEEDED", "The invocation deadline has passed.");
+        try
+        {
+            await using var scope = await StandingGrantReadScope.EnterAsync(db, cancellationToken);
+            var revision = request.Revision ?? await db.Set<InformationRecord>().AsNoTracking()
+                .Where(value => value.Id == request.RecordId).Select(value => (int?)value.Revision)
+                .SingleOrDefaultAsync(cancellationToken);
+            if (revision is null) return ReadRejected("INFORMATION_RECORD_NOT_FOUND", "The information record was not found.");
+            var retained = await db.Set<InformationContentRevisionRecord>().AsNoTracking().SingleOrDefaultAsync(value =>
+                value.Kind == "record" && value.Id == request.RecordId && value.Revision == revision, cancellationToken);
+            if (retained is null || retained.ContentFingerprint != InteractionCanonicalJson.Fingerprint(
+                    "dantes-roleplay/information-content-revision/v1", retained.ContentJson))
+                return ReadUnavailable("INFORMATION_RECORD_HISTORY_UNAVAILABLE");
+            var record = ParseRecord(retained.ContentJson);
+            if (record is null || record.Id != request.RecordId || record.Revision != revision
+                || record.ContentHash != InformationContentIdentity.RecordHash(record.Id, record.SourceId,
+                    record.Title, record.Content, record.MetadataJson, record.MetadataSchemaSourceRevision))
+                return ReadUnavailable("INFORMATION_RECORD_HISTORY_INVALID");
+            if (record.MetadataSchemaSourceRevision < 1)
+                return ReadUnavailable("INFORMATION_SCHEMA_HISTORY_UNAVAILABLE");
+            var sourceRetained = await db.Set<InformationContentRevisionRecord>().AsNoTracking().SingleOrDefaultAsync(value =>
+                value.Kind == "source" && value.Id == record.SourceId
+                && value.Revision == record.MetadataSchemaSourceRevision, cancellationToken);
+            if (sourceRetained is null || sourceRetained.ContentFingerprint != InteractionCanonicalJson.Fingerprint(
+                    "dantes-roleplay/information-content-revision/v1", sourceRetained.ContentJson))
+                return ReadUnavailable("INFORMATION_SCHEMA_HISTORY_UNAVAILABLE");
+            var source = ParseSource(sourceRetained.ContentJson);
+            if (source is null || source.Id != record.SourceId || source.Revision != record.MetadataSchemaSourceRevision
+                || source.ContentHash != InformationContentIdentity.SourceHash(source.Id, source.ScopeId, source.Name,
+                    source.Description, source.MetadataSchemaJson, InformationContentIdentity.Reference(source)))
+                return ReadUnavailable("INFORMATION_SCHEMA_HISTORY_INVALID");
+            var owner = await InformationSourceOwnership.ReadAsync(db, record.SourceId, cancellationToken);
+            if (owner is null) return ReadUnavailable("INFORMATION_SOURCE_OWNER_UNAVAILABLE");
+            var target = await targets.ResolveCurrentAsync(host, owner.Owner.QualifiedTargetId,
+                CatalogNamespaceKinds.InformationSource, cancellationToken);
+            if (target.Status != StandingGrantTargetResolutionStatus.Available || target.Target is null)
+                return ReadUnavailable(target.Code);
+            var authority = await grants.EvaluateAsync(host,
+                new(StandingGrantCapability.Read, StandingGrantScope.Application, [target.Target], []), cancellationToken);
+            if (!authority.Allowed)
+                return authority.Code.EndsWith("UNAVAILABLE", StringComparison.Ordinal)
+                    ? ReadUnavailable(authority.Code)
+                    : ReadRejected(authority.Code, "Current Read authority denied the information record.");
+            var binding = store.ReadMetadataSchemaBinding(source, host.ApplicationRevision.ApplicationId, out var schemaError);
+            if (binding is null) return ReadUnavailable(schemaError);
+            if (!store.ValidateRetainedMetadata(binding, record.MetadataJson, out _))
+                return ReadUnavailable("INFORMATION_RECORD_METADATA_HISTORY_INVALID");
+            return new("completed", new(record.Id, record.Revision, record.SourceId, record.Title, record.Content,
+                record.MetadataJson, record.ContentHash, binding));
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception) { return ReadUnavailable("INFORMATION_READ_UNAVAILABLE"); }
+    }
+
     public Task<InteractionInvocationResult> WriteSourceAsync(InteractionInvocationHost host,
         InformationSourceConditionalWriteRequest request, CancellationToken cancellationToken = default) =>
         ExecuteAsync(host, "source", request, async (operation, replay) =>
@@ -39,14 +100,16 @@ public sealed class SqliteConditionalInformationStore(DantesRoleplayDbContext db
                 if (!authority.Allowed) return Reject(authority);
                 if (replay)
                 {
-                    var retained = await HasOutcomeAsync(operation, "source", value.Id, request.ExpectedRevision,
-                        ContentHash.Of(value.Id, value.ScopeId, value.Name, value.Description, value.MetadataSchemaJson), cancellationToken);
+                    var retained = await HasOutcomeAsync(operation, "source", value.Id, request.ExpectedRevision, cancellationToken);
                     return retained ? null : Unavailable("INFORMATION_RECEIPT_INCONSISTENT");
                 }
                 operation.GuardEvidenceJson = InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(authority.Evidence));
             }
             else if (request.ExpectedRevision != 0 || request.QualifiedTargetId is null)
                 return Failed("INFORMATION_SOURCE_TARGET_REQUIRED");
+
+            if (store.ValidateMetadataSchemaOwner(value, host.ApplicationRevision.ApplicationId) is { } schemaError)
+                return Failed(schemaError);
 
             var result = await store.WriteSourceConditionallyAsync(value, request.ExpectedRevision, operation.Id, cancellationToken);
             if (result.Status == "rejected") return Failed(result.ErrorCode, result.ErrorMessage);
@@ -85,8 +148,7 @@ public sealed class SqliteConditionalInformationStore(DantesRoleplayDbContext db
             if (!authority.Allowed) return Reject(authority);
             if (replay)
             {
-                var retained = await HasOutcomeAsync(operation, "record", value.Id, request.ExpectedRevision,
-                    ContentHash.Of(value.Id, value.SourceId, value.Title, value.Content, value.MetadataJson), cancellationToken);
+                var retained = await HasOutcomeAsync(operation, "record", value.Id, request.ExpectedRevision, cancellationToken);
                 return retained ? null : Unavailable("INFORMATION_RECEIPT_INCONSISTENT");
             }
             var result = await store.WriteRecordConditionallyAsync(value, request.ExpectedRevision, operation.Id, cancellationToken);
@@ -172,7 +234,7 @@ public sealed class SqliteConditionalInformationStore(DantesRoleplayDbContext db
         }));
     }
 
-    private async Task<bool> HasOutcomeAsync(Operation operation, string kind, string id, int expected, string desiredHash, CancellationToken ct)
+    private async Task<bool> HasOutcomeAsync(Operation operation, string kind, string id, int expected, CancellationToken ct)
     {
         using var guard = JsonDocument.Parse(operation.GuardEvidenceJson ?? "{}");
         if (!guard.RootElement.TryGetProperty("outcome", out var outcome)
@@ -184,8 +246,7 @@ public sealed class SqliteConditionalInformationStore(DantesRoleplayDbContext db
         if (retained is null || retained.ContentFingerprint != outcome.GetProperty("ContentFingerprint").GetString()
             || retained.ContentFingerprint != InteractionCanonicalJson.Fingerprint(
                 "dantes-roleplay/information-content-revision/v1", retained.ContentJson)) return false;
-        using var content = JsonDocument.Parse(retained.ContentJson);
-        return content.RootElement.GetProperty("ContentHash").GetString() == desiredHash;
+        return true;
     }
 
     private static InteractionInvocationResult Reject(StandingGrantDecision decision) => decision.Code.EndsWith("UNAVAILABLE", StringComparison.Ordinal)
@@ -196,6 +257,40 @@ public sealed class SqliteConditionalInformationStore(DantesRoleplayDbContext db
     private static StandingGrantDecision AuthorDenied(InteractionInvocationHost host, string code) =>
         new(false, code, null, new(host.Principal.PrincipalId, host.Principal.AuthenticationMethod,
             "information-author", host.ApplicationRevision.ApplicationId.Value, host.CommandId, false, code));
+
+    private static InformationRecordRevisionReadResult ReadRejected(string code, string message) =>
+        new("rejected", null, code, message);
+    private static InformationRecordRevisionReadResult ReadUnavailable(string code) =>
+        new("unavailable", null, code, "The exact retained information record is unavailable.");
+
+    private static RetainedRecord? ParseRecord(string json)
+    {
+        try { return JsonSerializer.Deserialize<RetainedRecord>(json); }
+        catch (JsonException) { return null; }
+    }
+
+    private static InformationSource? ParseSource(string json)
+    {
+        try
+        {
+            var value = JsonSerializer.Deserialize<RetainedSource>(json);
+            return value is null ? null : new InformationSource
+            {
+                Id = value.Id, Revision = value.Revision, ScopeId = value.ScopeId, Name = value.Name,
+                Description = value.Description, MetadataSchemaJson = value.MetadataSchemaJson,
+                MetadataSchemaQualifiedId = value.MetadataSchemaQualifiedId,
+                MetadataSchemaVersion = value.MetadataSchemaVersion, MetadataSchemaHash = value.MetadataSchemaHash,
+                ContentHash = value.ContentHash, CreatedAtUtc = value.CreatedAtUtc, UpdatedAtUtc = value.UpdatedAtUtc
+            };
+        }
+        catch (JsonException) { return null; }
+    }
+
+    private sealed record RetainedRecord(string Id, int Revision, string SourceId, string Title, string Content,
+        string MetadataJson, int MetadataSchemaSourceRevision, string ContentHash);
+    private sealed record RetainedSource(string Id, int Revision, string ScopeId, string Name, string Description,
+        string MetadataSchemaJson, string? MetadataSchemaQualifiedId, int? MetadataSchemaVersion,
+        string? MetadataSchemaHash, string ContentHash, DateTime CreatedAtUtc, DateTime UpdatedAtUtc);
 }
 
 internal static class InformationOwnershipTargetRules
