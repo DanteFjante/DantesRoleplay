@@ -38,6 +38,27 @@ when a static tool has the same name. Direct requests retain their explicitly se
 Failed provider rounds, tool-round exhaustion and invalid structured output retain measured tokens
 and earlier observed tool calls. These fields describe runner activity, not committed effects.
 
+The additive `IAiService.SendAgentRequestAsync` overload requires an `IAiInvocationLifecycle` supplied
+by the durable host. Existing callers retain the original overload; implementations without lifecycle
+support fail unavailable on the new one. The runner admits every provider round and every validated
+selected-tool invocation, then records its return, throw, cancellation or admitted-but-not-started
+outcome in `finally` before proceeding. Dynamic callbacks and returned tool calls share the same
+tool boundary. Provider settlement excludes separately reserved tool executions. Host-only descriptors
+copy mutable payloads, clear provider executors, and reject JSON; concrete scope implementations must
+also reject JSON and keep authority private. Plan 04 owns committed admission, fresh authority/fences,
+and bounded outcome persistence independent of the cancelled worker token. No such adapter or ledger
+is supplied by the runner.
+
+`AiResponse.ToolResults` is populated only on the required-lifecycle path and retains actual returned
+tool data even if outcome recording fails. It does not establish world-commit authority. The serialized
+result collection shares the request's configured byte allowance. If a result exceeds that allowance,
+the runner keeps a small `AI_TOOL_RESULT_UNAVAILABLE` diagnostic with bounded dispatch identity, marks
+the actual output unavailable, and stops for reconciliation; it fabricates no receipt and does not
+silently truncate the result. These fixed-size diagnostics are separate from the retained payload
+allowance and remain bounded by the tool-call limit. Already admitted parallel calls may still return
+evidence. Failed persistence stops new work and preserves evidence from actions that already returned;
+late billing evidence never restores a stale worker's permission to publish a result or effect.
+
 Both worker adapters remain internal and unregistered. `ISystemInnerWorkerService` still resolves
 to the foundation's unavailable service. No worker can submit, self-confirm, or execute through
 these helpers. Real provider execution, crash/reconnect recovery, linked cancellation, expired-lease
