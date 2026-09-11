@@ -21,8 +21,9 @@ public interface IInteractionManualContextService
 
 /// <summary>
 /// Compact discovery data inside the existing CompletedComputation envelope. All property names
-/// serialize as camelCase. Null SelectedAction is mandatory: this result confers no write authority.
-/// Resolution is unresolved, ambiguous or refresh-required. Exact contract reads and the execution
+/// serialize as camelCase through ToJson. SelectedAction is an optional recommendation, never write
+/// authority. Current implementation returns unresolved, ambiguous or refresh-required; future exact
+/// validated recommendations may use resolved. Exact contract reads and the execution
 /// adapter remain responsible for binding/schema/grant checks. No durable task or receipt is created.
 ///
 /// ResultFingerprint is SHA-256 of canonical packet JSON with that field set to 64 zeroes.
@@ -48,7 +49,25 @@ public sealed record InteractionManualContextPacket(
     string RetrievalMode,
     string RetrievalAvailability,
     bool Bounded,
-    IReadOnlyList<string> NextSteps);
+    IReadOnlyList<string> NextSteps)
+{
+    private static readonly JsonSerializerOptions Wire = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
+    /// <summary>Explicit bounded camelCase wire serialization; input JSON is never truncated.</summary>
+    public string ToJson(int maximumCharacters = 16_000)
+    {
+        if (maximumCharacters is < 4000 or > 24_000 || Intent.Length is 0 or > 256
+            || KnownInputs.ValueKind != JsonValueKind.Object || KnownInputs.GetRawText().Length > 2000
+            || Candidates.Count > 8 || ReusableTasks.Count > 4 || ManualSections.Count > 8
+            || ManualSections.Any(value => value.Section.Text.Length > 2000)
+            || Resolution is not ("unresolved" or "ambiguous" or "refresh-required" or "resolved"))
+            throw new InteractionContractException("MANUAL_CONTEXT_LIMIT", "The manual packet exceeds the closed limits.");
+        var json = JsonSerializer.Serialize(this, Wire);
+        if (json.Length > maximumCharacters)
+            throw new InteractionContractException("MANUAL_CONTEXT_LIMIT", "The serialized manual packet exceeds the context budget.");
+        return json;
+    }
+}
 
 public sealed record InteractionManualFeatureCandidate(InteractionFeatureReference Reference, string Name,
     string Reason, string Prerequisites, IReadOnlyList<string> MissingInputs, string InputValidation);
@@ -64,9 +83,14 @@ public sealed record InteractionManualRecipeStep(string QualifiedId, int Contrac
 /// derived from source ID, field, heading ancestry, repeated heading occurrence and chunk ordinal;
 /// revision/hash remain mandatory because text edits can change chunk boundaries.
 /// Governs is authored applicability text, never an inferred executable contract reference.
+/// SourceFingerprint is derived full manual evidence (including Matches) for global procedures,
+/// or the exact activated feature content fingerprint for application procedures. StoredSourceHash
+/// retains the procedure store's synchronization hash verbatim where available, otherwise null.
+/// AssociationFingerprint independently hashes the exact authored Matches string; it is not a grant.
 /// </summary>
 public sealed record InteractionManualSectionEvidence(string ProcedureId, int Version,
-    string SourceFingerprint, string Governs, InteractionManualSection Section);
+    string SourceFingerprint, string? StoredSourceHash, string AssociationFingerprint,
+    string Governs, InteractionManualSection Section);
 
 public sealed record InteractionManualSection(string Reference, string Heading, string ParentContext,
     string Text, string ContentFingerprint);
