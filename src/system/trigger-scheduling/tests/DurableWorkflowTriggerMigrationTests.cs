@@ -12,6 +12,7 @@ public sealed class DurableWorkflowTriggerMigrationTests
     private const string Previous = "20260911195508_SystemTaskLifecycleOrigins";
     private const string Current = "20260911222713_DurableProcedureWorkflowTriggers";
     private const string ResultSchemas = "20260911231305_DurableProcedureWorkflowResultSchemas";
+    private const string RecurringWorkflows = "20260911234047_DurableRecurringProcedureWorkflowTriggers";
     private const string Hash = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 
     [Fact]
@@ -124,6 +125,114 @@ public sealed class DurableWorkflowTriggerMigrationTests
             "SELECT COUNT(*) FROM pragma_table_info('trigger_one_time_workflow_binding') WHERE name='ResultSchemaJson'"));
         Assert.Equal(1L, await ScalarAsync(connection,
             "SELECT COUNT(*) FROM sqlite_schema WHERE type='trigger' AND name='preserve_workflow_binding_trigger'"));
+    }
+
+    [Fact]
+    public async Task Recurring_workflow_upgrade_preserves_rows_and_custom_triggers_and_refuses_unsafe_downgrade()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        await using var db = Context(connection);
+        await db.GetService<IMigrator>().MigrateAsync(ResultSchemas);
+        SeedApplication(db);
+        await db.Database.ExecuteSqlRawAsync("""
+            INSERT INTO trigger_recurring_definition
+                (ApplicationId, Id, Version, Lifecycle, Kind, Interval, LocalTimeSeconds, TimeZoneId,
+                 StartDate, EndDate, WeekdaysMask, DayOfMonth, GapPolicy, OverlapPolicy, MisfirePolicy,
+                 Target, NotificationTopic, NotificationSubject, NotificationBody,
+                 NotificationStateSpaceId, RecordedAtUtc)
+            VALUES ('jobs', 'jobs.recurring.legacy', 1, 'active', 'daily', 1, 43200, 'Etc/UTC',
+                NULL, NULL, 0, NULL, 'skip', 'earlier', 'fire-once', 'notification-only',
+                'scheduled.reminder', 'Legacy recurring', '', NULL, '2026-09-12T11:00:00Z');
+            CREATE TABLE recurring_workflow_probe (observed INTEGER NOT NULL);
+            INSERT INTO recurring_workflow_probe (observed) VALUES (0);
+            CREATE TRIGGER preserve_recurring_definition_trigger
+            AFTER UPDATE OF NotificationSubject ON trigger_recurring_definition
+            BEGIN UPDATE recurring_workflow_probe SET observed=observed+1; END;
+            """);
+
+        await db.Database.MigrateAsync();
+
+        Assert.Contains(RecurringWorkflows, await db.Database.GetAppliedMigrationsAsync());
+        Assert.Equal(1L, await ScalarAsync(connection,
+            "SELECT COUNT(*) FROM trigger_recurring_definition WHERE Id='jobs.recurring.legacy'"));
+        Assert.Equal(1L, await ScalarAsync(connection,
+            "SELECT COUNT(*) FROM sqlite_schema WHERE type='trigger' AND name='preserve_recurring_definition_trigger'"));
+        Assert.Equal(1L, await ScalarAsync(connection,
+            "SELECT instr(sql, '\"Target\" IN (''notification-only'', ''procedure-workflow'')') > 0 FROM sqlite_schema WHERE type='table' AND name='trigger_recurring_definition'"));
+        Assert.Equal(0L, await ScalarAsync(connection, "SELECT COUNT(*) FROM pragma_foreign_key_check"));
+
+        await db.Database.ExecuteSqlRawAsync($"""
+            INSERT INTO trigger_recurring_definition
+                (ApplicationId, Id, Version, Lifecycle, Kind, Interval, LocalTimeSeconds, TimeZoneId,
+                 StartDate, EndDate, WeekdaysMask, DayOfMonth, GapPolicy, OverlapPolicy, MisfirePolicy,
+                 Target, NotificationTopic, NotificationSubject, NotificationBody,
+                 NotificationStateSpaceId, RecordedAtUtc)
+            VALUES ('jobs', 'jobs.recurring.workflow', 1, 'active', 'daily', 1, 43200, 'Etc/UTC',
+                NULL, NULL, 0, NULL, 'skip', 'earlier', 'fire-once', 'procedure-workflow',
+                'scheduled.reminder', 'Workflow recurring', '', NULL, '2026-09-12T11:00:00Z');
+            INSERT INTO trigger_recurring_workflow_binding
+                (ApplicationId, TriggerId, TriggerVersion, PrincipalReference, AuthenticationMethod,
+                 ApplicationRevision, ApplicationFingerprint, BaseApplicationsJson, StateSpaceId,
+                 GrantReference, StateRevision, DefinitionId, DefinitionVersion, DefinitionFingerprint,
+                 ExecutionRequestJson, ResultSchemaJson, ResultSchemaFingerprint, MaximumOperations,
+                 RuntimeWindowSeconds, BindingFingerprint)
+            VALUES ('jobs', 'jobs.recurring.workflow', 1, 'principal.' || lower('{Hash}'), 'fixture', 1,
+                '{Hash}', '[]', 'state.jobs', 'grant.jobs', 'state.revision', 'jobs.procedure', 1,
+                '{Hash}', char(123) || char(125), char(123) || char(125), '{Hash}', 4, 60, '{Hash}');
+            """);
+
+        var rejected = await Assert.ThrowsAsync<SqliteException>(() =>
+            db.GetService<IMigrator>().MigrateAsync(ResultSchemas));
+
+        Assert.Contains("retained_recurring_workflow_prevents_downgrade", rejected.Message);
+        Assert.Contains(RecurringWorkflows, await db.Database.GetAppliedMigrationsAsync());
+        Assert.Equal(1L, await ScalarAsync(connection,
+            "SELECT COUNT(*) FROM trigger_recurring_workflow_binding"));
+        Assert.Equal(1L, await ScalarAsync(connection,
+            "SELECT COUNT(*) FROM sqlite_schema WHERE type='trigger' AND name='preserve_recurring_definition_trigger'"));
+
+    }
+
+    [Fact]
+    public async Task Empty_recurring_workflow_downgrade_restores_constraint_without_rebuilding_definition()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        await using var db = Context(connection);
+        await db.GetService<IMigrator>().MigrateAsync(ResultSchemas);
+        SeedApplication(db);
+        await db.Database.ExecuteSqlRawAsync("""
+            INSERT INTO trigger_recurring_definition
+                (ApplicationId, Id, Version, Lifecycle, Kind, Interval, LocalTimeSeconds, TimeZoneId,
+                 StartDate, EndDate, WeekdaysMask, DayOfMonth, GapPolicy, OverlapPolicy, MisfirePolicy,
+                 Target, NotificationTopic, NotificationSubject, NotificationBody,
+                 NotificationStateSpaceId, RecordedAtUtc)
+            VALUES ('jobs', 'jobs.recurring.legacy', 1, 'active', 'daily', 1, 43200, 'Etc/UTC',
+                NULL, NULL, 0, NULL, 'skip', 'earlier', 'fire-once', 'notification-only',
+                'scheduled.reminder', 'Legacy recurring', '', NULL, '2026-09-12T11:00:00Z');
+            CREATE TABLE recurring_downgrade_probe (observed INTEGER NOT NULL);
+            INSERT INTO recurring_downgrade_probe (observed) VALUES (0);
+            CREATE TRIGGER preserve_recurring_downgrade_trigger
+            AFTER UPDATE OF NotificationSubject ON trigger_recurring_definition
+            BEGIN UPDATE recurring_downgrade_probe SET observed=observed+1; END;
+            """);
+        await db.Database.MigrateAsync();
+
+        await db.GetService<IMigrator>().MigrateAsync(ResultSchemas);
+
+        Assert.DoesNotContain(RecurringWorkflows, await db.Database.GetAppliedMigrationsAsync());
+        Assert.Equal(0L, await ScalarAsync(connection,
+            "SELECT COUNT(*) FROM sqlite_schema WHERE type='table' AND name='trigger_recurring_workflow_binding'"));
+        Assert.Equal(1L, await ScalarAsync(connection,
+            "SELECT instr(sql, '\"Target\" = ''notification-only''') > 0 FROM sqlite_schema WHERE type='table' AND name='trigger_recurring_definition'"));
+        Assert.Equal(1L, await ScalarAsync(connection,
+            "SELECT COUNT(*) FROM trigger_recurring_definition WHERE Id='jobs.recurring.legacy'"));
+        Assert.Equal(1L, await ScalarAsync(connection,
+            "SELECT COUNT(*) FROM sqlite_schema WHERE type='trigger' AND name='preserve_recurring_downgrade_trigger'"));
+        Assert.Equal(0L, await ScalarAsync(connection, "SELECT COUNT(*) FROM pragma_foreign_key_check"));
+        await db.Database.MigrateAsync();
+        Assert.Contains(RecurringWorkflows, await db.Database.GetAppliedMigrationsAsync());
     }
 
     [Fact]

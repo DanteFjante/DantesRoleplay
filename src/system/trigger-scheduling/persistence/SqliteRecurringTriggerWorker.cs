@@ -163,13 +163,16 @@ public sealed class SqliteRecurringTriggerWorker(
                 await transaction.RollbackAsync(cancellationToken);
                 return null;
             }
-            var attempt = await db.RecurringTriggerFireWork.AsNoTracking()
+            var claimed = await db.RecurringTriggerFireWork.AsNoTracking()
                 .Where(value => value.FireId == fireId && value.LeaseToken == token)
-                .Select(value => value.AttemptCount).SingleAsync(cancellationToken);
+                .Select(value => new { value.AttemptCount, value.CreatedAtUtc }).SingleAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             return new TriggerFireLease(fireId, trigger.ApplicationId, trigger.Id, trigger.Version,
-                occurrence, trigger.MisfirePolicy, trigger.Target, attempt, workerId, token, expires)
-                { ScheduleKind = TriggerScheduleKind.Recurring };
+                occurrence, trigger.MisfirePolicy, trigger.Target, claimed.AttemptCount, workerId, token, expires)
+                {
+                    ScheduleKind = TriggerScheduleKind.Recurring,
+                    AdmittedAt = new DateTimeOffset(DateTime.SpecifyKind(claimed.CreatedAtUtc, DateTimeKind.Utc))
+                };
         }
         catch
         {
@@ -470,12 +473,12 @@ public sealed class SqliteRecurringTriggerWorker(
             .Where(link => link.ApplicationId == value.ApplicationId && link.TriggerId == value.Id &&
                 link.TriggerVersion == value.Version).OrderBy(link => link.Ordinal)
             .Select(link => link.EntityId).ToArrayAsync(cancellationToken);
-        return RecurringTriggerDefinition.Create(ApplicationIdentifier.Parse(value.ApplicationId),
+        return RecurringTriggerDefinition.Stored(ApplicationIdentifier.Parse(value.ApplicationId),
             value.Id, value.Version, SqliteTriggerSchedulingStore.Pattern(row),
             row.Lifecycle switch { "active" => RecurringTriggerLifecycle.Active,
                 "paused" => RecurringTriggerLifecycle.Paused, _ => RecurringTriggerLifecycle.Cancelled },
             row.MisfirePolicy == "skip" ? TriggerMisfirePolicy.Skip : TriggerMisfirePolicy.FireOnce,
-            TriggerFireTarget.NotificationOnly, TriggerNotificationTarget.Create(row.NotificationTopic,
+            SqliteTriggerSchedulingStore.ParseTarget(row.Target), TriggerNotificationTarget.Create(row.NotificationTopic,
                 row.NotificationSubject, row.NotificationBody, row.NotificationStateSpaceId, entities));
     }
 

@@ -233,6 +233,7 @@ public sealed class SqliteTriggerSchedulingStore(
         await using var transaction = await BeginOwnedTransactionAsync(cancellationToken);
         var existing = await db.Set<RecurringTriggerRecord>().AsNoTracking()
             .Include(value => value.NotificationEntities)
+            .Include(value => value.WorkflowBinding)
             .SingleOrDefaultAsync(value => value.ApplicationId == definition.ApplicationId.Value &&
                 value.Id == definition.Id && value.Version == definition.Version, cancellationToken);
         if (existing is not null)
@@ -244,6 +245,17 @@ public sealed class SqliteTriggerSchedulingStore(
             value.ApplicationId == definition.ApplicationId.Value && value.Id == definition.Id,
             cancellationToken);
         RequireNewer(definition.Version, current?.CurrentVersion, "RECURRING_TRIGGER");
+        if (definition.Target == TriggerFireTarget.ProcedureWorkflow)
+        {
+            var workflow = definition.ProcedureWorkflow!;
+            var admission = durableTasks is SqliteSystemTaskDurableService durable
+                ? await durable.AuthorizeTriggerBindingAsync(workflow.InvocationHost,
+                    workflow.SelectedDefinition, definition.ApplicationId, cancellationToken)
+                : SystemTaskTriggerAdmissionDecision.Deny("SYSTEM_TASK_TRIGGER_UNAVAILABLE", true);
+            if (!admission.Accepted)
+                throw new TriggerSchedulingContractException(admission.Code,
+                    "The recurring procedure workflow trigger could not be authorized for this exact revision.");
+        }
         var row = RecurringRecord(definition, now);
         var pointer = current ?? new RecurringTriggerCurrentRecord
         {
@@ -282,10 +294,12 @@ public sealed class SqliteTriggerSchedulingStore(
         catch (DbUpdateException) when (transaction is not null)
         {
             await RollbackAndDetachAsync(transaction,
-                row.NotificationEntities.Cast<object>().Prepend(row).Append(pointer).Append(state),
+                row.NotificationEntities.Cast<object>().Concat(row.WorkflowBinding is null ? [] : [row.WorkflowBinding])
+                    .Prepend(row).Append(pointer).Append(state),
                 cancellationToken);
             var winner = await db.Set<RecurringTriggerRecord>().AsNoTracking()
                 .Include(value => value.NotificationEntities)
+                .Include(value => value.WorkflowBinding)
                 .SingleOrDefaultAsync(value => value.ApplicationId == definition.ApplicationId.Value &&
                     value.Id == definition.Id && value.Version == definition.Version, cancellationToken);
             if (winner is not null)
@@ -572,7 +586,9 @@ public sealed class SqliteTriggerSchedulingStore(
         row.NotificationTopic == value.Notification.Topic && row.NotificationSubject == value.Notification.Subject &&
         row.NotificationBody == value.Notification.Body && row.NotificationStateSpaceId == value.Notification.StateSpaceId &&
         row.NotificationEntities.OrderBy(item => item.Ordinal).Select(item => (item.StateSpaceId, item.EntityId))
-            .SequenceEqual(value.Notification.EntityIds.Select(item => (value.Notification.StateSpaceId!, item)));
+            .SequenceEqual(value.Target == TriggerFireTarget.NotificationOnly
+                ? value.Notification.EntityIds.Select(item => (value.Notification.StateSpaceId!, item))
+                : []) && TriggerProcedureWorkflowBindingPersistence.Same(row.WorkflowBinding, value.ProcedureWorkflow);
     private static bool Same(TriggerFireReceiptRecord row, OneTimeTriggerDefinition trigger, OneTimeTriggerEvaluation evaluation) =>
         row.ApplicationId == trigger.ApplicationId.Value && row.TriggerId == trigger.Id && row.TriggerVersion == trigger.Version && row.OccurrenceAtUtc == evaluation.OccurrenceAt.UtcDateTime && row.Disposition == Disposition(evaluation.Disposition);
 
@@ -655,7 +671,9 @@ public sealed class SqliteTriggerSchedulingStore(
             NotificationStateSpaceId = value.Notification.StateSpaceId,
             RecordedAtUtc = recordedAt.UtcDateTime
         };
-        for (var ordinal = 0; ordinal < value.Notification.EntityIds.Count; ordinal++)
+        if (value.Target == TriggerFireTarget.ProcedureWorkflow)
+            row.WorkflowBinding = TriggerProcedureWorkflowBindingPersistence.Recurring(value);
+        for (var ordinal = 0; value.Target == TriggerFireTarget.NotificationOnly && ordinal < value.Notification.EntityIds.Count; ordinal++)
         {
             row.NotificationEntities.Add(new RecurringTriggerNotificationEntityRecord
             {
@@ -682,7 +700,7 @@ public sealed class SqliteTriggerSchedulingStore(
                 "paused" => RecurringTriggerLifecycle.Paused,
                 _ => RecurringTriggerLifecycle.Cancelled
             }, pattern, value.MisfirePolicy == "skip" ? TriggerMisfirePolicy.Skip : TriggerMisfirePolicy.FireOnce,
-            TriggerFireTarget.NotificationOnly,
+            ParseTarget(value.Target),
             TriggerNotificationTarget.Create(value.NotificationTopic, value.NotificationSubject,
                 value.NotificationBody, value.NotificationStateSpaceId,
                 value.NotificationEntities.OrderBy(item => item.Ordinal).Select(item => item.EntityId).ToArray()),

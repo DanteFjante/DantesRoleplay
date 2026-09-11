@@ -3,6 +3,7 @@ using System;
 using DantesRoleplay.DataAccess;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DantesRoleplay.DataAccess.Migrations
 {
     [DbContext(typeof(DantesRoleplayDbContext))]
-    partial class DantesRoleplayDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260911234047_DurableRecurringProcedureWorkflowTriggers")]
+    partial class DurableRecurringProcedureWorkflowTriggers
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.11");
@@ -2536,9 +2539,6 @@ namespace DantesRoleplay.DataAccess.Migrations
                         .HasMaxLength(8000)
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("MetadataSchemaSourceRevision")
-                        .HasColumnType("INTEGER");
-
                     b.Property<int>("Revision")
                         .IsConcurrencyToken()
                         .HasColumnType("INTEGER");
@@ -2564,7 +2564,6 @@ namespace DantesRoleplay.DataAccess.Migrations
                         {
                             t.HasCheckConstraint("CK_information_record_metadata", "json_valid(\"MetadataJson\")");
 
-
                             t.HasCheckConstraint("CK_information_record_revision", "\"Revision\" > 0");
                         });
                 });
@@ -2588,21 +2587,10 @@ namespace DantesRoleplay.DataAccess.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("MetadataSchemaHash")
-                        .HasMaxLength(64)
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("MetadataSchemaJson")
                         .IsRequired()
                         .HasMaxLength(8000)
                         .HasColumnType("TEXT");
-
-                    b.Property<string>("MetadataSchemaQualifiedId")
-                        .HasMaxLength(200)
-                        .HasColumnType("TEXT");
-
-                    b.Property<int?>("MetadataSchemaVersion")
-                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -2628,7 +2616,6 @@ namespace DantesRoleplay.DataAccess.Migrations
                     b.ToTable("information_source", null, t =>
                         {
                             t.HasCheckConstraint("CK_information_source_metadata_schema", "json_valid(\"MetadataSchemaJson\")");
-
 
                             t.HasCheckConstraint("CK_information_source_revision", "\"Revision\" > 0");
                         });

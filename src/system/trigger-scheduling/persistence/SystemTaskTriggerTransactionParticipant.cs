@@ -37,6 +37,7 @@ internal sealed class SystemTaskTriggerTransactionParticipant(
             var target = lease.ScheduleKind switch
             {
                 TriggerScheduleKind.OneTime => await OneTimeAsync(lease, admittedAt, cancellationToken),
+                TriggerScheduleKind.Recurring => await RecurringAsync(lease, admittedAt, cancellationToken),
                 TriggerScheduleKind.Observation => await ObservationAsync(lease, admittedAt, cancellationToken),
                 _ => null
             };
@@ -92,6 +93,33 @@ internal sealed class SystemTaskTriggerTransactionParticipant(
             row.WorkflowBinding is null || observation is null || observation.SourceId != row.SourceId ||
             observation.SourceVersion != row.SourceVersion || observation.StructureId != row.StructureId ||
             observation.StructureVersion != row.StructureVersion || observation.StructureHash != row.StructureHash)
+            return null;
+        return TriggerProcedureWorkflowBindingPersistence.Materialize(row.Id, row.Version, lease.FireId,
+            admittedAt, row.WorkflowBinding);
+    }
+
+    private async Task<SystemTaskDurableTriggerTarget?> RecurringAsync(TriggerFireLease lease,
+        DateTimeOffset admittedAt, CancellationToken cancellationToken)
+    {
+        var current = await db.RecurringTriggerCurrent.AsNoTracking().SingleOrDefaultAsync(value =>
+            value.ApplicationId == lease.ApplicationId.Value && value.Id == lease.TriggerId,
+            cancellationToken);
+        if (current?.CurrentVersion != lease.TriggerVersion) return null;
+        var row = await db.RecurringTriggers.AsNoTracking().Include(value => value.WorkflowBinding)
+            .SingleOrDefaultAsync(value => value.ApplicationId == lease.ApplicationId.Value &&
+                value.Id == lease.TriggerId && value.Version == lease.TriggerVersion, cancellationToken);
+        if (row is null || row.Target != "procedure-workflow" || row.Lifecycle != "active" ||
+            row.WorkflowBinding is null)
+            return null;
+        var definition = RecurringTriggerDefinition.Stored(lease.ApplicationId, row.Id, row.Version,
+            SqliteTriggerSchedulingStore.Pattern(row), RecurringTriggerLifecycle.Active,
+            row.MisfirePolicy == "skip" ? TriggerMisfirePolicy.Skip : TriggerMisfirePolicy.FireOnce,
+            TriggerFireTarget.ProcedureWorkflow,
+            TriggerNotificationTarget.Create(row.NotificationTopic, row.NotificationSubject,
+                row.NotificationBody, row.NotificationStateSpaceId));
+        if (RecurringScheduleEvaluator.LatestOnOrBefore(definition, lease.OccurrenceAt)?.OccurrenceAtUtc
+                != lease.OccurrenceAt ||
+            TriggerSchedulingFingerprint.RecurringFire(definition, lease.OccurrenceAt) != lease.FireId)
             return null;
         return TriggerProcedureWorkflowBindingPersistence.Materialize(row.Id, row.Version, lease.FireId,
             admittedAt, row.WorkflowBinding);

@@ -125,6 +125,7 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
     public DbSet<TriggerNotificationLinkRecord> TriggerNotificationLinks => Set<TriggerNotificationLinkRecord>();
     public DbSet<RecurringTriggerRecord> RecurringTriggers => Set<RecurringTriggerRecord>();
     public DbSet<RecurringTriggerNotificationEntityRecord> RecurringTriggerNotificationEntities => Set<RecurringTriggerNotificationEntityRecord>();
+    public DbSet<RecurringTriggerWorkflowBindingRecord> RecurringTriggerWorkflowBindings => Set<RecurringTriggerWorkflowBindingRecord>();
     public DbSet<RecurringTriggerCurrentRecord> RecurringTriggerCurrent => Set<RecurringTriggerCurrentRecord>();
     public DbSet<RecurringTriggerStateRecord> RecurringTriggerState => Set<RecurringTriggerStateRecord>();
     public DbSet<RecurringTriggerFireWorkRecord> RecurringTriggerFireWork => Set<RecurringTriggerFireWorkRecord>();
@@ -1616,6 +1617,7 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
                 TriggerNotificationLinkRecord or
                 RecurringTriggerRecord or
                 RecurringTriggerNotificationEntityRecord or
+                RecurringTriggerWorkflowBindingRecord or
                 RecurringTriggerFireReceiptRecord or
                 RecurringTriggerNotificationLinkRecord or
                 ConditionalTriggerRecord or

@@ -172,6 +172,83 @@ public sealed class ProcedureWorkflowTriggerTests : IDisposable
         Assert.Empty(db.Notifications);
     }
 
+    [Fact]
+    public async Task Recurring_workflow_stages_one_distinct_durable_task_for_each_exact_occurrence()
+    {
+        await using var db = fixture.CreateContext();
+        var clock = new WorkflowClock(new DateTimeOffset(2026, 9, 12, 12, 0, 0, TimeSpan.Zero));
+        var authority = Authority(db, clock);
+        RegisterApplication(db);
+        var store = new SqliteTriggerSchedulingStore(db, clock, durableTasks: authority.Durable);
+        var definition = RecurringDefinition(authority.State, clock.UtcNow);
+
+        var appended = await store.AppendRecurringTriggerAsync(definition);
+        var replay = await store.AppendRecurringTriggerAsync(definition);
+        var first = await RecurringWorker(db, clock, authority)
+            .RunBatchAsync("worker.workflow.recurring.first");
+        clock.Advance(TimeSpan.FromDays(1));
+        var second = await RecurringWorker(db, clock, authority)
+            .RunBatchAsync("worker.workflow.recurring.second");
+
+        Assert.Equal(TriggerSchedulingWriteDisposition.Appended, appended.Disposition);
+        Assert.Equal(TriggerSchedulingWriteDisposition.Replay, replay.Disposition);
+        Assert.Equal(1, first.Completed);
+        Assert.Equal(1, second.Completed);
+        var tasks = await db.Set<SystemTaskLifecycleRecord>().AsNoTracking()
+            .OrderBy(value => value.CreatedAtUtc).ToArrayAsync();
+        Assert.Equal(2, tasks.Length);
+        Assert.Equal(2, tasks.Select(value => value.CommandId).Distinct(StringComparer.Ordinal).Count());
+        Assert.All(tasks, task =>
+        {
+            Assert.Equal("procedure-workflow", task.Purpose);
+            Assert.Equal(Procedure.ExactDefinitionId, task.DefinitionId);
+            Assert.Equal(Assignment("Run the recurring schedule."), task.InputJson);
+        });
+        Assert.Equal(2, await db.Set<SystemTaskAiCeilingRecord>().CountAsync());
+        Assert.Equal(2, await db.RecurringTriggerFireReceipts.CountAsync());
+        Assert.Equal(2, await db.RecurringTriggerFireWork.CountAsync());
+        Assert.Empty(db.Notifications);
+        Assert.Equal(clock.UtcNow.AddDays(1).UtcDateTime,
+            Assert.Single(db.RecurringTriggerState).NextOccurrenceAtUtc);
+        var binding = Assert.Single(await db.Set<RecurringTriggerWorkflowBindingRecord>()
+            .AsNoTracking().ToArrayAsync());
+        Assert.Equal(definition.ProcedureWorkflow!.Fingerprint, binding.BindingFingerprint);
+        Assert.Equal(ResultSchema, binding.ResultSchemaJson);
+    }
+
+    [Theory]
+    [InlineData("missing")]
+    [InlineData("legacy-schema")]
+    [InlineData("stale-fingerprint")]
+    public async Task Recurring_workflow_rejects_missing_legacy_or_stale_binding_without_side_effects(string corruption)
+    {
+        await using var db = fixture.CreateContext();
+        var clock = new WorkflowClock(new DateTimeOffset(2026, 9, 12, 12, 0, 0, TimeSpan.Zero));
+        var authority = Authority(db, clock);
+        RegisterApplication(db);
+        await new SqliteTriggerSchedulingStore(db, clock, durableTasks: authority.Durable)
+            .AppendRecurringTriggerAsync(RecurringDefinition(authority.State, clock.UtcNow));
+        var sql = corruption switch
+        {
+            "missing" => "DELETE FROM trigger_recurring_workflow_binding",
+            "legacy-schema" => "UPDATE trigger_recurring_workflow_binding SET ResultSchemaJson=NULL, ResultSchemaFingerprint=NULL",
+            "stale-fingerprint" => $"UPDATE trigger_recurring_workflow_binding SET BindingFingerprint='{new string('B', 64)}'",
+            _ => throw new ArgumentOutOfRangeException(nameof(corruption))
+        };
+        await db.Database.ExecuteSqlRawAsync(sql);
+        db.ChangeTracker.Clear();
+
+        var result = await RecurringWorker(db, clock, authority)
+            .RunBatchAsync("worker.workflow.recurring.invalid");
+
+        Assert.Equal(1, result.Failed);
+        Assert.Empty(await db.Set<SystemTaskLifecycleRecord>().ToArrayAsync());
+        Assert.Empty(await db.Set<SystemTaskAiCeilingRecord>().ToArrayAsync());
+        Assert.Empty(db.RecurringTriggerFireReceipts);
+        Assert.Empty(db.Notifications);
+        Assert.Equal("failed", Assert.Single(db.RecurringTriggerFireWork).State);
+    }
+
     private static OneTimeTriggerDefinition Definition(StateSpaceView state, DateTimeOffset dueAt)
     {
         var host = new InteractionInvocationHost(
@@ -186,9 +263,31 @@ public sealed class ProcedureWorkflowTriggerTests : IDisposable
             procedureWorkflow: workflow);
     }
 
+    private static RecurringTriggerDefinition RecurringDefinition(StateSpaceView state, DateTimeOffset dueAt)
+    {
+        var host = new InteractionInvocationHost(
+            TrustedPrincipalContext.VerifiedPrincipal(Principal, "workflow-trigger-test"),
+            state.ApplicationRevision, state.StateSpaceId, "grant.jobs", "binding.jobs.recurring",
+            InteractionStateRevision.From(state), InteractionExecutionProfile.Workflow,
+            new InteractionInvocationBudget(4, dueAt.AddHours(1).UtcDateTime));
+        var workflow = TriggerProcedureWorkflowTarget.Create(host, Procedure,
+            Assignment("Run the recurring schedule."), ResultSchema, TimeSpan.FromMinutes(2));
+        return RecurringTriggerDefinition.Create(App, "jobs.workflow.recurring", 1,
+            RecurrencePattern.Daily(1, TimeOnly.FromDateTime(dueAt.UtcDateTime), "Etc/UTC"),
+            misfirePolicy: TriggerMisfirePolicy.FireOnce,
+            target: TriggerFireTarget.ProcedureWorkflow,
+            procedureWorkflow: workflow);
+    }
+
     private static SqliteOneTimeTriggerWorker Worker(DantesRoleplayDbContext db, WorkflowClock clock,
         AuthorityFixture authority) => new(db, clock,
         new SqliteTriggerSchedulingStore(db, clock, durableTasks: authority.Durable),
+        new SystemTaskTriggerTransactionParticipant(db,
+            new TriggerNotificationTransactionParticipant(db, clock), authority.Durable,
+            authority.ProcedureWorkers));
+
+    private static SqliteRecurringTriggerWorker RecurringWorker(DantesRoleplayDbContext db,
+        WorkflowClock clock, AuthorityFixture authority) => new(db, clock,
         new SystemTaskTriggerTransactionParticipant(db,
             new TriggerNotificationTransactionParticipant(db, clock), authority.Durable,
             authority.ProcedureWorkers));

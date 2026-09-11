@@ -137,7 +137,9 @@ public sealed record RecurringTriggerDefinition
         RecurrencePattern pattern,
         TriggerMisfirePolicy misfirePolicy,
         TriggerFireTarget target,
-        TriggerNotificationTarget? notification)
+        TriggerNotificationTarget? notification,
+        TriggerProcedureWorkflowTarget? procedureWorkflow,
+        bool requireWorkflowPayload = true)
     {
         ApplicationId = applicationId ?? throw new ArgumentNullException(nameof(applicationId));
         Id = OneTimeTriggerDefinition.Create(applicationId, id, 1, DateTimeOffset.UnixEpoch,
@@ -146,12 +148,16 @@ public sealed record RecurringTriggerDefinition
         if (!Enum.IsDefined(lifecycle)) throw new TriggerSchedulingContractException("RECURRING_TRIGGER_LIFECYCLE", "The recurring trigger lifecycle is invalid.");
         Pattern = pattern ?? throw new ArgumentNullException(nameof(pattern));
         if (!Enum.IsDefined(misfirePolicy)) throw new TriggerSchedulingContractException("TRIGGER_MISFIRE_POLICY", "The trigger misfire policy is invalid.");
-        if (target != TriggerFireTarget.NotificationOnly) throw new TriggerSchedulingContractException("TRIGGER_TARGET_UNSUPPORTED", "Only notification-only triggers are supported.");
+        if (!Enum.IsDefined(target) ||
+            (target == TriggerFireTarget.NotificationOnly && procedureWorkflow is not null) ||
+            (requireWorkflowPayload && target == TriggerFireTarget.ProcedureWorkflow && procedureWorkflow is null))
+            throw new TriggerSchedulingContractException("TRIGGER_TARGET_SHAPE", "The recurring trigger target does not match its closed payload shape.");
         Version = version;
         Lifecycle = lifecycle;
         MisfirePolicy = misfirePolicy;
         Target = target;
         Notification = notification ?? TriggerNotificationTarget.Default(Id);
+        ProcedureWorkflow = procedureWorkflow;
     }
 
     public ApplicationIdentifier ApplicationId { get; }
@@ -162,6 +168,7 @@ public sealed record RecurringTriggerDefinition
     public TriggerMisfirePolicy MisfirePolicy { get; }
     public TriggerFireTarget Target { get; }
     public TriggerNotificationTarget Notification { get; }
+    public TriggerProcedureWorkflowTarget? ProcedureWorkflow { get; }
 
     public static RecurringTriggerDefinition Create(
         ApplicationIdentifier applicationId,
@@ -171,8 +178,22 @@ public sealed record RecurringTriggerDefinition
         RecurringTriggerLifecycle lifecycle = RecurringTriggerLifecycle.Active,
         TriggerMisfirePolicy misfirePolicy = TriggerMisfirePolicy.Skip,
         TriggerFireTarget target = TriggerFireTarget.NotificationOnly,
-        TriggerNotificationTarget? notification = null) =>
-        new(applicationId, id, version, lifecycle, pattern, misfirePolicy, target, notification);
+        TriggerNotificationTarget? notification = null,
+        TriggerProcedureWorkflowTarget? procedureWorkflow = null) =>
+        new(applicationId, id, version, lifecycle, pattern, misfirePolicy, target, notification,
+            procedureWorkflow);
+
+    public static RecurringTriggerDefinition Stored(
+        ApplicationIdentifier applicationId,
+        string id,
+        int version,
+        RecurrencePattern pattern,
+        RecurringTriggerLifecycle lifecycle,
+        TriggerMisfirePolicy misfirePolicy,
+        TriggerFireTarget target,
+        TriggerNotificationTarget notification) =>
+        new(applicationId, id, version, lifecycle, pattern, misfirePolicy, target, notification,
+            null, requireWorkflowPayload: false);
 }
 
 public sealed record RecurringOccurrence(

@@ -354,7 +354,7 @@ internal static class TriggerSchedulingModelConfiguration
             entity.ToTable("trigger_recurring_definition", table =>
             {
                 table.HasCheckConstraint("CK_trigger_recurring_definition_values",
-                    $"{application} AND {identifier} AND \"Version\" > 0 AND \"Lifecycle\" IN ('active', 'paused', 'cancelled') AND \"Kind\" IN ('daily', 'weekly', 'monthly') AND \"Interval\" BETWEEN 1 AND 365 AND \"LocalTimeSeconds\" BETWEEN 0 AND 86399 AND length(\"TimeZoneId\") BETWEEN 3 AND 100 AND \"GapPolicy\" IN ('skip', 'next-valid') AND \"OverlapPolicy\" IN ('earlier', 'later') AND \"MisfirePolicy\" IN ('skip', 'fire-once') AND \"Target\" = 'notification-only'");
+                    $"{application} AND {identifier} AND \"Version\" > 0 AND \"Lifecycle\" IN ('active', 'paused', 'cancelled') AND \"Kind\" IN ('daily', 'weekly', 'monthly') AND \"Interval\" BETWEEN 1 AND 365 AND \"LocalTimeSeconds\" BETWEEN 0 AND 86399 AND length(\"TimeZoneId\") BETWEEN 3 AND 100 AND \"GapPolicy\" IN ('skip', 'next-valid') AND \"OverlapPolicy\" IN ('earlier', 'later') AND \"MisfirePolicy\" IN ('skip', 'fire-once') AND \"Target\" IN ('notification-only', 'procedure-workflow')");
                 table.HasCheckConstraint("CK_trigger_recurring_definition_shape",
                     "(\"Kind\" = 'daily' AND \"WeekdaysMask\" = 0 AND \"DayOfMonth\" IS NULL) OR " +
                     "(\"Kind\" = 'weekly' AND \"WeekdaysMask\" BETWEEN 1 AND 127 AND \"DayOfMonth\" IS NULL) OR " +
@@ -381,6 +381,17 @@ internal static class TriggerSchedulingModelConfiguration
             entity.HasOne<ApplicationRegistryRecord>().WithMany().HasForeignKey(row => row.ApplicationId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
+
+        ConfigureWorkflowBinding<RecurringTriggerWorkflowBindingRecord>(modelBuilder,
+            "trigger_recurring_workflow_binding");
+        modelBuilder.Entity<RecurringTriggerWorkflowBindingRecord>()
+            .HasOne(row => row.Trigger).WithOne(row => row.WorkflowBinding)
+            .HasForeignKey<RecurringTriggerWorkflowBindingRecord>(row => new
+            {
+                row.ApplicationId,
+                Id = row.TriggerId,
+                Version = row.TriggerVersion
+            }).OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<RecurringTriggerNotificationEntityRecord>(entity =>
         {

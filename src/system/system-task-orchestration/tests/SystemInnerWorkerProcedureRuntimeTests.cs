@@ -57,7 +57,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
     }
 
     [Fact]
-    public async Task Procedure_worker_submission_and_due_trigger_use_the_registered_durable_runner()
+    public async Task Procedure_worker_and_due_trigger_routes_use_the_registered_durable_runner()
     {
         await using var database = await InnerWorkerDatabase.CreateAsync();
         var db = database.Db;
@@ -210,6 +210,46 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             Assert.Contains("\"answer\":\"42\"", triggerResult.DataJson,
                 StringComparison.Ordinal);
             Assert.Equal(2, provider.Calls);
+
+            var existingTaskIds = await db.Set<SystemTaskLifecycleRecord>().AsNoTracking()
+                .Select(value => value.TaskId).ToArrayAsync();
+            var recurringHost = InnerWorkerHost(application, state,
+                "recurring-trigger-binding-command", deadline);
+            var recurringTarget = TriggerProcedureWorkflowTarget.Create(recurringHost, selected,
+                assignment, schema, TimeSpan.FromMinutes(2));
+            var recurringDefinition = RecurringTriggerDefinition.Create(
+                Application, "demo.runtime.recurring-inner-trigger", 1,
+                RecurrencePattern.Daily(1,
+                    TimeOnly.FromDateTime(triggerClock.UtcNow.UtcDateTime), "Etc/UTC"),
+                misfirePolicy: TriggerMisfirePolicy.FireOnce,
+                target: TriggerFireTarget.ProcedureWorkflow,
+                procedureWorkflow: recurringTarget);
+            var recurringAppend = await triggerStore.AppendRecurringTriggerAsync(recurringDefinition);
+            var recurringReplay = await triggerStore.AppendRecurringTriggerAsync(recurringDefinition);
+            var recurringWorker = new SqliteRecurringTriggerWorker(db, triggerClock,
+                new SystemTaskTriggerTransactionParticipant(db,
+                    new TriggerNotificationTransactionParticipant(db, triggerClock), durable,
+                    resolver));
+
+            var recurringFire = await recurringWorker.RunBatchAsync("recurring-inner-worker");
+            var recurringDuplicate = await recurringWorker.RunBatchAsync("recurring-inner-worker-replay");
+
+            Assert.Equal(TriggerSchedulingWriteDisposition.Appended, recurringAppend.Disposition);
+            Assert.Equal(TriggerSchedulingWriteDisposition.Replay, recurringReplay.Disposition);
+            Assert.Equal(1, recurringFire.Completed);
+            Assert.Equal(0, recurringDuplicate.Completed);
+            var recurringTask = await db.Set<SystemTaskLifecycleRecord>().AsNoTracking()
+                .SingleAsync(value => !existingTaskIds.Contains(value.TaskId));
+            Assert.Equal(3L, await db.Set<SystemTaskAiCeilingRecord>().LongCountAsync());
+            Assert.Single(await db.RecurringTriggerFireReceipts.AsNoTracking().ToArrayAsync());
+            Assert.True(await worker.RunOnceAsync("inner-worker-recurring-trigger"));
+            var recurringResult = await service.GetAsync(
+                InnerWorkerHost(application, state, "recurring-trigger-result-read", deadline),
+                new(recurringTask.TaskId, recurringTask.CommandId));
+            Assert.Equal(InteractionInvocationResultTag.Completed, recurringResult.Tag);
+            Assert.Contains("\"answer\":\"42\"", recurringResult.DataJson,
+                StringComparison.Ordinal);
+            Assert.Equal(3, provider.Calls);
         }
     }
 
