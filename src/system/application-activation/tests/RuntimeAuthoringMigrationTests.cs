@@ -88,6 +88,19 @@ public sealed class RuntimeAuthoringMigrationTests
             VALUES ('task.migration.child', 1, 'attempt.migration.child', 1,
                     'lease.migration.child', 'waiting', '2026-09-11T20:00:02Z');
 
+            INSERT INTO system_task_checkpoint (
+                task_id, sequence, checkpoint_name, completion_handler, correlation_id,
+                state_json, status, created_at_utc)
+            VALUES ('task.migration.child', 1, 'checkpoint.migration', 'handler.migration',
+                    'correlation.migration', char(123) || char(125), 'waiting', '2026-09-11T20:00:02Z');
+
+            INSERT INTO system_task_host_call (
+                task_id, operation_id, request_fingerprint, request_json, status,
+                attempt_id, fencing_counter, started_at_utc)
+            VALUES ('task.migration.child', 'operation.migration.host',
+                    'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+                    char(123) || char(125), 'pending', 'attempt.migration.child', 1, '2026-09-11T20:00:02Z');
+
             INSERT INTO system_task_ai_ceiling (
                 task_id, enrollment_fingerprint, profile_id, profile_version, profile_fingerprint,
                 grant_reference, grant_revision, grant_fingerprint, definition_id, definition_version,
@@ -120,7 +133,15 @@ public sealed class RuntimeAuthoringMigrationTests
                 schema_fingerprint, request_json, observed_at_utc)
             VALUES ('reservation.migration', 0, 'event.migration.dispatch', {Hash}, 'dispatch',
                     'provider', {Hash}, 'provider.migration', 'model.migration', {Hash}, {Hash},
-                    {request}, '2026-09-11T20:00:03Z');
+                     {request}, '2026-09-11T20:00:03Z');
+
+            CREATE TABLE lifecycle_migration_trigger_probe (observed INTEGER NOT NULL);
+            INSERT INTO lifecycle_migration_trigger_probe (observed) VALUES (0);
+            CREATE TRIGGER preserve_lifecycle_migration_trigger
+            AFTER UPDATE OF input_json ON system_task_lifecycle
+            BEGIN
+                UPDATE lifecycle_migration_trigger_probe SET observed = observed + 1;
+            END;
             """);
         Assert.Empty(await ForeignKeyViolationsAsync(connection));
 
@@ -160,6 +181,14 @@ public sealed class RuntimeAuthoringMigrationTests
             "SELECT COUNT(*) FROM system_task_ai_reservation_ancestor WHERE ancestor_task_id = 'task.migration.root'"));
         Assert.Equal(1L, await ScalarAsync(connection,
             "SELECT COUNT(*) FROM system_task_ai_dispatch_evidence WHERE request_json = '{\"messages\":[]}'"));
+        Assert.Equal(1L, await ScalarAsync(connection,
+            "SELECT COUNT(*) FROM system_task_checkpoint WHERE task_id = 'task.migration.child' AND status = 'waiting'"));
+        Assert.Equal(1L, await ScalarAsync(connection,
+            "SELECT COUNT(*) FROM system_task_host_call WHERE task_id = 'task.migration.child' AND status = 'pending'"));
+        await db.Database.ExecuteSqlRawAsync(
+            "UPDATE system_task_lifecycle SET input_json = input_json WHERE task_id = 'task.migration.child'");
+        Assert.Equal(1L, await ScalarAsync(connection,
+            "SELECT observed FROM lifecycle_migration_trigger_probe"));
         Assert.Empty(await ForeignKeyViolationsAsync(connection));
         Assert.Equal(1L, await ScalarAsync(connection, "PRAGMA foreign_keys"));
 
@@ -188,6 +217,62 @@ public sealed class RuntimeAuthoringMigrationTests
             """));
         Assert.Equal(1L, await ScalarAsync(connection,
             "SELECT COUNT(*) FROM pragma_foreign_key_list('system_task_ai_ceiling') WHERE \"table\" = 'system_task_lifecycle'"));
+        Assert.Equal(1L, await ScalarAsync(connection,
+            "SELECT COUNT(*) FROM system_task_checkpoint WHERE task_id = 'task.migration.child'"));
+        Assert.Equal(1L, await ScalarAsync(connection,
+            "SELECT COUNT(*) FROM system_task_host_call WHERE task_id = 'task.migration.child'"));
+        await db.Database.ExecuteSqlRawAsync(
+            "UPDATE system_task_lifecycle SET input_json = input_json WHERE task_id = 'task.migration.child'");
+        Assert.Equal(2L, await ScalarAsync(connection,
+            "SELECT observed FROM lifecycle_migration_trigger_probe"));
+        Assert.Empty(await ForeignKeyViolationsAsync(connection));
+        Assert.Equal(1L, await ScalarAsync(connection, "PRAGMA foreign_keys"));
+    }
+
+    [Fact]
+    public async Task Lifecycle_origin_migration_failure_rolls_back_every_schema_change_and_can_retry()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        await using var db = Context(connection);
+        await db.GetService<IMigrator>().MigrateAsync(LifecycleOriginsPrevious);
+        await db.Database.ExecuteSqlRawAsync($"""
+            INSERT INTO system_task_root_budget (root_task_id, maximum_operations, consumed_operations)
+            VALUES ('task.rollback', 16, 0);
+            INSERT INTO system_task_lifecycle (
+                task_id, command_id, payload_fingerprint, root_task_id, parent_depth,
+                propagate_cancellation, state, principal_reference, authentication_method,
+                application_id, application_revision, application_fingerprint, base_applications_json,
+                state_space_id, grant_reference, state_revision, execution_profile, admitted_operations,
+                deadline_utc, definition_id, definition_version, definition_fingerprint, input_json,
+                created_at_utc, updated_at_utc)
+            VALUES ('task.rollback', 'command.rollback', '{Hash}', 'task.rollback', 0, 1, 'queued',
+                    'principal.rollback', 'fixture', 'migration-platform', 1, '{Hash}', '[]',
+                    'state.rollback', 'grant.rollback', 'revision.rollback', 'workflow', 16,
+                    '2026-09-12T00:00:00Z', 'migration-platform.rollback', 1, '{Hash}',
+                    char(123) || char(125),
+                    '2026-09-11T20:00:00Z', '2026-09-11T20:00:00Z');
+            CREATE INDEX "ix_system_task_lifecycle_causation_operation" ON operation ("Id");
+            """);
+
+        await Assert.ThrowsAsync<SqliteException>(() => db.Database.MigrateAsync());
+
+        Assert.Equal(0L, await ScalarAsync(connection,
+            "SELECT COUNT(*) FROM pragma_table_info('system_task_lifecycle') WHERE name = 'purpose'"));
+        Assert.Equal(1L, await ScalarAsync(connection,
+            "SELECT COUNT(*) FROM system_task_lifecycle WHERE task_id = 'task.rollback'"));
+        Assert.DoesNotContain("20260911195508_SystemTaskLifecycleOrigins",
+            await db.Database.GetAppliedMigrationsAsync());
+        Assert.Empty(await ForeignKeyViolationsAsync(connection));
+        Assert.Equal(1L, await ScalarAsync(connection, "PRAGMA foreign_keys"));
+
+        await db.Database.ExecuteSqlRawAsync("DROP INDEX ix_system_task_lifecycle_causation_operation");
+        await db.Database.MigrateAsync();
+
+        Assert.Equal("procedure-workflow", (await StringsAsync(connection,
+            "SELECT purpose FROM system_task_lifecycle WHERE task_id = 'task.rollback'")).Single());
+        Assert.Contains("20260911195508_SystemTaskLifecycleOrigins",
+            await db.Database.GetAppliedMigrationsAsync());
         Assert.Empty(await ForeignKeyViolationsAsync(connection));
         Assert.Equal(1L, await ScalarAsync(connection, "PRAGMA foreign_keys"));
     }
