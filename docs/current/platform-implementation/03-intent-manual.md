@@ -32,6 +32,12 @@ candidate drift even when a caller chooses a different output budget.
 
 The existing activation change reader can invalidate cached catalog snapshots and reject stale
 retrieval generations. Derived index failures preserve lexical discovery and cannot gate activation.
+Missing or stale vector generations trigger refresh; a successful empty search does not. Hosts share
+one `InteractionRetrievalRefreshCoordinator` per derived-index authority across scoped retrievers.
+It admits at most 16 active generations and 64 waiters per generation; waiters cancel with their
+caller or fall back after five seconds. The owner performs awaited work within its caller lifetime,
+pins the requested generation, and releases capacity on failure/cancellation. No background work
+captures scoped services. Without host injection, coordination is limited to one retriever instance.
 The accepted context seam is `IInteractionManualContextService` with `InteractionManualContextRequest`.
 Coordinator integration owns constructor registration and MCP/website mapping. Section-level vector identity/index support, standing grants and publication,
 candidate-bound equivalence review and end-to-end invocation through plans 01/05/06 remain separate

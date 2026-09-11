@@ -266,6 +266,95 @@ public sealed class InteractionFeatureRetrievalTests : IDisposable
     }
 
     [Fact]
+    public async Task Legitimately_empty_current_generation_does_not_reembed_catalog()
+    {
+        var provider = new MutableSnapshots(Snapshot());
+        var changes = new MutableDefinitionChanges(Application, provider.Snapshot.EffectiveSetFingerprint);
+        var embeddings = new ControlledEmbeddings();
+        embeddings.Release.TrySetResult();
+        var vectors = new EmptyCurrentVectors();
+        var retriever = new InteractionFeatureRetriever(provider, embeddings, vectors, changes: changes);
+        var result = await retriever.SearchAsync(new(Application, InteractionRetrievalLane.TrustedFeature), new("find", 10));
+        Assert.Equal(InteractionRetrievalMode.Hybrid, result.Mode);
+        Assert.Equal(0, embeddings.CatalogBatches);
+        Assert.Equal(0, vectors.Replacements);
+    }
+
+    [Fact]
+    public async Task Concurrent_scoped_misses_share_one_refresh_and_cancelled_waiter_does_not_cancel_owner()
+    {
+        var provider = new MutableSnapshots(Snapshot());
+        var changes = new MutableDefinitionChanges(Application, provider.Snapshot.EffectiveSetFingerprint);
+        var embeddings = new ControlledEmbeddings();
+        var vectors = new MemoryVectors();
+        var coordinator = new InteractionRetrievalRefreshCoordinator();
+        var leaderRetriever = new InteractionFeatureRetriever(provider, embeddings, vectors, changes: changes, refresh: coordinator);
+        var waiterRetriever = new InteractionFeatureRetriever(provider, embeddings, vectors, changes: changes, refresh: coordinator);
+        var scope = new InteractionFeatureRetrievalScope(Application, InteractionRetrievalLane.TrustedFeature);
+        var leader = leaderRetriever.SearchAsync(scope, new("find", 10));
+        await embeddings.Started.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        using var cancelled = new CancellationTokenSource();
+        var waiter = waiterRetriever.SearchAsync(scope, new("find", 10));
+        var cancelledWaiter = waiterRetriever.SearchAsync(scope, new("find", 10), cancelled.Token);
+        try
+        {
+            cancelled.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => cancelledWaiter);
+            Assert.False(leader.IsCompleted);
+            Assert.Equal(1, embeddings.CatalogBatches);
+        }
+        finally { embeddings.Release.TrySetResult(); }
+        Assert.All(await Task.WhenAll(leader, waiter), result => Assert.Equal(InteractionRetrievalMode.Hybrid, result.Mode));
+        Assert.Equal(1, embeddings.CatalogBatches);
+    }
+
+    [Fact]
+    public async Task Activation_change_during_shared_refresh_cannot_publish_or_disclose_old_generation()
+    {
+        var provider = new MutableSnapshots(Snapshot());
+        var changes = new MutableDefinitionChanges(Application, provider.Snapshot.EffectiveSetFingerprint);
+        var embeddings = new ControlledEmbeddings();
+        var vectors = new MemoryVectors();
+        var retriever = new InteractionFeatureRetriever(provider, embeddings, vectors, changes: changes);
+        var scope = new InteractionFeatureRetrievalScope(Application, InteractionRetrievalLane.TrustedFeature);
+        var search = retriever.SearchAsync(scope, new("find", 10));
+        await embeddings.Started.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        provider.Snapshot = Snapshot(fingerprintMarker: 'B');
+        changes.Fingerprint = provider.Snapshot.EffectiveSetFingerprint;
+        embeddings.Release.TrySetResult();
+        var stale = await search;
+        Assert.Equal(InteractionRetrievalMode.Unavailable, stale.Mode);
+        Assert.Equal("CATALOG_GENERATION_STALE", stale.AvailabilityCode);
+        Assert.Empty(stale.Hits);
+        Assert.Empty(vectors.Ids);
+        var fresh = await retriever.SearchAsync(scope, new("find", 10));
+        Assert.Equal(InteractionRetrievalMode.Hybrid, fresh.Mode);
+        Assert.All(fresh.Hits, hit => Assert.Equal(provider.Snapshot.Manifest.Fingerprint, hit.Reference.CatalogFingerprint));
+    }
+
+    [Fact]
+    public async Task Cancelled_refresh_owner_releases_capacity_for_a_later_retry()
+    {
+        var provider = new MutableSnapshots(Snapshot());
+        var changes = new MutableDefinitionChanges(Application, provider.Snapshot.EffectiveSetFingerprint);
+        var embeddings = new ControlledEmbeddings();
+        var vectors = new MemoryVectors();
+        var retriever = new InteractionFeatureRetriever(provider, embeddings, vectors, changes: changes);
+        var scope = new InteractionFeatureRetrievalScope(Application, InteractionRetrievalLane.TrustedFeature);
+        using var cancelled = new CancellationTokenSource();
+        var owner = retriever.SearchAsync(scope, new("find", 10), cancelled.Token);
+        await embeddings.Started.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        var waiter = retriever.SearchAsync(scope, new("find", 10));
+        cancelled.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => owner);
+        Assert.Equal(InteractionRetrievalMode.LexicalFallback, (await waiter).Mode);
+        Assert.Empty(vectors.Ids);
+        embeddings.Release.TrySetResult();
+        Assert.Equal(InteractionRetrievalMode.Hybrid, (await retriever.SearchAsync(scope, new("find", 10))).Mode);
+        Assert.Equal(2, embeddings.CatalogBatches);
+    }
+
+    [Fact]
     public async Task Derived_sqlite_index_is_disposable_scoped_and_deterministic()
     {
         var location = InteractionDerivedIndexLocation.Create(_temporaryRoot);
@@ -450,7 +539,7 @@ public sealed class InteractionFeatureRetrievalTests : IDisposable
 
     private sealed class MemoryVectors : IInteractionDerivedVectorIndex
     {
-        private readonly Dictionary<string, IReadOnlyList<InteractionVectorDocument>> _documents = new(StringComparer.Ordinal);
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<string, IReadOnlyList<InteractionVectorDocument>> _documents = new(StringComparer.Ordinal);
         public IReadOnlyList<string> Ids => _documents.Values.SelectMany(value => value).Select(value => value.Reference.QualifiedId).ToArray();
         public Task ReplaceAsync(InteractionRetrievalGeneration generation, IReadOnlyList<InteractionVectorDocument> documents, CancellationToken cancellationToken = default)
         {
@@ -459,7 +548,8 @@ public sealed class InteractionFeatureRetrievalTests : IDisposable
         }
         public Task<IReadOnlyList<InteractionVectorCandidate>> SearchAsync(InteractionRetrievalGeneration generation, float[] query, int limit, CancellationToken cancellationToken = default)
         {
-            if (!_documents.TryGetValue(generation.GenerationKey, out var documents)) return Task.FromResult<IReadOnlyList<InteractionVectorCandidate>>([]);
+            if (!_documents.TryGetValue(generation.GenerationKey, out var documents))
+                throw new InteractionContractException("VECTOR_INDEX_STALE", "The fixture has no current generation.");
             return Task.FromResult<IReadOnlyList<InteractionVectorCandidate>>(documents.Select(value => new InteractionVectorCandidate(
                 value.Reference.QualifiedId, value.Vector[0] == query[0] ? 0 : 1)).OrderBy(value => value.Distance).ThenBy(value => value.QualifiedId, StringComparer.Ordinal).Take(limit).ToArray());
         }
@@ -469,5 +559,34 @@ public sealed class InteractionFeatureRetrievalTests : IDisposable
     {
         public Task ReplaceAsync(InteractionRetrievalGeneration generation, IReadOnlyList<InteractionVectorDocument> documents, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task<IReadOnlyList<InteractionVectorCandidate>> SearchAsync(InteractionRetrievalGeneration generation, float[] query, int limit, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
+    }
+
+    private sealed class ControlledEmbeddings : ITextEmbeddingProvider
+    {
+        private static readonly EmbeddingProviderIdentity Identity = new("fixture", "controlled", "1", 2);
+        internal readonly TaskCompletionSource Started = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        internal readonly TaskCompletionSource Release = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        internal int CatalogBatches;
+        public Task<EmbeddingProviderStatus> CheckAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult(new EmbeddingProviderStatus(true, Identity));
+        public async Task<EmbeddingBatchResult> EmbedAsync(IReadOnlyList<string> inputs, CancellationToken cancellationToken = default)
+        {
+            if (inputs.Count > 1)
+            {
+                Interlocked.Increment(ref CatalogBatches);
+                Started.TrySetResult();
+                await Release.Task.WaitAsync(cancellationToken);
+            }
+            return new(Identity, inputs.Select(_ => new[] { 1f, 0f }).ToArray());
+        }
+    }
+
+    private sealed class EmptyCurrentVectors : IInteractionDerivedVectorIndex
+    {
+        internal int Replacements;
+        public Task ReplaceAsync(InteractionRetrievalGeneration generation, IReadOnlyList<InteractionVectorDocument> documents,
+            CancellationToken cancellationToken = default) { Replacements++; return Task.CompletedTask; }
+        public Task<IReadOnlyList<InteractionVectorCandidate>> SearchAsync(InteractionRetrievalGeneration generation,
+            float[] query, int limit, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<InteractionVectorCandidate>>([]);
     }
 }

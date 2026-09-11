@@ -18,7 +18,8 @@ public sealed class InteractionFeatureRetriever(
     ITextEmbeddingProvider? embeddings = null,
     IInteractionDerivedVectorIndex? vectors = null,
     ICatalogNamespaceRegistry? namespaces = null,
-    IApplicationDefinitionChangeReader? changes = null) : IInteractionFeatureRetriever
+    IApplicationDefinitionChangeReader? changes = null,
+    InteractionRetrievalRefreshCoordinator? refresh = null) : IInteractionFeatureRetriever
 {
     private static readonly byte[] CursorKey = SHA256.HashData(Encoding.UTF8.GetBytes(
         "dantes-roleplay/interaction-feature-retrieval-cursors/v1"));
@@ -27,6 +28,7 @@ public sealed class InteractionFeatureRetriever(
     private readonly IInteractionDerivedVectorIndex? _vectors = vectors;
     private readonly ICatalogNamespaceRegistry? _namespaces = namespaces;
     private readonly IApplicationDefinitionChangeReader? _changes = changes;
+    private readonly InteractionRetrievalRefreshCoordinator _refresh = refresh ?? new();
 
     public async Task<InteractionFeatureSearchResult> SearchAsync(
         InteractionFeatureRetrievalScope scope,
@@ -108,30 +110,22 @@ public sealed class InteractionFeatureRetriever(
         catch (InteractionContractException exception) when (_changes is not null
             && exception.Code is "VECTOR_INDEX_STALE" or "VECTOR_INDEX_UNAVAILABLE")
         {
-            var rebuild = await RebuildAsync(scope, cancellationToken);
+            InteractionFeatureRebuildResult rebuild;
+            try { rebuild = await EnsureGenerationAsync(scope, snapshot, generation, embedded.Vectors[0], cancellationToken); }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+            catch { return LexicalFallback(snapshot, scope, lexical, input, "VECTOR_REFRESH_FAILED", "Refresh could not complete; lexical retrieval remains available."); }
             if (!rebuild.Rebuilt)
                 return LexicalFallback(snapshot, scope, lexical, input,
                     SafeCode(rebuild.AvailabilityCode, "VECTOR_INDEX_UNAVAILABLE"),
                     SafeMessage(rebuild.AvailabilityMessage, "Vector retrieval is unavailable; lexical retrieval remains available."));
+            if (rebuild.GenerationKey != generation.GenerationKey)
+                return Unavailable("CATALOG_GENERATION_STALE", "Refresh did not produce the requested generation; retry discovery.");
             try { vector = await _vectors.SearchAsync(generation, embedded.Vectors[0], CandidateLimit(input.Limit), cancellationToken); }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch { return LexicalFallback(snapshot, scope, lexical, input, "VECTOR_INDEX_UNAVAILABLE", "Vector retrieval is unavailable; lexical retrieval remains available."); }
         }
         catch (InteractionContractException exception) { return LexicalFallback(snapshot, scope, lexical, input, SafeCode(exception.Code, "VECTOR_INDEX_UNAVAILABLE"), "Vector retrieval is unavailable; lexical retrieval remains available."); }
         catch { return LexicalFallback(snapshot, scope, lexical, input, "VECTOR_INDEX_UNAVAILABLE", "Vector retrieval is unavailable; lexical retrieval remains available."); }
-        if (vector.Count == 0 && _changes is not null)
-        {
-            // A new activation has a different generation key. An empty generation is therefore
-            // a bounded refresh opportunity, not evidence that stale vectors may be reused.
-            var rebuild = await RebuildAsync(scope, cancellationToken);
-            if (!rebuild.Rebuilt)
-                return LexicalFallback(snapshot, scope, lexical, input,
-                    SafeCode(rebuild.AvailabilityCode, "VECTOR_INDEX_UNAVAILABLE"),
-                    SafeMessage(rebuild.AvailabilityMessage, "Vector retrieval is unavailable; lexical retrieval remains available."));
-            try { vector = await _vectors.SearchAsync(generation, embedded.Vectors[0], CandidateLimit(input.Limit), cancellationToken); }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
-            catch { return LexicalFallback(snapshot, scope, lexical, input, "VECTOR_INDEX_UNAVAILABLE", "Vector retrieval is unavailable; lexical retrieval remains available."); }
-        }
         if (!MatchesCurrentDefinition(scope.ApplicationId, snapshot))
             return Unavailable("CATALOG_GENERATION_STALE",
                 "The active application definition advanced while retrieval was resolving; retry discovery.");
@@ -186,25 +180,57 @@ public sealed class InteractionFeatureRetriever(
         if (!status.Ready || status.Identity is null)
             return new(false, current.Documents.Count, AvailabilityCode: SafeCode(status.ErrorCode, "EMBEDDING_UNAVAILABLE"), AvailabilityMessage: SafeMessage(status.ErrorMessage, "Embedding retrieval is unavailable."));
 
+        var generation = Generation(scope, snapshot, status.Identity);
+        return await _refresh.RunAsync(generation.GenerationKey,
+            () => RebuildSnapshotAsync(scope, snapshot, generation, cancellationToken), cancellationToken);
+    }
+
+    private Task<InteractionFeatureRebuildResult> EnsureGenerationAsync(InteractionFeatureRetrievalScope scope,
+        ActiveCatalogFeatureSnapshot snapshot, InteractionRetrievalGeneration generation, float[] query,
+        CancellationToken cancellationToken) => _refresh.RunAsync(generation.GenerationKey, async () =>
+    {
+        // A caller may have observed the miss before another caller finished. Check again only
+        // after owning the slot. Empty is a valid current generation and never requests a rebuild.
+        try
+        {
+            await _vectors!.SearchAsync(generation, query, 1, cancellationToken);
+            return new(true, 0, generation.GenerationKey);
+        }
+        catch (InteractionContractException exception) when (exception.Code is "VECTOR_INDEX_STALE" or "VECTOR_INDEX_UNAVAILABLE") { }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+        catch { return new(false, 0, AvailabilityCode: "VECTOR_INDEX_UNAVAILABLE", AvailabilityMessage: "The derived index could not be inspected."); }
+        return await RebuildSnapshotAsync(scope, snapshot, generation, cancellationToken);
+    }, cancellationToken);
+
+    private async Task<InteractionFeatureRebuildResult> RebuildSnapshotAsync(InteractionFeatureRetrievalScope scope,
+        ActiveCatalogFeatureSnapshot snapshot, InteractionRetrievalGeneration generation, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!MatchesCurrentDefinition(scope.ApplicationId, snapshot))
+            return new(false, 0, AvailabilityCode: "CATALOG_GENERATION_STALE", AvailabilityMessage: "The requested definition is no longer current.");
+        var current = Current(snapshot, scope);
+        if (current.ErrorCode.Length != 0)
+            return new(false, 0, AvailabilityCode: current.ErrorCode, AvailabilityMessage: current.ErrorMessage);
+        current = (Resolve(snapshot, current.Documents, includeShadowed: false).Records, "", "");
         var built = new List<InteractionVectorDocument>(current.Documents.Count);
         foreach (var batch in current.Documents.Chunk(32))
         {
             var texts = batch.Select(value => InteractionRetrievalFingerprint.EmbeddingText(value.Record)).ToArray();
             EmbeddingBatchResult embedded;
-            try { embedded = await _embeddings.EmbedAsync(texts, cancellationToken); }
+            try { embedded = await _embeddings!.EmbedAsync(texts, cancellationToken); }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch { return new(false, current.Documents.Count, AvailabilityCode: "EMBEDDING_UNAVAILABLE", AvailabilityMessage: "Embedding retrieval is unavailable."); }
-            if (!embedded.Ok || embedded.Identity != status.Identity || embedded.Vectors.Count != batch.Length)
+            if (!embedded.Ok || embedded.Identity != generation.Embedding || embedded.Vectors.Count != batch.Length)
                 return new(false, current.Documents.Count, AvailabilityCode: SafeCode(embedded.ErrorCode, "EMBEDDING_RESPONSE_INVALID"), AvailabilityMessage: SafeMessage(embedded.ErrorMessage, "Embedding retrieval returned an invalid response."));
             for (var index = 0; index < batch.Length; index++)
                 built.Add(InteractionVectorDocument.Create(Reference(snapshot, scope, batch[index].Record), texts[index], embedded.Vectors[index]));
         }
 
-        var generation = Generation(scope, snapshot, status.Identity);
         if (!MatchesCurrentDefinition(scope.ApplicationId, snapshot))
             return new(false, current.Documents.Count, AvailabilityCode: "CATALOG_GENERATION_STALE",
                 AvailabilityMessage: "The active application definition advanced while retrieval was rebuilding.");
-        try { await _vectors.ReplaceAsync(generation, built, cancellationToken); }
+        cancellationToken.ThrowIfCancellationRequested();
+        try { await _vectors!.ReplaceAsync(generation, built, cancellationToken); }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
         catch { return new(false, current.Documents.Count, AvailabilityCode: "VECTOR_INDEX_UNAVAILABLE", AvailabilityMessage: "The disposable vector index could not be rebuilt."); }
         if (!MatchesCurrentDefinition(scope.ApplicationId, snapshot))
