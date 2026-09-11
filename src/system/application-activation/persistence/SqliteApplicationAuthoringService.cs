@@ -9,6 +9,7 @@ using DantesRoleplay.Interactions;
 using DantesRoleplay.LocalAI;
 using DantesRoleplay.Operations;
 using DantesRoleplay.Sources;
+using DantesRoleplay.StateSpaceAdministration;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
@@ -29,6 +30,7 @@ public sealed partial class SqliteApplicationAuthoringService : IApplicationAuth
     private readonly IInteractionManualContextService? manuals;
     private readonly ApplicationCandidateReviewedPureUpdateReader? reviewedPureUpdates;
     private readonly IApplicationCatalogSynchronizationEvidenceReader? synchronization;
+    private readonly CompatibleStateSpacePublicationRebinder stateSpaceRebinder;
 
     public SqliteApplicationAuthoringService(DantesRoleplayDbContext db, IApplicationRegistry applications,
         IApplicationActivationReader activations, IActivatedApplicationEvidenceReader evidence, ISourceRegistry sources,
@@ -49,6 +51,7 @@ public sealed partial class SqliteApplicationAuthoringService : IApplicationAuth
         this.sources = sources; this.grants = grants; this.targets = targets; this.operations = operations;
         this.preparation = preparation; this.manuals = manuals; this.reviewedPureUpdates = reviewedPureUpdates;
         this.synchronization = synchronization;
+        stateSpaceRebinder = new(db, applications);
     }
 
     private const string Tool = "application-candidate";

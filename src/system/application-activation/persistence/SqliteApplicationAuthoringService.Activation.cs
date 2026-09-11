@@ -134,6 +134,12 @@ public sealed partial class SqliteApplicationAuthoringService
                 : intentMatchUpdate is not null
                     ? await publisher.StageIntentMatchUpdateAsync(intentMatchUpdate, validation, operation.Id, token)
                     : await publisher.StageReviewedPureUpdateAsync(reviewed!, validation, operation.Id, token);
+            if (compatibleUpdate is not null)
+                _ = await stateSpaceRebinder.StageAsync(compatibleUpdate, activation, token);
+            else if (intentMatchUpdate is not null)
+                _ = await stateSpaceRebinder.StageAsync(intentMatchUpdate, activation, token);
+            else
+                _ = await stateSpaceRebinder.StageAsync(reviewed!, activation, token);
             operation.GuardEvidenceJson = ActivationGuard(candidate, validation.OperationId, activation.ActivationFingerprint);
             await db.SaveChangesAsync(token);
             await transaction.CommitAsync(token);

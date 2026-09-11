@@ -79,6 +79,14 @@ an input schema; broader dependency completeness remains false. Every selected m
 retained input/expected-data sample, with at most four per definition and sixteen per request. The
 entire request and report each obey the 64 KiB/depth 32 bound.
 
+Publication through the compatible mechanic-body, reviewed closed-pure, and Matches-only paths
+atomically advances runtime and application-publication state spaces whose application revision,
+manifest fingerprint, and resolution fingerprint all identify the immediate predecessor. The
+state-space owner preserves the scope and every state row, increments the binding revision, and
+appends immutable predecessor/successor history in the same writer transaction. Older, mixed-pin,
+and other-application spaces remain unchanged and therefore fail the ordinary current-activation
+check until separately upgraded.
+
 Runtime checks require current application Read and Validate authority in the authoring owner's
 existing transaction. Each engine attempt consumes one caller operation and shares its deadline;
 the validator creates no transaction, budget, service capability or effect dispatcher. Reports keep
