@@ -1,4 +1,5 @@
 using DantesRoleplay.CatalogNavigation;
+using DantesRoleplay.ApplicationActivation;
 using DantesRoleplay.CatalogNamespaces;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Knowledge;
@@ -68,11 +69,14 @@ internal static class InteractionOrchestrationComponentRegistration
         services.TryAddScoped<IInteractionRecipeLearner, InteractionRecipeLearner>();
         services.TryAddScoped<IInteractionRecipeProvenanceReader, InteractionRecipeProvenanceReader>();
         services.TryAddScoped<IInteractionRecipeReviewService, InteractionRecipeReviewService>();
+        services.TryAddSingleton<InteractionRetrievalRefreshCoordinator>();
         services.TryAddScoped<IInteractionFeatureRetriever>(provider => new InteractionFeatureRetriever(
             provider.GetRequiredService<IActiveCatalogFeatureSnapshotProvider>(),
             provider.GetService<ITextEmbeddingProvider>(),
             provider.GetService<IInteractionDerivedVectorIndex>(),
-            provider.GetService<ICatalogNamespaceRegistry>()));
+            provider.GetService<ICatalogNamespaceRegistry>(),
+            provider.GetRequiredService<IApplicationDefinitionChangeReader>(),
+            provider.GetRequiredService<InteractionRetrievalRefreshCoordinator>()));
         services.TryAddScoped<IVerifiedInteractionRecipeResolver>(provider => new VerifiedInteractionRecipeResolver(
             provider.GetRequiredService<IInteractionRecipeStore>(),
             provider.GetRequiredService<IActiveCatalogFeatureSnapshotProvider>(),
