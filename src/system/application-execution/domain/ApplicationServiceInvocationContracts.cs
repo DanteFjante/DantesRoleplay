@@ -3,66 +3,39 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using DantesRoleplay.Interactions;
+using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.Mechanics;
+using DantesRoleplay.SchemaValidation;
 using DantesRoleplay.SystemTasks;
 
 namespace DantesRoleplay.ApplicationExecution;
 
-/// <summary>
-/// Review proposal for the first read-only service declaration. This contract is unaccepted and
-/// unavailable in production unless the coordinator explicitly integrates it. Its authored JSON
-/// shape is closed and uses these exact fields:
-/// <code>
-/// {
-///   "inputSchemaHash": "99334726611CCF58A148B0814696BFA6FE08C1B2D027E946BECCF5A74331C9AA",
-///   "inputSchemaJson": "{\"additionalProperties\":false,\"properties\":{},\"type\":\"object\"}",
-///   "outputSchemaHash": "F000094D3398C2F64FE53862AAE7E5F40BA2EEEF3FFD6E999345B7B0E252203E",
-///   "outputSchemaJson": "{\"additionalProperties\":false,\"properties\":{\"count\":{\"type\":\"integer\"}},\"required\":[\"count\"],\"type\":\"object\"}",
-///   "reads": [{
-///     "alias": "inventory", "qualifiedQueryId": "example.query.inventory",
-///     "contract": {
-///       "executor": "projection", "projectionQualifiedId": "example.projection.inventory",
-///       "projectionVersion": 2,
-///       "projectionContentHash": "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD",
-///       "outputSchemaHash": "99334726611CCF58A148B0814696BFA6FE08C1B2D027E946BECCF5A74331C9AA",
-///       "outputSchemaJson": "{\"additionalProperties\":false,\"properties\":{},\"type\":\"object\"}",
-///       "exposure": 0, "roles": ["subject"], "collectionId": null
-///     },
-///     "roleMappings": { "subject": "viewer" }
-///   }]
-/// }
-/// </code>
-/// Exposure uses the numeric value of the existing <c>ApplicationQueryExposure</c> enum; the strict
-/// reader constructs <see cref="InteractionQueryContractReference"/> explicitly rather than
-/// relying on default serializer constructor binding. This declaration lives inside the retained
-/// mechanic requirements under the <c>service</c> property and is covered by that mechanic's
-/// content fingerprint. The whole
-/// declaration and each embedded schema are bounded to 64 KiB/depth 32. This record carries no
-/// source or independently selected service identity.
-/// </summary>
-[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
-public sealed record ApplicationReadOnlyServiceDefinitionProposal
+/// <summary>Closed read-only declaration retained in mechanic requirements.service. No source or authority is accepted here.</summary>
+[JsonConverter(typeof(ApplicationReadOnlyServiceDefinitionJsonConverter))]
+public sealed record ApplicationReadOnlyServiceDefinition
 {
-    public ApplicationReadOnlyServiceDefinitionProposal(
+    public ApplicationReadOnlyServiceDefinition(
         string inputSchemaHash,
         string inputSchemaJson,
         string outputSchemaHash,
         string outputSchemaJson,
-        IReadOnlyList<ApplicationServiceReadDeclarationProposal> reads)
+        IReadOnlyList<ApplicationServiceReadDeclaration> reads,
+        IBoundedJsonSchemaValidator schemas)
     {
         InputSchemaHash = InteractionGuard.UpperSha256(inputSchemaHash, nameof(inputSchemaHash));
-        InputSchemaJson = InteractionCanonicalJson.CanonicalizeObject(inputSchemaJson);
+        InputSchemaJson = ApplicationServiceSchema.Validate(schemas, inputSchemaJson, InputSchemaHash);
         OutputSchemaHash = InteractionGuard.UpperSha256(outputSchemaHash, nameof(outputSchemaHash));
-        OutputSchemaJson = InteractionCanonicalJson.CanonicalizeObject(outputSchemaJson);
+        OutputSchemaJson = ApplicationServiceSchema.Validate(schemas, outputSchemaJson, OutputSchemaHash);
         ArgumentNullException.ThrowIfNull(reads);
         var copied = reads.ToArray();
-        if (copied.Length > ApplicationReadOnlyServiceLimitsProposal.MaximumReads
+        if (copied.Length > ApplicationReadOnlyServiceLimits.MaximumReads
             || copied.Any(read => read is null)
             || copied.Select(read => read.Alias).Distinct(StringComparer.Ordinal).Count() != copied.Length)
             throw new InteractionContractException(
                 "INVALID_SERVICE_READS",
                 "The service read declarations are invalid, duplicated, or outside the closed limit.");
         Reads = Array.AsReadOnly(copied);
+        _ = ToJson(); // Apply the aggregate bound to host construction as well as retained JSON.
     }
 
     [JsonPropertyName("inputSchemaHash")]
@@ -78,7 +51,25 @@ public sealed record ApplicationReadOnlyServiceDefinitionProposal
     public string OutputSchemaJson { get; }
 
     [JsonPropertyName("reads")]
-    public IReadOnlyList<ApplicationServiceReadDeclarationProposal> Reads { get; }
+    public IReadOnlyList<ApplicationServiceReadDeclaration> Reads { get; }
+
+    public string ToJson() => InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
+    {
+        InputSchemaHash, InputSchemaJson, OutputSchemaHash, OutputSchemaJson,
+        Reads = Reads.Select(read => new
+        {
+            read.Alias, read.QualifiedQueryId,
+            Contract = new
+            {
+                read.Contract.Executor, read.Contract.ProjectionQualifiedId, read.Contract.ProjectionVersion,
+                read.Contract.ProjectionContentHash, read.Contract.OutputSchemaHash,
+                OutputSchemaJson = read.DeclaredOutputSchemaJson,
+                read.Contract.Exposure, read.Contract.Roles, read.Contract.CollectionId
+            },
+            read.RoleMappings
+        })
+    },
+        new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }));
 }
 
 /// <summary>
@@ -86,17 +77,25 @@ public sealed record ApplicationReadOnlyServiceDefinitionProposal
 /// entity is supplied by the trusted service host; invocation input cannot provide entity IDs.
 /// </summary>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
-public sealed record ApplicationServiceReadDeclarationProposal
+public sealed record ApplicationServiceReadDeclaration
 {
-    public ApplicationServiceReadDeclarationProposal(
+    public ApplicationServiceReadDeclaration(
         string alias,
         string qualifiedQueryId,
         InteractionQueryContractReference contract,
-        IReadOnlyDictionary<string, string> roleMappings)
+        IReadOnlyDictionary<string, string> roleMappings,
+        IBoundedJsonSchemaValidator schemas,
+        string declaredOutputSchemaJson)
     {
         Alias = InteractionGuard.Identifier(alias, nameof(alias));
         QualifiedQueryId = InteractionGuard.Identifier(qualifiedQueryId, nameof(qualifiedQueryId));
         Contract = contract ?? throw new ArgumentNullException(nameof(contract));
+        DeclaredOutputSchemaJson = ApplicationServiceSchema.Validate(schemas, declaredOutputSchemaJson, contract.OutputSchemaHash);
+        if (InteractionCanonicalJson.CanonicalizeObject(DeclaredOutputSchemaJson) != contract.OutputSchemaJson)
+            throw new InteractionContractException("SERVICE_SCHEMA_MISMATCH", "The declared query schema differs from its pinned reference.");
+        if (contract.Executor is not (ApplicationQueryContract.ProjectionExecutor
+            or ApplicationQueryContract.MechanicProjectionExecutor or ApplicationQueryContract.ObjectProjectionExecutor))
+            throw new InteractionContractException("INVALID_SERVICE_QUERY_EXECUTOR", "The query executor is unsupported.");
         RoleMappings = CopyRoleMappings(roleMappings, contract.Roles);
     }
 
@@ -108,6 +107,11 @@ public sealed record ApplicationServiceReadDeclarationProposal
 
     [JsonPropertyName("contract")]
     public InteractionQueryContractReference Contract { get; }
+
+    // The existing schema owner hashes its own normalization, which preserves property order.
+    // Query references canonicalize their copy, so retain the owner-normalized bytes separately.
+    [JsonIgnore]
+    public string DeclaredOutputSchemaJson { get; }
 
     [JsonPropertyName("roleMappings")]
     public IReadOnlyDictionary<string, string> RoleMappings { get; }
@@ -149,15 +153,17 @@ public sealed record ApplicationServiceReadDeclarationProposal
 /// <see cref="InputJson"/> and the final output against the declared schemas, and reject any
 /// mismatch rather than accepting a caller whitelist or substituting another version.
 /// </summary>
-public sealed record ApplicationReadOnlyServiceInvocationRequestProposal
+[JsonConverter(typeof(RejectApplicationServiceInvocationRequestJsonConverter))]
+public sealed record ApplicationReadOnlyServiceInvocationRequest
 {
-    public ApplicationReadOnlyServiceInvocationRequestProposal(
+    public ApplicationReadOnlyServiceInvocationRequest(
         InteractionInvocationHost host,
         SystemTaskSelectedDefinition selectedDefinition,
-        ApplicationReadOnlyServiceDefinitionProposal definition,
+        ApplicationReadOnlyServiceDefinition definition,
         IReadOnlyDictionary<string, string> hostRoleBindings,
         string inputJson,
-        ExecutionLimits computationLimits)
+        ExecutionLimits computationLimits,
+        ApplicationServiceProgressChannel? progress = null)
     {
         Host = host ?? throw new ArgumentNullException(nameof(host));
         if (host.Profile != InteractionExecutionProfile.ReadOnly)
@@ -172,14 +178,16 @@ public sealed record ApplicationReadOnlyServiceInvocationRequestProposal
             StringComparer.Ordinal));
         InputJson = InteractionCanonicalJson.CanonicalizeObject(inputJson);
         ComputationLimits = computationLimits ?? throw new ArgumentNullException(nameof(computationLimits));
+        Progress = progress;
     }
 
     public InteractionInvocationHost Host { get; }
     public SystemTaskSelectedDefinition SelectedDefinition { get; }
-    public ApplicationReadOnlyServiceDefinitionProposal Definition { get; }
+    public ApplicationReadOnlyServiceDefinition Definition { get; }
     public IReadOnlyDictionary<string, string> HostRoleBindings { get; }
     public string InputJson { get; }
     public ExecutionLimits ComputationLimits { get; }
+    public ApplicationServiceProgressChannel? Progress { get; }
 }
 
 /// <summary>
@@ -192,20 +200,20 @@ public sealed record ApplicationReadOnlyServiceInvocationRequestProposal
 /// ceiling. Cancellation and the host deadline are checked before a call and after every wait.
 /// The proposed JavaScript surface is <c>ctx.services.read(alias, inputObject)</c> and
 /// <c>ctx.services.progress(dataObject)</c>. JSON alone crosses the callback boundary; the CLR
-/// capability object is never exposed. The engine adapter must freeze whether reads are
-/// synchronous or Promise-based before implementation acceptance; either model must serialize
-/// engine access and must not reinterpret process-local waiting as durability. Progress sequence
+/// capability object is never exposed. Reads and progress are synchronous on the sole owning
+/// engine thread. Host waits use a linked deadline bounded by both the invocation deadline and
+/// remaining computation timeout. These waits are not durable. Progress sequence
 /// numbers are assigned by the host. Action, workflow, wait/job and AI callbacks return the
 /// existing canonical <c>unavailable</c> shape and never dispatch in v1.
 /// </summary>
-public interface IApplicationReadOnlyServiceCapabilitiesProposal
+public interface IApplicationReadOnlyServiceCapabilities
 {
     Task<InteractionInvocationResult> ReadAsync(
         string alias,
         string inputJson,
         CancellationToken cancellationToken = default);
 
-    ApplicationServiceProgressDispositionProposal TryWriteProgress(ApplicationServiceProgressFrameProposal frame);
+    ApplicationServiceProgressDisposition TryWriteProgress(string dataJson);
 }
 
 /// <summary>
@@ -214,17 +222,17 @@ public interface IApplicationReadOnlyServiceCapabilitiesProposal
 /// Sequence is assigned by the host, one-based and bounded by the per-root frame limit.
 /// </summary>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
-public sealed record ApplicationServiceProgressFrameProposal
+public sealed record ApplicationServiceProgressFrame
 {
-    public ApplicationServiceProgressFrameProposal(int sequence, string dataJson)
+    public ApplicationServiceProgressFrame(int sequence, string dataJson)
     {
-        if (sequence is < 1 or > ApplicationReadOnlyServiceLimitsProposal.MaximumProgressFrames)
+        if (sequence is < 1 or > ApplicationReadOnlyServiceLimits.MaximumProgressFrames)
             throw new InteractionContractException(
                 "INVALID_SERVICE_PROGRESS_SEQUENCE",
                 "The service progress sequence is outside the closed limit.");
         var canonical = InteractionCanonicalJson.CanonicalizeObject(dataJson);
         var wire = JsonSerializer.Serialize(new { sequence, dataJson = canonical });
-        if (Encoding.UTF8.GetByteCount(wire) > ApplicationReadOnlyServiceLimitsProposal.MaximumProgressFrameBytes)
+        if (Encoding.UTF8.GetByteCount(wire) > ApplicationReadOnlyServiceLimits.MaximumProgressFrameBytes)
             throw new InteractionContractException(
                 "SERVICE_PROGRESS_TOO_LARGE",
                 "The service progress frame exceeds its byte limit.");
@@ -244,7 +252,7 @@ public sealed record ApplicationServiceProgressFrameProposal
 /// write is never an invocation result, completion evidence, durable checkpoint, pending handle,
 /// or commit receipt.
 /// </summary>
-public enum ApplicationServiceProgressDispositionProposal
+public enum ApplicationServiceProgressDisposition
 {
     Accepted,
     Backpressured,
@@ -261,6 +269,8 @@ public enum ApplicationServiceProgressDispositionProposal
 /// the host-selected limits without increasing any parent limit, permits at most 16 shared
 /// operations including retries, and bounds progress to 32 frames, 2 KiB per frame, 16 KiB total,
 /// and channel capacity 8; <c>TryWriteProgress</c> reports backpressure instead of growing a queue.
+/// Attempts, including backpressured retries, consume the 32-attempt root allowance; accepted
+/// frames alone receive consecutive host sequence numbers. Producers cannot retry indefinitely.
 /// JavaScript continuation state is process-local and is never described as durable.
 /// The root computation consumes one operation from <see cref="InteractionInvocationHost.Budget"/>;
 /// every read consumes exactly one more through the existing adapter. The service wrapper must not
@@ -275,10 +285,10 @@ public enum ApplicationServiceProgressDispositionProposal
 /// enter Jint, and progress never becomes success evidence. A successful computation result must
 /// use actual validated runner evidence. No test double alone establishes production availability.
 /// </summary>
-public interface IApplicationReadOnlyServiceInvocationProposal
+public interface IApplicationReadOnlyServiceInvocationAdapter
 {
     Task<InteractionInvocationResult> InvokeAsync(
-        ApplicationReadOnlyServiceInvocationRequestProposal request,
+        ApplicationReadOnlyServiceInvocationRequest request,
         CancellationToken cancellationToken = default);
 }
 
@@ -291,14 +301,14 @@ public interface IApplicationReadOnlyServiceInvocationProposal
 /// input/output schemas and hashes, and explicitly construct every existing
 /// <see cref="InteractionQueryContractReference"/>. No existing shared JSON converter is changed.
 /// </summary>
-public interface IApplicationReadOnlyServiceDefinitionReaderProposal
+public interface IApplicationReadOnlyServiceDefinitionReader
 {
-    ApplicationReadOnlyServiceDefinitionProposal ReadRetained(
+    ApplicationReadOnlyServiceDefinition ReadRetained(
         SystemTaskSelectedDefinition selectedDefinition,
-        string retainedMechanicRequirementsJson);
+        CatalogRecordView retainedMechanic);
 }
 
-public static class ApplicationReadOnlyServiceLimitsProposal
+public static class ApplicationReadOnlyServiceLimits
 {
     public const int MaximumReads = InteractionContractLimits.ProposalSteps;
     public const int MaximumExchangedBytesPerRoot = 1024 * 1024;
@@ -306,4 +316,39 @@ public static class ApplicationReadOnlyServiceLimitsProposal
     public const int MaximumProgressFrameBytes = 2 * 1024;
     public const int MaximumProgressBytesPerRoot = 16 * 1024;
     public const int ProgressChannelCapacity = 8;
+}
+
+internal static class ApplicationServiceSchema
+{
+    internal static string Validate(IBoundedJsonSchemaValidator schemas, string json, string expectedHash)
+    {
+        ArgumentNullException.ThrowIfNull(schemas);
+        _ = InteractionCanonicalJson.CanonicalizeObject(json); // Bounds and duplicates, without changing schema-owner hash semantics.
+        var compiled = schemas.Compile(json);
+        if (!compiled.IsAccepted || compiled.SchemaHash != expectedHash)
+            throw new InteractionContractException("SERVICE_SCHEMA_MISMATCH",
+                "The service schema is invalid or does not match its declared hash.");
+        return compiled.NormalizedSchema;
+    }
+}
+
+public sealed class RejectApplicationServiceInvocationRequestJsonConverter
+    : JsonConverter<ApplicationReadOnlyServiceInvocationRequest>
+{
+    public override ApplicationReadOnlyServiceInvocationRequest Read(ref Utf8JsonReader reader,
+        Type typeToConvert, JsonSerializerOptions options) =>
+        throw new JsonException("Service invocation requests are host-only and cannot be deserialized.");
+
+    public override void Write(Utf8JsonWriter writer, ApplicationReadOnlyServiceInvocationRequest value,
+        JsonSerializerOptions options) =>
+        throw new JsonException("Service invocation authority is not serializable.");
+}
+
+public sealed class ApplicationReadOnlyServiceDefinitionJsonConverter : JsonConverter<ApplicationReadOnlyServiceDefinition>
+{
+    public override ApplicationReadOnlyServiceDefinition Read(ref Utf8JsonReader reader, Type typeToConvert,
+        JsonSerializerOptions options) => throw new JsonException("Service declarations must be read from exact retained mechanics.");
+
+    public override void Write(Utf8JsonWriter writer, ApplicationReadOnlyServiceDefinition value,
+        JsonSerializerOptions options) => writer.WriteRawValue(value.ToJson());
 }

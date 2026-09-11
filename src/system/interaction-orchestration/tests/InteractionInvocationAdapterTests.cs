@@ -20,6 +20,27 @@ namespace DantesRoleplay.Interactions.Tests;
 public sealed class InteractionInvocationAdapterTests
 {
     [Fact]
+    public async Task Noncanonical_schema_order_preserves_owner_hash_for_cold_and_repeated_reads()
+    {
+        using var fixture = await InvocationFixture.CreateAsync();
+        var cold = await fixture.ReadAdapter.ReadAsync(fixture.ReadRequest("command.schema.cold"));
+        var repeated = await fixture.ReadAdapter.ReadAsync(fixture.ReadRequest("command.schema.repeat"));
+
+        Assert.NotEqual(fixture.OriginalOutputSchema, fixture.QueryContract.OutputSchemaJson);
+        var compiled = new BoundedJsonSchemaValidator().Compile(fixture.OriginalOutputSchema);
+        Assert.Equal(fixture.QueryContract.OutputSchemaHash, compiled.SchemaHash);
+        Assert.NotEqual(compiled.SchemaHash,
+            new BoundedJsonSchemaValidator().Compile(fixture.QueryContract.OutputSchemaJson).SchemaHash);
+        Assert.Equal(InteractionInvocationResultTag.Completed, cold.Tag);
+        Assert.Equal(InteractionInvocationResultTag.Completed, repeated.Tag);
+        Assert.Equal(cold.DataJson, repeated.DataJson);
+        Assert.Equal(cold.ReadEvidence, repeated.ReadEvidence);
+        Assert.NotNull(cold.ReadEvidence);
+        Assert.Equal(compiled.SchemaHash, cold.ReadEvidence!.OutputSchemaHash);
+        Assert.Equal("{\"entityId\":\"subject\",\"value\":1}", cold.DataJson);
+    }
+
+    [Fact]
     public async Task Real_read_and_root_atomic_action_return_tracked_evidence_and_one_authoritative_commit()
     {
         using var fixture = await InvocationFixture.CreateAsync();
@@ -246,6 +267,8 @@ public sealed class InteractionInvocationAdapterTests
         public IApplicationActionRunner Runner { get; }
         public IApplicationReadModelInvocationAdapter ReadAdapter { get; }
         public IApplicationActionInvocationAdapter ActionAdapter { get; }
+        public InteractionQueryContractReference QueryContract => queryContract;
+        public string OriginalOutputSchema => OutputSchema;
 
         public static async Task<InvocationFixture> CreateAsync()
         {
