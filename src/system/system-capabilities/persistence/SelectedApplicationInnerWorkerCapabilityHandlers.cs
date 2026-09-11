@@ -146,18 +146,18 @@ internal static class SelectedApplicationInnerWorkerSchemas
     internal const string SubmitInput = """
         {"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","additionalProperties":false,
         "required":["stateSpaceId","procedure","instruction","resultSchema","dependencyHandles"],"properties":{
-        "stateSpaceId":{"type":"string","minLength":1,"maxLength":128},"procedure":{"type":"object","additionalProperties":false,
+        "stateSpaceId":{"type":"string","minLength":1,"maxLength":200},"procedure":{"type":"object","additionalProperties":false,
         "required":["definitionId","revision","contentFingerprint"],"properties":{"definitionId":{"type":"string","minLength":1,"maxLength":200},
         "revision":{"type":"integer","minimum":1},"contentFingerprint":{"type":"string","minLength":64,"maxLength":64}}},
         "instruction":{"type":"string","minLength":1,"maxLength":8000},"resultSchema":{"type":"string","minLength":2,"maxLength":16000},
         "dependencyHandles":{"type":"array","maxItems":16,"items":{"type":"object","additionalProperties":false,"required":["taskId","commandId"],
-        "properties":{"taskId":{"type":"string","minLength":1,"maxLength":128},"commandId":{"type":"string","minLength":1,"maxLength":200}}}}}}
+        "properties":{"taskId":{"type":"string","minLength":1,"maxLength":200},"commandId":{"type":"string","minLength":1,"maxLength":128}}}}}}
         """;
     internal const string HandleInput = """
         {"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","additionalProperties":false,
         "required":["stateSpaceId","taskId","commandId"],"properties":{
-        "stateSpaceId":{"type":"string","minLength":1,"maxLength":128},"taskId":{"type":"string","minLength":1,"maxLength":128},
-        "commandId":{"type":"string","minLength":1,"maxLength":200}}}
+        "stateSpaceId":{"type":"string","minLength":1,"maxLength":200},"taskId":{"type":"string","minLength":1,"maxLength":200},
+        "commandId":{"type":"string","minLength":1,"maxLength":128}}}
         """;
     internal const string ResultOutput = """
         {"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","additionalProperties":false,
@@ -190,7 +190,7 @@ internal static class SelectedApplicationInnerWorkerSchemas
         BoundedObject(input);
         var wire = Deserialize<AssignmentWire>(input);
         if (string.IsNullOrWhiteSpace(wire.Instruction) || wire.Instruction.Length > 8_000 || wire.Instruction.Any(char.IsControl)
-            || string.IsNullOrWhiteSpace(wire.StateSpaceId) || wire.StateSpaceId.Length > 128 || wire.StateSpaceId.Any(char.IsControl))
+            || string.IsNullOrWhiteSpace(wire.StateSpaceId) || wire.StateSpaceId.Length > InteractionContractLimits.Identifier || wire.StateSpaceId.Any(char.IsControl))
             throw new InteractionContractException("INVALID_WORKER_ASSIGNMENT", "The worker instruction is outside its bounded transport contract.");
         if (wire.Procedure is null || wire.DependencyHandles is null)
             throw new JsonException("The worker request is missing a required object or collection.");
@@ -215,7 +215,7 @@ internal static class SelectedApplicationInnerWorkerSchemas
     {
         BoundedObject(input);
         var wire = Deserialize<HandleWire>(input);
-        if (string.IsNullOrWhiteSpace(wire.StateSpaceId) || wire.StateSpaceId.Length > 128
+        if (string.IsNullOrWhiteSpace(wire.StateSpaceId) || wire.StateSpaceId.Length > InteractionContractLimits.Identifier
             || wire.StateSpaceId.Any(char.IsControl))
             throw new InteractionContractException("INVALID_WORKER_STATE_SPACE", "The worker state-space identity is invalid.");
         return new(wire.StateSpaceId, new(wire.TaskId, wire.CommandId));
