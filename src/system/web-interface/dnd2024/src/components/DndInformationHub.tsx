@@ -16,7 +16,7 @@ import { HUB_ROUTE_EVENT, navigateHubRoute, parseHubRoute } from "../data/hub-ro
 import { ITEM_ROUTE_EVENT, navigateItemRoute, parseItemRoute, readInventoryReturn } from "../data/item-view-route";
 import { ViewReadError } from "../data/view-read-client";
 import { allocateCharacterRequestToken, allocateCurrentRequestToken, allocateTableRequestToken, characterScope,
-  commitCampaignDetails, commitCharacterFacet, commitCurrentBootstrap, commitDeferredTable, commitFactionPage,
+  commitCampaignDetails, commitCharacterFacet, commitCurrentBootstrap, commitDeferredTable, commitDeferredTableProgress, commitFactionPage,
   commitInventory, currentActions, hubActions, itemActions, itemScope, selectCharacterGeneration,
   selectCharacterParty, selectCharacterScope, selectCurrentDisplay, selectCurrentGeneration, selectCurrentScope,
   selectCurrentFresh,
@@ -1073,7 +1073,7 @@ function DndInformationHubContent({
     let progressCommitted = false;
     const commitDeferredProgress = async (loaded: DeferredHubUpdate) => {
       if (controller.signal.aborted || !tableRequest) return;
-      dispatch(commitDeferredTable({
+      dispatch(commitDeferredTableProgress({
         scope: tableRequest.scope, key: tableRequest.key, value: loaded,
       }, {
         generation: tableRequest.generation, requestToken: tableRequest.requestToken,

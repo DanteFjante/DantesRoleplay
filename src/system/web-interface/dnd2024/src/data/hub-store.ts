@@ -18,6 +18,7 @@ export {
   allocateTableRequestToken,
   commitCampaignDetails,
   commitDeferredTable,
+  commitDeferredTableProgress,
   commitFactionPage,
   tableActions,
   tableFacetFresh,

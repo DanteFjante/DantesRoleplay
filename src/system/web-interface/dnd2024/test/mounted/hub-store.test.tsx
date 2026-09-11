@@ -27,6 +27,7 @@ import {
   tableFacetFresh,
   tableScope,
   commitDeferredTable,
+  commitDeferredTableProgress,
   commitCampaignDetails,
   commitFactionPage,
   MAX_CONFIRMED_TABLE_BYTES,
@@ -173,6 +174,48 @@ test("a late Campaign details read cannot replace independently confirmed knowle
   assert.deepEqual(campaign.quests, []);
   assert.deepEqual(campaign.mapOverlays, []);
   assert.equal(store.getState().table.facets["deferred:lore"]!.confirmedAt, 20);
+});
+
+test("source-fenced deferred progress retains its one request through prefixes and fences a late scope", () => {
+  const store = createHubStore();
+  const ready = readyTableEnvelope();
+  ready.campaign.cluesCoverage = "unavailable";
+  const scope = tableScope(ready);
+  store.dispatch(tableActions.bootstrapCommitted({ scope, envelope: ready }));
+  const generation = store.getState().table.generation;
+  const requestToken = allocateTableRequestToken();
+  const key = "deferred:lore";
+  store.dispatch(tableActions.requestStarted({ scope, key, requestToken }));
+  const prefix = (ids: string[], coverage: "partial" | "complete") => ({
+    section: "lore" as const, world: { lore: [] }, campaign: {
+      quests: [], clues: ids.map((id) => ({ id })) as typeof ready.campaign.clues,
+      cluesCoverage: coverage, mapOverlays: [],
+    },
+  });
+  store.dispatch(commitDeferredTableProgress({ scope, key, value: prefix(["clue.one"], "partial") }, {
+    generation, requestToken, bytes: 100, confirmedAt: 10,
+  }));
+  assert.deepEqual(selectTableEnvelope(store.getState())!.campaign.clues.map((clue) => clue.id), ["clue.one"]);
+  assert.equal(store.getState().table.requests[key]?.requestToken, requestToken,
+    "a prefix must retain the continuation lease");
+  store.dispatch(commitDeferredTableProgress({ scope, key, value: prefix(["clue.one", "clue.two"], "partial") }, {
+    generation, requestToken, bytes: 120, confirmedAt: 11,
+  }));
+  assert.deepEqual(selectTableEnvelope(store.getState())!.campaign.clues.map((clue) => clue.id), ["clue.one", "clue.two"]);
+  store.dispatch(commitDeferredTable({ scope, key, value: prefix(["clue.one", "clue.two", "clue.three"], "complete") }, {
+    generation, requestToken, bytes: 140, confirmedAt: 12,
+  }));
+  assert.deepEqual(selectTableEnvelope(store.getState())!.campaign.clues.map((clue) => clue.id), ["clue.one", "clue.two", "clue.three"]);
+  assert.equal(store.getState().table.requests[key], undefined, "only the terminal commit retires the lease");
+
+  const lateToken = allocateTableRequestToken();
+  store.dispatch(tableActions.requestStarted({ scope, key, requestToken: lateToken }));
+  store.dispatch(tableActions.invalidated());
+  store.dispatch(commitDeferredTableProgress({ scope, key, value: prefix(["clue.late"], "partial") }, {
+    generation, requestToken: lateToken, bytes: 100, confirmedAt: 13,
+  }));
+  assert.deepEqual(selectTableEnvelope(store.getState())!.campaign.clues.map((clue) => clue.id), ["clue.one", "clue.two", "clue.three"],
+    "a late progress callback cannot mutate the invalidated generation");
 });
 
 test("late World completion cannot overwrite a newer invalidation generation", () => {

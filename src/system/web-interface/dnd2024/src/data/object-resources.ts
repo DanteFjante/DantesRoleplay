@@ -258,22 +258,24 @@ function validText(value: unknown, maximumLength: number) {
   return typeof value === "string" && value.length > 0 && value.length <= maximumLength && value === value.trim();
 }
 
-export function isFactionDirectoryPage(value: unknown): value is FactionDirectoryPage {
+function isFactionDirectoryPageValue(value: unknown, allowMalformedCoverage = false): value is FactionDirectoryPage {
   if (!value || typeof value !== "object") return false;
   const page = value as Record<string, unknown>;
-  const pageKeys = Object.keys(page).sort().join("|");
-  if (pageKeys !== "complete|factions|nextCursor|projection|sourceRevisionFingerprint|totalCount" &&
-      pageKeys !== "complete|coverage|factions|nextCursor|projection|sourceRevisionFingerprint|totalCount") return false;
+  const requiredPageKeys = ["complete", "factions", "nextCursor", "projection",
+    "sourceRevisionFingerprint", "totalCount"];
+  if (!requiredPageKeys.every((key) => Object.hasOwn(page, key))) return false;
   if (!Array.isArray(page.factions) || page.factions.length > 25 ||
       !Number.isInteger(page.totalCount) || (page.totalCount as number) < page.factions.length ||
       (page.totalCount as number) > 100 || typeof page.complete !== "boolean" ||
       !(page.nextCursor === null || validText(page.nextCursor, 2_048)) ||
       page.complete !== (page.nextCursor === null) ||
       !validText(page.sourceRevisionFingerprint, 128) ||
-      (page.coverage !== undefined && !["complete", "partial"].includes(page.coverage as string))) return false;
+      (!allowMalformedCoverage && page.coverage !== undefined &&
+        !["complete", "partial"].includes(page.coverage as string))) return false;
   const projection = page.projection as Record<string, unknown> | null;
-  const evidenceKeys = "outputSchemaHash|qualifiedQueryId|resolutionFingerprint|resultFingerprint|sourceRevisionFingerprint|stateSpaceFingerprint";
-  if (!projection || Object.keys(projection).sort().join("|") !== evidenceKeys ||
+  const evidenceKeys = ["outputSchemaHash", "qualifiedQueryId", "resolutionFingerprint", "resultFingerprint",
+    "sourceRevisionFingerprint", "stateSpaceFingerprint"];
+  if (!projection || !evidenceKeys.every((key) => Object.hasOwn(projection, key)) ||
       projection.qualifiedQueryId !== "dnd2024.query.faction-directory-page" ||
       ![projection.stateSpaceFingerprint, projection.resolutionFingerprint, projection.outputSchemaHash,
         projection.resultFingerprint, projection.sourceRevisionFingerprint]
@@ -285,6 +287,21 @@ export function isFactionDirectoryPage(value: unknown): value is FactionDirector
     return validText(faction.id, 200) && validText(faction.name, 400) ? faction.id : null;
   });
   return identities.every((identity) => identity !== null) && new Set(identities).size === identities.length;
+}
+
+export function isFactionDirectoryPage(value: unknown): value is FactionDirectoryPage {
+  return isFactionDirectoryPageValue(value);
+}
+
+function isFactionDirectoryPageTransport(value: unknown): value is FactionDirectoryPage {
+  return isFactionDirectoryPageValue(value, true);
+}
+
+function normalizeFactionDirectoryPage(value: FactionDirectoryPage): FactionDirectoryPage {
+  const coverage = (value as FactionDirectoryPage & { coverage?: unknown }).coverage;
+  return coverage === undefined || coverage === "complete" || coverage === "partial"
+    ? value
+    : { ...value, coverage: "partial" };
 }
 
 /** Coordinates Campaign/World-table transport only. Confirmed values live in Redux. */
@@ -306,7 +323,7 @@ export class TableResourceOwner {
     this.#factions = {
       key: (request, generation) => factionScope(request, generation),
       read: options.readFactionPage,
-      validate: isFactionDirectoryPage,
+      validate: isFactionDirectoryPageTransport,
       maximumBytes: 524_288,
     };
     this.#campaignDetails = {
@@ -346,7 +363,8 @@ export class TableResourceOwner {
     };
     void preferCached;
     this.#coordinator.replaceScope(characterTableScope(request.envelope));
-    return acceptRevision(await this.#coordinator.load(this.#factions, request, signal));
+    const page = await this.#coordinator.load(this.#factions, request, signal);
+    return acceptRevision(normalizeFactionDirectoryPage(page));
   }
 
   async loadCampaignDetails(request: CampaignDetailsObjectRequest, signal?: AbortSignal, preferCached = true) {

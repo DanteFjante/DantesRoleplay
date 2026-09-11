@@ -359,6 +359,30 @@ const table = createSlice({
       commitMetadata(state, action.payload.key, metadata);
       state.retainedBytes = nextBytes;
     },
+    /** A visible prefix is source-fenced but its owned continuation still holds this request lease. */
+    deferredProgressCommitted(state, action: PayloadAction<{ scope: string; key: string; value: DeferredHubUpdate }>) {
+      const metadata = (action as PayloadAction<unknown, string, TableFacetMetadata>).meta;
+      const request = state.requests[action.payload.key];
+      if (!state.shell || !state.world || !state.campaign || state.scope !== action.payload.scope || !request ||
+          request.generation !== state.generation || request.generation !== metadata?.generation ||
+          request.requestToken !== metadata.requestToken || metadata.bytes < 0 ||
+          metadata.bytes > MAX_CONFIRMED_TABLE_BYTES) return;
+      const envelope = materializeTableEnvelope(state as unknown as TableState, []);
+      if (!envelope) return;
+      const updated = applyDeferredHubUpdate(envelope, action.payload.value);
+      const shell = shellFrom(updated);
+      const world = normalizeWorld(updated.world);
+      const campaign = normalizeCampaign(updated.campaign);
+      const nextBytes = world && campaign ? byteLength({ shell, world, campaign }) : MAX_CONFIRMED_TABLE_BYTES + 1;
+      if (!world || !campaign || nextBytes > MAX_CONFIRMED_TABLE_BYTES) return;
+      state.shell = shell;
+      state.world = world;
+      state.campaign = campaign;
+      // Do not retire the matching flight here: later prefixes and the terminal response must
+      // prove the same request token before replacing this bounded Redux value.
+      commitMetadata(state, action.payload.key, metadata);
+      state.retainedBytes = nextBytes;
+    },
     invalidated(state) {
       state.generation += 1;
       state.requests = {};
@@ -382,6 +406,11 @@ export function commitCampaignDetails(payload: { scope: string; key: string; val
 export function commitDeferredTable(payload: { scope: string; key: string; value: DeferredHubUpdate },
   meta: Omit<TableFacetMetadata, "fresh">) {
   return { type: tableActions.deferredCommitted.type, payload, meta };
+}
+
+export function commitDeferredTableProgress(payload: { scope: string; key: string; value: DeferredHubUpdate },
+  meta: Omit<TableFacetMetadata, "fresh">) {
+  return { type: tableActions.deferredProgressCommitted.type, payload, meta };
 }
 
 export function commitFactionPage(payload: { scope: string; key: string; cursor: string | null; value: ConfirmedFactionPage },

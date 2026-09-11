@@ -306,8 +306,16 @@ test("Faction pages reject incompatible and stale responses without retaining th
     "field-local coverage is an allowed projection facet");
   assert.equal(isFactionDirectoryPage({ ...page(), coverage: "unknown" }), false,
     "unsupported coverage remains rejected");
+  assert.equal(isFactionDirectoryPage({ ...page(), futureFacet: { state: "ready" } }), true,
+    "additive display metadata does not invalidate the consumed faction fields");
 
-  result = { ...page(), privateField: "must not enter cache" };
+  result = { ...page(), coverage: "unknown", futureFacet: { state: "ready" } } as unknown as FactionDirectoryPage;
+  const normalized = await state.loadFactionPage(first, new AbortController().signal, false);
+  assert.equal(normalized.coverage, "partial",
+    "malformed optional coverage is retained as an honest partial facet");
+  assert.equal(normalized.factions.length, 1);
+
+  result = { ...page(), totalCount: 0, futureFacet: "ignored" };
   await assert.rejects(
     state.loadFactionPage({ envelope, cursor: "invalid-shape" }, new AbortController().signal, false),
     (error) => error instanceof ViewReadError && error.category === "incompatible-data",
