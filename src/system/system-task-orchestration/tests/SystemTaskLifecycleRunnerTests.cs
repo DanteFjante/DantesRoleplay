@@ -118,6 +118,78 @@ public sealed class SystemTaskLifecycleRunnerTests
     }
 
     [Fact]
+    public async Task Cancellation_committed_between_monitor_read_and_renewal_is_acknowledged()
+    {
+        await using var fixture = await SystemTaskLifecycleSchemaFixture.CreateAsync();
+        var store = fixture.CreateStore();
+        var handle = (await store.EnqueueAsync(Request(fixture))).Handle!;
+        var clock = new RenewalInterleavingClock(fixture.TimeProvider, async () =>
+        {
+            Assert.False((await store.ReadAsync(handle))!.CancellationRequested);
+            Assert.True(await store.RequestCancellationAsync(handle, false));
+        });
+        var runner = new SqliteSystemTaskLifecycleRunner(new(fixture.ConnectionString, clock),
+            fixture.TimeProvider, TimeSpan.FromSeconds(30), TimeSpan.FromMilliseconds(10));
+        var finish = new TaskCompletionSource<SystemTaskRunOutcome>(TaskCreationOptions.RunContinuationsAsynchronously);
+        try { Assert.True(await runner.RunOnceAsync("worker.1", (_, _) => finish.Task).WaitAsync(TimeSpan.FromSeconds(5))); }
+        finally { finish.TrySetResult(Completed()); }
+        Assert.True(clock.Interleaved);
+        var snapshot = await store.ReadAsync(handle);
+        Assert.Equal(SystemTaskLifecycleState.Cancelled, snapshot!.State);
+        Assert.True(snapshot.CancellationAcknowledged);
+        Assert.Null(snapshot.ResultJson);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Renewal_failure_cannot_acknowledge_or_publish_for_a_replacement_lease(bool cancelReplacement)
+    {
+        await using var fixture = await SystemTaskLifecycleSchemaFixture.CreateAsync();
+        var store = fixture.CreateStore();
+        var handle = (await store.EnqueueAsync(Request(fixture))).Handle!;
+        SystemTaskLease? replacement = null;
+        var clock = new RenewalInterleavingClock(fixture.TimeProvider, async () =>
+        {
+            fixture.TimeProvider.Advance(TimeSpan.FromSeconds(31));
+            replacement = await store.ClaimNextAsync("worker.replacement", TimeSpan.FromSeconds(30));
+            Assert.NotNull(replacement);
+            if (cancelReplacement) Assert.True(await store.RequestCancellationAsync(handle, false));
+        });
+        var runner = new SqliteSystemTaskLifecycleRunner(new(fixture.ConnectionString, clock),
+            fixture.TimeProvider, TimeSpan.FromSeconds(30), TimeSpan.FromMilliseconds(10));
+        var finish = new TaskCompletionSource<SystemTaskRunOutcome>(TaskCreationOptions.RunContinuationsAsynchronously);
+        try { Assert.True(await runner.RunOnceAsync("worker.old", (_, _) => finish.Task).WaitAsync(TimeSpan.FromSeconds(5))); }
+        finally { finish.TrySetResult(Completed()); }
+        Assert.True(clock.Interleaved);
+        var snapshot = await store.ReadAsync(handle);
+        Assert.Equal(SystemTaskLifecycleState.Running, snapshot!.State);
+        Assert.Equal(replacement!.Attempt.FencingCounter, snapshot.FencingCounter);
+        Assert.Equal(cancelReplacement, snapshot.CancellationRequested);
+        Assert.False(snapshot.CancellationAcknowledged);
+        Assert.Null(snapshot.ResultJson);
+        if (cancelReplacement) Assert.True(await store.AcknowledgeCancellationAsync(replacement));
+        else Assert.True(await store.CompleteAsync(replacement, new("{}", "replacement.completed")));
+    }
+
+    // Only the store uses this clock: claim samples it once; renewal's sample occurs after
+    // the monitor's read and before renewal's UPDATE. The interleaving uses the real SQLite API.
+    private sealed class RenewalInterleavingClock(TimeProvider clock, Func<Task> betweenReadAndRenew) : TimeProvider
+    {
+        private int _samples;
+        internal bool Interleaved { get; private set; }
+        public override DateTimeOffset GetUtcNow()
+        {
+            if (Interlocked.Increment(ref _samples) == 2)
+            {
+                Task.Run(betweenReadAndRenew).WaitAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
+                Interleaved = true;
+            }
+            return clock.GetUtcNow();
+        }
+    }
+
+    [Fact]
     public async Task Worker_shutdown_abandons_lease_without_cancelling_task_and_restart_recovers()
     {
         await using var fixture = await SystemTaskLifecycleSchemaFixture.CreateAsync();

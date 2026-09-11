@@ -117,7 +117,17 @@ internal sealed class SqliteSystemTaskLifecycleRunner
                 var snapshot = await _store.ReadAsync(lease.Request.Handle, cancellationToken);
                 if (snapshot?.CancellationRequested == true) return StopReason.CancellationRequested;
                 if (!await _store.RenewAsync(lease, _leaseDuration, cancellationToken))
+                {
+                    // Cancellation can commit after the read above and make renewal fail.
+                    // Reconcile that durable request before classifying genuine lease loss;
+                    // never acknowledge a replacement worker's attempt with this old lease.
+                    var current = await _store.ReadAsync(lease.Request.Handle, CancellationToken.None);
+                    if (current?.CancellationRequested == true
+                        && current.FencingCounter == lease.Attempt.FencingCounter
+                        && current.AttemptCount == lease.AttemptOrdinal)
+                        return StopReason.CancellationRequested;
                     return StopReason.LeaseLost;
+                }
                 await Task.Delay(remaining < _pollInterval ? remaining : _pollInterval, _time, cancellationToken);
             }
         }
