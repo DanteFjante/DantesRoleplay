@@ -249,14 +249,6 @@ public sealed class ActivatedApplicationCatalogTests : IDisposable
         var authority = new ActivatedApplicationCatalogCacheAuthority();
         var projections = new CountingProjectionRegistry();
 
-        var pure = new ActivatedApplicationCatalogMaterializer(fixture.Applications, fixture.Activations,
-                fixture.Sources, new StaticRoot("fixture-root", Path.Combine(_root, "must-not-be-read")),
-                projections: projections)
-            .UsePreparationCache(cache, authority)
-            .BuildPermissionSnapshot(fixture.ApplicationId, fixture.Activation);
-
-        Assert.Equal(0, projections.DefineCalls);
-
         var published = new ActivatedApplicationCatalogProvider(
             new ConfiguredPublicApplicationCatalogPolicy([fixture.ApplicationId.Value]),
             new ActivatedApplicationCatalogMaterializer(fixture.Applications, fixture.Activations,
@@ -264,6 +256,12 @@ public sealed class ActivatedApplicationCatalogTests : IDisposable
                     projections: projections)
                 .UsePreparationCache(cache, authority),
             new CatalogCursorCodec(Encoding.UTF8.GetBytes("retained-pure-catalog-signing-key")));
+        Assert.True(published.TryGetPermissionSnapshot(
+            fixture.ApplicationId, fixture.Activation, out var pure));
+        Assert.True(published.TryGetSnapshot(fixture.ApplicationId, out var feature));
+        Assert.Same(pure, feature);
+        Assert.Equal(0, projections.DefineCalls);
+
         Assert.True(published.TryGet(fixture.ApplicationId, out _));
         Assert.Equal(1, projections.DefineCalls);
 

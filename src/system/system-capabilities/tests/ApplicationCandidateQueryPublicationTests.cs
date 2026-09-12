@@ -19,6 +19,7 @@ using DantesRoleplay.MCPServer;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.Operations;
 using DantesRoleplay.Procedures;
+using DantesRoleplay.Projections;
 using DantesRoleplay.SchemaValidation;
 using DantesRoleplay.SystemCapabilities;
 using DantesRoleplay.SystemTasks;
@@ -64,6 +65,11 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             var requiredInputProjection = WriteQueryProjection("page-summary-required-input",
                 "demo.runtime.projection.page-summary-required-input", "required",
                 "{\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"value\"],\"properties\":{\"value\":{\"type\":\"string\"}}}");
+            var objectSchemas = new BoundedJsonSchemaValidator();
+            var objectTypes = new SqliteComponentTypeRegistry(db, objectSchemas);
+            var objectType = objectTypes.Define(new(Application, "demo.runtime.component.name",
+                "{\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"name\"],\"properties\":{\"name\":{\"type\":\"string\"}}}"));
+            WriteQueryObject(objectType);
             WriteQuery(QueryText(QueryProjectionOne, firstProjection, QueryOutputSchema, "Initial page summary."));
             await ActivateAsync(setup);
             await SeedQueryAuthoringGrantAsync(db);
@@ -71,7 +77,9 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
 
             var before = setup.Activation.Current(Application)!;
             var materializer = new ActivatedApplicationCatalogMaterializer(
-                    setup.Applications, setup.Activation, setup.Sources, setup.Roots, setup.Extensions)
+                    setup.Applications, setup.Activation, setup.Sources, setup.Roots, setup.Extensions,
+                    new SqliteProjectionDefinitionRegistry(db,
+                        new SqliteComponentTypeRegistry(db, objectSchemas), objectSchemas, setup.Applications))
                 .UsePreparationCache(new ActivatedApplicationCatalogSnapshotCache(),
                     new ActivatedApplicationCatalogCacheAuthority());
             var catalogs = new ActivatedApplicationCatalogProvider(
@@ -115,15 +123,67 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
                 QueryText(QueryProjectionTwo, secondProjection, QueryOutputSchema,
                     "Reviewed page summary.", mediaOwnerReference: MediaOwnerReference), writeKey);
             var candidate = await CandidateAsync(db, written.OperationId!);
+
+            await db.Database.ExecuteSqlInterpolatedAsync($"""
+                UPDATE system_application_activation_revision
+                SET ResolutionFingerprint={new string('E', 64)}
+                WHERE ApplicationId={Application.Value} AND ActivationRevision={before.ActivationRevision}
+                """);
+            db.ChangeTracker.Clear();
+            var staleActive = setup.Activation.Current(Application)!;
+            var staleSnapshot = materializer.BuildPermissionSnapshot(Application, staleActive);
+            Assert.NotEqual(staleActive.ResolutionFingerprint,
+                staleSnapshot.Resolution?.Fingerprint ?? staleSnapshot.Manifest.Fingerprint);
+            await using (var boundary = await SystemTaskValidationTransaction.OpenAsync(
+                db, TimeProvider.System, false, default))
+            {
+                var stale = await gate.CheckAsync(PureReviewHost(setup, "query-stale-resolution"),
+                    candidate, true);
+                Assert.Equal("INNER_VALIDATION_DEPENDENCIES_UNAVAILABLE", stale.Failure?.Code);
+            }
+            await db.Database.ExecuteSqlInterpolatedAsync($"""
+                UPDATE system_application_activation_revision
+                SET ResolutionFingerprint={before.ResolutionFingerprint}
+                WHERE ApplicationId={Application.Value} AND ActivationRevision={before.ActivationRevision}
+                """);
+            db.ChangeTracker.Clear();
             await CompleteQueryReviewAsync(db, setup, gateway, gate, reviews,
                 principal, candidate, writeKey);
 
-            var validated = await ValidateQueryAsync(gateway, principal, candidate,
+            var coldMaterializer = new ActivatedApplicationCatalogMaterializer(
+                    setup.Applications, setup.Activation, setup.Sources, setup.Roots, setup.Extensions,
+                    new SqliteProjectionDefinitionRegistry(db,
+                        new SqliteComponentTypeRegistry(db, schemas), schemas, setup.Applications))
+                .UsePreparationCache(new ActivatedApplicationCatalogSnapshotCache(),
+                    new ActivatedApplicationCatalogCacheAuthority());
+            var coldCatalogs = new ActivatedApplicationCatalogProvider(
+                new ConfiguredPublicApplicationCatalogPolicy([Application.Value]), coldMaterializer,
+                new CatalogCursorCodec(RandomNumberGenerator.GetBytes(32)), setup.Activation);
+            var coldFeatures = new InteractionFeatureRetriever(coldCatalogs,
+                namespaces: setup.Namespaces, changes: setup.Activation);
+            var coldManuals = new InteractionManualContextService(new ProcedureStore(db), coldFeatures,
+                policy, setup.Resolver, setup.Activation, ["system"]);
+            var coldQueryClosure = new ApplicationCandidateQueryClosureReader(
+                setup.Activation, setup.Activation, setup.Resolver, coldCatalogs, schemas);
+            var coldGate = new SystemTaskApplicationValidationGate(db, setup.Applications,
+                setup.Activation, setup.Resolver, policy, TimeProvider.System,
+                pureClosures: null, coldManuals, coldFeatures, [coldQueryClosure]);
+            var coldReviews = new SystemTaskApplicationValidationService(db, coldGate, TimeProvider.System);
+            var coldReviewed = new ApplicationCandidateReviewedQueryUpdateReader(
+                db, setup.Applications, setup.Activation, setup.Resolver, coldGate);
+            var coldAuthoring = new SqliteApplicationAuthoringService(db, setup.Applications,
+                setup.Activation, setup.Activation, setup.Sources, policy, setup.Resolver,
+                new OperationLog(db), preparation: null, coldManuals, reviewedPureUpdates: null,
+                reviewedQueryUpdates: coldReviewed);
+            var coldGateway = new ApplicationCandidateCapabilityGateway(
+                CandidateCatalog(db, setup, coldAuthoring, coldReviews));
+
+            var validated = await ValidateQueryAsync(coldGateway, principal, candidate,
                 "query-publication-validate");
             Assert.True(validated.Ok, validated.Error?.Code + ": " + validated.Error?.Message);
             var validation = await db.Set<ApplicationCandidateValidationRecord>().AsNoTracking()
                 .SingleAsync(value => value.OperationId == validated.OperationId);
-            Assert.Equal("valid", validation.Outcome);
+            Assert.True(validation.Outcome == "valid", validation.DiagnosticsJson);
             Assert.Equal(ApplicationCandidateReviewedQueryUpdateValidation.PreparationVersion,
                 validation.PreparationVersion);
 
@@ -350,6 +410,10 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             "Reviewed fixture projections.", [CatalogNamespaceKinds.Mechanic],
             ReviewStatus: CatalogNamespaceReviewStatuses.Reviewed,
             ReviewNote: "Reviewed query projection fixture."));
+        setup.Namespaces.Register(new CatalogNamespaceRegistration("demo.runtime.component", "human-domain-label",
+            "Reviewed fixture component types.", [CatalogNamespaceKinds.ComponentType],
+            ReviewStatus: CatalogNamespaceReviewStatuses.Reviewed,
+            ReviewNote: "Reviewed query object fixture."));
     }
 
     private string WriteQueryProjection(string file, string id, string label, string? inputSchema = null)
@@ -386,6 +450,44 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
     }
 
     private void WriteQuery(string content) => WriteFile(QueryPath, content);
+
+    private void WriteQueryObject(RegisteredComponentTypeVersion component)
+    {
+        const string path = "content/objects/tools/demo.runtime.object.summary.json";
+        WriteFile(path, JsonSerializer.Serialize(new
+        {
+            id = "demo.runtime.object.summary",
+            version = 1,
+            schema = new
+            {
+                type = "object",
+                additionalProperties = false,
+                required = new[] { "name" },
+                properties = new { name = new { type = "string" } }
+            },
+            roles = new { subject = new { required = true } },
+            sources = new[]
+            {
+                new
+                {
+                    id = "subject", role = "subject",
+                    component = new
+                    {
+                        qualifiedId = component.QualifiedId,
+                        version = component.Version,
+                        schemaHash = component.SchemaHash
+                    },
+                    required = true
+                }
+            },
+            relationships = Array.Empty<object>(),
+            references = Array.Empty<object>(),
+            mappings = new[] { new { inputId = "subject", sourcePointer = "/name", targetPointer = "/name" } },
+            collections = Array.Empty<object>(),
+            limits = new { traversalDepth = 1, itemCount = 8, outputBytes = 4096, sqlQueries = 2 },
+            access = new { read = new[] { "dm" }, write = Array.Empty<string>() }
+        }));
+    }
 
     private void WriteFile(string relative, string content)
     {

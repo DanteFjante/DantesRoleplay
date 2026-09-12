@@ -23,7 +23,7 @@ internal sealed class ApplicationCandidateProcedureClosureReader(
     IApplicationActivationReader activations,
     IActivatedApplicationEvidenceReader evidence,
     IStandingGrantTargetResolver targets,
-    IActiveCatalogFeatureSnapshotProvider snapshots) : IApplicationCandidateReviewClosureReader
+    ActivatedApplicationCatalogProvider catalogs) : IApplicationCandidateReviewClosureReader
 {
     internal const string GrammarVersion = "procedure-governed-references-v3";
     public string Grammar => GrammarVersion;
@@ -58,7 +58,9 @@ internal sealed class ApplicationCandidateProcedureClosureReader(
             if (successor.Status != DantesRoleplay.Procedures.ProcedureStatus.Active || qualifiedProcedure != target.DefinitionId)
                 return ApplicationCandidateReviewClosureReadResult.Rejected();
             var active = RequireActiveBaseOrCandidate(candidate, selection, selected);
-            if (active is null || !snapshots.TryGetSnapshot(candidate.ApplicationId, out var snapshot)
+            if (active is null || !catalogs.TryGetPermissionSnapshot(
+                    candidate.ApplicationId, active.Value.Current, out var snapshot)
+                || snapshot.EffectiveSetFingerprint != active.Value.Current.ActivationFingerprint
                 || (snapshot.Resolution?.Fingerprint ?? snapshot.Manifest.Fingerprint)
                     != active.Value.Current.ResolutionFingerprint)
                 return ApplicationCandidateReviewClosureReadResult.Rejected();

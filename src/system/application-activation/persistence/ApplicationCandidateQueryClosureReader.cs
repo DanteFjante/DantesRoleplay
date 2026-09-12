@@ -22,7 +22,7 @@ internal sealed class ApplicationCandidateQueryClosureReader(
     IApplicationActivationReader activations,
     IActivatedApplicationEvidenceReader evidence,
     IStandingGrantTargetResolver targets,
-    IActiveCatalogFeatureSnapshotProvider snapshots,
+    ActivatedApplicationCatalogProvider catalogs,
     IBoundedJsonSchemaValidator schemas) : IApplicationCandidateReviewClosureReader
 {
     public const string GrammarVersion = "existing-query-mechanic-projection-v4";
@@ -61,7 +61,11 @@ internal sealed class ApplicationCandidateQueryClosureReader(
                 return ApplicationCandidateReviewClosureReadResult.Rejected();
 
             var active = RequireActiveBaseOrCandidate(candidate, selection, selected);
-            if (active is null || !snapshots.TryGetSnapshot(candidate.ApplicationId, out var snapshot)
+            if (active is null)
+                return ApplicationCandidateReviewClosureReadResult.Rejected();
+            if (!catalogs.TryGetPermissionSnapshot(candidate.ApplicationId, active.Value.Current, out var snapshot))
+                return ApplicationCandidateReviewClosureReadResult.Rejected();
+            if (snapshot.EffectiveSetFingerprint != active.Value.Current.ActivationFingerprint
                 || (snapshot.Resolution?.Fingerprint ?? snapshot.Manifest.Fingerprint)
                     != active.Value.Current.ResolutionFingerprint)
                 return ApplicationCandidateReviewClosureReadResult.Rejected();

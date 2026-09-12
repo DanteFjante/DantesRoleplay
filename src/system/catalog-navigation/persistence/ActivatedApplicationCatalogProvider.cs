@@ -639,7 +639,7 @@ public sealed class ActivatedApplicationCatalogProvider(
             var snapshot = materializer.BuildFeatureSnapshot(applicationId);
             navigator = new InMemoryCatalogNavigator(snapshot.Manifest, cursors, snapshot.Resolution);
             _cache.Add(applicationId, navigator);
-            _snapshots.Add(applicationId, snapshot);
+            _snapshots[applicationId] = snapshot;
             _failures.Remove(applicationId);
             return true;
         }
@@ -660,12 +660,50 @@ public sealed class ActivatedApplicationCatalogProvider(
 
     public bool TryGetSnapshot(ApplicationIdentifier applicationId, out ActiveCatalogFeatureSnapshot snapshot)
     {
+        ArgumentNullException.ThrowIfNull(applicationId);
+        RefreshForDefinitionChange(applicationId);
+        if (!policy.IsPublished(applicationId))
+        {
+            _failures[applicationId] = new("APPLICATION_CATALOG_UNPUBLISHED",
+                "The application catalog is not included in the host publication policy.");
+            snapshot = null!;
+            return false;
+        }
+        if (_snapshots.TryGetValue(applicationId, out snapshot!)) return true;
         if (!TryGet(applicationId, out _))
         {
             snapshot = null!;
             return false;
         }
         return _snapshots.TryGetValue(applicationId, out snapshot!);
+    }
+
+    internal bool TryGetPermissionSnapshot(ApplicationIdentifier applicationId,
+        ActiveApplicationManifest activation, out ActiveCatalogFeatureSnapshot snapshot)
+    {
+        ArgumentNullException.ThrowIfNull(applicationId);
+        ArgumentNullException.ThrowIfNull(activation);
+        try
+        {
+            RefreshForDefinitionChange(applicationId);
+            if (!policy.IsPublished(applicationId))
+            {
+                _failures[applicationId] = new("APPLICATION_CATALOG_UNPUBLISHED",
+                    "The application catalog is not included in the host publication policy.");
+                snapshot = null!;
+                return false;
+            }
+            snapshot = materializer.BuildPermissionSnapshot(applicationId, activation);
+            _snapshots[applicationId] = snapshot;
+            _failures.Remove(applicationId);
+            return true;
+        }
+        catch (ApplicationCatalogMaterializationException exception)
+        { _failures[applicationId] = new(exception.Code, exception.Message); snapshot = null!; return false; }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        { _failures[applicationId] = new("CATALOG_MATERIALIZATION_FAILED",
+            "The active catalog could not be materialized because a runtime or storage dependency failed.");
+            snapshot = null!; return false; }
     }
 
     /// <summary>
