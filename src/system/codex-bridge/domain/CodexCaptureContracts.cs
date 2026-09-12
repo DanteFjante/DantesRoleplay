@@ -25,13 +25,14 @@ public sealed record CodexCaptureOptions(
 public sealed record CodexGameplayCaptureBinding(
     string RepositoryRoot,
     string ProjectId,
-    string GameplaySessionId,
-    string ExternalThreadId)
+    string GameplaySessionContextId,
+    string ExternalCodexThreadId)
 {
-    public bool Matches(string sessionId, string cwd) =>
-        !string.IsNullOrWhiteSpace(ProjectId) && !string.IsNullOrWhiteSpace(ExternalThreadId) &&
+    public bool Matches(string codexSessionId, string cwd) =>
+        !string.IsNullOrWhiteSpace(ProjectId) && !string.IsNullOrWhiteSpace(GameplaySessionContextId) &&
+        !string.IsNullOrWhiteSpace(ExternalCodexThreadId) &&
         SamePath(RepositoryRoot, cwd) &&
-        string.Equals(GameplaySessionId, sessionId, StringComparison.Ordinal);
+        string.Equals(ExternalCodexThreadId, codexSessionId, StringComparison.Ordinal);
 
     private static bool SamePath(string left, string right)
     {
@@ -78,6 +79,7 @@ public sealed class CodexCaptureCorrelationSpool
     private readonly int maximumPending;
     private readonly int maximumCompleted;
     private readonly Queue<CodexCaptureCorrelation> pending = new();
+    private readonly Dictionary<string, CodexCaptureCorrelation> leased = new(StringComparer.Ordinal);
     private readonly HashSet<string> pendingIds = new(StringComparer.Ordinal);
     private readonly Queue<string> completedOrder = new();
     private readonly HashSet<string> completedIds = new(StringComparer.Ordinal);
@@ -90,7 +92,7 @@ public sealed class CodexCaptureCorrelationSpool
         this.maximumCompleted = maximumCompleted;
     }
 
-    public int Count => pending.Count;
+    public int Count => pending.Count + leased.Count;
 
     public bool TryEnqueue(CodexCaptureCorrelation correlation)
     {
@@ -109,11 +111,28 @@ public sealed class CodexCaptureCorrelationSpool
         return true;
     }
 
+    public bool TryLease(out CodexCaptureCorrelation? correlation)
+    {
+        if (!TryDequeue(out correlation) || correlation is null) return false;
+        leased.Add(correlation.TurnId, correlation);
+        return true;
+    }
+
     public void Requeue(CodexCaptureCorrelation correlation)
     {
         if (pending.Count >= maximumPending || pendingIds.Contains(correlation.TurnId) || completedIds.Contains(correlation.TurnId)) return;
         pending.Enqueue(correlation);
         pendingIds.Add(correlation.TurnId);
+    }
+
+    public void RequeueLease(string turnId)
+    {
+        if (leased.Remove(turnId, out var correlation)) Requeue(correlation);
+    }
+
+    public void AcknowledgeLease(string turnId)
+    {
+        if (leased.Remove(turnId)) Complete(turnId);
     }
 
     public void Complete(string turnId)
@@ -123,7 +142,7 @@ public sealed class CodexCaptureCorrelationSpool
         while (completedOrder.Count > maximumCompleted) completedIds.Remove(completedOrder.Dequeue());
     }
 
-    public CodexCaptureSpoolCheckpoint Snapshot() => new(pending.ToArray(), completedOrder.ToArray());
+    public CodexCaptureSpoolCheckpoint Snapshot() => new(pending.Concat(leased.Values).ToArray(), completedOrder.ToArray());
 
     public static CodexCaptureCorrelationSpool Restore(CodexCaptureSpoolCheckpoint checkpoint,
         int maximumPending = 64, int maximumCompleted = 256)
@@ -146,11 +165,14 @@ public sealed record CodexCapturedMessage(
     string Classification,
     int Ordinal);
 public sealed record CodexCapturedTurn(string ThreadId, string TurnId, IReadOnlyList<CodexCapturedMessage> Messages);
+public sealed record CodexCaptureDelivery(CodexCaptureCorrelation Correlation, CodexCapturedTurn Turn);
 
 public interface ICodexThreadReadClient
 {
     Task<string> GetVersionAsync(CancellationToken cancellationToken = default);
     Task<JsonElement> ReadThreadAsync(string threadId, bool includeTurns, CancellationToken cancellationToken = default);
+    Task<JsonElement> ReadTurnAsync(string threadId, string turnId, CancellationToken cancellationToken = default) =>
+        ReadThreadAsync(threadId, includeTurns: true, cancellationToken);
 }
 
 /// <summary>Reads one exact, completed linked turn and accepts only real user and visible assistant text.</summary>
@@ -168,26 +190,28 @@ public sealed class CodexCaptureAdapter(
             input.EventName == "UserPromptSubmit" ? Bound(input.Prompt ?? string.Empty, 32_000) : string.Empty, receivedAtUtc));
     }
 
-    public async Task<CodexCapturedTurn?> CaptureNextAsync(CancellationToken cancellationToken = default)
+    public async Task<CodexCaptureDelivery?> CaptureNextAsync(CancellationToken cancellationToken = default)
     {
-        if (!spool.TryDequeue(out var correlation) || correlation is null) return null;
+        if (!spool.TryLease(out var correlation) || correlation is null) return null;
         try
         {
             var version = await client.GetVersionAsync(cancellationToken);
             if (!string.Equals(version, CodexCaptureVersions.SupportedCliVersion, StringComparison.Ordinal))
                 throw new CodexBridgeException("CODEX_CAPTURE_VERSION_UNSUPPORTED",
                     $"Codex {version} is installed; capture requires {CodexCaptureVersions.SupportedCliVersion}.");
-            var response = await client.ReadThreadAsync(binding.ExternalThreadId, includeTurns: true, cancellationToken);
-            var captured = CodexCaptureThreadParser.Parse(response, binding.ExternalThreadId, correlation.TurnId);
-            spool.Complete(correlation.TurnId);
-            return captured;
+            var response = await client.ReadTurnAsync(binding.ExternalCodexThreadId, correlation.TurnId, cancellationToken);
+            var captured = CodexCaptureThreadParser.Parse(response, binding.ExternalCodexThreadId, correlation.TurnId);
+            return new(correlation, captured);
         }
         catch
         {
-            spool.Requeue(correlation);
+            spool.RequeueLease(correlation.TurnId);
             throw;
         }
     }
+
+    public void Acknowledge(CodexCaptureDelivery delivery) => spool.AcknowledgeLease(delivery.Correlation.TurnId);
+    public void Requeue(CodexCaptureDelivery delivery) => spool.RequeueLease(delivery.Correlation.TurnId);
 
     private static string Bound(string value, int maximum) => value.Length <= maximum ? value : value[..maximum];
 }
@@ -217,7 +241,7 @@ public static class CodexCaptureThreadParser
             var type = OptionalString(item, "type");
             var role = type == "userMessage" ? "user" : type == "agentMessage" ? "assistant" : string.Empty;
             if (string.IsNullOrEmpty(role) || !Visible(item)) continue;
-            var content = OptionalString(item, "text");
+            var content = role == "user" ? UserText(item) : OptionalString(item, "text");
             if (string.IsNullOrWhiteSpace(content) || content.Length > MaximumMessageCharacters)
                 throw Failure("CODEX_CAPTURE_PROTOCOL_INVALID", "A visible message has invalid text.");
             var id = OptionalString(item, "id");
@@ -238,7 +262,17 @@ public static class CodexCaptureThreadParser
     {
         var value = OptionalString(item, "phase");
         if (value.Length == 0) value = OptionalString(item, "channel");
-        return value is "final" or "commentary" ? value : string.Empty;
+        return value switch { "final_answer" => "final", "commentary" => "commentary", _ => string.Empty };
+    }
+    private static string UserText(JsonElement item)
+    {
+        if (!item.TryGetProperty("content", out var content) || content.ValueKind != JsonValueKind.Array)
+            throw Failure("CODEX_CAPTURE_PROTOCOL_INVALID", "A user message has no content array.");
+        var text = content.EnumerateArray().Where(value => value.ValueKind == JsonValueKind.Object &&
+            string.Equals(OptionalString(value, "type"), "text", StringComparison.Ordinal))
+            .Select(value => OptionalString(value, "text")).ToArray();
+        if (text.Length != 1) throw Failure("CODEX_CAPTURE_PROTOCOL_INVALID", "A user message must contain exactly one text item.");
+        return text[0];
     }
     private static JsonElement Object(JsonElement parent, string name) => parent.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Object ? value : throw Failure("CODEX_CAPTURE_PROTOCOL_INVALID", $"Codex omitted '{name}'.");
     private static JsonElement Array(JsonElement parent, string name) => parent.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Array ? value : throw Failure("CODEX_CAPTURE_PROTOCOL_INVALID", $"Codex omitted '{name}'.");

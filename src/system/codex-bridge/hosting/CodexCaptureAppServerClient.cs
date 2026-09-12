@@ -11,6 +11,9 @@ namespace DantesRoleplay.DataAccess;
 /// </summary>
 public sealed class CodexCaptureAppServerClient(CodexCaptureOptions options) : ICodexThreadReadClient
 {
+    private const int MaximumTurnPages = 8;
+    private const int MaximumItemPages = 2;
+    private const int PageSize = 64;
     public async Task<string> GetVersionAsync(CancellationToken cancellationToken = default)
     {
         using var process = new Process { StartInfo = StartInfo("--version", false) };
@@ -58,6 +61,74 @@ public sealed class CodexCaptureAppServerClient(CodexCaptureOptions options) : I
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             throw Failure("CODEX_PROCESS_TIMEOUT", "Codex thread/read timed out.");
+        }
+        finally
+        {
+            try { process.StandardInput.Close(); } catch (IOException) { }
+            if (!process.HasExited) { try { process.Kill(entireProcessTree: true); } catch (InvalidOperationException) { } }
+        }
+    }
+
+    /// <summary>
+    /// Uses metadata-only thread/read, then bounded turn/item pages. Full-history includeTurns is
+    /// deprecated by the pinned schema and can exceed the JSONL safety bound.
+    /// </summary>
+    public async Task<JsonElement> ReadTurnAsync(string threadId, string turnId, CancellationToken cancellationToken = default)
+    {
+        using var process = new Process { StartInfo = StartInfo("app-server", true), EnableRaisingEvents = true };
+        if (!process.Start()) throw Failure("CODEX_PROCESS_UNAVAILABLE", "The Codex app-server process did not start.");
+        try
+        {
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeout.CancelAfter(options.EffectiveInitializationTimeout);
+            var input = process.StandardInput;
+            input.AutoFlush = true;
+            var output = process.StandardOutput;
+            await SendAsync(input, 1, "initialize", new { clientInfo = new { name = "dantes-roleplay-capture", version = "capture-v1" }, capabilities = new { experimentalApi = true } }, timeout.Token);
+            await ReadResponseAsync(output, 1, timeout.Token);
+            await input.WriteLineAsync(JsonSerializer.Serialize(new { method = "initialized" }).AsMemory(), timeout.Token);
+            await SendAsync(input, 2, "thread/read", new { threadId, includeTurns = false }, timeout.Token);
+            var metadata = await ReadResponseAsync(output, 2, timeout.Token);
+            if (!metadata.TryGetProperty("thread", out var thread) || !string.Equals(OptionalString(thread, "id"), threadId, StringComparison.Ordinal))
+                throw Failure("CODEX_CAPTURE_THREAD_MISMATCH", "Codex returned a different thread.");
+
+            JsonElement selected = default;
+            string? cursor = null;
+            var requestId = 3L;
+            for (var page = 0; page < MaximumTurnPages && selected.ValueKind == JsonValueKind.Undefined; page++)
+            {
+                await SendAsync(input, requestId, "thread/turns/list", new { threadId, cursor, limit = PageSize, sortDirection = "desc", itemsView = "notLoaded" }, timeout.Token);
+                var turns = await ReadResponseAsync(output, requestId++, timeout.Token);
+                if (!turns.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Array)
+                    throw Failure("CODEX_CAPTURE_PROTOCOL_INVALID", "Codex returned an invalid turn page.");
+                foreach (var candidate in data.EnumerateArray())
+                {
+                    if (string.Equals(OptionalString(candidate, "id"), turnId, StringComparison.Ordinal))
+                    {
+                        selected = candidate.Clone();
+                        break;
+                    }
+                }
+                cursor = NullableString(turns, "nextCursor");
+                if (cursor is null) break;
+            }
+            if (selected.ValueKind == JsonValueKind.Undefined)
+                throw Failure("CODEX_CAPTURE_TURN_NOT_AVAILABLE", "The requested turn was not found within the bounded Codex history page limit.");
+
+            var items = new List<JsonElement>();
+            cursor = null;
+            for (var page = 0; page < MaximumItemPages; page++)
+            {
+                await SendAsync(input, requestId, "thread/items/list", new { threadId, turnId, cursor, limit = PageSize, sortDirection = "asc" }, timeout.Token);
+                var result = await ReadResponseAsync(output, requestId++, timeout.Token);
+                if (!result.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Array)
+                    throw Failure("CODEX_CAPTURE_PROTOCOL_INVALID", "Codex returned an invalid item page.");
+                items.AddRange(data.EnumerateArray().Select(entry => entry.TryGetProperty("item", out var item) ? item.Clone() : throw Failure("CODEX_CAPTURE_PROTOCOL_INVALID", "Codex returned an item without content.")));
+                cursor = NullableString(result, "nextCursor");
+                if (cursor is null) break;
+            }
+            if (cursor is not null) throw Failure("CODEX_CAPTURE_HISTORY_BOUNDED", "The requested turn exceeds the bounded Codex item page limit.");
+            return JsonSerializer.SerializeToElement(new { thread = new { id = threadId, turns = new[] { new { id = OptionalString(selected, "id"), status = OptionalString(selected, "status"), items = items.ToArray() } } } });
         }
         finally
         {
@@ -116,5 +187,7 @@ public sealed class CodexCaptureAppServerClient(CodexCaptureOptions options) : I
     }
 
     private static string Bound(string value, int maximum) => string.IsNullOrWhiteSpace(value) ? "Codex process failed." : value.Length <= maximum ? value : value[..maximum];
+    private static string OptionalString(JsonElement parent, string name) => parent.ValueKind == JsonValueKind.Object && parent.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() ?? string.Empty : string.Empty;
+    private static string? NullableString(JsonElement parent, string name) => parent.ValueKind == JsonValueKind.Object && parent.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
     private static CodexBridgeException Failure(string code, string message) => new(code, message);
 }
