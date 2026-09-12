@@ -26,5 +26,5 @@ reconnect to inner worker
 
 ## Constraints
 - Reading one handle does not grant execution, cancellation, task listing, or access to another task.
-- Task listing and server-side waiting are unavailable; bounded repeated reads are the supported reconnection path.
+- Listing and bounded waiting use their separate selected-application capabilities and the same current `ReadTask` authority.
 - A stale, foreign, revoked, or mismatched handle remains denied or unavailable.

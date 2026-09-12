@@ -1,13 +1,13 @@
 # Focused INNER AI workers
 
-Status: procedure-workflow workers, durable execution/readback, and selected-application submit/read/cancel capabilities are implemented, 2026-09-12. The website and selected-application AI use the existing capability gateway. Live provider acceptance, list/wait transport, and website progress presentation remain outside this boundary.
+Status: procedure-workflow workers, durable execution/readback, and selected-application submit/read/list/wait/cancel capabilities are implemented, 2026-09-12. The website and selected-application AI use the existing capability gateway. Live provider acceptance and website progress presentation remain outside this boundary.
 
 Prerequisite: implement [00 — Shared foundation](00-shared-foundation.md) first and have the coordinator supply its accepted foundation revision and contract baseline. This workstream consumes those shared contracts and does not redefine them independently.
 
 ## Implemented boundary and integration requirements
 
-`SystemInnerWorkerPreparation` in `system-capabilities/hosting` resolves and rechecks the selected
-active procedure through `IProcedureStore`, requests fresh context through the existing
+`SystemInnerWorkerPreparation` in `system-capabilities/hosting` rechecks host-only procedure content
+from the exact trusted active catalog snapshot (while legacy callers retain `IProcedureStore`), requests fresh context through the existing
 `IInteractionTaskContextMaterializer`, and selects only explicitly required references from the
 bounded version-2 packet. It rejects stale procedures, scope mismatch, missing context, expired or
 exhausted operation budgets, atomic work, malformed packets, and output-contract mismatch. The
@@ -61,11 +61,12 @@ late billing evidence never restores a stale worker's permission to publish a re
 
 The task-orchestration composition now registers `SystemInnerWorkerService`, its procedure resolver,
 the purpose-filtered durable runner, lifecycle factory, and selected-application capability handlers.
-`system.inner-worker.submit`, `system.inner-worker.read`, and `system.inner-worker.cancel` reuse the
+`system.inner-worker.submit`, `system.inner-worker.read`, `system.inner-worker.list`,
+`system.inner-worker.wait`, and `system.inner-worker.cancel` reuse the
 existing website/Codex gateway. They construct fresh state-scoped hosts from current standing grants;
 caller JSON selects the state, exact procedure, instruction, result schema, and dependency handles,
 while provider, model, tools, grants, budgets, leases, and evidence remain host-owned. Submit and
-cancel use stable idempotency keys. Read and replay query current grants again. Deterministic
+cancel use stable idempotency keys. Read, list, wait, and replay query current grants again. Deterministic
 acceptance covers the real gateway, SQLite task lifecycle, hosted runner, cancellation, reconnect
 readback, and grant revocation with a controlled provider. It does not establish a live provider run.
 
@@ -86,12 +87,12 @@ Current integration boundaries:
   it must not be exposed as an evidence-verification service.
   AI input/evidence/results stay in those task records without a second history. The durable
   lifecycle owns aggregate provider-token and tool-call accounting.
-- Bounded list/wait readback remains unavailable. Any later addition should reuse the durable service;
-  list should be scoped to the authorized parent with at most 16
-  handles per page. Wait must use named checkpoints and release execution resources. For example,
-  a pending response retains `{ "taskId": "task.1", "commandId": "command.1" }`; a completed
-  computation cites the existing terminal result record, never the provider conversation ID.
-  The selected-application transport currently exposes submit/read/cancel; plan 06 owns display.
+- Bounded list/wait readback reuses the durable service and selected-application owner. List returns
+  at most 16 freshly authorized tasks per page for the exact principal, application, and state.
+  Wait polls one exact handle for at most 25 seconds, releases database resources between reads,
+  retains one host deadline and budget, and refreshes the current state revision without selecting
+  a fresh grant each time. Timeout returns the actual pending result; terminal and recovery evidence
+  stays on the existing result envelope. Plan 06 owns display.
 
 ### Concrete profile and AI accounting contracts
 

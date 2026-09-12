@@ -52,7 +52,18 @@ internal static class SystemTaskOrchestrationComponentRegistration
                 provider.GetRequiredService<DantesRoleplay.Ecs.IStateSpaceRegistry>(),
                 () => provider.GetRequiredService<SystemInnerWorkerService>(),
                 provider.GetRequiredService<TimeProvider>()));
-        services.AddScoped<ISystemReadCapabilityHandler, SelectedApplicationInnerWorkerReadCapabilityHandler>();
+        services.AddScoped<ISystemReadCapabilityHandler>(provider =>
+            new SelectedApplicationInnerWorkerReadCapabilityHandler(
+                SystemCapabilityIds.InnerWorkerRead,
+                provider.GetRequiredService<ISelectedApplicationInnerWorkerOwner>()));
+        services.AddScoped<ISystemReadCapabilityHandler>(provider =>
+            new SelectedApplicationInnerWorkerReadCapabilityHandler(
+                SystemCapabilityIds.InnerWorkerList,
+                provider.GetRequiredService<ISelectedApplicationInnerWorkerOwner>()));
+        services.AddScoped<ISystemReadCapabilityHandler>(provider =>
+            new SelectedApplicationInnerWorkerReadCapabilityHandler(
+                SystemCapabilityIds.InnerWorkerWait,
+                provider.GetRequiredService<ISelectedApplicationInnerWorkerOwner>()));
         services.AddScoped<ISystemWriteCapabilityHandler>(provider =>
             new SelectedApplicationInnerWorkerWriteCapabilityHandler(
                 SystemCapabilityIds.InnerWorkerSubmit,

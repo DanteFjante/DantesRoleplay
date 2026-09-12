@@ -32,6 +32,8 @@ public static class SystemCapabilityIds
     public const string ApplicationCandidateReviewCancel = "system.application-candidate.review-cancel";
     public const string InnerWorkerSubmit = "system.inner-worker.submit";
     public const string InnerWorkerRead = "system.inner-worker.read";
+    public const string InnerWorkerList = "system.inner-worker.list";
+    public const string InnerWorkerWait = "system.inner-worker.wait";
     public const string InnerWorkerCancel = "system.inner-worker.cancel";
     public const string StandingGrantAdmin = "system.standing-grant.admin";
     public const string StateSpaceCreate = "system.state-space.create";
@@ -68,6 +70,8 @@ public static class ApplicationCandidateCapabilityAccess
         SystemCapabilityIds.ApplicationCandidateReviewCancel or
         SystemCapabilityIds.InnerWorkerSubmit or
         SystemCapabilityIds.InnerWorkerRead or
+        SystemCapabilityIds.InnerWorkerList or
+        SystemCapabilityIds.InnerWorkerWait or
         SystemCapabilityIds.InnerWorkerCancel;
 
     public static SystemCapabilityInvocationContext Context(

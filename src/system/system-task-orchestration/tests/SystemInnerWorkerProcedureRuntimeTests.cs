@@ -118,7 +118,13 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         var selectedApplicationOwner = new SelectedApplicationInnerWorkerOwner(
             db, stateSpaces, () => service, TimeProvider.System);
         var selectedApplicationCatalog = new SystemCapabilityCatalog(
-            [new SelectedApplicationInnerWorkerReadCapabilityHandler(selectedApplicationOwner)],
+            [
+                new SelectedApplicationInnerWorkerReadCapabilityHandler(selectedApplicationOwner),
+                new SelectedApplicationInnerWorkerReadCapabilityHandler(
+                    SystemCapabilityIds.InnerWorkerList, selectedApplicationOwner),
+                new SelectedApplicationInnerWorkerReadCapabilityHandler(
+                    SystemCapabilityIds.InnerWorkerWait, selectedApplicationOwner)
+            ],
             new BoundedJsonSchemaValidator(), new PrivateOperatorAuthorizationPolicy(),
             [
                 new SelectedApplicationInnerWorkerWriteCapabilityHandler(
@@ -206,8 +212,113 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             Assert.True(cancelled.Ok, cancelled.Error?.Message);
             Assert.Equal("cancelled", cancelled.Data!.Value.GetProperty("tag").GetString());
 
+            var firstList = await gateway.InvokeAsync(host.Principal, Application,
+                SystemCapabilityIds.InnerWorkerList, JsonSerializer.Serialize(new
+                {
+                    stateSpaceId = state.StateSpaceId,
+                    pageSize = 1,
+                    cursor = (string?)null
+                }), null, "website-list-first");
+            Assert.True(firstList.Ok, firstList.Error?.Message);
+            using var firstListData = JsonDocument.Parse(firstList.Data!.Value.GetProperty("dataJson").GetString()!);
+            var firstListItem = Assert.Single(firstListData.RootElement.GetProperty("items").EnumerateArray());
+            var firstListTask = firstListItem.GetProperty("handle").GetProperty("taskId").GetString();
+            var cursor = firstListData.RootElement.GetProperty("nextCursor").GetString();
+            Assert.False(string.IsNullOrWhiteSpace(cursor));
+            var secondList = await gateway.InvokeAsync(host.Principal, Application,
+                SystemCapabilityIds.InnerWorkerList, JsonSerializer.Serialize(new
+                {
+                    stateSpaceId = state.StateSpaceId,
+                    pageSize = 1,
+                    cursor
+                }), null, "website-list-second");
+            Assert.True(secondList.Ok, secondList.Error?.Message);
+            using var secondListData = JsonDocument.Parse(secondList.Data!.Value.GetProperty("dataJson").GetString()!);
+            var secondListItem = Assert.Single(secondListData.RootElement.GetProperty("items").EnumerateArray());
+            var secondListTask = secondListItem.GetProperty("handle").GetProperty("taskId").GetString();
+            Assert.Equal(new[] { handle.TaskId, cancelHandle.TaskId }.Order(),
+                new[] { firstListTask, secondListTask }.Order());
+            Assert.Equal(JsonValueKind.Null, secondListData.RootElement.GetProperty("nextCursor").ValueKind);
+
+            var wrongScopeList = await gateway.InvokeAsync(host.Principal, Application,
+                SystemCapabilityIds.InnerWorkerList, JsonSerializer.Serialize(new
+                {
+                    stateSpaceId = "state.other",
+                    pageSize = 16
+                }), null, "website-list-wrong-state");
+            Assert.True(wrongScopeList.Ok, wrongScopeList.Error?.Message);
+            Assert.Equal("failed", wrongScopeList.Data!.Value.GetProperty("tag").GetString());
+
+            var timedOutWait = await gateway.InvokeAsync(host.Principal, Application,
+                SystemCapabilityIds.InnerWorkerWait, JsonSerializer.Serialize(new
+                {
+                    stateSpaceId = state.StateSpaceId,
+                    taskId = handle.TaskId,
+                    commandId = handle.CommandId,
+                    waitMilliseconds = 1
+                }), null, "website-wait-timeout");
+            Assert.True(timedOutWait.Ok, timedOutWait.Error?.Message);
+            Assert.Equal("pending", timedOutWait.Data!.Value.GetProperty("tag").GetString());
+            Assert.Equal(0, provider.Calls);
+            Assert.Equal(2L, await db.Set<SystemTaskAiCeilingRecord>().LongCountAsync());
+
             var worker = lifecycleServices.GetRequiredService<SystemTaskWorkflowBackgroundWorker>();
             Assert.True(await worker.RunOnceAsync("inner-worker"));
+
+            var replay = await gateway.InvokeAsync(host.Principal, Application,
+                SystemCapabilityIds.InnerWorkerSubmit, transportInput, "inner-worker-gateway",
+                "website-replay");
+            Assert.True(replay.Ok, replay.Error?.Code + ": " + replay.Error?.Message);
+            Assert.Equal(handle.TaskId,
+                replay.Data!.Value.GetProperty("pending").GetProperty("taskId").GetString());
+            Assert.False(await worker.RunOnceAsync("inner-worker"));
+            Assert.Equal(1, provider.Calls);
+
+            var staleWaitHost = InnerWorkerHost(application, state, "stale-wait-host", deadline);
+            var sharedWaitBudget = staleWaitHost.Budget;
+            var stateRecord = await db.Set<ApplicationStateSpaceRecord>()
+                .SingleAsync(value => value.Id == state.StateSpaceId);
+            stateRecord.BindingRevision++;
+            stateRecord.UpdatedAtUtc = DateTime.UtcNow;
+            await db.SaveChangesAsync();
+            state = stateSpaces.Get(state.StateSpaceId)!;
+            var refreshedWaitHost = Assert.Single(SelectedApplicationInnerWorkerOwner.RefreshStateHosts(
+                stateSpaces, [staleWaitHost], state.StateSpaceId, Application));
+            Assert.NotEqual(staleWaitHost.StateRevision, refreshedWaitHost.StateRevision);
+            Assert.Same(sharedWaitBudget, refreshedWaitHost.Budget);
+
+            var completedWait = await gateway.InvokeAsync(host.Principal, Application,
+                SystemCapabilityIds.InnerWorkerWait, JsonSerializer.Serialize(new
+                {
+                    stateSpaceId = state.StateSpaceId,
+                    taskId = handle.TaskId,
+                    commandId = handle.CommandId,
+                    waitMilliseconds = 25_000
+                }), null, "codex-wait-completed");
+            Assert.True(completedWait.Ok, completedWait.Error?.Message);
+            Assert.Equal("completed", completedWait.Data!.Value.GetProperty("tag").GetString());
+            Assert.StartsWith("inner-result.",
+                completedWait.Data.Value.GetProperty("completionEvidenceReference").GetString(), StringComparison.Ordinal);
+            Assert.Equal(1, provider.Calls);
+            Assert.Equal(2L, await db.Set<SystemTaskAiCeilingRecord>().LongCountAsync());
+
+            var completedList = await gateway.InvokeAsync(host.Principal, Application,
+                SystemCapabilityIds.InnerWorkerList, JsonSerializer.Serialize(new
+                {
+                    stateSpaceId = state.StateSpaceId,
+                    pageSize = 16
+                }), null, "codex-list-completed");
+            Assert.True(completedList.Ok, completedList.Error?.Message);
+            using var completedListData = JsonDocument.Parse(
+                completedList.Data!.Value.GetProperty("dataJson").GetString()!);
+            var listedCompletion = completedListData.RootElement.GetProperty("items").EnumerateArray()
+                .Single(value => value.GetProperty("handle").GetProperty("taskId").GetString() == handle.TaskId)
+                .GetProperty("result");
+            Assert.Equal("completed", listedCompletion.GetProperty("tag").GetString());
+            Assert.Equal(completedWait.Data.Value.GetProperty("completionEvidenceReference").GetString(),
+                listedCompletion.GetProperty("completionEvidenceReference").GetString());
+            Assert.Equal(completedWait.Data.Value.GetProperty("previousCommits").GetRawText(),
+                listedCompletion.GetProperty("previousCommits").GetRawText());
 
             var read = await gateway.InvokeAsync(host.Principal, Application,
                 SystemCapabilityIds.InnerWorkerRead, JsonSerializer.Serialize(new
@@ -228,15 +339,6 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
                 value => value.Kind == "dispatch" && value.DispatchKind == "provider"));
             Assert.Equal(1L, await db.Set<SystemTaskAiDispatchEvidenceRecord>().LongCountAsync(
                 value => value.Kind == "usage" && value.IsComplete == 1));
-
-            var replay = await gateway.InvokeAsync(host.Principal, Application,
-                SystemCapabilityIds.InnerWorkerSubmit, transportInput, "inner-worker-gateway",
-                "website-replay");
-            Assert.True(replay.Ok, replay.Error?.Code + ": " + replay.Error?.Message);
-            Assert.Equal(handle.TaskId,
-                replay.Data!.Value.GetProperty("pending").GetProperty("taskId").GetString());
-            Assert.False(await worker.RunOnceAsync("inner-worker"));
-            Assert.Equal(1, provider.Calls);
 
             var triggerNow = DateTimeOffset.UtcNow;
             var triggerClock = new RuntimeTriggerClock(
@@ -316,6 +418,15 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             Assert.Equal(3, provider.Calls);
 
             await RevokeProcedureWorkerGrantAsync(db);
+            var revokedList = await gateway.InvokeAsync(host.Principal, Application,
+                SystemCapabilityIds.InnerWorkerList, JsonSerializer.Serialize(new
+                {
+                    stateSpaceId = state.StateSpaceId,
+                    pageSize = 16
+                }), null, "codex-list-revoked");
+            Assert.True(revokedList.Ok, revokedList.Error?.Message);
+            Assert.Equal("failed", revokedList.Data!.Value.GetProperty("tag").GetString());
+            Assert.Equal("STANDING_GRANT_DENIED", revokedList.Data.Value.GetProperty("code").GetString());
             var revokedRead = await gateway.InvokeAsync(host.Principal, Application,
                 SystemCapabilityIds.InnerWorkerRead, JsonSerializer.Serialize(new
                 {

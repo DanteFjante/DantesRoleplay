@@ -1,7 +1,7 @@
 {
   "id": "procedure.system.inner-worker",
   "owner": "procedure",
-  "description": "Generic selected-application procedures for submitting, reading, and cancelling durable focused inner workers.",
+  "description": "Generic selected-application procedures for submitting, reading, listing, waiting for, and cancelling durable focused inner workers.",
   "allowedKinds": [
     "procedure"
   ],

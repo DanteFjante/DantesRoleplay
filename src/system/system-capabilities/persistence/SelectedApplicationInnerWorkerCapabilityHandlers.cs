@@ -22,6 +22,12 @@ internal interface ISelectedApplicationInnerWorkerOwner
     Task<InteractionInvocationResult> ReadAsync(SystemCapabilityInvocationContext context,
         SelectedApplicationInnerWorkerHandle request, CancellationToken cancellationToken = default);
 
+    Task<InteractionInvocationResult> ListAsync(SystemCapabilityInvocationContext context,
+        SelectedApplicationInnerWorkerList request, CancellationToken cancellationToken = default);
+
+    Task<InteractionInvocationResult> WaitAsync(SystemCapabilityInvocationContext context,
+        SelectedApplicationInnerWorkerWait request, CancellationToken cancellationToken = default);
+
     Task<InteractionInvocationResult> CancelAsync(SystemCapabilityInvocationContext context, string commandId,
         SelectedApplicationInnerWorkerHandle request, CancellationToken cancellationToken = default);
 }
@@ -33,12 +39,24 @@ internal sealed record SelectedApplicationInnerWorkerSubmission(ApplicationIdent
 internal sealed record SelectedApplicationInnerWorkerHandle(string StateSpaceId,
     SystemTaskDurableHandle Handle);
 
+internal sealed record SelectedApplicationInnerWorkerList(string StateSpaceId, int PageSize, string? Cursor);
+
+internal sealed record SelectedApplicationInnerWorkerWait(SelectedApplicationInnerWorkerHandle Target,
+    int WaitMilliseconds);
+
 internal sealed class SelectedApplicationInnerWorkerReadCapabilityHandler(
-    ISelectedApplicationInnerWorkerOwner owner) : ISystemReadCapabilityHandler
+    string capabilityId, ISelectedApplicationInnerWorkerOwner owner) : ISystemReadCapabilityHandler
 {
+    internal SelectedApplicationInnerWorkerReadCapabilityHandler(ISelectedApplicationInnerWorkerOwner owner)
+        : this(SelectedApplicationInnerWorkerSchemas.ReadCapabilityId, owner) { }
+
     public SystemCapabilityRegistration Registration { get; } = SelectedApplicationInnerWorkerSchemas.Registration(
-        SelectedApplicationInnerWorkerSchemas.ReadCapabilityId, SystemCapabilityMode.Read,
-        SelectedApplicationInnerWorkerSchemas.HandleInput);
+        capabilityId, SystemCapabilityMode.Read, capabilityId switch
+        {
+            SelectedApplicationInnerWorkerSchemas.ListCapabilityId => SelectedApplicationInnerWorkerSchemas.ListInput,
+            SelectedApplicationInnerWorkerSchemas.WaitCapabilityId => SelectedApplicationInnerWorkerSchemas.WaitInput,
+            _ => SelectedApplicationInnerWorkerSchemas.HandleInput
+        });
 
     public Task<SystemCapabilityHandlerResult> ReadAsync(JsonElement input,
         CancellationToken cancellationToken = default) => Task.FromResult(SelectedApplicationInnerWorkerSchemas.Failure(
@@ -52,8 +70,16 @@ internal sealed class SelectedApplicationInnerWorkerReadCapabilityHandler(
             if (!SelectedApplicationInnerWorkerSchemas.TryApplication(context, out _))
                 return SelectedApplicationInnerWorkerSchemas.Failure("APPLICATION_CONTEXT_REQUIRED",
                     "A current selected application is required.");
-            var request = SelectedApplicationInnerWorkerSchemas.Handle(input);
-            var result = await owner.ReadAsync(context, request, cancellationToken);
+            var result = capabilityId switch
+            {
+                SelectedApplicationInnerWorkerSchemas.ReadCapabilityId =>
+                    await owner.ReadAsync(context, SelectedApplicationInnerWorkerSchemas.Handle(input), cancellationToken),
+                SelectedApplicationInnerWorkerSchemas.ListCapabilityId =>
+                    await owner.ListAsync(context, SelectedApplicationInnerWorkerSchemas.List(input), cancellationToken),
+                SelectedApplicationInnerWorkerSchemas.WaitCapabilityId =>
+                    await owner.WaitAsync(context, SelectedApplicationInnerWorkerSchemas.Wait(input), cancellationToken),
+                _ => throw new ArgumentException("Unknown inner worker read capability.")
+            };
             return SelectedApplicationInnerWorkerSchemas.Success(result);
         }
         catch (OperationCanceledException) { throw; }
@@ -139,6 +165,8 @@ internal static class SelectedApplicationInnerWorkerSchemas
 {
     internal const string SubmitCapabilityId = SystemCapabilityIds.InnerWorkerSubmit;
     internal const string ReadCapabilityId = SystemCapabilityIds.InnerWorkerRead;
+    internal const string ListCapabilityId = SystemCapabilityIds.InnerWorkerList;
+    internal const string WaitCapabilityId = SystemCapabilityIds.InnerWorkerWait;
     internal const string CancelCapabilityId = SystemCapabilityIds.InnerWorkerCancel;
     internal const string Recovery = "Retain the worker handle, select the current application, and retry through the worker owner.";
 
@@ -159,6 +187,18 @@ internal static class SelectedApplicationInnerWorkerSchemas
         "stateSpaceId":{"type":"string","minLength":1,"maxLength":200},"taskId":{"type":"string","minLength":1,"maxLength":200},
         "commandId":{"type":"string","minLength":1,"maxLength":128}}}
         """;
+    internal const string ListInput = """
+        {"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","additionalProperties":false,
+        "required":["stateSpaceId","pageSize"],"properties":{
+        "stateSpaceId":{"type":"string","minLength":1,"maxLength":200},"pageSize":{"type":"integer","minimum":1,"maximum":16},
+        "cursor":{"type":["string","null"],"maxLength":1024}}}
+        """;
+    internal const string WaitInput = """
+        {"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","additionalProperties":false,
+        "required":["stateSpaceId","taskId","commandId","waitMilliseconds"],"properties":{
+        "stateSpaceId":{"type":"string","minLength":1,"maxLength":200},"taskId":{"type":"string","minLength":1,"maxLength":200},
+        "commandId":{"type":"string","minLength":1,"maxLength":128},"waitMilliseconds":{"type":"integer","minimum":0,"maximum":25000}}}
+        """;
     internal const string ResultOutput = """
         {"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","additionalProperties":false,
         "required":["tag","code","message","dataJson","readEvidence","receipt","proposal","pending","completionEvidenceReference","previousCommits","recoveryIdentity"],
@@ -171,7 +211,12 @@ internal static class SelectedApplicationInnerWorkerSchemas
 
     internal static SystemCapabilityRegistration Registration(string id, SystemCapabilityMode mode, string input) => new(
         id, 1, "system-task-orchestration",
-        mode == SystemCapabilityMode.Read ? "Read one durable focused-worker result for the current selected application."
+        mode == SystemCapabilityMode.Read ? id switch
+            {
+                ListCapabilityId => "List authorized durable focused-worker results for the current selected application and state space.",
+                WaitCapabilityId => "Wait briefly for one durable focused-worker result for the current selected application.",
+                _ => "Read one durable focused-worker result for the current selected application."
+            }
             : id == SubmitCapabilityId ? "Submit one bounded focused-worker assignment for the current selected application."
             : "Request cancellation of one focused worker for the current selected application.",
         mode, input, ResultOutput,
@@ -179,6 +224,8 @@ internal static class SelectedApplicationInnerWorkerSchemas
         {
             SubmitCapabilityId => "procedure.system.inner-worker.submit",
             ReadCapabilityId => "procedure.system.inner-worker.read",
+            ListCapabilityId => "procedure.system.inner-worker.list",
+            WaitCapabilityId => "procedure.system.inner-worker.wait",
             CancelCapabilityId => "procedure.system.inner-worker.cancel",
             _ => throw new ArgumentException("Unknown inner worker capability.", nameof(id))
         }], mode == SystemCapabilityMode.Read ? PrivateOperatorCapability.Read : PrivateOperatorCapability.Modify,
@@ -219,6 +266,33 @@ internal static class SelectedApplicationInnerWorkerSchemas
             || wire.StateSpaceId.Any(char.IsControl))
             throw new InteractionContractException("INVALID_WORKER_STATE_SPACE", "The worker state-space identity is invalid.");
         return new(wire.StateSpaceId, new(wire.TaskId, wire.CommandId));
+    }
+
+    internal static SelectedApplicationInnerWorkerList List(JsonElement input)
+    {
+        BoundedObject(input);
+        var wire = Deserialize<ListWire>(input);
+        StateSpace(wire.StateSpaceId);
+        if (wire.PageSize is < 1 or > 16 || wire.Cursor is { Length: > 1_024 })
+            throw new InteractionContractException("INVALID_WORKER_LIST", "The worker list bounds are invalid.");
+        return new(wire.StateSpaceId, wire.PageSize, wire.Cursor);
+    }
+
+    internal static SelectedApplicationInnerWorkerWait Wait(JsonElement input)
+    {
+        BoundedObject(input);
+        var wire = Deserialize<WaitWire>(input);
+        StateSpace(wire.StateSpaceId);
+        if (wire.WaitMilliseconds is < 0 or > 25_000)
+            throw new InteractionContractException("INVALID_WORKER_WAIT", "The worker wait bound is invalid.");
+        return new(new(wire.StateSpaceId, new(wire.TaskId, wire.CommandId)), wire.WaitMilliseconds);
+    }
+
+    private static void StateSpace(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value) || value.Length > InteractionContractLimits.Identifier
+            || value.Any(char.IsControl))
+            throw new InteractionContractException("INVALID_WORKER_STATE_SPACE", "The worker state-space identity is invalid.");
     }
 
     internal static bool TryApplication(SystemCapabilityInvocationContext? context, out ApplicationIdentifier applicationId)
@@ -292,6 +366,15 @@ internal static class SelectedApplicationInnerWorkerSchemas
     [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
     private sealed record HandleWire([property: JsonRequired] string StateSpaceId,
         [property: JsonRequired] string TaskId, [property: JsonRequired] string CommandId);
+
+    [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+    private sealed record ListWire([property: JsonRequired] string StateSpaceId,
+        [property: JsonRequired] int PageSize, string? Cursor);
+
+    [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+    private sealed record WaitWire([property: JsonRequired] string StateSpaceId,
+        [property: JsonRequired] string TaskId, [property: JsonRequired] string CommandId,
+        [property: JsonRequired] int WaitMilliseconds);
 
     [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
     private sealed record TaskHandleWire([property: JsonRequired] string TaskId,

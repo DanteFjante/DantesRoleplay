@@ -46,8 +46,10 @@ public sealed class SystemCapabilityCatalogTests
             SystemCapabilityIds.Dependencies,
             SystemCapabilityIds.ExtensionRegister,
             SystemCapabilityIds.InnerWorkerCancel,
+            SystemCapabilityIds.InnerWorkerList,
             SystemCapabilityIds.InnerWorkerRead,
             SystemCapabilityIds.InnerWorkerSubmit,
+            SystemCapabilityIds.InnerWorkerWait,
             SystemCapabilityIds.InteractionContextPack,
             SystemCapabilityIds.InteractionRecipeReview,
             SystemCapabilityIds.InteractionRecipes,
@@ -62,7 +64,7 @@ public sealed class SystemCapabilityCatalogTests
             SystemCapabilityIds.StateSpaceCreate,
             SystemCapabilityIds.StateSpaceUpgrade
         ], descriptors.Select(value => value.Id).ToArray());
-        Assert.Equal(12, descriptors.Count(value => value.Mode == SystemCapabilityMode.Read));
+        Assert.Equal(14, descriptors.Count(value => value.Mode == SystemCapabilityMode.Read));
         Assert.Equal(21, descriptors.Count(value => value.Mode == SystemCapabilityMode.Write));
         Assert.All(descriptors, descriptor =>
         {

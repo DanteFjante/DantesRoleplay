@@ -132,7 +132,8 @@ public sealed class ApplicationCandidateCapabilityGateway(ISystemCapabilityCatal
             [StandingGrantCapability.Read, StandingGrantCapability.Validate],
         SystemCapabilityIds.ApplicationCandidateReviewRead => [StandingGrantCapability.Read],
         SystemCapabilityIds.InnerWorkerSubmit => [StandingGrantCapability.Execute],
-        SystemCapabilityIds.InnerWorkerRead => [StandingGrantCapability.ReadTask],
+        SystemCapabilityIds.InnerWorkerRead or SystemCapabilityIds.InnerWorkerList or SystemCapabilityIds.InnerWorkerWait =>
+            [StandingGrantCapability.ReadTask],
         SystemCapabilityIds.InnerWorkerCancel => [StandingGrantCapability.CancelTask],
         _ => throw new InvalidOperationException("The selected-application capability set is inconsistent.")
     };

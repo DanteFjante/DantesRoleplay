@@ -28,5 +28,5 @@ submit background work
 
 ## Constraints
 - The selected application and state space must still match current activation and standing-grant evidence.
-- Do not report `pending` as completion. Listing and server-side waiting are unavailable; read only a retained exact handle.
+- Do not report `pending` as completion. Use only the exact retained handle with read, list, or bounded wait.
 - Reusing an idempotency key for different input is a conflict.

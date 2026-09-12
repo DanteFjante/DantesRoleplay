@@ -14,18 +14,24 @@ public sealed class SelectedApplicationInnerWorkerCapabilityHandlersTests
     private static readonly string Hash = new('A', 64);
 
     [Fact]
-    public void Registrations_are_the_three_selected_application_worker_transport_contracts()
+    public void Registrations_are_the_five_selected_application_worker_transport_contracts()
     {
         var owner = new RecordingOwner();
         var submit = new SelectedApplicationInnerWorkerWriteCapabilityHandler(
             SelectedApplicationInnerWorkerSchemas.SubmitCapabilityId, owner).Registration;
         var read = new SelectedApplicationInnerWorkerReadCapabilityHandler(owner).Registration;
+        var list = new SelectedApplicationInnerWorkerReadCapabilityHandler(
+            SelectedApplicationInnerWorkerSchemas.ListCapabilityId, owner).Registration;
+        var wait = new SelectedApplicationInnerWorkerReadCapabilityHandler(
+            SelectedApplicationInnerWorkerSchemas.WaitCapabilityId, owner).Registration;
         var cancel = new SelectedApplicationInnerWorkerWriteCapabilityHandler(
             SelectedApplicationInnerWorkerSchemas.CancelCapabilityId, owner).Registration;
 
         Assert.Equal("system-task-orchestration", submit.Owner);
         Assert.Equal(SystemCapabilityMode.Write, submit.Mode);
         Assert.Equal(SystemCapabilityMode.Read, read.Mode);
+        Assert.Equal(SystemCapabilityMode.Read, list.Mode);
+        Assert.Equal(SystemCapabilityMode.Read, wait.Mode);
         Assert.Equal(SystemCapabilityMode.Write, cancel.Mode);
         Assert.Equal(PrivateOperatorCapability.Read, read.RequiredCapability);
         Assert.Equal(PrivateOperatorCapability.Modify, submit.RequiredCapability);
@@ -33,6 +39,8 @@ public sealed class SelectedApplicationInnerWorkerCapabilityHandlersTests
         Assert.True(submit.RequiresIdempotencyKey);
         Assert.Equal(["procedure.system.inner-worker.submit"], submit.ProcedureIds);
         Assert.Equal(["procedure.system.inner-worker.read"], read.ProcedureIds);
+        Assert.Equal(["procedure.system.inner-worker.list"], list.ProcedureIds);
+        Assert.Equal(["procedure.system.inner-worker.wait"], wait.ProcedureIds);
         Assert.Equal(["procedure.system.inner-worker.cancel"], cancel.ProcedureIds);
         Assert.DoesNotContain("provider", submit.InputSchemaJson, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("model", submit.InputSchemaJson, StringComparison.OrdinalIgnoreCase);
@@ -93,6 +101,32 @@ public sealed class SelectedApplicationInnerWorkerCapabilityHandlersTests
     }
 
     [Fact]
+    public async Task List_and_wait_forward_bounded_readback_requests_and_preserve_owner_results()
+    {
+        var owner = new RecordingOwner
+        {
+            ListResult = InteractionInvocationResult.CompletedComputation("{\"items\":[]}", "list.1"),
+            WaitResult = InteractionInvocationResult.Pending(new("task.2", "command.2"))
+        };
+        var list = new SelectedApplicationInnerWorkerReadCapabilityHandler(
+            SelectedApplicationInnerWorkerSchemas.ListCapabilityId, owner);
+        var wait = new SelectedApplicationInnerWorkerReadCapabilityHandler(
+            SelectedApplicationInnerWorkerSchemas.WaitCapabilityId, owner);
+
+        var listed = await list.ReadAsync(Element(
+            "{\"stateSpaceId\":\"state.1\",\"pageSize\":16,\"cursor\":null}"), Context());
+        var waited = await wait.ReadAsync(Element(
+            "{\"stateSpaceId\":\"state.1\",\"taskId\":\"task.2\",\"commandId\":\"command.2\",\"waitMilliseconds\":25000}"), Context());
+
+        Assert.True(listed.Ok);
+        Assert.Equal(owner.ListResult!.ToJson(), listed.Data!.Value.GetRawText());
+        Assert.True(waited.Ok);
+        Assert.Equal(owner.WaitResult!.ToJson(), waited.Data!.Value.GetRawText());
+        Assert.Equal(new("state.1", 16, null), Assert.Single(owner.Lists));
+        Assert.Equal(new(new("state.1", new("task.2", "command.2")), 25_000), Assert.Single(owner.Waits));
+    }
+
+    [Fact]
     public async Task Handlers_require_a_current_selected_application_and_reject_unbounded_or_open_input()
     {
         var owner = new RecordingOwner();
@@ -147,10 +181,14 @@ public sealed class SelectedApplicationInnerWorkerCapabilityHandlersTests
         public InteractionInvocationResult? SubmitResult { get; init; }
         public InteractionInvocationResult? ReadResult { get; init; }
         public InteractionInvocationResult? CancelResult { get; init; }
+        public InteractionInvocationResult? ListResult { get; init; }
+        public InteractionInvocationResult? WaitResult { get; init; }
         public List<SelectedApplicationInnerWorkerSubmission> Submissions { get; } = [];
         public List<string> SubmitCommands { get; } = [];
         public List<SelectedApplicationInnerWorkerHandle> Reads { get; } = [];
         public List<SelectedApplicationInnerWorkerHandle> Cancellations { get; } = [];
+        public List<SelectedApplicationInnerWorkerList> Lists { get; } = [];
+        public List<SelectedApplicationInnerWorkerWait> Waits { get; } = [];
 
         public Task<InteractionInvocationResult> SubmitAsync(SystemCapabilityInvocationContext context, string commandId,
             SelectedApplicationInnerWorkerSubmission request, CancellationToken cancellationToken = default)
@@ -172,6 +210,20 @@ public sealed class SelectedApplicationInnerWorkerCapabilityHandlersTests
         {
             Cancellations.Add(request);
             return Task.FromResult(CancelResult ?? InteractionInvocationResult.Unavailable("INNER_WORKER_UNAVAILABLE", "Unavailable."));
+        }
+
+        public Task<InteractionInvocationResult> ListAsync(SystemCapabilityInvocationContext context,
+            SelectedApplicationInnerWorkerList request, CancellationToken cancellationToken = default)
+        {
+            Lists.Add(request);
+            return Task.FromResult(ListResult ?? InteractionInvocationResult.Unavailable("INNER_WORKER_UNAVAILABLE", "Unavailable."));
+        }
+
+        public Task<InteractionInvocationResult> WaitAsync(SystemCapabilityInvocationContext context,
+            SelectedApplicationInnerWorkerWait request, CancellationToken cancellationToken = default)
+        {
+            Waits.Add(request);
+            return Task.FromResult(WaitResult ?? InteractionInvocationResult.Unavailable("INNER_WORKER_UNAVAILABLE", "Unavailable."));
         }
     }
 }
