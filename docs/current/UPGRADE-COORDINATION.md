@@ -16,7 +16,7 @@ Display data may contain additional fields. Each component checks the fields it 
 
 ## Current checkpoint
 
-Last coordinator update: 2026-09-12, 12:08 UTC. This is a checkpoint, not a claim that later work has finished.
+Last coordinator update: 2026-09-12, 12:28 UTC. This is a checkpoint, not a claim that later work has finished.
 
 | Boundary | Verified state |
 | --- | --- |
@@ -30,13 +30,13 @@ Last coordinator update: 2026-09-12, 12:08 UTC. This is a checkpoint, not a clai
 | Shared website | Merged on master through ef73bab1; final combined browser checks 99 passed; desktop/mobile and light/dark previews inspected |
 | DND website | Merged on master through ef73bab1; full mounted tests 79/79, typecheck/build passed; root preview recheck shows zero accessibility violations in the controlled inventory fixture in light and dark |
 | DND upgrade plan | Landed on master as 73eaf060 and 53a43029; parallel ownership, shared theme/navigation, existing website work, and durable checkpoints reconciled |
-| Live deployment | Verified backup/export/blob copy and copied-database rehearsal complete; corrected DND bundle is being re-published in rehearsal before live cutover |
+| Live deployment | Database migrations, reviewed catalog changes, application activation 66, state-space binding 40, home 9, and corrected DND page 78 are live on port 6217; launcher and live MCP proof passed. Final browser QA found a damaged deployed shared JavaScript file; deployment repair and final browser verification remain active. |
 
 Implementation, verification, landing on master, and deployment are separate states. Never call a worktree delivery a master update or a live deployment.
 
 Final verified pre-deletion backup: `C:/repo/DantesRoleplay/.tmp/branch-cleanup/20260912-113124/local-refs-pre-cleanup.bundle`, SHA256 `4589002B80F55D9E1F7FE8C7BA6D6BF0A50C16AC8749842FF033B837E61ED045`. The adjacent manifest records exact branch tips, worktree commits, remote refs, and stashes; `result.json` records completed cleanup. Every worktree's current HEAD was checked against the refreshed bundle before deletion. Active detached working directories are preserved.
 
-The newer extensive manual and shared/DND website changes passed combined acceptance at `0a445b54`: 3,456 full tests passed, eight protocol cases passed with two intentional retired skips, and build/browser/catalog gates passed. They are merged onto actual master at `ef73bab1`. Rehearsal against copied live data exposed a duplicate theme control and obsolete Player filtering in the shared website; the bounded correction landed as `b5c0e802`, with 91 context tests, six mounted header/resilience tests, a targeted faction continuation test, typecheck, and production build passed. [Local deployment and database activation](upgrade/06-local-deployment.md) is active under the user's explicit authorization. No live database cutover or release selection for this upgrade has occurred yet.
+The newer extensive manual and shared/DND website changes passed combined acceptance at `0a445b54`: 3,456 full tests passed, eight protocol cases passed with two intentional retired skips, and build/browser/catalog gates passed. They are merged onto actual master at `ef73bab1`. Rehearsal against copied live data exposed a duplicate theme control and obsolete Player filtering in the shared website; the bounded correction landed as `b5c0e802`, with 91 context tests, six mounted header/resilience tests, a targeted faction continuation test, typecheck, and production build passed. [Local deployment and database activation](upgrade/06-local-deployment.md) is active under the user's explicit authorization. Live cutover and MCP verification have succeeded. Final browser review found two corrupted lines in the deployed `ai-workspace.js`; the accepted source on master is valid. The deployment owner is repairing release assets, checking every shared browser module, and renewing the pinned release before final browser acceptance.
 
 ## Workstreams and ownership
 
