@@ -21,14 +21,14 @@ Last coordinator update: 2026-09-12, 09:32 UTC. This is a checkpoint, not a clai
 | Boundary | Verified state |
 | --- | --- |
 | Original platform plan | All 30 scoped slices implemented and integrated at 9395cd8e |
-| Platform acceptance | Complete at fe60517c: 3,452/3,452 full tests; protocol 8 passed and 2 intentional retired cases skipped; 614 catalog records valid with seven known warnings |
-| master landing | COMPLETE at 5795db00460973728a2d596a1c7c5a645e9c3892; upgraded platform is actually on master, together with previous master changes and the DND upgrade plan |
-| Source verification | Master includes fe60517c and all prior master history; every non-documentation file matches the accepted platform test target |
+| Final implementation acceptance | Complete at 0a445b54: 3,456/3,456 full tests; protocol 8 passed and 2 intentional retired cases skipped; 618 catalog records valid with seven known warnings |
+| master landing | COMPLETE: base platform at 5795db00, extensive manual and shared/DND website improvements at ef73bab1, preserving previous master changes and the DND upgrade plan |
+| Source verification | Every non-documentation file in the final master merge matches accepted 0a445b54; later coordinator changes are documentation only |
 | Existing guide alignment | 497b212c incorporated in the candidate as e32878d8 |
 | Branch cleanup | COMPLETE: deleted 40 local non-master branches, detached 22 clean worktrees at their exact commits; master is the only local branch; remote refs, both stashes, and all worktree directories preserved |
-| Manual | e0c8e95f and 8ee31837 delivered; 45 focused checks plus four final theme-retrieval checks passed, 618 catalog records valid; combined manual/website integration assigned to the same worker |
-| Shared website | ff3c486d delivered; 63 browser and three focused host tests passed; desktop/mobile and light/dark previews inspected |
-| DND website | 220018aa delivered after shared ff3c486d; full mounted tests 79/79, typecheck/build passed; root preview recheck shows zero accessibility violations in the controlled inventory fixture in light and dark |
+| Manual | Merged on master through ef73bab1, including e0c8e95f, 8ee31837, and tested metadata fixture alignment; cold-start and full integrated checks passed |
+| Shared website | Merged on master through ef73bab1; final combined browser checks 99 passed; desktop/mobile and light/dark previews inspected |
+| DND website | Merged on master through ef73bab1; full mounted tests 79/79, typecheck/build passed; root preview recheck shows zero accessibility violations in the controlled inventory fixture in light and dark |
 | DND upgrade plan | Landed on master as 73eaf060 and 53a43029; parallel ownership, shared theme/navigation, existing website work, and durable checkpoints reconciled |
 
 Implementation, verification, landing on master, and deployment are separate states. Never call a worktree delivery a master update or a live deployment.
