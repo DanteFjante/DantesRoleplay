@@ -42,4 +42,3 @@ contains content-addressed image metadata. The current authored catalog schema c
 `assetKey` and `alt`. The coordinator must select one contract and perform its reviewed migration
 or adapter change before applying these map values. This packet records the live-compatible value
 template but does not redefine or migrate the shared schema.
-
