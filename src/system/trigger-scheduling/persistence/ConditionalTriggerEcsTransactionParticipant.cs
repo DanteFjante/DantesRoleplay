@@ -163,6 +163,7 @@ internal sealed class ConditionalTriggerEcsTransactionParticipant(
                     CreatedAtUtc = admittedAt.UtcDateTime, UpdatedAtUtc = admittedAt.UtcDateTime
                 });
                 state.LastOperationId = operationId;
+                state.EvaluationRevision++;
                 state.UpdatedAtUtc = admittedAt.UtcDateTime;
                 continue;
             }

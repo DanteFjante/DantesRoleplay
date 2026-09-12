@@ -78,7 +78,8 @@ internal sealed partial class SqliteSystemTaskDurableService
         {
             var narrowedHost = WithMaximumOperations(request.InvocationHost, maximumOperations);
             var narrowedWorker = new SystemInnerWorkerRequest(narrowedHost, workflow.ProcedureVersion,
-                worker.InputJson, worker.ResultSchemaJson, worker.DependencyHandles);
+                worker.InputJson, worker.ResultSchemaJson, worker.DependencyHandles,
+                worker.DependencyInputs);
             preparation = preparation with { Worker = narrowedWorker };
             worker = narrowedWorker;
             request = new SystemTaskDurableSubmissionRequest(narrowedHost, workflow.ProcedureVersion,
