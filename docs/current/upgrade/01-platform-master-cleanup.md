@@ -40,15 +40,18 @@ Record actual paths if reruns use different names. Do not overwrite useful faile
 
 ## Current checkpoint
 
-- Updated 2026-09-12 09:15 UTC by verification worker `website_integration`.
+- Updated 2026-09-12 09:29 UTC by verification worker `website_integration`.
 - Full solution build at 9395cd8e: passed, zero warnings/errors.
 - First full-suite run at 9395cd8e completed in 14m05s: 3,450 passed, 2 failed, 0 skipped, 3,452 total. Failed report: `C:/repo/DantesRoleplay-foundation/.tmp/test-results/platform-final/platform-final.trx`.
 - Reported failures: GuardTests.No_catalog_contract_names_a_verb_kind_the_protocol_does_not_serve; SqliteStandingGrantTargetResolverTests.Existing_stateful_body_runs_real_dry_run_publishes_and_rechecks_current_authority.
 - Manual diagnosis: catalog/procedures/procedure/system/inner-worker/submit.md uses the placeholder query(kind: "<qualified-id>"); the guard's existing placeholder convention is "...". Correct the authored example, not the guard or public protocol.
 - Runtime diagnosis from worker: a derived state host reused a 16-operation parent validation budget although its selected state grant allowed eight. Narrow the child budget to the selected grant and expiry while retaining the shared parent ledger; prove stateful and workflow paths.
-- Both fixes committed at fe60517c6df24b567bad60a9ae455f4f1372694b. Focused guard/manual/stateful/workflow checks: 4/4 passed. Corrected full build: one existing CS8604 test warning, zero errors. Fresh catalog validation: 614 records valid with seven known legacy warnings.
+- Both fixes committed at fe60517c6df24b567bad60a9ae455f4f1372694b. Focused guard/manual/stateful/workflow checks: 4/4 passed. Corrected full build: one existing CS8604 test warning, zero errors.
 - Foundation checkout is clean at fe60517c6df24b567bad60a9ae455f4f1372694b. The corrected full suite passed in 16m26s: 3,452 passed, 0 failed, 0 skipped, 3,452 total. Green report: `C:/repo/DantesRoleplay-foundation/.tmp/test-results/platform-final/platform-final-rerun.trx`.
-- Next: run the opt-in protocol walk, rerun fresh-built catalog validation for final evidence, verify exact HEAD/clean status, then explicitly release integration ownership for landing.
+- Opt-in protocol walk passed: 8 passed, 0 failed, 2 skipped, 10 total. The skips explicitly cover two retired authored-procedure scenarios outside the current closed generic host. Report: `C:/repo/DantesRoleplay-foundation/.tmp/test-results/platform-final-protocol/platform-final-protocol.trx`.
+- Fresh-built Tools artifact `C:/repo/DantesRoleplay-foundation/.tmp/artifacts/provider-host-fix/bin/DantesRoleplay.Tools/debug/roleplay.dll` validated 614 catalog records: 54 mechanics, 112 procedures, 57 components, 46 event types, 2 subscriptions, and 343 entities. Catalog valid with seven known unchanged trail-survival capability-input-schema warnings; no live data touched.
+- No live-provider test or live database deployment was run. No verification process remains active. Verification worker explicitly releases exclusive foundation integration ownership at clean fe60517c6df24b567bad60a9ae455f4f1372694b.
+- Next: coordinator may land the prepared master candidate, verify master, and perform the separately authorized backed-up local branch cleanup.
 - master landing / branch deletion: NOT performed.
 
 ## Required handoff fields
