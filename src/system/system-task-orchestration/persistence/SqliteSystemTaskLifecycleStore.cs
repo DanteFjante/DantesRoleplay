@@ -109,7 +109,7 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
             using var retainedPayload = JsonDocument.Parse(payloadJson);
             var extendedPayload = retainedPayload.RootElement.EnumerateObject()
                 .ToDictionary(property => property.Name, property => property.Value.Clone(), StringComparer.Ordinal);
-            extendedPayload.Add("innerWorker", JsonSerializer.SerializeToElement(new
+            var innerWorker = JsonSerializer.SerializeToElement(new
             {
                 format = SystemInnerWorkerAssignmentV1.Format,
                 resultSchemaJson = innerWorkerProfile.Worker.ResultSchemaJson,
@@ -134,7 +134,18 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
                 innerWorkerProfile.AuthorityProvenance,
                 innerWorkerProfile.AiBudget,
                 enrollmentFingerprint = SqliteSystemTaskLifecycleStore.AiEnrollmentFingerprint(innerWorkerProfile)
-            }));
+            });
+            var workerPayload = innerWorker.EnumerateObject()
+                .ToDictionary(property => property.Name, property => property.Value.Clone(), StringComparer.Ordinal);
+            if (innerWorkerProfile.Worker.DependencyInputs.Count > 0)
+                workerPayload.Add("dependencyInputs", JsonSerializer.SerializeToElement(
+                    innerWorkerProfile.Worker.DependencyInputs.Select(value => new
+                    {
+                        name = value.Name,
+                        handle = new { taskId = value.Handle.TaskId, commandId = value.Handle.CommandId },
+                        jsonPointer = value.JsonPointer
+                    }).ToArray()));
+            extendedPayload.Add("innerWorker", JsonSerializer.SerializeToElement(workerPayload));
             payloadJson = InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(extendedPayload));
         }
         var payloadFingerprint = InteractionCanonicalJson.Fingerprint(FingerprintDomain, payloadJson);

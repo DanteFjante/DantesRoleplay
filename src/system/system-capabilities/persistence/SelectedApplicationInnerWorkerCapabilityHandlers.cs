@@ -34,7 +34,8 @@ internal interface ISelectedApplicationInnerWorkerOwner
 
 internal sealed record SelectedApplicationInnerWorkerSubmission(ApplicationIdentifier ApplicationId,
     string StateSpaceId, SystemTaskSelectedDefinition Procedure, string AssignmentJson,
-    string ResultSchemaJson, IReadOnlyList<SystemTaskDurableHandle> DependencyHandles);
+    string ResultSchemaJson, IReadOnlyList<SystemTaskDurableHandle> DependencyHandles,
+    IReadOnlyList<SystemInnerWorkerDependencyInput> DependencyInputs);
 
 internal sealed record SelectedApplicationInnerWorkerHandle(string StateSpaceId,
     SystemTaskDurableHandle Handle);
@@ -143,7 +144,7 @@ internal sealed class SelectedApplicationInnerWorkerWriteCapabilityHandler(
                 var assignment = SelectedApplicationInnerWorkerSchemas.Assignment(input);
                 result = await owner.SubmitAsync(context.Invocation, context.RequestToken,
                     new(applicationId, assignment.StateSpaceId, assignment.Procedure, assignment.AssignmentJson,
-                        assignment.ResultSchemaJson, assignment.DependencyHandles), cancellationToken);
+                        assignment.ResultSchemaJson, assignment.DependencyHandles, assignment.DependencyInputs), cancellationToken);
             }
             else
             {
@@ -179,7 +180,11 @@ internal static class SelectedApplicationInnerWorkerSchemas
         "revision":{"type":"integer","minimum":1},"contentFingerprint":{"type":"string","minLength":64,"maxLength":64}}},
         "instruction":{"type":"string","minLength":1,"maxLength":8000},"resultSchema":{"type":"string","minLength":2,"maxLength":16000},
         "dependencyHandles":{"type":"array","maxItems":16,"items":{"type":"object","additionalProperties":false,"required":["taskId","commandId"],
-        "properties":{"taskId":{"type":"string","minLength":1,"maxLength":200},"commandId":{"type":"string","minLength":1,"maxLength":128}}}}}}
+        "properties":{"taskId":{"type":"string","minLength":1,"maxLength":200},"commandId":{"type":"string","minLength":1,"maxLength":128}}}},
+        "dependencyInputs":{"type":"array","maxItems":16,"items":{"type":"object","additionalProperties":false,"required":["name","handle","jsonPointer"],
+        "properties":{"name":{"type":"string","minLength":1,"maxLength":200},"handle":{"type":"object","additionalProperties":false,
+        "required":["taskId","commandId"],"properties":{"taskId":{"type":"string","minLength":1,"maxLength":200},"commandId":{"type":"string","minLength":1,"maxLength":128}}},
+        "jsonPointer":{"type":"string","maxLength":1024}}}}}}
         """;
     internal const string HandleInput = """
         {"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","additionalProperties":false,
@@ -249,13 +254,19 @@ internal static class SelectedApplicationInnerWorkerSchemas
         var dependencies = wire.DependencyHandles.Select(value => new SystemTaskDurableHandle(value.TaskId, value.CommandId)).ToArray();
         if (dependencies.Select(value => value.TaskId).Distinct(StringComparer.Ordinal).Count() != dependencies.Length)
             throw new InteractionContractException("INVALID_WORKER_DEPENDENCIES", "Worker dependency handles must be distinct.");
+        var inputs = (wire.DependencyInputs ?? []).Select(value => new SystemInnerWorkerDependencyInput(
+            value.Name, new(value.Handle.TaskId, value.Handle.CommandId), value.JsonPointer)).ToArray();
+        if (inputs.Select(value => value.Name).Distinct(StringComparer.Ordinal).Count() != inputs.Length
+            || inputs.Any(value => !dependencies.Contains(value.Handle)))
+            throw new InteractionContractException("INVALID_WORKER_DEPENDENCY_INPUTS",
+                "Dependency inputs must be uniquely named and reference declared dependency handles.");
         return new(wire.StateSpaceId, procedure,
             InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
             {
                 format = SystemInnerWorkerAssignmentV1.Format,
                 instruction = wire.Instruction
             })),
-            resultSchema, Array.AsReadOnly(dependencies));
+            resultSchema, Array.AsReadOnly(dependencies), Array.AsReadOnly(inputs));
     }
 
     internal static SelectedApplicationInnerWorkerHandle Handle(JsonElement input)
@@ -357,7 +368,8 @@ internal static class SelectedApplicationInnerWorkerSchemas
         [property: JsonRequired] ProcedureWire Procedure,
         [property: JsonRequired] string Instruction,
         [property: JsonRequired] string ResultSchema,
-        [property: JsonRequired] IReadOnlyList<TaskHandleWire> DependencyHandles);
+        [property: JsonRequired] IReadOnlyList<TaskHandleWire> DependencyHandles,
+        IReadOnlyList<DependencyInputWire>? DependencyInputs);
 
     [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
     private sealed record ProcedureWire([property: JsonRequired] string DefinitionId,
@@ -380,7 +392,12 @@ internal static class SelectedApplicationInnerWorkerSchemas
     private sealed record TaskHandleWire([property: JsonRequired] string TaskId,
         [property: JsonRequired] string CommandId);
 
+    [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+    private sealed record DependencyInputWire([property: JsonRequired] string Name,
+        [property: JsonRequired] TaskHandleWire Handle, [property: JsonRequired] string JsonPointer);
+
     internal sealed record SelectedApplicationInnerWorkerSubmitWire(string StateSpaceId,
         SystemTaskSelectedDefinition Procedure, string AssignmentJson, string ResultSchemaJson,
-        IReadOnlyList<SystemTaskDurableHandle> DependencyHandles);
+        IReadOnlyList<SystemTaskDurableHandle> DependencyHandles,
+        IReadOnlyList<SystemInnerWorkerDependencyInput> DependencyInputs);
 }

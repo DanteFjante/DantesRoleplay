@@ -115,6 +115,30 @@ public sealed class SystemInnerWorkerPreparationTests
     }
 
     [Fact]
+    public async Task Prerequisites_are_bounded_labelled_user_data_and_never_profile_instructions()
+    {
+        var prepared = await PrepareAsync();
+        var dependency = new SystemInnerWorkerResolvedDependency("priorAnswer",
+            new("task.prior", "command.prior"), "/answer", Hash,
+            JsonSerializer.SerializeToElement("42"));
+
+        var combined = SystemInnerWorkerPreparation.AddPrerequisites(prepared, [dependency]);
+
+        Assert.Equal(prepared.Profile, combined.Profile);
+        var message = Assert.Single(combined.Request.Messages);
+        Assert.Equal(AiMessageRole.User, message.Role);
+        using var prompt = JsonDocument.Parse(message.Content);
+        var prerequisite = Assert.Single(prompt.RootElement.GetProperty("prerequisites").EnumerateArray());
+        Assert.Equal("priorAnswer", prerequisite.GetProperty("name").GetString());
+        Assert.Equal("42", prerequisite.GetProperty("value").GetString());
+
+        var oversized = dependency with { Value = JsonSerializer.SerializeToElement(new string('x', 17_000)) };
+        var error = Assert.Throws<InteractionContractException>(() =>
+            SystemInnerWorkerPreparation.AddPrerequisites(prepared, [oversized]));
+        Assert.Equal("INNER_WORKER_DEPENDENCY_INPUT_TOO_LARGE", error.Code);
+    }
+
+    [Fact]
     public async Task Host_restrictive_provider_limits_are_preserved_and_invalid_additions_fail()
     {
         var configuration = new AiRequest("provider", "model", [new(AiMessageRole.User, "ignored")],

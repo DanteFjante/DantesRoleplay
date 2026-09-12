@@ -340,7 +340,111 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             Assert.Equal(1L, await db.Set<SystemTaskAiDispatchEvidenceRecord>().LongCountAsync(
                 value => value.Kind == "usage" && value.IsComplete == 1));
 
+            var dependentInput = JsonSerializer.Serialize(new
+            {
+                stateSpaceId = state.StateSpaceId,
+                procedure = new
+                {
+                    definitionId = selected.ExactDefinitionId,
+                    revision = selected.Version,
+                    contentFingerprint = selected.Fingerprint
+                },
+                instruction = "Use the validated prerequisite answer.",
+                resultSchema = schema,
+                dependencyHandles = new[] { new { taskId = handle.TaskId, commandId = handle.CommandId } },
+                dependencyInputs = new[]
+                {
+                    new
+                    {
+                        name = "priorAnswer",
+                        handle = new { taskId = handle.TaskId, commandId = handle.CommandId },
+                        jsonPointer = "/answer"
+                    }
+                }
+            });
+            var dependent = await gateway.InvokeAsync(host.Principal, Application,
+                SystemCapabilityIds.InnerWorkerSubmit, dependentInput, "inner-worker-dependent", "website-dependent");
+            Assert.True(dependent.Ok, dependent.Error?.Message);
+            var dependentPending = dependent.Data!.Value.GetProperty("pending");
+            var dependentHandle = new SystemTaskDurableHandle(
+                dependentPending.GetProperty("taskId").GetString()!,
+                dependentPending.GetProperty("commandId").GetString()!);
+            Assert.True(await worker.RunOnceAsync("inner-worker-dependent"));
+            var dependentResult = await gateway.InvokeAsync(host.Principal, Application,
+                SystemCapabilityIds.InnerWorkerRead, JsonSerializer.Serialize(new
+                {
+                    stateSpaceId = state.StateSpaceId,
+                    taskId = dependentHandle.TaskId,
+                    commandId = dependentHandle.CommandId
+                }), null, "dependent-result");
+            Assert.True(dependentResult.Ok, dependentResult.Error?.Message);
+            Assert.Equal("completed", dependentResult.Data!.Value.GetProperty("tag").GetString());
+            Assert.Equal(1, provider.CallsWithPrerequisites);
+            Assert.Equal(2, provider.Calls);
+            var mappedDispatch = await db.Set<SystemTaskAiDispatchEvidenceRecord>().AsNoTracking()
+                .SingleAsync(value => value.Kind == "dispatch" && value.DispatchKind == "provider"
+                    && value.RequestJson != null && value.RequestJson.Contains("priorAnswer"));
+            using var frozenDispatch = JsonDocument.Parse(mappedDispatch.RequestJson!);
+            var frozenUserMessage = frozenDispatch.RootElement.GetProperty("messages").EnumerateArray()
+                .Single(value => value.GetProperty("content").GetString()!.Contains("priorAnswer"));
+            using var frozenPrompt = JsonDocument.Parse(frozenUserMessage.GetProperty("content").GetString()!);
+            var frozenPrerequisite = Assert.Single(
+                frozenPrompt.RootElement.GetProperty("prerequisites").EnumerateArray());
+            Assert.Equal("42", frozenPrerequisite.GetProperty("value").GetString());
+            var dependentReplay = await gateway.InvokeAsync(host.Principal, Application,
+                SystemCapabilityIds.InnerWorkerSubmit, dependentInput, "inner-worker-dependent", "website-dependent-replay");
+            Assert.True(dependentReplay.Ok, dependentReplay.Error?.Message);
+            Assert.Equal(dependentHandle.TaskId,
+                dependentReplay.Data!.Value.GetProperty("pending").GetProperty("taskId").GetString());
+            Assert.False(await worker.RunOnceAsync("inner-worker-dependent-replay"));
+            Assert.Equal(2, provider.Calls);
+
+            var failedDependencyInput = JsonSerializer.Serialize(new
+            {
+                stateSpaceId = state.StateSpaceId,
+                procedure = new
+                {
+                    definitionId = selected.ExactDefinitionId,
+                    revision = selected.Version,
+                    contentFingerprint = selected.Fingerprint
+                },
+                instruction = "This must not run after a failed prerequisite.",
+                resultSchema = schema,
+                dependencyHandles = new[] { new { taskId = cancelHandle.TaskId, commandId = cancelHandle.CommandId } },
+                dependencyInputs = new[]
+                {
+                    new
+                    {
+                        name = "cancelledAnswer",
+                        handle = new { taskId = cancelHandle.TaskId, commandId = cancelHandle.CommandId },
+                        jsonPointer = "/answer"
+                    }
+                }
+            });
+            var failedDependent = await gateway.InvokeAsync(host.Principal, Application,
+                SystemCapabilityIds.InnerWorkerSubmit, failedDependencyInput,
+                "inner-worker-failed-dependent", "website-failed-dependent");
+            Assert.True(failedDependent.Ok, failedDependent.Error?.Message);
+            var failedPending = failedDependent.Data!.Value.GetProperty("pending");
+            var failedHandle = new SystemTaskDurableHandle(
+                failedPending.GetProperty("taskId").GetString()!,
+                failedPending.GetProperty("commandId").GetString()!);
+            Assert.False(await worker.RunOnceAsync("inner-worker-failed-dependent"));
+            var failedResult = await gateway.InvokeAsync(host.Principal, Application,
+                SystemCapabilityIds.InnerWorkerRead, JsonSerializer.Serialize(new
+                {
+                    stateSpaceId = state.StateSpaceId,
+                    taskId = failedHandle.TaskId,
+                    commandId = failedHandle.CommandId
+                }), null, "failed-dependent-result");
+            Assert.True(failedResult.Ok, failedResult.Error?.Message);
+            Assert.Equal("failed", failedResult.Data!.Value.GetProperty("tag").GetString());
+            Assert.Equal("SYSTEM_TASK_DEPENDENCY_FAILED", failedResult.Data.Value.GetProperty("code").GetString());
+            Assert.Equal(2, provider.Calls);
+
             var triggerNow = DateTimeOffset.UtcNow;
+            var existingBeforeTrigger = await db.Set<SystemTaskLifecycleRecord>().AsNoTracking()
+                .Select(value => value.TaskId).ToArrayAsync();
             var triggerClock = new RuntimeTriggerClock(
                 triggerNow.AddTicks(-(triggerNow.Ticks % TimeSpan.TicksPerSecond)));
             var triggerHost = InnerWorkerHost(application, state, "trigger-binding-command", deadline);
@@ -361,12 +465,11 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
 
             Assert.Equal(1, fired.Completed);
             var triggerTask = await db.Set<SystemTaskLifecycleRecord>().AsNoTracking()
-                .SingleAsync(value => value.CommandId != handle.CommandId
-                    && value.CommandId != cancelHandle.CommandId);
+                .SingleAsync(value => !existingBeforeTrigger.Contains(value.TaskId));
             Assert.NotNull(triggerTask.AdmissionPayloadJson);
             Assert.Contains("\"innerWorker\"", triggerTask.AdmissionPayloadJson,
                 StringComparison.Ordinal);
-            Assert.Equal(3L, await db.Set<SystemTaskAiCeilingRecord>().LongCountAsync());
+            Assert.Equal(5L, await db.Set<SystemTaskAiCeilingRecord>().LongCountAsync());
             Assert.True(await worker.RunOnceAsync("inner-worker-trigger-trigger"));
             var triggerResult = await service.GetAsync(
                 InnerWorkerHost(application, state, "trigger-result-read", deadline),
@@ -374,7 +477,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             Assert.Equal(InteractionInvocationResultTag.Completed, triggerResult.Tag);
             Assert.Contains("\"answer\":\"42\"", triggerResult.DataJson,
                 StringComparison.Ordinal);
-            Assert.Equal(2, provider.Calls);
+            Assert.Equal(3, provider.Calls);
 
             var existingTaskIds = await db.Set<SystemTaskLifecycleRecord>().AsNoTracking()
                 .Select(value => value.TaskId).ToArrayAsync();
@@ -406,7 +509,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             Assert.Equal(0, recurringDuplicate.Completed);
             var recurringTask = await db.Set<SystemTaskLifecycleRecord>().AsNoTracking()
                 .SingleAsync(value => !existingTaskIds.Contains(value.TaskId));
-            Assert.Equal(4L, await db.Set<SystemTaskAiCeilingRecord>().LongCountAsync());
+            Assert.Equal(6L, await db.Set<SystemTaskAiCeilingRecord>().LongCountAsync());
             Assert.Single(await db.RecurringTriggerFireReceipts.AsNoTracking().ToArrayAsync());
             Assert.True(await worker.RunOnceAsync("inner-worker-recurring-trigger"));
             var recurringResult = await service.GetAsync(
@@ -415,9 +518,15 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             Assert.Equal(InteractionInvocationResultTag.Completed, recurringResult.Tag);
             Assert.Contains("\"answer\":\"42\"", recurringResult.DataJson,
                 StringComparison.Ordinal);
-            Assert.Equal(3, provider.Calls);
+            Assert.Equal(4, provider.Calls);
 
+            var revokedDependency = await gateway.InvokeAsync(host.Principal, Application,
+                SystemCapabilityIds.InnerWorkerSubmit, dependentInput,
+                "inner-worker-revoked-dependency", "website-revoked-dependency");
+            Assert.True(revokedDependency.Ok, revokedDependency.Error?.Message);
             await RevokeProcedureWorkerGrantAsync(db);
+            Assert.True(await worker.RunOnceAsync("inner-worker-revoked-dependency"));
+            Assert.Equal(4, provider.Calls);
             var revokedList = await gateway.InvokeAsync(host.Principal, Application,
                 SystemCapabilityIds.InnerWorkerList, JsonSerializer.Serialize(new
                 {
@@ -443,7 +552,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             Assert.True(revokedReplay.Ok, revokedReplay.Error?.Message);
             Assert.Equal("failed", revokedReplay.Data!.Value.GetProperty("tag").GetString());
             Assert.Equal("STANDING_GRANT_DENIED", revokedReplay.Data.Value.GetProperty("code").GetString());
-            Assert.Equal(3, provider.Calls);
+            Assert.Equal(4, provider.Calls);
         }
     }
 
@@ -533,6 +642,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
     private sealed class SuccessfulProcedureProvider(string activeInstructions, string activeConstraints) : IAiProvider
     {
         internal int Calls { get; private set; }
+        internal int CallsWithPrerequisites { get; private set; }
         public AiProviderInfo Info { get; } = new("codex", "Controlled Codex fixture");
         public Task<IReadOnlyList<AiModel>> ListModelsAsync(CancellationToken cancellationToken = default) =>
             Task.FromResult<IReadOnlyList<AiModel>>([]);
@@ -549,6 +659,16 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             if (!string.IsNullOrWhiteSpace(activeConstraints))
                 Assert.Contains(activeConstraints, system, StringComparison.Ordinal);
             Assert.DoesNotContain("obsolete manual instructions", system, StringComparison.Ordinal);
+            var user = Assert.Single(request.Messages, value => value.Role == AiMessageRole.User).Content;
+            if (user.Contains("\"prerequisites\"", StringComparison.Ordinal))
+            {
+                CallsWithPrerequisites++;
+                using var prompt = JsonDocument.Parse(user);
+                var prerequisite = Assert.Single(prompt.RootElement.GetProperty("prerequisites").EnumerateArray());
+                Assert.Equal("priorAnswer", prerequisite.GetProperty("name").GetString());
+                Assert.Equal("42", prerequisite.GetProperty("value").GetString());
+                Assert.Equal(64, prerequisite.GetProperty("outputFingerprint").GetString()!.Length);
+            }
             return Task.FromResult(new AiProviderResponse(true, null, "done",
                 "{\"answer\":\"42\",\"summary\":\"Inspection completed.\"}", [],
                 Usage: new(7, 2, 9, true)));

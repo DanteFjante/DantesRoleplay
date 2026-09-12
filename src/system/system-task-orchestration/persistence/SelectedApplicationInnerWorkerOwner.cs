@@ -41,7 +41,8 @@ internal sealed class SelectedApplicationInnerWorkerOwner(
         foreach (var host in selection.Hosts)
         {
             result = await workers.SubmitEphemeralRootAsync(new(host, request.Procedure,
-                request.AssignmentJson, request.ResultSchemaJson, request.DependencyHandles),
+                request.AssignmentJson, request.ResultSchemaJson, request.DependencyHandles,
+                request.DependencyInputs),
                 cancellationToken);
             if (result.Tag == InteractionInvocationResultTag.Pending || !Retryable(result.Code))
                 return result;

@@ -56,6 +56,13 @@ internal sealed record SystemInnerWorkerPreparedRequest(
     IReadOnlyList<string> SelectedContextReferences,
     int PromptBytes);
 
+internal sealed record SystemInnerWorkerResolvedDependency(
+    string Name,
+    SystemTaskDurableHandle Handle,
+    string JsonPointer,
+    string OutputFingerprint,
+    JsonElement Value);
+
 /// <summary>
 /// Converts an exact, host-selected procedure and freshly authorized task-context pack into a
 /// narrow AI request. It has no provider, tool, task, or budget-consumption dependency. The
@@ -70,6 +77,55 @@ internal sealed class SystemInnerWorkerPreparation(
     private const int MaximumContextReferences = InteractionTaskContextMaterializer.MaximumPackItems;
     private const int MaximumContextReferenceLength = 1_024;
     private const int MaximumPromptBytes = InteractionContractLimits.JsonBytes;
+    private const int MaximumPrerequisiteBytes = 16_384;
+
+    internal static SystemInnerWorkerPreparedRequest AddPrerequisites(
+        SystemInnerWorkerPreparedRequest prepared,
+        IReadOnlyList<SystemInnerWorkerResolvedDependency> dependencies)
+    {
+        ArgumentNullException.ThrowIfNull(prepared);
+        ArgumentNullException.ThrowIfNull(dependencies);
+        if (dependencies.Count == 0) return prepared;
+        var prerequisites = InteractionCanonicalJson.Canonicalize(JsonSerializer.Serialize(
+            dependencies.Select(value => new
+            {
+                name = value.Name,
+                handle = new { taskId = value.Handle.TaskId, commandId = value.Handle.CommandId },
+                jsonPointer = value.JsonPointer,
+                outputFingerprint = value.OutputFingerprint,
+                value = value.Value
+            }).ToArray()));
+        if (Encoding.UTF8.GetByteCount(prerequisites) > MaximumPrerequisiteBytes)
+            throw Failure("INNER_WORKER_DEPENDENCY_INPUT_TOO_LARGE",
+                "The selected prerequisite data exceeds its 16 KiB aggregate bound.");
+        if (prepared.Request.Messages.Count != 1)
+            throw Failure("WORKER_PROMPT_INVALID",
+                "The prepared focused-worker request has an invalid message shape.");
+        var source = prepared.Request.Messages[0];
+        if (source.Role != AiMessageRole.User) throw Failure("WORKER_PROMPT_INVALID",
+            "The prepared focused-worker request has an invalid message shape.");
+        using var prompt = JsonDocument.Parse(source.Content);
+        using var prerequisiteDocument = JsonDocument.Parse(prerequisites);
+        if (prompt.RootElement.ValueKind != JsonValueKind.Object
+            || !prompt.RootElement.TryGetProperty("input", out var input)
+            || !prompt.RootElement.TryGetProperty("context", out var context))
+            throw Failure("WORKER_PROMPT_INVALID", "The prepared focused-worker prompt is invalid.");
+        var combined = InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
+        {
+            input,
+            prerequisites = prerequisiteDocument.RootElement,
+            context
+        }));
+        var bytes = Encoding.UTF8.GetByteCount(combined);
+        if (bytes > MaximumPromptBytes)
+            throw Failure("WORKER_PROMPT_BUDGET_EXCEEDED",
+                "The focused worker prompt with prerequisites exceeds its closed byte budget.");
+        return prepared with
+        {
+            Request = prepared.Request with { Messages = [new(AiMessageRole.User, combined)] },
+            PromptBytes = bytes
+        };
+    }
 
     public async Task<SystemInnerWorkerPreparedRequest> PrepareAsync(
         SystemInnerWorkerPreparationInput input,

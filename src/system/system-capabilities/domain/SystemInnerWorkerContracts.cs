@@ -49,17 +49,37 @@ public sealed class RejectSystemInnerWorkerSubjectJsonConverterFactory : JsonCon
     }
 }
 
+/// <summary>A caller-selected name and JSON Pointer over one already-declared dependency result.</summary>
+public sealed record SystemInnerWorkerDependencyInput
+{
+    public SystemInnerWorkerDependencyInput(string name, SystemTaskDurableHandle handle, string jsonPointer)
+    {
+        Name = InteractionGuard.Identifier(name, nameof(name));
+        Handle = handle ?? throw new ArgumentNullException(nameof(handle));
+        if (jsonPointer.Length > 1_024 || jsonPointer.Length > 0 && jsonPointer[0] != '/')
+            throw new InteractionContractException("INVALID_WORKER_DEPENDENCY_POINTER",
+                "A dependency JSON Pointer must be empty or begin with '/'.");
+        JsonPointer = jsonPointer;
+    }
+
+    public string Name { get; }
+    public SystemTaskDurableHandle Handle { get; }
+    public string JsonPointer { get; }
+}
+
 /// <summary>Bounded host-selected request. It contains no provider or tool authority.</summary>
 public sealed record SystemInnerWorkerRequest
 {
     public SystemInnerWorkerRequest(InteractionInvocationHost invocationHost,
         SystemTaskSelectedDefinition procedureVersion, string inputJson, string resultSchemaJson,
-        IReadOnlyList<SystemTaskDurableHandle>? dependencyHandles = null)
+        IReadOnlyList<SystemTaskDurableHandle>? dependencyHandles = null,
+        IReadOnlyList<SystemInnerWorkerDependencyInput>? dependencyInputs = null)
         : this(new SystemInnerWorkerSubject.ProcedureWorkflow(procedureVersion), invocationHost,
-            inputJson, resultSchemaJson, dependencyHandles) { }
+            inputJson, resultSchemaJson, dependencyHandles, dependencyInputs) { }
 
     public SystemInnerWorkerRequest(SystemInnerWorkerSubject subject, InteractionInvocationHost invocationHost,
-        string inputJson, string resultSchemaJson, IReadOnlyList<SystemTaskDurableHandle>? dependencyHandles = null)
+        string inputJson, string resultSchemaJson, IReadOnlyList<SystemTaskDurableHandle>? dependencyHandles = null,
+        IReadOnlyList<SystemInnerWorkerDependencyInput>? dependencyInputs = null)
     {
         InvocationHost = invocationHost ?? throw new ArgumentNullException(nameof(invocationHost));
         Subject = subject ?? throw new ArgumentNullException(nameof(subject));
@@ -86,6 +106,14 @@ public sealed record SystemInnerWorkerRequest
         if (dependencies.Any(handle => handle is null) || dependencies.Select(handle => handle.TaskId).Distinct(StringComparer.Ordinal).Count() != dependencies.Length)
             throw new InteractionContractException("INVALID_WORKER_DEPENDENCIES", "Worker dependencies must be non-null and have distinct task IDs.");
         DependencyHandles = Array.AsReadOnly(dependencies);
+        var inputs = dependencyInputs?.ToArray() ?? [];
+        if (inputs.Length > InteractionContractLimits.DependenciesPerStep || inputs.Any(value => value is null)
+            || inputs.Select(value => value.Name).Distinct(StringComparer.Ordinal).Count() != inputs.Length
+            || inputs.Any(value => !dependencies.Contains(value.Handle))
+            || subject is SystemInnerWorkerSubject.ApplicationCandidateValidation && inputs.Length > 0)
+            throw new InteractionContractException("INVALID_WORKER_DEPENDENCY_INPUTS",
+                "Dependency inputs must be uniquely named and reference declared dependency handles.");
+        DependencyInputs = Array.AsReadOnly(inputs.OrderBy(value => value.Name, StringComparer.Ordinal).ToArray());
     }
 
     public InteractionInvocationHost InvocationHost { get; }
@@ -94,6 +122,7 @@ public sealed record SystemInnerWorkerRequest
     public string InputJson { get; }
     public string ResultSchemaJson { get; }
     public IReadOnlyList<SystemTaskDurableHandle> DependencyHandles { get; }
+    public IReadOnlyList<SystemInnerWorkerDependencyInput> DependencyInputs { get; }
 }
 
 public interface ISystemInnerWorkerService

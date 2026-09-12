@@ -40,7 +40,8 @@ internal sealed class SystemInnerWorkerProcedureExecutor(
 
             var host = RehydrateHost(lease.Request.Invocation);
             var worker = new SystemInnerWorkerRequest(host, lease.Request.WorkflowDefinition,
-                lease.Request.InputJson, admission.ResultSchemaJson, lease.Request.Dependencies);
+                lease.Request.InputJson, admission.ResultSchemaJson, lease.Request.Dependencies,
+                admission.DependencyInputs);
             var preparation = await resolver.ResolveAsync(worker, cancellationToken);
             SqliteSystemTaskDurableService.InnerWorkerAuthorityResolution authority;
             await using (var boundary = await SystemTaskValidationTransaction.OpenAsync(db, time, false, cancellationToken))
@@ -48,9 +49,12 @@ internal sealed class SystemInnerWorkerProcedureExecutor(
             if (authority.Failure is { } failure)
                 return Failed(failure.Code, failure.SafeMessage);
             var profile = authority.Profile!;
+            var dependencies = await durable.ResolveInnerWorkerDependenciesAsync(
+                host, worker.DependencyHandles, worker.DependencyInputs, cancellationToken);
+            var prepared = SystemInnerWorkerPreparation.AddPrerequisites(preparation.Prepared, dependencies);
             var invocation = await lifecycles.CreateProcedureAsync(
                 lease, profile, preparation.ToolContext, cancellationToken);
-            var response = await invoker.InvokeAsync(profile, preparation.Prepared,
+            var response = await invoker.InvokeAsync(profile, prepared,
                 preparation.ToolContext, invocation.Lifecycle, invocation.WriteApproval,
                 preparation.ApplicationTools, cancellationToken);
             var evidence = SystemInnerWorkerCompletionEvidence.For(lease);

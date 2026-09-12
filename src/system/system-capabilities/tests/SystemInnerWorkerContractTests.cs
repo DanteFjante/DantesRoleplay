@@ -43,6 +43,23 @@ public sealed class SystemInnerWorkerContractTests
             new SystemInnerWorkerRequest(ApplicationHost(), procedure, "{}", "{}")).Code);
     }
 
+    [Fact]
+    public void Dependency_inputs_are_named_bounded_and_restricted_to_declared_handles()
+    {
+        var first = new SystemTaskDurableHandle("task.1", "command.1");
+        var second = new SystemTaskDurableHandle("task.2", "command.2");
+        var request = new SystemInnerWorkerRequest(Host(), new("procedure.fixture", 1, Hash), "{}", "{}",
+            [first, second],
+            [new("zeta", second, "/items/0"), new("alpha", first, "")]);
+
+        Assert.Equal(["alpha", "zeta"], request.DependencyInputs.Select(value => value.Name));
+        Assert.Equal("INVALID_WORKER_DEPENDENCY_INPUTS", Assert.Throws<InteractionContractException>(() =>
+            new SystemInnerWorkerRequest(Host(), new("procedure.fixture", 1, Hash), "{}", "{}",
+                [first], [new("missing", second, "")])).Code);
+        Assert.Equal("INVALID_WORKER_DEPENDENCY_POINTER", Assert.Throws<InteractionContractException>(() =>
+            new SystemInnerWorkerDependencyInput("bad", first, "items/0")).Code);
+    }
+
     [Theory]
     [InlineData("short", 1, false)]
     [InlineData("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", 1, false)]

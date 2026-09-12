@@ -229,8 +229,9 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
         };
 
     private static string AiEnrollmentFingerprint(SystemInnerWorkerResolvedProfile profile,
-        SystemTaskSelectedDefinition procedureVersion) => AiHash(
-        InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
+        SystemTaskSelectedDefinition procedureVersion)
+    {
+        var canonical = InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
         {
             profile.ProfileVersion, profileDefinition = profile.Profile,
             profile.OutputSchemaFingerprint, profile.AuthorityProvenance,
@@ -238,7 +239,20 @@ internal sealed partial class SqliteSystemTaskLifecycleStore
             profile.ToolBindings, profile.RequiredContextReferences, contextEvidence = profile.ManualContext,
             profile.Worker.InvocationHost.Budget.DeadlineUtc,
             inputFingerprint = AiHash(profile.Worker.InputJson)
-        }, AiJson)));
+        }, AiJson));
+        if (profile.Worker.DependencyInputs.Count == 0) return AiHash(canonical);
+        using var document = JsonDocument.Parse(canonical);
+        var payload = document.RootElement.EnumerateObject()
+            .ToDictionary(property => property.Name, property => property.Value.Clone(), StringComparer.Ordinal);
+        payload.Add("dependencyInputs", JsonSerializer.SerializeToElement(
+            profile.Worker.DependencyInputs.Select(value => new
+            {
+                name = value.Name,
+                handle = new { taskId = value.Handle.TaskId, commandId = value.Handle.CommandId },
+                jsonPointer = value.JsonPointer
+            }).ToArray(), AiJson));
+        return AiHash(InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(payload, AiJson)));
+    }
 
     private static string AiHash(string value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
     private static SystemTaskAiAccountingResult AiRejected(string code) => new(false, code);

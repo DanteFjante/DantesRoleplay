@@ -16,10 +16,21 @@ combined assignment/context JSON is capped at 64 KiB; the source context packet 
 data; procedure instructions replace prior profile instructions. Tool names are an explicit host
 allowlist. These internal preparation types are not a new public profile/authority contract.
 
-Preparation does not authorize standing grants, consume operation allowance, execute AI, resolve
-dependencies, or persist evidence. Its `PromptBytes` measures the assignment/context message only;
+Preparation does not authorize standing grants, consume operation allowance, execute AI, load
+dependencies from storage, or persist evidence. Its `PromptBytes` measures the assignment/context message only;
 it excludes the AI runner's system prompt, tool schemas and provider overhead. Existing per-request
 tool-round/output limits are preserved, but are not an aggregate token or descendant budget.
+
+The durable procedure executor resolves prerequisite results immediately before lifecycle admission
+through the existing task service and a fresh current `ReadTask` authorization check. It accepts only
+successful terminal results whose retained task/command identity, typed output-contract fingerprint,
+canonical data, and completion evidence are present. Optional named RFC 6901 mappings select only from
+that validated output data; authority and receipt fields are never selectable. When mappings are absent,
+each declared dependency is included under its exact handle identity. Canonical prerequisite data is
+limited to 16 KiB, placed in a separately labelled user-data section, and included in the existing
+64 KiB prompt limit. The retained admission payload and AI enrollment fingerprint pin the mapping, and
+the existing provider request journal pins the resolved values before dispatch. Missing, failed, stale,
+unauthorized, malformed, or oversized inputs stop execution before a provider call.
 
 `SystemInnerWorkerResultAdapter.MapStoredResult` is an internal readback projection for a terminal
 AI response already persisted by the lifecycle owner. It validates the command identity and typed
@@ -65,7 +76,8 @@ the purpose-filtered durable runner, lifecycle factory, and selected-application
 `system.inner-worker.wait`, and `system.inner-worker.cancel` reuse the
 existing website/Codex gateway. They construct fresh state-scoped hosts from current standing grants;
 caller JSON selects the state, exact procedure, instruction, result schema, and dependency handles,
-while provider, model, tools, grants, budgets, leases, and evidence remain host-owned. Submit and
+while optional prerequisite names/pointers can select data only from the declared dependency handles;
+provider, model, tools, grants, budgets, leases, and evidence remain host-owned. Submit and
 cancel use stable idempotency keys. Read, list, wait, and replay query current grants again. Deterministic
 acceptance covers the real gateway, SQLite task lifecycle, hosted runner, cancellation, reconnect
 readback, and grant revocation with a controlled provider. It does not establish a live provider run.

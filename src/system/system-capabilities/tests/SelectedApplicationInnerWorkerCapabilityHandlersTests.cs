@@ -69,6 +69,7 @@ public sealed class SelectedApplicationInnerWorkerCapabilityHandlersTests
         Assert.Equal("{\"summary\":{\"type\":\"string\"},\"type\":\"object\"}", submitted.ResultSchemaJson);
         Assert.Equal(new SystemTaskDurableHandle("task.prerequisite", "command.prerequisite"),
             Assert.Single(submitted.DependencyHandles));
+        Assert.Empty(submitted.DependencyInputs);
         Assert.Equal("{\"format\":\"dantes-roleplay/inner-procedure-assignment/v1\",\"instruction\":\"Inspect the bounded assignment.\"}", submitted.AssignmentJson);
         Assert.Equal("0123456789abcdef0123456789abcdef", Assert.Single(owner.SubmitCommands));
         Assert.Equal(owner.SubmitResult!.ToJson(), result.Data!.Value.GetRawText());
@@ -98,6 +99,24 @@ public sealed class SelectedApplicationInnerWorkerCapabilityHandlersTests
         Assert.Equal(owner.CancelResult!.ToJson(), cancelResult.Data!.Value.GetRawText());
         Assert.Equal(new("state.1", handle), Assert.Single(owner.Reads));
         Assert.Equal(new("state.1", handle), Assert.Single(owner.Cancellations));
+    }
+
+    [Fact]
+    public async Task Submit_forwards_only_named_pointer_mappings_for_declared_dependencies()
+    {
+        var owner = new RecordingOwner { SubmitResult = InteractionInvocationResult.Pending(new("task.1", "command.1")) };
+        var handler = new SelectedApplicationInnerWorkerWriteCapabilityHandler(
+            SelectedApplicationInnerWorkerSchemas.SubmitCapabilityId, owner);
+        var input = Element("{\"stateSpaceId\":\"state.1\",\"procedure\":{\"definitionId\":\"procedure.fixture\",\"revision\":1,\"contentFingerprint\":\"" + Hash + "\"},\"instruction\":\"Inspect\",\"resultSchema\":\"{}\",\"dependencyHandles\":[{\"taskId\":\"task.prerequisite\",\"commandId\":\"command.prerequisite\"}],\"dependencyInputs\":[{\"name\":\"priorAnswer\",\"handle\":{\"taskId\":\"task.prerequisite\",\"commandId\":\"command.prerequisite\"},\"jsonPointer\":\"/answer\"}]}");
+        var preflight = await handler.PreflightAsync(input, []);
+
+        var result = await handler.ExecuteAsync(input, Execution(preflight));
+
+        Assert.True(result.Ok);
+        var mapping = Assert.Single(Assert.Single(owner.Submissions).DependencyInputs);
+        Assert.Equal("priorAnswer", mapping.Name);
+        Assert.Equal(new("task.prerequisite", "command.prerequisite"), mapping.Handle);
+        Assert.Equal("/answer", mapping.JsonPointer);
     }
 
     [Fact]
