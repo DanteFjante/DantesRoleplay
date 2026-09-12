@@ -38,8 +38,11 @@ adjacency, routes, time, and audience knowledge remain the authoritative world m
 5. Use `game.core.world.map.visual` only on an entity carrying an active
    `game.core.world.root` or active `game.core.world.location`. The owning entity is the depicted
    map plane. Its complete closed data is exactly status plus a nonempty closed `variants` object.
-   Each optional `player` or `dm` variant records a finalized blob hash, MIME type, dimensions,
-   nonempty alt text, optional caption, order, and reviewed provenance.
+   Each optional `player` or `dm` live variant records a finalized blob hash, MIME type, dimensions,
+   nonempty alt text, a caption string (which may be empty), order, and reviewed provenance.
+   The registered compatibility schema also accepts a separate legacy `assetKey` form for
+   authored fixtures; use the content-addressed form for live maps, because runtime media does
+   not resolve legacy asset keys.
 6. Select only the exact requested audience variant. A missing Player variant exposes no DM blob
    metadata or alt text, and a missing DM variant does not fall back to Player. Delivery re-resolves
    the map through its owning entity before opening the verified blob.
@@ -56,7 +59,7 @@ adjacency, routes, time, and audience knowledge remain the authoritative world m
 - An anchor contains no label, plane/region/settlement/map ID, visibility, z-index, scale, image, route, distance,
   terrain, path, position history, or player-discovery state. Entity identity/name and containment
   supply display identity and scope.
-- A map visual contains no URL, path, asset key, owner ID, child ID, coordinates, crop, scale, visibility,
+- A live map visual contains no URL, path, asset key, owner ID, child ID, coordinates, crop, scale, visibility,
   discovery, geometry, route, terrain, distance, campaign ID, or game rule. Blob hashes are exact
   lowercase SHA-256 identities and never select an audience implicitly.
 - This contract creates no map renderer, browser/UI, query kind, geometry rule, route/path rule,
