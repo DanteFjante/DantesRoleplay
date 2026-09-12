@@ -31,6 +31,8 @@ public static class ApplicationExecutionComponentRegistration
         .AddScoped<ApplicationActionInvocationAdapter>()
         .AddScoped<IApplicationActionInvocationAdapter>(provider =>
             provider.GetRequiredService<ApplicationActionInvocationAdapter>())
+        .AddScoped<IStandingGrantApplicationActionInvocationAdapter>(provider =>
+            provider.GetRequiredService<ApplicationActionInvocationAdapter>())
         .AddScoped<SystemInnerWorkerApplicationToolFactory>()
         .AddScoped<IApplicationReadOnlyServiceDefinitionReader, ApplicationReadOnlyServiceDefinitionReader>()
         .AddScoped<ApplicationReadOnlyServiceInvocationAdapter>()
