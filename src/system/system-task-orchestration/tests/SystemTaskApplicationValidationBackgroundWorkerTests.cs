@@ -17,6 +17,46 @@ namespace DantesRoleplay.Authorization.Tests;
 public sealed partial class SqliteStandingGrantTargetResolverTests
 {
     [Fact]
+    public async Task Prepared_validation_rechecks_revoked_grant_before_any_provider_accounting()
+    {
+        var databasePath = Path.Combine(Path.GetTempPath(), $"validation-revoked-{Guid.NewGuid():N}.db");
+        try
+        {
+            await using var db = new DantesRoleplayDbContext(new DbContextOptionsBuilder<DantesRoleplayDbContext>()
+                .UseSqlite("Filename=" + databasePath).Options);
+            await db.Database.EnsureCreatedAsync();
+            var data = await PureRuntimeFixtureAsync(db,
+                "return { data: { count: ctx.input.count + 1 } };");
+            var gate = PureValidationGate(db, data.Setup);
+            var host = PureReviewHost(data.Setup, "revoked-before-reservation");
+            SystemTaskValidationAuthority captured;
+            await using (var boundary = await SystemTaskValidationTransaction.OpenAsync(
+                db, TimeProvider.System, false, default))
+                captured = await gate.CheckAsync(host, data.Candidate, true,
+                    cancellationToken: default, prepareRuntimeContext: false);
+            var prepared = await gate.BindRuntimeReviewAsync(host, captured);
+            Assert.Null(SystemTaskApplicationValidationGate.ExecutionPrerequisite(prepared));
+
+            await RevokeGrantAsync(db);
+            await using var admission = await SystemTaskValidationTransaction.OpenAsync(
+                db, TimeProvider.System, true, default);
+            Assert.False(await gate.RevalidatePreparedAsync(host, prepared, null, null));
+            foreach (var table in new[] { "system_task_ai_reservation", "system_task_ai_dispatch_evidence" })
+            {
+                await using var command = admission.Connection.CreateCommand();
+                command.Transaction = admission.Transaction;
+                command.CommandText = "SELECT COUNT(*) FROM " + table;
+                Assert.Equal(0L, (long)(await command.ExecuteScalarAsync())!);
+            }
+        }
+        finally
+        {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            if (File.Exists(databasePath)) File.Delete(databasePath);
+        }
+    }
+
+    [Fact]
     public async Task Registered_opt_in_validation_worker_drains_one_review_and_disabled_worker_does_not_dispatch()
     {
         var databasePath = Path.Combine(Path.GetTempPath(), $"validation-worker-{Guid.NewGuid():N}.db");
@@ -64,21 +104,41 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
                 Assert.Equal(SystemTaskLifecycleState.Queued, queued!.State);
             }
 
-            await using (var enabled = WorkerServices(databasePath, enabled: true, provider))
+            await using (var journal = new Microsoft.Data.Sqlite.SqliteConnection("Filename=" + databasePath))
+            {
+                await journal.OpenAsync();
+                await using var deleteMode = journal.CreateCommand();
+                deleteMode.CommandText = "PRAGMA journal_mode=DELETE";
+                Assert.Equal("delete", (string)(await deleteMode.ExecuteScalarAsync())!);
+            }
+            var manualDelay = new ManualDelay();
+            await using (var enabled = WorkerServices(databasePath, enabled: true, provider, manualDelay))
             {
                 var worker = enabled.GetRequiredService<SystemTaskApplicationValidationBackgroundWorker>();
-                using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-                await worker.StartAsync(timeout.Token);
+                using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(20));
                 var store = new SqliteSystemTaskLifecycleStore("Filename=" + databasePath, TimeProvider.System);
-                SystemTaskLifecycleSnapshot? completed;
-                do
+                var run = worker.RunOnceAsync("enabled-validation-worker", timeout.Token);
+                await manualDelay.Entered.Task.WaitAsync(timeout.Token);
+                await using (var concurrent = new Microsoft.Data.Sqlite.SqliteConnection(
+                    "Filename=" + databasePath + ";Default Timeout=1"))
                 {
-                    await Task.Delay(TimeSpan.FromMilliseconds(25), timeout.Token);
-                    completed = await store.ReadAsync(handle, timeout.Token);
-                } while (completed?.State is SystemTaskLifecycleState.Queued or SystemTaskLifecycleState.Running);
-                await worker.StopAsync(timeout.Token);
+                    await concurrent.OpenAsync(timeout.Token);
+                    await using var mode = concurrent.CreateCommand();
+                    mode.CommandText = "PRAGMA journal_mode";
+                    Assert.Equal("delete", (string)(await mode.ExecuteScalarAsync(timeout.Token))!);
+                    await using var writer = concurrent.CreateCommand();
+                    writer.CommandText = "CREATE TABLE validation_concurrent_probe(value INTEGER NOT NULL)";
+                    await writer.ExecuteNonQueryAsync(timeout.Token);
+                }
+                await Task.Delay(TimeSpan.FromSeconds(6), timeout.Token);
+                Assert.Equal(SystemTaskLifecycleState.Running,
+                    (await store.ReadAsync(handle, timeout.Token))!.State);
+                manualDelay.Release.TrySetResult();
+                Assert.True(await run);
+                var completed = await store.ReadAsync(handle, timeout.Token);
 
-                Assert.Equal(SystemTaskLifecycleState.Completed, completed!.State);
+                Assert.True(completed!.State == SystemTaskLifecycleState.Completed,
+                    $"{completed.State}: {completed.ErrorCode}");
                 Assert.StartsWith("validation.result.", completed.CompletionEvidenceReference,
                     StringComparison.Ordinal);
                 Assert.Contains("application-candidate-reuse-review-result/v1", completed.ResultJson,
@@ -101,6 +161,17 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
                     db, TimeProvider.System, false, timeout.Token);
                 Assert.NotNull(await boundary.Store.ReadCompletedValidationProofAsync(
                     handle, boundary.Connection, boundary.Transaction, timeout.Token));
+                foreach (var query in new[]
+                {
+                    "SELECT COUNT(*) FROM system_task_ai_reservation",
+                    "SELECT COUNT(*) FROM system_task_ai_dispatch_evidence WHERE kind='dispatch'"
+                })
+                {
+                    await using var command = boundary.Connection.CreateCommand();
+                    command.Transaction = boundary.Transaction;
+                    command.CommandText = query;
+                    Assert.Equal(1L, (long)(await command.ExecuteScalarAsync(timeout.Token))!);
+                }
             }
         }
         finally
@@ -111,7 +182,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
     }
 
     private ServiceProvider WorkerServices(string databasePath, bool enabled,
-        ProductionValidationProvider provider)
+        ProductionValidationProvider provider, ManualDelay? manualDelay = null)
     {
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         {
@@ -126,8 +197,35 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             publishedApplicationCatalogs: [Application.Value],
             hostConfiguration: configuration,
             blobStorageRoot: Path.Combine(root, "validation-worker-blobs"));
+        if (manualDelay is not null)
+        {
+            var descriptor = services.Last(value => value.ServiceType == typeof(IInteractionManualContextService));
+            services.Remove(descriptor);
+            services.AddScoped<IInteractionManualContextService>(provider => manualDelay.Wrap(
+                (IInteractionManualContextService)descriptor.ImplementationFactory!(provider)));
+        }
         services.AddSingleton<IAiService>(new AiService([provider]));
         return services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+    }
+
+    private sealed class ManualDelay
+    {
+        internal TaskCompletionSource Entered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        internal TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        internal IInteractionManualContextService Wrap(IInteractionManualContextService actual) =>
+            new DelayedManual(actual, this);
+
+        private sealed class DelayedManual(IInteractionManualContextService actual, ManualDelay owner)
+            : IInteractionManualContextService
+        {
+            public async Task<InteractionInvocationResult> DiscoverAsync(InteractionManualContextRequest request,
+                CancellationToken cancellationToken = default)
+            {
+                owner.Entered.TrySetResult();
+                await owner.Release.Task.WaitAsync(cancellationToken);
+                return await actual.DiscoverAsync(request, cancellationToken);
+            }
+        }
     }
 
     private sealed class ProductionValidationProvider(ApplicationCandidateReuseInputV2 input) : IAiProvider

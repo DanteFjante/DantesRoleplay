@@ -77,18 +77,23 @@ internal sealed class SystemTaskApplicationValidationService(
         try
         {
             var host = RehydrateHost(lease.Request.Invocation);
-            SystemTaskValidationAuthority authority;
+            SystemTaskValidationAuthority captured;
             await using (var boundary = await SystemTaskValidationTransaction.OpenAsync(db, time, false, cancellationToken))
             {
-                authority = await gate.CheckAsync(host, lease.Request.Candidate, true,
-                    lease.Request.Causation?.OperationId, lease.Request.Causation?.CausalCommandId, cancellationToken);
+                captured = await gate.CheckAsync(host, lease.Request.Candidate, true,
+                    lease.Request.Causation?.OperationId, lease.Request.Causation?.CausalCommandId,
+                    cancellationToken, prepareRuntimeContext: false);
             }
+            var authority = captured.Failure is null
+                ? await gate.BindRuntimeReviewAsync(host, captured, cancellationToken)
+                : captured;
             if (SystemTaskApplicationValidationGate.ExecutionPrerequisite(authority) is { } unavailable)
                 return Failed(unavailable.Code, unavailable.SafeMessage);
             if (authority.Profile!.Worker.InputJson != lease.Request.InputJson)
                 return Failed("INNER_VALIDATION_INPUT_CHANGED", "The owner-prepared validation input changed after admission.");
 
-            var lifecycle = await lifecycles.CreateAsync(lease, authority.Profile, cancellationToken);
+            var lifecycle = await lifecycles.CreateValidationAsync(lease, authority.Profile,
+                authority, cancellationToken);
             var computation = await invoker.InvokeAsync(authority.Profile, authority.ReviewInput!,
                 providerConfiguration, lifecycle, cancellationToken);
             if (computation.Judgment is null)

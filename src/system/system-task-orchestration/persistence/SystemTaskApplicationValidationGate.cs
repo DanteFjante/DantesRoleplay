@@ -40,7 +40,7 @@ internal sealed class SystemTaskApplicationValidationGate(
     internal async Task<SystemTaskValidationAuthority> CheckAsync(InteractionInvocationHost host,
         ApplicationCandidateReference candidate, bool requireValidate,
         string? causationOperationId = null, string? causalCommandId = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, bool prepareRuntimeContext = true)
     {
         if (db.Database.CurrentTransaction is null)
             throw new InvalidOperationException("Validation authority must join the owner's transaction.");
@@ -92,10 +92,13 @@ internal sealed class SystemTaskApplicationValidationGate(
         if (!requireValidate) return new(null, selection, read.Grant, validateGrant, causation);
         if (manuals is null || features is null || pureClosures is null && reviewClosures.Length == 0)
             return new(null, selection, read.Grant, validateGrant, causation);
-        var prepared = await PrepareRuntimeReviewAsync(host, candidate, selection, read.Grant!, validateGrant!, cancellationToken);
-        return prepared.Failure is null
-            ? prepared with { Causation = causation }
-            : prepared;
+        var captured = await CaptureRuntimeReviewAsync(host, candidate, selection,
+            read.Grant!, validateGrant!, cancellationToken);
+        if (captured.Failure is not null) return captured;
+        captured = captured with { Causation = causation };
+        return prepareRuntimeContext
+            ? await BindRuntimeReviewAsync(host, captured, cancellationToken)
+            : captured;
     }
 
     /// <summary>
@@ -114,7 +117,7 @@ internal sealed class SystemTaskApplicationValidationGate(
         return null;
     }
 
-    private async Task<SystemTaskValidationAuthority> PrepareRuntimeReviewAsync(InteractionInvocationHost host,
+    private async Task<SystemTaskValidationAuthority> CaptureRuntimeReviewAsync(InteractionInvocationHost host,
         ApplicationCandidateReference candidate, ApplicationCandidateSelectionEvidence selection,
         StandingGrantRevision readGrant, StandingGrantRevision validateGrant, CancellationToken cancellationToken)
     {
@@ -137,6 +140,27 @@ internal sealed class SystemTaskApplicationValidationGate(
             return new(UnavailableResult("INNER_VALIDATION_DEPENDENCIES_UNAVAILABLE",
                 "The candidate is outside one unambiguous owner-issued review grammar."));
         var closure = available[0];
+        var retained = await new ApplicationCandidateRetainedReader(db, applications).ReadMetadataAsync(
+            candidate.ApplicationId, candidate.CandidateId, candidate.Revision, cancellationToken);
+        if (retained is null || retained.RevisionRow.ContentFingerprint != candidate.ContentFingerprint)
+            return new(UnavailableResult("INNER_VALIDATION_SELECTION_UNAVAILABLE",
+                "The retained candidate changed during review preparation."));
+        return new(null, selection, readGrant, validateGrant, null, pureClosure, closure);
+    }
+
+    internal async Task<SystemTaskValidationAuthority> BindRuntimeReviewAsync(InteractionInvocationHost host,
+        SystemTaskValidationAuthority captured, CancellationToken cancellationToken = default)
+    {
+        if (captured.Failure is not null || captured.Selection is null
+            || captured.ReadGrant is null || captured.ValidateGrant is null
+            || captured.ReviewClosure is null)
+            return new(UnavailableResult("INNER_VALIDATION_CONTEXT_BINDING_UNAVAILABLE",
+                "Review context preparation requires one complete owner capture."));
+        var candidate = captured.ReviewClosure.Candidate;
+        var selection = captured.Selection;
+        var readGrant = captured.ReadGrant;
+        var validateGrant = captured.ValidateGrant;
+        var closure = captured.ReviewClosure;
         var retained = await new ApplicationCandidateRetainedReader(db, applications).ReadMetadataAsync(
             candidate.ApplicationId, candidate.CandidateId, candidate.Revision, cancellationToken);
         if (retained is null || retained.RevisionRow.ContentFingerprint != candidate.ContentFingerprint)
@@ -169,11 +193,8 @@ internal sealed class SystemTaskApplicationValidationGate(
                 "The authorized alternative selection changed during review preparation."));
         var readAgain = await policy.EvaluateAsync(host,
             new(StandingGrantCapability.Read, StandingGrantScope.Application, selection.Targets, []), cancellationToken);
-        var validateAgain = await policy.EvaluateAsync(host,
-            new(StandingGrantCapability.Validate, StandingGrantScope.Application, selection.Targets, []), cancellationToken);
         if (!Matches(readAgain, host, StandingGrantCapability.Read)
-            || !Matches(validateAgain, host, StandingGrantCapability.Validate)
-            || !SameGrant(readGrant, readAgain.Grant!) || !SameGrant(validateGrant, validateAgain.Grant!))
+            || !SameGrant(readGrant, readAgain.Grant!))
             return new(UnavailableResult("INNER_VALIDATION_AUTHORITY_CHANGED",
                 "Validation authority changed during review preparation."));
         var input = ApplicationCandidateReuseInputV2.Create(new(candidate.ApplicationId.Value,
@@ -185,7 +206,36 @@ internal sealed class SystemTaskApplicationValidationGate(
             SystemInnerWorkerCandidateReviewer.Profile, schemaFingerprint, [], ContextReferences(manualPacket),
             new(manualResult.CompletionEvidenceReference, manualFingerprint), Provenance("validate", validateGrant),
             new SystemInnerWorkerAiBudget(toolCalls: 0), Provenance("read", readGrant));
-        return new(null, selection, readGrant, validateGrant, null, pureClosure, closure, input, profile);
+        return captured with { ReviewInput = input, Profile = profile };
+    }
+
+    internal async Task<bool> RevalidatePreparedAsync(InteractionInvocationHost host,
+        SystemTaskValidationAuthority prepared, string? causationOperationId, string? causalCommandId,
+        CancellationToken cancellationToken = default)
+    {
+        if (db.Database.CurrentTransaction is null || prepared.ReviewClosure is null
+            || prepared.ReviewInput is null || prepared.Profile is null) return false;
+        var current = await CheckAsync(host, prepared.ReviewClosure.Candidate, true,
+            causationOperationId, causalCommandId, cancellationToken, prepareRuntimeContext: false);
+        if (current.Failure is not null || current.Selection is null || current.ReadGrant is null
+            || current.ValidateGrant is null || current.ReviewClosure is null
+            || current.Selection.EvidenceFingerprint != prepared.Selection?.EvidenceFingerprint
+            || !current.Selection.Targets.SequenceEqual(prepared.Selection.Targets)
+            || !SameGrant(current.ReadGrant, prepared.ReadGrant!)
+            || !SameGrant(current.ValidateGrant, prepared.ValidateGrant!)
+            || current.Causation != prepared.Causation
+            || current.ReviewClosure.Candidate != prepared.ReviewClosure.Candidate
+            || current.ReviewClosure.Grammar != prepared.ReviewClosure.Grammar
+            || current.ReviewClosure.EvidenceFingerprint != prepared.ReviewClosure.EvidenceFingerprint)
+            return false;
+        foreach (var alternative in prepared.ReviewClosure.ReviewAlternatives)
+            if (!await CanReadRetainedAsync(host, alternative, cancellationToken)) return false;
+        var closureIds = prepared.ReviewClosure.ReviewAlternatives
+            .Select(value => value.Target.DefinitionId).ToHashSet(StringComparer.Ordinal);
+        foreach (var alternative in prepared.ReviewInput.Alternatives)
+            if (!closureIds.Contains(alternative.DefinitionId)
+                && !await CanReadAsync(host, alternative, cancellationToken)) return false;
+        return true;
     }
 
     private async Task<bool> VerifyClosureAsync(InteractionInvocationHost host,

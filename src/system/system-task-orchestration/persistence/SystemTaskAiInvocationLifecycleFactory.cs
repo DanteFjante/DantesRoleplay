@@ -36,6 +36,23 @@ internal sealed class SystemTaskAiInvocationLifecycleFactory(IServiceScopeFactor
         return new Lifecycle(this, lease, profile);
     }
 
+    internal async Task<IAiInvocationLifecycle> CreateValidationAsync(SystemTaskLease lease,
+        SystemInnerWorkerResolvedProfile profile, SystemTaskValidationAuthority prepared,
+        CancellationToken cancellationToken = default)
+    {
+        RequireSubject(lease, profile);
+        if (profile.Worker.Subject is not SystemInnerWorkerSubject.ApplicationCandidateValidation
+            || prepared.Failure is not null || prepared.Profile != profile || prepared.ReviewInput is null
+            || prepared.ReviewClosure is null || prepared.Profile.Worker.InputJson != lease.Request.InputJson)
+            throw Failure("INNER_AI_VALIDATION_RUNTIME_UNAVAILABLE");
+        await InScopeAsync(false, async (boundary, _, _) =>
+        {
+            await RequireStoredCurrentAsync(boundary, lease, profile, cancellationToken);
+            return true;
+        }, cancellationToken);
+        return new Lifecycle(this, lease, profile, validationAuthority: prepared);
+    }
+
     internal async Task<ProcedureInvocation> CreateProcedureAsync(SystemTaskLease lease,
         SystemInnerWorkerResolvedProfile profile, SystemCapabilityInvocationContext toolContext,
         CancellationToken cancellationToken = default)
@@ -88,12 +105,32 @@ internal sealed class SystemTaskAiInvocationLifecycleFactory(IServiceScopeFactor
             throw new AiLifecycleException(denied.Code, denied.SafeMessage);
     }
 
+    private static async Task RequireStoredCurrentAsync(SystemTaskValidationTransaction boundary,
+        SystemTaskLease lease, SystemInnerWorkerResolvedProfile profile, CancellationToken cancellationToken)
+    {
+        var check = await boundary.Store.CheckAiInvocationAsync(lease, profile,
+            boundary.Connection, boundary.Transaction, cancellationToken);
+        if (!check.Accepted) throw Failure(check.Code);
+        var retained = await boundary.Store.ReadInTransactionAsync(lease.Request.Handle,
+            boundary.Connection, boundary.Transaction, cancellationToken);
+        if (retained is null) throw Failure("INNER_AI_INVOCATION_SCOPE_MISMATCH");
+    }
+
     private Task<IAiProviderCallScope> AdmitAsync(SystemTaskLease lease, SystemInnerWorkerResolvedProfile profile,
         Lifecycle session, AiProviderCallDescriptor call,
         CancellationToken cancellationToken) => InScopeAsync<IAiProviderCallScope>(true,
         async (boundary, gate, services) =>
         {
-            await RequireCurrentAsync(boundary, gate, services, lease, profile, cancellationToken);
+            if (session.ValidationAuthority is { } prepared)
+            {
+                await RequireStoredCurrentAsync(boundary, lease, profile, cancellationToken);
+                if (gate is null || !await gate.RevalidatePreparedAsync(profile.Worker.InvocationHost,
+                        prepared, lease.Request.Causation?.OperationId,
+                        lease.Request.Causation?.CausalCommandId, cancellationToken))
+                    throw Failure("INNER_AI_VALIDATION_CONTEXT_CHANGED");
+            }
+            else
+                await RequireCurrentAsync(boundary, gate, services, lease, profile, cancellationToken);
             if (profile.Worker.Subject is SystemInnerWorkerSubject.ApplicationCandidateValidation
                 && (call.Request.Tools.Count != 0 || profile.ToolBindings.Count != 0 || profile.AiBudget.ToolCalls != 0))
                 throw Failure("INNER_AI_VALIDATION_TOOLS_FORBIDDEN");
@@ -447,10 +484,12 @@ internal sealed class SystemTaskAiInvocationLifecycleFactory(IServiceScopeFactor
 
     [JsonConverter(typeof(AiHostOnlyLifecycleJsonConverterFactory))]
     private sealed class Lifecycle(SystemTaskAiInvocationLifecycleFactory owner, SystemTaskLease lease,
-        SystemInnerWorkerResolvedProfile profile, SystemInnerWorkerWriteApprovalGate? approval = null)
+        SystemInnerWorkerResolvedProfile profile, SystemInnerWorkerWriteApprovalGate? approval = null,
+        SystemTaskValidationAuthority? validationAuthority = null)
         : IAiInvocationLifecycle
     {
         internal SystemInnerWorkerWriteApprovalGate? Approval { get; } = approval;
+        internal SystemTaskValidationAuthority? ValidationAuthority { get; } = validationAuthority;
 
         public async ValueTask<IAiProviderCallScope> AdmitProviderCallAsync(AiProviderCallDescriptor call,
             CancellationToken cancellationToken) => await owner.AdmitAsync(lease, profile, this, call, cancellationToken);
