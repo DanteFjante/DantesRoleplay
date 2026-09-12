@@ -68,7 +68,8 @@ public sealed record CodexCaptureCorrelation(
 
 public sealed record CodexCaptureSpoolCheckpoint(
     IReadOnlyList<CodexCaptureCorrelation> Pending,
-    IReadOnlyList<string> CompletedTurnIds);
+    IReadOnlyList<string> CompletedTurnIds,
+    bool WatchInitialized = false);
 
 /// <summary>
 /// A synchronous bounded queue used by hooks. It never waits for Codex or reads transcript files;
@@ -83,6 +84,7 @@ public sealed class CodexCaptureCorrelationSpool
     private readonly HashSet<string> pendingIds = new(StringComparer.Ordinal);
     private readonly Queue<string> completedOrder = new();
     private readonly HashSet<string> completedIds = new(StringComparer.Ordinal);
+    private bool watchInitialized;
 
     public CodexCaptureCorrelationSpool(int maximumPending = 64, int maximumCompleted = 256)
     {
@@ -93,6 +95,7 @@ public sealed class CodexCaptureCorrelationSpool
     }
 
     public int Count => pending.Count + leased.Count;
+    public bool WatchInitialized => watchInitialized;
 
     public bool TryEnqueue(CodexCaptureCorrelation correlation)
     {
@@ -139,12 +142,21 @@ public sealed class CodexCaptureCorrelationSpool
 
     public void Complete(string turnId)
     {
-        if (!ValidTurn(turnId) || !completedIds.Add(turnId)) return;
+        if (!ValidTurn(turnId) || pendingIds.Contains(turnId) || leased.ContainsKey(turnId)
+            || !completedIds.Add(turnId)) return;
         completedOrder.Enqueue(turnId);
         while (completedOrder.Count > maximumCompleted) completedIds.Remove(completedOrder.Dequeue());
     }
 
-    public CodexCaptureSpoolCheckpoint Snapshot() => new(pending.Concat(leased.Values).ToArray(), completedOrder.ToArray());
+    public void InitializeWatch(IEnumerable<string> existingTurnIds)
+    {
+        ArgumentNullException.ThrowIfNull(existingTurnIds);
+        foreach (var turnId in existingTurnIds) Complete(turnId);
+        watchInitialized = true;
+    }
+
+    public CodexCaptureSpoolCheckpoint Snapshot() =>
+        new(pending.Concat(leased.Values).ToArray(), completedOrder.ToArray(), watchInitialized);
 
     public static CodexCaptureCorrelationSpool Restore(CodexCaptureSpoolCheckpoint checkpoint,
         int maximumPending = 64, int maximumCompleted = 256)
@@ -160,6 +172,7 @@ public sealed class CodexCaptureCorrelationSpool
             throw new CodexBridgeException("CODEX_CAPTURE_CHECKPOINT_INVALID",
                 "The capture checkpoint is malformed or exceeds its configured bounds.");
         var spool = new CodexCaptureCorrelationSpool(maximumPending, maximumCompleted);
+        spool.watchInitialized = checkpoint.WatchInitialized;
         foreach (var turnId in checkpoint.CompletedTurnIds) spool.Complete(turnId);
         foreach (var correlation in checkpoint.Pending)
             if (!spool.TryEnqueue(correlation))
@@ -187,6 +200,13 @@ public interface ICodexThreadReadClient
     Task<JsonElement> ReadThreadAsync(string threadId, bool includeTurns, CancellationToken cancellationToken = default);
     Task<JsonElement> ReadTurnAsync(string threadId, string turnId, CancellationToken cancellationToken = default) =>
         ReadThreadAsync(threadId, includeTurns: true, cancellationToken);
+}
+
+public interface ICodexThreadTurnDiscoveryClient
+{
+    Task<IReadOnlyList<string>> ListCompletedTurnIdsAsync(
+        string threadId,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>Reads one exact, completed linked turn and accepts only real user and visible assistant text.</summary>

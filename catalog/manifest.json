@@ -995,7 +995,7 @@
       "kind": "procedure",
       "id": "procedure.system.conversation-memory",
       "version": 1,
-      "contentHash": "D7D6F762FF55452C9AE7E621238AE7B42DCBEA62B16DC46E29D2C2DE43C76EA2",
+      "contentHash": "19FCF9A2C20AB7C34498CFA681C48E9ED650339BE7AF260626DE188728BB9828",
       "path": "procedures/procedure/system/conversation-memory.md"
     },
     {

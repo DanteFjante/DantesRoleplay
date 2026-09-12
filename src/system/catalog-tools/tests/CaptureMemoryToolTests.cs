@@ -184,6 +184,90 @@ public sealed class CaptureMemoryToolTests
     }
 
     [Fact]
+    public async Task Asynchronous_stop_waits_boundedly_for_completion_and_commits_without_manual_retry()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "capture-memory-wait-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var database = Path.Combine(root, "capture.db");
+        var checkpoint = Path.Combine(root, "capture.checkpoint.json");
+        const string externalThread = "thread.external.wait";
+        const string gameplaySession = "session.gameplay.wait";
+        const string turn = "turn.wait";
+        try
+        {
+            var options = await CreateDatabaseAsync(database);
+            var common = Options(root, checkpoint, externalThread, gameplaySession);
+            var client = new IncompleteThenCompletedClient(externalThread, turn);
+            var connect = new CaptureMemoryTool(_ => client, () => new StringReader(string.Empty));
+            Assert.Equal(0, await connect.RunAsync(Context(database, common, connect: true), default));
+
+            common["wait-for-completion-ms"] = "1000";
+            var output = new StringWriter();
+            var stop = new CaptureMemoryTool(_ => client,
+                () => new StringReader(Hook("Stop", externalThread, root, turn)));
+            Assert.Equal(0, await stop.RunAsync(Context(database, common, output: output), default));
+
+            Assert.Equal(2, client.ReadAttempts);
+            Assert.Equal(string.Empty, output.ToString());
+            var completed = await CodexCaptureCheckpointFile.LoadAsync(checkpoint);
+            Assert.Empty(completed.Pending);
+            Assert.Equal(turn, Assert.Single(completed.CompletedTurnIds));
+            await using var verify = new DantesRoleplayDbContext(options);
+            var journal = await verify.Set<ApplicationConversationMemoryJournalRecord>().SingleAsync();
+            Assert.Equal(ConversationMemoryStatuses.Connected, journal.Status);
+            Assert.Equal(2, await verify.Set<ApplicationConversationMemoryMessageRecord>().CountAsync());
+            Assert.Single(await verify.Set<ApplicationConversationMemoryDeliveryRecord>().ToArrayAsync());
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task Watch_baselines_existing_history_then_captures_a_new_completed_turn_once()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "capture-memory-watch-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var database = Path.Combine(root, "capture.db");
+        var checkpoint = Path.Combine(root, "capture.checkpoint.json");
+        const string externalThread = "thread.external.watch";
+        const string gameplaySession = "session.gameplay.watch";
+        try
+        {
+            var options = await CreateDatabaseAsync(database);
+            var common = Options(root, checkpoint, externalThread, gameplaySession);
+            var client = new WatchCaptureClient(externalThread, "turn.existing", "turn.new");
+            var connect = new CaptureMemoryTool(_ => client, () => new StringReader(string.Empty));
+            Assert.Equal(0, await connect.RunAsync(Context(database, common, connect: true), default));
+
+            common["watch"] = "";
+            common["watch-ms"] = "350";
+            common["poll-ms"] = "100";
+            var watch = new CaptureMemoryTool(_ => client,
+                () => throw new InvalidOperationException("Watch must not read hook stdin."));
+            Assert.Equal(0, await watch.RunAsync(Context(database, common), default));
+
+            var completed = await CodexCaptureCheckpointFile.LoadAsync(checkpoint);
+            Assert.True(completed.WatchInitialized);
+            Assert.Empty(completed.Pending);
+            Assert.Contains("turn.existing", completed.CompletedTurnIds);
+            Assert.Contains("turn.new", completed.CompletedTurnIds);
+            await using var verify = new DantesRoleplayDbContext(options);
+            var messages = await verify.Set<ApplicationConversationMemoryMessageRecord>().ToArrayAsync();
+            Assert.Equal(2, messages.Length);
+            Assert.All(messages, message => Assert.Equal("turn.new", message.SourceTurnId));
+            Assert.Single(await verify.Set<ApplicationConversationMemoryDeliveryRecord>().ToArrayAsync());
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Hook_parser_accepts_the_current_Codex_field_and_rejects_a_conflicting_alias()
     {
         var currentJson = JsonSerializer.Serialize(new
@@ -348,6 +432,95 @@ public sealed class CaptureMemoryToolTests
                     }
                 }
             });
+        }
+    }
+
+    private sealed class IncompleteThenCompletedClient(string threadId, string turnId) : ICodexThreadReadClient
+    {
+        public int ReadAttempts { get; private set; }
+
+        public Task<string> GetVersionAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult(CodexCaptureVersions.SupportedCliVersion);
+
+        public Task<JsonElement> ReadThreadAsync(string requestedThreadId, bool includeTurns,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public Task<JsonElement> ReadTurnAsync(string requestedThreadId, string requestedTurnId,
+            CancellationToken cancellationToken = default)
+        {
+            Assert.Equal(threadId, requestedThreadId);
+            Assert.Equal(turnId, requestedTurnId);
+            ReadAttempts++;
+            return Task.FromResult(JsonSerializer.SerializeToElement(new
+            {
+                thread = new
+                {
+                    id = threadId,
+                    turns = new[]
+                    {
+                        new
+                        {
+                            id = turnId,
+                            status = ReadAttempts == 1 ? "inProgress" : "completed",
+                            items = new object[]
+                            {
+                                new { id = "item.user.wait", type = "userMessage", content = new[] { new { type = "text", text = "Prompt." } }, visibility = "visible" },
+                                new { id = "item.assistant.wait", type = "agentMessage", text = "Answer.", phase = "final_answer", visibility = "visible" }
+                            }
+                        }
+                    }
+                }
+            }));
+        }
+    }
+
+    private sealed class WatchCaptureClient(string threadId, string existingTurnId, string newTurnId) :
+        ICodexThreadReadClient, ICodexThreadTurnDiscoveryClient
+    {
+        private int discoveries;
+
+        public Task<string> GetVersionAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult(CodexCaptureVersions.SupportedCliVersion);
+
+        public Task<JsonElement> ReadThreadAsync(string requestedThreadId, bool includeTurns,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public Task<IReadOnlyList<string>> ListCompletedTurnIdsAsync(
+            string requestedThreadId,
+            CancellationToken cancellationToken = default)
+        {
+            Assert.Equal(threadId, requestedThreadId);
+            discoveries++;
+            return Task.FromResult<IReadOnlyList<string>>(discoveries == 1
+                ? [existingTurnId]
+                : [existingTurnId, newTurnId]);
+        }
+
+        public Task<JsonElement> ReadTurnAsync(string requestedThreadId, string requestedTurnId,
+            CancellationToken cancellationToken = default)
+        {
+            Assert.Equal(threadId, requestedThreadId);
+            Assert.Equal(newTurnId, requestedTurnId);
+            return Task.FromResult(JsonSerializer.SerializeToElement(new
+            {
+                thread = new
+                {
+                    id = threadId,
+                    turns = new[]
+                    {
+                        new
+                        {
+                            id = newTurnId,
+                            status = "completed",
+                            items = new object[]
+                            {
+                                new { id = "item.user.watch", type = "userMessage", content = new[] { new { type = "text", text = "Prompt." } }, visibility = "visible" },
+                                new { id = "item.assistant.watch", type = "agentMessage", text = "Answer.", phase = "final_answer", visibility = "visible" }
+                            }
+                        }
+                    }
+                }
+            }));
         }
     }
 }

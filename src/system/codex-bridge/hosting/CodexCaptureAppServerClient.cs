@@ -10,7 +10,8 @@ namespace DantesRoleplay.DataAccess;
 /// bounded thread/turns/list plus thread/items/list requests. It never lists all threads,
 /// starts/resumes a thread, starts a turn, or opens a hook transcript path.
 /// </summary>
-public sealed class CodexCaptureAppServerClient(CodexCaptureOptions options) : ICodexThreadReadClient
+public sealed class CodexCaptureAppServerClient(CodexCaptureOptions options) :
+    ICodexThreadReadClient, ICodexThreadTurnDiscoveryClient
 {
     private const int MaximumTurnPages = 8;
     private const int MaximumItemPages = 2;
@@ -130,6 +131,63 @@ public sealed class CodexCaptureAppServerClient(CodexCaptureOptions options) : I
             }
             if (cursor is not null) throw Failure("CODEX_CAPTURE_HISTORY_BOUNDED", "The requested turn exceeds the bounded Codex item page limit.");
             return JsonSerializer.SerializeToElement(new { thread = new { id = threadId, turns = new[] { new { id = OptionalString(selected, "id"), status = OptionalString(selected, "status"), items = items.ToArray() } } } });
+        }
+        finally
+        {
+            try { process.StandardInput.Close(); } catch (IOException) { }
+            if (!process.HasExited) { try { process.Kill(entireProcessTree: true); } catch (InvalidOperationException) { } }
+        }
+    }
+
+    /// <summary>Returns only the latest bounded page of completed turn identities for one pinned thread.</summary>
+    public async Task<IReadOnlyList<string>> ListCompletedTurnIdsAsync(
+        string threadId,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(threadId) || threadId.Length > 200)
+            throw Failure("CODEX_CAPTURE_THREAD_INVALID", "A capture thread identifier is required.");
+        using var process = new Process { StartInfo = StartInfo("app-server", true), EnableRaisingEvents = true };
+        if (!process.Start()) throw Failure("CODEX_PROCESS_UNAVAILABLE", "The Codex app-server process did not start.");
+        try
+        {
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeout.CancelAfter(options.EffectiveInitializationTimeout);
+            var input = process.StandardInput;
+            input.AutoFlush = true;
+            var output = process.StandardOutput;
+            await SendAsync(input, 1, "initialize", new
+            {
+                clientInfo = new { name = "dantes-roleplay-capture", version = "capture-v1" },
+                capabilities = new { experimentalApi = true }
+            }, timeout.Token);
+            await ReadResponseAsync(output, 1, timeout.Token);
+            await input.WriteLineAsync(JsonSerializer.Serialize(new { method = "initialized" }).AsMemory(), timeout.Token);
+            await SendAsync(input, 2, "thread/read", new { threadId, includeTurns = false }, timeout.Token);
+            var metadata = await ReadResponseAsync(output, 2, timeout.Token);
+            if (!metadata.TryGetProperty("thread", out var thread)
+                || !string.Equals(OptionalString(thread, "id"), threadId, StringComparison.Ordinal))
+                throw Failure("CODEX_CAPTURE_THREAD_MISMATCH", "Codex returned a different thread.");
+            await SendAsync(input, 3, "thread/turns/list", new
+            {
+                threadId,
+                cursor = (string?)null,
+                limit = PageSize,
+                sortDirection = "desc",
+                itemsView = "notLoaded"
+            }, timeout.Token);
+            var turns = await ReadResponseAsync(output, 3, timeout.Token);
+            if (!turns.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Array)
+                throw Failure("CODEX_CAPTURE_PROTOCOL_INVALID", "Codex returned an invalid turn page.");
+            return data.EnumerateArray()
+                .Where(value => string.Equals(OptionalString(value, "status"), "completed", StringComparison.Ordinal))
+                .Select(value => OptionalString(value, "id"))
+                .Where(value => !string.IsNullOrWhiteSpace(value) && value.Length <= 200)
+                .Reverse()
+                .ToArray();
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw Failure("CODEX_PROCESS_TIMEOUT", "Codex completed-turn discovery timed out.");
         }
         finally
         {
