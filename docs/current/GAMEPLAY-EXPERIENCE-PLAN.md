@@ -184,4 +184,19 @@ Root task: `01a09056-6d13-76d0-8706-40e435fb8b03`. Tasks return commits and conc
 - Local branch cleanup is complete: only `master` remains. Detached checkouts, their commit references and recovery evidence remain preserved; remote branches were untouched.
 - Release compilation encountered a reproducible Roslyn nullable-flow-analysis crash. Same-source normal Debug checks passed. Building Release with `Nullable=annotations` retained type annotations and runtime behavior while skipping that compiler warning pass; the build passed with zero errors. Corrected DataAccess assembly SHA-256: `F578035F18390EE0677B490910E1DC328D63D7D6B44CA50535CE8F8C1BB4DA0B`. Preserve `.tmp/gameplay-dataaccess-release.log` and the compiler-failure log as evidence. Keep final host and Tools on the same verified assembly graph.
 
-Next: complete the three real copied reviews/activations and final public checks, then authorize the sole writer to take fresh live preservation and publish. Live publication must use fresh live candidates, reviews and version checks, not copied database or review receipts; three additional bounded live reviews are authorized. Verify live DM/Player, overlays, galleries, secrets, manual retrieval and restart stability before marking P5 complete.
+The matching `676182b7` Release build passed in 22.82 seconds with zero warnings/errors. The copied
+host now runs the verified framework-dependent artifact-bin graph, but fresh Validate operation
+`0369f43b7be6a483e0fb363c1bf49eb2` still persisted `unavailable` with dependency, reuse-review and
+pure-closure unavailable diagnostics. The existing read-only comparator is checking the exact
+running source/database to find the remaining failing guard. Candidate, successful review, copied
+activation 66/page 82 and live state remain unchanged. No additional provider call was made.
+Evidence: preservation root `p5-evidence/candidate-scope-validation-after-cold-fix.json`.
+
+Next: recover the valid first copied review, complete the two remaining copied reviews/activations
+and final public checks, then authorize the sole writer to take fresh live preservation and
+publish. Live publication must use fresh live candidates, reviews and version checks, not copied
+database or review receipts; three additional bounded live reviews are authorized. Verify live
+DM/Player, overlays, galleries, secrets, manual retrieval and restart stability before marking P5
+complete. Human setup instructions for explicitly linked gameplay capture are in
+[OPERATIONS.md](OPERATIONS.md#link-a-gameplay-task-to-conversation-memory); live capture remains
+unconnected until an actual gameplay task is selected.
