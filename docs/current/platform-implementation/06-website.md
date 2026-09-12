@@ -1,7 +1,8 @@
 # Website composition and operator interface
 
 Status: retained composition storage and permissioned publication rendering are implemented, including
-the initial exact query and pure application-action bindings; broader dependent platform acceptance remains pending. The
+exact queries, pure application actions, and the page-owned stateful Atomic action binding described below.
+Coordinator registration and broader dependent platform acceptance remain pending. The
 [coordination plan](../PLATFORM-IMPLEMENTATION.md) defines shared contracts and scheduling; the
 coordinator includes the relevant agreement with each assignment. This file owns the website
 workstream. Initial integrations are the website and Codex. Application-specific
@@ -79,6 +80,16 @@ and budget consumption to the existing real adapter. Reads are sequential, bound
 per binding (1–100 items, opaque cursor at most 1,024 characters), and are never cached by this
 consumer. This does not claim all queries share a database snapshot. Any failed read suppresses
 render values; original shared outcomes remain available for diagnostics.
+
+Stateful page actions use a separate standing-grant adapter over the existing action runner. The
+coordinator reads the exact active mechanic requirements and supports zero or one simple root role;
+when present, that role is bound to the server-selected route entity. Multiple roles, object or
+snapshot roles, graph snapshots, child mechanics, authorized context, and event requirements remain
+unavailable from a page. The host supplies the current application-publication state space, state
+revision, audience principal, grant candidate, command identity, deadline, and Atomic profile.
+The adapter rechecks the exact mechanic target before execution and the allowed effect kinds inside
+the same database write that commits the effects. Pure actions retain their existing application-scoped
+path. Browser-authored input cannot select any of this authority.
 
 [composition-bindings.js](../../../DantesRoleplay.Web/BrowserComponents/composition-bindings.js)
 provides result/operator presentation and a controller accepting injected read/dispatch functions.
@@ -176,6 +187,11 @@ The unregistered publication CAS writes only the ECS component reference after c
 `ReadCompatibilityPointerAsync` reports disagreement with the separate web `ActiveRevision`;
 it neither repairs the pointer nor promises a transaction across the two databases. Legacy
 discovery refuses to send pinned content through the old mutable-active HTML route.
+If a later publication loses its compare-and-swap or fails caller-owned constraint validation, the
+prior ECS pin remains selected and its exact retained assets remain readable. The newer content draft
+stays retained and inert. The compatibility pointer reports the pinned and legacy active revisions
+separately, including `RequiresReconciliation`, so recovery is explicit rather than inferred from a
+failed request.
 
 Selections and pins are evidence, never permission tokens. The coordinator's `web-page` resource
 permission maps to the retained web content page and immutable owning application; publication
@@ -223,11 +239,16 @@ constraint validator, and validates before committing. A returned staged compone
 evidence, not an operation receipt; rolling back does not remove the separately retained web draft.
 
 Library and migrated SQLite fixtures demonstrate composition, inert retention, exact historical
-asset readback, local transaction rollback and consumer conformance. They do not demonstrate
-production composition activation, published composition routes, cross-owner failed-publication recovery,
-Codex-to-page action execution, invited-user grants, scheduled jobs or delegated worker completion.
-Those scenarios wait for real dependencies and coordinator integration; test doubles are confined
-to test projects and cannot satisfy platform acceptance.
+asset readback, local transaction rollback, cross-owner failed-publication recovery, and consumer
+conformance. A disposable SQLite integration follows a published page through the real standing-grant
+read and action adapters, Jint mechanic, guarded ECS commit, fresh publication selection, and authorized
+query readback; wrong-audience and revoked-grant attempts remain denied without another write. Reviewed
+new stateful mechanic publication is proven by the application-candidate owner separately. Runtime
+query-contract authoring is outside this website-owned change and remains a plan 02 dependency: its
+reviewed publication must preserve the exact query-to-projection closure consumed here. Until that
+owner and coordinator registration are integrated, the combined Codex-authored query/page scenario,
+invited-user acceptance, scheduled jobs, and delegated worker completion still wait for real
+dependencies. Test doubles cannot satisfy those platform scenarios.
 
 ## Outcome and existing owners
 

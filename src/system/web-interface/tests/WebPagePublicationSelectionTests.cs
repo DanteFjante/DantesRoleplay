@@ -192,6 +192,10 @@ public sealed class WebPagePublicationSelectionTests
         Assert.Equal(2, current.Content.Revision);
         Assert.Equal(new byte[] { 2 }, (await fixture.Publication.ReadSelectedAssetAsync(current, "assets/icon.bin"))!.Content);
         Assert.Equal(3, (await fixture.Content.GetSummaryAsync(Fixture.ContentId))!.LatestRevision);
+        var recovery = await fixture.Publication.ReadCompatibilityPointerAsync(current);
+        Assert.True(recovery.RequiresReconciliation);
+        Assert.Equal(2, recovery.PinnedRevision);
+        Assert.Equal(1, recovery.ActiveRevision);
     }
 
     [Fact]
