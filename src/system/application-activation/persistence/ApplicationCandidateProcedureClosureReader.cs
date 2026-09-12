@@ -55,12 +55,15 @@ internal sealed class ApplicationCandidateProcedureClosureReader(
                 ? successor.Id : candidate.ApplicationId.Value + "." + successor.Id;
             if (successor.Status != DantesRoleplay.Procedures.ProcedureStatus.Active || qualifiedProcedure != target.DefinitionId)
                 return ApplicationCandidateReviewClosureReadResult.Rejected();
-            var basis = RequireCurrentBase(candidate, selection);
-            if (basis is null || !snapshots.TryGetSnapshot(candidate.ApplicationId, out var snapshot)
-                || (snapshot.Resolution?.Fingerprint ?? snapshot.Manifest.Fingerprint) != basis.ResolutionFingerprint)
+            var active = RequireActiveBaseOrCandidate(candidate, selection, selected);
+            if (active is null || !snapshots.TryGetSnapshot(candidate.ApplicationId, out var snapshot)
+                || (snapshot.Resolution?.Fingerprint ?? snapshot.Manifest.Fingerprint)
+                    != active.Value.Current.ResolutionFingerprint)
                 return ApplicationCandidateReviewClosureReadResult.Rejected();
 
-            var predecessor = await PredecessorAsync(host, candidate, basis, selected, target, successor, cancellationToken);
+            var basis = active.Value.Basis;
+            var predecessor = await PredecessorAsync(host, candidate, basis, active.Value.BasisIsCurrent,
+                selected, target, successor, cancellationToken);
             if (predecessor.Rejected) return ApplicationCandidateReviewClosureReadResult.Rejected();
             var references = SystemInnerWorkerGovernedReferences.Parse(successor.Governs);
             if (!ExplicitReferencesWellFormed(successor.Governs, references))
@@ -69,7 +72,7 @@ internal sealed class ApplicationCandidateProcedureClosureReader(
             if (dependencies is null) return ApplicationCandidateReviewClosureReadResult.Rejected();
             return ApplicationCandidateReviewClosureReadResult.Available(
                 ApplicationCandidateProcedureReviewClosureEvidence.FromVerified(
-                    selection, basis, selected, predecessor.Definition,
+                    selection, selected, predecessor.Definition,
                     dependencies.Value.Definitions, dependencies.Value.Documents));
         }
         catch (Exception exception) when (exception is ArgumentException or InvalidOperationException
@@ -82,28 +85,43 @@ internal sealed class ApplicationCandidateProcedureClosureReader(
         }
     }
 
-    private ActiveApplicationManifest? RequireCurrentBase(ApplicationCandidateReference candidate,
-        ApplicationCandidateSelectionEvidence selection)
+    private (ActiveApplicationManifest Basis, ActiveApplicationManifest Current, bool BasisIsCurrent)?
+        RequireActiveBaseOrCandidate(ApplicationCandidateReference candidate,
+            ApplicationCandidateSelectionEvidence selection, ApplicationCandidateSelectedDocument selected)
     {
         var origin = selection.BaseOrigin;
         var basis = origin is null ? null : activations.ReadRevision(candidate.ApplicationId, origin.ActivationRevision);
         var current = activations.Current(candidate.ApplicationId);
-        return basis is null || current is null || basis.ActivationFingerprint != origin!.ActivationFingerprint
+        if (basis is null || current is null || basis.ActivationFingerprint != origin!.ActivationFingerprint
             || basis.ApplicationRevision != origin.ApplicationRevision || basis.ApplicationFingerprint != origin.ApplicationFingerprint
-            || current.ActivationFingerprint != basis.ActivationFingerprint || basis.PreparationVersion is null
-            ? null : basis;
+            || basis.PreparationVersion is null) return null;
+        var basisIsCurrent = current.ActivationFingerprint == basis.ActivationFingerprint;
+        if (!basisIsCurrent)
+        {
+            var currentSelected = current.Winners.SingleOrDefault(value =>
+                value.RelativePath == selected.Document.RelativePath);
+            var unchanged = basis.Winners.Where(value => value.RelativePath != selected.Document.RelativePath).ToArray();
+            if (current.CandidateManifestFingerprint != candidate.ContentFingerprint
+                || currentSelected != selected.Document
+                || unchanged.Any(value => !current.Winners.Contains(value))) return null;
+        }
+        return (basis, current, basisIsCurrent);
     }
 
     private async Task<(bool Rejected, StandingGrantDefinitionReference? Definition)> PredecessorAsync(
         InteractionInvocationHost host, ApplicationCandidateReference candidate, ActiveApplicationManifest basis,
+        bool basisIsCurrent,
         ApplicationCandidateSelectedDocument selected, StandingGrantDefinitionTarget target, ProcedureFile successor,
         CancellationToken cancellationToken)
     {
         var old = basis.Winners.SingleOrDefault(value => value.RelativePath == selected.Document.RelativePath);
         if (old is null)
         {
-            var absent = await targets.ResolveCurrentAsync(host, target.DefinitionId, "procedure", cancellationToken);
-            return absent.Code == "STANDING_GRANT_DEFINITION_UNAVAILABLE" ? (false, null) : (true, null);
+            if (!basisIsCurrent) return (false, null);
+            var absent = await targets.ResolveCurrentAsync(host, target.DefinitionId,
+                "procedure", cancellationToken);
+            return absent.Code == "STANDING_GRANT_DEFINITION_UNAVAILABLE"
+                ? (false, null) : (true, null);
         }
         if (old with { ContentFingerprint = selected.Document.ContentFingerprint, Length = selected.Document.Length } != selected.Document)
             return (true, null);
@@ -112,17 +130,25 @@ internal sealed class ApplicationCandidateProcedureClosureReader(
             || retained.ContentFingerprint != old.ContentFingerprint || retained.Length != old.Length
             || Convert.ToHexString(SHA256.HashData(bytes)) != old.ContentFingerprint)
             return (true, null);
-        var prior = ProcedureFile.Parse(Text(bytes), old.RelativePath);
+        var prior = ProcedureFile.Parse(Text(bytes.ToImmutableArray()), old.RelativePath);
         if (prior.Id != successor.Id || prior.Status != DantesRoleplay.Procedures.ProcedureStatus.Active
             || prior with { Instructions = successor.Instructions, Governs = successor.Governs } != successor)
             return (true, null);
-        var resolved = await targets.ResolveCurrentAsync(host, target.DefinitionId, "procedure", cancellationToken);
-        if (resolved.Status != StandingGrantTargetResolutionStatus.Available || resolved.Target is null
-            || resolved.Target.OwnerApplicationId != candidate.ApplicationId || resolved.Target.Kind != "procedure"
-            || resolved.Target.DefinitionId != target.DefinitionId)
+        var record = ActivatedApplicationCatalogMaterializer.ParseRetainedRecord(candidate.ApplicationId,
+            old, new Dictionary<string, ActivatedApplicationDocument>(StringComparer.Ordinal)
+            { [old.RelativePath] = old }, new Dictionary<string, byte[]>(StringComparer.Ordinal)
+            { [old.RelativePath] = bytes });
+        if (record is null || record.Kind != "procedure" || record.QualifiedId != target.DefinitionId)
             return (true, null);
-        return (false, new(resolved.Target.DefinitionId, resolved.Target.Kind, resolved.Target.Revision,
-            resolved.Target.ContentFingerprint));
+        var predecessor = new StandingGrantDefinitionReference(record.QualifiedId, record.Kind,
+            record.Version, record.ContentFingerprint);
+        if (basisIsCurrent)
+        {
+            var resolved = await targets.ResolveAsync(host, predecessor, cancellationToken);
+            if (resolved.Status != StandingGrantTargetResolutionStatus.Available || resolved.Target is null
+                || resolved.Target.OwnerApplicationId != candidate.ApplicationId) return (true, null);
+        }
+        return (false, predecessor);
     }
 
     private async Task<(ImmutableArray<StandingGrantDefinitionReference> Definitions,
@@ -198,9 +224,9 @@ internal sealed class ApplicationCandidateProcedureClosureReader(
         {
             var value = clause.Trim();
             if (!value.StartsWith("execute", StringComparison.Ordinal)) continue;
-            if (!ActionClause().IsMatch(value) || !actions.Contains(value[8..].Trim())) return false;
+            if (!ActionClause.IsMatch(value) || !actions.Contains(value[8..].Trim())) return false;
         }
-        return QueryMarker().Matches(governs).Count == QueryClause().Matches(governs).Count;
+        return QueryMarker.Matches(governs).Count == QueryClause.Matches(governs).Count;
     }
 
     private static readonly Regex ActionClause = new("^execute\\s+([a-z0-9][a-z0-9._-]{2,159})$",
@@ -217,8 +243,7 @@ internal sealed class ApplicationCandidateProcedureReviewClosureEvidence
     : IApplicationCandidateReviewClosureEvidence
 {
     private ApplicationCandidateProcedureReviewClosureEvidence(
-        ApplicationCandidateSelectionEvidence selection, ActiveApplicationManifest basis,
-        ApplicationCandidateSelectedDocument selected,
+        ApplicationCandidateSelectionEvidence selection, ApplicationCandidateSelectedDocument selected,
         StandingGrantDefinitionReference? predecessor,
         ImmutableArray<StandingGrantDefinitionReference> dependencies,
         ImmutableArray<ApplicationCandidateReviewClosureDocument> dependencyDocuments)
@@ -252,10 +277,9 @@ internal sealed class ApplicationCandidateProcedureReviewClosureEvidence
     internal StandingGrantDefinitionReference? Predecessor { get; }
 
     internal static ApplicationCandidateProcedureReviewClosureEvidence FromVerified(
-        ApplicationCandidateSelectionEvidence selection, ActiveApplicationManifest basis,
-        ApplicationCandidateSelectedDocument selected,
+        ApplicationCandidateSelectionEvidence selection, ApplicationCandidateSelectedDocument selected,
         StandingGrantDefinitionReference? predecessor,
         ImmutableArray<StandingGrantDefinitionReference> dependencies,
         ImmutableArray<ApplicationCandidateReviewClosureDocument> dependencyDocuments) =>
-        new(selection, basis, selected, predecessor, dependencies, dependencyDocuments);
+        new(selection, selected, predecessor, dependencies, dependencyDocuments);
 }

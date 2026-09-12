@@ -51,7 +51,7 @@ public sealed partial class SqliteApplicationAuthoringService : IApplicationAuth
         IStandingGrantPolicy grants, IStandingGrantTargetResolver targets, IOperationLog operations,
         IApplicationCandidatePreparation? preparation, IInteractionManualContextService? manuals,
         ApplicationCandidateReviewedPureUpdateReader? reviewedPureUpdates,
-        ApplicationCandidateReviewedProcedureUpdateReader? reviewedProcedureUpdates,
+        ApplicationCandidateReviewedProcedureUpdateReader? reviewedProcedureUpdates = null,
         IApplicationCatalogSynchronizationEvidenceReader? synchronization = null,
         ApplicationCandidateStatefulRuntimeValidator? statefulRuntime = null,
         ApplicationCandidateStatefulReviewClosureReader? statefulReviewClosures = null,
