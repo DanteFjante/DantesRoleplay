@@ -669,13 +669,12 @@
       "ownerLocationId": "location.caldris.gilded-kettle",
       "parentLocationId": null,
       "mapAnchor": null,
-      "mediaId": "scene-gilded-kettle-rainy-common-room-v1",
-      "role": "scene",
+      "role": "illustration",
       "visibility": [
         "player",
         "dm"
       ],
-      "activationDisposition": "retained-inert-until-explicit-scene-use",
+      "activationDisposition": "guarded-location-gallery-append",
       "relativePath": "gilded-kettle-rainy-common-room-v1.png",
       "sha256": "cbcde4250262c0fac2ec9dc37c29fee36c72ffa7506dbfa3a16ff237bc8db6a1",
       "mimeType": "image/png",
@@ -693,9 +692,43 @@
       "previousActiveMap": null,
       "bindingPlan": {
         "componentId": "game.core.media.visual",
-        "expectedDisposition": "merge-by-media-id-with-current-CAS",
-        "attachment": {
-          "role": "scene",
+        "preflightReadRequired": true,
+        "preservedBaseline": {
+          "databaseBackupSha256": "4f8e16c7ebc93e43906c21b7eba6083e85af665278636b855fa085ec6f8a9290",
+          "capturedAtUtc": "2026-09-12T13:39:56.0323837Z",
+          "ownerEntityRevision": 1,
+          "componentObservedAbsent": true,
+          "expectedComponentRevision": 0
+        },
+        "expectedDisposition": "add-if-still-absent-or-append-after-fresh-CAS-read",
+        "valueWhenAbsent": {
+          "status": "active",
+          "attachments": [
+            {
+              "role": "illustration",
+              "visibility": [
+                "player",
+                "dm"
+              ],
+              "sha256": "cbcde4250262c0fac2ec9dc37c29fee36c72ffa7506dbfa3a16ff237bc8db6a1",
+              "mimeType": "image/png",
+              "width": 1536,
+              "height": 1024,
+              "alt": "A rain-darkened common room at the Gilded Kettle, warm and crowded, with wet cloaks and copper pots.",
+              "caption": "Prepared location illustration of the Gilded Kettle common room in rain; no depicted event is recorded as having occurred.",
+              "order": 10,
+              "provenance": {
+                "kind": "generated",
+                "credit": "OpenAI image generation",
+                "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/gilded-kettle-rainy-common-room-v1.png",
+                "reviewedOn": "2026-09-12",
+                "version": 1
+              }
+            }
+          ]
+        },
+        "appendAttachment": {
+          "role": "illustration",
           "visibility": [
             "player",
             "dm"
@@ -705,7 +738,7 @@
           "width": 1536,
           "height": 1024,
           "alt": "A rain-darkened common room at the Gilded Kettle, warm and crowded, with wet cloaks and copper pots.",
-          "caption": "",
+          "caption": "Prepared location illustration of the Gilded Kettle common room in rain; no depicted event is recorded as having occurred.",
           "order": 10,
           "provenance": {
             "kind": "generated",
@@ -714,8 +747,17 @@
             "reviewedOn": "2026-09-12",
             "version": 1
           }
-        }
-      }
+        },
+        "mergeRules": [
+          "Read the current game.core.media.visual value and revision immediately before writing.",
+          "If absent, add valueWhenAbsent with expected revision 0.",
+          "If present, preserve status and every existing attachment byte-for-byte, append appendAttachment once by sha256, and set expected revision to the freshly read revision.",
+          "If the component changes after the read, reject the CAS and repeat the read/merge; never replace the gallery from this packet alone."
+        ]
+      },
+      "caption": "Prepared location illustration of the Gilded Kettle common room in rain; no depicted event is recorded as having occurred.",
+      "attachmentKey": "scene-gilded-kettle-rainy-common-room-v1",
+      "mediaIdDisposition": "assigned-by-existing-media-owner-after-CAS"
     },
     {
       "logicalAssetKey": "caldris.scene.weir-bridge-rainy-toll.v1",
@@ -723,13 +765,12 @@
       "ownerLocationId": "location.caldris.atlas.weir-bridge",
       "parentLocationId": null,
       "mapAnchor": null,
-      "mediaId": "scene-weir-bridge-rainy-toll-v1",
-      "role": "scene",
+      "role": "illustration",
       "visibility": [
         "player",
         "dm"
       ],
-      "activationDisposition": "retained-inert-until-explicit-scene-use",
+      "activationDisposition": "guarded-location-gallery-append",
       "relativePath": "weir-bridge-rainy-toll-v1.png",
       "sha256": "f494acf0eadbe8bf17cb3a34f31dc08e4c84b08d1474592b4f9b2495b0b870d2",
       "mimeType": "image/png",
@@ -747,9 +788,43 @@
       "previousActiveMap": null,
       "bindingPlan": {
         "componentId": "game.core.media.visual",
-        "expectedDisposition": "merge-by-media-id-with-current-CAS",
-        "attachment": {
-          "role": "scene",
+        "preflightReadRequired": true,
+        "preservedBaseline": {
+          "databaseBackupSha256": "4f8e16c7ebc93e43906c21b7eba6083e85af665278636b855fa085ec6f8a9290",
+          "capturedAtUtc": "2026-09-12T13:39:56.0323837Z",
+          "ownerEntityRevision": 1,
+          "componentObservedAbsent": true,
+          "expectedComponentRevision": 0
+        },
+        "expectedDisposition": "add-if-still-absent-or-append-after-fresh-CAS-read",
+        "valueWhenAbsent": {
+          "status": "active",
+          "attachments": [
+            {
+              "role": "illustration",
+              "visibility": [
+                "player",
+                "dm"
+              ],
+              "sha256": "f494acf0eadbe8bf17cb3a34f31dc08e4c84b08d1474592b4f9b2495b0b870d2",
+              "mimeType": "image/png",
+              "width": 1536,
+              "height": 1024,
+              "alt": "A rainy approach to Weir Bridge and its modest toll barrier, with no named characters or secret markers.",
+              "caption": "Prepared location illustration of the rainy Weir Bridge toll approach; no depicted event is recorded as having occurred.",
+              "order": 10,
+              "provenance": {
+                "kind": "generated",
+                "credit": "OpenAI image generation",
+                "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/weir-bridge-rainy-toll-v1.png",
+                "reviewedOn": "2026-09-12",
+                "version": 1
+              }
+            }
+          ]
+        },
+        "appendAttachment": {
+          "role": "illustration",
           "visibility": [
             "player",
             "dm"
@@ -759,7 +834,7 @@
           "width": 1536,
           "height": 1024,
           "alt": "A rainy approach to Weir Bridge and its modest toll barrier, with no named characters or secret markers.",
-          "caption": "",
+          "caption": "Prepared location illustration of the rainy Weir Bridge toll approach; no depicted event is recorded as having occurred.",
           "order": 10,
           "provenance": {
             "kind": "generated",
@@ -768,8 +843,17 @@
             "reviewedOn": "2026-09-12",
             "version": 1
           }
-        }
-      }
+        },
+        "mergeRules": [
+          "Read the current game.core.media.visual value and revision immediately before writing.",
+          "If absent, add valueWhenAbsent with expected revision 0.",
+          "If present, preserve status and every existing attachment byte-for-byte, append appendAttachment once by sha256, and set expected revision to the freshly read revision.",
+          "If the component changes after the read, reject the CAS and repeat the read/merge; never replace the gallery from this packet alone."
+        ]
+      },
+      "caption": "Prepared location illustration of the rainy Weir Bridge toll approach; no depicted event is recorded as having occurred.",
+      "attachmentKey": "scene-weir-bridge-rainy-toll-v1",
+      "mediaIdDisposition": "assigned-by-existing-media-owner-after-CAS"
     },
     {
       "logicalAssetKey": "caldris.scene.north-bell-tower-before-noon.v1",
@@ -777,13 +861,12 @@
       "ownerLocationId": "location.caldris.north-bell-tower",
       "parentLocationId": null,
       "mapAnchor": null,
-      "mediaId": "scene-north-bell-tower-before-noon-v1",
-      "role": "scene",
+      "role": "illustration",
       "visibility": [
         "player",
         "dm"
       ],
-      "activationDisposition": "retained-inert-until-explicit-scene-use",
+      "activationDisposition": "guarded-location-gallery-append",
       "relativePath": "north-bell-tower-before-noon-v1.png",
       "sha256": "19b1280d6b62ccf77e4f0d887bb27b5637c1176d184afad194a07f5a7e85f521",
       "mimeType": "image/png",
@@ -801,9 +884,43 @@
       "previousActiveMap": null,
       "bindingPlan": {
         "componentId": "game.core.media.visual",
-        "expectedDisposition": "merge-by-media-id-with-current-CAS",
-        "attachment": {
-          "role": "scene",
+        "preflightReadRequired": true,
+        "preservedBaseline": {
+          "databaseBackupSha256": "4f8e16c7ebc93e43906c21b7eba6083e85af665278636b855fa085ec6f8a9290",
+          "capturedAtUtc": "2026-09-12T13:39:56.0323837Z",
+          "ownerEntityRevision": 1,
+          "componentObservedAbsent": true,
+          "expectedComponentRevision": 0
+        },
+        "expectedDisposition": "add-if-still-absent-or-append-after-fresh-CAS-read",
+        "valueWhenAbsent": {
+          "status": "active",
+          "attachments": [
+            {
+              "role": "illustration",
+              "visibility": [
+                "player",
+                "dm"
+              ],
+              "sha256": "19b1280d6b62ccf77e4f0d887bb27b5637c1176d184afad194a07f5a7e85f521",
+              "mimeType": "image/png",
+              "width": 1536,
+              "height": 1024,
+              "alt": "The North Bell Tower before noon, its bell rope and timber mechanism visible without revealing the mystery.",
+              "caption": "Prepared location illustration of the North Bell Tower before noon; it reveals no solution and records no event as having occurred.",
+              "order": 10,
+              "provenance": {
+                "kind": "generated",
+                "credit": "OpenAI image generation",
+                "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/north-bell-tower-before-noon-v1.png",
+                "reviewedOn": "2026-09-12",
+                "version": 1
+              }
+            }
+          ]
+        },
+        "appendAttachment": {
+          "role": "illustration",
           "visibility": [
             "player",
             "dm"
@@ -813,7 +930,7 @@
           "width": 1536,
           "height": 1024,
           "alt": "The North Bell Tower before noon, its bell rope and timber mechanism visible without revealing the mystery.",
-          "caption": "",
+          "caption": "Prepared location illustration of the North Bell Tower before noon; it reveals no solution and records no event as having occurred.",
           "order": 10,
           "provenance": {
             "kind": "generated",
@@ -822,8 +939,17 @@
             "reviewedOn": "2026-09-12",
             "version": 1
           }
-        }
-      }
+        },
+        "mergeRules": [
+          "Read the current game.core.media.visual value and revision immediately before writing.",
+          "If absent, add valueWhenAbsent with expected revision 0.",
+          "If present, preserve status and every existing attachment byte-for-byte, append appendAttachment once by sha256, and set expected revision to the freshly read revision.",
+          "If the component changes after the read, reject the CAS and repeat the read/merge; never replace the gallery from this packet alone."
+        ]
+      },
+      "caption": "Prepared location illustration of the North Bell Tower before noon; it reveals no solution and records no event as having occurred.",
+      "attachmentKey": "scene-north-bell-tower-before-noon-v1",
+      "mediaIdDisposition": "assigned-by-existing-media-owner-after-CAS"
     }
   ],
   "locationCreates": [
@@ -1118,13 +1244,14 @@
       "Verify the live state-space and each existing component revision/hash against authority and previousActiveMap.",
       "Retain a database backup and every current blob before mutation.",
       "Land the P2 site/interior map-parent validator change.",
-      "Resolve the authored map.visual schema versus the registered live hash-bearing schema before import."
+      "Resolve the authored map.visual schema versus the registered live hash-bearing schema before import.",
+      "Re-read the three illustration-owner entity revisions and game.core.media.visual revisions; the preserved baseline observed entity revision 1 and component absence for each owner."
     ],
     "order": [
       "Upload all 11 PNG files to content-addressed blob storage and verify SHA-256 and byte length.",
       "Create the 14 locations, then their containment and map.anchor components with expected absence.",
       "Apply eight map.visual bindings with exact component CAS; preserve both player and DM variants on one terrain master.",
-      "Retain the three scene attachments but leave them unbound until explicit scene use.",
+      "Preflight-read game.core.media.visual on all three scene owners, then add or append each illustration with exact component CAS while preserving the complete existing gallery.",
       "Import prepared-situation clue entities and relationships as unrevealed GM content.",
       "Read back entity, component, containment, relationship, blob, and audience projections before activation."
     ],

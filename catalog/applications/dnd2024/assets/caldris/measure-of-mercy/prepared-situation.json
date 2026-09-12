@@ -232,6 +232,57 @@
         "role": "knowledge",
         "audience": "gm"
       }
+    },
+    {
+      "from": "clue.caldris.thirteenth-bell.dry-flour",
+      "to": "secret.caldris.mystery-tax-wagon-solution",
+      "kind": "game.core.world.clue.supports",
+      "data": {}
+    },
+    {
+      "from": "clue.caldris.thirteenth-bell.pulley-fibers",
+      "to": "secret.caldris.mystery-tax-wagon-solution",
+      "kind": "game.core.world.clue.supports",
+      "data": {}
+    },
+    {
+      "from": "clue.caldris.thirteenth-bell.changed-whistle",
+      "to": "secret.caldris.mystery-tax-wagon-solution",
+      "kind": "game.core.world.clue.supports",
+      "data": {}
+    },
+    {
+      "from": "clue.caldris.thirteenth-bell.altered-alley-map",
+      "to": "secret.caldris.mystery-tax-wagon-solution",
+      "kind": "game.core.world.clue.supports",
+      "data": {}
+    },
+    {
+      "from": "clue.caldris.thirteenth-bell.barge-signal-timing",
+      "to": "secret.caldris.mystery-tax-wagon-solution",
+      "kind": "game.core.world.clue.supports",
+      "data": {}
+    },
+    {
+      "from": "secret.caldris.measure-of-mercy.before-the-fourteenth-stroke",
+      "to": "campaign.caldris.measure-of-mercy.chapter.the-thirteenth-bell",
+      "kind": "game.core.world.knowledge.about",
+      "data": {}
+    },
+    {
+      "from": "secret.caldris.measure-of-mercy.before-the-fourteenth-stroke",
+      "to": "world.caldris",
+      "kind": "game.core.world.knowledge.in-world",
+      "data": {}
+    },
+    {
+      "from": "campaign.caldris.measure-of-mercy",
+      "to": "secret.caldris.measure-of-mercy.before-the-fourteenth-stroke",
+      "kind": "game.core.campaign.references",
+      "data": {
+        "role": "knowledge",
+        "audience": "gm"
+      }
     }
   ],
   "scenes": [
@@ -310,5 +361,48 @@
     "Do not move Ganji or change the current scene.",
     "Do not reveal a clue or admit player knowledge during import.",
     "Do not resolve a quest, award a reward, or record any prepared event as played."
-  ]
+  ],
+  "canonicalKnowledgeRecord": {
+    "owner": "existing-world-knowledge",
+    "entityCreate": {
+      "id": "secret.caldris.measure-of-mercy.before-the-fourteenth-stroke",
+      "name": "Before the Fourteenth Stroke — Prepared Situation",
+      "components": {
+        "game.core.world.secret": {
+          "status": "active",
+          "summary": "Prepared, unplayed situation. Opening: at the next session Elowen Pike may ask Ganji why the noon bell rang thirteen times as the empty tax wagon entered Bramblebridge market. Goals: Elowen wants lawful humane tolls; Tibb wants a truthful report respected; Merrit wants safe hospitality and the burned-inn letters traced; Odo wants oral memory and hives preserved; Nan wants charters stabilized without exposing private conclusions. Unused scenes: rainy Gilded Kettle, rainy Weir Bridge toll approach, and North Bell Tower before noon. Clues concern dry flour, pulley fibers, a changed whistle, an altered alley map, and barge-signal timing. Success enables a witnessed lawful intervention; premature confrontation advances the carriers but leaves clearer tracks; delay changes the next signal while physical evidence remains. Optional hooks: a Mallow Abbey charter discrepancy and the Gilded Kettle letters remain separate unresolved threads.",
+          "provenance": "Reviewed future-play packet prepared from the retained 2026-09-12 Measure of Mercy campaign export; no described event is recorded as played.",
+          "visibility": "gm"
+        },
+        "game.core.world.knowledge.classification": {
+          "subjectKind": "intention",
+          "sensitivity": "secret"
+        }
+      }
+    },
+    "relationshipCreates": [
+      {
+        "from": "secret.caldris.measure-of-mercy.before-the-fourteenth-stroke",
+        "to": "campaign.caldris.measure-of-mercy.chapter.the-thirteenth-bell",
+        "kind": "game.core.world.knowledge.about",
+        "data": {}
+      },
+      {
+        "from": "secret.caldris.measure-of-mercy.before-the-fourteenth-stroke",
+        "to": "world.caldris",
+        "kind": "game.core.world.knowledge.in-world",
+        "data": {}
+      },
+      {
+        "from": "campaign.caldris.measure-of-mercy",
+        "to": "secret.caldris.measure-of-mercy.before-the-fourteenth-stroke",
+        "kind": "game.core.campaign.references",
+        "data": {
+          "role": "knowledge",
+          "audience": "gm"
+        }
+      }
+    ],
+    "retrieval": "DM-authorized game.core.world.secret through the configured knowledge-answer/manual context owners"
+  }
 }

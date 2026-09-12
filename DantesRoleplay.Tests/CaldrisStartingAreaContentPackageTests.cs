@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Security.Cryptography;
 using System.Text.Json;
+using DantesRoleplay.SchemaValidation;
 
 namespace DantesRoleplay.Tests;
 
@@ -64,7 +65,7 @@ public sealed class CaldrisStartingAreaContentPackageTests
         Assert.All(nearby, key => Assert.Contains(assets,
             value => value.GetProperty("logicalAssetKey").GetString() == key));
         Assert.All(assets.Where(value => value.GetProperty("kind").GetString() == "scene"),
-            value => Assert.Equal("retained-inert-until-explicit-scene-use",
+            value => Assert.Equal("guarded-location-gallery-append",
                 value.GetProperty("activationDisposition").GetString()));
     }
 
@@ -129,7 +130,10 @@ public sealed class CaldrisStartingAreaContentPackageTests
                 .GetProperty("game.core.world.knowledge.classification").GetProperty("sensitivity").GetString());
         }
 
-        Assert.Equal(15, root.GetProperty("relationshipCreates").GetArrayLength());
+        Assert.Equal(23, root.GetProperty("relationshipCreates").GetArrayLength());
+        Assert.All(clues, clue => Assert.Single(root.GetProperty("relationshipCreates").EnumerateArray(),
+            relationship => relationship.GetProperty("from").GetString() == clue.GetProperty("id").GetString()
+                && relationship.GetProperty("kind").GetString() == "game.core.world.clue.supports"));
         Assert.All(root.GetProperty("scenes").EnumerateArray(),
             scene => Assert.Equal("prepared-unused", scene.GetProperty("status").GetString()));
         Assert.All(root.GetProperty("playerOrientationCandidates").EnumerateArray(), candidate =>
@@ -157,17 +161,102 @@ public sealed class CaldrisStartingAreaContentPackageTests
         }
     }
 
+    [Fact]
+    public void Import_components_relationship_data_and_prepared_document_validate_against_closed_schemas()
+    {
+        var directory = PackageDirectory();
+        var repository = RepositoryRoot();
+        var validator = new BoundedJsonSchemaValidator();
+        using var manifest = Read(Path.Combine(directory, "asset-import-manifest.json"));
+        using var situation = Read(Path.Combine(directory, "prepared-situation.json"));
+
+        Validates(validator, Path.Combine(directory, "prepared-situation.schema.json"), situation.RootElement);
+        foreach (var location in manifest.RootElement.GetProperty("locationCreates").EnumerateArray())
+        {
+            var components = location.GetProperty("components");
+            Validates(validator, Schema(repository, "world", "location.schema.json"),
+                components.GetProperty("game.core.world.location"));
+            Validates(validator, Schema(repository, "world", "map", "anchor.schema.json"),
+                components.GetProperty("game.core.world.map.anchor"));
+        }
+
+        foreach (var asset in manifest.RootElement.GetProperty("assets").EnumerateArray()
+                     .Where(value => value.GetProperty("kind").GetString() == "scene"))
+        {
+            Assert.Equal("guarded-location-gallery-append", asset.GetProperty("activationDisposition").GetString());
+            var binding = asset.GetProperty("bindingPlan");
+            Assert.True(binding.GetProperty("preflightReadRequired").GetBoolean());
+            Assert.True(binding.GetProperty("preservedBaseline").GetProperty("componentObservedAbsent").GetBoolean());
+            Assert.Equal(0, binding.GetProperty("preservedBaseline").GetProperty("expectedComponentRevision").GetInt32());
+            Validates(validator, Schema(repository, "media", "visual.schema.json"),
+                binding.GetProperty("valueWhenAbsent"));
+        }
+
+        foreach (var clue in situation.RootElement.GetProperty("clueCreates").EnumerateArray())
+        {
+            var components = clue.GetProperty("components");
+            Validates(validator, Schema(repository, "world", "clue.schema.json"),
+                components.GetProperty("game.core.world.clue"));
+            Validates(validator, Schema(repository, "world", "knowledge", "classification.schema.json"),
+                components.GetProperty("game.core.world.knowledge.classification"));
+        }
+
+        var knowledge = situation.RootElement.GetProperty("canonicalKnowledgeRecord");
+        var knowledgeEntity = knowledge.GetProperty("entityCreate");
+        var knowledgeComponents = knowledgeEntity.GetProperty("components");
+        Assert.StartsWith("secret.caldris.", knowledgeEntity.GetProperty("id").GetString(), StringComparison.Ordinal);
+        Validates(validator, Schema(repository, "world", "secret.schema.json"),
+            knowledgeComponents.GetProperty("game.core.world.secret"));
+        Validates(validator, Schema(repository, "world", "knowledge", "classification.schema.json"),
+            knowledgeComponents.GetProperty("game.core.world.knowledge.classification"));
+
+        const string emptyRelationshipDataSchema = "{\"type\":\"object\",\"additionalProperties\":false}";
+        const string campaignReferenceDataSchema = "{\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"role\",\"audience\"],\"properties\":{\"role\":{\"const\":\"knowledge\"},\"audience\":{\"const\":\"gm\"}}}";
+        foreach (var relationship in situation.RootElement.GetProperty("relationshipCreates").EnumerateArray())
+        {
+            var kind = relationship.GetProperty("kind").GetString();
+            var schema = kind == "game.core.campaign.references"
+                ? campaignReferenceDataSchema
+                : emptyRelationshipDataSchema;
+            var value = relationship.GetProperty("data");
+            var validation = validator.Validate(schema, value.GetRawText());
+            Assert.True(validation.Status == SchemaValueStatus.Valid,
+                $"Relationship {kind} data failed schema validation: {JsonSerializer.Serialize(validation.Diagnostics)}");
+            Assert.Contains(kind, new[]
+            {
+                "game.core.campaign.references",
+                "game.core.world.knowledge.about",
+                "game.core.world.knowledge.in-world",
+                "game.core.world.clue.supports"
+            });
+        }
+    }
+
     private static JsonDocument Read(string path) => JsonDocument.Parse(File.ReadAllText(path));
 
-    private static string PackageDirectory()
+    private static string PackageDirectory() => Path.Combine(RepositoryRoot(),
+        "catalog", "applications", "dnd2024", "assets", "caldris", "measure-of-mercy");
+
+    private static string Schema(string repository, params string[] parts) =>
+        Path.Combine([repository, "catalog", "components", "game", "core", .. parts]);
+
+    private static void Validates(BoundedJsonSchemaValidator validator, string schemaPath, JsonElement value)
+    {
+        var compilation = validator.Compile(File.ReadAllText(schemaPath));
+        Assert.True(compilation.IsAccepted, JsonSerializer.Serialize(compilation.Diagnostics));
+        var validation = validator.Validate(compilation.ProfileId, compilation.NormalizedSchema, value.GetRawText());
+        Assert.True(validation.Status == SchemaValueStatus.Valid,
+            $"{schemaPath}: {JsonSerializer.Serialize(validation.Diagnostics)}");
+    }
+
+    private static string RepositoryRoot()
     {
         for (var directory = new DirectoryInfo(AppContext.BaseDirectory);
              directory is not null;
              directory = directory.Parent)
         {
             if (File.Exists(Path.Combine(directory.FullName, "DantesRoleplay.slnx")))
-                return Path.Combine(directory.FullName,
-                    "catalog", "applications", "dnd2024", "assets", "caldris", "measure-of-mercy");
+                return directory.FullName;
         }
         throw new DirectoryNotFoundException("Could not locate the repository root.");
     }

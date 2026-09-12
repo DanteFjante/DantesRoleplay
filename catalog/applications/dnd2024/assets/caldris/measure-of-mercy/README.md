@@ -9,8 +9,9 @@ their map ownership and normalized anchors, six previous active map revisions, f
 locations, and the required compare-and-swap operations. `prepared-situation.json` contains future
 play material. Its five clues are unrevealed GM records, its three scenes are unused, and every
 player-orientation candidate requires an explicit knowledge admission to
-`actor.caldris.ganji`. `image-prompts.json` records the selected image-generation requests and
-output identities.
+`actor.caldris.ganji`. The full situation also has a canonical `game.core.world.secret` payload,
+linked to the campaign, chapter, and world so the authorized knowledge owner can retrieve it.
+`image-prompts.json` records the selected image-generation requests and output identities.
 
 ## Import boundary
 
@@ -25,10 +26,16 @@ output identities.
 5. Replace the six existing and add the two new map bindings using the manifest's exact component
    expectations. Player and DM variants use the same clean terrain master; labels and markers come
    from retained overlay records.
-6. Retain the three scene images without attaching them to an active scene. Import the five clue
-   entities and their relationships as unrevealed GM content. Do not admit knowledge, move a
-   character, create a session or encounter, resolve a quest, or award a reward.
-7. Read back blobs, entities, components, containments, relationships, map projections, and Player
+6. Preflight-read each illustration owner's `game.core.media.visual` component. The preserved
+   baseline observed component absence at owner entity revision 1. If still absent, add the
+   manifest's complete value with expected revision 0. If present, preserve its status and every
+   attachment, append the new illustration once by SHA-256, and write with the freshly read
+   component revision. A stale CAS must restart the read/merge. These are ordinary prepared
+   location illustrations; attaching them records no active scene or played event.
+7. Import the five clue entities, their required truth-support links, and the prepared-situation
+   secret as unrevealed/DM-only knowledge. Do not admit knowledge, move a character, create a
+   session or encounter, resolve a quest, or award a reward.
+8. Read back blobs, entities, components, containments, relationships, map projections, and Player
    and DM audience results before selecting the new application generation.
 
 If activation must be reversed, restore the six previous map values through new version-checked
