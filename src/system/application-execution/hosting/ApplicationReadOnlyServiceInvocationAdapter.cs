@@ -611,8 +611,13 @@ internal sealed class ApplicationReadOnlyServiceInvocationAdapter(
                 }
 
                 using var deadline = DeadlineToken(host, cancellationToken);
+                var readHost = host.Profile == InteractionExecutionProfile.Workflow
+                    ? new InteractionInvocationHost(host.Principal, host.ApplicationRevision,
+                        host.StateSpaceId!, host.GrantReference, host.CommandId, host.StateRevision!,
+                        InteractionExecutionProfile.ReadOnly, host.Budget, host.ParentCommandId)
+                    : host;
                 var task = reads.ReadAsync(new(
-                    host,
+                    readHost,
                     declaration.QualifiedQueryId,
                     declaration.Contract,
                     roles,

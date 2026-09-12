@@ -38,6 +38,7 @@ public sealed partial class SqliteApplicationAuthoringService
             ApplicationCandidateStatefulUpdateEvidence? stagedStatefulUpdate = null;
             ApplicationCandidateStatefulReviewClosureEvidence? stagedReviewedStateful = null;
             ApplicationCandidateStatefulRuntimeReport? statefulReport = null;
+            ApplicationCandidateRuntimeReport? workflowReport = null;
             if (statefulRuntime is not null && samples.Count > 0
                 && samples.All(value => value.StateSpaceId is not null))
             {
@@ -61,6 +62,11 @@ public sealed partial class SqliteApplicationAuthoringService
                             stagedReviewedStateful, samples, host, cancellationToken);
                 }
             }
+            if (statefulReport is null && workflowRuntime is not null && samples.Count > 0
+                && samples.All(value => value.StateSpaceId is not null
+                    && value.StateRevision is not null && value.RoleEntityIds is not null))
+                workflowReport = await workflowRuntime.ValidateAsync(
+                    new(candidate, samples), host, cancellationToken);
             await db.Database.OpenConnectionAsync(cancellationToken); opened = true;
             await using var transaction = ((SqliteConnection)db.Database.GetDbConnection()).BeginTransaction(deferred: false);
             await using var enlistment = await db.Database.UseTransactionAsync(transaction, cancellationToken);
@@ -101,7 +107,13 @@ public sealed partial class SqliteApplicationAuthoringService
                     && value.CandidateId == candidate.CandidateId && value.Revision == candidate.Revision
                     && value.CandidateFingerprint == candidate.ContentFingerprint && value.CanonicalCommandFingerprint == commandFingerprint,
                     cancellationToken);
-                if (validation is null || !ApplicationCandidateOperationProof.ValidationMatches(prior, validation, candidate, definitions))
+                var workflowPreparation = validation?.PreparationVersion?.StartsWith(
+                    ApplicationCandidateWorkflowRuntimeValidator.PolicyVersion + "@", StringComparison.Ordinal) == true;
+                if (validation is null || (workflowPreparation
+                        ? !ApplicationCandidateWorkflowOperationProof.TryRead(prior, validation, candidate,
+                            definitions, out _, out _)
+                        : !ApplicationCandidateOperationProof.ValidationMatches(prior, validation,
+                            candidate, definitions)))
                     return InteractionInvocationResult.Unavailable("APPLICATION_CANDIDATE_RECEIPT_INCONSISTENT", "The stored validation receipt cannot be reconciled.");
                 if (validation.PreparationVersion is { } statefulVersion
                     && statefulVersion.StartsWith(ApplicationCandidateStatefulRuntimeValidator.PolicyVersion + "@", StringComparison.Ordinal))
@@ -128,7 +140,24 @@ public sealed partial class SqliteApplicationAuthoringService
                             "APPLICATION_CANDIDATE_VALIDATION_EVIDENCE_INCONSISTENT",
                             "The retained stateful validation is no longer current or cannot be reconciled.");
                 }
-                if (validation.Outcome == "valid"
+                if (validation.PreparationVersion is { } workflowVersion
+                    && workflowVersion.StartsWith(ApplicationCandidateWorkflowRuntimeValidator.PolicyVersion + "@",
+                        StringComparison.Ordinal))
+                {
+                    if (workflowRuntime is null || reviewedWorkflowUpdates is null
+                        || !ApplicationCandidateWorkflowOperationProof.TryRead(prior, validation,
+                            candidate, definitions, out var retainedRequest, out var retainedWorkflow)
+                        || retainedRequest is null || retainedWorkflow is null
+                        || retainedWorkflow.Status == ApplicationCandidateRuntimeStatus.Completed
+                            && await new ApplicationCandidateReviewedWorkflowUpdateValidation(
+                                    reviewedWorkflowUpdates, workflowRuntime)
+                                .VerifyAsync(host, retainedRequest, retainedWorkflow, validation,
+                                    cancellationToken) is null)
+                        return InteractionInvocationResult.Unavailable(
+                            "APPLICATION_CANDIDATE_VALIDATION_EVIDENCE_INCONSISTENT",
+                            "The retained workflow validation is no longer current or cannot be reconciled.");
+                }
+                if (!workflowPreparation && validation.Outcome == "valid"
                     && validation.DependencyEvidenceReference is { } durableReview
                     && durableReview.StartsWith("validation.result.", StringComparison.Ordinal)
                     && validation.ReuseEvidenceReference == durableReview
@@ -154,7 +183,7 @@ public sealed partial class SqliteApplicationAuthoringService
                     .ReadAsync(candidate, cancellationToken)
                 : null;
             ApplicationCandidateRuntimeReport? runtimeReport = null;
-            if (intentMatchUpdate is null && statefulReport is null && preparation is not null
+            if (intentMatchUpdate is null && statefulReport is null && workflowReport is null && preparation is not null
                 && samples.All(value => value.StateSpaceId is null))
             {
                 var prepared = await preparation.ValidateAsync(
@@ -173,7 +202,7 @@ public sealed partial class SqliteApplicationAuthoringService
                 new ApplicationCandidateDiagnostic("DEPENDENCY_EXTRACTION_UNAVAILABLE", candidate.CandidateId, "Exact dependency extraction is unavailable."),
                 new ApplicationCandidateDiagnostic("REUSE_REVIEW_UNAVAILABLE", candidate.CandidateId, "Reuse review is unavailable.")
             };
-            if (runtimeReport is null && statefulReport is null)
+            if (runtimeReport is null && statefulReport is null && workflowReport is null)
             {
                 diagnostics.Add(new("RUNTIME_PREPARATION_UNAVAILABLE", candidate.CandidateId,
                     "Runtime preparation and sample validation are unavailable."));
@@ -185,10 +214,16 @@ public sealed partial class SqliteApplicationAuthoringService
             {
                 diagnostics.AddRange(runtimeReport.Diagnostics);
             }
+            else if (workflowReport is not null)
+            {
+                diagnostics.AddRange(workflowReport.Diagnostics);
+            }
             var runtimeFingerprint = runtimeReport is null ? null
                 : ApplicationCandidateOperationProof.RuntimeReportFingerprint(runtimeReport);
             var statefulFingerprint = statefulReport is null ? null
                 : ApplicationCandidateOperationProof.StatefulRuntimeReportFingerprint(statefulReport);
+            var workflowFingerprint = workflowReport is null ? null
+                : ApplicationCandidateWorkflowRuntimeValidator.ReportFingerprint(workflowReport);
             var validationRow = new ApplicationCandidateValidationRecord
             {
                 OperationId = operation.Id, ApplicationId = candidate.ApplicationId.Value, CandidateId = candidate.CandidateId,
@@ -198,16 +233,22 @@ public sealed partial class SqliteApplicationAuthoringService
                     InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new { candidate.ApplicationId, candidate.CandidateId, candidate.Revision, candidate.ContentFingerprint }))),
                 PreparationVersion = statefulReport is not null
                     ? statefulReport.PolicyVersion + "@" + statefulReport.PolicyFingerprint
+                    : workflowReport is not null
+                        ? ApplicationCandidateWorkflowRuntimeValidator.PolicyVersion + "@"
+                            + ApplicationCandidateWorkflowRuntimeValidator.PolicyFingerprint
                     : runtimeReport is { RuntimePolicyVersion: not null, RuntimePolicyFingerprint: not null }
                         ? runtimeReport.RuntimePolicyVersion + "@" + runtimeReport.RuntimePolicyFingerprint : null,
                 ManualPacketResultFingerprint = null, CanonicalCommandFingerprint = commandFingerprint,
                 DependenciesJson = "[]", DependenciesComplete = false, DependencyEvidenceReference = null,
                 PreparedEvidenceReference = statefulFingerprint is not null
                     ? ApplicationCandidateOperationProof.StatefulRuntimeEvidenceReference(operation.Id, statefulFingerprint)
+                    : workflowFingerprint is not null
+                        ? ApplicationCandidateWorkflowOperationProof.EvidenceReference(operation.Id, workflowFingerprint)
                     : runtimeFingerprint is null ? null
                         : ApplicationCandidateOperationProof.RuntimeEvidenceReference(operation.Id, runtimeFingerprint),
                 ReuseEvidenceReference = null,
-                Outcome = runtimeReport?.Status == ApplicationCandidateRuntimeStatus.Invalid ? "invalid" : "unavailable",
+                Outcome = (runtimeReport ?? workflowReport)?.Status == ApplicationCandidateRuntimeStatus.Invalid
+                    ? "invalid" : "unavailable",
                 DiagnosticsJson = InteractionCanonicalJson.Canonicalize(JsonSerializer.Serialize(diagnostics)), AlternativesJson = "[]"
             };
             if (statefulReport is not null && stagedStatefulUpdate is not null && manuals is not null)
@@ -225,6 +266,11 @@ public sealed partial class SqliteApplicationAuthoringService
                 await new ApplicationCandidateReviewedStatefulUpdateValidation(
                         reviewedStatefulUpdates, statefulRuntime!)
                     .CompleteAsync(host, statefulReport, validationRow, cancellationToken);
+            if (workflowReport is not null && workflowRuntime is not null && reviewedWorkflowUpdates is not null)
+                await new ApplicationCandidateReviewedWorkflowUpdateValidation(
+                        reviewedWorkflowUpdates, workflowRuntime)
+                    .CompleteAsync(host, new(candidate, samples), workflowReport,
+                        validationRow, cancellationToken);
             if (intentMatchUpdate is not null && manuals is not null)
             {
                 var exactMatch = new ApplicationCandidateIntentMatchUpdateValidation(
@@ -248,6 +294,9 @@ public sealed partial class SqliteApplicationAuthoringService
             operation.GuardEvidenceJson = statefulReport is not null && validationRow.Outcome == "valid"
                 ? ApplicationCandidateOperationProof.StatefulValidationGuard(host, candidate, validationRow,
                     definitions, commandFingerprint, statefulReport)
+                : workflowReport is not null
+                    ? ApplicationCandidateWorkflowOperationProof.Guard(host, candidate, validationRow,
+                        definitions, commandFingerprint, workflowReport)
                 : ApplicationCandidateOperationProof.ValidationGuard(host, candidate, validationRow,
                     definitions, commandFingerprint, runtimeReport);
             await db.SaveChangesAsync(cancellationToken);
@@ -283,13 +332,14 @@ public sealed partial class SqliteApplicationAuthoringService
         static bool CompleteStatefulSample(ApplicationCandidateValidationSample sample)
         {
             var supplied = new object?[] { sample.StateSpaceId, sample.StateRevision,
-                sample.RoleEntityIds, sample.ExpectedEffectsJson }.Count(value => value is not null);
+                sample.RoleEntityIds }.Count(value => value is not null);
             if (supplied == 0) return true;
-            if (supplied != 4 || string.IsNullOrWhiteSpace(sample.StateSpaceId)
+            if (supplied != 3 || string.IsNullOrWhiteSpace(sample.StateSpaceId)
                 || string.IsNullOrWhiteSpace(sample.StateRevision)
                 || sample.RoleEntityIds!.Count > 32
                 || sample.RoleEntityIds.Any(value => string.IsNullOrWhiteSpace(value.Key)
                     || string.IsNullOrWhiteSpace(value.Value))) return false;
+            if (sample.ExpectedEffectsJson is null) return true;
             try
             {
                 using var effects = JsonDocument.Parse(sample.ExpectedEffectsJson!);

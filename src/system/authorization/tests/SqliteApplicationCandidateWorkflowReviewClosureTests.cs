@@ -13,9 +13,11 @@ namespace DantesRoleplay.Authorization.Tests;
 public sealed partial class SqliteStandingGrantTargetResolverTests
 {
     [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public async Task Workflow_review_closure_uses_exact_retained_pair_and_active_job_contract(bool staleJob)
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task Workflow_review_closure_uses_exact_retained_pair_and_active_job_contract(
+        bool staleJob, bool newMechanic)
     {
         await using var db = fixture.CreateContext();
         var setup = await SetupMechanicAsync(db);
@@ -50,13 +52,18 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
                 }
             }
         }));
-        var markdown = MechanicMarkdown("Workflow fixture").Replace("{}", requirements, StringComparison.Ordinal);
+        var definitionId = newMechanic ? "demo.runtime.mechanics.new-workflow" : MechanicId;
+        var markdownPath = newMechanic
+            ? "content/mechanics/fixture/mechanic.fixture.new-workflow.md" : MechanicMarkdownPath;
+        var sourcePath = Path.ChangeExtension(markdownPath, ".js").Replace('\\', '/');
+        var markdown = MechanicMarkdown("Workflow fixture", definitionId)
+            .Replace("{}", requirements, StringComparison.Ordinal);
         var source = "return {data:{ok:true}};";
         var write = await Service(db, setup).WriteCandidateAsync(
             ApplicationHost(setup, "workflow-write", InteractionExecutionProfile.Atomic, "mechanic-grant@1"),
             MechanicRequest(setup.Activation.Current(Application)!.ActivationFingerprint,
-                new("file:" + MechanicMarkdownPath, "catalog", MechanicMarkdownPath, "text/markdown", markdown),
-                new("file:" + MechanicSourcePath, "catalog", MechanicSourcePath, "text/javascript", source)));
+                new("file:" + markdownPath, "catalog", markdownPath, "text/markdown", markdown),
+                new("file:" + sourcePath, "catalog", sourcePath, "text/javascript", source)));
         Assert.Equal(InteractionInvocationResultTag.Committed, write.Tag);
         var candidate = await CandidateAsync(db);
         var selection = await new ApplicationCandidateSelectionReader(db, setup.Applications,
@@ -76,8 +83,8 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         var closure = Assert.IsType<ApplicationCandidateWorkflowReviewClosureEvidence>(result.Evidence);
         Assert.Equal(ApplicationCandidateWorkflowReviewClosureReader.GrammarVersion, closure.Grammar);
         Assert.Equal(selection!.EvidenceFingerprint, closure.SelectionEvidenceFingerprint);
-        Assert.NotNull(closure.Predecessor);
-        Assert.Equal(MechanicId, closure.Predecessor!.DefinitionId);
+        if (newMechanic) Assert.Null(closure.Predecessor);
+        else Assert.Equal(MechanicId, Assert.IsType<StandingGrantDefinitionReference>(closure.Predecessor).DefinitionId);
         Assert.Equal(new StandingGrantDefinitionReference(target.DefinitionId, target.Kind,
             target.Revision, target.ContentFingerprint), Assert.Single(closure.Dependencies));
         Assert.Equal(3, closure.ReviewDocuments.Length);

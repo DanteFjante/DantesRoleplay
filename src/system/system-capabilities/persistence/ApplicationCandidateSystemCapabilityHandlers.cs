@@ -143,9 +143,10 @@ internal sealed class ApplicationCandidateWriteCapabilityHandler(
                 _ => throw new ArgumentException("Unknown application candidate capability.")
             };
             var selection = await ApplicationCandidateCapabilityHost.CreateAsync(
-                db, applications, context.Invocation, applicationId, capability,
+                db, applications, context.Invocation, applicationId, [capability],
                 context.RequestToken, InteractionExecutionProfile.Atomic, parsed.RequiredOperations,
-                cancellationToken);
+                cancellationToken, maximumDuration: TimeSpan.FromSeconds(10),
+                maximumOperations: parsed.MaximumOperations);
             if (selection.Hosts.Count == 0) return Failure(selection.Code);
 
             InteractionInvocationResult? result = null;
@@ -224,7 +225,9 @@ internal sealed class ApplicationCandidateWriteCapabilityHandler(
         if (requiredOperations > StandingGrantLimits.MaximumOperations)
             throw new InteractionContractException("INVOCATION_BUDGET_EXHAUSTED",
                 "Validation samples exceed the available operation budget.");
-        return new(value.ApplicationId, new(candidate, samples), requiredOperations);
+        var stateScoped = samples.Length > 0 && samples.All(sample => sample.StateSpaceId is not null);
+        return new(value.ApplicationId, new(candidate, samples), requiredOperations,
+            stateScoped ? StandingGrantLimits.MaximumOperations : null);
     }
 
     private static ActivateParsed Activate(JsonElement input)
@@ -249,9 +252,11 @@ internal sealed class ApplicationCandidateWriteCapabilityHandler(
             message ?? "The application candidate request was rejected.",
             ApplicationCandidateCapabilitySchemas.Recovery);
 
-    private abstract record Parsed(string ApplicationId, int RequiredOperations);
+    private abstract record Parsed(string ApplicationId, int RequiredOperations,
+        int? MaximumOperations = null);
     private sealed record WriteParsed(string Id, ApplicationCandidateWriteRequest Request, int Operations) : Parsed(Id, Operations);
-    private sealed record ValidateParsed(string Id, ApplicationCandidateValidationRequest Request, int Operations) : Parsed(Id, Operations);
+    private sealed record ValidateParsed(string Id, ApplicationCandidateValidationRequest Request,
+        int Operations, int? Allowance = null) : Parsed(Id, Operations, Allowance);
     private sealed record ActivateParsed(string Id, ApplicationCandidateActivationRequest Request, int Operations) : Parsed(Id, Operations);
     private sealed record RecoverParsed(string Id, int ActivationRevision, string? ExpectedActiveFingerprint, int Operations) : Parsed(Id, Operations);
 
@@ -310,7 +315,8 @@ internal static class ApplicationCandidateCapabilityHost
         IReadOnlyCollection<StandingGrantCapability> capabilities, string commandId,
         InteractionExecutionProfile profile, int requiredOperations, CancellationToken cancellationToken,
         TimeSpan? maximumDuration = null,
-        Func<StandingGrantRevision, bool>? eligibleGrant = null)
+        Func<StandingGrantRevision, bool>? eligibleGrant = null,
+        int? maximumOperations = null)
     {
         if (context is null || !context.Principal.Verified
             || context.ApplicationId is not null && context.ApplicationId != applicationId)
@@ -319,7 +325,9 @@ internal static class ApplicationCandidateCapabilityHost
         if (application is null) return ([], "APPLICATION_UNKNOWN");
         var grants = await CurrentAsync(db, context.Principal, applicationId, cancellationToken);
         if (grants is null) return ([], "STANDING_GRANT_CANDIDATES_UNAVAILABLE");
-        if (requiredOperations is < 1 or > StandingGrantLimits.MaximumOperations)
+        if (requiredOperations is < 1 or > StandingGrantLimits.MaximumOperations
+            || maximumOperations is { } allowance
+                && (allowance < requiredOperations || allowance > StandingGrantLimits.MaximumOperations))
             return ([], "INVOCATION_BUDGET_EXHAUSTED");
         var required = capabilities?.Distinct().ToArray() ?? [];
         if (required.Length == 0) return ([], "STANDING_GRANT_DENIED");
@@ -339,7 +347,10 @@ internal static class ApplicationCandidateCapabilityHost
             if (deadline > hostLimit) deadline = hostLimit;
         }
         if (deadline <= now) return ([], "STANDING_GRANT_DENIED");
-        var budget = new InteractionInvocationBudget(requiredOperations, deadline);
+        var budgetOperations = maximumOperations is null
+            ? requiredOperations
+            : Math.Min(maximumOperations.Value, eligible.Min(value => value.MaximumOperations));
+        var budget = new InteractionInvocationBudget(budgetOperations, deadline);
         return (Array.AsReadOnly(eligible.Select(grant => InteractionInvocationHost.ForApplication(
             context.Principal, application, grant.GrantReference, commandId, profile, budget)).ToArray()),
             "STANDING_GRANT_SELECTED");

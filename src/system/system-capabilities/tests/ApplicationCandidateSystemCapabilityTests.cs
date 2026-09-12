@@ -23,7 +23,7 @@ public sealed class ApplicationCandidateSystemCapabilityTests
     [Fact]
     public async Task Codex_capability_forwards_validation_samples_with_a_trusted_current_application_host_and_grant()
     {
-        await using var fixture = await Fixture.CreateAsync(withGrant: true);
+        await using var fixture = await Fixture.CreateAsync(withGrant: true, maximumOperations: 8);
         var context = Context(Application);
         var catalog = fixture.Scope.ServiceProvider.GetRequiredService<ISystemCapabilityCatalog>();
         var tool = SystemCapabilityAiTools.CreateTools(catalog, context, new Approval())
@@ -60,10 +60,47 @@ public sealed class ApplicationCandidateSystemCapabilityTests
         Assert.Equal(Principal.PrincipalId, call.Host.Principal.PrincipalId);
         Assert.Equal("grant.validate@1", call.Host.GrantReference);
         Assert.Equal(InteractionExecutionProfile.Atomic, call.Host.Profile);
-        Assert.Equal(3, call.Host.Budget.MaximumOperations);
+        Assert.Equal(8, call.Host.Budget.MaximumOperations);
         Assert.InRange(call.Host.Budget.DeadlineUtc, DateTime.UtcNow, DateTime.UtcNow.AddSeconds(10));
         Assert.Contains("\"operationId\":\"0123456789abcdef0123456789abcdef\"", result.Content,
             StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Stateless_validation_keeps_its_exact_derived_allowance_and_too_small_state_grant_never_dispatches()
+    {
+        await using var pure = await Fixture.CreateAsync(withGrant: true, maximumOperations: 8);
+        var catalog = pure.Scope.ServiceProvider.GetRequiredService<ISystemCapabilityCatalog>();
+        var gateway = new ApplicationCandidateCapabilityGateway(catalog);
+        var definition = new { definitionId = "candidate-app.runtime.roll", kind = "mechanic",
+            revision = 2, contentFingerprint = Hash };
+        var stateless = JsonSerializer.Serialize(new
+        {
+            applicationId = Application.Value, candidateId = new string('b', 32), revision = 3,
+            contentFingerprint = Hash,
+            samples = new[] { new { definition, inputJson = "{\"value\":1}", expectedDataJson = "{\"value\":2}" } }
+        });
+        var result = await gateway.InvokeAsync(Principal, Application,
+            SystemCapabilityIds.ApplicationCandidateValidate, stateless, "stateless-validation", "codex");
+        Assert.True(result.Ok, result.Error?.Message);
+        Assert.Equal(3, Assert.Single(pure.Authoring.ValidationCalls).Host.Budget.MaximumOperations);
+
+        await using var narrow = await Fixture.CreateAsync(withGrant: true, maximumOperations: 2);
+        catalog = narrow.Scope.ServiceProvider.GetRequiredService<ISystemCapabilityCatalog>();
+        gateway = new ApplicationCandidateCapabilityGateway(catalog);
+        var stateful = JsonSerializer.Serialize(new
+        {
+            applicationId = Application.Value, candidateId = new string('b', 32), revision = 3,
+            contentFingerprint = Hash,
+            samples = new[] { new { definition, inputJson = "{\"value\":1}", expectedDataJson = "{\"value\":2}",
+                stateSpaceId = "candidate-state", stateRevision = "state-binding.1." + new string('a', 64),
+                roleEntityIds = new Dictionary<string, string>(), expectedEffectsJson = "[]" } }
+        });
+        result = await gateway.InvokeAsync(Principal, Application,
+            SystemCapabilityIds.ApplicationCandidateValidate, stateful, "stateful-validation", "codex");
+        Assert.False(result.Ok);
+        Assert.Equal("STANDING_GRANT_BUDGET_DENIED", result.Error?.Code);
+        Assert.Empty(narrow.Authoring.ValidationCalls);
     }
 
     [Fact]
@@ -271,15 +308,22 @@ public sealed class ApplicationCandidateSystemCapabilityTests
     {
         await using var fixture = await Fixture.CreateAsync(withGrant: false);
         var db = fixture.Scope.ServiceProvider.GetRequiredService<DantesRoleplayDbContext>();
-        await Fixture.AddGrantAsync(db, StandingGrantCapability.Validate, "a-narrow");
-        await Fixture.AddGrantAsync(db, StandingGrantCapability.Validate, "b-valid");
+        await Fixture.AddGrantAsync(db, StandingGrantCapability.Validate, "a-narrow",
+            maximumOperations: 7);
+        await Fixture.AddGrantAsync(db, StandingGrantCapability.Validate, "b-valid",
+            maximumOperations: 9);
         fixture.Authoring.DeniedGrantReference = "grant.a-narrow@1";
         var gateway = fixture.Scope.ServiceProvider.GetRequiredService<IApplicationCandidateCapabilityGateway>();
+        var definition = new { definitionId = "candidate-app.runtime.roll", kind = "mechanic",
+            revision = 2, contentFingerprint = Hash };
         var input = JsonSerializer.Serialize(new
         {
             applicationId = Application.Value,
             candidateId = new string('d', 32), revision = 1, contentFingerprint = Hash,
-            samples = Array.Empty<object>()
+            samples = new[] { new { definition, inputJson = "{\"value\":1}",
+                expectedDataJson = "{\"value\":2}", stateSpaceId = "candidate-state",
+                stateRevision = "state-binding.1." + new string('a', 64),
+                roleEntityIds = new Dictionary<string, string>(), expectedEffectsJson = "[]" } }
         });
 
         var result = await gateway.InvokeAsync(Principal, Application,
@@ -290,6 +334,7 @@ public sealed class ApplicationCandidateSystemCapabilityTests
             fixture.Authoring.ValidationCalls.Select(value => value.Host.GrantReference).ToArray());
         Assert.Same(fixture.Authoring.ValidationCalls[0].Host.Budget,
             fixture.Authoring.ValidationCalls[1].Host.Budget);
+        Assert.Equal(7, fixture.Authoring.ValidationCalls[0].Host.Budget.MaximumOperations);
     }
 
     [Fact]
@@ -472,7 +517,8 @@ public sealed class ApplicationCandidateSystemCapabilityTests
 
         public static async Task<Fixture> CreateAsync(bool withGrant,
             StandingGrantCapability capability = StandingGrantCapability.Validate,
-            IReadOnlyList<StandingGrantCapability>? capabilities = null)
+            IReadOnlyList<StandingGrantCapability>? capabilities = null,
+            int maximumOperations = 16)
         {
             var connection = new SqliteConnection("Data Source=:memory:");
             await connection.OpenAsync();
@@ -492,20 +538,21 @@ public sealed class ApplicationCandidateSystemCapabilityTests
             if (withGrant)
             {
                 foreach (var value in capabilities ?? [capability])
-                    await AddGrantAsync(db, value);
+                    await AddGrantAsync(db, value, maximumOperations: maximumOperations);
             }
             return new(connection, provider, scope, authoring);
         }
 
         internal static async Task AddGrantAsync(DantesRoleplayDbContext db,
-            StandingGrantCapability capability, string? grantId = null)
+            StandingGrantCapability capability, string? grantId = null,
+            int maximumOperations = 16)
         {
             var name = capability.ToString().ToLowerInvariant();
             grantId ??= name;
             var operationId = "grant-issuer-" + grantId;
             var grant = new StandingGrantRevision($"grant.{grantId}@1", $"grant.{grantId}", 1,
                 new string('0', 64), Principal.PrincipalId, Application, StandingGrantScope.Application, null,
-                [capability], new(StandingGrantDefinitionMode.ExactIds, [], []), [], 16,
+                [capability], new(StandingGrantDefinitionMode.ExactIds, [], []), [], maximumOperations,
                 DateTime.UtcNow.AddMinutes(5), false, operationId);
             grant = grant with { ContentFingerprint = StandingGrantRevisionCanonicalization.ContentFingerprint(grant) };
             db.Add(new Operation { Id = operationId, Timestamp = DateTime.UtcNow, Tool = "test" });
@@ -515,7 +562,7 @@ public sealed class ApplicationCandidateSystemCapabilityTests
                 PrincipalReference = grant.PrincipalReference, ApplicationId = Application.Value,
                 Scope = "application", StateSpaceId = null,
                 PermissionsJson = StandingGrantRevisionCanonicalization.PermissionsJson(grant),
-                ContentFingerprint = grant.ContentFingerprint, MaximumOperations = 16,
+                ContentFingerprint = grant.ContentFingerprint, MaximumOperations = maximumOperations,
                 ExpiresAtUtc = grant.ExpiresAtUtc, Revoked = false, IssuedByOperationId = operationId
             });
             db.Add(new StandingGrantCurrentRecord { GrantId = grant.GrantId, Revision = 1 });

@@ -68,9 +68,13 @@ internal sealed class ApplicationCandidateWorkflowReviewClosureReader(
                 candidate.ApplicationId, candidate.CandidateId, candidate.Revision, cancellationToken);
             var basis = retained is null ? null : await ApplicationCandidateDocumentSelection.ReadBaseAsync(
                 db, activations, candidate.ApplicationId, retained.RevisionRow.ExpectedActiveFingerprint, cancellationToken);
+            var active = activations.Current(candidate.ApplicationId);
+            var basisIsCurrent = active?.ActivationFingerprint == basis?.ActivationFingerprint;
+            var candidateIsCurrent = active?.CandidateManifestFingerprint == candidate.ContentFingerprint
+                && retained is not null && active.Winners.SequenceEqual(retained.Documents);
             if (retained is null || basis is null || basis.PreparationVersion is null
                 || selection.BaseOrigin?.ActivationFingerprint != basis.ActivationFingerprint
-                || activations.Current(candidate.ApplicationId)?.ActivationFingerprint != basis.ActivationFingerprint
+                || !basisIsCurrent && !candidateIsCurrent
                 || retained.RevisionRow.ContentFingerprint != candidate.ContentFingerprint
                 || !OnlySelectedPairChanged(retained.Documents, basis.Winners, markdown.Document.RelativePath,
                     javascript.Document.RelativePath)) return Rejected();
@@ -80,7 +84,7 @@ internal sealed class ApplicationCandidateWorkflowReviewClosureReader(
             var predecessor = ReadPredecessor(candidate.ApplicationId, basis, markdown.Document.RelativePath,
                 javascript.Document.RelativePath, parsed.QualifiedId);
             if (predecessor.Status == PredecessorStatus.Invalid) return Rejected();
-            if (predecessor.Status == PredecessorStatus.New)
+            if (predecessor.Status == PredecessorStatus.New && basisIsCurrent)
             {
                 var current = await targets.ResolveCurrentAsync(host, rootReference.DefinitionId,
                     rootReference.Kind, cancellationToken);

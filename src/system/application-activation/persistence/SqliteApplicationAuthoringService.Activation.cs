@@ -60,25 +60,30 @@ public sealed partial class SqliteApplicationAuthoringService
             var reviewed = compatibleUpdate is null && intentMatchUpdate is null
                 && reviewedProcedure is null && reviewedPureUpdates is not null
                 ? await reviewedPureUpdates.ReadAsync(host, candidate, token) : null;
-            var statefulUpdate = compatibleUpdate is null && intentMatchUpdate is null
+            var workflowUpdate = compatibleUpdate is null && intentMatchUpdate is null
                 && reviewedProcedure is null && reviewed is null
+                && reviewedWorkflowUpdates is not null
+                ? await reviewedWorkflowUpdates.ReadAsync(host, candidate, token) : null;
+            var statefulUpdate = compatibleUpdate is null && intentMatchUpdate is null
+                && reviewedProcedure is null && reviewed is null && workflowUpdate is null
                 && statefulRuntime is not null
                 ? await new ApplicationCandidateStatefulUpdateReader(db, applications, activations, evidence, targets)
                     .ReadAsync(host, candidate, token) : null;
             var reviewedStateful = compatibleUpdate is null && intentMatchUpdate is null
-                && reviewedProcedure is null && reviewed is null
+                && reviewedProcedure is null && reviewed is null && workflowUpdate is null
                 && statefulUpdate is null && reviewedStatefulUpdates is not null
                 ? await reviewedStatefulUpdates.ReadAsync(host, candidate, token) : null;
             if (compatibleUpdate is null && intentMatchUpdate is null
-                && reviewedProcedure is null && reviewed is null
+                && reviewedProcedure is null && reviewed is null && workflowUpdate is null
                 && statefulUpdate is null && reviewedStateful is null)
                 return InteractionInvocationResult.Unavailable("APPLICATION_CANDIDATE_COMPATIBILITY_UNAVAILABLE",
-                    "This publication path requires a compatible body update, exact intent metadata update, independently reviewed procedure, pure or stateful atomic mechanic candidate, or validated existing atomic body update.");
+                    "This publication path requires a compatible body update, exact intent metadata update, independently reviewed procedure, pure or stateful atomic mechanic candidate, workflow service candidate, or validated existing atomic body update.");
             var definitions = compatibleUpdate is not null
                 ? compatibleUpdate.Closure.Definitions.Select(value => value.Plan.Definition).ToArray()
                 : intentMatchUpdate is not null ? new[] { intentMatchUpdate.Successor }
                 : reviewedProcedure is not null ? new[] { reviewedProcedure.Closure.Successor }
                 : reviewed is not null ? reviewed.Closure.Definitions.Select(value => value.Plan.Definition).ToArray()
+                : workflowUpdate is not null ? new[] { workflowUpdate.Closure.Definition }
                 : new[] { statefulUpdate?.Definition ?? reviewedStateful!.Closure.Definition };
             var selected = new List<StandingGrantDefinitionTarget>();
             foreach (var definition in definitions)
@@ -99,6 +104,8 @@ public sealed partial class SqliteApplicationAuthoringService
             if (validation is null || checkedOperation is null)
                 return Failed("APPLICATION_CANDIDATE_VALIDATION_REQUIRED");
             ApplicationCandidateStatefulRuntimeReport? statefulReport = null;
+            ApplicationCandidateRuntimeReport? workflowReport = null;
+            ApplicationCandidateValidationRequest? workflowRequest = null;
             if (intentMatchUpdate is not null)
             {
                 if (!ApplicationCandidateOperationProof.ValidationMatches(checkedOperation, validation, candidate, definitions)
@@ -133,6 +140,19 @@ public sealed partial class SqliteApplicationAuthoringService
                         selected, statefulReport.EffectKinds), token);
                 if (!activationAuthority.Allowed) return Failed(activationAuthority.Code);
             }
+            else if (workflowUpdate is not null)
+            {
+                if (workflowRuntime is null
+                    || !ApplicationCandidateWorkflowOperationProof.TryRead(checkedOperation, validation,
+                        candidate, definitions, out workflowRequest, out workflowReport)
+                    || workflowRequest is null || workflowReport is null
+                    || !ApplicationCandidateReviewedWorkflowUpdateValidation.Matches(
+                        workflowRequest, workflowReport, validation, workflowUpdate)
+                    || !await workflowRuntime.CurrentAsync(workflowRequest, workflowReport,
+                        ApplicationCandidateWorkflowRuntimeValidator.ReportFingerprint(workflowReport),
+                        host, token))
+                    return Failed("APPLICATION_CANDIDATE_VALIDATION_REQUIRED");
+            }
             else
             {
                 var closure = compatibleUpdate?.Closure ?? reviewed!.Closure;
@@ -166,7 +186,8 @@ public sealed partial class SqliteApplicationAuthoringService
                 return Receipt(operationId, commandFingerprint);
             }
             var basis = compatibleUpdate?.Basis ?? intentMatchUpdate?.Basis ?? reviewed?.Basis
-                ?? reviewedProcedure?.Basis ?? statefulUpdate?.Basis ?? reviewedStateful!.Closure.Basis;
+                ?? reviewedProcedure?.Basis ?? workflowUpdate?.Basis ?? statefulUpdate?.Basis
+                ?? reviewedStateful!.Closure.Basis;
             if (activations.Current(candidate.ApplicationId)?.ActivationFingerprint != basis.ActivationFingerprint)
                 return Failed("APPLICATION_CANDIDATE_ACTIVE_STALE");
             var operation = await operations.RecordAsync("application-candidate-activation",
@@ -176,6 +197,7 @@ public sealed partial class SqliteApplicationAuthoringService
                     : reviewed is not null ? "Published a runtime-tested and independently reviewed pure mechanic candidate."
                     : reviewedProcedure is not null ? "Published an independently reviewed procedure candidate."
                     : reviewedStateful is not null ? "Published a runtime-tested and independently reviewed stateful atomic mechanic candidate."
+                    : workflowUpdate is not null ? "Published a runtime-tested and independently reviewed workflow service candidate."
                     : "Published a dry-run-validated existing atomic mechanic body update.",
                 true, subject: candidate.ApplicationId.Value, projectionJson: canonical, guardEvidenceJson: "{}", id: operationId,
                 cancellationToken: token);
@@ -188,6 +210,9 @@ public sealed partial class SqliteApplicationAuthoringService
                         : reviewedProcedure is not null
                             ? await publisher.StageReviewedProcedureUpdateAsync(
                                 reviewedProcedure, validation, operation.Id, token)
+                        : workflowUpdate is not null
+                            ? await publisher.StageReviewedWorkflowUpdateAsync(workflowUpdate, workflowReport!,
+                                validation, operation.Id, token)
                         : reviewedStateful is not null
                             ? await publisher.StageReviewedStatefulUpdateAsync(
                                 reviewedStateful, statefulReport!, validation, operation.Id, token)
@@ -201,6 +226,8 @@ public sealed partial class SqliteApplicationAuthoringService
                 _ = await stateSpaceRebinder.StageAsync(reviewedProcedure, activation, token);
             else if (reviewed is not null)
                 _ = await stateSpaceRebinder.StageAsync(reviewed!, activation, token);
+            else if (workflowUpdate is not null)
+                _ = await stateSpaceRebinder.StageAsync(workflowUpdate, activation, token);
             else if (reviewedStateful is not null)
                 _ = await stateSpaceRebinder.StageAsync(reviewedStateful, activation, token);
             else

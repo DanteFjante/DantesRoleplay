@@ -14,6 +14,8 @@ using DantesRoleplay.Interactions;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.Procedures;
 using DantesRoleplay.SchemaValidation;
+using DantesRoleplay.StateSpaceAdministration;
+using Microsoft.EntityFrameworkCore;
 
 namespace DantesRoleplay.ApplicationExecution;
 
@@ -43,7 +45,7 @@ internal sealed class ApplicationCandidateWorkflowRuntimeValidator(
 {
     private readonly IStandingGrantApplicationReadModelInvocationAdapter serviceReads = reads;
 
-    internal const string PolicyVersion = "workflow-service-candidate-runtime-v1";
+    internal const string PolicyVersion = "workflow-candidate-runtime-v1";
 
     internal static readonly string PolicyFingerprint = InteractionCanonicalJson.Fingerprint(
         "dantes-roleplay/workflow-service-candidate-runtime-policy/v1",
@@ -265,6 +267,12 @@ internal sealed class ApplicationCandidateWorkflowRuntimeValidator(
             || !catalogs.TryGet(request.Candidate.ApplicationId, out _)
             || !await AuthorizeCandidateAsync(authoringHost, update, cancellationToken)
             || samples.Any(sample => sample.Definition != update.Definition)) return false;
+        var activation = activations.Current(request.Candidate.ApplicationId);
+        var beforePublication = activation?.ActivationFingerprint == update.Basis.ActivationFingerprint;
+        var published = activation?.CandidateManifestFingerprint == request.Candidate.ContentFingerprint
+            && activation.ApplicationRevision == update.Basis.ApplicationRevision
+            && activation.ApplicationFingerprint == update.Basis.ApplicationFingerprint;
+        if (!beforePublication && !published) return false;
         var closure = ResolveClosure(update);
         if (closure is null || !closure.Dependencies.SequenceEqual(report.Dependencies)) return false;
         for (var index = 0; index < samples.Count; index++)
@@ -279,11 +287,42 @@ internal sealed class ApplicationCandidateWorkflowRuntimeValidator(
                     ? null : DataFingerprint(sample.ExpectedEffectsJson))) return false;
             var state = sample.StateSpaceId is null ? null : stateSpaces.Get(sample.StateSpaceId);
             if (state is null || !SameRevision(state.ApplicationRevision, authoringHost.ApplicationRevision)
-                || state.ManifestFingerprint != update.Basis.ActivationFingerprint
-                || sample.StateRevision != InteractionStateRevision.From(state)
+                || beforePublication && (state.ManifestFingerprint != update.Basis.ActivationFingerprint
+                    || sample.StateRevision != InteractionStateRevision.From(state))
+                || published && !await IsPublishedRebindingAsync(
+                    state, sample.StateRevision!, update.Basis, activation!, cancellationToken)
                 || await SelectGrantAsync(authoringHost, state, closure, cancellationToken) is null) return false;
         }
         return true;
+    }
+
+    private async Task<bool> IsPublishedRebindingAsync(StateSpaceView state, string retainedRevision,
+        ActiveApplicationManifest predecessor, ActiveApplicationManifest successor,
+        CancellationToken cancellationToken)
+    {
+        const string prefix = "state-binding.";
+        var separator = retainedRevision.LastIndexOf('.');
+        if (!retainedRevision.StartsWith(prefix, StringComparison.Ordinal)
+            || separator <= prefix.Length
+            || !int.TryParse(retainedRevision[prefix.Length..separator], out var retainedBindingRevision)
+            || retainedRevision[(separator + 1)..] != predecessor.ActivationFingerprint.ToLowerInvariant()
+            || state.ManifestFingerprint != successor.ActivationFingerprint
+            || state.ResolutionFingerprint != successor.ResolutionFingerprint
+            || state.BindingRevision != retainedBindingRevision + 1) return false;
+        var history = await db.Set<StateSpaceBindingRevisionRecord>().AsNoTracking()
+            .Where(value => value.StateSpaceId == state.StateSpaceId
+                && (value.BindingRevision == retainedBindingRevision
+                    || value.BindingRevision == state.BindingRevision))
+            .OrderBy(value => value.BindingRevision).ToArrayAsync(cancellationToken);
+        if (history.Length != 2) return false;
+        var baseline = history[0];
+        var current = history[1];
+        return baseline.ActiveFingerprint == predecessor.ActivationFingerprint
+            && baseline.ResolutionFingerprint == predecessor.ResolutionFingerprint
+            && current.ActiveFingerprint == successor.ActivationFingerprint
+            && current.ResolutionFingerprint == successor.ResolutionFingerprint
+            && current.PreviousBindingFingerprint == baseline.BindingFingerprint
+            && current.CompatibilityCode == "compatible-candidate-publication";
     }
 
     internal static string ReportFingerprint(ApplicationCandidateRuntimeReport report) =>
