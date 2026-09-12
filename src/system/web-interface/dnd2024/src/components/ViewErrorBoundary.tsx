@@ -3,6 +3,7 @@ import { Component, type ErrorInfo, type ReactNode } from "react";
 export class ViewErrorBoundary extends Component<{
   children: ReactNode;
   viewLabel: string;
+  resetKey?: string;
 }, { failed: boolean }> {
   state = { failed: false };
 
@@ -12,6 +13,10 @@ export class ViewErrorBoundary extends Component<{
 
   componentDidCatch(_error: Error, _info: ErrorInfo) {
     // Rendering failures stay local to this view. The browser console retains React's diagnostic.
+  }
+
+  componentDidUpdate(previous: Readonly<{ children: ReactNode; viewLabel: string; resetKey?: string }>) {
+    if (this.state.failed && previous.resetKey !== this.props.resetKey) this.setState({ failed: false });
   }
 
   render() {

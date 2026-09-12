@@ -1,6 +1,7 @@
 import type { DeferredViewState, HubContextSelection, Perspective } from "../data/hub-types";
 import { PerspectiveSwitch } from "./PerspectiveSwitch";
 import { WorldCampaignSelector } from "./WorldCampaignSelector";
+import { SystemControls } from "./SystemControls";
 
 export function TopBar({
   perspective,
@@ -46,6 +47,7 @@ export function TopBar({
         perspective={perspective}
         onChange={onPerspectiveChange}
       /> : <span className="perspective-switch__label">Shared table</span>}
+      <SystemControls />
     </header>
   );
 }

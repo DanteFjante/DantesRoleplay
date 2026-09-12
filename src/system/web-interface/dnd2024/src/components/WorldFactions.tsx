@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import type { WorldFaction, WorldReadModel } from "../data/hub-types";
 import { filterWorldFactions } from "../state.js";
+import { selectWorldFactions } from "../data/presentation-records";
 import { Icon } from "./Icon";
 import { WorldDirectoryControls } from "./WorldDirectoryControls";
 
@@ -128,18 +129,20 @@ export function WorldFactions({
 }) {
   const [query, setQuery] = useState("");
   const [influence, setInfluence] = useState("all");
+  const selected = useMemo(() => selectWorldFactions((world as { factions?: unknown }).factions), [world.factions]);
+  useEffect(() => { setQuery(""); setInfluence("all"); }, [world.id]);
   const influences = useMemo(
-    () => [...new Set(world.factions.map((faction) => faction.influence))].sort(),
-    [world.factions],
+    () => [...new Set(selected.records.map((faction) => faction.influence))].sort(),
+    [selected.records],
   );
   const factions = useMemo(
-    () => filterWorldFactions(world.factions, { query, influence }),
-    [world.factions, query, influence],
+    () => filterWorldFactions(selected.records, { query, influence }),
+    [selected.records, query, influence],
   );
-  const sourceTotal = world.factionDirectory?.totalCount ?? world.factions.length;
+  const sourceTotal = world.factionDirectory?.totalCount ?? selected.records.length + selected.omittedCount;
   const completePage = world.factionDirectory?.complete ?? true;
-  const omittedCompleteRows = completePage && sourceTotal > world.factions.length;
-  const partialCoverage = world.factionDirectory?.coverage === "partial" || omittedCompleteRows || world.factions.some(
+  const omittedCompleteRows = completePage && sourceTotal > selected.records.length;
+  const partialCoverage = world.factionDirectory?.coverage === "partial" || selected.omittedCount > 0 || omittedCompleteRows || selected.records.some(
     (faction) => (faction.unavailableFields?.length ?? 0) > 0,
   );
 
@@ -150,7 +153,7 @@ export function WorldFactions({
           <span className="eyebrow">Powers in motion</span>
           <h1 id="main-view-heading" tabIndex={-1}>Factions</h1>
         </div>
-        <p aria-live="polite">{factions.length} visible · {world.factions.length} displayed from {sourceTotal} source records</p>
+        <p aria-live="polite">{factions.length} visible · {selected.records.length} displayed from {sourceTotal} source records</p>
       </header>
       <p className="world-directory-introduction">
         Sovereign powers and organizations whose rule, goals, alliances, and rivalries continue to shape {world.name}.

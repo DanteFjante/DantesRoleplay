@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import type { WorldLoreEntry, WorldReadModel } from "../data/hub-types";
 import { filterWorldLore } from "../state.js";
+import { selectWorldLore } from "../data/presentation-records";
 import { Icon } from "./Icon";
 import { KnowledgeAdmissions } from "./KnowledgeAdmissions";
 import { WorldDirectoryControls } from "./WorldDirectoryControls";
@@ -104,18 +105,21 @@ export function WorldLore({
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
   const [status, setStatus] = useState("all");
+  const selected = useMemo(() => selectWorldLore((world as { lore?: unknown }).lore), [world.lore]);
+  useEffect(() => { setQuery(""); setCategory("all"); setStatus("all"); }, [world.id]);
   const categories = useMemo(
-    () => [...new Set(world.lore.map((entry) => entry.category))].sort(),
-    [world.lore],
+    () => [...new Set(selected.records.map((entry) => entry.category))].sort(),
+    [selected.records],
   );
   const statuses = useMemo(
-    () => [...new Set(world.lore.map((entry) => entry.status))].sort(),
-    [world.lore],
+    () => [...new Set(selected.records.map((entry) => entry.status))].sort(),
+    [selected.records],
   );
   const entries = useMemo(
-    () => filterWorldLore(world.lore, { query, category, status }),
-    [world.lore, query, category, status],
+    () => filterWorldLore(selected.records, { query, category, status }),
+    [selected.records, query, category, status],
   );
+  const partial = world.loreCoverage === "partial" || selected.omittedCount > 0;
 
   return (
     <div className="world-directory-view">
@@ -124,12 +128,12 @@ export function WorldLore({
           <span className="eyebrow">An encyclopedia of {world.name}</span>
           <h1 id="main-view-heading" tabIndex={-1}>Lore</h1>
         </div>
-        <p>{entries.length} of {world.lore.length} visible</p>
+        <p>{entries.length} of {selected.records.length} visible</p>
       </header>
       <p className="world-directory-introduction">
         Customs, relics, places, rumours, and established truths available in this perspective.
       </p>
-      {world.loreCoverage === "partial" ? <p role="status" className="directory-completeness-notice">
+      {partial ? <p role="status" className="directory-completeness-notice">
         Some lore fields or records are unavailable. The readable entries are shown below.
       </p> : null}
       <WorldDirectoryControls
@@ -173,8 +177,8 @@ export function WorldLore({
       ) : (
         <div className="directory-empty">
           <Icon name="BookOpen" size={26} />
-          <strong>{world.loreCoverage === "partial" && world.lore.length === 0 ? "Lore unavailable" : "No lore matches"}</strong>
-          <p>{world.loreCoverage === "partial" && world.lore.length === 0
+          <strong>{partial && selected.records.length === 0 ? "Lore unavailable" : "No lore matches"}</strong>
+          <p>{partial && selected.records.length === 0
             ? "This response does not establish an empty lore collection." : "Try another phrase, category, or status."}</p>
         </div>
       )}
