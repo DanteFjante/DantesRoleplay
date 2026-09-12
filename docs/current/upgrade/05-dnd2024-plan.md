@@ -20,4 +20,38 @@ Plan focused invariant checks and one final integrated acceptance, not a full te
 
 ## Current checkpoint
 
-Assignment active; no plan commit delivered yet. Next: complete focused source assessment, write the durable plan with compatible assignments, validate its links and scope, and record the commit and important unknowns here.
+Delivered from the clean detached worktree at commit
+`cc0fd197b26a2021464aeeb8162adcc12cfaf5c3` (`Add D&D 2024 upgrade execution plan`). The commit
+adds `docs/current/DND2024-UPGRADE-PLAN.md` and one routing row in `docs/current/README.md`; its
+parent is integration baseline `6023d31bd1233bd20d5d061a17736d1674b5ca05`. No branch was created.
+
+The plan fixes generic and D&D file owners, dependency order, eight bounded vertical slices,
+Sol/Terra/Luna roles, detached-worktree starter prompts, focused checks, one final integrated
+acceptance, and live migration/recovery. Slices 0–5 describe the current preservation and website
+lane while explicitly leaving the already assigned website implementation to workstream 04.
+Slices 6–8 plan future catalog/runtime adoption and mechanic/content repairs without claiming full
+D&D 2024 coverage.
+
+Key evidence and constraints are recorded in the plan: the generic composition contract already
+supports bounded structure with free-form props and minimum required props; the D&D frontend needs
+an application registry, component failure isolation, and a safe bridge to existing generic
+bindings. Thirty-one canonical/legacy duplicate IDs have different bytes and are protected by
+compatibility retention, so none can be removed without provenance and consumer evidence. Live
+application/source registration is unknown, and no concrete D&D declarative workflow, durable
+schedule, observer, or inner-worker fixture was found; these paths remain unavailable until real
+fixtures and dependencies exist.
+
+Validation was documentation-scoped: the staged diff check passed, every named existing owner
+path was verified, and an independent Luna review was incorporated. No full suite, live database,
+or external provider was run. The detached worktree is clean. The original checkout was clean at
+`d32489ab15407657b045d0ecb3d049525613f4f0` before this checkpoint-only edit and now has only the
+coordinator-owned checkpoint change from this lane.
+
+Next action: coordinator reviews and cherry-picks `cc0fd197b26a2021464aeeb8162adcc12cfaf5c3`
+onto master, then workstream 04 implements the website slices against that integrated baseline.
+
+Coordinator review is complete. A docs-only compatibility revision is in progress to align the
+plan with the active shared `system-navigation` and `system-theme.js` contracts, permit compatible
+parallel implementation lanes, make D&D file seams provisional against workstream 04, and require
+workers to update this checkpoint without staging or committing the original checkout. The next
+checkpoint will replace the integration action with the exact revision commit range.
