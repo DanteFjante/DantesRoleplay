@@ -4402,28 +4402,6 @@ strong {
   padding-left: 22px;
 }
 
-.rule-readable-block table {
-  width: 100%;
-  margin-top: 10px;
-  border-collapse: collapse;
-  background: var(--surface);
-  color: var(--ink);
-  font-size: 0.72rem;
-}
-
-.rule-readable-block th,
-.rule-readable-block td {
-  padding: 9px 10px;
-  border: 1px solid var(--line);
-  text-align: left;
-  vertical-align: top;
-}
-
-.rule-readable-block th {
-  background: var(--surface-raised);
-  color: var(--ink);
-}
-
 .rule-examples,
 .rule-related {
   margin-top: 25px;
