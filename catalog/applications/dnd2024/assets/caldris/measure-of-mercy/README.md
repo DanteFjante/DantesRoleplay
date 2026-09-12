@@ -53,8 +53,10 @@ Keep retained blobs and operation history.
 
 ## Contract dependency
 
-The live registered `game.core.world.map.visual` schema identified in the preservation export
-contains content-addressed image metadata. The current authored catalog schema contains only
-`assetKey` and `alt`. The coordinator must select one contract and perform its reviewed migration
-or adapter change before applying these map values. This packet records the live-compatible value
-template but does not redefine or migrate the shared schema.
+The reviewed `game.core.world.map.visual` schema supports rich content-addressed metadata and a
+separate strict legacy fixture shape. Register version 2 with hash
+`096846284D7D198FAD231F32CDB301FA7C498836E67D986CE42231F6420E5D1A` through the typed
+registration operation, retaining immutable version 1/hash
+`7C443530D2436D1089E5639154DDA0B1122D9F4CAE92F80806891E39DA42A760`. Preview and apply against
+the preserved version expectation before world synchronization. This packet uses the rich shape;
+the legacy asset-key fixture branch is not a runtime media fallback.
