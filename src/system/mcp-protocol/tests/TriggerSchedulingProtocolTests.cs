@@ -21,7 +21,8 @@ public sealed class TriggerSchedulingProtocolTests : IDisposable
         var commit = Assert.Single(McpVerbCatalog.CommitKinds, value => value.Name == "system.trigger-scheduling");
         Assert.True(commit.Descriptor.Operations.SupportsPreview);
         Assert.Contains("resource", query.Descriptor.Input.SchemaJson, StringComparison.Ordinal);
-        Assert.Equal(["procedure.system.use"], commit.Descriptor.ProcedureIds);
+        Assert.Equal(["procedure.system.trigger-scheduling"], query.Descriptor.ProcedureIds);
+        Assert.Equal(["procedure.system.trigger-scheduling"], commit.Descriptor.ProcedureIds);
     }
 
     [Fact]
