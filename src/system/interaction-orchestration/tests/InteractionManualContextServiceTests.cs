@@ -7,6 +7,7 @@ using DantesRoleplay.Applications;
 using DantesRoleplay.Authorization;
 using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.DataAccess;
+using DantesRoleplay.DataAccess.Bootstrap;
 using DantesRoleplay.Ecs;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Procedures;
@@ -27,6 +28,45 @@ public sealed class InteractionManualContextServiceTests : IDisposable
     {
         _fixture.Dispose();
         if (Directory.Exists(_derivedRoot)) Directory.Delete(_derivedRoot, recursive: true);
+    }
+
+    [Fact]
+    public async Task Authored_inner_worker_submit_contract_is_available_through_the_system_manual()
+    {
+        await using var db = _fixture.CreateContext();
+        var repository = new DirectoryInfo(AppContext.BaseDirectory);
+        while (repository is not null && !File.Exists(Path.Combine(repository.FullName, "AGENTS.md")))
+            repository = repository.Parent;
+        Assert.NotNull(repository);
+        var path = Path.Combine(repository!.FullName, "catalog", "procedures", "procedure",
+            "system", "inner-worker", "submit.md");
+        var authored = ProcedureFile.Parse(await File.ReadAllTextAsync(path), path);
+        var procedures = new ProcedureStore(db);
+        await procedures.WriteAsync(new()
+        {
+            Id = authored.Id,
+            Category = authored.Category,
+            Name = authored.Name,
+            Description = authored.Description,
+            Governs = authored.Governs,
+            Matches = authored.Matches,
+            Instructions = authored.Instructions,
+            Constraints = authored.Constraints,
+            Status = authored.Status,
+            CreatedBy = authored.CreatedBy,
+            ChangeNote = authored.ChangeNote
+        });
+        var result = await Service(procedures, new Changes(App, HashA), "system")
+            .DiscoverAsync(Host(), "dependency handles Execute reconnect worker");
+
+        Assert.Equal(InteractionInvocationResultTag.Completed, result.Tag);
+        using var packet = JsonDocument.Parse(result.DataJson!);
+        Assert.Contains("procedure.system.inner-worker.submit",
+            packet.RootElement.GetProperty("manualSections").GetRawText(),
+            StringComparison.Ordinal);
+        Assert.Contains("dependencyHandles", authored.Description, StringComparison.Ordinal);
+        Assert.Contains("system.inner-worker.read", authored.Instructions, StringComparison.Ordinal);
+        Assert.Contains("Execute", authored.Description, StringComparison.Ordinal);
     }
 
     [Fact]
