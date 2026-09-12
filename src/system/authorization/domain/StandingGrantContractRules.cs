@@ -64,10 +64,17 @@ public static class StandingGrantContractRules
             && (requirement.Scope != StandingGrantScope.Application
                 || requirement.Capability is not (StandingGrantCapability.Author or StandingGrantCapability.Read)))
             Fail("STANDING_GRANT_CATALOG_SELECTION_SCOPE_DENIED", "Catalog selections authorize application comparison and authoring only.");
-        if (targets.Any(target => target.RetainedActivation is not null)
-            && (requirement.Scope != StandingGrantScope.StateSpace
-                || requirement.Capability is not (StandingGrantCapability.ReadTask or StandingGrantCapability.CancelTask)))
-            Fail("STANDING_GRANT_RETAINED_SCOPE_DENIED", "Historical targets authorize only the stored task's read or cancellation.");
+        if (targets.Any(target => target.RetainedActivation is not null))
+        {
+            var retainedMechanicRead = requirement is
+                { Capability: StandingGrantCapability.Read, Scope: StandingGrantScope.StateSpace }
+                && targets.All(target => target.RetainedActivation is not null
+                    && target.Kind == CatalogNamespaceKinds.Mechanic);
+            if (!retainedMechanicRead && (requirement.Scope != StandingGrantScope.StateSpace
+                    || requirement.Capability is not (StandingGrantCapability.ReadTask or StandingGrantCapability.CancelTask)))
+                Fail("STANDING_GRANT_RETAINED_SCOPE_DENIED",
+                    "Historical targets authorize stored task control or an exact retained mechanic state read.");
+        }
         if (targets.Select(target => target.DefinitionId).Distinct(StringComparer.Ordinal).Count() != targets.Count)
             Fail("INVALID_STANDING_GRANT_TARGETS", "Definition targets must have distinct identities.");
         var effects = Distinct(requirement.EffectKinds, StandingGrantLimits.EffectKinds, "INVALID_STANDING_GRANT_EFFECTS");

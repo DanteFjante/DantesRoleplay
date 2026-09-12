@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using DantesRoleplay.ApplicationActivation;
 using DantesRoleplay.DataAccess.Composition;
+using DantesRoleplay.TriggerScheduling;
 
 namespace DantesRoleplay.ApplicationExecution;
 
@@ -20,6 +21,11 @@ public static class ApplicationExecutionComponentRegistration
         .AddScoped<ApplicationMechanicEvaluator>()
         .AddScoped<IApplicationMechanicEvaluator>(provider =>
             provider.GetRequiredService<ApplicationMechanicEvaluator>())
+        .AddScoped<CatalogJavaScriptObserverPredicateAdapter>()
+        .AddScoped<IApplicationObserverPredicateInputCapture>(provider =>
+            provider.GetRequiredService<CatalogJavaScriptObserverPredicateAdapter>())
+        .AddScoped<IApplicationObserverPredicateEvaluator>(provider =>
+            provider.GetRequiredService<CatalogJavaScriptObserverPredicateAdapter>())
         .AddScoped<IApplicationEcsEffectBatchBuilder, ApplicationEcsEffectBatchBuilder>()
         .AddScoped<IApplicationPureActionExecutor, ApplicationPureActionExecutor>()
         .AddScoped<ApplicationActionInvocationAdapter>()

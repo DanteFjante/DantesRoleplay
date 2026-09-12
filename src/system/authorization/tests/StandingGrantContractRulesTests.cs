@@ -53,20 +53,32 @@ public sealed class StandingGrantContractRulesTests
     }
 
     [Fact]
-    public void Historical_targets_allow_only_exact_task_read_or_cancellation_tuples()
+    public void Historical_targets_allow_task_control_and_exact_state_scoped_mechanic_reads_only()
     {
         var host = Host();
         var target = Target() with { RetainedActivation = new(1, Hash, 1, Hash) };
         foreach (var capability in new[] { StandingGrantCapability.ReadTask, StandingGrantCapability.CancelTask })
             StandingGrantContractRules.ValidateRequirement(host,
                 new(capability, StandingGrantScope.StateSpace, [target], [], TaskTarget(host, target)));
-        foreach (var capability in new[] { StandingGrantCapability.Read, StandingGrantCapability.Execute, StandingGrantCapability.Author })
+        StandingGrantContractRules.ValidateRequirement(host,
+            new(StandingGrantCapability.Read, StandingGrantScope.StateSpace, [target], []));
+        foreach (var capability in new[] { StandingGrantCapability.Execute, StandingGrantCapability.Author })
         {
             var scope = capability == StandingGrantCapability.Author ? StandingGrantScope.Application : StandingGrantScope.StateSpace;
             var error = Assert.Throws<InteractionContractException>(() => StandingGrantContractRules.ValidateRequirement(host,
                 new(capability, scope, [target], [])));
             Assert.Equal("STANDING_GRANT_RETAINED_SCOPE_DENIED", error.Code);
         }
+        var applicationRead = Assert.Throws<InteractionContractException>(() =>
+            StandingGrantContractRules.ValidateRequirement(host,
+                new(StandingGrantCapability.Read, StandingGrantScope.Application, [target], [])));
+        Assert.Equal("STANDING_GRANT_RETAINED_SCOPE_DENIED", applicationRead.Code);
+        var retainedProcedure = target with { DefinitionId = "demo.rules.procedure", Kind = "procedure" };
+        var mixedRead = Assert.Throws<InteractionContractException>(() =>
+            StandingGrantContractRules.ValidateRequirement(host,
+                new(StandingGrantCapability.Read, StandingGrantScope.StateSpace,
+                    [target, retainedProcedure], [])));
+        Assert.Equal("STANDING_GRANT_RETAINED_SCOPE_DENIED", mixedRead.Code);
         var mixed = target with
         {
             Candidate = new DantesRoleplay.ApplicationActivation.ApplicationCandidateReference(App, new string('a', 32), 1, Hash)
