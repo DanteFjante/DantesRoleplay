@@ -106,7 +106,7 @@ Official [hooks documentation](https://learn.chatgpt.com/docs/hooks) describes p
 
 ## Current checkpoint
 
-Updated 2026-09-12. P0–P4 and publication corrections are integrated on master through `7304c5cb`; P5 is running. The copied-state host is available on port 16217 for rehearsal. **The live site on port 6217 has not received this feature release yet.** Root owns Git integration and acceptance; `website_integration` is the sole deployment writer, currently authorized for copied-state rehearsal only.
+Updated 2026-09-12. P0–P4 and publication corrections are integrated on master through `410cb2c1`; P5 is running. The copied-state host is available on port 16217 for rehearsal. **The live site on port 6217 has not received this feature release yet.** Root owns Git integration and acceptance; `website_integration` is the sole deployment writer, currently authorized for copied-state rehearsal only.
 
 | Work package | Source status | Remaining acceptance |
 | --- | --- | --- |
@@ -160,4 +160,14 @@ Root task: `01a09056-6d13-76d0-8706-40e435fb8b03`. Tasks return commits and conc
 - Publish the new parser host before reviewing/activating the two incompatible location-query contracts with media declarations. Use a fresh candidate review, typed schema registration, exact-byte media verification, world sync, gallery merge/CAS, page publication and any required state upgrade. Retain prior revisions, blobs and profile. Never reuse stale compatible review receipts.
 - Preserve campaign `campaign.caldris.measure-of-mercy`, location `location.caldris.bramblebridge`, actor `actor.caldris.ganji`, existing campaign history and Green & Wood default. Test configured owner and public origins separately; restore owner DM presentation after browser checks.
 
-Next: finish bounded capture review, build matching host/Tools and the corrected page, complete copied-state reviewed publication and browser acceptance, then authorize the sole writer to take fresh live preservation and publish. Verify live DM/Player, overlays, galleries, secrets, manual retrieval and restart stability before marking P5 complete.
+### Final copied release checkpoint
+
+- Final production source: `410cb2c1`. The capture client now checks the returned task's repository as well as its ID. The manual lists all six host binding fields, requires a durable initialized watcher before gameplay, and documents the initial history baseline. Bounded pagination fails explicitly on missing anchors or excessive history, including an initially empty task.
+- Root final affected checks: 37 passed and two deliberately retired protocol skips. After the last capture-only correction, 18 capture checks passed and disposable catalog validation passed 620 records with seven existing warnings. A transient test-compiler access violation cleared on one retry; no test failure remains. The full-suite evidence above remains the broad regression run.
+- Corrected copied page 82: 63-entry bundle SHA-256 `976503EF5D05B0FE09E35FC724A25453FA47A47B4CCEF75AE9A726A638D9ECF`; all 62 stored assets verified against the archive. Typecheck and production build passed with the pinned TypeScript toolchain.
+- Copied browser checks passed all eight real maps, with marker counts 3/6/8/9/15/5/4/5; three 1536×1024 galleries; the same map canvas under zoom and keyboard pan; Player scope/gallery reset; and absence of DM blocks in Player. Stable fresh loads showed no stale-view banner or API/page errors. A reversible data-only rename check is authorized on the copy, with exact payload restoration and unchanged image hash.
+- The first exact single-query candidate was written, but review submission rejects its dependency closure before any provider call. Current activation 66 has a non-null `retained-mechanic-body-v2` preparation and the candidate matches its active fingerprint. The exact remaining closure invariant is being diagnosed from retained copied data. No fabricated review or legacy activation bypass is authorized.
+- Matching final host/Tools were built; the final DataAccess assembly contains the new repository check and has SHA-256 `8CCA03FBD8E6D9E51E1C3C5A98076CA971A5B9EECFABA659318E42B762F66789`. Review configuration explicitly selects installed Codex 0.153.4 and Sol; no real review has dispatched yet.
+- Local branch cleanup is complete: only `master` remains. Detached checkouts, their commit references and recovery evidence remain preserved; remote branches were untouched.
+
+Next: resolve the exact copied candidate closure rejection, complete reviewed publication and the final copied checks, then authorize the sole writer to take fresh live preservation and publish. Verify live DM/Player, overlays, galleries, secrets, manual retrieval and restart stability before marking P5 complete.
