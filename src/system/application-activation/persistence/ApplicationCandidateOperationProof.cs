@@ -101,6 +101,15 @@ internal static class ApplicationCandidateOperationProof
         if (row.PreparationVersion is { } statefulVersion
             && statefulVersion.StartsWith(ApplicationCandidateStatefulRuntimeValidator.PolicyVersion + "@", StringComparison.Ordinal))
             return TryReadStatefulRuntimeReport(operation, row, candidate, actualDefinitions, out _);
+        if (row.PreparationVersion == ApplicationCandidateReviewedProcedureUpdateValidation.PreparationVersion)
+            return row.Outcome == "valid" && row.DependenciesComplete
+                && row.ManualPacketResultFingerprint is { Length: 64 }
+                && row.DependencyEvidenceReference is { } review
+                && review.StartsWith("validation.result.", StringComparison.Ordinal)
+                && row.PreparedEvidenceReference == review && row.ReuseEvidenceReference == review
+                && operation.GuardEvidenceJson == Guard(principal, authenticationMethod, applicationId,
+                    commandId, candidate, row.GrantReference, actualDefinitions,
+                    row.CanonicalCommandFingerprint, ValidationFingerprint(row), null);
         if (row.PreparedEvidenceReference is not null || row.PreparationVersion is not null)
             return TryReadRuntimeReport(operation, row, candidate, actualDefinitions, out _);
         return operation.GuardEvidenceJson == Guard(principal, authenticationMethod, applicationId,

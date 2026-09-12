@@ -36,6 +36,10 @@ internal sealed class CompatibleStateSpacePublicationRebinder(
         ActiveApplicationManifest successor, CancellationToken cancellationToken) =>
         StageAsync(proof?.Closure.Basis ?? throw new ArgumentNullException(nameof(proof)), successor, cancellationToken);
 
+    internal Task<int> StageAsync(ApplicationCandidateReviewedProcedureUpdateEvidence proof,
+        ActiveApplicationManifest successor, CancellationToken cancellationToken) =>
+        StageAsync(proof?.Basis ?? throw new ArgumentNullException(nameof(proof)), successor, cancellationToken);
+
     private async Task<int> StageAsync(ActiveApplicationManifest predecessor,
         ActiveApplicationManifest successor, CancellationToken cancellationToken)
     {

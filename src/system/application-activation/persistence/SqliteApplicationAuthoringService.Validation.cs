@@ -134,12 +134,16 @@ public sealed partial class SqliteApplicationAuthoringService
                     && validation.ReuseEvidenceReference == durableReview
                     && validation.PreparationVersion?.StartsWith(
                         ApplicationCandidateStatefulRuntimeValidator.PolicyVersion + "@", StringComparison.Ordinal) != true
-                    && (reviewedPureUpdates is null
-                        || !ApplicationCandidateOperationProof.TryReadRuntimeReport(
-                            prior, validation, candidate, definitions, out var retainedReport)
-                        || retainedReport is null
-                        || await new ApplicationCandidateReviewedPureUpdateValidation(reviewedPureUpdates)
-                            .VerifyAsync(host, retainedReport, validation, cancellationToken) is null))
+                    && (validation.PreparationVersion == ApplicationCandidateReviewedProcedureUpdateValidation.PreparationVersion
+                        ? reviewedProcedureUpdates is null
+                            || await new ApplicationCandidateReviewedProcedureUpdateValidation(reviewedProcedureUpdates)
+                                .VerifyAsync(host, candidate, validation, cancellationToken) is null
+                        : reviewedPureUpdates is null
+                            || !ApplicationCandidateOperationProof.TryReadRuntimeReport(
+                                prior, validation, candidate, definitions, out var retainedReport)
+                            || retainedReport is null
+                            || await new ApplicationCandidateReviewedPureUpdateValidation(reviewedPureUpdates)
+                                .VerifyAsync(host, retainedReport, validation, cancellationToken) is null))
                     return InteractionInvocationResult.Unavailable("APPLICATION_CANDIDATE_VALIDATION_EVIDENCE_INCONSISTENT",
                         "The retained candidate review is no longer current or cannot be reconciled.");
                 await transaction.CommitAsync(cancellationToken);
@@ -234,6 +238,9 @@ public sealed partial class SqliteApplicationAuthoringService
                         new(new SchemaValidation.BoundedJsonSchemaValidator())), targets, grants, manuals, operations);
                 await compatible.CompleteAsync(host, runtimeReport, validationRow, cancellationToken);
             }
+            if (validationRow.Outcome != "valid" && reviewedProcedureUpdates is not null)
+                await new ApplicationCandidateReviewedProcedureUpdateValidation(reviewedProcedureUpdates)
+                    .CompleteAsync(host, candidate, validationRow, cancellationToken);
             if (validationRow.Outcome != "valid" && runtimeReport is not null && reviewedPureUpdates is not null)
                 await new ApplicationCandidateReviewedPureUpdateValidation(reviewedPureUpdates)
                     .CompleteAsync(host, runtimeReport, validationRow, cancellationToken);

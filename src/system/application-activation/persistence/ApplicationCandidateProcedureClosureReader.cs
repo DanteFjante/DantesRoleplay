@@ -67,8 +67,10 @@ internal sealed class ApplicationCandidateProcedureClosureReader(
                 return ApplicationCandidateReviewClosureReadResult.Rejected();
             var dependencies = await DependenciesAsync(host, candidate, basis, snapshot, references, cancellationToken);
             if (dependencies is null) return ApplicationCandidateReviewClosureReadResult.Rejected();
-            return ApplicationCandidateReviewClosureReadResult.Available(new Evidence(
-                selection, selected, predecessor.Definition, dependencies.Value.Definitions, dependencies.Value.Documents));
+            return ApplicationCandidateReviewClosureReadResult.Available(
+                ApplicationCandidateProcedureReviewClosureEvidence.FromVerified(
+                    selection, basis, selected, predecessor.Definition,
+                    dependencies.Value.Definitions, dependencies.Value.Documents));
         }
         catch (Exception exception) when (exception is ArgumentException or InvalidOperationException
             or JsonException or DecoderFallbackException or InteractionContractException
@@ -98,7 +100,11 @@ internal sealed class ApplicationCandidateProcedureClosureReader(
         CancellationToken cancellationToken)
     {
         var old = basis.Winners.SingleOrDefault(value => value.RelativePath == selected.Document.RelativePath);
-        if (old is null) return (false, null);
+        if (old is null)
+        {
+            var absent = await targets.ResolveCurrentAsync(host, target.DefinitionId, "procedure", cancellationToken);
+            return absent.Code == "STANDING_GRANT_DEFINITION_UNAVAILABLE" ? (false, null) : (true, null);
+        }
         if (old with { ContentFingerprint = selected.Document.ContentFingerprint, Length = selected.Document.Length } != selected.Document)
             return (true, null);
         var retained = evidence.ReadDocumentEvidence(candidate.ApplicationId, basis.ActivationRevision, old.LogicalIdentity);
@@ -205,30 +211,51 @@ internal sealed class ApplicationCandidateProcedureClosureReader(
 
     private static string Text(ImmutableArray<byte> bytes) => new UTF8Encoding(false, true).GetString(bytes.AsSpan());
 
-    private sealed class Evidence : IApplicationCandidateReviewClosureEvidence
+}
+
+internal sealed class ApplicationCandidateProcedureReviewClosureEvidence
+    : IApplicationCandidateReviewClosureEvidence
+{
+    private ApplicationCandidateProcedureReviewClosureEvidence(
+        ApplicationCandidateSelectionEvidence selection, ActiveApplicationManifest basis,
+        ApplicationCandidateSelectedDocument selected,
+        StandingGrantDefinitionReference? predecessor,
+        ImmutableArray<StandingGrantDefinitionReference> dependencies,
+        ImmutableArray<ApplicationCandidateReviewClosureDocument> dependencyDocuments)
     {
-        internal Evidence(ApplicationCandidateSelectionEvidence selection, ApplicationCandidateSelectedDocument selected,
-            StandingGrantDefinitionReference? predecessor, ImmutableArray<StandingGrantDefinitionReference> dependencies,
-            ImmutableArray<ApplicationCandidateReviewClosureDocument> dependencyDocuments)
-        {
-            Candidate = selection.Candidate; SelectionEvidenceFingerprint = selection.EvidenceFingerprint;
-            Predecessor = predecessor; Dependencies = dependencies;
-            ReviewDocuments = [new(selected.Definition, ApplicationCandidateReviewDocumentRole.Changed,
-                selected.Document, selected.RetainedBytes), .. dependencyDocuments];
-            EvidenceFingerprint = InteractionCanonicalJson.Fingerprint("dantes-roleplay/application-candidate-procedure-closure/v1",
-                InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
-                {
-                    Candidate, selection.BaseOrigin, SelectionEvidenceFingerprint, grammar = "procedure-governed-references-v1",
-                    selected = selected.Definition, predecessor, dependencies,
-                    documents = ReviewDocuments.Select(value => new { value.Definition, value.Role, value.Document })
-                })));
-        }
-        public string Grammar => "procedure-governed-references-v1";
-        public ApplicationCandidateReference Candidate { get; }
-        public string SelectionEvidenceFingerprint { get; }
-        public string EvidenceFingerprint { get; }
-        public ImmutableArray<ApplicationCandidateReviewClosureDocument> ReviewDocuments { get; }
-        public ImmutableArray<StandingGrantDefinitionReference> Dependencies { get; }
-        internal StandingGrantDefinitionReference? Predecessor { get; }
+        Candidate = selection.Candidate;
+        BaseOrigin = selection.BaseOrigin!;
+        SelectionEvidenceFingerprint = selection.EvidenceFingerprint;
+        Successor = selected.Definition;
+        Predecessor = predecessor;
+        Dependencies = dependencies;
+        ReviewDocuments = [new(selected.Definition, ApplicationCandidateReviewDocumentRole.Changed,
+            selected.Document, selected.RetainedBytes), .. dependencyDocuments];
+        EvidenceFingerprint = InteractionCanonicalJson.Fingerprint(
+            "dantes-roleplay/application-candidate-procedure-closure/v1",
+            InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
+            {
+                Candidate, BaseOrigin, SelectionEvidenceFingerprint,
+                grammar = "procedure-governed-references-v1", Successor, predecessor, dependencies,
+                documents = ReviewDocuments.Select(value => new { value.Definition, value.Role, value.Document })
+            })));
     }
+
+    public string Grammar => "procedure-governed-references-v1";
+    public ApplicationCandidateReference Candidate { get; }
+    public string SelectionEvidenceFingerprint { get; }
+    public string EvidenceFingerprint { get; }
+    public ImmutableArray<ApplicationCandidateReviewClosureDocument> ReviewDocuments { get; }
+    public ImmutableArray<StandingGrantDefinitionReference> Dependencies { get; }
+    internal StandingGrantActivationOrigin BaseOrigin { get; }
+    internal StandingGrantDefinitionReference Successor { get; }
+    internal StandingGrantDefinitionReference? Predecessor { get; }
+
+    internal static ApplicationCandidateProcedureReviewClosureEvidence FromVerified(
+        ApplicationCandidateSelectionEvidence selection, ActiveApplicationManifest basis,
+        ApplicationCandidateSelectedDocument selected,
+        StandingGrantDefinitionReference? predecessor,
+        ImmutableArray<StandingGrantDefinitionReference> dependencies,
+        ImmutableArray<ApplicationCandidateReviewClosureDocument> dependencyDocuments) =>
+        new(selection, basis, selected, predecessor, dependencies, dependencyDocuments);
 }
