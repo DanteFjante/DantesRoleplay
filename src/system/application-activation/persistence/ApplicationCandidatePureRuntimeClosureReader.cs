@@ -22,7 +22,7 @@ internal sealed class ApplicationCandidatePureRuntimeClosureReader(DantesRolepla
 internal sealed record ApplicationCandidatePureRuntimeDefinition(ApplicationCandidatePureMechanicPlan Plan,
     ApplicationCandidateSelectedDocument Markdown, ApplicationCandidateSelectedDocument JavaScript);
 
-internal sealed class ApplicationCandidatePureRuntimeClosureEvidence
+internal sealed class ApplicationCandidatePureRuntimeClosureEvidence : IApplicationCandidateReviewClosureEvidence
 {
     private ApplicationCandidatePureRuntimeClosureEvidence(ApplicationCandidateSelectionEvidence selection,
         ImmutableArray<ApplicationCandidatePureRuntimeDefinition> definitions)
@@ -47,6 +47,20 @@ internal sealed class ApplicationCandidatePureRuntimeClosureEvidence
     internal string CoverageVersion => "selected-pure-mechanic-runtime-v1";
     internal string EvidenceFingerprint { get; }
     internal ImmutableArray<ApplicationCandidatePureRuntimeDefinition> Definitions { get; }
+
+    string IApplicationCandidateReviewClosureEvidence.Grammar => "pure-mechanic-runtime-v1";
+    ApplicationCandidateReference IApplicationCandidateReviewClosureEvidence.Candidate => Candidate;
+    string IApplicationCandidateReviewClosureEvidence.SelectionEvidenceFingerprint => SelectionEvidenceFingerprint;
+    string IApplicationCandidateReviewClosureEvidence.EvidenceFingerprint => EvidenceFingerprint;
+    ImmutableArray<ApplicationCandidateReviewClosureDocument> IApplicationCandidateReviewClosureEvidence.ReviewDocuments =>
+        Definitions.SelectMany(value => new[]
+        {
+            new ApplicationCandidateReviewClosureDocument(value.Plan.Definition,
+                ApplicationCandidateReviewDocumentRole.Changed, value.Markdown.Document, value.Markdown.RetainedBytes),
+            new ApplicationCandidateReviewClosureDocument(value.Plan.Definition,
+                ApplicationCandidateReviewDocumentRole.Sidecar, value.JavaScript.Document, value.JavaScript.RetainedBytes)
+        }).ToImmutableArray();
+    ImmutableArray<StandingGrantDefinitionReference> IApplicationCandidateReviewClosureEvidence.Dependencies => [];
 
     // There is intentionally no constructor/factory taking a caller's completeness flag or a list
     // of alleged plans. Every instance passes the actual retained reader and closed grammar owner.

@@ -31,7 +31,8 @@ internal static class SystemTaskOrchestrationComponentRegistration
             provider.GetRequiredService<TimeProvider>(),
             provider.GetRequiredService<ApplicationCandidatePureRuntimeClosureReader>(),
             provider.GetRequiredService<IInteractionManualContextService>(),
-            provider.GetRequiredService<IInteractionFeatureRetriever>()));
+            provider.GetRequiredService<IInteractionFeatureRetriever>(),
+            provider.GetServices<IApplicationCandidateReviewClosureReader>()));
         services.AddScoped<SystemTaskApplicationValidationService>();
         services.AddSingleton<SystemTaskAiInvocationLifecycleFactory>();
         services.AddScoped<SystemInnerWorkerValidationInvoker>(provider => new(

@@ -99,7 +99,7 @@ internal sealed class SystemTaskApplicationValidationService(
                 task = lease.Request.Handle,
                 attempt = lease.Attempt,
                 candidate = lease.Request.Candidate,
-                closureEvidenceFingerprint = authority.PureClosure!.EvidenceFingerprint,
+                closureEvidenceFingerprint = authority.ReviewClosure!.EvidenceFingerprint,
                 inputFingerprint = authority.ReviewInput!.InputFingerprint,
                 judgment = computation.Judgment
             }, new JsonSerializerOptions(JsonSerializerDefaults.Web)
@@ -110,7 +110,7 @@ internal sealed class SystemTaskApplicationValidationService(
                 return Failed("INNER_VALIDATION_RESULT_TOO_LARGE", "The validation result exceeds its retained bound.");
             var hash = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(result)));
             return new SystemTaskRunOutcome.Completed(new(result, "validation.result." + hash,
-                [authority.PureClosure.EvidenceFingerprint, authority.Profile.ManualContext.Reference]));
+                [authority.ReviewClosure.EvidenceFingerprint, authority.Profile.ManualContext.Reference]));
         }
         catch (AiLifecycleException error)
         {

@@ -21,6 +21,7 @@ internal sealed record SystemTaskValidationAuthority(
     StandingGrantRevision? ValidateGrant = null,
     ApplicationCandidateCausationEvidence? Causation = null,
     ApplicationCandidatePureRuntimeClosureEvidence? PureClosure = null,
+    IApplicationCandidateReviewClosureEvidence? ReviewClosure = null,
     ApplicationCandidateReuseInputV2? ReviewInput = null,
     SystemInnerWorkerResolvedProfile? Profile = null);
 
@@ -30,8 +31,12 @@ internal sealed class SystemTaskApplicationValidationGate(
     IStandingGrantTargetResolver targets, IStandingGrantPolicy policy, TimeProvider time,
     ApplicationCandidatePureRuntimeClosureReader? pureClosures = null,
     IInteractionManualContextService? manuals = null,
-    IInteractionFeatureRetriever? features = null)
+    IInteractionFeatureRetriever? features = null,
+    IEnumerable<IApplicationCandidateReviewClosureReader>? reviewClosures = null)
 {
+    private readonly IApplicationCandidateReviewClosureReader[] reviewClosures = reviewClosures?
+        .OrderBy(value => value.Grammar, StringComparer.Ordinal).ToArray() ?? [];
+
     internal async Task<SystemTaskValidationAuthority> CheckAsync(InteractionInvocationHost host,
         ApplicationCandidateReference candidate, bool requireValidate,
         string? causationOperationId = null, string? causalCommandId = null,
@@ -85,9 +90,9 @@ internal sealed class SystemTaskApplicationValidationGate(
                 return Unavailable("INNER_VALIDATION_CAUSATION_UNAVAILABLE", "The exact causal authoring receipt could not be verified.");
         }
         if (!requireValidate) return new(null, selection, read.Grant, validateGrant, causation);
-        if (pureClosures is null || manuals is null || features is null)
+        if (manuals is null || features is null || pureClosures is null && reviewClosures.Length == 0)
             return new(null, selection, read.Grant, validateGrant, causation);
-        var prepared = await PreparePureRuntimeAsync(host, candidate, selection, read.Grant!, validateGrant!, cancellationToken);
+        var prepared = await PrepareRuntimeReviewAsync(host, candidate, selection, read.Grant!, validateGrant!, cancellationToken);
         return prepared.Failure is null
             ? prepared with { Causation = causation }
             : prepared;
@@ -100,44 +105,50 @@ internal sealed class SystemTaskApplicationValidationGate(
     internal static InteractionInvocationResult? ExecutionPrerequisite(SystemTaskValidationAuthority authority)
     {
         if (authority.Failure is not null) return authority.Failure;
-        if (authority.PureClosure is null)
+        if (authority.ReviewClosure is null)
             return InteractionInvocationResult.Unavailable("INNER_VALIDATION_DEPENDENCIES_UNAVAILABLE",
-                "An owner-issued closed pure-runtime dependency and sidecar proof is required before durable validation admission.");
+                "An owner-issued closed review dependency and source proof is required before durable validation admission.");
         if (authority.ReviewInput is null || authority.Profile is null)
             return InteractionInvocationResult.Unavailable("INNER_VALIDATION_CONTEXT_BINDING_UNAVAILABLE",
                 "Owner-verified selected-source, manual-context, and reviewer-profile bindings are required.");
         return null;
     }
 
-    private async Task<SystemTaskValidationAuthority> PreparePureRuntimeAsync(InteractionInvocationHost host,
+    private async Task<SystemTaskValidationAuthority> PrepareRuntimeReviewAsync(InteractionInvocationHost host,
         ApplicationCandidateReference candidate, ApplicationCandidateSelectionEvidence selection,
         StandingGrantRevision readGrant, StandingGrantRevision validateGrant, CancellationToken cancellationToken)
     {
-        var closure = await pureClosures!.ReadAsync(host, candidate, cancellationToken);
-        if (closure is null || closure.Candidate != candidate
-            || closure.SelectionEvidenceFingerprint != selection.EvidenceFingerprint
-            || closure.Definitions.IsDefaultOrEmpty || closure.Definitions.Length != selection.Targets.Length
-            || closure.Definitions.Any(value => !selection.Targets.Any(target =>
-                target.DefinitionId == value.Plan.Definition.DefinitionId
-                && target.Kind == value.Plan.Definition.Kind
-                && target.Revision == value.Plan.Definition.Revision
-                && target.ContentFingerprint == value.Plan.Definition.ContentFingerprint)))
+        ApplicationCandidatePureRuntimeClosureEvidence? pureClosure = pureClosures is null ? null
+            : await pureClosures.ReadAsync(host, candidate, cancellationToken);
+        var available = new List<IApplicationCandidateReviewClosureEvidence>();
+        if (pureClosure is not null) available.Add(pureClosure);
+        var rejected = false;
+        foreach (var reader in reviewClosures)
+        {
+            var result = await reader.ReadAsync(host, candidate, selection, cancellationToken);
+            if (result.Status == ApplicationCandidateReviewClosureReadStatus.Rejected) rejected = true;
+            else if (result.Status == ApplicationCandidateReviewClosureReadStatus.Available && result.Evidence is not null)
+                available.Add(result.Evidence);
+            else if (result.Status != ApplicationCandidateReviewClosureReadStatus.NotApplicable)
+                rejected = true;
+        }
+        if (rejected || available.Count != 1 || !await VerifyClosureAsync(
+                host, candidate, selection, available.SingleOrDefault(), cancellationToken))
             return new(UnavailableResult("INNER_VALIDATION_DEPENDENCIES_UNAVAILABLE",
-                "The candidate is outside the closed pure-runtime review grammar."));
+                "The candidate is outside one unambiguous owner-issued review grammar."));
+        var closure = available[0];
         var retained = await new ApplicationCandidateRetainedReader(db, applications).ReadMetadataAsync(
             candidate.ApplicationId, candidate.CandidateId, candidate.Revision, cancellationToken);
         if (retained is null || retained.RevisionRow.ContentFingerprint != candidate.ContentFingerprint)
             return new(UnavailableResult("INNER_VALIDATION_SELECTION_UNAVAILABLE",
                 "The retained candidate changed during review preparation."));
         var documents = new List<ApplicationCandidateReviewDocumentV2>();
-        foreach (var definition in closure.Definitions)
+        foreach (var source in closure.ReviewDocuments)
         {
-            if (!TryDocument(definition.Markdown, ApplicationCandidateReviewDocumentRole.Changed, out var markdown)
-                || !TryDocument(definition.JavaScript, ApplicationCandidateReviewDocumentRole.Sidecar, out var javascript))
+            if (!TryDocument(source, out var document))
                 return new(UnavailableResult("INNER_VALIDATION_SELECTION_UNAVAILABLE",
                     "Trusted retained review documents are unavailable."));
-            documents.Add(markdown!);
-            documents.Add(javascript!);
+            documents.Add(document!);
         }
         var manualResult = await manuals!.DiscoverAsync(new(host, retained.RevisionRow.NewImplementationReason), cancellationToken);
         if (manualResult.Tag != InteractionInvocationResultTag.Completed || manualResult.DataJson is null
@@ -173,8 +184,43 @@ internal sealed class SystemTaskApplicationValidationGate(
             SystemInnerWorkerCandidateReviewer.Profile, schemaFingerprint, [], ContextReferences(manualPacket),
             new(manualResult.CompletionEvidenceReference, manualFingerprint), Provenance("validate", validateGrant),
             new SystemInnerWorkerAiBudget(toolCalls: 0), Provenance("read", readGrant));
-        return new(null, selection, readGrant, validateGrant, null, closure, input, profile);
+        return new(null, selection, readGrant, validateGrant, null, pureClosure, closure, input, profile);
     }
+
+    private async Task<bool> VerifyClosureAsync(InteractionInvocationHost host,
+        ApplicationCandidateReference candidate, ApplicationCandidateSelectionEvidence selection,
+        IApplicationCandidateReviewClosureEvidence? closure, CancellationToken cancellationToken)
+    {
+        if (closure is null || closure.Candidate != candidate
+            || closure.SelectionEvidenceFingerprint != selection.EvidenceFingerprint
+            || string.IsNullOrWhiteSpace(closure.Grammar) || !Hash(closure.EvidenceFingerprint)
+            || closure.ReviewDocuments.IsDefaultOrEmpty || closure.Dependencies.IsDefault
+            || closure.Dependencies.Distinct().Count() != closure.Dependencies.Length) return false;
+        var selectedDocuments = closure.ReviewDocuments.Where(value => value.Role is not ApplicationCandidateReviewDocumentRole.Dependency).ToArray();
+        if (selectedDocuments.Length != selection.Documents.Length
+            || selection.Documents.Any(selected => selectedDocuments.Count(value => SameDocument(value, selected)) != 1)
+            || selectedDocuments.Any(value => !selection.Documents.Any(selected => SameDocument(value, selected)))
+            || selection.Targets.Any(target => !selectedDocuments.Any(value => SameDefinition(value.Definition, target)
+                && value.Role == ApplicationCandidateReviewDocumentRole.Changed))) return false;
+        var dependencyDocuments = closure.ReviewDocuments.Where(value => value.Role == ApplicationCandidateReviewDocumentRole.Dependency).ToArray();
+        if (dependencyDocuments.Any(value => !closure.Dependencies.Contains(value.Definition))
+            || closure.Dependencies.Any(value => !dependencyDocuments.Any(document => document.Definition == value))) return false;
+        foreach (var dependency in closure.Dependencies)
+        {
+            if (selection.Targets.Any(target => SameDefinition(dependency, target))
+                || !await CanReadAsync(host, dependency, cancellationToken)) return false;
+        }
+        return true;
+    }
+
+    private static bool SameDocument(ApplicationCandidateReviewClosureDocument value,
+        ApplicationCandidateSelectedDocument selected) => value.Definition == selected.Definition
+        && value.Document == selected.Document && value.RetainedBytes.AsSpan().SequenceEqual(selected.RetainedBytes.AsSpan());
+
+    private static bool SameDefinition(StandingGrantDefinitionReference reference,
+        StandingGrantDefinitionTarget target) => reference.DefinitionId == target.DefinitionId
+        && reference.Kind == target.Kind && reference.Revision == target.Revision
+        && reference.ContentFingerprint == target.ContentFingerprint;
 
     private async Task<IReadOnlyList<ApplicationCandidateReuseAlternative>?> ReadAlternativesAsync(
         InteractionInvocationHost host, JsonElement manualPacket, CancellationToken cancellationToken)
@@ -211,8 +257,8 @@ internal sealed class SystemTaskApplicationValidationGate(
             StandingGrantScope.Application, [resolved.Target], []), cancellationToken), host, StandingGrantCapability.Read);
     }
 
-    private static bool TryDocument(ApplicationCandidateSelectedDocument selected,
-        ApplicationCandidateReviewDocumentRole role, out ApplicationCandidateReviewDocumentV2? document)
+    private static bool TryDocument(ApplicationCandidateReviewClosureDocument selected,
+        out ApplicationCandidateReviewDocumentV2? document)
     {
         document = null;
         try
@@ -222,7 +268,7 @@ internal sealed class SystemTaskApplicationValidationGate(
             var text = new UTF8Encoding(false, true).GetString(selected.RetainedBytes.AsSpan());
             if (Convert.ToHexString(SHA256.HashData(selected.RetainedBytes.AsSpan()))
                 != selected.Document.ContentFingerprint) return false;
-            document = new(selected.Definition, role, selected.Document.LogicalIdentity,
+            document = new(selected.Definition, selected.Role, selected.Document.LogicalIdentity,
                 selected.Document.RelativePath, selected.Document.MediaType, selected.Document.ContentFingerprint, text);
             return true;
         }
@@ -256,6 +302,8 @@ internal sealed class SystemTaskApplicationValidationGate(
     private static bool SameGrant(StandingGrantRevision left, StandingGrantRevision right) =>
         left.GrantReference == right.GrantReference && left.Revision == right.Revision
         && left.ContentFingerprint == right.ContentFingerprint;
+
+    private static bool Hash(string value) => value.Length == 64 && value.All(char.IsAsciiHexDigitUpper);
 
     private static InteractionInvocationResult UnavailableResult(string code, string message) =>
         InteractionInvocationResult.Unavailable(code, message);
