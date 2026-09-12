@@ -170,7 +170,7 @@ export function renderInvocation(container, result) {
     add('p', view.receipt.effectDetailsAvailable ? `${view.receipt.effects.length} recorded effects.` :
       'Effect details are unavailable; this does not mean no effects occurred.');
   }
-  if (view.pending) add('p', `Task: ${view.pending.taskId}. Progress is separate from an operation receipt.`);
+  if (view.pending) add('p', `Task: ${view.pending.taskId} · command ${view.pending.commandId}. Progress is separate from an operation receipt.`);
   for (const previous of view.previousCommits)
     add('p', `Earlier committed operation: ${previous.operationId}. This change has not been rolled back.`);
   if (view.recoveryIdentity) add('p', `Reconcile operation ${view.recoveryIdentity.operationId} before retrying.`);

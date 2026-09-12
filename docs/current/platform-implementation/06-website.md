@@ -34,6 +34,20 @@ The website presents these shared results without becoming an execution owner. H
 failures preserve the owner code as forbidden, while invalid input, stale/conflicting requests, pending
 tasks, cancellation, unavailable dependencies, and committed receipts remain distinct outcomes.
 
+The selected-application control-center view uses `application-capability-center` to discover the
+current application capability descriptors from that existing route and invoke their closed JSON
+contracts. Its result panel delegates to the shared `InteractionInvocationResult` presentation, so
+durable inner-worker task and command identity, current result/progress, prior commits, and recovery
+identity keep their distinct meanings. It sends no automatic retry and cannot provide grants, state
+revision, provider/model/tool selection, budgets, deadlines, or control authority. The incoming
+`system.inner-worker.submit`, `system.inner-worker.read`, and `system.inner-worker.cancel` entries
+appear only when their real owner registrations and current grants make them discoverable.
+
+Schedules and observers remain in the existing trigger-scheduling panel. That view reads current
+application schedules and past fires, distinguishes conditional and observation listeners, and uses
+the established preview/apply owner endpoints. No composition-specific schedule store or task state
+was added.
+
 ## Independent implementation boundary
 
 [WebComposition.cs](../../../DantesRoleplay.Web/Pages/WebComposition.cs) parses a closed, page-local

@@ -981,6 +981,21 @@ public sealed class WebInterfaceTests
         Assert.DoesNotContain("method: 'DELETE'", applicationScript, StringComparison.Ordinal);
         Assert.DoesNotContain("innerHTML", applicationScript, StringComparison.Ordinal);
 
+        var capabilityCenter = await BrowserComponentAssets.ReadAsync("application-capability-center");
+        Assert.NotNull(capabilityCenter);
+        Assert.Contains("/authoring/capabilities", capabilityCenter, StringComparison.Ordinal);
+        Assert.Contains("renderInvocation", capabilityCenter, StringComparison.Ordinal);
+        Assert.Contains("previousCommits", await BrowserComponentAssets.ReadAsync("composition-bindings"),
+            StringComparison.Ordinal);
+        Assert.DoesNotContain("/api/control", capabilityCenter, StringComparison.Ordinal);
+        Assert.DoesNotContain("/mcp", capabilityCenter, StringComparison.OrdinalIgnoreCase);
+        var controlCenter = File.ReadAllText(Path.Combine(RepositoryRoot(), "src", "system", "web-interface",
+            "examples", "control-center", "index.html"));
+        Assert.Contains("document.createElement(\"application-capability-center\")", controlCenter,
+            StringComparison.Ordinal);
+        Assert.Contains("/components/application-capability-center.js",
+            await BrowserComponentAssets.ReadAsync("system-workspace"), StringComparison.Ordinal);
+
         Assert.Null(await BrowserComponentAssets.ReadAsync("missing-browser-component"));
 
         var assetRoute = Assert.Single(((IEndpointRouteBuilder)application).DataSources
