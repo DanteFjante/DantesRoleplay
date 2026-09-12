@@ -16,7 +16,7 @@ Display data may contain additional fields. Each component checks the fields it 
 
 ## Current checkpoint
 
-Last coordinator update: 2026-09-12, 12:28 UTC. This is a checkpoint, not a claim that later work has finished.
+Last coordinator update: 2026-09-12, 12:30 UTC. The scoped implementation, local cleanup, master landing, and live deployment are complete.
 
 | Boundary | Verified state |
 | --- | --- |
@@ -30,13 +30,15 @@ Last coordinator update: 2026-09-12, 12:28 UTC. This is a checkpoint, not a clai
 | Shared website | Merged on master through ef73bab1; final combined browser checks 99 passed; desktop/mobile and light/dark previews inspected |
 | DND website | Merged on master through ef73bab1; full mounted tests 79/79, typecheck/build passed; root preview recheck shows zero accessibility violations in the controlled inventory fixture in light and dark |
 | DND upgrade plan | Landed on master as 73eaf060 and 53a43029; parallel ownership, shared theme/navigation, existing website work, and durable checkpoints reconciled |
-| Live deployment | Database migrations, reviewed catalog changes, application activation 66, state-space binding 40, home 9, and corrected DND page 78 are live on port 6217; launcher and live MCP proof passed. Final browser QA found a damaged deployed shared JavaScript file; deployment repair and final browser verification remain active. |
+| Live deployment | COMPLETE: database migrations, reviewed catalog changes, application activation 66, state-space binding 40, home 9, and corrected DND page 78 are live on port 6217; launcher, database integrity, live MCP/manual retrieval, and final live browser checks passed. |
 
 Implementation, verification, landing on master, and deployment are separate states. Never call a worktree delivery a master update or a live deployment.
 
 Final verified pre-deletion backup: `C:/repo/DantesRoleplay/.tmp/branch-cleanup/20260912-113124/local-refs-pre-cleanup.bundle`, SHA256 `4589002B80F55D9E1F7FE8C7BA6D6BF0A50C16AC8749842FF033B837E61ED045`. The adjacent manifest records exact branch tips, worktree commits, remote refs, and stashes; `result.json` records completed cleanup. Every worktree's current HEAD was checked against the refreshed bundle before deletion. Active detached working directories are preserved.
 
-The newer extensive manual and shared/DND website changes passed combined acceptance at `0a445b54`: 3,456 full tests passed, eight protocol cases passed with two intentional retired skips, and build/browser/catalog gates passed. They are merged onto actual master at `ef73bab1`. Rehearsal against copied live data exposed a duplicate theme control and obsolete Player filtering in the shared website; the bounded correction landed as `b5c0e802`, with 91 context tests, six mounted header/resilience tests, a targeted faction continuation test, typecheck, and production build passed. [Local deployment and database activation](upgrade/06-local-deployment.md) is active under the user's explicit authorization. Live cutover and MCP verification have succeeded. Final browser review found two corrupted lines in the deployed `ai-workspace.js`; the accepted source on master is valid. The deployment owner is repairing release assets, checking every shared browser module, and renewing the pinned release before final browser acceptance.
+The newer extensive manual and shared/DND website changes passed combined acceptance at `0a445b54`: 3,456 full tests passed, eight protocol cases passed with two intentional retired skips, and build/browser/catalog gates passed. They are merged onto actual master at `ef73bab1`. Rehearsal against copied live data exposed a duplicate theme control and obsolete Player filtering in the shared website; the bounded correction landed as `b5c0e802`, with 91 context tests, six mounted header/resilience tests, a targeted faction continuation test, typecheck, and production build passed. [Local deployment and database activation](upgrade/06-local-deployment.md) is complete. A supported managed restart cleared a damaged served module image; all 11 shared JavaScript files match accepted source, pinned disk, and fresh HTTP responses. Final browser checks verified application navigation, one theme control, shared-table context, real Lore records, all 35 factions through continuation, and light/dark rendering with no new browser warnings or errors. Live MCP retrieves the new manuals and ranks them for matching intents. Open `http://127.0.0.1:6217/` or `/ui/dnd2024-play` to try the release.
+
+The broader DND2024 rules and catalog follow-up remains the separately requested [upgrade plan](DND2024-UPGRADE-PLAN.md). Existing incomplete game records can still show local missing-field notices; this deployment preserves that data rather than inventing replacements.
 
 ## Workstreams and ownership
 
