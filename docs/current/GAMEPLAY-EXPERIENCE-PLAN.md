@@ -81,7 +81,7 @@ Official [hooks documentation](https://learn.chatgpt.com/docs/hooks) describes p
 
 ## Current checkpoint
 
-- Status: plan ready; implementation dispatched after the plan commit. No live mutation yet.
+- Status: P1/P2, P3 and P4 are running in the three assigned tasks with GPT-5.6 Sol high. Dispatch followed plan commit `51aa6d3a`. No live mutation yet.
 - Root task: `01a09056-6d13-76d0-8706-40e435fb8b03`; master `ddcd5eed` before this plan.
 - Reconnaissance: `workflow_publication_finish` reads audience/map owners; `final_guide_alignment` reads conversation/capture owners; `website_integration` exports the live starting-area/audience/map context and owns later deployment.
 - Decisions fixed: Player sees party-union knowledge; DM is server-authorized; labels/locations are data overlays; consistent zoom uses shared geography; capture is linked/scoped and preserves real visible conversation turns; dreamed memories are evidence-linked derived records.
@@ -98,4 +98,8 @@ Official [hooks documentation](https://learn.chatgpt.com/docs/hooks) describes p
 | Implement focused INNER AI workers | `01a0917a-67f5-78d0-9555-cd9265c27348` | `C:/repo/DantesRoleplay-gameplay-memory` | P4; journal, capture adapter, memory/dream manuals, focused tests; no website map edits |
 
 - Root owns this plan, README, integration, acceptance and runtime selection. Implementation tasks return commits and concise evidence; they do not modify live data or the original checkout. Deployment worker remains the only live writer.
+- P2/P3 agreed geometry: 0..1000 normalized coordinates, top-left origin, east/right, south/down, north-up. A child `mapAnchor` is a point in its parent's frame. Missing coordinates remain unplaced. Explicit child bounds/transforms require authored evidence; do not infer alignment from pixel dimensions or center every child automatically.
+- Asset inventory confirms baked labels/markers in all six active levels (atlas, Eredane, Alderwick, Bramble Country, Bramblebridge, Gilded Kettle). P3 must replace the coherent family and retain its old hashes; nearby detail can reuse the settlement and inn plus another verified site. Both old player/DM variants currently use identical map bytes.
+- P4 will isolate captured messages from `ApplicationPlayMessageRecord`; private source journals and derived-memory references use existing play-recording persistence and INNER tasks. Shared migration/DI changes are confined to the memory lane and integrated by root.
+- Workspace preparation encountered limited disk space. New lanes use sparse detached checkouts. Seven idle, verified-clean checkouts were sparsified to remove only redundant tracked export/world/PDF copies from their working trees, leaving Git history, original files, live data and recovery copies intact; about 5.3 GB was free afterward. Check capacity before release copies.
 - Next: implement P1–P4 concurrently, then continue through P5 without another user confirmation.
