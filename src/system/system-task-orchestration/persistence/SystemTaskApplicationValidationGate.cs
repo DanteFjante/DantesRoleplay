@@ -150,7 +150,8 @@ internal sealed class SystemTaskApplicationValidationGate(
                     "Trusted retained review documents are unavailable."));
             documents.Add(document!);
         }
-        var manualResult = await manuals!.DiscoverAsync(new(host, retained.RevisionRow.NewImplementationReason), cancellationToken);
+        var manualResult = await manuals!.DiscoverAsync(new(host,
+            AdvisoryIntent(retained.RevisionRow.NewImplementationReason)), cancellationToken);
         if (manualResult.Tag != InteractionInvocationResultTag.Completed || manualResult.DataJson is null
             || manualResult.CompletionEvidenceReference is null)
             return new(UnavailableResult("INNER_VALIDATION_CONTEXT_BINDING_UNAVAILABLE",
@@ -158,11 +159,11 @@ internal sealed class SystemTaskApplicationValidationGate(
         using var manualDocument = JsonDocument.Parse(manualResult.DataJson);
         var manualPacket = manualDocument.RootElement.Clone();
         if (!TryManualFingerprint(manualPacket, manualResult.CompletionEvidenceReference, out var manualFingerprint)
-            || manualPacket.GetProperty("bounded").GetBoolean()
+            || !AdvisoryBoundsSupported(manualPacket)
             || manualPacket.GetProperty("reusableTasks").GetArrayLength() != 0)
             return new(UnavailableResult("INNER_VALIDATION_CONTEXT_BINDING_UNAVAILABLE",
                 "The authorized manual context is incomplete or unsupported."));
-        var alternatives = await ReadAlternativesAsync(host, manualPacket, cancellationToken);
+        var alternatives = await ReadAlternativesAsync(host, closure, manualPacket, cancellationToken);
         if (alternatives is null)
             return new(UnavailableResult("INNER_VALIDATION_CONTEXT_BINDING_UNAVAILABLE",
                 "The authorized alternative selection changed during review preparation."));
@@ -195,7 +196,10 @@ internal sealed class SystemTaskApplicationValidationGate(
             || closure.SelectionEvidenceFingerprint != selection.EvidenceFingerprint
             || string.IsNullOrWhiteSpace(closure.Grammar) || !Hash(closure.EvidenceFingerprint)
             || closure.ReviewDocuments.IsDefaultOrEmpty || closure.Dependencies.IsDefault
-            || closure.Dependencies.Distinct().Count() != closure.Dependencies.Length) return false;
+            || closure.ReviewAlternatives.IsDefault
+            || closure.Dependencies.Distinct().Count() != closure.Dependencies.Length
+            || closure.ReviewAlternatives.Select(value => value.Target.DefinitionId)
+                .Distinct(StringComparer.Ordinal).Count() != closure.ReviewAlternatives.Length) return false;
         var selectedDocuments = closure.ReviewDocuments.Where(value => value.Role is not ApplicationCandidateReviewDocumentRole.Dependency).ToArray();
         if (selectedDocuments.Length != selection.Documents.Length
             || selection.Documents.Any(selected => selectedDocuments.Count(value => SameDocument(value, selected)) != 1)
@@ -223,9 +227,16 @@ internal sealed class SystemTaskApplicationValidationGate(
         && reference.ContentFingerprint == target.ContentFingerprint;
 
     private async Task<IReadOnlyList<ApplicationCandidateReuseAlternative>?> ReadAlternativesAsync(
-        InteractionInvocationHost host, JsonElement manualPacket, CancellationToken cancellationToken)
+        InteractionInvocationHost host, IApplicationCandidateReviewClosureEvidence closure,
+        JsonElement manualPacket, CancellationToken cancellationToken)
     {
         var alternatives = new List<ApplicationCandidateReuseAlternative>();
+        foreach (var alternative in closure.ReviewAlternatives)
+        {
+            if (!ValidAlternative(host, alternative.Target, alternative.ContractJson)
+                || !await CanReadRetainedAsync(host, alternative, cancellationToken)) return null;
+            alternatives.Add(new(alternative.Target, alternative.ContractJson));
+        }
         foreach (var candidate in manualPacket.GetProperty("candidates").EnumerateArray())
         {
             var reference = candidate.GetProperty("reference");
@@ -240,9 +251,45 @@ internal sealed class SystemTaskApplicationValidationGate(
                 && value.Reference.Kind == target.Kind && value.Reference.Version == target.Revision
                 && value.Reference.ContentFingerprint == target.ContentFingerprint);
             if (hit is null || !await CanReadAsync(host, target, cancellationToken)) return null;
+            var existing = alternatives.SingleOrDefault(value => value.Target.DefinitionId == target.DefinitionId);
+            if (existing is not null)
+            {
+                if (existing.Target != target || existing.ContractJson != hit.ContractJson) return null;
+                continue;
+            }
             alternatives.Add(new(target, hit.ContractJson));
         }
         return alternatives;
+    }
+
+    private static bool AdvisoryBoundsSupported(JsonElement packet)
+    {
+        if (!packet.TryGetProperty("bounded", out var bounded) || bounded.ValueKind is not JsonValueKind.True and not JsonValueKind.False
+            || packet.TryGetProperty("boundReasons", out var reasons) && reasons.ValueKind != JsonValueKind.Array)
+            return false;
+        if (!packet.TryGetProperty("boundReasons", out reasons)) return !bounded.GetBoolean();
+        var values = reasons.EnumerateArray().Select(value => value.ValueKind == JsonValueKind.String
+            ? value.GetString() : null).ToArray();
+        if (values.Any(string.IsNullOrWhiteSpace) || values.Distinct(StringComparer.Ordinal).Count() != values.Length)
+            return false;
+        var supported = values.All(value => value is "ranked-advisory-sections" or "serialized-manual-sections");
+        return supported && bounded.GetBoolean() == (values.Length != 0);
+    }
+
+    private static string AdvisoryIntent(string reason) => reason.Length <= 256 ? reason : reason[..256];
+
+    private static bool ValidAlternative(InteractionInvocationHost host,
+        StandingGrantDefinitionReference target, string contractJson)
+    {
+        try
+        {
+            _ = InteractionCanonicalJson.CanonicalizeObject(contractJson);
+            return target.DefinitionId.StartsWith(host.ApplicationRevision.ApplicationId.Value + ".", StringComparison.Ordinal)
+                && target.Kind is "query" or "procedure"
+                && target.Revision > 0
+                && target.ContentFingerprint == Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(contractJson)));
+        }
+        catch (JsonException) { return false; }
     }
 
     private async Task<bool> CanReadAsync(InteractionInvocationHost host,
@@ -255,6 +302,22 @@ internal sealed class SystemTaskApplicationValidationGate(
             || resolved.Target.ContentFingerprint != reference.ContentFingerprint) return false;
         return Matches(await policy.EvaluateAsync(host, new(StandingGrantCapability.Read,
             StandingGrantScope.Application, [resolved.Target], []), cancellationToken), host, StandingGrantCapability.Read);
+    }
+
+    private async Task<bool> CanReadRetainedAsync(InteractionInvocationHost host,
+        ApplicationCandidateReviewAlternativeEvidence alternative, CancellationToken cancellationToken)
+    {
+        var resolved = await targets.ResolveRetainedAsync(host, alternative.RetainedOrigin,
+            alternative.Target, cancellationToken);
+        if (resolved.Status != StandingGrantTargetResolutionStatus.Available || resolved.Target is null
+            || resolved.Target.DefinitionId != alternative.Target.DefinitionId
+            || resolved.Target.Kind != alternative.Target.Kind
+            || resolved.Target.Revision != alternative.Target.Revision
+            || resolved.Target.ContentFingerprint != alternative.Target.ContentFingerprint
+            || resolved.Target.RetainedActivation != alternative.RetainedOrigin) return false;
+        return Matches(await policy.EvaluateAsync(host, new(StandingGrantCapability.Read,
+            StandingGrantScope.Application, [resolved.Target], []), cancellationToken), host,
+            StandingGrantCapability.Read);
     }
 
     private static bool TryDocument(ApplicationCandidateReviewClosureDocument selected,

@@ -32,6 +32,12 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         Assert.Equal(oldTarget.ContentFingerprint, result.Target.ContentFingerprint);
         Assert.Null(result.CurrentActivation);
 
+        var staleOrigin = origin with { ActivationFingerprint = new string('B', 64) };
+        var stale = await setup.Resolver.ResolveRetainedAsync(host, staleOrigin, Selection(oldTarget));
+        Assert.Equal(StandingGrantTargetResolutionStatus.Denied, stale.Status);
+        Assert.Equal("STANDING_GRANT_RETAINED_ORIGIN_STALE", stale.Code);
+        Assert.Null(stale.Target);
+
         setup.Sources.Retire(Application, "catalog", "Source ownership was withdrawn.");
         var denied = await setup.Resolver.ResolveRetainedAsync(host, origin, Selection(oldTarget));
         Assert.Equal(StandingGrantTargetResolutionStatus.Denied, denied.Status);

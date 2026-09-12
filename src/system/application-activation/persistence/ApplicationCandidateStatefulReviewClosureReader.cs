@@ -280,6 +280,7 @@ internal sealed class ApplicationCandidateStatefulReviewClosureEvidence :
     public string EvidenceFingerprint { get; }
     public ImmutableArray<ApplicationCandidateReviewClosureDocument> ReviewDocuments { get; }
     public ImmutableArray<StandingGrantDefinitionReference> Dependencies { get; }
+    public ImmutableArray<ApplicationCandidateReviewAlternativeEvidence> ReviewAlternatives => [];
     internal ApplicationCandidateRetainedMetadata Retained { get; }
     public ActiveApplicationManifest Basis { get; }
     public CatalogRecordView Successor { get; }

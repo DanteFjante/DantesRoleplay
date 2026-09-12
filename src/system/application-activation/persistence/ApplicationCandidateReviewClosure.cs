@@ -13,6 +13,10 @@ internal sealed record ApplicationCandidateReviewClosureDocument(
     ActivatedApplicationDocument Document,
     ImmutableArray<byte> RetainedBytes);
 
+internal sealed record ApplicationCandidateReviewAlternativeEvidence(
+    StandingGrantDefinitionReference Target, string ContractJson,
+    StandingGrantActivationOrigin RetainedOrigin);
+
 /// <summary>
 /// Owner-issued exact source and dependency closure for one explicit review grammar. Implementations
 /// must not expose public construction from caller-supplied completeness claims or review DTOs.
@@ -25,6 +29,7 @@ internal interface IApplicationCandidateReviewClosureEvidence
     string EvidenceFingerprint { get; }
     ImmutableArray<ApplicationCandidateReviewClosureDocument> ReviewDocuments { get; }
     ImmutableArray<StandingGrantDefinitionReference> Dependencies { get; }
+    ImmutableArray<ApplicationCandidateReviewAlternativeEvidence> ReviewAlternatives { get; }
 }
 
 internal sealed record ApplicationCandidateReviewClosureReadResult(

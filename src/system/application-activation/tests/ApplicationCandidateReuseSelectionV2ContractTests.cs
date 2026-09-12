@@ -29,6 +29,7 @@ public sealed class ApplicationCandidateReuseSelectionV2ContractTests
 
         Assert.NotEqual(left.SelectionFingerprint, right.SelectionFingerprint);
         Assert.Contains(ApplicationCandidateReuseInputV2.InputDomain, left.ModelInputJson);
+        Assert.Contains("\"manualRole\":\"advisory\"", left.ModelInputJson, StringComparison.Ordinal);
         Assert.DoesNotContain("CandidateFingerprint", left.ModelInputJson, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("Base", left.ModelInputJson, StringComparison.OrdinalIgnoreCase);
         Assert.NotEqual(left.InputFingerprint, right.InputFingerprint);

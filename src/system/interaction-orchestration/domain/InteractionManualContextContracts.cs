@@ -34,7 +34,9 @@ public interface IInteractionManualContextService
 /// It is opaque to callers; resubmit it for authorized-view drift detection.
 /// Bounds: intent 256 chars, known input 2000 chars, result 4000..24000 chars (default 16000),
 /// at most 8 feature candidates, 4 recipes and 8 sections, each section at most 2000 chars.
-/// Bounded means content was omitted; exact source reads are required before relying on constraints.
+/// Bounded means content was omitted; BoundReasons identifies whether this was advisory ranking,
+/// source enumeration, an oversize source, or serialized packet trimming. Exact source reads are
+/// required before relying on omitted constraints.
 /// Global source categories are an immutable trusted host allow-list, never a request field.
 /// </summary>
 public sealed record InteractionManualContextPacket(
@@ -52,6 +54,7 @@ public sealed record InteractionManualContextPacket(
     string RetrievalMode,
     string RetrievalAvailability,
     bool Bounded,
+    IReadOnlyList<string> BoundReasons,
     IReadOnlyList<string> NextSteps)
 {
     private static readonly JsonSerializerOptions Wire = new()

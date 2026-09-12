@@ -81,8 +81,10 @@ public sealed class InteractionManualContextService(
             var globalSources = new Dictionary<string, string>(StringComparer.Ordinal);
             var exact = new List<string>();
             var bounded = false;
+            var boundReasons = new HashSet<string>(StringComparer.Ordinal);
             var globalManual = await manualStore.ReadOperationalManualAsync(_globalCategories, MaximumSources + 1, token);
             bounded = globalManual.Count > MaximumSources;
+            if (bounded) boundReasons.Add("source-enumeration");
             foreach (var detail in globalManual.Take(MaximumSources))
             {
                 var sourceFingerprint = ProcedureManualSections.Fingerprint(detail);
@@ -173,6 +175,7 @@ public sealed class InteractionManualContextService(
             var selectedSections = sections.OrderByDescending(value => value.Score)
                 .ThenBy(value => value.Section.Reference, StringComparer.Ordinal).Take(8).ToList();
             bounded |= sections.Count > selectedSections.Count;
+            if (sections.Count > selectedSections.Count) boundReasons.Add("ranked-advisory-sections");
             var fingerprint = ProcedureManualSections.Hash(JsonSerializer.Serialize(new
             {
                 format = ProcedureManualSections.Format, host.Principal.PrincipalId, host.GrantReference,
@@ -204,6 +207,8 @@ public sealed class InteractionManualContextService(
                 ["retrievalMode"] = featureResult.Mode.ToString(),
                 ["retrievalAvailability"] = featureResult.AvailabilityCode,
                 ["bounded"] = bounded,
+                ["boundReasons"] = new JsonArray(boundReasons.Order(StringComparer.Ordinal)
+                    .Select(value => (JsonNode?)JsonValue.Create(value)).ToArray()),
                 ["nextSteps"] = new JsonArray("Inspect a candidate's exact callable contract and full manual by ID and revision.",
                     "Supply missing inputs and resolve ambiguity; revalidate scope, grants and exact revisions at execution.")
             };
@@ -211,11 +216,11 @@ public sealed class InteractionManualContextService(
             // constraints have been validated. Exact source reads remain the recovery path.
             var manual = (JsonArray)packet["manualSections"]!;
             while (packet.ToJsonString().Length > maximumCharacters && manual.Count > 0)
-            { manual.RemoveAt(manual.Count - 1); packet["bounded"] = true; }
+            { manual.RemoveAt(manual.Count - 1); MarkBounded("serialized-manual-sections"); }
             while (packet.ToJsonString().Length > maximumCharacters && reusable.Count > 0)
-            { reusable.RemoveAt(reusable.Count - 1); packet["bounded"] = true; }
+            { reusable.RemoveAt(reusable.Count - 1); MarkBounded("serialized-recipes"); }
             while (packet.ToJsonString().Length > maximumCharacters && candidates.Count > 0)
-            { candidates.RemoveAt(candidates.Count - 1); packet["bounded"] = true; }
+            { candidates.RemoveAt(candidates.Count - 1); MarkBounded("serialized-candidates"); }
             var resultFingerprint = ProcedureManualSections.Hash(InteractionCanonicalJson.CanonicalizeObject(packet.ToJsonString()));
             packet["resultFingerprint"] = resultFingerprint;
             var json = packet.ToJsonString();
@@ -228,7 +233,8 @@ public sealed class InteractionManualContextService(
                 string instructions, string constraints, string metadata, bool isExact, string? storedSourceHash,
                 string associationFingerprint, Action<ManualCandidate>? observe = null, bool deferSelection = false)
             {
-                if (instructions.Length + constraints.Length > 64_000) { bounded = true; return; }
+                if (instructions.Length + constraints.Length > 64_000)
+                { bounded = true; boundReasons.Add("oversize-source"); return; }
                 foreach (var section in ProcedureManualSections.Derive(id, instructions, constraints))
                 {
                     var score = isExact ? 1000 : Score(search.Query,
@@ -238,6 +244,15 @@ public sealed class InteractionManualContextService(
                     observe?.Invoke(candidate);
                     if (!deferSelection && score > 0) sections.Add(candidate);
                 }
+            }
+
+            void MarkBounded(string reason)
+            {
+                bounded = true;
+                boundReasons.Add(reason);
+                packet["bounded"] = true;
+                packet["boundReasons"] = new JsonArray(boundReasons.Order(StringComparer.Ordinal)
+                    .Select(value => (JsonNode?)JsonValue.Create(value)).ToArray());
             }
         }
         catch (OperationCanceledException)

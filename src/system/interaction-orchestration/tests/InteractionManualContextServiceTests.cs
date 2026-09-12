@@ -303,6 +303,72 @@ public sealed class InteractionManualContextServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task More_than_eight_matching_advisory_sections_reports_ranked_section_bounding()
+    {
+        await using var db = _fixture.CreateContext();
+        var store = new ProcedureStore(db);
+        var instructions = string.Join('\n', Enumerable.Range(1, 9)
+            .Select(index => $"## Advisory {index}\nInspect ranked advisory section {index}."));
+        await store.WriteAsync(Request("procedure.system.ranked-advisories", "system", "Rank advisories",
+            instructions, matches: "rank advisories"));
+
+        var result = await Service(store, new Changes(App, HashA), "system")
+            .DiscoverAsync(Host(), "rank advisories", maximumCharacters: 24_000);
+
+        Assert.Equal(InteractionInvocationResultTag.Completed, result.Tag);
+        var packet = JsonNode.Parse(result.DataJson!)!;
+        Assert.True(packet["bounded"]!.GetValue<bool>());
+        Assert.Equal(8, packet["manualSections"]!.AsArray().Count);
+        Assert.Equal(["ranked-advisory-sections"], packet["boundReasons"]!.AsArray()
+            .Select(value => value!.GetValue<string>()).ToArray());
+    }
+
+    [Fact]
+    public async Task More_than_one_hundred_twenty_eight_permitted_sources_reports_source_enumeration()
+    {
+        await using var db = _fixture.CreateContext();
+        var store = new ProcedureStore(db);
+        await store.WriteAsync(Request("procedure.system.000-enumeration-match", "system", "Exact bounded source",
+            "## Exact\nUse the exact enumerated source.", matches: "enumeration needle"));
+        foreach (var index in Enumerable.Range(1, 128))
+            await store.WriteAsync(Request($"procedure.system.source-{index:D3}", "system", "Unrelated guidance",
+                "## Routine\nRead an ordinary operational note."));
+
+        var result = await Service(store, new Changes(App, HashA), "system")
+            .DiscoverAsync(Host(), "enumeration needle", maximumCharacters: 24_000);
+
+        Assert.Equal(InteractionInvocationResultTag.Completed, result.Tag);
+        var packet = JsonNode.Parse(result.DataJson!)!;
+        Assert.True(packet["bounded"]!.GetValue<bool>());
+        Assert.Single(packet["manualSections"]!.AsArray());
+        Assert.Equal(["source-enumeration"], packet["boundReasons"]!.AsArray()
+            .Select(value => value!.GetValue<string>()).ToArray());
+    }
+
+    [Fact]
+    public async Task Serialized_manual_trimming_preserves_existing_ranked_section_reason()
+    {
+        await using var db = _fixture.CreateContext();
+        var store = new ProcedureStore(db);
+        var body = string.Concat(Enumerable.Repeat("Preserve this advisory guidance while bounding the packet. ", 16));
+        var instructions = string.Join('\n', Enumerable.Range(1, 9)
+            .Select(index => $"## Advisory {index}\n{body}{index}"));
+        await store.WriteAsync(Request("procedure.system.trimmed-advisories", "system", "Trim advisories",
+            instructions, matches: "trim advisories"));
+
+        var result = await Service(store, new Changes(App, HashA), "system")
+            .DiscoverAsync(Host(), "trim advisories", maximumCharacters: 4000);
+
+        Assert.Equal(InteractionInvocationResultTag.Completed, result.Tag);
+        Assert.InRange(result.DataJson!.Length, 1, 4000);
+        var packet = JsonNode.Parse(result.DataJson)!;
+        Assert.True(packet["bounded"]!.GetValue<bool>());
+        Assert.Equal(["ranked-advisory-sections", "serialized-manual-sections"],
+            packet["boundReasons"]!.AsArray().Select(value => value!.GetValue<string>()).ToArray());
+        Assert.InRange(packet["manualSections"]!.AsArray().Count, 1, 7);
+    }
+
+    [Fact]
     public async Task Completion_evidence_pins_each_budgeted_packet_while_resolution_and_input_remain_stable()
     {
         await using var db = _fixture.CreateContext();

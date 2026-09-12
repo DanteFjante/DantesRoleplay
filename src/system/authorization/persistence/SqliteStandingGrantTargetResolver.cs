@@ -62,7 +62,8 @@ public sealed partial class SqliteStandingGrantTargetResolver(
     {
         ArgumentNullException.ThrowIfNull(origin);
         ArgumentNullException.ThrowIfNull(selection);
-        if (selection.Kind is not (CatalogNamespaceKinds.Procedure or CatalogNamespaceKinds.Mechanic))
+        if (selection.Kind is not (CatalogNamespaceKinds.Procedure or CatalogNamespaceKinds.Mechanic
+            or CatalogNamespaceKinds.Query))
             return Denied("STANDING_GRANT_RETAINED_KIND_DENIED");
         var result = await ResolveGenerationAsync(host, selection.DefinitionId, selection.Kind, origin, cancellationToken);
         return result.Target is { } target && (target.Revision != selection.Revision || target.ContentFingerprint != selection.ContentFingerprint)

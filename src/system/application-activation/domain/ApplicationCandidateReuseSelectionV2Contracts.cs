@@ -92,6 +92,12 @@ public sealed class ApplicationCandidateReuseInputV2
         var payload = InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
         {
             format = InputDomain, selectionFingerprint = selectionHash, manualResultFingerprint = manualHash,
+            reviewContext = new
+            {
+                authority = "owner-issued-closure",
+                manualRole = "advisory",
+                completeness = "changed-dependency-predecessor-contracts"
+            },
             material.ApplicationId, material.NewImplementationReason,
             documents = material.Documents.OrderBy(value => value.LogicalIdentity, StringComparer.Ordinal),
             manualPacket = material.ManualPacket,

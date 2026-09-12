@@ -53,7 +53,7 @@ public sealed class StandingGrantContractRulesTests
     }
 
     [Fact]
-    public void Historical_targets_allow_task_control_and_exact_state_scoped_mechanic_reads_only()
+    public void Historical_targets_allow_task_control_exact_mechanic_state_reads_and_application_review_reads()
     {
         var host = Host();
         var target = Target() with { RetainedActivation = new(1, Hash, 1, Hash) };
@@ -74,6 +74,24 @@ public sealed class StandingGrantContractRulesTests
                 new(StandingGrantCapability.Read, StandingGrantScope.Application, [target], [])));
         Assert.Equal("STANDING_GRANT_RETAINED_SCOPE_DENIED", applicationRead.Code);
         var retainedProcedure = target with { DefinitionId = "demo.rules.procedure", Kind = "procedure" };
+        var retainedQuery = target with { DefinitionId = "demo.rules.query", Kind = "query" };
+        StandingGrantContractRules.ValidateRequirement(host,
+            new(StandingGrantCapability.Read, StandingGrantScope.Application,
+                [retainedProcedure, retainedQuery], []));
+        foreach (var capability in new[] { StandingGrantCapability.Execute, StandingGrantCapability.Author,
+                     StandingGrantCapability.Validate, StandingGrantCapability.Activate })
+        {
+            var error = Assert.Throws<InteractionContractException>(() => StandingGrantContractRules.ValidateRequirement(host,
+                new(capability, capability == StandingGrantCapability.Execute
+                    ? StandingGrantScope.StateSpace : StandingGrantScope.Application, [retainedProcedure], [])));
+            Assert.Equal("STANDING_GRANT_RETAINED_SCOPE_DENIED", error.Code);
+        }
+        var currentQuery = retainedQuery with { RetainedActivation = null };
+        var mixedApplicationRead = Assert.Throws<InteractionContractException>(() =>
+            StandingGrantContractRules.ValidateRequirement(host,
+                new(StandingGrantCapability.Read, StandingGrantScope.Application,
+                    [retainedProcedure, currentQuery], [])));
+        Assert.Equal("STANDING_GRANT_RETAINED_SCOPE_DENIED", mixedApplicationRead.Code);
         var mixedRead = Assert.Throws<InteractionContractException>(() =>
             StandingGrantContractRules.ValidateRequirement(host,
                 new(StandingGrantCapability.Read, StandingGrantScope.StateSpace,

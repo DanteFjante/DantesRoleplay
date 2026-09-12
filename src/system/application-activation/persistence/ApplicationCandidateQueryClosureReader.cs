@@ -25,7 +25,7 @@ internal sealed class ApplicationCandidateQueryClosureReader(
     IActiveCatalogFeatureSnapshotProvider snapshots,
     IBoundedJsonSchemaValidator schemas) : IApplicationCandidateReviewClosureReader
 {
-    public const string GrammarVersion = "existing-query-mechanic-projection-v3";
+    public const string GrammarVersion = "existing-query-mechanic-projection-v4";
     public string Grammar => GrammarVersion;
 
     public async Task<ApplicationCandidateReviewClosureReadResult> ReadAsync(
@@ -78,7 +78,8 @@ internal sealed class ApplicationCandidateQueryClosureReader(
 
             return ApplicationCandidateReviewClosureReadResult.Available(
                 ApplicationCandidateQueryReviewClosureEvidence.FromVerified(selection, selected,
-                    predecessor.Value.Definition, projection.Value.Definition, projection.Value.Documents,
+                    predecessor.Value.Definition, predecessor.Value.ContractJson,
+                    projection.Value.Definition, projection.Value.Documents,
                     inputSchemaHash, addsMediaOwnerReference));
         }
         catch (Exception exception) when (exception is ArgumentException or InvalidOperationException
@@ -112,7 +113,8 @@ internal sealed class ApplicationCandidateQueryClosureReader(
         return (basis, current);
     }
 
-    private (ApplicationQueryContract Contract, StandingGrantDefinitionReference Definition)? ReadPredecessor(
+    private (ApplicationQueryContract Contract, StandingGrantDefinitionReference Definition,
+        string ContractJson)? ReadPredecessor(
         ApplicationCandidateReference candidate, ActiveApplicationManifest basis,
         ApplicationCandidateSelectedDocument selected)
     {
@@ -132,7 +134,7 @@ internal sealed class ApplicationCandidateQueryClosureReader(
             return null;
         var content = ApplicationCatalogRecordContent.QueryJson(predecessor);
         return (predecessor, new(predecessor.Id, ApplicationQueryContract.CatalogKind, 1,
-            ApplicationCatalogRecordContent.Fingerprint(content)));
+            ApplicationCatalogRecordContent.Fingerprint(content)), content);
     }
 
     private bool CompatibleContract(ApplicationQueryContract predecessor, ApplicationQueryContract successor,
@@ -290,7 +292,8 @@ internal sealed class ApplicationCandidateQueryReviewClosureEvidence : IApplicat
 {
     private ApplicationCandidateQueryReviewClosureEvidence(
         ApplicationCandidateSelectionEvidence selection, ApplicationCandidateSelectedDocument selected,
-        StandingGrantDefinitionReference predecessor, StandingGrantDefinitionReference projection,
+        StandingGrantDefinitionReference predecessor, string predecessorContractJson,
+        StandingGrantDefinitionReference projection,
         ImmutableArray<ApplicationCandidateReviewClosureDocument> projectionDocuments,
         string? inputSchemaHash, bool addsMediaOwnerReference)
     {
@@ -299,6 +302,7 @@ internal sealed class ApplicationCandidateQueryReviewClosureEvidence : IApplicat
         SelectionEvidenceFingerprint = selection.EvidenceFingerprint;
         Successor = selected.Definition;
         Predecessor = predecessor;
+        ReviewAlternatives = [new(predecessor, predecessorContractJson, BaseOrigin)];
         Projection = projection;
         InputSchemaHash = inputSchemaHash;
         AddsMediaOwnerReference = addsMediaOwnerReference;
@@ -306,12 +310,12 @@ internal sealed class ApplicationCandidateQueryReviewClosureEvidence : IApplicat
         ReviewDocuments = [new(selected.Definition, ApplicationCandidateReviewDocumentRole.Changed,
             selected.Document, selected.RetainedBytes), .. projectionDocuments];
         EvidenceFingerprint = InteractionCanonicalJson.Fingerprint(
-            "dantes-roleplay/application-candidate-query-closure/v3",
+            "dantes-roleplay/application-candidate-query-closure/v4",
             InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
             {
                 Candidate, BaseOrigin, SelectionEvidenceFingerprint,
                 grammar = ApplicationCandidateQueryClosureReader.GrammarVersion, Successor, Predecessor,
-                Projection, InputSchemaHash, AddsMediaOwnerReference,
+                Projection, InputSchemaHash, AddsMediaOwnerReference, ReviewAlternatives,
                 documents = ReviewDocuments.Select(value => new { value.Definition, value.Role, value.Document })
             })));
     }
@@ -322,6 +326,7 @@ internal sealed class ApplicationCandidateQueryReviewClosureEvidence : IApplicat
     public string EvidenceFingerprint { get; }
     public ImmutableArray<ApplicationCandidateReviewClosureDocument> ReviewDocuments { get; }
     public ImmutableArray<StandingGrantDefinitionReference> Dependencies { get; }
+    public ImmutableArray<ApplicationCandidateReviewAlternativeEvidence> ReviewAlternatives { get; }
     internal StandingGrantActivationOrigin BaseOrigin { get; }
     internal StandingGrantDefinitionReference Successor { get; }
     internal StandingGrantDefinitionReference Predecessor { get; }
@@ -331,8 +336,10 @@ internal sealed class ApplicationCandidateQueryReviewClosureEvidence : IApplicat
 
     internal static ApplicationCandidateQueryReviewClosureEvidence FromVerified(
         ApplicationCandidateSelectionEvidence selection, ApplicationCandidateSelectedDocument selected,
-        StandingGrantDefinitionReference predecessor, StandingGrantDefinitionReference projection,
+        StandingGrantDefinitionReference predecessor, string predecessorContractJson,
+        StandingGrantDefinitionReference projection,
         ImmutableArray<ApplicationCandidateReviewClosureDocument> projectionDocuments,
         string? inputSchemaHash, bool addsMediaOwnerReference) => new(selection, selected, predecessor,
+            predecessorContractJson,
             projection, projectionDocuments, inputSchemaHash, addsMediaOwnerReference);
 }

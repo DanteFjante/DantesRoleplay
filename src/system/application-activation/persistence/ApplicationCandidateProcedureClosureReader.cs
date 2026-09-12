@@ -25,7 +25,8 @@ internal sealed class ApplicationCandidateProcedureClosureReader(
     IStandingGrantTargetResolver targets,
     IActiveCatalogFeatureSnapshotProvider snapshots) : IApplicationCandidateReviewClosureReader
 {
-    public string Grammar => "procedure-governed-references-v2";
+    internal const string GrammarVersion = "procedure-governed-references-v3";
+    public string Grammar => GrammarVersion;
 
     public async Task<ApplicationCandidateReviewClosureReadResult> ReadAsync(
         InteractionInvocationHost host, ApplicationCandidateReference candidate,
@@ -74,7 +75,7 @@ internal sealed class ApplicationCandidateProcedureClosureReader(
             if (dependencies is null) return ApplicationCandidateReviewClosureReadResult.Rejected();
             return ApplicationCandidateReviewClosureReadResult.Available(
                 ApplicationCandidateProcedureReviewClosureEvidence.FromVerified(
-                    selection, selected, predecessor.Definition,
+                    selection, selected, predecessor.Definition, predecessor.ContractJson,
                     dependencies.Value.Definitions, dependencies.Value.SystemCapabilities,
                     dependencies.Value.Documents));
         }
@@ -111,7 +112,8 @@ internal sealed class ApplicationCandidateProcedureClosureReader(
         return (basis, current, basisIsCurrent);
     }
 
-    private async Task<(bool Rejected, StandingGrantDefinitionReference? Definition)> PredecessorAsync(
+    private async Task<(bool Rejected, StandingGrantDefinitionReference? Definition,
+        string? ContractJson)> PredecessorAsync(
         InteractionInvocationHost host, ApplicationCandidateReference candidate, ActiveApplicationManifest basis,
         bool basisIsCurrent,
         ApplicationCandidateSelectedDocument selected, StandingGrantDefinitionTarget target, ProcedureFile successor,
@@ -120,38 +122,38 @@ internal sealed class ApplicationCandidateProcedureClosureReader(
         var old = basis.Winners.SingleOrDefault(value => value.RelativePath == selected.Document.RelativePath);
         if (old is null)
         {
-            if (!basisIsCurrent) return (false, null);
+            if (!basisIsCurrent) return (false, null, null);
             var absent = await targets.ResolveCurrentAsync(host, target.DefinitionId,
                 "procedure", cancellationToken);
             return absent.Code == "STANDING_GRANT_DEFINITION_UNAVAILABLE"
-                ? (false, null) : (true, null);
+                ? (false, null, null) : (true, null, null);
         }
         if (old with { ContentFingerprint = selected.Document.ContentFingerprint, Length = selected.Document.Length } != selected.Document)
-            return (true, null);
+            return (true, null, null);
         var retained = evidence.ReadDocumentEvidence(candidate.ApplicationId, basis.ActivationRevision, old.LogicalIdentity);
         if (retained?.RetainedBytes is not { } bytes || retained.IsLegacyMetadataOnly
             || retained.ContentFingerprint != old.ContentFingerprint || retained.Length != old.Length
             || Convert.ToHexString(SHA256.HashData(bytes)) != old.ContentFingerprint)
-            return (true, null);
+            return (true, null, null);
         var prior = ProcedureFile.Parse(Text(bytes.ToImmutableArray()), old.RelativePath);
         if (prior.Id != successor.Id || prior.Status != DantesRoleplay.Procedures.ProcedureStatus.Active
             || prior with { Instructions = successor.Instructions, Governs = successor.Governs } != successor)
-            return (true, null);
+            return (true, null, null);
         var record = ActivatedApplicationCatalogMaterializer.ParseRetainedRecord(candidate.ApplicationId,
             old, new Dictionary<string, ActivatedApplicationDocument>(StringComparer.Ordinal)
             { [old.RelativePath] = old }, new Dictionary<string, byte[]>(StringComparer.Ordinal)
             { [old.RelativePath] = bytes });
         if (record is null || record.Kind != "procedure" || record.QualifiedId != target.DefinitionId)
-            return (true, null);
+            return (true, null, null);
         var predecessor = new StandingGrantDefinitionReference(record.QualifiedId, record.Kind,
             record.Version, record.ContentFingerprint);
         if (basisIsCurrent)
         {
             var resolved = await targets.ResolveAsync(host, predecessor, cancellationToken);
             if (resolved.Status != StandingGrantTargetResolutionStatus.Available || resolved.Target is null
-                || resolved.Target.OwnerApplicationId != candidate.ApplicationId) return (true, null);
+                || resolved.Target.OwnerApplicationId != candidate.ApplicationId) return (true, null, null);
         }
-        return (false, predecessor);
+        return (false, predecessor, record.ContentJson);
     }
 
     private async Task<(ImmutableArray<StandingGrantDefinitionReference> Definitions,
@@ -270,7 +272,7 @@ internal sealed class ApplicationCandidateProcedureReviewClosureEvidence
 {
     private ApplicationCandidateProcedureReviewClosureEvidence(
         ApplicationCandidateSelectionEvidence selection, ApplicationCandidateSelectedDocument selected,
-        StandingGrantDefinitionReference? predecessor,
+        StandingGrantDefinitionReference? predecessor, string? predecessorContractJson,
         ImmutableArray<StandingGrantDefinitionReference> dependencies,
         ImmutableArray<SystemInnerWorkerGovernedSystemCapabilityEvidence> systemCapabilities,
         ImmutableArray<ApplicationCandidateReviewClosureDocument> dependencyDocuments)
@@ -280,27 +282,31 @@ internal sealed class ApplicationCandidateProcedureReviewClosureEvidence
         SelectionEvidenceFingerprint = selection.EvidenceFingerprint;
         Successor = selected.Definition;
         Predecessor = predecessor;
+        ReviewAlternatives = predecessor is null ? [] : [new(predecessor, predecessorContractJson!, BaseOrigin)];
         Dependencies = dependencies;
         SystemCapabilities = systemCapabilities;
         ReviewDocuments = [new(selected.Definition, ApplicationCandidateReviewDocumentRole.Changed,
             selected.Document, selected.RetainedBytes), .. dependencyDocuments];
         EvidenceFingerprint = InteractionCanonicalJson.Fingerprint(
-            "dantes-roleplay/application-candidate-procedure-closure/v2",
+            "dantes-roleplay/application-candidate-procedure-closure/v3",
             InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
             {
                 Candidate, BaseOrigin, SelectionEvidenceFingerprint,
-                grammar = "procedure-governed-references-v2", Successor, predecessor, dependencies,
+                grammar = ApplicationCandidateProcedureClosureReader.GrammarVersion,
+                Successor, predecessor, dependencies,
+                ReviewAlternatives,
                 systemCapabilities,
                 documents = ReviewDocuments.Select(value => new { value.Definition, value.Role, value.Document })
             })));
     }
 
-    public string Grammar => "procedure-governed-references-v2";
+    public string Grammar => ApplicationCandidateProcedureClosureReader.GrammarVersion;
     public ApplicationCandidateReference Candidate { get; }
     public string SelectionEvidenceFingerprint { get; }
     public string EvidenceFingerprint { get; }
     public ImmutableArray<ApplicationCandidateReviewClosureDocument> ReviewDocuments { get; }
     public ImmutableArray<StandingGrantDefinitionReference> Dependencies { get; }
+    public ImmutableArray<ApplicationCandidateReviewAlternativeEvidence> ReviewAlternatives { get; }
     internal ImmutableArray<SystemInnerWorkerGovernedSystemCapabilityEvidence> SystemCapabilities { get; }
     internal StandingGrantActivationOrigin BaseOrigin { get; }
     internal StandingGrantDefinitionReference Successor { get; }
@@ -308,9 +314,9 @@ internal sealed class ApplicationCandidateProcedureReviewClosureEvidence
 
     internal static ApplicationCandidateProcedureReviewClosureEvidence FromVerified(
         ApplicationCandidateSelectionEvidence selection, ApplicationCandidateSelectedDocument selected,
-        StandingGrantDefinitionReference? predecessor,
+        StandingGrantDefinitionReference? predecessor, string? predecessorContractJson,
         ImmutableArray<StandingGrantDefinitionReference> dependencies,
         ImmutableArray<SystemInnerWorkerGovernedSystemCapabilityEvidence> systemCapabilities,
         ImmutableArray<ApplicationCandidateReviewClosureDocument> dependencyDocuments) =>
-        new(selection, selected, predecessor, dependencies, systemCapabilities, dependencyDocuments);
+        new(selection, selected, predecessor, predecessorContractJson, dependencies, systemCapabilities, dependencyDocuments);
 }

@@ -40,6 +40,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
     private const string QueryPath = "content/queries/page-summary.json";
     private const string QueryProjectionOne = "demo.runtime.projection.page-summary-one";
     private const string QueryProjectionTwo = "demo.runtime.projection.page-summary-two";
+    private const string QueryExtensionReason = "Extend the existing page-summary query with an explicit mediaOwnerReference declaration so the host can issue audience-checked media tickets for the exact ready subject. Preserve the query ID, inputs, output and projection. Retain the established publication behavior and require the same reviewed projection output.";
     private const string QueryOutputSchema =
         "{\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"label\",\"state\",\"subject\"],\"properties\":{\"label\":{\"type\":\"string\"},\"state\":{\"const\":\"ready\"},\"subject\":{\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"id\"],\"properties\":{\"id\":{\"type\":\"string\"}}}}}";
     private static readonly ApplicationQueryMediaOwnerReference MediaOwnerReference =
@@ -144,6 +145,12 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             var activeQuery = ApplicationQueryContract.Parse(activeCatalog.Inspect(new(
                 Application, Application.Value, QueryId)).ContentJson, Application);
             Assert.Equal(MediaOwnerReference, activeQuery.MediaOwnerReference);
+            SystemTaskValidationAuthority replayAuthority;
+            await using (var boundary = await SystemTaskValidationTransaction.OpenAsync(
+                db, TimeProvider.System, false, default))
+                replayAuthority = await gate.CheckAsync(PureReviewHost(setup, "query-review-replay"),
+                    candidate, true);
+            Assert.Null(SystemTaskApplicationValidationGate.ExecutionPrerequisite(replayAuthority));
             var replayed = await gateway.InvokeAsync(principal, Application,
                 SystemCapabilityIds.ApplicationCandidateActivate, activationArguments,
                 "query-publication-activate", "website");
@@ -240,7 +247,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
                 expectedActiveFingerprint = basis.ActivationFingerprint,
                 origin = "runtime",
                 synchronizationEvidenceReference = (string?)null,
-                newImplementationReason = "Reuse the existing query contract with a reviewed projection.",
+                newImplementationReason = QueryExtensionReason,
                 documents = new[]
                 {
                     new
@@ -300,6 +307,12 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             prepared.ReviewClosure);
         Assert.Equal(QueryProjectionTwo, Assert.Single(closure.Dependencies).DefinitionId);
         Assert.True(closure.AddsMediaOwnerReference);
+        var input = prepared.ReviewInput!;
+        Assert.True(QueryExtensionReason.Length > 256);
+        Assert.Contains(QueryExtensionReason, input.ModelInputJson, StringComparison.Ordinal);
+        Assert.Contains("\"manualRole\":\"advisory\"", input.ModelInputJson, StringComparison.Ordinal);
+        var predecessor = Assert.Single(input.Alternatives);
+        Assert.Equal(QueryId, predecessor.DefinitionId);
         var provider = new RetainedReviewProvider(prepared.ReviewInput!, "extendExisting");
         var invoker = new SystemInnerWorkerValidationInvoker(
             new AiService([provider]), TimeProvider.System);

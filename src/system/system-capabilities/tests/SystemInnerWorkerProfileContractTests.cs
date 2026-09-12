@@ -146,11 +146,11 @@ public sealed class SystemInnerWorkerProfileContractTests
     }
 
     [Fact]
-    public void Unreleased_reviewer_v1_is_pinned_to_the_selected_material_v2_definition()
+    public void Reviewer_v2_is_pinned_to_owner_closure_and_advisory_manual_semantics()
     {
         Assert.Equal("inner.application-candidate-reuse-review", SystemInnerWorkerCandidateReviewer.ProfileVersion.ExactDefinitionId);
-        Assert.Equal(1, SystemInnerWorkerCandidateReviewer.ProfileVersion.Version);
-        Assert.Equal("7A34D5EEF82F3FB4FF28306B4CD715077D979F1B95D5AEC719878F45249B179C",
+        Assert.Equal(2, SystemInnerWorkerCandidateReviewer.ProfileVersion.Version);
+        Assert.Equal("9416568BACC0932B9F364EECE5E1664CC4A45EEEBD1C9B65F6CEFD8D5C3CA37A",
             SystemInnerWorkerCandidateReviewer.ProfileVersion.Fingerprint);
         Assert.DoesNotContain("candidateFingerprint", SystemInnerWorkerCandidateReviewer.Profile.Instructions, StringComparison.Ordinal);
     }
@@ -161,7 +161,7 @@ public sealed class SystemInnerWorkerProfileContractTests
         var profile = CandidateProfile();
         Assert.Null(profile.Worker.ProcedureVersion);
         Assert.Equal("inner.application-candidate-reuse-review", profile.ProfileVersion.ExactDefinitionId);
-        Assert.Equal(1, profile.ProfileVersion.Version);
+        Assert.Equal(2, profile.ProfileVersion.Version);
         Assert.Equal(HashOf(SystemInnerWorkerCandidateReviewer.CanonicalDefinitionJson), profile.ProfileVersion.Fingerprint);
         Assert.Equal("validate.1", profile.AuthorityProvenance.Reference);
         Assert.Equal("read.1", profile.ReadAuthorityProvenance!.Reference);
@@ -191,10 +191,10 @@ public sealed class SystemInnerWorkerProfileContractTests
         Assert.Equal("WORKER_VALIDATION_REVIEWER_INVALID", Assert.Throws<InteractionContractException>(() =>
             CandidateProfile(reviewer: SystemInnerWorkerCandidateReviewer.Profile with { Instructions = "altered" })).Code);
         Assert.Equal("WORKER_VALIDATION_REVIEWER_INVALID", Assert.Throws<InteractionContractException>(() =>
-            CandidateProfile(reviewerVersion: new(SystemInnerWorkerCandidateReviewer.Id, 2,
+            CandidateProfile(reviewerVersion: new(SystemInnerWorkerCandidateReviewer.Id, 3,
                 SystemInnerWorkerCandidateReviewer.ProfileVersion.Fingerprint))).Code);
         Assert.Equal("WORKER_VALIDATION_REVIEWER_INVALID", Assert.Throws<InteractionContractException>(() =>
-            CandidateProfile(reviewerVersion: new(SystemInnerWorkerCandidateReviewer.Id, 1, Hash))).Code);
+            CandidateProfile(reviewerVersion: new(SystemInnerWorkerCandidateReviewer.Id, 2, Hash))).Code);
     }
 
     private static SystemInnerWorkerResolvedProfile CandidateProfile(bool omitRead = false, bool addTool = false, int toolBudget = 0,

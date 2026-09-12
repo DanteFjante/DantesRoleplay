@@ -351,6 +351,7 @@ internal sealed class ApplicationCandidateWorkflowReviewClosureEvidence : IAppli
     public string EvidenceFingerprint { get; }
     public ImmutableArray<ApplicationCandidateReviewClosureDocument> ReviewDocuments { get; }
     public ImmutableArray<StandingGrantDefinitionReference> Dependencies { get; }
+    public ImmutableArray<ApplicationCandidateReviewAlternativeEvidence> ReviewAlternatives => [];
 
     internal static ApplicationCandidateWorkflowReviewClosureEvidence Create(
         ApplicationCandidateReference candidate, ApplicationCandidateRetainedMetadata retained, ActiveApplicationManifest basis,

@@ -61,6 +61,7 @@ internal sealed class ApplicationCandidatePureRuntimeClosureEvidence : IApplicat
                 ApplicationCandidateReviewDocumentRole.Sidecar, value.JavaScript.Document, value.JavaScript.RetainedBytes)
         }).ToImmutableArray();
     ImmutableArray<StandingGrantDefinitionReference> IApplicationCandidateReviewClosureEvidence.Dependencies => [];
+    ImmutableArray<ApplicationCandidateReviewAlternativeEvidence> IApplicationCandidateReviewClosureEvidence.ReviewAlternatives => [];
 
     // There is intentionally no constructor/factory taking a caller's completeness flag or a list
     // of alleged plans. Every instance passes the actual retained reader and closed grammar owner.

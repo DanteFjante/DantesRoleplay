@@ -70,10 +70,15 @@ public static class StandingGrantContractRules
                 { Capability: StandingGrantCapability.Read, Scope: StandingGrantScope.StateSpace }
                 && targets.All(target => target.RetainedActivation is not null
                     && target.Kind == CatalogNamespaceKinds.Mechanic);
-            if (!retainedMechanicRead && (requirement.Scope != StandingGrantScope.StateSpace
+            var retainedApplicationReviewRead = requirement is
+                { Capability: StandingGrantCapability.Read, Scope: StandingGrantScope.Application }
+                && targets.All(target => target.RetainedActivation is not null
+                    && target.Kind is CatalogNamespaceKinds.Query or CatalogNamespaceKinds.Procedure);
+            if (!retainedMechanicRead && !retainedApplicationReviewRead
+                && (requirement.Scope != StandingGrantScope.StateSpace
                     || requirement.Capability is not (StandingGrantCapability.ReadTask or StandingGrantCapability.CancelTask)))
                 Fail("STANDING_GRANT_RETAINED_SCOPE_DENIED",
-                    "Historical targets authorize stored task control or an exact retained mechanic state read.");
+                    "Historical targets authorize stored task control, an exact retained mechanic state read, or application review of an exact retained query or procedure contract.");
         }
         if (targets.Select(target => target.DefinitionId).Distinct(StringComparer.Ordinal).Count() != targets.Count)
             Fail("INVALID_STANDING_GRANT_TARGETS", "Definition targets must have distinct identities.");
