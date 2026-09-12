@@ -8,6 +8,7 @@ public static class PlayRecordingComponentExtensions
     public static IServiceCollection AddPlayRecordingComponent(this IServiceCollection services)
     {
         services.AddScoped<IApplicationPlayRecordStore, ApplicationPlayRecordStore>();
+        services.AddScoped<IConversationMemoryStore, ApplicationConversationMemoryStore>();
         return services;
     }
 }
