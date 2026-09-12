@@ -9,6 +9,12 @@ coordinator includes the relevant agreement with each assignment. This file owns
 workstream. Initial integrations are the website and Codex. Application-specific
 pages and DND2024 behavior are outside this plan.
 
+The shared presentation theme stores one browser preference under `dantes.system-theme.v1`.
+`green-wood` (`Green & Wood`) is the default when that preference is absent, invalid, cleared,
+or unavailable; the existing explicit `system`, `light`, and `dark` choices remain supported.
+Green & Wood uses the shared semantic color variables and resolves to the browser's dark color
+scheme. This presentation preference grants no runtime or authoring authority.
+
 Prerequisite: implement [00 — Shared foundation](00-shared-foundation.md) first and have the coordinator supply its accepted foundation revision and contract baseline. This workstream consumes those shared contracts and does not redefine them independently.
 
 ## Shared operator gateways

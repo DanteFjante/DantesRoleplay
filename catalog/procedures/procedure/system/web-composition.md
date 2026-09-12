@@ -75,7 +75,10 @@ Wrong-audience or revoked-grant reads return no page content and do not broaden 
 Theme authoring has no published capability contract. The shared presentation-only browser asset
 `/components/system-theme.js` provides `initializeSystemTheme`, `getSystemTheme`, `setSystemTheme`,
 `onSystemThemeChange`, and `SystemThemeToggle`. It persists the key
-`dantes.system-theme.v1` with `system`, `light`, or `dark`, reflects selection through
+`dantes.system-theme.v1` with `green-wood` (`Green & Wood`), `system`, `light`, or `dark`. Green & Wood
+is the default when storage is absent, invalid, cleared, or unavailable and resolves to the browser's
+dark color scheme; explicit system, light, and dark preferences retain their existing behavior. The
+asset reflects selection through
 `documentElement.dataset.systemTheme`, binds a native select marked `system-theme-toggle`, and emits
 the `system-theme-change` window event with `{preference, resolvedTheme}`. Its semantic CSS variables include
 `--system-color-canvas`, `--system-color-surface`, `--system-color-surface-raised`,

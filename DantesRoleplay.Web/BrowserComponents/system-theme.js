@@ -1,8 +1,15 @@
 export const SYSTEM_THEME_STORAGE_KEY = 'dantes.system-theme.v1';
-export const SYSTEM_THEME_PREFERENCES = Object.freeze(['system', 'light', 'dark']);
+export const SYSTEM_THEME_PREFERENCES = Object.freeze(['green-wood', 'system', 'light', 'dark']);
 export const SYSTEM_THEME_EVENT = 'system-theme-change';
 const DARK_QUERY = '(prefers-color-scheme: dark)';
-let preference = 'system';
+const DEFAULT_PREFERENCE = 'green-wood';
+const PREFERENCE_LABELS = Object.freeze({
+  'green-wood': 'Green & Wood',
+  system: 'System',
+  light: 'Light',
+  dark: 'Dark'
+});
+let preference = DEFAULT_PREFERENCE;
 let mediaQuery = null;
 let initialized = false;
 
@@ -13,14 +20,15 @@ function validPreference(value) {
 function readStoredPreference() {
   try {
     const value = window.localStorage?.getItem(SYSTEM_THEME_STORAGE_KEY);
-    return validPreference(value) ? value : 'system';
+    return validPreference(value) ? value : DEFAULT_PREFERENCE;
   } catch (_) {
-    return 'system';
+    return DEFAULT_PREFERENCE;
   }
 }
 
 function resolvedTheme(value = preference) {
   if (value === 'light' || value === 'dark') return value;
+  if (value === 'green-wood') return 'dark';
   return mediaQuery?.matches === true ? 'dark' : 'light';
 }
 
@@ -33,7 +41,7 @@ function dispatchThemeChange() {
 }
 
 function applyTheme(value, notify) {
-  preference = validPreference(value) ? value : 'system';
+  preference = validPreference(value) ? value : DEFAULT_PREFERENCE;
   document.documentElement.dataset.systemTheme = preference;
   document.documentElement.style.colorScheme = resolvedTheme();
   if (notify) dispatchThemeChange();
@@ -78,6 +86,20 @@ function installTokens() {
       --system-shadow-raised: 0 1rem 3rem rgba(0, 0, 0, .32);
       color-scheme: dark;
     }
+    :root[data-system-theme='green-wood'] {
+      --system-color-canvas: #07100e;
+      --system-color-surface: #111c19;
+      --system-color-surface-raised: #182521;
+      --system-color-text: #f0eadb;
+      --system-color-muted: #b6b0a1;
+      --system-color-border: #8a6b45;
+      --system-color-accent: #c99b52;
+      --system-color-accent-contrast: #07100e;
+      --system-color-danger: #ff9b91;
+      --system-color-focus: #e6bd72;
+      --system-shadow-raised: 0 1rem 3rem rgba(0, 0, 0, .42);
+      color-scheme: dark;
+    }
     @media (prefers-color-scheme: dark) {
       :root[data-system-theme='system'] {
         --system-color-canvas: #101519;
@@ -111,7 +133,9 @@ export function initializeSystemTheme() {
     if (typeof mediaQuery?.addEventListener === 'function') mediaQuery.addEventListener('change', mediaChanged);
     else if (typeof mediaQuery?.addListener === 'function') mediaQuery.addListener(mediaChanged);
     window.addEventListener('storage', event => {
-      if (event.key === SYSTEM_THEME_STORAGE_KEY) applyTheme(validPreference(event.newValue) ? event.newValue : 'system', true);
+      if (event.key === SYSTEM_THEME_STORAGE_KEY || event.key === null) {
+        applyTheme(validPreference(event.newValue) ? event.newValue : DEFAULT_PREFERENCE, true);
+      }
     });
   }
   return applyTheme(readStoredPreference(), false);
@@ -123,7 +147,7 @@ export function getSystemTheme() {
 }
 
 export function setSystemTheme(value) {
-  if (!validPreference(value)) throw new TypeError('Theme preference must be system, light, or dark.');
+  if (!validPreference(value)) throw new TypeError('Theme preference must be green-wood, system, light, or dark.');
   if (!initialized) initializeSystemTheme();
   try { window.localStorage?.setItem(SYSTEM_THEME_STORAGE_KEY, value); }
   catch (_) { /* The in-memory preference still applies for this page. */ }
@@ -158,7 +182,7 @@ export class SystemThemeToggle extends HTMLElement {
     for (const value of SYSTEM_THEME_PREFERENCES) {
       const option = document.createElement('option');
       option.value = value;
-      option.textContent = value[0].toUpperCase() + value.slice(1);
+      option.textContent = PREFERENCE_LABELS[value];
       this._select.append(option);
     }
     this._select.addEventListener('change', () => setSystemTheme(this._select.value));

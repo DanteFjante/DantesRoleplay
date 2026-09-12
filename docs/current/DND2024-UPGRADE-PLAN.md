@@ -180,7 +180,8 @@ visible website page for the current principal. Packages without website publica
 the navigation model. D&D must not add a second discovery registry or application switcher.
 
 `DantesRoleplay.Web/BrowserComponents/system-theme.js` is the sole theme preference engine. It owns
-storage key `dantes.system-theme.v1`; accepts `system`, `light`, and `dark`; emits
+storage key `dantes.system-theme.v1`; defaults to `green-wood` (`Green & Wood`) and also accepts
+explicit `system`, `light`, and `dark` preferences; emits
 `system-theme-change` with detail `{ preference, resolvedTheme }`; and exports
 `initializeSystemTheme`, `getSystemTheme`, `setSystemTheme`, `onSystemThemeChange`, and
 `SystemThemeToggle`. D&D consumes that module and the shared CSS tokens. Optional D&D palette
@@ -432,7 +433,8 @@ C:\repo\DantesRoleplay\docs\current\upgrade\05-dnd2024-plan.md in the original c
 stage or commit any original-checkout file because the coordinator serializes checkpoints.
 Implement only the uncovered DND2024-UPGRADE-PLAN Slice 3 outcome after reconciling workstream 04.
 Consume shared `system-navigation` for application switching and shared `system-theme.js` for the
-`system`/`light`/`dark` preference, `dantes.system-theme.v1` storage, `system-theme-change` event,
+default `green-wood` and explicit `system`/`light`/`dark` preferences, `dantes.system-theme.v1`
+storage, `system-theme-change` event,
 toggle, and CSS tokens. Keep D&D local navigation in the React/Redux/Vite shell. Do not add a D&D
 discovery registry, application switcher, theme storage/event engine, runtime theme-metadata
 requirement, public ID, or generic endpoint edit. If a shared contract is insufficient, stop at an

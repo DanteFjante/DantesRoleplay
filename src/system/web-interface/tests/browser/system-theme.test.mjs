@@ -34,16 +34,78 @@ function mountTheme({storedPreference = null, dark = false, blockedStorage = fal
       dark = value;
       for (const listener of listeners) listener({matches: dark});
     },
-    storage(value) {
+    storage(value, key = 'dantes.system-theme.v1') {
       const event = new dom.window.Event('storage');
       Object.defineProperties(event, {
-        key: {value: 'dantes.system-theme.v1'},
+        key: {value: key},
         newValue: {value}
       });
       dom.window.dispatchEvent(event);
     }
   };
 }
+
+function contrastRatio(first, second) {
+  const luminance = value => {
+    const channels = value.slice(1).match(/../g).map(channel => Number.parseInt(channel, 16) / 255);
+    const linear = channels.map(channel => channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4);
+    return (0.2126 * linear[0]) + (0.7152 * linear[1]) + (0.0722 * linear[2]);
+  };
+  const [bright, dark] = [luminance(first), luminance(second)].sort((left, right) => right - left);
+  return (bright + 0.05) / (dark + 0.05);
+}
+
+function greenWoodToken(name) {
+  const block = themeSource.match(/:root\[data-system-theme='green-wood'\]\s*{(?<tokens>[^}]*)}/s)?.groups?.tokens;
+  assert.ok(block, 'Green & Wood token block must exist.');
+  const value = block.match(new RegExp(`--system-color-${name}:\\s*(#[0-9a-f]{6})`, 'i'))?.[1];
+  assert.ok(value, `Green & Wood ${name} token must exist.`);
+  return value;
+}
+
+test('green and wood is the accessible default for absent, invalid, cleared, and blocked storage', () => {
+  for (const options of [{}, {storedPreference: 'sepia'}, {blockedStorage: true}]) {
+    const mounted = mountTheme(options);
+    try {
+      assert.deepEqual({...mounted.theme.getSystemTheme()}, {preference: 'green-wood', resolvedTheme: 'dark'});
+      assert.equal(mounted.dom.window.document.documentElement.dataset.systemTheme, 'green-wood');
+      assert.equal(mounted.dom.window.document.documentElement.style.colorScheme, 'dark');
+      const toggle = mounted.dom.window.document.createElement('system-theme-toggle');
+      mounted.dom.window.document.body.append(toggle);
+      const optionElements = [...toggle.shadowRoot.querySelectorAll('option')];
+      assert.deepEqual(optionElements.map(option => [option.value, option.textContent]), [
+        ['green-wood', 'Green & Wood'], ['system', 'System'], ['light', 'Light'], ['dark', 'Dark']
+      ]);
+    } finally { mounted.dom.window.close(); }
+  }
+
+  const mounted = mountTheme({storedPreference: 'dark'});
+  try {
+    mounted.storage(null, null);
+    assert.deepEqual({...mounted.theme.getSystemTheme()}, {preference: 'green-wood', resolvedTheme: 'dark'});
+    assert.deepEqual({...mounted.theme.setSystemTheme('green-wood')}, {preference: 'green-wood', resolvedTheme: 'dark'});
+    assert.equal(mounted.dom.window.localStorage.getItem('dantes.system-theme.v1'), 'green-wood');
+  } finally { mounted.dom.window.close(); }
+
+  const canvas = greenWoodToken('canvas');
+  const surface = greenWoodToken('surface');
+  const text = greenWoodToken('text');
+  const muted = greenWoodToken('muted');
+  const border = greenWoodToken('border');
+  const accent = greenWoodToken('accent');
+  const accentContrast = greenWoodToken('accent-contrast');
+  const danger = greenWoodToken('danger');
+  const focus = greenWoodToken('focus');
+  assert.equal(canvas.toLowerCase(), '#07100e');
+  assert.equal(accent.toLowerCase(), '#c99b52');
+  assert.ok(contrastRatio(text, canvas) >= 4.5);
+  assert.ok(contrastRatio(text, surface) >= 4.5);
+  assert.ok(contrastRatio(muted, surface) >= 4.5);
+  assert.ok(contrastRatio(border, surface) >= 3);
+  assert.ok(contrastRatio(accentContrast, accent) >= 4.5);
+  assert.ok(contrastRatio(danger, surface) >= 4.5);
+  assert.ok(contrastRatio(focus, canvas) >= 3);
+});
 
 test('system theme persists explicit choices, follows system light and dark, and accepts external storage changes', () => {
   const mounted = mountTheme({storedPreference: 'light', dark: true});
@@ -80,7 +142,7 @@ test('system theme persists explicit choices, follows system light and dark, and
 test('system theme still applies an explicit choice when local storage is blocked', () => {
   const mounted = mountTheme({dark: true, blockedStorage: true});
   try {
-    assert.deepEqual({...mounted.theme.getSystemTheme()}, {preference: 'system', resolvedTheme: 'dark'});
+    assert.deepEqual({...mounted.theme.getSystemTheme()}, {preference: 'green-wood', resolvedTheme: 'dark'});
     assert.deepEqual({...mounted.theme.setSystemTheme('light')}, {preference: 'light', resolvedTheme: 'light'});
     assert.equal(mounted.storageWrites, 1);
     assert.equal(mounted.dom.window.document.documentElement.dataset.systemTheme, 'light');

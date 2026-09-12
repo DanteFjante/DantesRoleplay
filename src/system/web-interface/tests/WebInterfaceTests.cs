@@ -158,6 +158,12 @@ public sealed class WebInterfaceTests
             StringComparison.Ordinal);
         Assert.Contains("SYSTEM_THEME_EVENT = 'system-theme-change'", theme,
             StringComparison.Ordinal);
+        Assert.Contains("['green-wood', 'system', 'light', 'dark']", theme,
+            StringComparison.Ordinal);
+        Assert.Contains("'green-wood': 'Green & Wood'", theme,
+            StringComparison.Ordinal);
+        Assert.Contains("--system-color-accent: #c99b52", theme,
+            StringComparison.OrdinalIgnoreCase);
         Assert.Contains("customElements.define('system-theme-toggle'", theme,
             StringComparison.Ordinal);
         Assert.Contains("--system-color-canvas", theme, StringComparison.Ordinal);
