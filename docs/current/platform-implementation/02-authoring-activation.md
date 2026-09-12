@@ -1,12 +1,18 @@
 # 02 — Runtime authoring and recoverable activation
 
-Status: implementation in progress. Initial callers are the website and Codex through MCP, on one user-controlled installation. Other APIs remain extension points; device and provider bridges are excluded.
+Status: the scoped candidate, validation, reviewed publication, activation and recovery paths below
+are implemented for the website and Codex through MCP on one user-controlled installation. Other
+APIs remain extension points; device and provider bridges are excluded.
 
 Prerequisite: implement [00 — Shared foundation](00-shared-foundation.md) first and have the coordinator supply its accepted foundation revision and contract baseline. This workstream consumes those shared contracts and does not redefine them independently.
 
 ## Outcome and existing owners
 
-An authorized caller can create or revise information, schemas, queries, and JavaScript actions, validate the candidate, activate it within configured permissions, and inspect the resulting revision without rebuilding the host. Application behavior remains authored content; the kernel enforces generic storage, validation, execution, and authority boundaries.
+An authorized caller can use the reviewed candidate paths below to create or revise supported runtime
+definitions and ordinary registered metadata, validate a candidate, activate it within configured
+permissions, and inspect the resulting revision without rebuilding the host. Application behavior
+remains authored content; the kernel enforces generic storage, validation, execution, and authority
+boundaries.
 
 Reuse [InformationStore](../../../src/system/information/persistence/InformationStore.cs), [MechanicStore](../../../src/system/mechanics/persistence/MechanicStore.cs), [the scoped ECS store](../../../DantesRoleplay.DataAccess/Ecs/SqliteApplicationScopedEcsStore.cs), and [schema validation](../../../src/system/schema-validation/persistence/BoundedJsonSchemaValidator.cs). Information records currently update their stored revision; mechanic definitions retain immutable versions. Neither fact establishes one consistent draft-to-activation lifecycle today. Information metadata currently receives bounded JSON-object checks; schema-declared validation requires explicit work.
 
@@ -28,11 +34,32 @@ The first automatic publication path updates existing pure JavaScript mechanic b
 
 New and contract-changed mechanics can use a second automatic path only when the complete candidate remains within the same closed, state-free pure grammar and preserves every other source document. A successful retained fixed-reviewer task supplements the owner proofs: publication independently verifies its canonical result hash, exact candidate and manual input, current grant provenance, completed lease, provider-only accounting, positive reuse judgment, runtime policy, and sample outcomes. Uncertain or incomplete judgments confer no publication authority. Schema conversions and mechanics with services or effects still require their broader validation paths.
 
-An existing atomic mechanic with state or typed effects can publish a JavaScript-body-only update when its Markdown contract and every other generation document remain byte-identical. Each stateful sample pins the exact state-space binding revision, role entities, expected data, and canonical typed effects. Validation runs the candidate through the real projection, Jint, typed-batch, and ECS dry-run owners, retains the canonical batch and current Read/Execute grant evidence, and rechecks those pins in the authoring and activation writer. Publication atomically rebinds compatible state spaces to the successor activation without changing their data; replay verifies the retained binding transition and current authority. Services, events, new definitions, contract changes, and schema conversion remain outside this path.
+New or changed atomic mechanics have a reviewed path within the retained stateful grammar. Each
+stateful sample pins the exact state-space binding revision, role entities, expected data, and
+canonical typed effects. Validation runs the candidate through the real projection, Jint,
+typed-batch, and ECS dry-run owners, retains the canonical batch and current Read/Execute grant
+evidence, and rechecks those pins in the authoring and activation writer. Publication atomically
+rebinds compatible state spaces to the successor activation without changing their data; replay
+verifies the retained binding transition and current authority. Services, events and schema
+conversion remain outside this path.
 
-Reviewed workflow-service candidates have a separate publication path for new definitions and contract or source updates. Validation proves the exact retained Markdown and JavaScript pair, its closed query/action/procedure dependencies, current application and state-space authority, and each pinned state sample. It executes real reads, dry-runs the first action, or validates the first retained catalog procedure job without committing effects or creating tasks. Publication requires the authenticated positive reuse judgment, retained runtime report, unchanged dependency/state evidence, and current authority, then atomically activates and rebinds compatible state spaces. A failed validation leaves the prior activation authoritative, and successful publication is replayable from its retained receipt.
+Reviewed workflow-service candidates have a separate narrow path for one procedure and one workflow
+mechanic Markdown/JavaScript pair. Validation proves that exact retained content, its closed
+query/action/procedure dependencies, current application and state-space authority, and each pinned
+state sample. It executes real reads, dry-runs the first action, or validates the first retained
+catalog procedure job without committing effects or creating tasks. Publication requires the
+authenticated positive reuse judgment, retained runtime report, unchanged dependency/state evidence,
+and current authority, then atomically activates and rebinds compatible state spaces. A failed
+validation leaves the prior activation authoritative, and successful publication is replayable from
+its retained receipt.
 
-Existing query definitions have a distinct reviewed publication path. The candidate must preserve the exact query ID, exposure, executor, roles, route-entity bindings, and canonical input/output schemas and hashes; a changed projection must resolve as an exact current trusted read-only dependency. Publication rechecks the authenticated `ExtendExisting` review receipt and current Read, Validate, and Activate authority, then activates and rebinds compatible state spaces through the same retained-history boundary.
+Existing query definitions have a distinct reviewed update path; this path does not create a new
+query. The candidate preserves the exact query ID, exposure, executor, roles, route-entity bindings,
+and canonical input/output schemas and hashes. Only a compatible projection update is accepted, and
+the changed projection must resolve as an exact current trusted read-only dependency. Publication
+rechecks the authenticated `ExtendExisting` review receipt and current Read, Validate, and Activate
+authority, then activates and rebinds compatible state spaces through the same retained-history
+boundary.
 
 Publication independently checks current Read/Activate permissions and exact retained validation, compatibility, and policy evidence. The activation owner writes the new generation, active pointer, and both activation and candidate receipts in one SQLite transaction. A failed publication leaves the prior generation and validation intact; an identical retry returns the recorded receipt. Existing change-feed consumers refresh from the new active generation. Recovery creates another inert candidate from retained historical bytes and still requires validation and activation; it does not undo data changes. Legacy scanner MIME labels for decoded JavaScript are treated as equivalent to explicit JavaScript labels when comparing source identity.
 

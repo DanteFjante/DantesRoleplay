@@ -2,7 +2,8 @@
 
 Status: retained composition storage and permissioned publication rendering are implemented, including
 exact queries, pure application actions, and the page-owned stateful Atomic action binding described below.
-Coordinator registration and broader dependent platform acceptance remain pending. The
+Coordinator registration and the scoped dependent integrations described below are implemented;
+full platform acceptance remains pending. The
 [coordination plan](../PLATFORM-IMPLEMENTATION.md) defines shared contracts and scheduling; the
 coordinator includes the relevant agreement with each assignment. This file owns the website
 workstream. Initial integrations are the website and Codex. Application-specific
@@ -54,8 +55,8 @@ was added.
 [WebComposition.cs](../../../DantesRoleplay.Web/Pages/WebComposition.cs) parses a closed, page-local
 declarative document into an opaque immutable tree. Component IDs/revisions resolve only inside
 that document; `generation` is an authored label, not proof of an active database revision. The
-coordinator must pin the exact retained document bytes/hash and selected content revision before
-production rendering. There is no global component registry; retained content uses the existing
+coordinator pins the exact retained document bytes/hash and selected content revision for production
+rendering. There is no global component registry; retained content uses the existing
 versioned page store and asset payload owner.
 
 The renderer permits escaped text/values, allowlisted elements, conditions, loops, required props,
@@ -63,8 +64,8 @@ and caller-scoped slots. It validates references/cycles and rejects duplicate/un
 unsafe URLs and undeclared bindings. Asset references must occur in the host-supplied selected
 revision inventory; render accepts the legacy `/ui/{slug}/` base or the exact retained base
 `/ui/{slug}/content/{contentPageId}/revisions/{revision}/`. The current active-asset
-route does not pin asset reads to the rendered revision. It must be coordinated before claiming
-generation-consistent publication. A published composition enables only action bindings resolved to
+route does not pin asset reads to the rendered revision. Published compositions therefore use the
+exact retained revision asset route. A published composition enables only action bindings resolved to
 exact active mechanics by the registered server coordinator.
 
 Bounds: 1 MiB document, JSON/node depth 32, 64 component definitions, 4,096 authored nodes,
@@ -103,7 +104,7 @@ authoritative data; uncertain actions remain fenced without retry. Existing scop
 invalidate reads, reconnect refreshes data, and a page-revision event disposes old controls before
 the host reloads compatible content. No task lifecycle or authorization semantics live in this UI.
 
-Example composition payload (draft authoring; production publication remains unavailable):
+Example composition payload:
 
 ```json
 {
@@ -162,13 +163,13 @@ identity. Neither declaration can select authority or advertise availability by 
   `CompositionPagePreview`. Supply the verified host, exact selected queries and asset base,
   serve audience-specific results without shared HTML caching, and map missing/denied/incompatible
   reads distinctly. Coordinate revision-pinned asset reads and retention with the same publication.
-  The proposed immutable asset base is `/ui/{slug}/content/{contentPageId}/revisions/{revision}/`; acceptance of its access
-  semantics and transport remains coordinator-owned. It is not a public draft preview URL.
-- Register the read materializer/preview only in the existing coordinator-owned web registration.
-  Bind browser actions to the common plan 01 dispatch boundary in
+  The immutable asset base is `/ui/{slug}/content/{contentPageId}/revisions/{revision}/`; the
+  coordinator enforces its access semantics and transport. It is not a public draft preview URL.
+- The read materializer/preview is registered in the existing coordinator-owned web registration.
+  Browser actions bind to the common plan 01 dispatch boundary in
   `WebInterfaceApplicationEndpoints`; preserve stable command identity and reconcile uncertain
   receipts. Plans 02–05 supply authoring/grants, manuals, schedules/observers and child-task readback.
-  No proposed downstream contract is consumed before its coordinator freeze.
+  These integrations retain their separate owner contracts and authority checks.
 
 `WebPageContentReference` preserves the legacy pageId-only reference or requires all four pin
 fields: `revision`, `contentFormat`, `contentHash`, and `assetInventoryFingerprint`. It derives
@@ -178,12 +179,12 @@ payload. The inventory fingerprint is uppercase SHA-256 over UTF-8
 ordinal-path-sorted `[path, contentType, contentHash, length]` arrays. Asset bodies remain in the
 web content store. Metadata updates preserve the whole reference.
 
-The unregistered selection methods in `WebPagePublicationService` capture and recheck the exact
+The selection methods in `WebPagePublicationService` capture and recheck the exact
 application-publication binding, application generation, entity, component type/revision/value,
 and retained content pin. Draft selection names its revision; published selection refuses an
 unpinned reference. Literal component/slot rendering needs no synthetic invocation host; query
-and action declarations remain unavailable until their actual owners select exact contracts.
-The unregistered publication CAS writes only the ECS component reference after content retention.
+and action declarations execute only after their actual owners select exact contracts.
+The publication CAS writes only the ECS component reference after content retention.
 `ReadCompatibilityPointerAsync` reports disagreement with the separate web `ActiveRevision`;
 it neither repairs the pointer nor promises a transaction across the two databases. Legacy
 discovery refuses to send pinned content through the old mutable-active HTML route.
@@ -209,14 +210,14 @@ grant policy rehydrates that evidence on every use. Exact resource resolution do
 ECS publication link. `ResolveCurrentAsync` selects the latest retained revision for inspection or
 authoring only; it never selects what a published route serves.
 
-`WebPagePermissionedReader` is an unregistered serving consumer. It accepts a host-created read-only
+`WebPagePermissionedReader` is the registered serving consumer. It accepts a host-created read-only
 invocation, normally created with `InteractionInvocationHost.ForApplication`. Existing trusted hosts
 may also carry state context; that context never substitutes for the required Application-scoped
 Read grant. The reader selects the live ECS publication pin and resolves that exact retained resource.
 It consumes one shared operation and rechecks authority
 and the publication before returning HTML or exact revision assets. Query bindings consume child
 operations from the same bounded root ledger and a common deadline; failures return no content.
-The coordinator owns host construction, binding resolution, registration,
+The coordinator supplies host construction, binding resolution, registration,
 HTTP routing and response cache policy. This consumer does not provide resource adoption, candidate
 acceptance, publication authorization, or mutation receipts. Existing legacy publish/activate and
 directory paths refuse pinned references rather than changing or reading the compatibility pointer.
@@ -243,12 +244,12 @@ asset readback, local transaction rollback, cross-owner failed-publication recov
 conformance. A disposable SQLite integration follows a published page through the real standing-grant
 read and action adapters, Jint mechanic, guarded ECS commit, fresh publication selection, and authorized
 query readback; wrong-audience and revoked-grant attempts remain denied without another write. Reviewed
-new stateful mechanic publication is proven by the application-candidate owner separately. Runtime
-query-contract authoring is outside this website-owned change and remains a plan 02 dependency: its
-reviewed publication must preserve the exact query-to-projection closure consumed here. Until that
-owner and coordinator registration are integrated, the combined Codex-authored query/page scenario,
-invited-user acceptance, scheduled jobs, and delegated worker completion still wait for real
-dependencies. Test doubles cannot satisfy those platform scenarios.
+new stateful mechanic publication is proven by the application-candidate owner separately. The
+integrated plan 02 query path updates an existing query only when its canonical contract is preserved
+and its projection change is compatible; it does not create an arbitrary new query. Focused integration
+follows that actual query update through publication, fresh page readback and recovery, and covers the
+zero-or-one server-bound root-role Atomic action path. Multiple roles, child mechanics, service calls
+and other advanced page action contexts remain outside the supported page boundary.
 
 ## Outcome and existing owners
 

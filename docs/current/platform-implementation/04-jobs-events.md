@@ -1,6 +1,8 @@
 # Durable JavaScript jobs, schedules, and observers
 
-Status: implemented core and trigger integration, 2026-09-12. Initial callers are the website, Codex, and runtime JavaScript; additional external integrations remain future extension seams.
+Status: the durable lifecycle, trigger integration and scoped caller paths below are implemented.
+Initial callers are the website, Codex and runtime JavaScript; additional external integrations
+remain future extension seams.
 
 Prerequisite: implement [00 — Shared foundation](00-shared-foundation.md) first and have the coordinator supply its accepted foundation revision and contract baseline. This workstream consumes those shared contracts and does not redefine them independently.
 
@@ -60,19 +62,14 @@ Workflow admission and enrollment fingerprints remain unchanged. Readback requir
 application Read; cancellation requires current Read and Validate for every affected candidate.
 Neither operation borrows state-workflow permissions or exposes a semantic validation result.
 
-The internal AI lifecycle factory opens a fresh service scope and short transaction for each
+The registered AI lifecycle factory opens a fresh service scope and short transaction for each
 admission or observation. It rehydrates the actual task, original proof, enrollment, fenced attempt,
 current candidate, and current Read/Validate authority before reserving and recording dispatch.
 Dispatch commits before the provider receives its scope. Late accounting uses an independent
 bounded scope and cannot restore execution authority. Hard-cap mode remains unavailable without
-an owner-supplied total-token bound. The factory and validation service have no production registration.
-
-Production validation submission deliberately returns unavailable before allowance transfer,
-enqueue, Pending, or provider dispatch: the actual candidate reader's broader dependency coverage
-is incomplete. A narrower pure-runtime closure cannot satisfy this requirement. Even complete
-coverage also needs the actual selected-source/manual-context/reviewer binding; a caller-created
-profile or V2 DTO is not that proof. Internal staging fixtures establish lifecycle mechanics only,
-and tests against the real application/grant owners establish denial and unavailable paths only.
+an owner-supplied total-token bound. Candidate validation submission rehydrates the actual candidate,
+selected-source closure, permissioned manual context and immutable reviewer binding before allowance
+transfer, enqueue or provider dispatch. A caller-created profile or V2 DTO is not that proof.
 
 AI accounting uses the same task/attempt history. Host-resolved enrollment and dispatch
 reservations debit every persisted ancestor; provider and tool observations are separate,
@@ -100,14 +97,19 @@ command from the binding revision and exact occurrence, resolves the retained pr
 actual catalog owner, and rechecks current Execute authority. Recurring occurrences retain distinct
 identities while duplicate delivery and registration replay converge on the same durable evidence.
 
+Conditional observers execute their retained catalog JavaScript predicate against admitted event,
+component and directed-relationship captures. A queued match retains its immutable observer revision.
+Each firing receives a shared causal ledger of 64 operations and may admit from 1 through 16 workflow
+targets within that bound. The preserving observer migration is integrated in source; applying it to
+a live database remains an explicit deployment boundary.
+
 Trigger evidence, lifecycle admission, and AI enrollment share the worker transaction and an
 enclosing savepoint. A denied grant, stale or corrupt binding, failed enrollment, lost lease, or
 superseded trigger leaves no executable task and no success receipt. Notification-only targets keep
 their existing behavior. Focused acceptance covers actual one-time, recurring, and observation
-admission plus controlled-provider execution and durable readback. Application-candidate validation
-remains unavailable in production until its broader dependency closure and exact reviewer/context
-binding are supplied. An uncertain action commit still requires authoritative receipt reconciliation
-before retry.
+admission plus controlled-provider execution, durable readback and application-candidate validation
+through its exact reviewer/context binding. An uncertain action commit still requires authoritative
+receipt reconciliation before retry.
 
 ## Atomic effects versus orchestration
 
