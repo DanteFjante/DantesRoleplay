@@ -220,6 +220,7 @@ public sealed class JintMechanicEngine : IMechanicEngine
 
             Engine engine;
             ServiceTerminalConstraint? serviceTerminal = serviceCapabilities is IApplicationJobServiceCapabilities { JobsEnabled: true }
+                || serviceCapabilities is IApplicationTerminalActionServiceCapabilities
                 ? new ServiceTerminalConstraint()
                 : null;
             string payload;
@@ -435,7 +436,9 @@ public sealed class JintMechanicEngine : IMechanicEngine
                 .ConfigureAwait(false).GetAwaiter().GetResult();
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfTimeoutElapsed(invocation.Elapsed, timeout);
-            return result.ToJson();
+            return capabilities is IApplicationTerminalActionServiceCapabilities
+                ? Terminalize(result)
+                : result.ToJson();
         }
 
         public string Job(string alias, string inputJson)
@@ -794,6 +797,17 @@ public sealed class JintMechanicEngine : IMechanicEngine
             harness = Harness
         })));
 
+    /// <summary>Identity of the exact service bridge layered over the pure execution policy.</summary>
+    internal static string ServiceExecutionPolicyFingerprint => InteractionCanonicalJson.Fingerprint(
+        "dantes-roleplay/jint-service-execution-policy/v1",
+        InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
+        {
+            pure = PureExecutionPolicyFingerprint,
+            bindingHarness = ServiceBindingHarness,
+            terminalActionMarker = nameof(IApplicationTerminalActionServiceCapabilities),
+            terminalConstraint = nameof(ServiceTerminalConstraint)
+        })));
+
     private const int MaximumJsonDepth = 64;
 
     private static bool ExceedsJsonDepth(string? json)
@@ -1140,6 +1154,9 @@ internal interface IApplicationActionServiceCapabilities : IApplicationReadOnlyS
         string inputJson,
         CancellationToken cancellationToken = default);
 }
+
+/// <summary>Validation-only marker: stop Jint at the first action boundary.</summary>
+internal interface IApplicationTerminalActionServiceCapabilities { }
 
 internal interface IApplicationJobServiceCapabilities : IApplicationReadOnlyServiceCapabilities
 {

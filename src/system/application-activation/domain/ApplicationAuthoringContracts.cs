@@ -36,17 +36,57 @@ public sealed record ApplicationCandidateValidationRequest(
 /// <summary>Completed means only the bounded runtime checks completed; it never approves a candidate for publication.</summary>
 public enum ApplicationCandidateRuntimeStatus { Completed, Invalid, Unavailable }
 
+public enum ApplicationCandidateRuntimeCompletionBoundary
+{
+    ReturnedOutput,
+    ProposedAction,
+    ProposedJob
+}
+
+public enum ApplicationCandidateRuntimeProposalKind { Action, Job }
+
+public sealed record ApplicationCandidateRuntimeReadEvidence(
+    string Alias,
+    Authorization.StandingGrantDefinitionReference Definition,
+    string InputFingerprint,
+    InteractionInvocationReadEvidence Evidence);
+
+/// <summary>
+/// Validation-only evidence for the first external workflow boundary. It is neither a commit
+/// receipt nor a durable task handle and carries no operation identity.
+/// </summary>
+public sealed record ApplicationCandidateRuntimeProposal(
+    ApplicationCandidateRuntimeProposalKind Kind,
+    string Alias,
+    Authorization.StandingGrantDefinitionReference Definition,
+    string InputFingerprint,
+    string SourceFingerprint,
+    string SchemaFingerprint,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? OutputFingerprint,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? BatchFingerprint,
+    IReadOnlyList<string> EffectKinds);
+
 public sealed record ApplicationCandidateRuntimeSampleResult(
     Authorization.StandingGrantDefinitionReference Definition, int SampleIndex,
     ApplicationCandidateRuntimeStatus Outcome, bool Attempted,
-    string InputFingerprint, string ExpectedDataFingerprint, string? ActualDataFingerprint);
+    string InputFingerprint, string ExpectedDataFingerprint, string? ActualDataFingerprint,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    ApplicationCandidateRuntimeCompletionBoundary? CompletionBoundary = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    IReadOnlyList<ApplicationCandidateRuntimeProposal>? Proposals = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    IReadOnlyList<ApplicationCandidateRuntimeReadEvidence>? ReadEvidence = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    string? ExpectedEffectsFingerprint = null);
 
 /// <summary>Runtime evidence to be retained by the authoring owner, never a durable receipt or an authorization token.</summary>
 public sealed record ApplicationCandidateRuntimeReport(
     ApplicationCandidateRuntimeStatus Status, ApplicationCandidateReference Candidate,
     string? SelectionEvidenceFingerprint, string? RuntimePolicyVersion, string? RuntimePolicyFingerprint,
     IReadOnlyList<ApplicationCandidateRuntimeSampleResult> Samples,
-    IReadOnlyList<ApplicationCandidateDiagnostic> Diagnostics);
+    IReadOnlyList<ApplicationCandidateDiagnostic> Diagnostics,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    IReadOnlyList<ApplicationCandidateDependency>? Dependencies = null);
 
 /// <summary>Exact dependency identity resolved by the owning service, including absent dependencies as invalid evidence.</summary>
 public sealed record ApplicationCandidateDependency(string DefinitionId, int Revision, string ContentFingerprint);
