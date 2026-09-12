@@ -1,5 +1,6 @@
 using System.Text.Json;
 using DantesRoleplay.CodexBridge;
+using DantesRoleplay.DataAccess;
 
 namespace DantesRoleplay.Tests;
 
@@ -54,7 +55,7 @@ public sealed class CodexCaptureAdapterTests
               {"id":"u1","type":"userMessage","content":[{"type":"text","text":"First player message"}],"visibility":"visible"},
               {"id":"a1","type":"agentMessage","text":"Working note","visibility":"visible","channel":"commentary"},
               {"id":"u2","type":"userMessage","content":[{"type":"text","text":"Second player message"}],"visibility":"visible"},
-              {"id":"a2","type":"agentMessage","text":"Final reply","visibility":"visible","phase":"final"}
+              {"id":"a2","type":"agentMessage","text":"Final reply","visibility":"visible","phase":"final_answer"}
             ]}]}}
             """));
         var adapter = Adapter(client, new());
@@ -119,6 +120,56 @@ public sealed class CodexCaptureAdapterTests
         Assert.False(restored.TryEnqueue(new("s", Repository, "t1", "", DateTimeOffset.UtcNow)));
         Assert.True(restored.TryDequeue(out var resumed));
         Assert.Equal("t2", resumed!.TurnId);
+    }
+
+    [Fact]
+    public void Checkpoint_retains_an_inflight_lease_and_new_prompt_and_rejects_overflow()
+    {
+        var now = DateTimeOffset.UtcNow;
+        var spool = new CodexCaptureCorrelationSpool(maximumPending: 2, maximumCompleted: 2);
+        Assert.True(spool.TryEnqueue(new("s", Repository, "leased", "", now)));
+        Assert.True(spool.TryLease(out _));
+        Assert.False(spool.TryEnqueue(new("s", Repository, "leased", "", now)));
+        Assert.True(spool.TryEnqueue(new("s", Repository, "pending", "", now.AddSeconds(1))));
+        Assert.False(spool.TryEnqueue(new("s", Repository, "overflow", "", now.AddSeconds(2))));
+
+        var restored = CodexCaptureCorrelationSpool.Restore(spool.Snapshot(), 2, 2);
+        var retained = new List<string>();
+        while (restored.TryDequeue(out var correlation)) retained.Add(correlation!.TurnId);
+        Assert.Equal(["leased", "pending"], retained.OrderBy(value => value));
+
+        var invalid = new CodexCaptureSpoolCheckpoint(
+            [new("s", Repository, "one", "", now), new("s", Repository, "two", "", now),
+                new("s", Repository, "three", "", now)], []);
+        var error = Assert.Throws<CodexBridgeException>(() =>
+            CodexCaptureCorrelationSpool.Restore(invalid, 2, 2));
+        Assert.Equal("CODEX_CAPTURE_CHECKPOINT_INVALID", error.Code);
+    }
+
+    [Fact]
+    public async Task Checkpoint_file_round_trips_atomically_and_reports_corruption()
+    {
+        var path = Path.Combine(Path.GetTempPath(), "codex-capture-" + Guid.NewGuid().ToString("N") + ".json");
+        try
+        {
+            var checkpoint = new CodexCaptureSpoolCheckpoint(
+                [new("thread.gameplay", Repository, "turn.1", "", DateTimeOffset.UtcNow)],
+                ["turn.completed"]);
+            await CodexCaptureCheckpointFile.SaveAsync(path, checkpoint);
+
+            var restored = await CodexCaptureCheckpointFile.LoadAsync(path);
+
+            Assert.Equal("turn.1", Assert.Single(restored.Pending).TurnId);
+            Assert.Equal("turn.completed", Assert.Single(restored.CompletedTurnIds));
+            await File.WriteAllTextAsync(path, "{not-json");
+            var error = await Assert.ThrowsAsync<CodexBridgeException>(() =>
+                CodexCaptureCheckpointFile.LoadAsync(path));
+            Assert.Equal("CODEX_CAPTURE_CHECKPOINT_INVALID", error.Code);
+        }
+        finally
+        {
+            if (File.Exists(path)) File.Delete(path);
+        }
     }
 
     [Fact]

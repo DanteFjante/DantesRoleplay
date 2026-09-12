@@ -43,6 +43,7 @@ public sealed class SystemCapabilityCatalogTests
             SystemCapabilityIds.ApplicationRegister,
             SystemCapabilityIds.Applications,
             SystemCapabilityIds.ComponentTypeRegister,
+            SystemCapabilityIds.ConversationMemory,
             SystemCapabilityIds.Dependencies,
             SystemCapabilityIds.ExtensionRegister,
             SystemCapabilityIds.InnerWorkerCancel,
@@ -64,7 +65,7 @@ public sealed class SystemCapabilityCatalogTests
             SystemCapabilityIds.StateSpaceCreate,
             SystemCapabilityIds.StateSpaceUpgrade
         ], descriptors.Select(value => value.Id).ToArray());
-        Assert.Equal(14, descriptors.Count(value => value.Mode == SystemCapabilityMode.Read));
+        Assert.Equal(15, descriptors.Count(value => value.Mode == SystemCapabilityMode.Read));
         Assert.Equal(21, descriptors.Count(value => value.Mode == SystemCapabilityMode.Write));
         Assert.All(descriptors, descriptor =>
         {

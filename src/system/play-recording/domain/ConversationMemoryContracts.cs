@@ -1,4 +1,5 @@
 using DantesRoleplay.SystemTasks;
+using DantesRoleplay.Authorization;
 
 namespace DantesRoleplay.Play;
 
@@ -39,6 +40,20 @@ public sealed record ConversationMemoryBinding(
     string SourceProjectId,
     string RepositoryRoot,
     string SourceThreadId);
+
+/// <summary>
+/// Immutable host-owned binding for one explicitly linked capture session. Transport fields are
+/// matched against this value; they never select the owner, gameplay session, repository, or thread.
+/// </summary>
+public interface IConversationMemoryHostBinding
+{
+    ConversationMemoryBinding Binding { get; }
+}
+
+public sealed class ConversationMemoryHostBinding(ConversationMemoryBinding binding) : IConversationMemoryHostBinding
+{
+    public ConversationMemoryBinding Binding { get; } = binding ?? throw new ArgumentNullException(nameof(binding));
+}
 
 public sealed record ConversationMemoryCapturedMessage(
     string SourceMessageId,
@@ -119,6 +134,13 @@ public sealed record ConversationMemoryDerivedCandidateDocument(
     string Status,
     DateTime CreatedAtUtc);
 
+public sealed record ConversationMemoryDreamRecordRequest(
+    ConversationMemoryScope Scope,
+    SystemTaskDurableHandle Task,
+    int SourceRevision,
+    IReadOnlyList<string> SourceMessageIds,
+    string RequestToken);
+
 public sealed class ConversationMemoryException(string code, string message) : Exception(message)
 {
     public string Code { get; } = code;
@@ -131,6 +153,8 @@ public interface IConversationMemoryStore
     ConversationMemoryAppendResult AppendTurn(ConversationMemoryTurnAppend append);
     ConversationMemoryMessagePage GetMessages(ConversationMemoryScope scope, int? beforeOrdinal, int limit,
         bool includeArchived = false);
+    IReadOnlyList<ConversationMemoryMessageDocument> GetSourceMessages(
+        ConversationMemoryScope scope, int sourceRevision, IReadOnlyList<string> sourceMessageIds);
     ConversationMemoryJournalDocument MarkRetryPending(ConversationMemoryScope scope, string failureCode);
     ConversationMemoryJournalDocument Retry(ConversationMemoryScope scope);
     ConversationMemoryJournalDocument Disconnect(ConversationMemoryScope scope);
@@ -139,6 +163,15 @@ public interface IConversationMemoryStore
     ConversationMemoryDerivedCandidateDocument AppendDerivedCandidate(ConversationMemoryDerivedCandidateAppend append);
     IReadOnlyList<ConversationMemoryDerivedCandidateDocument> GetDerivedCandidates(
         ConversationMemoryScope scope, int limit = 20, bool includeArchived = false);
+}
+
+public interface IConversationMemoryDreamRecorder
+{
+    Task<ConversationMemoryDerivedCandidateDocument> RetainCompletedAsync(
+        TrustedPrincipalContext principal,
+        ConversationMemoryDreamRecordRequest request,
+        string correlationId,
+        CancellationToken cancellationToken = default);
 }
 
 public sealed class ApplicationConversationMemoryJournalRecord

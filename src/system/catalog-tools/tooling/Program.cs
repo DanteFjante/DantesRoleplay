@@ -19,7 +19,8 @@ ITool[] tools =
     new SourcesTool(),
     new HashesTool(),
     new BackfillHashesTool(),
-    new FeedbackTool()
+    new FeedbackTool(),
+    new CaptureMemoryTool()
 ];
 
 var parsed = CommandLine.Parse(args);

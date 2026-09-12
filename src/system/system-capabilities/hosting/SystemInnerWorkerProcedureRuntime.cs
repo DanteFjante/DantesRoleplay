@@ -8,6 +8,7 @@ using DantesRoleplay.SystemTasks;
 using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.Content;
 using DantesRoleplay.Sources;
+using DantesRoleplay.Applications;
 
 namespace DantesRoleplay.DataAccess.Composition;
 
@@ -82,16 +83,32 @@ internal sealed class SystemInnerWorkerHostPolicy(
 
     internal SystemInnerWorkerHostSelection Resolve(SystemInnerWorkerRequest worker,
         SystemCapabilityInvocationContext context, DateTime nowUtc,
-        IReadOnlyList<SystemInnerWorkerApplicationToolSelection>? applicationTools = null)
+        IReadOnlyList<SystemInnerWorkerApplicationToolSelection>? applicationTools = null,
+        IReadOnlyList<string>? governedSystemCapabilities = null)
     {
         var profile = profiles?.Get(InnerProfileId)
             ?? throw Failure("INNER_WORKER_PROFILE_UNAVAILABLE", "The host has no focused INNER profile configured.");
         var procedure = worker.ProcedureVersion
             ?? throw Failure("INNER_WORKER_SUBJECT_UNSUPPORTED", "Only exact procedure workflow subjects use this runtime.");
-        var governedProcedureId = "procedure." + procedure.ExactDefinitionId;
+        var governedProcedureId = procedure.ExactDefinitionId.StartsWith("procedure.", StringComparison.Ordinal)
+            ? procedure.ExactDefinitionId
+            : "procedure." + procedure.ExactDefinitionId;
+        var governedSystemIds = new HashSet<string>(StringComparer.Ordinal);
+        if (governedSystemCapabilities is { Count: > 0 })
+        {
+            if (governedSystemCapabilities.Any(value => value != SystemCapabilityIds.ConversationMemory))
+                throw Failure("INNER_WORKER_SYSTEM_CAPABILITY_UNSUPPORTED",
+                    "The procedure declares a system capability that is not available to focused workers.");
+            if (!SystemInnerWorkerProcedureIdentity.IsConversationDream(
+                    worker.InvocationHost.ApplicationRevision.ApplicationId, procedure.ExactDefinitionId))
+                throw Failure("INNER_WORKER_SYSTEM_CAPABILITY_NOT_CONFIGURED",
+                    "The application procedure is not the configured focused-worker owner of this system capability.");
+            governedSystemIds.Add(SystemCapabilityIds.ConversationMemory);
+        }
         var descriptors = capabilities?.Discover(context) is { Ok: true } discovered
             ? discovered.Capabilities
-                .Where(value => value.ProcedureIds.Contains(governedProcedureId, StringComparer.Ordinal))
+                .Where(value => value.ProcedureIds.Contains(governedProcedureId, StringComparer.Ordinal)
+                    || governedSystemIds.Contains(value.Id))
                 .OrderBy(value => value.Id, StringComparer.Ordinal)
                 .ToArray()
             : [];
@@ -183,8 +200,14 @@ internal sealed class SystemInnerWorkerProcedureResolver(
             ResolutionFingerprint = envelope.Host.ResolutionFingerprint
         };
         var procedureContract = ResolveProcedureContract(worker, envelope);
-        var applicationTools = ResolveApplicationTools(worker, procedureContract);
-        var selection = policy.Resolve(worker, toolContext, time.GetUtcNow().UtcDateTime, applicationTools);
+        var governedReferences = SystemInnerWorkerGovernedReferences.Parse(
+            procedureContract.ActiveProcedure.Governs);
+        var applicationTools = ResolveApplicationTools(worker, procedureContract, governedReferences);
+        var governedSystemCapabilities = governedReferences
+            .Where(value => value.Kind == SystemInnerWorkerGovernedReferenceKind.SystemCapability)
+            .Select(value => value.QualifiedId).ToArray();
+        var selection = policy.Resolve(worker, toolContext, time.GetUtcNow().UtcDateTime,
+            applicationTools, governedSystemCapabilities);
         var context = await contextMaterializer.MaterializeAsync(envelope, authorization, cancellationToken);
         var prepared = await preparation.PrepareAsync(new(worker, selection.Profile, selection.Configuration,
             envelope, authorization, context.SourceReferences,
@@ -253,11 +276,13 @@ internal sealed class SystemInnerWorkerProcedureResolver(
     }
 
     private static IReadOnlyList<SystemInnerWorkerApplicationToolSelection> ResolveApplicationTools(
-        SystemInnerWorkerRequest worker, SystemInnerWorkerProcedureContract procedure)
+        SystemInnerWorkerRequest worker, SystemInnerWorkerProcedureContract procedure,
+        IReadOnlyList<SystemInnerWorkerGovernedReference> references)
     {
-        var references = SystemInnerWorkerGovernedReferences.Parse(procedure.ActiveProcedure.Governs);
         var result = new List<SystemInnerWorkerApplicationToolSelection>();
-        foreach (var reference in references)
+        foreach (var reference in references.Where(value =>
+                     value.Kind is SystemInnerWorkerGovernedReferenceKind.Action
+                         or SystemInnerWorkerGovernedReferenceKind.Query))
         {
             var kind = reference.Kind == SystemInnerWorkerGovernedReferenceKind.Action
                 ? "mechanic" : ApplicationQueryContract.CatalogKind;
@@ -292,4 +317,15 @@ internal sealed class SystemInnerWorkerProcedureResolver(
         JsonSerializer.Serialize(new { profile.Id, profile.Name, profile.Identity, profile.Instructions })));
     private static string Hash(string value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
     private static InteractionContractException Failure(string code, string message) => new(code, message);
+}
+
+internal static class SystemInnerWorkerProcedureIdentity
+{
+    internal const string ConversationDreamSuffix = ".procedure.conversation-dream";
+
+    internal static string ConversationDream(ApplicationIdentifier application) =>
+        application.Value + ConversationDreamSuffix;
+
+    internal static bool IsConversationDream(ApplicationIdentifier application, string definitionId) =>
+        definitionId == ConversationDream(application);
 }

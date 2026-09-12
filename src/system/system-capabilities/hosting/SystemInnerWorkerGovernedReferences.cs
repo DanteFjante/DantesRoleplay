@@ -3,7 +3,7 @@ using DantesRoleplay.Interactions;
 
 namespace DantesRoleplay.SystemCapabilities;
 
-internal enum SystemInnerWorkerGovernedReferenceKind { Action, Query }
+internal enum SystemInnerWorkerGovernedReferenceKind { Action, Query, SystemCapability }
 internal sealed record SystemInnerWorkerGovernedReference(
     SystemInnerWorkerGovernedReferenceKind Kind, string QualifiedId);
 
@@ -19,6 +19,9 @@ internal static partial class SystemInnerWorkerGovernedReferences
                     match.Groups[1].Value))
             .Concat(QueryReference().Matches(governs).Select(match =>
                 new SystemInnerWorkerGovernedReference(SystemInnerWorkerGovernedReferenceKind.Query,
+                    match.Groups[1].Value)))
+            .Concat(SystemCapabilityReference().Matches(governs).Select(match =>
+                new SystemInnerWorkerGovernedReference(SystemInnerWorkerGovernedReferenceKind.SystemCapability,
                     match.Groups[1].Value)))
             .Where(value => value.QualifiedId.Contains('.', StringComparison.Ordinal))
             .Distinct().OrderBy(value => value.Kind).ThenBy(value => value.QualifiedId, StringComparer.Ordinal)
@@ -36,4 +39,8 @@ internal static partial class SystemInnerWorkerGovernedReferences
     [GeneratedRegex("query\\(kind:\\s*\"([a-z0-9][a-z0-9._-]{2,159})\"\\)",
         RegexOptions.CultureInvariant)]
     private static partial Regex QueryReference();
+
+    [GeneratedRegex(@"(?:(?<=^)|(?<=[;,]))\s*system capability\s+([a-z0-9][a-z0-9._-]{2,159})\s*(?=$|[;,])",
+        RegexOptions.CultureInvariant)]
+    private static partial Regex SystemCapabilityReference();
 }

@@ -35,6 +35,7 @@ public static class SystemCapabilityIds
     public const string InnerWorkerList = "system.inner-worker.list";
     public const string InnerWorkerWait = "system.inner-worker.wait";
     public const string InnerWorkerCancel = "system.inner-worker.cancel";
+    public const string ConversationMemory = "system.conversation-memory";
     public const string StandingGrantAdmin = "system.standing-grant.admin";
     public const string StateSpaceCreate = "system.state-space.create";
     public const string StateSpaceUpgrade = "system.state-space.upgrade";

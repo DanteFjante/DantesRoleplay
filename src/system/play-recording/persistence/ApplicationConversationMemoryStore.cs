@@ -5,6 +5,7 @@ using DantesRoleplay.Ecs;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Play;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Data.Sqlite;
 
 namespace DantesRoleplay.DataAccess;
 
@@ -106,7 +107,7 @@ public sealed class ApplicationConversationMemoryStore(DantesRoleplayDbContext d
         {
             binding.Scope, binding.SourceClient, binding.SourceProjectId, binding.RepositoryRoot,
             binding.SourceThreadId, append.SourceTurnId, append.Messages,
-            append.CaptureProvenance, append.CapturedAtUtc
+            append.CaptureProvenance
         });
 
         writeGate.Wait();
@@ -170,23 +171,54 @@ public sealed class ApplicationConversationMemoryStore(DantesRoleplayDbContext d
         ValidateScope(scope);
         if (limit is < 1 or > 64) throw Failure("CONVERSATION_MEMORY_LIMIT_INVALID", "Message page size must be between 1 and 64.");
         if (beforeOrdinal is < 1) throw Failure("CONVERSATION_MEMORY_CURSOR_INVALID", "The message cursor is invalid.");
-        var journal = RequiredJournal(scope, noTracking: true);
-        if (!includeArchived && journal.Status is ConversationMemoryStatuses.Archived or ConversationMemoryStatuses.Deleted)
-            throw Failure("CONVERSATION_MEMORY_ARCHIVED", "The conversation memory is archived.");
-        var query = db.Set<ApplicationConversationMemoryMessageRecord>().AsNoTracking()
-            .Where(value => value.JournalId == journal.Id);
-        if (!includeArchived) query = query.Where(value => value.Status == "captured");
-        if (beforeOrdinal is not null) query = query.Where(value => value.Ordinal < beforeOrdinal.Value);
-        var descending = query.OrderByDescending(value => value.Ordinal).Take(limit + 1).ToArray();
-        var page = descending.Take(limit).OrderBy(value => value.Ordinal).Select(Message).ToArray();
-        return new(page, descending.Length > limit ? page[0].Ordinal : null, journal.Revision);
+        return ReadSnapshot(() =>
+        {
+            var journal = RequiredJournal(scope, noTracking: true);
+            if (!includeArchived && journal.Status is ConversationMemoryStatuses.Archived or ConversationMemoryStatuses.Deleted)
+                throw Failure("CONVERSATION_MEMORY_ARCHIVED", "The conversation memory is archived.");
+            var query = db.Set<ApplicationConversationMemoryMessageRecord>().AsNoTracking()
+                .Where(value => value.JournalId == journal.Id);
+            if (!includeArchived) query = query.Where(value => value.Status == "captured");
+            if (beforeOrdinal is not null) query = query.Where(value => value.Ordinal < beforeOrdinal.Value);
+            var descending = query.OrderByDescending(value => value.Ordinal).Take(limit + 1).ToArray();
+            var page = descending.Take(limit).OrderBy(value => value.Ordinal).Select(Message).ToArray();
+            return new ConversationMemoryMessagePage(
+                page, descending.Length > limit ? page[0].Ordinal : null, journal.Revision);
+        });
+    }
+
+    public IReadOnlyList<ConversationMemoryMessageDocument> GetSourceMessages(
+        ConversationMemoryScope scope, int sourceRevision, IReadOnlyList<string> sourceMessageIds)
+    {
+        ValidateScope(scope);
+        if (sourceRevision < 1 || sourceMessageIds is null || sourceMessageIds.Count is < 1 or > 64
+            || sourceMessageIds.Distinct(StringComparer.Ordinal).Count() != sourceMessageIds.Count)
+            throw Failure("CONVERSATION_MEMORY_SOURCE_INVALID", "The exact source selection is invalid.");
+        foreach (var id in sourceMessageIds) ValidateToken(id, 200, nameof(sourceMessageIds));
+        return ReadSnapshot(() =>
+        {
+            var journal = RequiredJournal(scope, noTracking: true);
+            if (journal.Revision != sourceRevision)
+                throw Failure("CONVERSATION_MEMORY_SOURCE_STALE", "The conversation source revision changed.");
+            if (journal.Status is ConversationMemoryStatuses.Archived or ConversationMemoryStatuses.Deleted)
+                throw Failure("CONVERSATION_MEMORY_ARCHIVED", "The conversation memory is archived.");
+            var messages = db.Set<ApplicationConversationMemoryMessageRecord>().AsNoTracking()
+                .Where(value => value.JournalId == journal.Id && sourceMessageIds.Contains(value.SourceMessageId)
+                    && value.Status == "captured").OrderBy(value => value.Ordinal).ToArray();
+            if (messages.Length != sourceMessageIds.Count)
+                throw Failure("CONVERSATION_MEMORY_SOURCE_INVALID", "One or more exact source messages are unavailable.");
+            return messages.Select(Message).ToArray();
+        });
     }
 
     public ConversationMemoryJournalDocument MarkRetryPending(ConversationMemoryScope scope, string failureCode) =>
-        SetStatus(scope, ConversationMemoryStatuses.RetryPending, ValidateToken(failureCode, 100, nameof(failureCode)));
+        SetStatus(scope, ConversationMemoryStatuses.RetryPending,
+            ValidateToken(failureCode, 100, nameof(failureCode)),
+            allowedCurrentStatuses: [ConversationMemoryStatuses.Connected, ConversationMemoryStatuses.RetryPending]);
 
     public ConversationMemoryJournalDocument Retry(ConversationMemoryScope scope) =>
-        SetStatus(scope, ConversationMemoryStatuses.Connected, null);
+        SetStatus(scope, ConversationMemoryStatuses.Connected, null,
+            allowedCurrentStatuses: [ConversationMemoryStatuses.Connected, ConversationMemoryStatuses.RetryPending]);
 
     public ConversationMemoryJournalDocument Disconnect(ConversationMemoryScope scope) =>
         SetStatus(scope, ConversationMemoryStatuses.Disconnected, null);
@@ -254,6 +286,8 @@ public sealed class ApplicationConversationMemoryStore(DantesRoleplayDbContext d
         {
             using var transaction = db.Database.BeginTransaction();
             var journal = RequiredJournal(append.Scope);
+            if (journal.Status is ConversationMemoryStatuses.Archived or ConversationMemoryStatuses.Deleted)
+                throw Failure("CONVERSATION_MEMORY_ARCHIVED", "The conversation memory is archived.");
             if (journal.Revision != append.SourceRevision)
                 throw Failure("CONVERSATION_MEMORY_SOURCE_STALE", "The conversation source revision changed before the candidate was retained.");
             var messages = db.Set<ApplicationConversationMemoryMessageRecord>()
@@ -311,23 +345,29 @@ public sealed class ApplicationConversationMemoryStore(DantesRoleplayDbContext d
     {
         ValidateScope(scope);
         if (limit is < 1 or > 64) throw Failure("CONVERSATION_MEMORY_LIMIT_INVALID", "Candidate limit must be between 1 and 64.");
-        var journal = RequiredJournal(scope, noTracking: true);
-        var records = db.Set<ApplicationConversationMemoryDerivedRecord>().AsNoTracking()
-            .Where(value => value.JournalId == journal.Id && (includeArchived || value.Status == "candidate"))
-            .OrderByDescending(value => value.CreatedAtUtc).ThenBy(value => value.Id).Take(limit).ToArray();
-        var recordIds = records.Select(value => value.Id).ToArray();
-        var links = db.Set<ApplicationConversationMemoryDerivedSourceRecord>().AsNoTracking()
-            .Where(value => recordIds.Contains(value.DerivedId)).Join(
-                db.Set<ApplicationConversationMemoryMessageRecord>().AsNoTracking(),
-                link => link.MessageId, message => message.Id,
-                (link, message) => new { link.DerivedId, message.SourceMessageId, message.Ordinal })
-            .ToArray().GroupBy(value => value.DerivedId).ToDictionary(value => value.Key,
-                value => value.OrderBy(item => item.Ordinal).Select(item => item.SourceMessageId).ToArray());
-        return records.Select(value => Derived(value, links.GetValueOrDefault(value.Id) ?? [])).ToArray();
+        return ReadSnapshot(() =>
+        {
+            var journal = RequiredJournal(scope, noTracking: true);
+            if (!includeArchived && journal.Status is ConversationMemoryStatuses.Archived or ConversationMemoryStatuses.Deleted)
+                throw Failure("CONVERSATION_MEMORY_ARCHIVED", "The conversation memory is archived.");
+            var records = db.Set<ApplicationConversationMemoryDerivedRecord>().AsNoTracking()
+                .Where(value => value.JournalId == journal.Id && (includeArchived || value.Status == "candidate"))
+                .OrderByDescending(value => value.CreatedAtUtc).ThenBy(value => value.Id).Take(limit).ToArray();
+            var recordIds = records.Select(value => value.Id).ToArray();
+            var links = db.Set<ApplicationConversationMemoryDerivedSourceRecord>().AsNoTracking()
+                .Where(value => recordIds.Contains(value.DerivedId)).Join(
+                    db.Set<ApplicationConversationMemoryMessageRecord>().AsNoTracking(),
+                    link => link.MessageId, message => message.Id,
+                    (link, message) => new { link.DerivedId, message.SourceMessageId, message.Ordinal })
+                .ToArray().GroupBy(value => value.DerivedId).ToDictionary(value => value.Key,
+                    value => value.OrderBy(item => item.Ordinal).Select(item => item.SourceMessageId).ToArray());
+            return records.Select(value => Derived(value, links.GetValueOrDefault(value.Id) ?? [])).ToArray();
+        });
     }
 
     private ConversationMemoryJournalDocument SetStatus(ConversationMemoryScope scope, string status,
-        string? failureCode, bool allowArchived = false)
+        string? failureCode, bool allowArchived = false,
+        string[]? allowedCurrentStatuses = null)
     {
         ValidateScope(scope);
         writeGate.Wait();
@@ -336,6 +376,9 @@ public sealed class ApplicationConversationMemoryStore(DantesRoleplayDbContext d
             var journal = RequiredJournal(scope);
             if (!allowArchived && journal.Status is ConversationMemoryStatuses.Archived or ConversationMemoryStatuses.Deleted)
                 throw Failure("CONVERSATION_MEMORY_ARCHIVED", "The conversation memory is archived.");
+            if (allowedCurrentStatuses is not null && !allowedCurrentStatuses.Contains(journal.Status))
+                throw Failure("CONVERSATION_MEMORY_NOT_CONNECTED",
+                    "The disconnected gameplay conversation capture requires an explicit connect.");
             if (journal.Status != status || journal.FailureCode != failureCode)
             {
                 journal.Status = status;
@@ -478,6 +521,26 @@ public sealed class ApplicationConversationMemoryStore(DantesRoleplayDbContext d
 
     private static string Fingerprint<T>(T value) => Hash(
         InteractionCanonicalJson.Canonicalize(JsonSerializer.Serialize(value)));
+
+    private T ReadSnapshot<T>(Func<T> read)
+    {
+        db.Database.OpenConnection();
+        try
+        {
+            var connection = db.Database.GetDbConnection() as SqliteConnection
+                ?? throw new InvalidOperationException("Conversation memory requires SQLite.");
+            using var native = connection.BeginTransaction(deferred: true);
+            using var transaction = db.Database.UseTransaction(native)
+                ?? throw new InvalidOperationException("The SQLite read snapshot could not be established.");
+            var result = read();
+            transaction.Commit();
+            return result;
+        }
+        finally
+        {
+            db.Database.CloseConnection();
+        }
+    }
     private static string Hash(string value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
     private static string NewId(string prefix) => prefix + Guid.NewGuid().ToString("N");
     private static string DeterministicId(string prefix, string owner, string key) =>

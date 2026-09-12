@@ -13,6 +13,8 @@ using DantesRoleplay.DataAccess.Composition;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.AI;
 using DantesRoleplay.AI.Ollama;
+using DantesRoleplay.Knowledge;
+using DantesRoleplay.Play;
 using System.Diagnostics;
 
 var startup = Stopwatch.StartNew();
@@ -38,6 +40,19 @@ var allowedSourceRoots = RuntimeStoragePaths.ResolveSourceRoots(
         .Select(child => new KeyValuePair<string, string?>(child.Key, child.Value)));
 var publishedApplicationCatalogs = builder.Configuration.GetSection("Catalogs:PublishedApplications")
     .GetChildren().Select(child => child.Value ?? string.Empty).ToArray();
+var conversationCaptureValues = new[]
+{
+    builder.Configuration["ConversationMemoryCapture:ApplicationId"],
+    builder.Configuration["ConversationMemoryCapture:StateSpaceId"],
+    builder.Configuration["ConversationMemoryCapture:SessionContextId"],
+    builder.Configuration["ConversationMemoryCapture:ProjectId"],
+    builder.Configuration["ConversationMemoryCapture:RepositoryRoot"],
+    builder.Configuration["ConversationMemoryCapture:ThreadId"]
+};
+if (conversationCaptureValues.Any(value => !string.IsNullOrWhiteSpace(value))
+    && conversationCaptureValues.Any(string.IsNullOrWhiteSpace))
+    throw new InvalidOperationException(
+        "ConversationMemoryCapture requires ApplicationId, StateSpaceId, SessionContextId, ProjectId, RepositoryRoot, and ThreadId together.");
 
 var hostSettings = new ConfiguredHostSettingDefinitionProvider(builder.Configuration);
 var outerHostOptions = new InteractionOuterHostOptions(builder.Configuration);
@@ -131,6 +146,26 @@ builder.Services.AddDantesRoleplayMcpServer(
     publishedApplicationCatalogs,
     builder.Configuration,
     blobStorageRoot);
+if (conversationCaptureValues.All(value => !string.IsNullOrWhiteSpace(value)))
+{
+    var configuredApplication = conversationCaptureValues[0]!;
+    var configuredState = conversationCaptureValues[1]!;
+    var configuredSession = conversationCaptureValues[2]!;
+    var configuredProject = conversationCaptureValues[3]!;
+    var configuredRoot = ResolveRepositoryRoot(conversationCaptureValues[4], builder.Environment.ContentRootPath);
+    var configuredThread = conversationCaptureValues[5]!;
+    builder.Services.AddScoped<IConversationMemoryHostBinding>(services =>
+    {
+        var seat = services.GetRequiredService<ILocalKnowledgeSeatProvider>().Current();
+        if (!seat.Enabled || string.IsNullOrWhiteSpace(seat.PrincipalId)
+            || seat.ApplicationId != configuredApplication)
+            throw new InvalidOperationException(
+                "ConversationMemoryCapture does not match the active private application seat.");
+        return new ConversationMemoryHostBinding(new(
+            new(seat.PrincipalId, configuredApplication, configuredState, configuredSession),
+            "codex", configuredProject, configuredRoot, configuredThread));
+    });
+}
 builder.Services.AddCodexBridgeComponent(new CodexBridgeOptions(
     builder.Configuration["Codex:ExecutablePath"] ?? "codex",
     ResolveRepositoryRoot(

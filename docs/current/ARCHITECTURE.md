@@ -115,6 +115,15 @@ Generic security, resource, and transaction invariants remain host responsibilit
   or a different client does not create another conversation for the same binding. The play API
   exposes the current bounded window and cursor-based earlier transcript without turning transcript
   text into ECS authority.
+- Linked outer-AI conversation memory is a second private journal under the play-recording owner,
+  separate from gameplay continuity and assistant workspaces. One immutable host binding fixes its
+  principal, application, state space, gameplay session, Codex project, repository, and external
+  thread. The version-pinned capture helper reads only an exact completed turn through Codex
+  app-server, commits every visible user/assistant item as one replay-safe SQLite batch, and then
+  acknowledges its bounded crash-recoverable queue. Ordinary planning excludes this journal.
+  Focused INNER consolidation can read only an explicit message-ID selection at one exact current
+  journal revision; its output remains a private source-citing candidate and never becomes ECS or
+  played-event authority by itself.
 - Play-facing outer and narration providers return a closed, schema-validated situation update and
   a bounded set of durable truths alongside the exact visible reply. The reply, situation change,
   and truth assertions are committed together. Active and completed situations preserve their

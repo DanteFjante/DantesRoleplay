@@ -96,8 +96,9 @@ public sealed class CodexCaptureCorrelationSpool
 
     public bool TryEnqueue(CodexCaptureCorrelation correlation)
     {
-        if (!ValidTurn(correlation.TurnId) || pending.Count >= maximumPending ||
-            pendingIds.Contains(correlation.TurnId) || completedIds.Contains(correlation.TurnId)) return false;
+        if (!ValidTurn(correlation.TurnId) || Count >= maximumPending ||
+            pendingIds.Contains(correlation.TurnId) || leased.ContainsKey(correlation.TurnId)
+            || completedIds.Contains(correlation.TurnId)) return false;
         pending.Enqueue(correlation);
         pendingIds.Add(correlation.TurnId);
         return true;
@@ -120,7 +121,8 @@ public sealed class CodexCaptureCorrelationSpool
 
     public void Requeue(CodexCaptureCorrelation correlation)
     {
-        if (pending.Count >= maximumPending || pendingIds.Contains(correlation.TurnId) || completedIds.Contains(correlation.TurnId)) return;
+        if (Count >= maximumPending || pendingIds.Contains(correlation.TurnId)
+            || leased.ContainsKey(correlation.TurnId) || completedIds.Contains(correlation.TurnId)) return;
         pending.Enqueue(correlation);
         pendingIds.Add(correlation.TurnId);
     }
@@ -148,9 +150,21 @@ public sealed class CodexCaptureCorrelationSpool
         int maximumPending = 64, int maximumCompleted = 256)
     {
         ArgumentNullException.ThrowIfNull(checkpoint);
+        if (checkpoint.Pending is null || checkpoint.CompletedTurnIds is null
+            || checkpoint.Pending.Count > maximumPending || checkpoint.CompletedTurnIds.Count > maximumCompleted
+            || checkpoint.Pending.Any(value => value is null || !ValidTurn(value.TurnId))
+            || checkpoint.Pending.Select(value => value.TurnId).Distinct(StringComparer.Ordinal).Count() != checkpoint.Pending.Count
+            || checkpoint.CompletedTurnIds.Any(value => !ValidTurn(value))
+            || checkpoint.CompletedTurnIds.Distinct(StringComparer.Ordinal).Count() != checkpoint.CompletedTurnIds.Count
+            || checkpoint.Pending.Any(value => checkpoint.CompletedTurnIds.Contains(value.TurnId, StringComparer.Ordinal)))
+            throw new CodexBridgeException("CODEX_CAPTURE_CHECKPOINT_INVALID",
+                "The capture checkpoint is malformed or exceeds its configured bounds.");
         var spool = new CodexCaptureCorrelationSpool(maximumPending, maximumCompleted);
-        foreach (var turnId in checkpoint.CompletedTurnIds.Take(maximumCompleted)) spool.Complete(turnId);
-        foreach (var correlation in checkpoint.Pending.Take(maximumPending)) spool.TryEnqueue(correlation);
+        foreach (var turnId in checkpoint.CompletedTurnIds) spool.Complete(turnId);
+        foreach (var correlation in checkpoint.Pending)
+            if (!spool.TryEnqueue(correlation))
+                throw new CodexBridgeException("CODEX_CAPTURE_CHECKPOINT_INVALID",
+                    "The capture checkpoint cannot be restored without losing a turn.");
         return spool;
     }
 
@@ -218,7 +232,7 @@ public sealed class CodexCaptureAdapter(
 
 public static class CodexCaptureThreadParser
 {
-    public const int MaximumMessagesPerTurn = 64;
+    public const int MaximumMessagesPerTurn = 32;
     public const int MaximumMessageCharacters = 32_000;
 
     public static CodexCapturedTurn Parse(JsonElement response, string expectedThreadId, string expectedTurnId)

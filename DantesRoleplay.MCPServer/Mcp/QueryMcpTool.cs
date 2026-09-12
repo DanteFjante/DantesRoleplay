@@ -22,6 +22,7 @@ using DantesRoleplay.TriggerScheduling;
 using DantesRoleplay.SystemCapabilities;
 using DantesRoleplay.Knowledge;
 using DantesRoleplay.Blobs;
+using DantesRoleplay.Play;
 using ModelContextProtocol.Server;
 
 namespace DantesRoleplay.MCPServer.Mcp;
@@ -40,7 +41,7 @@ public sealed class QueryMcpTool
     [McpServerTool(Name = "query")]
     [Description(
         "Read anything in this system. kind is one of: capabilities, procedures, categories, world, entities, graph, information-answer, information-actions, system.audience-context, " +
-        "mechanics, event-types, events, subscriptions, notifications, feedback, system.applications, system.sources, system.application-preview, system.application-readiness, system.application-object, system.dependencies, system.catalogs, system.catalog.browse, system.catalog.search, system.catalog.record, system.feature-search, system.interaction-plan, system.interaction-receipt, system.interaction-recipes, system.trigger-scheduling, system.blobs, namespaces, history. Omit id for a list or search; " +
+        "mechanics, event-types, events, subscriptions, notifications, feedback, system.applications, system.sources, system.application-preview, system.application-readiness, system.application-object, system.dependencies, system.catalogs, system.catalog.browse, system.catalog.search, system.catalog.record, system.feature-search, system.interaction-plan, system.interaction-receipt, system.interaction-recipes, system.trigger-scheduling, system.conversation-memory, system.blobs, namespaces, history. Omit id for a list or search; " +
         "pass id for one record in full. When you are unsure what a kind takes or what a commit payload looks like, call " +
         "query(kind: \"capabilities\") — it is the exact catalog. Irrelevant filters are ignored unless a fixed query kind explicitly rejects them. Never changes state.")]
     public async Task<ToolEnvelope> QueryAsync(
@@ -55,7 +56,7 @@ public sealed class QueryMcpTool
         INotificationStore notifications,
         [Description(
             "Closed kind: capabilities, procedures, categories, world, entities, graph, mechanics, event-types, events, "
-            + "subscriptions, notifications, feedback, information-answer, information-actions, system.audience-context, system.applications, system.sources, system.application-preview, system.application-readiness, system.application-object, system.dependencies, system.catalogs, system.catalog.browse, system.catalog.search, system.catalog.record, system.feature-search, system.interaction-plan, system.interaction-receipt, system.interaction-recipes, system.trigger-scheduling, system.blobs, or history.")]
+            + "subscriptions, notifications, feedback, information-answer, information-actions, system.audience-context, system.applications, system.sources, system.application-preview, system.application-readiness, system.application-object, system.dependencies, system.catalogs, system.catalog.browse, system.catalog.search, system.catalog.record, system.feature-search, system.interaction-plan, system.interaction-receipt, system.interaction-recipes, system.trigger-scheduling, system.conversation-memory, system.blobs, or history.")]
         string kind,
         [Description("Full-record id for procedures, mechanics, or one entity.")] string? id = null,
         [Description("Entity ids for a full batch read.")] string[]? ids = null,
@@ -118,7 +119,7 @@ public sealed class QueryMcpTool
         [Description("System catalog browse/search page size, 1–100; default 25.")] int? pageSize = null,
         [Description("System dependency impact: include indirect declared dependents; default true.")] bool? transitive = null,
         [Description("Interaction queries: application-bound state-space ID.")] string? stateSpaceId = null,
-        [Description("Interaction plan: closed request JSON containing operation (resolve or submit), stateSpaceId, sessionContextId, intent, and proposal only for submit.")] string? request = null,
+        [Description("Closed request JSON for interaction-plan or conversation-memory queries. Read the selected capability contract for its exact shape.")] string? request = null,
         [Description("Interaction recipes: optional closed status candidate, verified, stale, or retired.")] string? status = null,
         [Description("Trigger scheduling: overview, structures, sources, devices, one-time, recurring, conditional, observation-triggers, observations, fires, or phone-principal.")] string? resource = null,
         CancellationToken cancellationToken = default,
@@ -151,7 +152,9 @@ public sealed class QueryMcpTool
         IProjectionDefinitionRegistry? projectionDefinitions = null,
         IApplicationReadModelService? applicationReadModels = null,
         IApplicationQueryRoleBindingResolver? applicationRoleBindings = null,
-        IApplicationQueryAuthorizedContextProvider? applicationAuthorizedContext = null)
+        IApplicationQueryAuthorizedContextProvider? applicationAuthorizedContext = null,
+        IConversationMemoryStore? conversationMemory = null,
+        IConversationMemoryHostBinding? conversationMemoryHostBinding = null)
     {
         var normalizedKind = kind?.Trim().ToLowerInvariant() ?? string.Empty;
 
@@ -296,6 +299,10 @@ public sealed class QueryMcpTool
                 interactionRecipes, privateOperator, log, applicationId, id, query, status, cursor, limit, cancellationToken),
             "system.trigger-scheduling" => await new SystemTriggerSchedulingHandler().QueryAsync(
                 triggerSchedulingAdministration, privateOperator, log, applicationId, resource, id, limit, cancellationToken),
+            "system.conversation-memory" => await new SystemConversationMemoryHandler().QueryAsync(
+                conversationMemory, conversationMemoryHostBinding, localKnowledgeSeats,
+                applicationEntityStateSpaces, privateOperator, log,
+                applicationId, stateSpaceId, request, cancellationToken),
             "system.blobs" => await new SystemBlobHandler().QueryAsync(
                 blobTransfers, privateOperator, log, id, cancellationToken),
             "namespaces" => await new CatalogNamespaceHandler().ListAsync(

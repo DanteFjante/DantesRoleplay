@@ -6,8 +6,9 @@ using DantesRoleplay.CodexBridge;
 namespace DantesRoleplay.DataAccess;
 
 /// <summary>
-/// Minimal app-server client for capture. Its only operational request is thread/read; it never
-/// lists threads, starts/resumes a thread, starts a turn, or opens a hook transcript path.
+/// Minimal app-server client for capture. Exact-turn capture uses metadata-only thread/read and
+/// bounded thread/turns/list plus thread/items/list requests. It never lists all threads,
+/// starts/resumes a thread, starts a turn, or opens a hook transcript path.
 /// </summary>
 public sealed class CodexCaptureAppServerClient(CodexCaptureOptions options) : ICodexThreadReadClient
 {
@@ -70,8 +71,8 @@ public sealed class CodexCaptureAppServerClient(CodexCaptureOptions options) : I
     }
 
     /// <summary>
-    /// Uses metadata-only thread/read, then bounded turn/item pages. Full-history includeTurns is
-    /// deprecated by the pinned schema and can exceed the JSONL safety bound.
+    /// Uses metadata-only thread/read, then bounded turn/item pages. Full-history hydration is
+    /// avoided because it can exceed the JSONL safety bound.
     /// </summary>
     public async Task<JsonElement> ReadTurnAsync(string threadId, string turnId, CancellationToken cancellationToken = default)
     {

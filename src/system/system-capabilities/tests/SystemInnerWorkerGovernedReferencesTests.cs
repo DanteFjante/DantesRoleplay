@@ -9,7 +9,7 @@ public sealed class SystemInnerWorkerGovernedReferencesTests
     public void Parses_only_explicit_complete_application_references()
     {
         var values = SystemInnerWorkerGovernedReferences.Parse(
-            "execute demo.action; query(kind: \"demo.query\"); may execute records; query(kind: \"mechanic\") when useful");
+            "execute demo.action; query(kind: \"demo.query\"); system capability system.conversation-memory; may execute records; query(kind: \"mechanic\") when useful");
 
         Assert.Collection(values,
             action =>
@@ -21,6 +21,11 @@ public sealed class SystemInnerWorkerGovernedReferencesTests
             {
                 Assert.Equal(SystemInnerWorkerGovernedReferenceKind.Query, query.Kind);
                 Assert.Equal("demo.query", query.QualifiedId);
+            },
+            system =>
+            {
+                Assert.Equal(SystemInnerWorkerGovernedReferenceKind.SystemCapability, system.Kind);
+                Assert.Equal("system.conversation-memory", system.QualifiedId);
             });
     }
 

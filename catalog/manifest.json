@@ -986,6 +986,20 @@
     },
     {
       "kind": "procedure",
+      "id": "procedure.system.conversation-dream",
+      "version": 1,
+      "contentHash": "EDFB9431D18199B37090660DAA73A3A05D238F8A86FE60662721233C5E57AD1E",
+      "path": "procedures/procedure/system/conversation-dream.md"
+    },
+    {
+      "kind": "procedure",
+      "id": "procedure.system.conversation-memory",
+      "version": 1,
+      "contentHash": "9B1E25D2F7B979B5C0D6E5ADE6816EAE5B4EEC2BD1329A69D623AE3A27DBAEAB",
+      "path": "procedures/procedure/system/conversation-memory.md"
+    },
+    {
+      "kind": "procedure",
       "id": "procedure.system.create-feature",
       "version": 7,
       "contentHash": "29D53710CA350F2C3067182766EB039BA40E4232225E43BD52AA9456FF3BC6AE",
