@@ -138,7 +138,13 @@ public sealed class CodexCaptureCorrelationSpool
     private static bool ValidTurn(string value) => !string.IsNullOrWhiteSpace(value) && value.Length <= 200;
 }
 
-public sealed record CodexCapturedMessage(string ExternalMessageId, string Role, string Content, int Ordinal);
+/// <summary>One real visible item from a Codex turn; content is never joined with another item.</summary>
+public sealed record CodexCapturedMessage(
+    string ExternalMessageId,
+    string Role,
+    string Content,
+    string Classification,
+    int Ordinal);
 public sealed record CodexCapturedTurn(string ThreadId, string TurnId, IReadOnlyList<CodexCapturedMessage> Messages);
 
 public interface ICodexThreadReadClient
@@ -188,6 +194,9 @@ public sealed class CodexCaptureAdapter(
 
 public static class CodexCaptureThreadParser
 {
+    public const int MaximumMessagesPerTurn = 64;
+    public const int MaximumMessageCharacters = 32_000;
+
     public static CodexCapturedTurn Parse(JsonElement response, string expectedThreadId, string expectedTurnId)
     {
         var thread = Object(response, "thread");
@@ -209,10 +218,14 @@ public static class CodexCaptureThreadParser
             var role = type == "userMessage" ? "user" : type == "agentMessage" ? "assistant" : string.Empty;
             if (string.IsNullOrEmpty(role) || !Visible(item)) continue;
             var content = OptionalString(item, "text");
-            if (string.IsNullOrWhiteSpace(content)) continue;
+            if (string.IsNullOrWhiteSpace(content) || content.Length > MaximumMessageCharacters)
+                throw Failure("CODEX_CAPTURE_PROTOCOL_INVALID", "A visible message has invalid text.");
             var id = OptionalString(item, "id");
-            if (string.IsNullOrWhiteSpace(id)) throw Failure("CODEX_CAPTURE_PROTOCOL_INVALID", "A visible message has no identity.");
-            messages.Add(new(id, role, content, ordinal++));
+            if (string.IsNullOrWhiteSpace(id) || id.Length > 200)
+                throw Failure("CODEX_CAPTURE_PROTOCOL_INVALID", "A visible message has no valid identity.");
+            if (messages.Count >= MaximumMessagesPerTurn)
+                throw Failure("CODEX_CAPTURE_BATCH_OVERSIZE", "A completed turn has too many visible messages to capture atomically.");
+            messages.Add(new(id, role, content, Classification(item), ordinal++));
         }
         if (messages.Count == 0) throw Failure("CODEX_CAPTURE_PROTOCOL_INVALID", "The completed turn has no visible messages.");
         return new(expectedThreadId, expectedTurnId, messages);
@@ -221,6 +234,12 @@ public static class CodexCaptureThreadParser
     private static bool Visible(JsonElement item) =>
         !item.TryGetProperty("visibility", out var visibility) || visibility.ValueKind == JsonValueKind.String &&
         string.Equals(visibility.GetString(), "visible", StringComparison.Ordinal);
+    private static string Classification(JsonElement item)
+    {
+        var value = OptionalString(item, "phase");
+        if (value.Length == 0) value = OptionalString(item, "channel");
+        return value is "final" or "commentary" ? value : string.Empty;
+    }
     private static JsonElement Object(JsonElement parent, string name) => parent.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Object ? value : throw Failure("CODEX_CAPTURE_PROTOCOL_INVALID", $"Codex omitted '{name}'.");
     private static JsonElement Array(JsonElement parent, string name) => parent.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Array ? value : throw Failure("CODEX_CAPTURE_PROTOCOL_INVALID", $"Codex omitted '{name}'.");
     private static string String(JsonElement parent, string name) => OptionalString(parent, name) is { Length: > 0 } value ? value : throw Failure("CODEX_CAPTURE_PROTOCOL_INVALID", $"Codex omitted '{name}'.");

@@ -47,6 +47,29 @@ public sealed class CodexCaptureAdapterTests
     }
 
     [Fact]
+    public async Task Retains_every_visible_message_item_in_source_order_and_preserves_classification()
+    {
+        var client = new FakeReadClient(Json("""
+            {"thread":{"id":"thread.gameplay","turns":[{"id":"turn.1","status":"completed","items":[
+              {"id":"u1","type":"userMessage","text":"First player message","visibility":"visible"},
+              {"id":"a1","type":"agentMessage","text":"Working note","visibility":"visible","channel":"commentary"},
+              {"id":"u2","type":"userMessage","text":"Second player message","visibility":"visible"},
+              {"id":"a2","type":"agentMessage","text":"Final reply","visibility":"visible","phase":"final"}
+            ]}]}}
+            """));
+        var adapter = Adapter(client, new());
+        adapter.TryAcceptHook(Hook("Stop", "turn.1", ""), DateTimeOffset.UtcNow);
+
+        var turn = await adapter.CaptureNextAsync();
+
+        Assert.Equal(["u1", "a1", "u2", "a2"], turn!.Messages.Select(message => message.ExternalMessageId));
+        Assert.Equal(["First player message", "Working note", "Second player message", "Final reply"],
+            turn.Messages.Select(message => message.Content));
+        Assert.Equal(["", "commentary", "", "final"], turn.Messages.Select(message => message.Classification));
+        Assert.Equal([0, 1, 2, 3], turn.Messages.Select(message => message.Ordinal));
+    }
+
+    [Fact]
     public async Task Rejects_wrong_thread_wrong_turn_and_incomplete_turn_without_completing_checkpoint()
     {
         foreach (var response in new[]
