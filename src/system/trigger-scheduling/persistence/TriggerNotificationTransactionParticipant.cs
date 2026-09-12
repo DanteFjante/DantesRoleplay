@@ -38,11 +38,6 @@ internal sealed class TriggerNotificationTransactionParticipant(
         CancellationToken cancellationToken)
     {
         if (lease.ObservationId is null) return TriggerFireAttemptResult.Permanent();
-        var current = await db.ObservationTriggerCurrent.AsNoTracking().SingleOrDefaultAsync(value =>
-            value.ApplicationId == lease.ApplicationId.Value && value.Id == lease.TriggerId,
-            cancellationToken);
-        if (current?.CurrentVersion != lease.TriggerVersion)
-            return TriggerFireAttemptResult.Permanent(TriggerFireFailureKind.StaleTrigger);
         var stored = await db.ObservationTriggers.AsNoTracking()
             .Include(value => value.NotificationEntities)
             .SingleOrDefaultAsync(value => value.ApplicationId == lease.ApplicationId.Value &&
@@ -50,7 +45,7 @@ internal sealed class TriggerNotificationTransactionParticipant(
         var observation = await db.TriggerObservations.AsNoTracking().SingleOrDefaultAsync(value =>
             value.Id == lease.ObservationId && value.ApplicationId == lease.ApplicationId.Value,
             cancellationToken);
-        if (stored is null || stored.Lifecycle != "active" || stored.Target != "notification-only" ||
+        if (stored is null || stored.Target != "notification-only" ||
             observation is null || observation.SourceId != stored.SourceId ||
             observation.SourceVersion != stored.SourceVersion || observation.StructureId != stored.StructureId ||
             observation.StructureVersion != stored.StructureVersion ||
@@ -155,20 +150,16 @@ internal sealed class TriggerNotificationTransactionParticipant(
         CancellationToken cancellationToken)
     {
         if (lease.ChangeOperationId is null) return TriggerFireAttemptResult.Permanent();
-        var current = await db.ConditionalTriggerCurrent.AsNoTracking().SingleOrDefaultAsync(value =>
-            value.ApplicationId == lease.ApplicationId.Value && value.Id == lease.TriggerId,
-            cancellationToken);
-        if (current?.CurrentVersion != lease.TriggerVersion)
-            return TriggerFireAttemptResult.Permanent(TriggerFireFailureKind.StaleTrigger);
         var stored = await db.ConditionalTriggers.AsNoTracking()
             .Include(value => value.NotificationEntities)
             .SingleOrDefaultAsync(value => value.ApplicationId == lease.ApplicationId.Value &&
                 value.Id == lease.TriggerId && value.Version == lease.TriggerVersion, cancellationToken);
         var state = await db.ConditionalTriggerState.AsNoTracking().SingleOrDefaultAsync(value =>
-            value.ApplicationId == lease.ApplicationId.Value && value.TriggerId == lease.TriggerId &&
-            value.CurrentVersion == lease.TriggerVersion, cancellationToken);
-        if (stored is null || stored.Lifecycle != "active" || stored.Target != "notification-only" ||
-            state?.LastFiredOperationId != lease.ChangeOperationId)
+            value.ApplicationId == lease.ApplicationId.Value && value.TriggerId == lease.TriggerId,
+            cancellationToken);
+        if (stored is null || stored.Target != "notification-only" || state is null ||
+            state.CurrentVersion < lease.TriggerVersion ||
+            state.CurrentVersion == lease.TriggerVersion && state.LastFiredOperationId != lease.ChangeOperationId)
             return TriggerFireAttemptResult.Permanent(TriggerFireFailureKind.StaleTrigger);
         TriggerNotificationTarget target;
         try

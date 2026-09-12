@@ -99,7 +99,7 @@ public sealed class SqliteObservationTriggerWorker(
             IObservationMatchAdapter adapter;
             try
             {
-                (definition, observation) = await CurrentInputAsync(lease, cancellationToken);
+                (definition, observation) = await RetainedInputAsync(lease, cancellationToken);
                 adapter = store.ResolveAdapter(definition.Adapter);
             }
             catch (TriggerSchedulingContractException)
@@ -163,16 +163,13 @@ public sealed class SqliteObservationTriggerWorker(
         }
     }
 
-    private async Task<(ObservationTriggerDefinition Definition, ObservationMatchInput Input)> CurrentInputAsync(
+    private async Task<(ObservationTriggerDefinition Definition, ObservationMatchInput Input)> RetainedInputAsync(
         TriggerFireLease lease, CancellationToken cancellationToken)
     {
-        var current = await db.ObservationTriggerCurrent.AsNoTracking().SingleOrDefaultAsync(value =>
-            value.ApplicationId == lease.ApplicationId.Value && value.Id == lease.TriggerId, cancellationToken);
-        if (current?.CurrentVersion != lease.TriggerVersion) throw Stale();
         var row = await db.ObservationTriggers.AsNoTracking().Include(value => value.NotificationEntities)
             .SingleOrDefaultAsync(value => value.ApplicationId == lease.ApplicationId.Value &&
                 value.Id == lease.TriggerId && value.Version == lease.TriggerVersion, cancellationToken);
-        if (row is null || row.Lifecycle != "active") throw Stale();
+        if (row is null) throw Stale();
         var sourceCurrent = await db.TriggerObservationSourceCurrent.AsNoTracking().SingleOrDefaultAsync(value =>
             value.ApplicationId == row.ApplicationId && value.Id == row.SourceId, cancellationToken);
         var source = await db.TriggerObservationSources.AsNoTracking().Include(value => value.AllowedStructures)
@@ -239,13 +236,9 @@ public sealed class SqliteObservationTriggerWorker(
                 LeaseOwner = NULL, LeaseToken = NULL, LeaseExpiresAtUtc = NULL,
                 FailureKind = 'stale-trigger', Revision = Revision + 1, UpdatedAtUtc = {now.UtcDateTime}
             WHERE FireId IN (SELECT work.FireId FROM trigger_observation_match_work work
-                LEFT JOIN trigger_observation_match_current current ON current.ApplicationId = work.ApplicationId
-                    AND current.Id = work.TriggerId
                 LEFT JOIN trigger_observation_match_definition definition ON definition.ApplicationId = work.ApplicationId
                     AND definition.Id = work.TriggerId AND definition.Version = work.TriggerVersion
-                WHERE work.State IN ('ready', 'retry', 'leased') AND
-                    (current.CurrentVersion IS NULL OR current.CurrentVersion <> work.TriggerVersion OR
-                     definition.Lifecycle <> 'active')
+                WHERE work.State IN ('ready', 'retry', 'leased') AND definition.ApplicationId IS NULL
                 ORDER BY work.UpdatedAtUtc, work.FireId LIMIT {MaximumBatchSize})
             """, cancellationToken);
 

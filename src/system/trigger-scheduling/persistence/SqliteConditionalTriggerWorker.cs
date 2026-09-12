@@ -164,13 +164,9 @@ public sealed class SqliteConditionalTriggerWorker(
                 LeaseOwner = NULL, LeaseToken = NULL, LeaseExpiresAtUtc = NULL,
                 FailureKind = 'stale-trigger', Revision = Revision + 1, UpdatedAtUtc = {now.UtcDateTime}
             WHERE FireId IN (SELECT work.FireId FROM trigger_conditional_fire_work work
-                LEFT JOIN trigger_conditional_current current ON current.ApplicationId = work.ApplicationId
-                    AND current.Id = work.TriggerId
                 LEFT JOIN trigger_conditional_definition definition ON definition.ApplicationId = work.ApplicationId
                     AND definition.Id = work.TriggerId AND definition.Version = work.TriggerVersion
-                WHERE work.State IN ('ready', 'retry', 'leased') AND
-                    (current.CurrentVersion IS NULL OR current.CurrentVersion <> work.TriggerVersion OR
-                     definition.Lifecycle <> 'active')
+                WHERE work.State IN ('ready', 'retry', 'leased') AND definition.ApplicationId IS NULL
                 ORDER BY work.UpdatedAtUtc, work.FireId LIMIT {MaximumBatchSize})
             """, cancellationToken);
 
