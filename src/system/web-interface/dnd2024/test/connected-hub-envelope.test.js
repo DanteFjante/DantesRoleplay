@@ -1188,6 +1188,36 @@ test("a declared atlas becomes the map owner beneath a non-map World parent", ()
   assert.equal(envelope.world.maps.find((map) => map.id === envelope.world.rootMapId).subject.name, "World atlas");
 });
 
+test("permission-bound live map URLs keep their approved perspective and reject unrelated query authority", () => {
+  for (const perspective of ["dm", "player"]) {
+    const imageUrl = `${visual("location.world", "World atlas").imageUrl}?perspective=${perspective}`;
+    const envelope = connectedCampaignToHubEnvelope(connectedFixture({
+      audience: { seat: perspective === "dm" ? "dm" : "player", perspective,
+        allowedPerspectives: perspective === "dm" ? ["dm", "player"] : ["player"] },
+      locationDirectoryAudience: perspective,
+      locationDirectory: [{ id: "location.world", name: "World atlas", containerId: "world.thalorien",
+        mapVisual: { imageUrl, alt: "World atlas" } }],
+    }));
+    assert.equal(envelope.world.maps.find((map) => map.id === envelope.world.rootMapId)?.base.imageUrl, imageUrl);
+  }
+
+  for (const suffix of ["?perspective=owner", "?perspective=dm&download=true", "?download=true", "#perspective=dm"]) {
+    const envelope = connectedCampaignToHubEnvelope(connectedFixture({
+      audience: { seat: "dm", perspective: "dm", allowedPerspectives: ["dm", "player"] },
+      locationDirectory: [{ id: "location.world", name: "World atlas", containerId: "world.thalorien",
+        mapVisual: { imageUrl: `${visual("location.world", "World atlas").imageUrl}${suffix}`, alt: "World atlas" } }],
+    }));
+    assert.equal(envelope.world.maps.find((map) => map.id === envelope.world.rootMapId)?.baseState, "unavailable");
+  }
+
+  const absolute = connectedCampaignToHubEnvelope(connectedFixture({
+    audience: { seat: "dm", perspective: "dm", allowedPerspectives: ["dm", "player"] },
+    locationDirectory: [{ id: "location.world", name: "World atlas", containerId: "world.thalorien",
+      mapVisual: { imageUrl: "http://media.invalid/api/applications/dnd2024/state-spaces/dnd2024-main/entities/location.world/media/map/content?perspective=dm", alt: "World atlas" } }],
+  }));
+  assert.equal(absolute.world.maps.find((map) => map.id === absolute.world.rootMapId)?.baseState, "unavailable");
+});
+
 test("uses exact live containment for cropped Region map membership", () => {
   const envelope = connectedCampaignToHubEnvelope(connectedFixture({
     audience: { seat: "dm", perspective: "dm", allowedPerspectives: ["dm", "player"] },

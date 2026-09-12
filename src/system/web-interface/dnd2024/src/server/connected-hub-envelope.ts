@@ -351,8 +351,13 @@ function resolvedMapBase(
   value: LiveDirectoryEntry,
 ): { imageUrl: string; alt: string; width?: number; height?: number } | null {
   if (!value.mapVisual || typeof value.mapVisual.imageUrl !== "string") return null;
-  if (!value.mapVisual.imageUrl.startsWith("/api/applications/") ||
-      !value.mapVisual.imageUrl.endsWith("/content")) return null;
+  try {
+    const parsed = new URL(value.mapVisual.imageUrl, "http://media.invalid");
+    if (!value.mapVisual.imageUrl.startsWith("/api/applications/") ||
+        parsed.origin !== "http://media.invalid" || parsed.hash ||
+        !/^\/api\/applications\/[^/?#\\\s]+\/state-spaces\/[^/?#\\\s]+\/entities\/[^/?#\\\s]+\/media\/[^/?#\\\s]+\/content$/u.test(parsed.pathname) ||
+        !(parsed.search === "" || /^\?perspective=(?:player|dm)$/u.test(parsed.search))) return null;
+  } catch { return null; }
   const dimensions = Number.isInteger(value.mapVisual.width) && value.mapVisual.width! > 0 &&
     Number.isInteger(value.mapVisual.height) && value.mapVisual.height! > 0
     ? { width: value.mapVisual.width, height: value.mapVisual.height }
