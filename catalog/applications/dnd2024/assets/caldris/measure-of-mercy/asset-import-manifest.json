@@ -1,0 +1,1141 @@
+{
+  "format": "dnd2024.retained-media-import/1",
+  "packageId": "caldris.measure-of-mercy.starting-area.v1",
+  "applicationId": "dnd2024",
+  "stateSpaceId": "dnd2024-main",
+  "campaignId": "campaign.caldris.measure-of-mercy",
+  "authority": {
+    "capturedAtUtc": "2026-09-12T13:38:56.0725046Z",
+    "liveEvidenceRoot": "DantesRoleplay.MCPServer/data/backups/caldris-starting-area-recon-20260912T1330Z",
+    "baselineStateSpaceFingerprint": "717be58bcc02fe2a2f2727d3227e43c45086e2afe93577f4b1a4695f9cb9a45b",
+    "currentLocationId": "location.caldris.bramblebridge",
+    "activePartyActorIds": [
+      "actor.caldris.ganji"
+    ],
+    "playerKnowledgeRecordCount": 0,
+    "liveMutationPerformed": false
+  },
+  "coordinateContract": {
+    "unit": "normalized",
+    "width": 1000,
+    "height": 1000,
+    "origin": "top-left",
+    "positiveX": "east/right",
+    "positiveY": "south/down",
+    "orientation": "north-up",
+    "rule": "Each owner has its own frame; a child anchor is expressed only in its direct parent map frame."
+  },
+  "assets": [
+    {
+      "logicalAssetKey": "caldris.map.atlas.clean.v1",
+      "kind": "map",
+      "ownerLocationId": "location.caldris.atlas",
+      "parentLocationId": null,
+      "mapAnchor": null,
+      "mediaId": "map-clean-v1",
+      "role": "map",
+      "visibility": [
+        "player",
+        "dm"
+      ],
+      "activationDisposition": "candidate-for-map-publication",
+      "relativePath": "caldris-atlas-clean-v1.png",
+      "sha256": "f2a9aeb6b3d38b494c507e5373a659837f5c633e278824d4e2d67d05fd5a5b0d",
+      "mimeType": "image/png",
+      "width": 1448,
+      "height": 1086,
+      "length": 2714615,
+      "alt": "Caldris atlas terrain without baked labels or markers.",
+      "provenance": {
+        "kind": "generated",
+        "credit": "OpenAI image generation",
+        "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/caldris-atlas-clean-v1.png",
+        "reviewedOn": "2026-09-12",
+        "version": 1
+      },
+      "previousActiveMap": {
+        "componentRevision": 4,
+        "typeVersion": 1,
+        "schemaHash": "7c443530d2436d1089e5639154dda0b1122d9f4cae92f80806891e39da42a760",
+        "playerSha256": "3ef332cb5963a0081e3afcb9f045d4582e7f95507cdc6552e25e619dfc9102f1",
+        "dmSha256": "3ef332cb5963a0081e3afcb9f045d4582e7f95507cdc6552e25e619dfc9102f1",
+        "localPreservationReference": "DantesRoleplay.MCPServer/data/backups/caldris-starting-area-recon-20260912T1330Z/map-image-references/location.caldris.atlas--map-dm.png",
+        "localPreservationSha256": "3ef332cb5963a0081e3afcb9f045d4582e7f95507cdc6552e25e619dfc9102f1"
+      },
+      "bindingPlan": {
+        "componentId": "game.core.world.map.visual",
+        "expectedComponentRevision": 4,
+        "expectedDisposition": "replace-exact",
+        "valueTemplate": {
+          "status": "active",
+          "variants": {
+            "player": {
+              "sha256": "f2a9aeb6b3d38b494c507e5373a659837f5c633e278824d4e2d67d05fd5a5b0d",
+              "mimeType": "image/png",
+              "width": 1448,
+              "height": 1086,
+              "alt": "Caldris atlas terrain without baked labels or markers.",
+              "caption": "",
+              "order": 0,
+              "provenance": {
+                "kind": "generated",
+                "credit": "OpenAI image generation",
+                "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/caldris-atlas-clean-v1.png",
+                "reviewedOn": "2026-09-12",
+                "version": 1
+              }
+            },
+            "dm": {
+              "sha256": "f2a9aeb6b3d38b494c507e5373a659837f5c633e278824d4e2d67d05fd5a5b0d",
+              "mimeType": "image/png",
+              "width": 1448,
+              "height": 1086,
+              "alt": "Caldris atlas terrain without baked labels or markers.",
+              "caption": "",
+              "order": 0,
+              "provenance": {
+                "kind": "generated",
+                "credit": "OpenAI image generation",
+                "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/caldris-atlas-clean-v1.png",
+                "reviewedOn": "2026-09-12",
+                "version": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "logicalAssetKey": "caldris.map.eredane.clean.v1",
+      "kind": "map",
+      "ownerLocationId": "location.caldris.eredane",
+      "parentLocationId": "location.caldris.atlas",
+      "mapAnchor": {
+        "x": 255,
+        "y": 380
+      },
+      "mediaId": "map-clean-v1",
+      "role": "map",
+      "visibility": [
+        "player",
+        "dm"
+      ],
+      "activationDisposition": "candidate-for-map-publication",
+      "relativePath": "eredane-clean-v1.png",
+      "sha256": "1435526aae8c1cdbacd58ad82c361c0a3acad8bae7bcdc85247155e99934db59",
+      "mimeType": "image/png",
+      "width": 1448,
+      "height": 1086,
+      "length": 3002293,
+      "alt": "Eredane regional terrain without baked labels or markers.",
+      "provenance": {
+        "kind": "generated",
+        "credit": "OpenAI image generation",
+        "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/eredane-clean-v1.png",
+        "reviewedOn": "2026-09-12",
+        "version": 1
+      },
+      "previousActiveMap": {
+        "componentRevision": 4,
+        "typeVersion": 1,
+        "schemaHash": "7c443530d2436d1089e5639154dda0b1122d9f4cae92f80806891e39da42a760",
+        "playerSha256": "96f6a778bfe921a6637b5bd4cd3f084b343bdaac807854f583101710995307f4",
+        "dmSha256": "96f6a778bfe921a6637b5bd4cd3f084b343bdaac807854f583101710995307f4",
+        "localPreservationReference": "DantesRoleplay.MCPServer/data/backups/caldris-starting-area-recon-20260912T1330Z/map-image-references/location.caldris.eredane--map-dm.png",
+        "localPreservationSha256": "96f6a778bfe921a6637b5bd4cd3f084b343bdaac807854f583101710995307f4"
+      },
+      "bindingPlan": {
+        "componentId": "game.core.world.map.visual",
+        "expectedComponentRevision": 4,
+        "expectedDisposition": "replace-exact",
+        "valueTemplate": {
+          "status": "active",
+          "variants": {
+            "player": {
+              "sha256": "1435526aae8c1cdbacd58ad82c361c0a3acad8bae7bcdc85247155e99934db59",
+              "mimeType": "image/png",
+              "width": 1448,
+              "height": 1086,
+              "alt": "Eredane regional terrain without baked labels or markers.",
+              "caption": "",
+              "order": 0,
+              "provenance": {
+                "kind": "generated",
+                "credit": "OpenAI image generation",
+                "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/eredane-clean-v1.png",
+                "reviewedOn": "2026-09-12",
+                "version": 1
+              }
+            },
+            "dm": {
+              "sha256": "1435526aae8c1cdbacd58ad82c361c0a3acad8bae7bcdc85247155e99934db59",
+              "mimeType": "image/png",
+              "width": 1448,
+              "height": 1086,
+              "alt": "Eredane regional terrain without baked labels or markers.",
+              "caption": "",
+              "order": 0,
+              "provenance": {
+                "kind": "generated",
+                "credit": "OpenAI image generation",
+                "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/eredane-clean-v1.png",
+                "reviewedOn": "2026-09-12",
+                "version": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "logicalAssetKey": "caldris.map.alderwick.clean.v1",
+      "kind": "map",
+      "ownerLocationId": "location.caldris.alderwick",
+      "parentLocationId": "location.caldris.eredane",
+      "mapAnchor": {
+        "x": 525,
+        "y": 530
+      },
+      "mediaId": "map-clean-v1",
+      "role": "map",
+      "visibility": [
+        "player",
+        "dm"
+      ],
+      "activationDisposition": "candidate-for-map-publication",
+      "relativePath": "alderwick-clean-v1.png",
+      "sha256": "f1a67e8f1b362fa0f872b86bc0007abf0f2d512833bc907502a3f7a3f11e11c7",
+      "mimeType": "image/png",
+      "width": 1448,
+      "height": 1086,
+      "length": 2868713,
+      "alt": "Alderwick regional terrain without baked labels or markers.",
+      "provenance": {
+        "kind": "generated",
+        "credit": "OpenAI image generation",
+        "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/alderwick-clean-v1.png",
+        "reviewedOn": "2026-09-12",
+        "version": 1
+      },
+      "previousActiveMap": {
+        "componentRevision": 5,
+        "typeVersion": 1,
+        "schemaHash": "7c443530d2436d1089e5639154dda0b1122d9f4cae92f80806891e39da42a760",
+        "playerSha256": "f118c3091f212e9f2a8c2c26bf981e4d2b99009af0415d02e1e396195bc008bd",
+        "dmSha256": "f118c3091f212e9f2a8c2c26bf981e4d2b99009af0415d02e1e396195bc008bd",
+        "localPreservationReference": "DantesRoleplay.MCPServer/data/backups/caldris-starting-area-recon-20260912T1330Z/map-image-references/location.caldris.alderwick--map-dm.png",
+        "localPreservationSha256": "f118c3091f212e9f2a8c2c26bf981e4d2b99009af0415d02e1e396195bc008bd"
+      },
+      "bindingPlan": {
+        "componentId": "game.core.world.map.visual",
+        "expectedComponentRevision": 5,
+        "expectedDisposition": "replace-exact",
+        "valueTemplate": {
+          "status": "active",
+          "variants": {
+            "player": {
+              "sha256": "f1a67e8f1b362fa0f872b86bc0007abf0f2d512833bc907502a3f7a3f11e11c7",
+              "mimeType": "image/png",
+              "width": 1448,
+              "height": 1086,
+              "alt": "Alderwick regional terrain without baked labels or markers.",
+              "caption": "",
+              "order": 0,
+              "provenance": {
+                "kind": "generated",
+                "credit": "OpenAI image generation",
+                "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/alderwick-clean-v1.png",
+                "reviewedOn": "2026-09-12",
+                "version": 1
+              }
+            },
+            "dm": {
+              "sha256": "f1a67e8f1b362fa0f872b86bc0007abf0f2d512833bc907502a3f7a3f11e11c7",
+              "mimeType": "image/png",
+              "width": 1448,
+              "height": 1086,
+              "alt": "Alderwick regional terrain without baked labels or markers.",
+              "caption": "",
+              "order": 0,
+              "provenance": {
+                "kind": "generated",
+                "credit": "OpenAI image generation",
+                "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/alderwick-clean-v1.png",
+                "reviewedOn": "2026-09-12",
+                "version": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "logicalAssetKey": "caldris.map.bramble-country.clean.v1",
+      "kind": "map",
+      "ownerLocationId": "location.caldris.atlas.bramble-country",
+      "parentLocationId": "location.caldris.alderwick",
+      "mapAnchor": {
+        "x": 510,
+        "y": 400
+      },
+      "mediaId": "map-clean-v1",
+      "role": "map",
+      "visibility": [
+        "player",
+        "dm"
+      ],
+      "activationDisposition": "candidate-for-map-publication",
+      "relativePath": "bramble-country-clean-v1.png",
+      "sha256": "c4fc7b846d578a29841df334a1293ea8a6ddc103521c9621c04c56a321a060dc",
+      "mimeType": "image/png",
+      "width": 1448,
+      "height": 1086,
+      "length": 3077943,
+      "alt": "Bramble Country terrain without baked labels or markers.",
+      "provenance": {
+        "kind": "generated",
+        "credit": "OpenAI image generation",
+        "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/bramble-country-clean-v1.png",
+        "reviewedOn": "2026-09-12",
+        "version": 1
+      },
+      "previousActiveMap": {
+        "componentRevision": 2,
+        "typeVersion": 1,
+        "schemaHash": "7c443530d2436d1089e5639154dda0b1122d9f4cae92f80806891e39da42a760",
+        "playerSha256": "fb9f3ccf2de4f999e871e11fb0ea46ae3bb7c298390167144224c5035815cb9c",
+        "dmSha256": "fb9f3ccf2de4f999e871e11fb0ea46ae3bb7c298390167144224c5035815cb9c",
+        "localPreservationReference": "DantesRoleplay.MCPServer/data/backups/caldris-starting-area-recon-20260912T1330Z/map-image-references/location.caldris.atlas.bramble-country--map-dm.png",
+        "localPreservationSha256": "fb9f3ccf2de4f999e871e11fb0ea46ae3bb7c298390167144224c5035815cb9c"
+      },
+      "bindingPlan": {
+        "componentId": "game.core.world.map.visual",
+        "expectedComponentRevision": 2,
+        "expectedDisposition": "replace-exact",
+        "valueTemplate": {
+          "status": "active",
+          "variants": {
+            "player": {
+              "sha256": "c4fc7b846d578a29841df334a1293ea8a6ddc103521c9621c04c56a321a060dc",
+              "mimeType": "image/png",
+              "width": 1448,
+              "height": 1086,
+              "alt": "Bramble Country terrain without baked labels or markers.",
+              "caption": "",
+              "order": 0,
+              "provenance": {
+                "kind": "generated",
+                "credit": "OpenAI image generation",
+                "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/bramble-country-clean-v1.png",
+                "reviewedOn": "2026-09-12",
+                "version": 1
+              }
+            },
+            "dm": {
+              "sha256": "c4fc7b846d578a29841df334a1293ea8a6ddc103521c9621c04c56a321a060dc",
+              "mimeType": "image/png",
+              "width": 1448,
+              "height": 1086,
+              "alt": "Bramble Country terrain without baked labels or markers.",
+              "caption": "",
+              "order": 0,
+              "provenance": {
+                "kind": "generated",
+                "credit": "OpenAI image generation",
+                "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/bramble-country-clean-v1.png",
+                "reviewedOn": "2026-09-12",
+                "version": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "logicalAssetKey": "caldris.map.bramblebridge.clean.v1",
+      "kind": "map",
+      "ownerLocationId": "location.caldris.bramblebridge",
+      "parentLocationId": "location.caldris.atlas.bramble-country",
+      "mapAnchor": {
+        "x": 455,
+        "y": 450
+      },
+      "mediaId": "map-clean-v1",
+      "role": "map",
+      "visibility": [
+        "player",
+        "dm"
+      ],
+      "activationDisposition": "candidate-for-map-publication",
+      "relativePath": "bramblebridge-clean-v1.png",
+      "sha256": "0edb6b93e6c26fa4de8973cb1753bd72b165cab3a18092317170f6a16f058f57",
+      "mimeType": "image/png",
+      "width": 1448,
+      "height": 1086,
+      "length": 3155946,
+      "alt": "Bramblebridge streets, river, and structures without baked labels or markers.",
+      "provenance": {
+        "kind": "generated",
+        "credit": "OpenAI image generation",
+        "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/bramblebridge-clean-v1.png",
+        "reviewedOn": "2026-09-12",
+        "version": 1
+      },
+      "previousActiveMap": {
+        "componentRevision": 4,
+        "typeVersion": 1,
+        "schemaHash": "7c443530d2436d1089e5639154dda0b1122d9f4cae92f80806891e39da42a760",
+        "playerSha256": "dd77019c73bf9b5cd8360db5d3b1c9331126242f4e15f7367c5f278bb8580fda",
+        "dmSha256": "dd77019c73bf9b5cd8360db5d3b1c9331126242f4e15f7367c5f278bb8580fda",
+        "localPreservationReference": "DantesRoleplay.MCPServer/data/backups/caldris-starting-area-recon-20260912T1330Z/map-image-references/location.caldris.bramblebridge--map-dm.png",
+        "localPreservationSha256": "dd77019c73bf9b5cd8360db5d3b1c9331126242f4e15f7367c5f278bb8580fda"
+      },
+      "bindingPlan": {
+        "componentId": "game.core.world.map.visual",
+        "expectedComponentRevision": 4,
+        "expectedDisposition": "replace-exact",
+        "valueTemplate": {
+          "status": "active",
+          "variants": {
+            "player": {
+              "sha256": "0edb6b93e6c26fa4de8973cb1753bd72b165cab3a18092317170f6a16f058f57",
+              "mimeType": "image/png",
+              "width": 1448,
+              "height": 1086,
+              "alt": "Bramblebridge streets, river, and structures without baked labels or markers.",
+              "caption": "",
+              "order": 0,
+              "provenance": {
+                "kind": "generated",
+                "credit": "OpenAI image generation",
+                "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/bramblebridge-clean-v1.png",
+                "reviewedOn": "2026-09-12",
+                "version": 1
+              }
+            },
+            "dm": {
+              "sha256": "0edb6b93e6c26fa4de8973cb1753bd72b165cab3a18092317170f6a16f058f57",
+              "mimeType": "image/png",
+              "width": 1448,
+              "height": 1086,
+              "alt": "Bramblebridge streets, river, and structures without baked labels or markers.",
+              "caption": "",
+              "order": 0,
+              "provenance": {
+                "kind": "generated",
+                "credit": "OpenAI image generation",
+                "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/bramblebridge-clean-v1.png",
+                "reviewedOn": "2026-09-12",
+                "version": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "logicalAssetKey": "caldris.map.gilded-kettle.clean.v1",
+      "kind": "map",
+      "ownerLocationId": "location.caldris.gilded-kettle",
+      "parentLocationId": "location.caldris.bramblebridge",
+      "mapAnchor": {
+        "x": 280,
+        "y": 575
+      },
+      "mediaId": "map-clean-v1",
+      "role": "map",
+      "visibility": [
+        "player",
+        "dm"
+      ],
+      "activationDisposition": "candidate-for-map-publication",
+      "relativePath": "gilded-kettle-ground-floor-clean-v1.png",
+      "sha256": "f43c2bc732b3cce3383ff19327aa54266e9460b41c770ab318d0dbfd75722e5e",
+      "mimeType": "image/png",
+      "width": 1447,
+      "height": 1087,
+      "length": 2935466,
+      "alt": "The Gilded Kettle ground floor without baked labels or markers.",
+      "provenance": {
+        "kind": "generated",
+        "credit": "OpenAI image generation",
+        "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/gilded-kettle-ground-floor-clean-v1.png",
+        "reviewedOn": "2026-09-12",
+        "version": 1
+      },
+      "previousActiveMap": {
+        "componentRevision": 1,
+        "typeVersion": 1,
+        "schemaHash": "7c443530d2436d1089e5639154dda0b1122d9f4cae92f80806891e39da42a760",
+        "playerSha256": "1b01a8f3334237ed69dfd48f6ac7327efc6234c087b3b9c4601e9bd795769c00",
+        "dmSha256": "1b01a8f3334237ed69dfd48f6ac7327efc6234c087b3b9c4601e9bd795769c00",
+        "localPreservationReference": "DantesRoleplay.MCPServer/data/backups/caldris-starting-area-recon-20260912T1330Z/map-image-references/location.caldris.gilded-kettle--map-dm.png",
+        "localPreservationSha256": "1b01a8f3334237ed69dfd48f6ac7327efc6234c087b3b9c4601e9bd795769c00"
+      },
+      "bindingPlan": {
+        "componentId": "game.core.world.map.visual",
+        "expectedComponentRevision": 1,
+        "expectedDisposition": "replace-exact",
+        "valueTemplate": {
+          "status": "active",
+          "variants": {
+            "player": {
+              "sha256": "f43c2bc732b3cce3383ff19327aa54266e9460b41c770ab318d0dbfd75722e5e",
+              "mimeType": "image/png",
+              "width": 1447,
+              "height": 1087,
+              "alt": "The Gilded Kettle ground floor without baked labels or markers.",
+              "caption": "",
+              "order": 0,
+              "provenance": {
+                "kind": "generated",
+                "credit": "OpenAI image generation",
+                "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/gilded-kettle-ground-floor-clean-v1.png",
+                "reviewedOn": "2026-09-12",
+                "version": 1
+              }
+            },
+            "dm": {
+              "sha256": "f43c2bc732b3cce3383ff19327aa54266e9460b41c770ab318d0dbfd75722e5e",
+              "mimeType": "image/png",
+              "width": 1447,
+              "height": 1087,
+              "alt": "The Gilded Kettle ground floor without baked labels or markers.",
+              "caption": "",
+              "order": 0,
+              "provenance": {
+                "kind": "generated",
+                "credit": "OpenAI image generation",
+                "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/gilded-kettle-ground-floor-clean-v1.png",
+                "reviewedOn": "2026-09-12",
+                "version": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "logicalAssetKey": "caldris.map.weir-bridge.v1",
+      "kind": "map",
+      "ownerLocationId": "location.caldris.atlas.weir-bridge",
+      "parentLocationId": "location.caldris.bramblebridge",
+      "mapAnchor": {
+        "x": 655,
+        "y": 505
+      },
+      "mediaId": "map-clean-v1",
+      "role": "map",
+      "visibility": [
+        "player",
+        "dm"
+      ],
+      "activationDisposition": "candidate-for-map-publication",
+      "relativePath": "weir-bridge-bridge-house-map-v1.png",
+      "sha256": "a9de90d48d70135c65c166c6ef9b66f5fcdbd806344c8eda03e01329b187cd95",
+      "mimeType": "image/png",
+      "width": 1448,
+      "height": 1086,
+      "length": 3642908,
+      "alt": "Weir Bridge and Bridge House approach without baked labels or markers.",
+      "provenance": {
+        "kind": "generated",
+        "credit": "OpenAI image generation",
+        "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/weir-bridge-bridge-house-map-v1.png",
+        "reviewedOn": "2026-09-12",
+        "version": 1
+      },
+      "previousActiveMap": null,
+      "bindingPlan": {
+        "componentId": "game.core.world.map.visual",
+        "expectedComponentRevision": 0,
+        "expectedDisposition": "add-if-absent",
+        "valueTemplate": {
+          "status": "active",
+          "variants": {
+            "player": {
+              "sha256": "a9de90d48d70135c65c166c6ef9b66f5fcdbd806344c8eda03e01329b187cd95",
+              "mimeType": "image/png",
+              "width": 1448,
+              "height": 1086,
+              "alt": "Weir Bridge and Bridge House approach without baked labels or markers.",
+              "caption": "",
+              "order": 0,
+              "provenance": {
+                "kind": "generated",
+                "credit": "OpenAI image generation",
+                "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/weir-bridge-bridge-house-map-v1.png",
+                "reviewedOn": "2026-09-12",
+                "version": 1
+              }
+            },
+            "dm": {
+              "sha256": "a9de90d48d70135c65c166c6ef9b66f5fcdbd806344c8eda03e01329b187cd95",
+              "mimeType": "image/png",
+              "width": 1448,
+              "height": 1086,
+              "alt": "Weir Bridge and Bridge House approach without baked labels or markers.",
+              "caption": "",
+              "order": 0,
+              "provenance": {
+                "kind": "generated",
+                "credit": "OpenAI image generation",
+                "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/weir-bridge-bridge-house-map-v1.png",
+                "reviewedOn": "2026-09-12",
+                "version": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "logicalAssetKey": "caldris.map.mallow-abbey.v1",
+      "kind": "map",
+      "ownerLocationId": "location.caldris.bramblebridge.mallow-abbey",
+      "parentLocationId": "location.caldris.atlas.bramble-country",
+      "mapAnchor": {
+        "x": 230,
+        "y": 325
+      },
+      "mediaId": "map-clean-v1",
+      "role": "map",
+      "visibility": [
+        "player",
+        "dm"
+      ],
+      "activationDisposition": "candidate-for-map-publication",
+      "relativePath": "mallow-abbey-map-v1.png",
+      "sha256": "620f090645e427ac80f01e228cbdd93a4c40d06567f845d468a1a6b8d397c327",
+      "mimeType": "image/png",
+      "width": 1448,
+      "height": 1086,
+      "length": 3605028,
+      "alt": "Mallow Abbey buildings, orchard, paths, and apiary without baked labels or markers.",
+      "provenance": {
+        "kind": "generated",
+        "credit": "OpenAI image generation",
+        "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/mallow-abbey-map-v1.png",
+        "reviewedOn": "2026-09-12",
+        "version": 1
+      },
+      "previousActiveMap": null,
+      "bindingPlan": {
+        "componentId": "game.core.world.map.visual",
+        "expectedComponentRevision": 0,
+        "expectedDisposition": "add-if-absent",
+        "valueTemplate": {
+          "status": "active",
+          "variants": {
+            "player": {
+              "sha256": "620f090645e427ac80f01e228cbdd93a4c40d06567f845d468a1a6b8d397c327",
+              "mimeType": "image/png",
+              "width": 1448,
+              "height": 1086,
+              "alt": "Mallow Abbey buildings, orchard, paths, and apiary without baked labels or markers.",
+              "caption": "",
+              "order": 0,
+              "provenance": {
+                "kind": "generated",
+                "credit": "OpenAI image generation",
+                "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/mallow-abbey-map-v1.png",
+                "reviewedOn": "2026-09-12",
+                "version": 1
+              }
+            },
+            "dm": {
+              "sha256": "620f090645e427ac80f01e228cbdd93a4c40d06567f845d468a1a6b8d397c327",
+              "mimeType": "image/png",
+              "width": 1448,
+              "height": 1086,
+              "alt": "Mallow Abbey buildings, orchard, paths, and apiary without baked labels or markers.",
+              "caption": "",
+              "order": 0,
+              "provenance": {
+                "kind": "generated",
+                "credit": "OpenAI image generation",
+                "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/mallow-abbey-map-v1.png",
+                "reviewedOn": "2026-09-12",
+                "version": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "logicalAssetKey": "caldris.scene.gilded-kettle-rainy-common-room.v1",
+      "kind": "scene",
+      "ownerLocationId": "location.caldris.gilded-kettle",
+      "parentLocationId": null,
+      "mapAnchor": null,
+      "mediaId": "scene-gilded-kettle-rainy-common-room-v1",
+      "role": "scene",
+      "visibility": [
+        "player",
+        "dm"
+      ],
+      "activationDisposition": "retained-inert-until-explicit-scene-use",
+      "relativePath": "gilded-kettle-rainy-common-room-v1.png",
+      "sha256": "cbcde4250262c0fac2ec9dc37c29fee36c72ffa7506dbfa3a16ff237bc8db6a1",
+      "mimeType": "image/png",
+      "width": 1536,
+      "height": 1024,
+      "length": 2925307,
+      "alt": "A rain-darkened common room at the Gilded Kettle, warm and crowded, with wet cloaks and copper pots.",
+      "provenance": {
+        "kind": "generated",
+        "credit": "OpenAI image generation",
+        "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/gilded-kettle-rainy-common-room-v1.png",
+        "reviewedOn": "2026-09-12",
+        "version": 1
+      },
+      "previousActiveMap": null,
+      "bindingPlan": {
+        "componentId": "game.core.media.visual",
+        "expectedDisposition": "merge-by-media-id-with-current-CAS",
+        "attachment": {
+          "role": "scene",
+          "visibility": [
+            "player",
+            "dm"
+          ],
+          "sha256": "cbcde4250262c0fac2ec9dc37c29fee36c72ffa7506dbfa3a16ff237bc8db6a1",
+          "mimeType": "image/png",
+          "width": 1536,
+          "height": 1024,
+          "alt": "A rain-darkened common room at the Gilded Kettle, warm and crowded, with wet cloaks and copper pots.",
+          "caption": "",
+          "order": 10,
+          "provenance": {
+            "kind": "generated",
+            "credit": "OpenAI image generation",
+            "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/gilded-kettle-rainy-common-room-v1.png",
+            "reviewedOn": "2026-09-12",
+            "version": 1
+          }
+        }
+      }
+    },
+    {
+      "logicalAssetKey": "caldris.scene.weir-bridge-rainy-toll.v1",
+      "kind": "scene",
+      "ownerLocationId": "location.caldris.atlas.weir-bridge",
+      "parentLocationId": null,
+      "mapAnchor": null,
+      "mediaId": "scene-weir-bridge-rainy-toll-v1",
+      "role": "scene",
+      "visibility": [
+        "player",
+        "dm"
+      ],
+      "activationDisposition": "retained-inert-until-explicit-scene-use",
+      "relativePath": "weir-bridge-rainy-toll-v1.png",
+      "sha256": "f494acf0eadbe8bf17cb3a34f31dc08e4c84b08d1474592b4f9b2495b0b870d2",
+      "mimeType": "image/png",
+      "width": 1536,
+      "height": 1024,
+      "length": 3486329,
+      "alt": "A rainy approach to Weir Bridge and its modest toll barrier, with no named characters or secret markers.",
+      "provenance": {
+        "kind": "generated",
+        "credit": "OpenAI image generation",
+        "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/weir-bridge-rainy-toll-v1.png",
+        "reviewedOn": "2026-09-12",
+        "version": 1
+      },
+      "previousActiveMap": null,
+      "bindingPlan": {
+        "componentId": "game.core.media.visual",
+        "expectedDisposition": "merge-by-media-id-with-current-CAS",
+        "attachment": {
+          "role": "scene",
+          "visibility": [
+            "player",
+            "dm"
+          ],
+          "sha256": "f494acf0eadbe8bf17cb3a34f31dc08e4c84b08d1474592b4f9b2495b0b870d2",
+          "mimeType": "image/png",
+          "width": 1536,
+          "height": 1024,
+          "alt": "A rainy approach to Weir Bridge and its modest toll barrier, with no named characters or secret markers.",
+          "caption": "",
+          "order": 10,
+          "provenance": {
+            "kind": "generated",
+            "credit": "OpenAI image generation",
+            "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/weir-bridge-rainy-toll-v1.png",
+            "reviewedOn": "2026-09-12",
+            "version": 1
+          }
+        }
+      }
+    },
+    {
+      "logicalAssetKey": "caldris.scene.north-bell-tower-before-noon.v1",
+      "kind": "scene",
+      "ownerLocationId": "location.caldris.north-bell-tower",
+      "parentLocationId": null,
+      "mapAnchor": null,
+      "mediaId": "scene-north-bell-tower-before-noon-v1",
+      "role": "scene",
+      "visibility": [
+        "player",
+        "dm"
+      ],
+      "activationDisposition": "retained-inert-until-explicit-scene-use",
+      "relativePath": "north-bell-tower-before-noon-v1.png",
+      "sha256": "19b1280d6b62ccf77e4f0d887bb27b5637c1176d184afad194a07f5a7e85f521",
+      "mimeType": "image/png",
+      "width": 1536,
+      "height": 1024,
+      "length": 3373851,
+      "alt": "The North Bell Tower before noon, its bell rope and timber mechanism visible without revealing the mystery.",
+      "provenance": {
+        "kind": "generated",
+        "credit": "OpenAI image generation",
+        "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/north-bell-tower-before-noon-v1.png",
+        "reviewedOn": "2026-09-12",
+        "version": 1
+      },
+      "previousActiveMap": null,
+      "bindingPlan": {
+        "componentId": "game.core.media.visual",
+        "expectedDisposition": "merge-by-media-id-with-current-CAS",
+        "attachment": {
+          "role": "scene",
+          "visibility": [
+            "player",
+            "dm"
+          ],
+          "sha256": "19b1280d6b62ccf77e4f0d887bb27b5637c1176d184afad194a07f5a7e85f521",
+          "mimeType": "image/png",
+          "width": 1536,
+          "height": 1024,
+          "alt": "The North Bell Tower before noon, its bell rope and timber mechanism visible without revealing the mystery.",
+          "caption": "",
+          "order": 10,
+          "provenance": {
+            "kind": "generated",
+            "credit": "OpenAI image generation",
+            "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/north-bell-tower-before-noon-v1.png",
+            "reviewedOn": "2026-09-12",
+            "version": 1
+          }
+        }
+      }
+    }
+  ],
+  "locationCreates": [
+    {
+      "id": "location.caldris.gilded-kettle.common-room",
+      "name": "Common Room",
+      "container": {
+        "id": "location.caldris.gilded-kettle",
+        "slot": "location"
+      },
+      "components": {
+        "game.core.world.location": {
+          "kind": "site",
+          "status": "active",
+          "summary": "The inn’s broad common room, with crowded tables, a hearth, and sightlines to the stair and serving hatch.",
+          "visibility": "public"
+        },
+        "game.core.world.map.anchor": {
+          "x": 300,
+          "y": 440
+        }
+      }
+    },
+    {
+      "id": "location.caldris.gilded-kettle.kitchen",
+      "name": "Kitchen",
+      "container": {
+        "id": "location.caldris.gilded-kettle",
+        "slot": "location"
+      },
+      "components": {
+        "game.core.world.location": {
+          "kind": "site",
+          "status": "active",
+          "summary": "The working kitchen behind the common room, lined with copper pots and a hot range.",
+          "visibility": "public"
+        },
+        "game.core.world.map.anchor": {
+          "x": 650,
+          "y": 250
+        }
+      }
+    },
+    {
+      "id": "location.caldris.gilded-kettle.pantry",
+      "name": "Pantry",
+      "container": {
+        "id": "location.caldris.gilded-kettle",
+        "slot": "location"
+      },
+      "components": {
+        "game.core.world.location": {
+          "kind": "site",
+          "status": "active",
+          "summary": "A compact pantry of dry goods, preserves, and shelves beside the kitchen.",
+          "visibility": "public"
+        },
+        "game.core.world.map.anchor": {
+          "x": 675,
+          "y": 520
+        }
+      }
+    },
+    {
+      "id": "location.caldris.gilded-kettle.yard",
+      "name": "Inn Yard",
+      "container": {
+        "id": "location.caldris.gilded-kettle",
+        "slot": "location"
+      },
+      "components": {
+        "game.core.world.location": {
+          "kind": "site",
+          "status": "active",
+          "summary": "The service yard behind the inn, reached from the kitchen and the lane.",
+          "visibility": "public"
+        },
+        "game.core.world.map.anchor": {
+          "x": 850,
+          "y": 420
+        }
+      }
+    },
+    {
+      "id": "location.caldris.gilded-kettle.cloak-porch",
+      "name": "Cloak Porch",
+      "container": {
+        "id": "location.caldris.gilded-kettle",
+        "slot": "location"
+      },
+      "components": {
+        "game.core.world.location": {
+          "kind": "site",
+          "status": "active",
+          "summary": "The covered entrance where guests shed rainwater and hang wet cloaks.",
+          "visibility": "public"
+        },
+        "game.core.world.map.anchor": {
+          "x": 455,
+          "y": 760
+        }
+      }
+    },
+    {
+      "id": "location.caldris.atlas.weir-bridge.west-toll-yard",
+      "name": "West Toll Yard",
+      "container": {
+        "id": "location.caldris.atlas.weir-bridge",
+        "slot": "location"
+      },
+      "components": {
+        "game.core.world.location": {
+          "kind": "site",
+          "status": "active",
+          "summary": "The cobbled western approach between Bridge House and the bridge.",
+          "visibility": "public"
+        },
+        "game.core.world.map.anchor": {
+          "x": 330,
+          "y": 385
+        }
+      }
+    },
+    {
+      "id": "location.caldris.atlas.weir-bridge.toll-barrier",
+      "name": "Toll Barrier",
+      "container": {
+        "id": "location.caldris.atlas.weir-bridge",
+        "slot": "location"
+      },
+      "components": {
+        "game.core.world.location": {
+          "kind": "site",
+          "status": "active",
+          "summary": "The working barrier where lawful bridge tolls are collected.",
+          "visibility": "public"
+        },
+        "game.core.world.map.anchor": {
+          "x": 420,
+          "y": 455
+        }
+      }
+    },
+    {
+      "id": "location.caldris.atlas.weir-bridge.river-stairs",
+      "name": "River Stairs",
+      "container": {
+        "id": "location.caldris.atlas.weir-bridge",
+        "slot": "location"
+      },
+      "components": {
+        "game.core.world.location": {
+          "kind": "site",
+          "status": "active",
+          "summary": "Wet stone steps descending from the bridge approach to the narrow Weir.",
+          "visibility": "public"
+        },
+        "game.core.world.map.anchor": {
+          "x": 610,
+          "y": 650
+        }
+      }
+    },
+    {
+      "id": "location.caldris.atlas.weir-bridge.east-landing",
+      "name": "East Landing",
+      "container": {
+        "id": "location.caldris.atlas.weir-bridge",
+        "slot": "location"
+      },
+      "components": {
+        "game.core.world.location": {
+          "kind": "site",
+          "status": "active",
+          "summary": "The eastern landing where the road leaves the bridge and divides around the bank.",
+          "visibility": "public"
+        },
+        "game.core.world.map.anchor": {
+          "x": 825,
+          "y": 450
+        }
+      }
+    },
+    {
+      "id": "location.caldris.bramblebridge.mallow-abbey.chapel",
+      "name": "Abbey Chapel",
+      "container": {
+        "id": "location.caldris.bramblebridge.mallow-abbey",
+        "slot": "location"
+      },
+      "components": {
+        "game.core.world.location": {
+          "kind": "site",
+          "status": "active",
+          "summary": "The small working chapel at the center of Mallow Abbey.",
+          "visibility": "public"
+        },
+        "game.core.world.map.anchor": {
+          "x": 505,
+          "y": 360
+        }
+      }
+    },
+    {
+      "id": "location.caldris.bramblebridge.mallow-abbey.hospice-wing",
+      "name": "Hospice Wing",
+      "container": {
+        "id": "location.caldris.bramblebridge.mallow-abbey",
+        "slot": "location"
+      },
+      "components": {
+        "game.core.world.location": {
+          "kind": "site",
+          "status": "active",
+          "summary": "The abbey wing used for beds, remedies, and travelers needing quiet care.",
+          "visibility": "public"
+        },
+        "game.core.world.map.anchor": {
+          "x": 650,
+          "y": 420
+        }
+      }
+    },
+    {
+      "id": "location.caldris.bramblebridge.mallow-abbey.archive-room",
+      "name": "Archive Room",
+      "container": {
+        "id": "location.caldris.bramblebridge.mallow-abbey",
+        "slot": "location"
+      },
+      "components": {
+        "game.core.world.location": {
+          "kind": "site",
+          "status": "active",
+          "summary": "A dry stone room where local charters and copied records are stabilized.",
+          "visibility": "public"
+        },
+        "game.core.world.map.anchor": {
+          "x": 610,
+          "y": 520
+        }
+      }
+    },
+    {
+      "id": "location.caldris.bramblebridge.mallow-abbey.apiary",
+      "name": "Abbey Apiary",
+      "container": {
+        "id": "location.caldris.bramblebridge.mallow-abbey",
+        "slot": "location"
+      },
+      "components": {
+        "game.core.world.location": {
+          "kind": "site",
+          "status": "active",
+          "summary": "The abbey’s working hives and sheltered bee yard.",
+          "visibility": "public"
+        },
+        "game.core.world.map.anchor": {
+          "x": 315,
+          "y": 265
+        }
+      }
+    },
+    {
+      "id": "location.caldris.bramblebridge.mallow-abbey.orchard",
+      "name": "Abbey Orchard",
+      "container": {
+        "id": "location.caldris.bramblebridge.mallow-abbey",
+        "slot": "location"
+      },
+      "components": {
+        "game.core.world.location": {
+          "kind": "site",
+          "status": "active",
+          "summary": "An old orchard crossed by footpaths beside the abbey buildings.",
+          "visibility": "public"
+        },
+        "game.core.world.map.anchor": {
+          "x": 255,
+          "y": 560
+        }
+      }
+    }
+  ],
+  "namespaceProposal": {
+    "id": "clue.caldris",
+    "status": "reviewed-registration-required-before-import",
+    "authorizedBy": "docs/current/GAMEPLAY-EXPERIENCE-PLAN.md"
+  },
+  "deployment": {
+    "preconditions": [
+      "Verify the live state-space and each existing component revision/hash against authority and previousActiveMap.",
+      "Retain a database backup and every current blob before mutation.",
+      "Land the P2 site/interior map-parent validator change.",
+      "Resolve the authored map.visual schema versus the registered live hash-bearing schema before import."
+    ],
+    "order": [
+      "Upload all 11 PNG files to content-addressed blob storage and verify SHA-256 and byte length.",
+      "Create the 14 locations, then their containment and map.anchor components with expected absence.",
+      "Apply eight map.visual bindings with exact component CAS; preserve both player and DM variants on one terrain master.",
+      "Retain the three scene attachments but leave them unbound until explicit scene use.",
+      "Import prepared-situation clue entities and relationships as unrevealed GM content.",
+      "Read back entity, component, containment, relationship, blob, and audience projections before activation."
+    ],
+    "rollback": [
+      "Restore each of the six replaced map.visual values from previousActiveMap through a new version-checked operation.",
+      "Remove only newly created records that are still unreferenced, using supported versioned operations.",
+      "Do not delete retained blobs or rewrite operation history."
+    ],
+    "knownContractDependencies": [
+      "P2 must accept direct map-owning parents of kind site or interior.",
+      "The live registered game.core.world.map.visual schema stores content-addressed metadata, while the authored catalog schema currently stores assetKey and alt; coordinator must choose and migrate one contract."
+    ]
+  }
+}
