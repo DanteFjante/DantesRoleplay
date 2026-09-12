@@ -323,6 +323,13 @@ Implementation anchors: [AI contracts](../../DantesRoleplay.LocalAI/Contracts/Ai
 - Play-facing continuity must retain exact visible replies, situations, and supported durable
   truth assertions with provenance. These records supplement context and do not substitute for
   verified component effects.
+- Explicitly linked outer-AI messages use a separate private journal under play recording, with
+  immutable principal/application/state/session and source-thread bindings. The pinned Codex
+  helper preserves visible message IDs/text, queues delivery durably, commits before acknowledgement,
+  and respects disconnect across restarts. Retry and archive/delete controls remain scoped.
+  An application-owned conversation-dream procedure can read an exact journal revision/message
+  selection and retain a private derived candidate with durable task and source evidence. It
+  cannot promote conversation text to played events or widen its audience automatically.
 - System tasks must retain their steps, exact capability contracts, plan/proposal fingerprints,
   confirmation state, execution receipts, and terminal/partial outcomes. Supported workflows must
   allow preparation and inspection before authorized execution and support recovery. Execution

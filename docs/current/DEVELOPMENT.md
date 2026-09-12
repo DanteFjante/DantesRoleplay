@@ -350,6 +350,22 @@ The command verifies length, media signature, and SHA-256 during upload, then re
 the finalized bytes. It does not change ECS associations or delete sources. Backups and restores of
 a runtime database must include both the SQLite file and its adjacent `blobs/` directory.
 
+## Linked outer-AI conversation memory
+
+Keep captured Codex messages in the private play-recording journal, separate from authoritative
+play messages and ordinary planning history. A host binding fixes the principal, application,
+state space, gameplay session, project, repository and source thread. The pinned `capture-memory`
+helper must use a matching current release; its explicit connect, hook, and retry paths preserve
+the checkpoint across failures, serialize concurrent delivery, commit before acknowledgement,
+and never reconnect a disconnected journal implicitly. Do not capture engineering tasks as play.
+
+The executable dream procedure is exactly `{application}.procedure.conversation-dream` in the
+active application catalog. Its reviewed `governs: system capability system.conversation-memory`
+declaration permits only the scoped read capability. The shared system manual is guidance;
+standing grants and durable targets retain same-application ownership. Derived output remains
+private, revision-bound review material with source IDs and actual terminal task evidence.
+See the canonical conversation-memory and conversation-dream manuals for operation contracts.
+
 ## Published web bundles
 
 The published D&D game website is read-only until the user explicitly approves website editing.
