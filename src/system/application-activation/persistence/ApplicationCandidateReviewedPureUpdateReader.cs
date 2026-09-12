@@ -161,7 +161,7 @@ internal sealed class ApplicationCandidateReviewedPureUpdateReader(
         return broader ? (predecessors.ToImmutable(), hasNew) : null;
     }
 
-    private static bool TaskScopeMatches(SystemTaskCompletedValidationProof proof, InteractionInvocationHost host,
+    internal static bool TaskScopeMatches(SystemTaskCompletedValidationProof proof, InteractionInvocationHost host,
         ApplicationCandidateReference candidate, ApplicationCandidateRetainedMetadata retained, string causalCommand)
     {
         var invocation = proof.Snapshot.Request.Invocation;
@@ -179,7 +179,7 @@ internal sealed class ApplicationCandidateReviewedPureUpdateReader(
             && invocation.Profile == InteractionExecutionProfile.ReadOnly;
     }
 
-    private static bool TryReadJudgment(SystemTaskCompletedValidationProof proof,
+    internal static bool TryReadJudgment(SystemTaskCompletedValidationProof proof,
         SystemTaskValidationAuthority authority, out ApplicationCandidateReuseJudgmentOutputV2? judgment)
     {
         judgment = null;
@@ -189,18 +189,18 @@ internal sealed class ApplicationCandidateReviewedPureUpdateReader(
             var resultHash = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(result)));
             if (proof.Snapshot.CompletionEvidenceReference != "validation.result." + resultHash
                 || proof.Snapshot.Evidence.Count != 2
-                || !proof.Snapshot.Evidence.Contains(authority.PureClosure!.EvidenceFingerprint, StringComparer.Ordinal)
+                || !proof.Snapshot.Evidence.Contains(authority.ReviewClosure!.EvidenceFingerprint, StringComparer.Ordinal)
                 || !proof.Snapshot.Evidence.Contains(authority.Profile!.ManualContext.Reference, StringComparer.Ordinal))
                 return false;
             using var resultDocument = JsonDocument.Parse(result);
             var root = resultDocument.RootElement;
             if (root.GetProperty("format").GetString() != "dantes-roleplay/application-candidate-reuse-review-result/v1"
-                || root.GetProperty("closureEvidenceFingerprint").GetString() != authority.PureClosure.EvidenceFingerprint
+                || root.GetProperty("closureEvidenceFingerprint").GetString() != authority.ReviewClosure.EvidenceFingerprint
                 || root.GetProperty("inputFingerprint").GetString() != authority.ReviewInput!.InputFingerprint
                 || !SameTask(root.GetProperty("task"), proof.Snapshot.Request.Handle)
                 || !SameAttempt(root.GetProperty("attempt"), proof.Attempt)
                 || InteractionCanonicalJson.Canonicalize(root.GetProperty("candidate").GetRawText())
-                    != InteractionCanonicalJson.Canonicalize(JsonSerializer.Serialize(authority.PureClosure.Candidate,
+                    != InteractionCanonicalJson.Canonicalize(JsonSerializer.Serialize(authority.ReviewClosure.Candidate,
                         new JsonSerializerOptions(JsonSerializerDefaults.Web))))
                 return false;
             judgment = ApplicationCandidateReuseJudgmentOutputV2.Parse(
