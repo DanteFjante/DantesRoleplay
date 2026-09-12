@@ -102,7 +102,7 @@ internal sealed class ApplicationCandidateStatefulUpdateReader(
                 return null;
             return ApplicationCandidateStatefulUpdateEvidence.Create(retained, basis, successor, predecessor,
                 requirements, definition, new(predecessor.Summary.QualifiedId, predecessor.Summary.Kind,
-                    predecessor.Summary.Version, predecessor.Summary.ContentFingerprint));
+                    predecessor.Summary.Version, predecessor.Summary.ContentFingerprint), target);
         }
         catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or JsonException
             or ApplicationActivationException or ApplicationCatalogMaterializationException)
@@ -136,15 +136,16 @@ internal sealed class ApplicationCandidateStatefulUpdateReader(
         record.SourceId, record.SourceLogicalPath), record.ContentJson);
 }
 
-internal sealed class ApplicationCandidateStatefulUpdateEvidence
+internal sealed class ApplicationCandidateStatefulUpdateEvidence : IApplicationCandidateStatefulRuntimeEvidence
 {
     private ApplicationCandidateStatefulUpdateEvidence(ApplicationCandidateRetainedMetadata retained,
         ActiveApplicationManifest basis, CatalogRecordView successor, CatalogRecordView predecessor,
         MechanicRequirements requirements, StandingGrantDefinitionReference definition,
-        StandingGrantDefinitionReference predecessorDefinition)
+        StandingGrantDefinitionReference predecessorDefinition, StandingGrantDefinitionTarget candidateTarget)
     {
         Retained = retained; Basis = basis; Successor = successor; Predecessor = predecessor;
         Requirements = requirements; Definition = definition; PredecessorDefinition = predecessorDefinition;
+        CandidateTarget = candidateTarget;
         Fingerprint = InteractionCanonicalJson.Fingerprint("dantes-roleplay/stateful-atomic-body-update/v1",
             InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
             {
@@ -163,13 +164,22 @@ internal sealed class ApplicationCandidateStatefulUpdateEvidence
     internal MechanicRequirements Requirements { get; }
     internal StandingGrantDefinitionReference Definition { get; }
     internal StandingGrantDefinitionReference PredecessorDefinition { get; }
+    ApplicationCandidateReference IApplicationCandidateStatefulRuntimeEvidence.Candidate => Candidate;
+    ActiveApplicationManifest IApplicationCandidateStatefulRuntimeEvidence.Basis => Basis;
+    CatalogRecordView IApplicationCandidateStatefulRuntimeEvidence.Successor => Successor;
+    MechanicRequirements IApplicationCandidateStatefulRuntimeEvidence.Requirements => Requirements;
+    StandingGrantDefinitionReference IApplicationCandidateStatefulRuntimeEvidence.Definition => Definition;
+    StandingGrantDefinitionReference? IApplicationCandidateStatefulRuntimeEvidence.PredecessorDefinition => PredecessorDefinition;
+    public StandingGrantDefinitionTarget CandidateTarget { get; }
+    public System.Collections.Immutable.ImmutableArray<StandingGrantDefinitionReference> Dependencies => [];
     internal ApplicationCandidateReference Candidate => new(Retained.ApplicationRevision.ApplicationId,
         Retained.RevisionRow.CandidateId, Retained.RevisionRow.Revision, Retained.RevisionRow.ContentFingerprint);
     internal string Fingerprint { get; }
+    string IApplicationCandidateStatefulRuntimeEvidence.Fingerprint => Fingerprint;
 
     internal static ApplicationCandidateStatefulUpdateEvidence Create(ApplicationCandidateRetainedMetadata retained,
         ActiveApplicationManifest basis, CatalogRecordView successor, CatalogRecordView predecessor,
         MechanicRequirements requirements, StandingGrantDefinitionReference definition,
-        StandingGrantDefinitionReference predecessorDefinition) =>
-        new(retained, basis, successor, predecessor, requirements, definition, predecessorDefinition);
+        StandingGrantDefinitionReference predecessorDefinition, StandingGrantDefinitionTarget candidateTarget) =>
+        new(retained, basis, successor, predecessor, requirements, definition, predecessorDefinition, candidateTarget);
 }

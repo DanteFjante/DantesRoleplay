@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using DantesRoleplay.ApplicationActivation;
 using DantesRoleplay.Applications;
 using DantesRoleplay.Authorization;
@@ -25,13 +26,15 @@ internal sealed record ApplicationCandidateStatefulSampleResult(
 internal sealed record ApplicationCandidateStatefulRuntimeReport(
     ApplicationCandidateReference Candidate, string UpdateFingerprint,
     string PolicyVersion, string PolicyFingerprint,
-    StandingGrantDefinitionReference RootPredecessor,
+    StandingGrantDefinitionReference? RootPredecessor,
     IReadOnlyList<StandingGrantDefinitionReference> Dependencies,
     string StateGrantReference, string StateGrantFingerprint,
     IReadOnlyList<string> EffectKinds,
-    IReadOnlyList<ApplicationCandidateStatefulSampleResult> Samples);
+    IReadOnlyList<ApplicationCandidateStatefulSampleResult> Samples,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    IReadOnlyList<EcsComponentReference>? ComponentTypes = null);
 
-/// <summary>Runs exact existing atomic body replacements through the real stateful execution owners without committing.</summary>
+/// <summary>Runs an owner-proved stateful atomic candidate through the real execution owners without committing.</summary>
 internal sealed class ApplicationCandidateStatefulRuntimeValidator(
     DantesRoleplayDbContext db,
     IApplicationActivationReader activations,
@@ -43,15 +46,30 @@ internal sealed class ApplicationCandidateStatefulRuntimeValidator(
     IApplicationEcsEffectApplier effects,
     IStandingGrantReadCandidateReader grantCandidates,
     IStandingGrantTargetResolver targets,
-    IStandingGrantPolicy grants)
+    IStandingGrantPolicy grants,
+    IApplicationComponentTypeRegistry? componentTypes = null)
 {
-    internal const string PolicyVersion = "stateful-atomic-body-runtime-v1";
+    internal const string PolicyVersion = "stateful-atomic-runtime-v2";
     internal static readonly string PolicyFingerprint = InteractionCanonicalJson.Fingerprint(
-        "dantes-roleplay/stateful-atomic-body-runtime-policy/v1",
-        "candidate-overlay|active-children|projection-v1|jint-default|retained-typed-batch|ecs-dry-run|current-read-execute-grant");
+        "dantes-roleplay/stateful-atomic-runtime-policy/v2",
+        "candidate-overlay|active-children|projection-v1|jint-default|retained-typed-batch|current-component-schemas|ecs-dry-run|current-read-execute-grant");
 
     internal async Task<ApplicationCandidateStatefulRuntimeReport?> ValidateAsync(
         ApplicationCandidateStatefulUpdateEvidence update,
+        IReadOnlyList<ApplicationCandidateValidationSample> samples,
+        InteractionInvocationHost authoringHost,
+        CancellationToken cancellationToken)
+        => await ValidateCoreAsync(update, samples, authoringHost, cancellationToken);
+
+    internal async Task<ApplicationCandidateStatefulRuntimeReport?> ValidateAsync(
+        ApplicationCandidateStatefulReviewClosureEvidence update,
+        IReadOnlyList<ApplicationCandidateValidationSample> samples,
+        InteractionInvocationHost authoringHost,
+        CancellationToken cancellationToken)
+        => await ValidateCoreAsync(update, samples, authoringHost, cancellationToken);
+
+    private async Task<ApplicationCandidateStatefulRuntimeReport?> ValidateCoreAsync(
+        IApplicationCandidateStatefulRuntimeEvidence update,
         IReadOnlyList<ApplicationCandidateValidationSample> samples,
         InteractionInvocationHost authoringHost,
         CancellationToken cancellationToken)
@@ -66,6 +84,7 @@ internal sealed class ApplicationCandidateStatefulRuntimeValidator(
         StandingGrantRevision? selectedGrant = null;
         var results = new List<ApplicationCandidateStatefulSampleResult>(samples.Count);
         var effectKinds = new SortedSet<string>(StringComparer.Ordinal);
+        var componentPins = new HashSet<EcsComponentReference>();
         for (var index = 0; index < samples.Count; index++)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -74,7 +93,7 @@ internal sealed class ApplicationCandidateStatefulRuntimeValidator(
             if (state is null || !SameRevision(state.ApplicationRevision, authoringHost.ApplicationRevision)
                 || state.ManifestFingerprint != update.Basis.ActivationFingerprint
                 || InteractionStateRevision.From(state) != sample.StateRevision) return null;
-            var grant = await SelectGrantAsync(authoringHost, state, update.PredecessorDefinition, cancellationToken);
+            var grant = await SelectGrantAsync(authoringHost, state, update, cancellationToken);
             if (grant is null || selectedGrant is not null && (selectedGrant.GrantReference != grant.GrantReference
                     || selectedGrant.ContentFingerprint != grant.ContentFingerprint)) return null;
             selectedGrant = grant;
@@ -101,6 +120,9 @@ internal sealed class ApplicationCandidateStatefulRuntimeValidator(
             var batchJson = InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(built.Batch));
             if (actualData != sample.ExpectedDataJson || actualEffects != sample.ExpectedEffectsJson) return null;
             foreach (var effect in built.Batch.Effects) effectKinds.Add(effect.Type);
+            foreach (var component in built.Batch.ComponentExpectations.Select(value => value.ComponentType)
+                .Concat(built.Batch.Effects.Where(value => value.ComponentType is not null)
+                    .Select(value => value.ComponentType!))) componentPins.Add(component);
             var dryRun = await effects.ApplyAsync(built.Batch, dryRun: true, cancellationToken);
             if (!dryRun.Valid || !dryRun.DryRun || dryRun.Applied || dryRun.Replayed) return null;
             results.Add(new(update.Definition, index, state.StateSpaceId, sample.StateRevision!,
@@ -111,25 +133,36 @@ internal sealed class ApplicationCandidateStatefulRuntimeValidator(
         }
         if (selectedGrant is null || !effectKinds.All(value => selectedGrant.EffectKinds.Contains(value, StringComparer.Ordinal)))
             return null;
+        var retainedComponents = componentTypes is null ? null : componentPins
+            .OrderBy(value => value.QualifiedTypeId, StringComparer.Ordinal).ThenBy(value => value.TypeVersion).ToArray();
+        if (retainedComponents is not null && !CurrentComponents(retainedComponents)) return null;
         // Re-evaluate actual current authority with the produced effect kinds. Sample data never supplies authority.
         foreach (var sample in samples)
         {
             var state = stateSpaces.Get(sample.StateSpaceId!)!;
             var stateHost = StateHost(authoringHost, state, selectedGrant.GrantReference);
-            var resolved = await targets.ResolveAsync(stateHost, update.PredecessorDefinition, cancellationToken);
-            if (resolved is not { Status: StandingGrantTargetResolutionStatus.Available, Target: { } target }) return null;
-            foreach (var capability in new[] { StandingGrantCapability.Read, StandingGrantCapability.Execute })
+            if (update.PredecessorDefinition is { } predecessor)
             {
-                var decision = await EvaluateAuthorityAsync(stateHost,
-                    new(capability, StandingGrantScope.StateSpace, [target],
-                        capability == StandingGrantCapability.Execute ? effectKinds.ToArray() : []), cancellationToken);
-                if (!decision.Allowed || decision.Grant?.GrantReference != selectedGrant.GrantReference
-                    || decision.Grant.ContentFingerprint != selectedGrant.ContentFingerprint) return null;
+                var resolved = await targets.ResolveAsync(stateHost, predecessor, cancellationToken);
+                if (resolved is not { Status: StandingGrantTargetResolutionStatus.Available, Target: { } target }
+                    || !await HasAuthorityAsync(stateHost, selectedGrant, [target],
+                        effectKinds.ToArray(), cancellationToken)) return null;
             }
+            else if (!StandingGrantContractRules.MatchesDefinitionAllowance(
+                         update.Candidate.ApplicationId, selectedGrant.Definitions, update.CandidateTarget)) return null;
+            var dependencyTargets = new List<StandingGrantDefinitionTarget>();
+            foreach (var dependency in dependencies.Where(value => value != update.PredecessorDefinition))
+            {
+                var resolved = await targets.ResolveAsync(stateHost, dependency, cancellationToken);
+                if (resolved is not { Status: StandingGrantTargetResolutionStatus.Available, Target: { } target }) return null;
+                dependencyTargets.Add(target);
+            }
+            if (dependencyTargets.Count > 0 && !await HasAuthorityAsync(stateHost, selectedGrant,
+                    dependencyTargets, effectKinds.ToArray(), cancellationToken)) return null;
         }
         return new(update.Candidate, update.Fingerprint, PolicyVersion, PolicyFingerprint,
             update.PredecessorDefinition, dependencies, selectedGrant.GrantReference,
-            selectedGrant.ContentFingerprint, effectKinds.ToArray(), results.AsReadOnly());
+            selectedGrant.ContentFingerprint, effectKinds.ToArray(), results.AsReadOnly(), retainedComponents);
     }
 
     internal async Task<bool> CurrentAsync(ApplicationCandidateStatefulUpdateEvidence update,
@@ -154,7 +187,29 @@ internal sealed class ApplicationCandidateStatefulRuntimeValidator(
         }
     }
 
-    private async Task<bool> CurrentCoreAsync(ApplicationCandidateStatefulUpdateEvidence update,
+    internal async Task<bool> CurrentAsync(ApplicationCandidateStatefulReviewClosureEvidence update,
+        ApplicationCandidateStatefulRuntimeReport report, InteractionInvocationHost host,
+        CancellationToken cancellationToken)
+    {
+        if (db.Database.CurrentTransaction is not null)
+            return await CurrentCoreAsync(update, report, host, cancellationToken);
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            var current = await CurrentCoreAsync(update, report, host, cancellationToken);
+            await transaction.RollbackAsync(CancellationToken.None);
+            db.ChangeTracker.Clear();
+            return current;
+        }
+        catch
+        {
+            await transaction.RollbackAsync(CancellationToken.None);
+            db.ChangeTracker.Clear();
+            throw;
+        }
+    }
+
+    private async Task<bool> CurrentCoreAsync(IApplicationCandidateStatefulRuntimeEvidence update,
         ApplicationCandidateStatefulRuntimeReport report, InteractionInvocationHost host,
         CancellationToken cancellationToken)
     {
@@ -164,15 +219,20 @@ internal sealed class ApplicationCandidateStatefulRuntimeValidator(
             || report.RootPredecessor != update.PredecessorDefinition || report.Samples.Count == 0
             || activation is null || !catalogs.TryGet(update.Candidate.ApplicationId, out var catalog)
             || Dependencies(update, catalog) is not { } dependencies
-            || !dependencies.SequenceEqual(report.Dependencies)) return false;
-        var activeDefinition = catalog.Inspect(new(update.Candidate.ApplicationId,
-            update.Candidate.ApplicationId.Value, update.Definition.DefinitionId));
+            || !dependencies.SequenceEqual(report.Dependencies)
+            || componentTypes is not null && (report.ComponentTypes is null
+                || !CurrentComponents(report.ComponentTypes))) return false;
+        CatalogRecordView? activeDefinition = null;
+        try { activeDefinition = catalog.Inspect(new(update.Candidate.ApplicationId,
+            update.Candidate.ApplicationId.Value, update.Definition.DefinitionId)); }
+        catch (KeyNotFoundException) { }
         var beforePublication = activation.ActivationFingerprint == update.Basis.ActivationFingerprint
-            && activeDefinition.Summary.ContentFingerprint == update.PredecessorDefinition.ContentFingerprint;
+            && (update.PredecessorDefinition is null ? activeDefinition is null
+                : activeDefinition?.Summary.ContentFingerprint == update.PredecessorDefinition.ContentFingerprint);
         var published = activation.CandidateManifestFingerprint == update.Candidate.ContentFingerprint
             && activation.ApplicationRevision == update.Basis.ApplicationRevision
             && activation.ApplicationFingerprint == update.Basis.ApplicationFingerprint
-            && activeDefinition.Summary == update.Successor.Summary;
+            && activeDefinition?.Summary == update.Successor.Summary;
         if (!beforePublication && !published) return false;
         var authorityDefinition = published ? update.Definition : update.PredecessorDefinition;
         foreach (var sample in report.Samples)
@@ -191,13 +251,23 @@ internal sealed class ApplicationCandidateStatefulRuntimeValidator(
             if (grant is null || grant.Revoked || grant.ExpiresAtUtc <= DateTime.UtcNow
                 || !report.EffectKinds.All(value => grant.EffectKinds.Contains(value, StringComparer.Ordinal))) return false;
             var stateHost = StateHost(host, state, grant.GrantReference);
-            var resolved = await targets.ResolveAsync(stateHost, authorityDefinition, cancellationToken);
-            if (resolved is not { Status: StandingGrantTargetResolutionStatus.Available, Target: { } target }) return false;
-            foreach (var capability in new[] { StandingGrantCapability.Read, StandingGrantCapability.Execute })
-                if (!(await grants.EvaluateAsync(stateHost,
-                        new(capability, StandingGrantScope.StateSpace, [target],
-                            capability == StandingGrantCapability.Execute ? report.EffectKinds : []), cancellationToken)).Allowed)
-                    return false;
+            if (authorityDefinition is { } currentDefinition)
+            {
+                var resolved = await targets.ResolveAsync(stateHost, currentDefinition, cancellationToken);
+                if (resolved is not { Status: StandingGrantTargetResolutionStatus.Available, Target: { } target }
+                    || !await HasAuthorityAsync(stateHost, grant, [target], report.EffectKinds, cancellationToken)) return false;
+            }
+            else if (!StandingGrantContractRules.MatchesDefinitionAllowance(
+                         update.Candidate.ApplicationId, grant.Definitions, update.CandidateTarget)) return false;
+            var dependencyTargets = new List<StandingGrantDefinitionTarget>();
+            foreach (var dependency in report.Dependencies.Where(value => value != update.PredecessorDefinition))
+            {
+                var resolved = await targets.ResolveAsync(stateHost, dependency, cancellationToken);
+                if (resolved is not { Status: StandingGrantTargetResolutionStatus.Available, Target: { } target }) return false;
+                dependencyTargets.Add(target);
+            }
+            if (dependencyTargets.Count > 0 && !await HasAuthorityAsync(
+                    stateHost, grant, dependencyTargets, report.EffectKinds, cancellationToken)) return false;
             var dryRun = await db.Operations.AsNoTracking().SingleOrDefaultAsync(
                 value => value.Id == sample.DryRunOperationId, cancellationToken);
             if (dryRun is null || !DryRunMatches(dryRun, sample, update.Definition)) return false;
@@ -266,7 +336,7 @@ internal sealed class ApplicationCandidateStatefulRuntimeValidator(
     }
 
     private async Task<StandingGrantRevision?> SelectGrantAsync(InteractionInvocationHost host, StateSpaceView state,
-        StandingGrantDefinitionReference predecessor, CancellationToken cancellationToken)
+        IApplicationCandidateStatefulRuntimeEvidence update, CancellationToken cancellationToken)
     {
         var candidates = await grantCandidates.ReadAsync(host.Principal, host.ApplicationRevision.ApplicationId,
             StandingGrantScope.StateSpace, state.StateSpaceId,
@@ -276,15 +346,44 @@ internal sealed class ApplicationCandidateStatefulRuntimeValidator(
         {
             if (grant.Revoked || grant.ExpiresAtUtc <= DateTime.UtcNow) continue;
             var stateHost = StateHost(host, state, grant.GrantReference);
-            var resolved = await targets.ResolveAsync(stateHost, predecessor, cancellationToken);
-            if (resolved is not { Status: StandingGrantTargetResolutionStatus.Available, Target: { } target }) continue;
-            var read = await grants.EvaluateAsync(stateHost,
-                new(StandingGrantCapability.Read, StandingGrantScope.StateSpace, [target], []), cancellationToken);
-            if (read.Allowed && read.Grant?.GrantReference == grant.GrantReference
-                && read.Grant.ContentFingerprint == grant.ContentFingerprint) return grant;
+            if (update.PredecessorDefinition is null)
+            {
+                if (grant.Capabilities.Contains(StandingGrantCapability.Read)
+                    && grant.Capabilities.Contains(StandingGrantCapability.Execute)
+                    && StandingGrantContractRules.MatchesDefinitionAllowance(
+                        update.Candidate.ApplicationId, grant.Definitions, update.CandidateTarget)) return grant;
+                continue;
+            }
+            var resolved = await targets.ResolveAsync(stateHost, update.PredecessorDefinition, cancellationToken);
+            if (resolved is { Status: StandingGrantTargetResolutionStatus.Available, Target: { } target }
+                && await HasAuthorityAsync(stateHost, grant, [target], [], cancellationToken, execute: false)) return grant;
         }
         return null;
     }
+
+    private async Task<bool> HasAuthorityAsync(InteractionInvocationHost host, StandingGrantRevision expected,
+        IReadOnlyList<StandingGrantDefinitionTarget> definitions, IReadOnlyList<string> effectKinds,
+        CancellationToken cancellationToken, bool execute = true)
+    {
+        var capabilities = execute
+            ? new[] { StandingGrantCapability.Read, StandingGrantCapability.Execute }
+            : new[] { StandingGrantCapability.Read };
+        foreach (var capability in capabilities)
+        {
+            var decision = await EvaluateAuthorityAsync(host, new(capability, StandingGrantScope.StateSpace,
+                definitions, capability == StandingGrantCapability.Execute ? effectKinds : []), cancellationToken);
+            if (!decision.Allowed || decision.Grant?.GrantReference != expected.GrantReference
+                || decision.Grant.ContentFingerprint != expected.ContentFingerprint) return false;
+        }
+        return true;
+    }
+
+    private bool CurrentComponents(IReadOnlyList<EcsComponentReference> references) =>
+        references.Count <= 256 && references.Distinct().Count() == references.Count
+        && references.All(reference => componentTypes!.Get(reference.QualifiedTypeId, reference.TypeVersion) is { } exact
+            && exact.SchemaHash == reference.SchemaHash
+            && componentTypes.GetLatest(reference.QualifiedTypeId) is { } latest
+            && latest.Version == reference.TypeVersion && latest.SchemaHash == reference.SchemaHash);
 
     private async Task<StandingGrantDecision> EvaluateAuthorityAsync(InteractionInvocationHost host,
         StandingGrantRequirement requirement, CancellationToken cancellationToken)
@@ -318,12 +417,13 @@ internal sealed class ApplicationCandidateStatefulRuntimeValidator(
         && left.BaseApplications.SequenceEqual(right.BaseApplications);
 
     private static IReadOnlyList<StandingGrantDefinitionReference>? Dependencies(
-        ApplicationCandidateStatefulUpdateEvidence update, ICatalogNavigator catalog)
+        IApplicationCandidateStatefulRuntimeEvidence update, ICatalogNavigator catalog)
     {
         try
         {
-            var result = new SortedDictionary<string, StandingGrantDefinitionReference>(StringComparer.Ordinal)
-            { [update.PredecessorDefinition.DefinitionId] = update.PredecessorDefinition };
+            var result = new SortedDictionary<string, StandingGrantDefinitionReference>(StringComparer.Ordinal);
+            if (update.PredecessorDefinition is { } predecessor)
+                result[predecessor.DefinitionId] = predecessor;
             var visits = 0;
             Walk(update.Requirements, update.Definition.DefinitionId, 0, new HashSet<string>(StringComparer.Ordinal));
             return result.Values.ToArray();

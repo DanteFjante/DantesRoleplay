@@ -33,6 +33,8 @@ public sealed partial class SqliteApplicationAuthoringService : IApplicationAuth
     private readonly IApplicationCatalogSynchronizationEvidenceReader? synchronization;
     private readonly CompatibleStateSpacePublicationRebinder stateSpaceRebinder;
     private readonly ApplicationCandidateStatefulRuntimeValidator? statefulRuntime;
+    private readonly ApplicationCandidateStatefulReviewClosureReader? statefulReviewClosures;
+    private readonly ApplicationCandidateReviewedStatefulUpdateReader? reviewedStatefulUpdates;
 
     public SqliteApplicationAuthoringService(DantesRoleplayDbContext db, IApplicationRegistry applications,
         IApplicationActivationReader activations, IActivatedApplicationEvidenceReader evidence, ISourceRegistry sources,
@@ -40,7 +42,8 @@ public sealed partial class SqliteApplicationAuthoringService : IApplicationAuth
         IApplicationCandidatePreparation? preparation = null, IInteractionManualContextService? manuals = null,
         IApplicationCatalogSynchronizationEvidenceReader? synchronization = null)
         : this(db, applications, activations, evidence, sources, grants, targets, operations, preparation, manuals,
-            reviewedPureUpdates: null, synchronization: synchronization, statefulRuntime: null) { }
+            reviewedPureUpdates: null, synchronization: synchronization, statefulRuntime: null,
+            statefulReviewClosures: null, reviewedStatefulUpdates: null) { }
 
     internal SqliteApplicationAuthoringService(DantesRoleplayDbContext db, IApplicationRegistry applications,
         IApplicationActivationReader activations, IActivatedApplicationEvidenceReader evidence, ISourceRegistry sources,
@@ -48,7 +51,9 @@ public sealed partial class SqliteApplicationAuthoringService : IApplicationAuth
         IApplicationCandidatePreparation? preparation, IInteractionManualContextService? manuals,
         ApplicationCandidateReviewedPureUpdateReader? reviewedPureUpdates,
         IApplicationCatalogSynchronizationEvidenceReader? synchronization = null,
-        ApplicationCandidateStatefulRuntimeValidator? statefulRuntime = null)
+        ApplicationCandidateStatefulRuntimeValidator? statefulRuntime = null,
+        ApplicationCandidateStatefulReviewClosureReader? statefulReviewClosures = null,
+        ApplicationCandidateReviewedStatefulUpdateReader? reviewedStatefulUpdates = null)
     {
         this.db = db; this.applications = applications; this.activations = activations; this.evidence = evidence;
         this.sources = sources; this.grants = grants; this.targets = targets; this.operations = operations;
@@ -56,6 +61,8 @@ public sealed partial class SqliteApplicationAuthoringService : IApplicationAuth
         this.synchronization = synchronization;
         stateSpaceRebinder = new(db, applications);
         this.statefulRuntime = statefulRuntime;
+        this.statefulReviewClosures = statefulReviewClosures;
+        this.reviewedStatefulUpdates = reviewedStatefulUpdates;
     }
 
     private const string Tool = "application-candidate";

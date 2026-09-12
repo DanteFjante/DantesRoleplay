@@ -162,11 +162,16 @@ internal static class ApplicationCandidateOperationProof
             if (report is null || report.Candidate != request.Candidate || !Hash(report.UpdateFingerprint)
                 || report.PolicyVersion != ApplicationCandidateStatefulRuntimeValidator.PolicyVersion
                 || report.PolicyFingerprint != ApplicationCandidateStatefulRuntimeValidator.PolicyFingerprint
-                || report.Dependencies is null || report.Dependencies.Count == 0
+                || report.Dependencies is null
                 || report.Dependencies.Any(value => value.Revision < 1 || !Hash(value.ContentFingerprint))
+                || report.RootPredecessor is { } predecessor
+                    && (predecessor.Revision < 1 || !Hash(predecessor.ContentFingerprint))
                 || string.IsNullOrWhiteSpace(report.StateGrantReference) || !Hash(report.StateGrantFingerprint)
                 || report.EffectKinds is null || report.EffectKinds.Any(value =>
                     !EcsEffects.ApplicationEcsEffectType.All.Contains(value, StringComparer.Ordinal))
+                || report.ComponentTypes is { } componentTypes && (componentTypes.Count > 256
+                    || componentTypes.Distinct().Count() != componentTypes.Count
+                    || componentTypes.Any(value => value.TypeVersion < 1 || !Hash(value.SchemaHash)))
                 || report.Samples is null || report.Samples.Count != request.Samples.Count) return false;
             for (var index = 0; index < report.Samples.Count; index++)
             {
@@ -239,7 +244,9 @@ internal static class ApplicationCandidateOperationProof
             if (element.ValueKind != JsonValueKind.Object
                 || InteractionCanonicalJson.CanonicalizeObject(element.GetProperty("Candidate").GetRawText())
                     != InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(candidate))) return false;
-            var predecessor = Definition(element.GetProperty("RootPredecessor"));
+            var predecessorElement = element.GetProperty("RootPredecessor");
+            var predecessor = predecessorElement.ValueKind == JsonValueKind.Null
+                ? null : Definition(predecessorElement);
             var dependencies = element.GetProperty("Dependencies").EnumerateArray().Select(Definition).ToArray();
             var effectKinds = element.GetProperty("EffectKinds").EnumerateArray()
                 .Select(value => value.GetString() ?? throw new JsonException()).ToArray();
@@ -262,10 +269,15 @@ internal static class ApplicationCandidateOperationProof
                     value.GetProperty("BatchFingerprint").GetString()!,
                     value.GetProperty("DryRunOperationId").GetString()!));
             }
+            IReadOnlyList<Ecs.EcsComponentReference>? componentTypes = null;
+            if (element.TryGetProperty("ComponentTypes", out var componentElement))
+                componentTypes = componentElement.EnumerateArray().Select(value => new Ecs.EcsComponentReference(
+                    value.GetProperty("QualifiedTypeId").GetString()!, value.GetProperty("TypeVersion").GetInt32(),
+                    value.GetProperty("SchemaHash").GetString()!)).ToArray();
             report = new(candidate, element.GetProperty("UpdateFingerprint").GetString()!,
                 element.GetProperty("PolicyVersion").GetString()!, element.GetProperty("PolicyFingerprint").GetString()!,
                 predecessor, dependencies, element.GetProperty("StateGrantReference").GetString()!,
-                element.GetProperty("StateGrantFingerprint").GetString()!, effectKinds, samples.AsReadOnly());
+                element.GetProperty("StateGrantFingerprint").GetString()!, effectKinds, samples.AsReadOnly(), componentTypes);
             return true;
         }
         catch (Exception exception) when (exception is JsonException or InteractionContractException

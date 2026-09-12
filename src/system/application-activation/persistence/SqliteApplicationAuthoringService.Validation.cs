@@ -36,6 +36,7 @@ public sealed partial class SqliteApplicationAuthoringService
             var commandFingerprint = InteractionCanonicalJson.Fingerprint("dantes-roleplay/application-candidate-validation/v1", canonical);
             var operationId = Id(host, candidate.ApplicationId, "validation");
             ApplicationCandidateStatefulUpdateEvidence? stagedStatefulUpdate = null;
+            ApplicationCandidateStatefulReviewClosureEvidence? stagedReviewedStateful = null;
             ApplicationCandidateStatefulRuntimeReport? statefulReport = null;
             if (statefulRuntime is not null && samples.Count > 0
                 && samples.All(value => value.StateSpaceId is not null))
@@ -46,6 +47,19 @@ public sealed partial class SqliteApplicationAuthoringService
                 if (stagedStatefulUpdate is not null)
                     statefulReport = await statefulRuntime.ValidateAsync(
                         stagedStatefulUpdate, samples, host, cancellationToken);
+                else if (statefulReviewClosures is not null)
+                {
+                    var selection = await new ApplicationCandidateSelectionReader(
+                            db, applications, activations, targets)
+                        .ReadAsync(host, candidate, cancellationToken);
+                    var closure = selection is null ? null : await statefulReviewClosures.ReadAsync(
+                        host, candidate, selection, cancellationToken);
+                    stagedReviewedStateful = closure?.Status == ApplicationCandidateReviewClosureReadStatus.Available
+                        ? closure.Evidence as ApplicationCandidateStatefulReviewClosureEvidence : null;
+                    if (stagedReviewedStateful is not null)
+                        statefulReport = await statefulRuntime.ValidateAsync(
+                            stagedReviewedStateful, samples, host, cancellationToken);
+                }
             }
             await db.Database.OpenConnectionAsync(cancellationToken); opened = true;
             await using var transaction = ((SqliteConnection)db.Database.GetDbConnection()).BeginTransaction(deferred: false);
@@ -95,13 +109,21 @@ public sealed partial class SqliteApplicationAuthoringService
                     var update = await new ApplicationCandidateStatefulUpdateReader(
                             db, applications, activations, evidence, targets)
                         .ReadAsync(host, candidate, cancellationToken);
-                    if (update is null || statefulRuntime is null
-                        || !ApplicationCandidateOperationProof.TryReadStatefulRuntimeReport(
+                    if (statefulRuntime is null || !ApplicationCandidateOperationProof.TryReadStatefulRuntimeReport(
                             prior, validation, candidate, definitions, out var retainedStateful)
-                        || retainedStateful is null
-                        || !await ApplicationCandidateStatefulUpdateValidation.VerifyAsync(
+                        || retainedStateful is null)
+                        return InteractionInvocationResult.Unavailable(
+                            "APPLICATION_CANDIDATE_VALIDATION_EVIDENCE_INCONSISTENT",
+                            "The retained stateful validation is no longer current or cannot be reconciled.");
+                    var existingCurrent = update is not null
+                        && await ApplicationCandidateStatefulUpdateValidation.VerifyAsync(
                             db, update, retainedStateful, validation, cancellationToken)
-                        || !await statefulRuntime.CurrentAsync(update, retainedStateful, host, cancellationToken))
+                        && await statefulRuntime.CurrentAsync(update, retainedStateful, host, cancellationToken);
+                    var reviewedCurrent = !existingCurrent && reviewedStatefulUpdates is not null
+                        && await new ApplicationCandidateReviewedStatefulUpdateValidation(
+                                reviewedStatefulUpdates, statefulRuntime)
+                            .VerifyAsync(host, retainedStateful, validation, cancellationToken) is not null;
+                    if (!existingCurrent && !reviewedCurrent)
                         return InteractionInvocationResult.Unavailable(
                             "APPLICATION_CANDIDATE_VALIDATION_EVIDENCE_INCONSISTENT",
                             "The retained stateful validation is no longer current or cannot be reconciled.");
@@ -110,6 +132,8 @@ public sealed partial class SqliteApplicationAuthoringService
                     && validation.DependencyEvidenceReference is { } durableReview
                     && durableReview.StartsWith("validation.result.", StringComparison.Ordinal)
                     && validation.ReuseEvidenceReference == durableReview
+                    && validation.PreparationVersion?.StartsWith(
+                        ApplicationCandidateStatefulRuntimeValidator.PolicyVersion + "@", StringComparison.Ordinal) != true
                     && (reviewedPureUpdates is null
                         || !ApplicationCandidateOperationProof.TryReadRuntimeReport(
                             prior, validation, candidate, definitions, out var retainedReport)
@@ -192,6 +216,11 @@ public sealed partial class SqliteApplicationAuthoringService
                             db, targets, grants, manuals, operations, statefulRuntime!)
                         .CompleteAsync(host, currentUpdate, statefulReport, validationRow, cancellationToken);
             }
+            else if (statefulReport is not null && stagedReviewedStateful is not null
+                && reviewedStatefulUpdates is not null)
+                await new ApplicationCandidateReviewedStatefulUpdateValidation(
+                        reviewedStatefulUpdates, statefulRuntime!)
+                    .CompleteAsync(host, statefulReport, validationRow, cancellationToken);
             if (intentMatchUpdate is not null && manuals is not null)
             {
                 var exactMatch = new ApplicationCandidateIntentMatchUpdateValidation(

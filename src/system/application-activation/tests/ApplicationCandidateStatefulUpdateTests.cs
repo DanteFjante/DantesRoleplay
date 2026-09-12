@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using DantesRoleplay.AI;
 using DantesRoleplay.ApplicationActivation;
 using DantesRoleplay.ApplicationExecution;
 using DantesRoleplay.Applications;
@@ -15,7 +16,10 @@ using DantesRoleplay.Operations;
 using DantesRoleplay.Procedures;
 using DantesRoleplay.SchemaValidation;
 using DantesRoleplay.SystemCapabilities;
+using DantesRoleplay.SystemTasks;
+using DantesRoleplay.SystemTasks.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DantesRoleplay.Authorization.Tests;
 
@@ -77,7 +81,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         var policy = new SqliteStandingGrantPolicy(db, setup.Resolver);
         var runtime = new ApplicationCandidateStatefulRuntimeValidator(db, setup.Activation, catalogs, spaces, mapping,
             evaluator, runner, effectApplier, new SqliteStandingGrantReadCandidateReader(db),
-            setup.Resolver, policy);
+            setup.Resolver, policy, types);
         var manuals = new InteractionManualContextService(new ProcedureStore(db),
             new InteractionFeatureRetriever(catalogs), policy, setup.Resolver, setup.Activation, ["system"]);
         var service = new SqliteApplicationAuthoringService(db, setup.Applications, setup.Activation,
@@ -233,7 +237,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         {
             Capabilities = [StandingGrantCapability.Author, StandingGrantCapability.Validate,
                 StandingGrantCapability.Read, StandingGrantCapability.Activate],
-            EffectKinds = [ApplicationEcsEffectType.EntityCreate], MaximumOperations = 8
+            EffectKinds = [ApplicationEcsEffectType.EntityCreate], MaximumOperations = 16
         };
         row.PermissionsJson = StandingGrantRevisionCanonicalization.PermissionsJson(grant);
         row.ContentFingerprint = StandingGrantRevisionCanonicalization.ContentFingerprint(grant);
@@ -263,6 +267,215 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         });
         db.Add(new StandingGrantCurrentRecord { GrantId = grant.GrantId, Revision = grant.Revision });
         await db.SaveChangesAsync();
+    }
+
+    [Fact]
+    public async Task New_stateful_atomic_action_requires_retained_review_then_dry_runs_publishes_executes_and_replays()
+    {
+        var databasePath = Path.Combine(Path.GetTempPath(), $"candidate-new-stateful-{Guid.NewGuid():N}.db");
+        try
+        {
+        var options = new DbContextOptionsBuilder<DantesRoleplayDbContext>()
+            .UseSqlite("Filename=" + databasePath).Options;
+        await using var db = new DantesRoleplayDbContext(options);
+        await db.Database.EnsureCreatedAsync();
+        var setup = Setup(db);
+        setup.Namespaces.Register(new CatalogNamespaceRegistration("demo.runtime.mechanics", "human-domain-label",
+            "Stateful mechanic fixture namespace.", [CatalogNamespaceKinds.Mechanic],
+            ReviewStatus: CatalogNamespaceReviewStatuses.Reviewed, ReviewNote: "Reviewed fixture."));
+        WriteStatefulMechanic(StatefulSource(1));
+        await ActivateAsync(setup);
+        await SeedMechanicGrantAsync(db);
+        await AllowStatefulAuthoringAsync(db);
+        var active = setup.Activation.Current(Application)!;
+        var revision = new ApplicationRevision(Application, 1, setup.Applications.Get(Application)!.Fingerprint, []);
+        var spaces = new SqliteStateSpaceRegistry(db, setup.Applications);
+        var state = spaces.Create(new(StatefulSpace, revision, active.ActivationFingerprint, active.ResolutionFingerprint));
+        var schemas = new BoundedJsonSchemaValidator();
+        var types = new SqliteComponentTypeRegistry(db, schemas);
+        var entities = new SqliteEntityComponentStore(db, types, schemas);
+        await entities.CreateEntityAsync(StatefulSpace, "subject", "Subject");
+        var edges = new SqliteStateSpaceEdgeStore(db, spaces);
+        await SeedStatefulExecutionGrantAsync(db);
+        db.ChangeTracker.Clear();
+
+        const string id = "demo.runtime.mechanics.new-stateful";
+        const string markdownPath = "content/mechanics/stateful/mechanic.fixture.new-stateful.md";
+        const string javascriptPath = "content/mechanics/stateful/mechanic.fixture.new-stateful.js";
+        var markdown = $$$$$"""
+            ---
+            id: {{{{{id}}}}}
+            category: fixture.stateful
+            name: New reviewed stateful fixture
+            scope: action
+            status: active
+            ---
+
+            ## Description
+            Create one fixture entity through a reviewed new Atomic action.
+
+            ## Requirements
+            ```json
+            {"roles":{"subject":{"components":[]}},"inputSchema":{"type":"object","required":["entityId"],"properties":{"entityId":{"type":"string"}}}}
+            ```
+            """;
+        var policy = new SqliteStandingGrantPolicy(db, setup.Resolver);
+        var materializer = new ActivatedApplicationCatalogMaterializer(setup.Applications, setup.Activation,
+            setup.Sources, setup.Roots, setup.Extensions);
+        var catalogs = new ActivatedApplicationCatalogProvider(
+            new ConfiguredPublicApplicationCatalogPolicy([Application.Value]), materializer,
+            new CatalogCursorCodec(new byte[32]), setup.Activation);
+        var projection = new ApplicationMechanicProjectionResolver(db, spaces);
+        var mapping = new ApplicationMechanicProjectionMappingResolver(catalogs, spaces, types, edges);
+        var evaluator = new ApplicationMechanicEvaluator(catalogs, projection, new JintMechanicEngine());
+        var effectApplier = new ApplicationEcsEffectApplier(db, entities, spaces, new OperationLog(db), edges);
+        var runner = new ApplicationActionRunner(catalogs, setup.Activation, spaces, types, entities, edges,
+            mapping, evaluator, effectApplier, new OperationLog(db),
+            new ApplicationEcsEffectBatchBuilder(types, entities, edges));
+        var runtime = new ApplicationCandidateStatefulRuntimeValidator(db, setup.Activation, catalogs, spaces,
+            mapping, evaluator, runner, effectApplier, new SqliteStandingGrantReadCandidateReader(db),
+            setup.Resolver, policy);
+        var features = new InteractionFeatureRetriever(catalogs, namespaces: setup.Namespaces, changes: setup.Activation);
+        var manuals = new InteractionManualContextService(new ProcedureStore(db), features, policy,
+            setup.Resolver, setup.Activation, ["system"]);
+        var closureReader = new ApplicationCandidateStatefulReviewClosureReader(db, setup.Applications,
+            setup.Activation, setup.Activation, setup.Resolver, catalogs);
+        var gate = new SystemTaskApplicationValidationGate(db, setup.Applications, setup.Activation,
+            setup.Resolver, policy, TimeProvider.System, PureRuntimeClosure(db, setup), manuals, features,
+            [closureReader]);
+        var receiptReader = new ApplicationCandidateReviewedClosureReceiptReader(db, setup.Applications, gate);
+        var reviewedReader = new ApplicationCandidateReviewedStatefulUpdateReader(receiptReader);
+        var authoring = new SqliteApplicationAuthoringService(db, setup.Applications, setup.Activation,
+            setup.Activation, setup.Sources, policy, setup.Resolver, new OperationLog(db), null, manuals,
+            null, null, runtime, closureReader, reviewedReader);
+        var reviews = new SystemTaskApplicationValidationService(db, gate, TimeProvider.System);
+        var gateway = new ApplicationCandidateCapabilityGateway(CandidateCatalog(db, setup, authoring, reviews));
+        var principal = AuthorHost(setup, "new-stateful-principal").Principal;
+
+        var write = await gateway.InvokeAsync(principal, Application, SystemCapabilityIds.ApplicationCandidateWrite,
+            JsonSerializer.Serialize(new
+            {
+                applicationId = Application.Value, candidateId = (string?)null, expectedCandidateRevision = 0,
+                expectedActiveFingerprint = active.ActivationFingerprint, origin = "runtime",
+                synchronizationEvidenceReference = (string?)null,
+                newImplementationReason = "Add one reviewed Atomic stateful action without changing component schemas.",
+                documents = new[]
+                {
+                    new { logicalIdentity = "file:" + markdownPath, sourceId = "catalog", relativePath = markdownPath,
+                        mediaType = "text/markdown", text = markdown },
+                    new { logicalIdentity = "file:" + javascriptPath, sourceId = "catalog", relativePath = javascriptPath,
+                        mediaType = "text/javascript", text = StatefulSource(3) }
+                }
+            }), "new-stateful-write", "website");
+        Assert.True(write.Ok, write.Error?.Code + ":" + write.Error?.Message);
+        var row = await db.Set<ApplicationCandidateRevisionRecord>().AsNoTracking()
+            .SingleAsync(value => value.SourceOperationId == write.OperationId);
+        var candidate = new ApplicationCandidateReference(Application, row.CandidateId, row.Revision, row.ContentFingerprint);
+        var selection = await new ApplicationCandidateSelectionReader(db, setup.Applications,
+            setup.Activation, setup.Resolver).ReadAsync(AuthorHost(setup, "new-stateful-select"), candidate);
+        var definition = new StandingGrantDefinitionReference(selection!.Targets[0].DefinitionId, "mechanic",
+            selection.Targets[0].Revision, selection.Targets[0].ContentFingerprint);
+        var sourceOperation = await db.Operations.AsNoTracking().SingleAsync(value => value.Id == row.SourceOperationId);
+        var retainedCandidate = await new ApplicationCandidateRetainedReader(db, setup.Applications)
+            .ReadMetadataAsync(Application, candidate.CandidateId, candidate.Revision);
+        Assert.NotNull(retainedCandidate);
+        Assert.True(ApplicationCandidateOperationProof.WriteMatches(
+            sourceOperation, retainedCandidate, [definition], out var writeCommand));
+        var reviewInput = JsonSerializer.Serialize(new
+        {
+            applicationId = Application.Value, candidateId = candidate.CandidateId, revision = candidate.Revision,
+            contentFingerprint = candidate.ContentFingerprint, authoringOperationId = row.SourceOperationId,
+            authoringCommandId = writeCommand!.CommandId
+        });
+        var submitted = await gateway.InvokeAsync(principal, Application,
+            SystemCapabilityIds.ApplicationCandidateReviewSubmit, reviewInput, "new-stateful-review", "website");
+        Assert.True(submitted.Ok, submitted.Error?.Code + ":" + submitted.Error?.Message);
+
+        SystemTaskValidationAuthority prepared;
+        await using (var boundary = await SystemTaskValidationTransaction.OpenAsync(db, TimeProvider.System, false, default))
+            prepared = await gate.CheckAsync(InteractionInvocationHost.ForApplication(principal, revision,
+                "mechanic-grant@1", "new-stateful-provider", InteractionExecutionProfile.ReadOnly,
+                new(16, DateTime.UtcNow.AddMinutes(2))), candidate, true);
+        Assert.IsType<ApplicationCandidateStatefulReviewClosureEvidence>(prepared.ReviewClosure);
+        var provider = new RetainedReviewProvider(prepared.ReviewInput!, "justifiedNew");
+        var invoker = new SystemInnerWorkerValidationInvoker(new AiService([provider]), TimeProvider.System);
+        var services = new ServiceCollection().AddSingleton(db).AddSingleton(gate)
+            .AddSingleton<TimeProvider>(TimeProvider.System).BuildServiceProvider();
+        await using (services)
+        {
+            var lifecycles = new SystemTaskAiInvocationLifecycleFactory(
+                services.GetRequiredService<IServiceScopeFactory>(), TimeProvider.System);
+            Assert.True(await reviews.RunNextAsync("new-stateful-reviewer", invoker,
+                ReviewerConfiguration(), lifecycles));
+        }
+        Assert.Equal(1, provider.Calls);
+
+        var expectedEffects = InteractionCanonicalJson.Canonicalize(JsonSerializer.Serialize(new[]
+        {
+            new ApplicationEcsEffect { Type = ApplicationEcsEffectType.EntityCreate,
+                EntityId = "new-created", Name = "Version 3" }
+        }));
+        var validationInput = JsonSerializer.Serialize(new
+        {
+            applicationId = Application.Value, candidateId = candidate.CandidateId, revision = candidate.Revision,
+            contentFingerprint = candidate.ContentFingerprint,
+            samples = new[] { new { definition = new { definitionId = definition.DefinitionId, kind = definition.Kind,
+                    revision = definition.Revision, contentFingerprint = definition.ContentFingerprint },
+                inputJson = "{\"entityId\":\"new-created\"}",
+                expectedDataJson = "{\"entityId\":\"new-created\",\"version\":3}",
+                stateSpaceId = StatefulSpace, stateRevision = InteractionStateRevision.From(state),
+                roleEntityIds = new Dictionary<string,string> { ["subject"] = "subject" },
+                expectedEffectsJson = expectedEffects } }
+        });
+        var validated = await gateway.InvokeAsync(principal, Application,
+            SystemCapabilityIds.ApplicationCandidateValidate, validationInput, "new-stateful-validate", "website");
+        Assert.True(validated.Ok, validated.Error?.Code + ":" + validated.Error?.Message);
+        var validation = await db.Set<ApplicationCandidateValidationRecord>().AsNoTracking()
+            .SingleAsync(value => value.OperationId == validated.OperationId);
+        Assert.Equal("valid", validation.Outcome);
+        Assert.StartsWith("validation.result.", validation.ReuseEvidenceReference);
+
+        ApplicationCandidateReviewedStatefulUpdateEvidence? reviewedProof;
+        await using (var reviewTransaction = await db.Database.BeginTransactionAsync())
+        {
+            reviewedProof = await reviewedReader.ReadAsync(
+                AuthorHost(setup, "new-stateful-activate"), candidate);
+            Assert.NotNull(reviewedProof);
+            await reviewTransaction.RollbackAsync();
+            db.ChangeTracker.Clear();
+        }
+
+        var activated = await authoring.ActivateAsync(AuthorHost(setup, "new-stateful-activate"),
+            new(candidate, validated.OperationId!));
+        Assert.Equal(InteractionInvocationResultTag.Committed, activated.Tag);
+        Assert.Null(await entities.GetEntityAsync(StatefulSpace, "new-created"));
+        Assert.True(catalogs.TryGet(Application, out var published));
+        var publishedDefinition = published.Inspect(new(Application, Application.Value, id)).Summary;
+        var executed = await runner.RunAsync(new(StatefulSpace, Application, id,
+            publishedDefinition.Version, publishedDefinition.ContentFingerprint,
+            new Dictionary<string, string> { ["subject"] = "subject" },
+            "{\"entityId\":\"new-created\"}", 43,
+            new("fedcba0987654321fedcba0987654321", new string('D', 64))));
+        Assert.Equal(ApplicationActionExecutionDisposition.Succeeded, executed.Disposition);
+        Assert.Equal("Version 3", (await entities.GetEntityAsync(StatefulSpace, "new-created"))!.Name);
+        var replay = await authoring.ActivateAsync(AuthorHost(setup, "new-stateful-activate"),
+            new(candidate, validated.OperationId!));
+        Assert.Equal(activated.Receipt, replay.Receipt);
+        Assert.Equal(1, provider.Calls);
+        var validationOperation = await db.Operations.AsNoTracking()
+            .SingleAsync(value => value.Id == validation.OperationId);
+        Assert.True(ApplicationCandidateOperationProof.TryReadStatefulRuntimeReport(
+            validationOperation, validation, candidate, [definition], out var retainedReport));
+        await RevokeStatefulExecutionGrantAsync(db);
+        db.ChangeTracker.Clear();
+        Assert.False(await runtime.CurrentAsync(reviewedProof!.Closure, retainedReport!,
+            AuthorHost(setup, "new-stateful-revoked"), default));
+        }
+        finally
+        {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            if (File.Exists(databasePath)) File.Delete(databasePath);
+        }
     }
 
     private static async Task RevokeStatefulExecutionGrantAsync(DantesRoleplayDbContext db)
