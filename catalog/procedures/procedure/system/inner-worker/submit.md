@@ -21,7 +21,7 @@ start a focused inner worker
 submit background work
 
 ## Instructions
-1. Discover the application procedure and pin its exact current definition ID, revision, and content fingerprint. Its authored `Governs` value must use the supported explicit form `execute <qualified-id>` or `query(kind: "<qualified-id>")`; never derive tools from prose.
+1. Discover the application procedure and pin its exact current definition ID, revision, and content fingerprint. Its authored `Governs` value must use the supported explicit form `execute <qualified-id>` or `query(kind: "...")`, replacing `...` with the exact registered application query ID; never derive tools from prose.
 2. Write one complete result schema and a bounded instruction. Pass only retained dependency handles from earlier durable tasks; use an empty array when there are none. Use `dependencyInputs` when the worker needs named values or a specific subvalue from a successful dependency result.
 3. Invoke `system.inner-worker.submit` through the selected-application gateway with one stable idempotency key. Do not put a model, provider, profile, tools, grant, budget, or deadline in the input.
 4. Preserve the returned task ID and command ID. Reconnect with `system.inner-worker.read`; use `system.inner-worker.cancel` only when cancellation is intended.
