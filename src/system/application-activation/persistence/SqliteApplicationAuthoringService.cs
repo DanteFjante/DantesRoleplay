@@ -31,6 +31,7 @@ public sealed partial class SqliteApplicationAuthoringService : IApplicationAuth
     private readonly IInteractionManualContextService? manuals;
     private readonly ApplicationCandidateReviewedPureUpdateReader? reviewedPureUpdates;
     private readonly ApplicationCandidateReviewedProcedureUpdateReader? reviewedProcedureUpdates;
+    private readonly ApplicationCandidateReviewedQueryUpdateReader? reviewedQueryUpdates;
     private readonly IApplicationCatalogSynchronizationEvidenceReader? synchronization;
     private readonly CompatibleStateSpacePublicationRebinder stateSpaceRebinder;
     private readonly ApplicationCandidateStatefulRuntimeValidator? statefulRuntime;
@@ -47,7 +48,7 @@ public sealed partial class SqliteApplicationAuthoringService : IApplicationAuth
         : this(db, applications, activations, evidence, sources, grants, targets, operations, preparation, manuals,
             reviewedPureUpdates: null, synchronization: synchronization, statefulRuntime: null,
             reviewedProcedureUpdates: null, statefulReviewClosures: null, reviewedStatefulUpdates: null,
-            reviewedWorkflowUpdates: null, workflowRuntime: null) { }
+            reviewedWorkflowUpdates: null, workflowRuntime: null, reviewedQueryUpdates: null) { }
 
     internal SqliteApplicationAuthoringService(DantesRoleplayDbContext db, IApplicationRegistry applications,
         IApplicationActivationReader activations, IActivatedApplicationEvidenceReader evidence, ISourceRegistry sources,
@@ -60,12 +61,14 @@ public sealed partial class SqliteApplicationAuthoringService : IApplicationAuth
         ApplicationCandidateReviewedStatefulUpdateReader? reviewedStatefulUpdates = null,
         ApplicationCandidateReviewedProcedureUpdateReader? reviewedProcedureUpdates = null,
         ApplicationCandidateReviewedWorkflowUpdateReader? reviewedWorkflowUpdates = null,
-        ApplicationCandidateWorkflowRuntimeValidator? workflowRuntime = null)
+        ApplicationCandidateWorkflowRuntimeValidator? workflowRuntime = null,
+        ApplicationCandidateReviewedQueryUpdateReader? reviewedQueryUpdates = null)
     {
         this.db = db; this.applications = applications; this.activations = activations; this.evidence = evidence;
         this.sources = sources; this.grants = grants; this.targets = targets; this.operations = operations;
         this.preparation = preparation; this.manuals = manuals; this.reviewedPureUpdates = reviewedPureUpdates;
         this.reviewedProcedureUpdates = reviewedProcedureUpdates;
+        this.reviewedQueryUpdates = reviewedQueryUpdates;
         this.synchronization = synchronization;
         stateSpaceRebinder = new(db, applications);
         this.statefulRuntime = statefulRuntime;

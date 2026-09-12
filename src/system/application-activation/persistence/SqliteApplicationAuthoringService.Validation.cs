@@ -167,7 +167,11 @@ public sealed partial class SqliteApplicationAuthoringService
                         ? reviewedProcedureUpdates is null
                             || await new ApplicationCandidateReviewedProcedureUpdateValidation(reviewedProcedureUpdates)
                                 .VerifyAsync(host, candidate, validation, cancellationToken) is null
-                        : reviewedPureUpdates is null
+                        : validation.PreparationVersion == ApplicationCandidateReviewedQueryUpdateValidation.PreparationVersion
+                            ? reviewedQueryUpdates is null
+                                || await new ApplicationCandidateReviewedQueryUpdateValidation(reviewedQueryUpdates)
+                                    .VerifyAsync(host, candidate, validation, cancellationToken) is null
+                            : reviewedPureUpdates is null
                             || !ApplicationCandidateOperationProof.TryReadRuntimeReport(
                                 prior, validation, candidate, definitions, out var retainedReport)
                             || retainedReport is null
@@ -286,6 +290,9 @@ public sealed partial class SqliteApplicationAuthoringService
             }
             if (validationRow.Outcome != "valid" && reviewedProcedureUpdates is not null)
                 await new ApplicationCandidateReviewedProcedureUpdateValidation(reviewedProcedureUpdates)
+                    .CompleteAsync(host, candidate, validationRow, cancellationToken);
+            if (validationRow.Outcome != "valid" && reviewedQueryUpdates is not null)
+                await new ApplicationCandidateReviewedQueryUpdateValidation(reviewedQueryUpdates)
                     .CompleteAsync(host, candidate, validationRow, cancellationToken);
             if (validationRow.Outcome != "valid" && runtimeReport is not null && reviewedPureUpdates is not null)
                 await new ApplicationCandidateReviewedPureUpdateValidation(reviewedPureUpdates)

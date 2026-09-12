@@ -101,7 +101,8 @@ internal static class ApplicationCandidateOperationProof
         if (row.PreparationVersion is { } statefulVersion
             && statefulVersion.StartsWith(ApplicationCandidateStatefulRuntimeValidator.PolicyVersion + "@", StringComparison.Ordinal))
             return TryReadStatefulRuntimeReport(operation, row, candidate, actualDefinitions, out _);
-        if (row.PreparationVersion == ApplicationCandidateReviewedProcedureUpdateValidation.PreparationVersion)
+        if (row.PreparationVersion == ApplicationCandidateReviewedProcedureUpdateValidation.PreparationVersion
+            || row.PreparationVersion == ApplicationCandidateReviewedQueryUpdateValidation.PreparationVersion)
             return row.Outcome == "valid" && row.DependenciesComplete
                 && row.ManualPacketResultFingerprint is { Length: 64 }
                 && row.DependencyEvidenceReference is { } review
