@@ -16,16 +16,17 @@ retained compatibility records.
 
 The work is complete when:
 
-1. The existing D&D website is rendered through a small application-owned component registry.
-   Page component props remain free-form JSON, unknown props are tolerated, and each component
-   declares only the fields it actually requires.
+1. The existing D&D website is rendered through the shared website composition contract and a
+   small D&D-owned mapping to its React components. Page component props remain free-form JSON,
+   unknown props are tolerated, and each component declares only the fields it actually requires.
 2. One malformed or failed component cannot take down its siblings. The failed component exposes
    a local retry or recovery state and preserves the rest of the page.
 3. Reads, actions, and forms use the current generic web application endpoints and composition
    binding envelopes. Typed writes continue through current-authority checks, standing grants,
    confirmation, idempotency, audit, and readback.
-4. The shell can discover and navigate among published website applications, apply an
-   application-provided theme, and omit packages that do not publish website pages.
+4. The shared system navigation discovers and switches among published website applications while
+   omitting packages that do not publish website pages. D&D consumes the shared system theme and
+   tokens without creating another preference engine.
 5. The D&D application's queries, procedures, mechanics, manuals, intent associations, workflows,
    schedules, and observers are adopted only through the platform's existing candidate publication
    and recoverable activation path. Missing records remain unavailable.
@@ -75,8 +76,9 @@ campaign-premise write adapter and editor exist but are not connected to the pub
 The generic page grammar in `DantesRoleplay.Web/Pages/WebComposition.cs`
 already keeps its structural envelope bounded while allowing component `props` to contain
 arbitrary JSON values. Component definitions already declare `requiredProps`. The implementation
-must reuse that contract. The main website gap is an application component registry with local
-failure recovery and an incremental bridge from generic bindings to existing D&D components.
+must reuse that contract. The main D&D gap is a component mapping with local failure recovery and
+an incremental bridge from generic bindings to existing React components. Workstream 04 may land
+an equivalent seam first; the D&D plan must reuse it rather than create a duplicate.
 
 The platform already owns application discovery, read models, action preparation and execution,
 recovery, mapped object writes, candidate publication, current-authority validation, manuals,
@@ -107,9 +109,13 @@ these capabilities can be considered implemented.
 - Do not remove legacy records until their source, hash, registration, activation, and consumers
   have been compared with the canonical record.
 - Workers use detached worktrees from the coordinator-provided exact master commit and create no
-  branches. One coordinator integrates commits onto master.
+  branches. Compatible lanes with disjoint file ownership may run concurrently. One coordinator
+  serializes shared-contract decisions, integration onto master, migrations, and final acceptance.
 - Worker checks use disposable databases and disabled providers. Dependent scenarios wait for
   real dependencies; test doubles do not count as acceptance.
+- Each worker updates the assigned original-checkout checkpoint at decisions, material progress,
+  delivery, and pauses, but never stages or commits original-checkout files. The coordinator alone
+  serializes those checkpoint changes.
 
 ## Fixed contracts and owners
 
@@ -121,11 +127,15 @@ props, and `requiredProps`.
 coordination and current-authority revalidation. The browser contract is owned by
 `DantesRoleplay.Web/BrowserComponents/system-client.js`,
 `DantesRoleplay.Web/BrowserComponents/application-workspace.js`, and
-`DantesRoleplay.Web/BrowserComponents/composition-bindings.js`.
+`DantesRoleplay.Web/BrowserComponents/composition-bindings.js`. The active shared website lane
+also owns `DantesRoleplay.Web/BrowserComponents/system-navigation.js` and
+`DantesRoleplay.Web/BrowserComponents/system-theme.js`.
 
 The generic host project above is separate from the D&D package. D&D integration belongs under
-`src/system/web-interface/dnd2024/src`. Add these internal,
-application-owned seams during the first website slice:
+`src/system/web-interface/dnd2024/src`. The following are provisional internal seams for the first
+website slice. Reconcile them with workstream 04 before editing; when that workstream has already
+landed an equivalent registry, boundary, API adapter, or renderer, extend the landed owner instead
+of adding the proposed file:
 
 - `page-components/component-contract.ts` defines the local renderer input and result types. Its
   component key is a website-local key, not a public catalog ID.
@@ -137,13 +147,13 @@ application-owned seams during the first website slice:
   registered D&D components.
 - `server/website-api.ts` is the single D&D adapter over the generic read, prepare, execute,
   recovery, and mapped-write endpoints. It normalizes transport errors but does not decide rules.
-- `components/ApplicationNavigation.tsx` renders discoverable website applications and their pages.
-- `theme/application-theme.ts` maps a bounded presentation theme into CSS custom properties.
 
-Existing page components remain the view owners. `DndInformationHub.tsx` remains the application
-coordinator until each route has moved behind `CompositionPage`; it should shrink rather than be
-replaced wholesale. `game-server-context.js` is migrated call by call into `server/website-api.ts`
-and existing scoped stores, with behavior-preserving tests around every moved call.
+Existing page components remain the view owners. Shared `system-navigation` owns the application
+switcher; D&D owns only its local views and local route presentation. `DndInformationHub.tsx`
+remains the application coordinator until each route has moved behind the shared composition seam;
+it should shrink rather than be replaced wholesale. `game-server-context.js` is migrated call by
+call into the reconciled API adapter and existing scoped stores, with behavior-preserving tests
+around every moved call.
 
 Unknown props must reach the registered component unchanged. Missing required props fail only that
 component before render. Malformed optional props are handled by that component's adapter and do
@@ -164,10 +174,18 @@ Shared composition, discovery, transport, DI, or publication changes are coordin
 worker that finds a gap must report the current behavior, the smallest contract change, exact
 files, compatibility effect, and tests; it must not edit those owners.
 
-Multi-application navigation is built from `/api/web/applications` and the selected application's
-published pages. An application appears only when it has at least one visible website page for the
-current principal. Packages without website publication never enter the navigation model. Theme
-data is presentation metadata and cannot grant access or select hidden pages.
+Shared `system-navigation` builds multi-application navigation from `/api/web/applications` and the
+selected application's published pages. An application appears only when it has at least one
+visible website page for the current principal. Packages without website publication never enter
+the navigation model. D&D must not add a second discovery registry or application switcher.
+
+`DantesRoleplay.Web/BrowserComponents/system-theme.js` is the sole theme preference engine. It owns
+storage key `dantes.system-theme.v1`; accepts `system`, `light`, and `dark`; emits
+`system-theme-change` with detail `{ preference, resolvedTheme }`; and exports
+`initializeSystemTheme`, `getSystemTheme`, `setSystemTheme`, `onSystemThemeChange`, and
+`SystemThemeToggle`. D&D consumes that module and the shared CSS tokens. Optional D&D palette
+overrides are a future presentation extension and do not require application-theme metadata for
+the current lane.
 
 ### Catalog and runtime ownership
 
@@ -210,23 +228,25 @@ and current revision from registered context and rejects stale or mismatched req
 ## Execution order and vertical slices
 
 Each slice ends with a reviewable commit and focused checks. Later slices start only when their
-listed dependencies are real on the integration baseline.
+listed dependencies are real on the integration baseline. Website Slices 1–5 describe required
+outcomes for the already assigned workstream 04. Before starting one, compare it with workstream
+04's integrated and in-flight changes, then implement only the uncovered outcome.
 
 | Slice | Lane | Must already be integrated |
 | --- | --- | --- |
 | 0 | Current preservation | Generic platform baseline and worktree launcher |
-| 1 | Current website | Slice 0 inventory; existing generic composition format |
-| 2 | Current website | Slice 1; real generic read and binding endpoints |
-| 3 | Current website | Slice 1; real application/page discovery |
-| 4 | Current website | Slices 1–2; real mapped-write or prepared-action path |
-| 5 | Current website | Slices 1–4, one family at a time |
+| 1 | Current website | Slice 0 inventory; workstream 04 reconciliation; existing generic composition format |
+| 2 | Current website | Uncovered Slice 1 outcome; real generic read and binding endpoints |
+| 3 | Current website | Shared `system-navigation` and `system-theme.js` from workstream 04 |
+| 4 | Current website | Uncovered Slices 1–2 outcomes; real mapped-write or prepared-action path |
+| 5 | Current website | Reconciled Slices 1–4 outcomes, one family at a time |
 | 6 | Future catalog integration | Slice 0; real candidate publication, activation, manual, and intent dependencies |
 | 7 | Future runtime adoption | Slice 6 plus a named fixture and every real worker/schedule/observer dependency |
 | 8 | Future game repair | Slice 0 provenance plus one failing rule/content fixture; Slice 6 before publication |
 
 ### Slice 0 — Preserve and inventory live authority
 
-Owner: Astra coordinator. Helper: Luna, read-only.
+Owner: Astra coordinator. Luna may assist with a read-only comparison.
 
 Record the exact integration commit. In a disposable database, register or locate the D&D source
 and application, inspect selected activation, state-space bindings, page revisions, namespace
@@ -239,12 +259,14 @@ ID and fingerprint. Unknown live registrations are explicit. No record is change
 
 ### Slice 1 — Component runtime and failure isolation
 
-Owner: Terra implementation worker. Helper: Luna independent contract audit. Astra integrates.
+Owner: Terra implementation worker. Luna may perform an independent contract audit. Astra
+integrates.
 
-Add the internal page-component contract, registry, composition renderer, and per-component error
-boundary. Adapt two existing read-only components with different data shapes. One fixture includes
-an unknown prop; another omits a required prop; a third returns malformed optional data beside a
-healthy sibling.
+First compare workstream 04's delivered and in-flight files with the provisional D&D seams above.
+Add or extend only the missing page-component mapping, composition renderer, and per-component
+error boundary. Adapt two existing read-only components with different data shapes. One fixture
+includes an unknown prop; another omits a required prop; a third returns malformed optional data
+beside a healthy sibling.
 
 Outcome: unknown props survive, required fields fail locally, malformed data cannot take down the
 page, and retry is scoped to the failed binding. Existing routes continue to work.
@@ -253,29 +275,31 @@ page, and retry is scoped to the failed binding. Existing routes continue to wor
 
 Owner: Terra. Astra reviews binding and authority behavior.
 
-Add `server/website-api.ts` over the existing generic endpoints and migrate one low-coupling page,
-preferably Rules or Installed Content, through `CompositionPage`. Reuse the generic binding
-envelope and current query IDs; do not create a D&D transport. Carry cancellation, denial, stale
-selection, recovery, and structured error states to the local component boundary.
+Extend the website API adapter supplied by workstream 04, using the provisional
+`server/website-api.ts` name only if no equivalent owner landed. Migrate one low-coupling page,
+preferably Rules or Installed Content, through the shared composition seam. Reuse the generic
+binding envelope and current query IDs; do not create a D&D transport. Carry cancellation, denial,
+stale selection, recovery, and structured error states to the local component boundary.
 
 Outcome: one published page is wholly driven by generic discovery and bindings, while its current
 React component and Redux state continue to render it.
 
-### Slice 3 — Multi-application navigation and theme
+### Slice 3 — Consume shared navigation and theme
 
-Owner: Terra. Helper: Luna performs access and keyboard review.
+Owner: Terra. Luna may perform an independent access and keyboard review.
 
-Build navigation from application discovery, filter to visible website pages, preserve direct
-links, and show an explicit empty state when no website application is available. Map a bounded
-theme to CSS variables, with the current D&D dark/gold design as its application fallback. Verify
-focus, labels, contrast, narrow layouts, and route restoration.
+Integrate D&D with shared `system-navigation`; do not implement application discovery or switching
+inside the D&D package. Preserve D&D local routes and show the shared empty state when no website
+application is available. Import `system-theme.js`, initialize it once in the shell, and use its
+toggle, change event, and shared CSS tokens. Verify focus, labels, contrast, narrow layouts, and
+route restoration for `system`, `light`, and `dark`.
 
-Outcome: users can switch among authorized website applications and pages. Nonwebsite packages
-remain absent, and one application's theme cannot leak into another.
+Outcome: shared navigation switches among authorized website applications and pages. Nonwebsite
+packages remain absent, and D&D follows the single shared theme preference without a second storage
+key or theme event.
 
-If discovery lacks theme metadata or a stable selected-page field, the worker reports an exact
-shared-contract proposal. The coordinator owns that proposal, compatibility tests, registration,
-and DI changes.
+If shared navigation or theme lacks a necessary behavior, the worker reports an exact contract
+proposal. The coordinator owns that proposal, compatibility tests, registration, and DI changes.
 
 ### Slice 4 — Typed form/action pilot
 
@@ -291,9 +315,9 @@ logic in C# or a D&D-specific write endpoint.
 
 ### Slice 5 — Remaining website families
 
-Owner: Terra, one family per commit. Luna audits fixtures and isolation.
+Owner: Terra, one family per commit. Luna may audit fixtures and isolation independently.
 
-Move all remaining contracted page families behind the registry in dependency order: simple
+Move all remaining contracted page families behind the reconciled component seam in dependency order: simple
 read models, list/detail views, route-sensitive views, then encounter and character surfaces. Keep
 existing selectors and view models when they already express the behavior. Delete an old adapter
 only in the same commit that proves all of its consumers moved.
@@ -304,8 +328,8 @@ contract coverage stays green. `DndInformationHub.tsx` contains coordination onl
 
 ### Slice 6 — Candidate publication, manuals, and intent fixtures
 
-Owner: Sol as the implementation worker when Terra is idle. Astra reviews all identifiers and
-integrates. Luna may independently inspect authored closure.
+Owner: Sol. Astra reviews all identifiers and integrates. Luna may independently inspect authored
+closure. Sol may run concurrently with Terra only while their file owners are disjoint.
 
 For one existing mechanic, one existing procedure, and one existing query, build disposable
 registration and candidate fixtures that prove exact dependency closure, reviewed namespace
@@ -318,7 +342,8 @@ capability, and rollback restores the prior selected activation.
 
 ### Slice 7 — Inner worker, schedule, and observer adoption
 
-Owner: Sol when Terra is idle. Astra owns shared registration and final authority review.
+Owner: Sol. Astra owns shared registration and final authority review. This catalog/runtime lane
+may run beside a website lane only when file ownership is disjoint.
 
 Start only after a named D&D use case has an input fixture, expected events/effects, retry behavior,
 and an approved existing or new public ID. Choose the smallest real case for each capability. A
@@ -331,8 +356,8 @@ replay. Capabilities without an approved fixture remain unavailable and are repo
 
 ### Slice 8 — Mechanic and content repair batches
 
-Owner: Sol for rule analysis and implementation, alternating with Terra so there is never more
-than one implementation worker. Luna checks source/fixture consistency. Astra integrates.
+Owner: Sol for rule analysis and implementation. Terra may work concurrently on a disjoint website
+family. Luna may check source/fixture consistency. Astra integrates.
 
 Repair one rule family at a time. Begin from a reproducible game-state fixture and an expected
 rule outcome, then update the canonical JavaScript/schema/content owner and focused tests. Compare
@@ -346,15 +371,20 @@ aggregate claim of complete D&D 2024 coverage.
 
 - **Astra, medium:** sole coordinator and integrator. Owns architecture, shared-contract proposals,
   DI/registration, transports, migrations, master integration, recovery decisions, and final
-  acceptance. Astra does not spend the expensive model on routine file edits.
+  acceptance. Astra uses the expensive model for coordination and shared decisions rather than
+  routine file edits.
 - **Terra, medium:** primary implementation worker for website slices and bounded mechanical edits.
-- **Sol, medium:** alternate implementation worker for the more involved catalog/runtime and rule
-  slices. Sol and Terra do not implement concurrently.
-- **Luna, low:** one independent read-only helper for inventory, fixture comparison, accessibility,
-  and focused-check review. Luna may run beside the active implementation worker.
+- **Sol, medium:** implementation worker for catalog/runtime and rule slices. Sol and Terra may run
+  concurrently when their declared file owners do not overlap and neither changes a shared
+  contract.
+- **Luna, low:** optional independent helper for inventory, fixture comparison, accessibility, or a
+  focused review when that check materially reduces integration risk. A helper review is not a
+  mandatory gate for every slice.
 
-At most one implementation worker and one independent helper run at once. Each worker returns a
-compact commit, changed files, focused results, dependency status, unavailable paths, and blockers.
+Parallel lanes declare their file lists before editing. The coordinator resolves overlaps first
+and serializes shared contracts, original-checkout integration, migrations, and the solution-wide
+acceptance. Each worker returns a compact commit, changed files, focused results, dependency status,
+unavailable paths, and blockers.
 
 ## Starter prompts
 
@@ -365,13 +395,18 @@ worktree and no branch.
 
 ```text
 Work in a new detached worktree from <BASE>; do not create a branch or change the original checkout.
+At decisions, material progress, delivery, and pauses, update
+C:\repo\DantesRoleplay\docs\current\upgrade\05-dnd2024-plan.md in the original checkout; do not
+stage or commit any original-checkout file because the coordinator serializes checkpoints.
 Read AGENTS.md, docs/current/README.md, and docs/current/DND2024-UPGRADE-PLAN.md, then inspect only the
-D&D website composition owners and focused tests. Implement Slice 1 only: the application-owned
-component contract, registry, CompositionPage, and per-component failure/retry boundary. Adapt two
-existing read-only components. Preserve React/Redux/Vite and the strict generic page envelope;
+D&D website composition owners and focused tests. Reconcile first with the delivered and in-flight
+workstream 04 files. Implement only the uncovered Slice 1 outcome: extend the existing component
+mapping/composition owner and per-component failure/retry boundary, then adapt two existing
+read-only components. Preserve React/Redux/Vite and the strict generic page envelope;
 component props remain free-form and ECS schemas remain strict. Do not edit shared contracts, DI,
 transports, migrations, catalog IDs, live SQLite, providers, docs/world, PDFs, or _to_delete. Run
-focused typecheck/tests/build with the package-supported Node runtime. Commit the slice and report
+`npm run verify` with the package-supported Node runtime. Before editing, report your exact file
+list to the coordinator so it can be checked against concurrent lanes. Commit the slice and report
 the commit, files, results, dependency status, unavailable paths, and blockers to the coordinator.
 ```
 
@@ -379,46 +414,64 @@ the commit, files, results, dependency status, unavailable paths, and blockers t
 
 ```text
 In a separate detached worktree from <BASE>, read the D&D upgrade plan and review Slice 1 without
-editing. Check that unknown component props survive, only declared required props gate rendering,
+editing implementation files. At decisions, material progress, delivery, and pauses, update
+C:\repo\DantesRoleplay\docs\current\upgrade\05-dnd2024-plan.md in the original checkout; do not
+stage or commit any original-checkout file because the coordinator serializes checkpoints. Check
+that unknown component props survive, only declared required props gate rendering,
 malformed optional data and render exceptions stay local, retry is local, and no authoritative ECS
 schema or generic envelope was relaxed. Run only focused checks. Report actionable findings with
-file and line references; do not create a branch, commit, or permanent report.
+file and line references; do not create a branch or commit in the detached review worktree.
 ```
 
 ### Terra — navigation and theme
 
 ```text
 Work in a detached worktree from the coordinator-provided integrated commit; create no branch.
-Implement DND2024-UPGRADE-PLAN Slice 3 only. Build navigation from the existing application/page
-discovery API, omit applications without visible website pages, preserve direct links, and scope a
-bounded application theme through CSS variables with the current D&D theme as fallback. Keep the
-current React/Redux/Vite shell. Do not add public IDs or edit generic endpoints. If a shared contract
-is insufficient, stop at an exact proposal with files and tests. Run the focused D&D tests and
-`npm run verify` under the supported Node runtime; commit and report results and blockers.
+At decisions, material progress, delivery, and pauses, update
+C:\repo\DantesRoleplay\docs\current\upgrade\05-dnd2024-plan.md in the original checkout; do not
+stage or commit any original-checkout file because the coordinator serializes checkpoints.
+Implement only the uncovered DND2024-UPGRADE-PLAN Slice 3 outcome after reconciling workstream 04.
+Consume shared `system-navigation` for application switching and shared `system-theme.js` for the
+`system`/`light`/`dark` preference, `dantes.system-theme.v1` storage, `system-theme-change` event,
+toggle, and CSS tokens. Keep D&D local navigation in the React/Redux/Vite shell. Do not add a D&D
+discovery registry, application switcher, theme storage/event engine, runtime theme-metadata
+requirement, public ID, or generic endpoint edit. If a shared contract is insufficient, stop at an
+exact proposal with files and tests. Run the focused D&D tests and `npm run verify` under the
+supported Node runtime. Before editing, report your exact file list to the coordinator so it can be
+checked against concurrent lanes; commit and report results and blockers.
 ```
 
 ### Terra — typed form pilot
 
 ```text
 Work in a detached worktree from the coordinator-provided integrated commit; create no branch.
+At decisions, material progress, delivery, and pauses, update
+C:\repo\DantesRoleplay\docs\current\upgrade\05-dnd2024-plan.md in the original checkout; do not
+stage or commit any original-checkout file because the coordinator serializes checkpoints.
 Implement DND2024-UPGRADE-PLAN Slice 4 only by connecting the existing campaign-premise editor to
 the current generic mapped-write or prepared-action path. Preserve expected fingerprint,
 current-authority revalidation, DM authorization, confirmation, idempotency, recovery, audit, and
 readback. Add focused tests for denied, stale, duplicate, invalid, interrupted, and successful
 outcomes. Do not add a D&D endpoint, game logic to C#, migration, or public ID. Use disposable data
-and disabled providers. Commit and report files, results, dependencies, unavailable paths, blockers.
+and disabled providers. Before editing, report your exact file list to the coordinator so it can be
+checked against concurrent lanes. Commit and report files, results, dependencies, unavailable
+paths, and blockers.
 ```
 
 ### Sol — catalog publication fixture
 
 ```text
 Work in a detached worktree from the coordinator-provided integrated commit; create no branch.
+At decisions, material progress, delivery, and pauses, update
+C:\repo\DantesRoleplay\docs\current\upgrade\05-dnd2024-plan.md in the original checkout; do not
+stage or commit any original-checkout file because the coordinator serializes checkpoints.
 Implement DND2024-UPGRADE-PLAN Slice 6 for one existing D&D mechanic, procedure, and query. Use the
 existing candidate publication, reviewed namespace, retained-content activation, manual, and intent
 owners. Do not invent IDs, create a second registry, edit shared contracts/DI/transports/migrations,
 touch live SQLite, or claim unavailable workflows. Run focused catalog and runtime tests with a
-disposable database and disabled providers. Commit and report the exact IDs/fingerprints, files,
-tests, real dependency status, unavailable paths, and blockers.
+disposable database and disabled providers. Before editing, report your exact file list to the
+coordinator so it can be checked against concurrent lanes. Commit and report the exact
+IDs/fingerprints, files, tests, real dependency status, unavailable paths, and blockers.
 ```
 
 ## Verification strategy
@@ -461,8 +514,8 @@ The coordinator runs one final acceptance after all integrated slices:
    Without that fixture, report these scenarios unavailable and do not replace them with test data
    that bypasses registration or activation.
 5. Exercise the website in a browser: multiple authorized applications, hidden nonwebsite packages,
-   direct routes, scoped themes, extra props, missing required props, a malformed sibling, query
-   success/denial/staleness/recovery, and the campaign-premise write's confirmation,
+   direct routes, the shared `system`/`light`/`dark` preference, extra props, missing required props,
+   a malformed sibling, query success/denial/staleness/recovery, and the campaign-premise write's confirmation,
    idempotency, audit, and readback.
 6. Run the protocol walk only if MCP transport or dependency registration changed.
 
@@ -519,7 +572,8 @@ registered activation.
   disabled. Any later provider-dependent behavior stays unavailable until exercised with its real
   dependency in an explicitly authorized environment.
 
-Current work may deliver Slices 0 through 5 once their dependencies land. Slices 6 through 8 are
-future catalog and game repair work gated by real registrations, reviewed fixtures, and approved
-identifiers. Completion of the current website lane must not be reported as completion of D&D 2024
-mechanic or content coverage.
+Workstream 04 owns the current website implementation. Slices 0 through 5 are its outcome checklist
+and must be reconciled against that lane's delivery rather than rerun as a second implementation.
+Slices 6 through 8 are future catalog and game repair work gated by real registrations, reviewed
+fixtures, and approved identifiers. Completion of the current website lane must not be reported as
+completion of D&D 2024 mechanic or content coverage.
