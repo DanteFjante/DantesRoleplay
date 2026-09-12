@@ -19,7 +19,8 @@ adjacency, routes, time, and audience knowledge remain the authoritative world m
 ## Instructions
 1. Use `game.core.world.map.anchor` only on an active `game.core.world.location` directly
    contained by an active map plane. A plane is an active `game.core.world.root` or an active
-   `game.core.world.location` whose kind is `region` or `settlement`. Existing topology still owns
+   `game.core.world.location` whose kind is `region` or `settlement`, or an active `site` or
+   `interior` location that owns an active `game.core.world.map.visual`. Existing topology still owns
    the child slot: a child region uses `region`; a child settlement, site, or interior uses
    `location`. The direct container is the anchor's only map plane; never store a plane, region,
    settlement, or map ID in the component.
@@ -49,8 +50,9 @@ adjacency, routes, time, and audience knowledge remain the authoritative world m
 ## Constraints
 - Missing, null, non-object, fractional, negative, out-of-range, or extra coordinate data is
   invalid. Roots, actors, factions, routes, knowledge records, inactive locations, and locations
-  outside the direct active-plane topology/slot contract never carry an anchor. Sites and interiors
-  are not planes; their direct children cannot carry anchors for that container.
+  outside the direct active-plane topology/slot contract never carry an anchor. A site or interior
+  becomes a display plane only while it owns an active map visual; without that visual its direct
+  children cannot carry anchors for that container.
 - An anchor contains no label, plane/region/settlement/map ID, visibility, z-index, scale, image, route, distance,
   terrain, path, position history, or player-discovery state. Entity identity/name and containment
   supply display identity and scope.

@@ -56,6 +56,33 @@ test("world scope projection uses containment and audience instead of identifier
   assert.deepEqual(dm.locations.map((item) => item.id), ["place-gm", "place-party", "place-public"]);
 });
 
+test("site and interior scopes preserve direct-child anchors for detailed map overlays", () => {
+  for (const parentKind of ["site", "interior"]) {
+    const result = project({
+      roles: { scope: {
+        id: `place-${parentKind}`, name: `Detailed ${parentKind}`, containerId: "place-parent",
+        containerSlot: "location", components: {
+          "game.core.world.location": JSON.stringify({
+            kind: parentKind, status: "active", summary: "A detailed mapped place.", visibility: "party",
+          }),
+        },
+        contains: [{
+          id: `place-${parentKind}-child`, name: "Named overlay", slot: "location", components: {
+            "game.core.world.location": JSON.stringify({
+              kind: "interior", status: "active", summary: "A direct child.", visibility: "party",
+            }),
+            "game.core.world.map.anchor": JSON.stringify({ x: 275, y: 725 }),
+          },
+        }],
+      } },
+      input: {}, audience: { perspective: "player" },
+    }).data;
+    assert.equal(result.state, "ready");
+    assert.deepEqual(result.locations[0].mapAnchor, { x: 275, y: 725 });
+    assert.equal(result.locations[0].name, "Named overlay");
+  }
+});
+
 test("world scope projection fails closed when the exact owner is hidden", () => {
   const result = project({ ...rootRecord("gm"), audience: { perspective: "player" } }).data;
   assert.deepEqual(result, {

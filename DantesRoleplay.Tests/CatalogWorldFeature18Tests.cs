@@ -19,6 +19,7 @@ public sealed class CatalogWorldFeature18Tests
 
         Assert.Contains("active `game.core.world.root`", spatial.Instructions, StringComparison.Ordinal);
         Assert.Contains("kind is `region` or `settlement`", spatial.Instructions, StringComparison.Ordinal);
+        Assert.Contains("or an active `site` or", spatial.Instructions, StringComparison.Ordinal);
         Assert.Contains("unique within that plane", spatial.Instructions, StringComparison.Ordinal);
         Assert.Contains("selected active map plane", read.Instructions, StringComparison.Ordinal);
         Assert.Contains("Equal coordinates on another plane are unrelated", read.Instructions,
@@ -53,6 +54,16 @@ public sealed class CatalogWorldFeature18Tests
         string slot, bool expected) =>
         Assert.Equal(expected, ValidPlacement(planeKind, planeStatus, childKind, childStatus, slot));
 
+    [Theory]
+    [InlineData("site")]
+    [InlineData("interior")]
+    public void Detailed_location_becomes_an_anchor_plane_only_with_an_active_map_visual(string planeKind)
+    {
+        Assert.False(ValidPlacement(planeKind, "active", "interior", "active", "location"));
+        Assert.True(ValidPlacement(planeKind, "active", "interior", "active", "location", activeMapVisual: true));
+        Assert.False(ValidPlacement(planeKind, "active", "region", "active", "region", activeMapVisual: true));
+    }
+
     [Fact]
     public void Coordinate_uniqueness_is_scoped_per_plane()
     {
@@ -68,16 +79,17 @@ public sealed class CatalogWorldFeature18Tests
     }
 
     private static bool ValidPlacement(string planeKind, string planeStatus,
-        string childKind, string childStatus, string slot)
+        string childKind, string childStatus, string slot, bool activeMapVisual = false)
     {
         if (planeStatus != "active" || childStatus != "active" ||
-            planeKind is not ("root" or "region" or "settlement") ||
-            childKind is not ("region" or "settlement" or "site" or "interior")) return false;
+            planeKind is not ("root" or "region" or "settlement" or "site" or "interior") ||
+            childKind is not ("region" or "settlement" or "site" or "interior") ||
+            planeKind is "site" or "interior" && !activeMapVisual) return false;
         return planeKind switch
         {
             "root" => childKind == "region" && slot == "region",
             "region" => childKind == "region" ? slot == "region" : slot == "location",
-            "settlement" => childKind != "region" && slot == "location",
+            "settlement" or "site" or "interior" => childKind != "region" && slot == "location",
             _ => false
         };
     }

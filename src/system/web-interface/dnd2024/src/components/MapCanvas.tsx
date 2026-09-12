@@ -30,6 +30,16 @@ function placement(feature: MapFeature, map: MapDocument) {
   };
 }
 
+function markerIcon(feature: MapFeature, isCurrent: boolean, opensChildMap: boolean) {
+  if (isCurrent) return "LocateFixed";
+  switch (feature.icon) {
+    case "region": return "Globe2";
+    case "settlement": return "Castle";
+    case "site": return "Landmark";
+    default: return opensChildMap ? "Landmark" : "MapPin";
+  }
+}
+
 function clampZoom(value: number) {
   return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value));
 }
@@ -284,6 +294,9 @@ export function MapCanvas({
         aria-label={`${map.subject.name} interactive map`}
         className="world-map-canvas"
         data-record-id={map.id}
+        data-coordinate-space={map.coordinateSpace.id}
+        data-map-origin={map.coordinateSpace.frame?.origin}
+        data-map-orientation={map.coordinateSpace.frame?.orientation}
         data-base={map.base && !imageFailed ? "present" : "absent"}
         data-image-state={imageFailed ? "failed" : imageLoading ? "loading" : map.baseState}
         onClick={() => {
@@ -371,7 +384,7 @@ export function MapCanvas({
                   type="button"
                 >
                   <span className="world-map-marker__pin" aria-hidden="true">
-                    <Icon name={isCurrent ? "LocateFixed" : childMapId ? "Landmark" : "MapPin"} size={15} />
+                    <Icon name={markerIcon(feature, isCurrent, !!childMapId)} size={15} />
                   </span>
                   <span aria-hidden="true" className="world-map-marker__label">{feature.name}</span>
                   <span aria-hidden="true" className="world-map-marker__preview">

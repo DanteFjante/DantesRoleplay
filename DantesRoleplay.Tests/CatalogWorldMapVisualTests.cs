@@ -91,6 +91,16 @@ public sealed class CatalogWorldMapVisualTests : IDisposable
         Assert.Equal(expected, IsValidAnchorScope(planeKind, planeStatus, childKind, childStatus, slot));
     }
 
+    [Theory]
+    [InlineData("site")]
+    [InlineData("interior")]
+    public void Detailed_location_plane_requires_its_own_active_visual(string planeKind)
+    {
+        Assert.False(IsValidAnchorScope(planeKind, "active", "interior", "active", "location"));
+        Assert.True(IsValidAnchorScope(planeKind, "active", "interior", "active", "location", activeMapVisual: true));
+        Assert.False(IsValidAnchorScope(planeKind, "active", "region", "active", "region", activeMapVisual: true));
+    }
+
     private static void AssertSchema(string schema, string value, SchemaValueStatus expected)
     {
         var validator = new BoundedJsonSchemaValidator();
@@ -125,16 +135,17 @@ public sealed class CatalogWorldMapVisualTests : IDisposable
         });
 
     private static bool IsValidAnchorScope(string planeKind, string planeStatus,
-        string childKind, string childStatus, string slot)
+        string childKind, string childStatus, string slot, bool activeMapVisual = false)
     {
         if (planeStatus != "active" || childStatus != "active" ||
-            planeKind is not ("root" or "region" or "settlement") ||
-            childKind is not ("region" or "settlement" or "site" or "interior")) return false;
+            planeKind is not ("root" or "region" or "settlement" or "site" or "interior") ||
+            childKind is not ("region" or "settlement" or "site" or "interior") ||
+            planeKind is "site" or "interior" && !activeMapVisual) return false;
         return planeKind switch
         {
             "root" => childKind == "region" && slot == "region",
             "region" => childKind == "region" ? slot == "region" : slot == "location",
-            "settlement" => childKind != "region" && slot == "location",
+            "settlement" or "site" or "interior" => childKind != "region" && slot == "location",
             _ => false
         };
     }

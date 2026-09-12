@@ -167,6 +167,12 @@ export type MapCoordinateSpace = {
   unit: string;
   width: number;
   height: number;
+  frame?: {
+    origin: "top-left";
+    xAxis: "right";
+    yAxis: "down";
+    orientation: "north-up";
+  };
 };
 
 export type MapLayer = {
@@ -182,6 +188,7 @@ export type MapFeature = {
   layerId: string;
   coordinateSpaceId: string;
   geometry: { x: number; y: number };
+  icon?: "region" | "settlement" | "site" | "place";
   name: string;
   detail: string;
   locationId: string | null;
@@ -194,6 +201,11 @@ export type MapScopeLink = {
   childScope: MapScope;
   childName: string;
   viaFeatureId: string | null;
+  parentAnchor?: {
+    coordinateSpaceId: string;
+    featureId: string;
+    geometry: { x: number; y: number };
+  } | null;
 };
 
 export type MapDocument = {
@@ -912,7 +924,7 @@ export type HubAudience = {
   perspective: Perspective;
   allowedPerspectives: Perspective[];
   /** Exact transport evidence that the host owns one shared, full-table website view. */
-  websiteAccess?: "shared";
+  websiteAccess?: "shared" | "public";
 };
 
 export type HubContextSelection = {
@@ -1172,7 +1184,7 @@ export type ConnectedCampaignEnvelope = {
     seat: Perspective;
     perspective?: Perspective;
     allowedPerspectives: Perspective[];
-    websiteAccess?: "shared";
+    websiteAccess?: "shared" | "public";
   };
   contextSelection: HubContextSelection;
   campaign: {

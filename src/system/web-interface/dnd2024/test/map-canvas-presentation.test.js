@@ -4,6 +4,15 @@ import test from "node:test";
 
 const component = readFileSync(new URL("../src/components/MapCanvas.tsx", import.meta.url), "utf8");
 const workspace = readFileSync(new URL("../src/components/ScopedMapWorkspace.tsx", import.meta.url), "utf8");
+
+test("map labels and semantic marker icons come from projected feature data", () => {
+  assert.match(component, /world-map-marker__label[^\n]*\{feature\.name\}/u);
+  assert.match(component, /switch \(feature\.icon\)/u);
+  assert.match(component, /case "region": return "Globe2"/u);
+  assert.match(component, /case "settlement": return "Castle"/u);
+  assert.match(component, /case "site": return "Landmark"/u);
+  assert.doesNotMatch(component, /extractText|ocr|canvas\.getContext/iu);
+});
 const styles = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
 
 test("map bases keep their intrinsic aspect ratio inside the interactive viewport", () => {
@@ -42,6 +51,13 @@ test("place names behave as visual tooltips without replacing accessible button 
 test("selected place stays in page flow", () => {
   assert.match(styles, /\.world-map-selection\s*\{[^}]*position:\s*static;/s);
   assert.doesNotMatch(styles, /\.world-map-selection\s*\{[^}]*position:\s*sticky;/s);
+});
+
+test("site and interior map planes use the same bounded zoom controls", () => {
+  assert.match(component, /aria-label="Current map zoom"/u);
+  assert.match(component, /aria-label="Zoom in"/u);
+  assert.match(component, /aria-label="Zoom out"/u);
+  assert.doesNotMatch(component, /map\.subject\.kind|subject\.kind/u);
 });
 
 test("map viewport state stays local and touch policy leaves browser gestures available", () => {

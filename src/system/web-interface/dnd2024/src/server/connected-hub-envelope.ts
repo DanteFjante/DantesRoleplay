@@ -159,6 +159,7 @@ function normalizeExactName(value: string | null | undefined): string | null {
 }
 
 type LiveLayerCategory = "regions" | "settlements" | "sites" | "other";
+type LiveMapIcon = NonNullable<MapFeature["icon"]>;
 
 const LIVE_LAYER_CATEGORIES: ReadonlyArray<{
   category: LiveLayerCategory;
@@ -187,6 +188,25 @@ function liveLayerCategory(kind: string | null | undefined): LiveLayerCategory {
 
 function liveLayerId(scope: MapScope, category: LiveLayerCategory): string {
   return `layer.live.${scope}.${category}`;
+}
+
+function liveMapIcon(category: LiveLayerCategory): LiveMapIcon {
+  switch (category) {
+    case "regions": return "region";
+    case "settlements": return "settlement";
+    case "sites": return "site";
+    default: return "place";
+  }
+}
+
+function liveCoordinateSpace(id: string): MapDocument["coordinateSpace"] {
+  return {
+    id,
+    unit: "normalized",
+    width: LIVE_MAP_SPACE_SIZE,
+    height: LIVE_MAP_SPACE_SIZE,
+    frame: { origin: "top-left", xAxis: "right", yAxis: "down", orientation: "north-up" },
+  };
 }
 
 function liveLayersForFeatures(
@@ -405,12 +425,7 @@ function buildLiveMapTree(
         scope: "world",
         parentMapId: null,
         subject: { kind: "world", id: worldRootId, name: rootEntry?.name ?? worldName },
-        coordinateSpace: {
-          id: `space.live.${worldRootId}`,
-          unit: "normalized",
-          width: LIVE_MAP_SPACE_SIZE,
-          height: LIVE_MAP_SPACE_SIZE,
-        },
+        coordinateSpace: liveCoordinateSpace(`space.live.${worldRootId}`),
         baseState: unavailable ? "unavailable" : "absent",
         base: null,
         layers: [],
@@ -435,12 +450,14 @@ function buildLiveMapTree(
     const coordinateSpaceId = `space.live.${owner.id}`;
     const features: MapFeature[] = children.filter((child) => validAnchor(child.mapAnchor)).map((child) => {
       const preview = child.media?.setting ?? child.media?.scene ?? child.media?.portrait;
+      const category = liveLayerCategory(child.kind);
       return {
         id: `feature.live.${owner.id}.${child.id}`,
         kind: "point",
-        layerId: liveLayerId(scope, liveLayerCategory(child.kind)),
+        layerId: liveLayerId(scope, category),
         coordinateSpaceId,
         geometry: { x: child.mapAnchor!.x, y: child.mapAnchor!.y },
+        icon: liveMapIcon(category),
         name: child.name,
         detail: child.summary ?? `Known information about ${child.name}.`,
         locationId: child.id,
@@ -452,12 +469,7 @@ function buildLiveMapTree(
       scope,
       parentMapId,
       subject: { kind: owner.kind ?? "location", id: owner.id, name: owner.name },
-      coordinateSpace: {
-        id: coordinateSpaceId,
-        unit: "normalized",
-        width: LIVE_MAP_SPACE_SIZE,
-        height: LIVE_MAP_SPACE_SIZE,
-      },
+      coordinateSpace: liveCoordinateSpace(coordinateSpaceId),
       baseState: mapBaseState(owner),
       base,
       layers: liveLayersForFeatures(scope, features),
@@ -469,14 +481,20 @@ function buildLiveMapTree(
       visit(child, mapId, false);
       const childMapId = mapIdForLocation(child.id);
       if (!maps.some((candidate) => candidate.id === childMapId && candidate.parentMapId === mapId)) continue;
+      const featureId = validAnchor(child.mapAnchor)
+        ? `feature.live.${owner.id}.${child.id}`
+        : null;
       document.scopeLinks.push({
         id: `scopelink.live.${owner.id}.${child.id}`,
         childMapId,
         childScope: scopeForMap(child, false),
         childName: child.name,
-        viaFeatureId: validAnchor(child.mapAnchor)
-          ? `feature.live.${owner.id}.${child.id}`
-          : null,
+        viaFeatureId: featureId,
+        parentAnchor: featureId ? {
+          coordinateSpaceId,
+          featureId,
+          geometry: { x: child.mapAnchor!.x, y: child.mapAnchor!.y },
+        } : null,
       });
     }
     visiting.delete(owner.id);

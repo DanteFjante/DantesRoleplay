@@ -715,6 +715,29 @@ test("a map hierarchy is rejected when a relationship or a placement cannot be t
     ],
   });
   assert.equal(isValidMapHierarchy([unknownViaFeature, regionMapFixture], "map.world"), false);
+
+  const wrongCoordinateSpace = mapFixture({
+    features: [{ ...worldMapFixture.features[0], coordinateSpaceId: "space.somewhere-else" }],
+  });
+  assert.equal(isValidMapHierarchy([wrongCoordinateSpace], "map.world"), false);
+
+  const anchoredWorld = mapFixture({
+    scopeLinks: [{
+      ...linkedWorldMapFixture.scopeLinks[0],
+      parentAnchor: {
+        coordinateSpaceId: "space.world",
+        featureId: "feature.archive",
+        geometry: { x: 50, y: 50 },
+      },
+    }],
+  });
+  assert.equal(isValidMapHierarchy([anchoredWorld, regionMapFixture], "map.world"), true);
+  assert.equal(isValidMapHierarchy([mapFixture({
+    scopeLinks: [{
+      ...anchoredWorld.scopeLinks[0],
+      parentAnchor: { ...anchoredWorld.scopeLinks[0].parentAnchor, geometry: { x: 51, y: 50 } },
+    }],
+  }), regionMapFixture], "map.world"), false);
 });
 
 const overlayFixtures = [

@@ -532,6 +532,8 @@ function isMapFeature(value, space, layerIds) {
     typeof value.kind === "string" &&
     typeof value.layerId === "string" &&
     layerIds.has(value.layerId) &&
+    value.coordinateSpaceId === space.id &&
+    (value.icon === undefined || ["region", "settlement", "site", "place"].includes(value.icon)) &&
     typeof value.name === "string" &&
     (value.locationId === null || typeof value.locationId === "string") &&
     (preview === undefined || (
@@ -559,6 +561,15 @@ function isMapDocument(value) {
     Number.isFinite(value.coordinateSpace.height) &&
     value.coordinateSpace.width > 0 &&
     value.coordinateSpace.height > 0 &&
+    (value.coordinateSpace.frame === undefined || (
+      value.coordinateSpace.unit === "normalized" &&
+      value.coordinateSpace.width === 1000 &&
+      value.coordinateSpace.height === 1000 &&
+      value.coordinateSpace.frame?.origin === "top-left" &&
+      value.coordinateSpace.frame?.xAxis === "right" &&
+      value.coordinateSpace.frame?.yAxis === "down" &&
+      value.coordinateSpace.frame?.orientation === "north-up"
+    )) &&
     ["ready", "absent", "unavailable"].includes(value.baseState) &&
     (value.baseState === "ready") === (value.base !== null) &&
     (value.base === null ||
@@ -585,7 +596,12 @@ function isMapDocument(value) {
         typeof link.childMapId === "string" &&
         typeof link.childName === "string" &&
         MAP_SCOPES.includes(link.childScope) &&
-        (link.viaFeatureId === null || typeof link.viaFeatureId === "string"),
+        (link.viaFeatureId === null || typeof link.viaFeatureId === "string") &&
+        (link.parentAnchor === undefined || link.parentAnchor === null || (
+          typeof link.parentAnchor.coordinateSpaceId === "string" &&
+          typeof link.parentAnchor.featureId === "string" &&
+          isGeometryInCoordinateSpace(link.parentAnchor.geometry, value.coordinateSpace)
+        )),
     )
   );
 }
@@ -601,7 +617,10 @@ export function isValidMapHierarchy(maps, rootMapId) {
   if (!root || root.scope !== "world" || root.parentMapId !== null) return false;
 
   return maps.every((map) => {
-    if (map.scopeLinks.some((link) => !byId.has(link.childMapId))) return false;
+    if (map.scopeLinks.some((link) => {
+      const child = byId.get(link.childMapId);
+      return !child || child.parentMapId !== map.id || child.scope !== link.childScope;
+    })) return false;
     if (
       map.scopeLinks.some(
         (link) => link.viaFeatureId !== null && !map.features.some((feature) => feature.id === link.viaFeatureId),
@@ -609,6 +628,15 @@ export function isValidMapHierarchy(maps, rootMapId) {
     ) {
       return false;
     }
+    if (map.scopeLinks.some((link) => {
+      if (link.parentAnchor === undefined) return false;
+      if (link.parentAnchor === null) return link.viaFeatureId !== null;
+      const feature = map.features.find((candidate) => candidate.id === link.viaFeatureId);
+      return !feature || link.parentAnchor.coordinateSpaceId !== map.coordinateSpace.id ||
+        link.parentAnchor.featureId !== feature.id ||
+        link.parentAnchor.geometry.x !== feature.geometry.x ||
+        link.parentAnchor.geometry.y !== feature.geometry.y;
+    })) return false;
     return buildMapBreadcrumbs(maps, map.id).length > 0;
   });
 }

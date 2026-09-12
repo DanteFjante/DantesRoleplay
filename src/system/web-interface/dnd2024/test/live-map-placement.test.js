@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import test from "node:test";
 
 import { connectedCampaignToHubEnvelope } from "../src/server/connected-hub-envelope.ts";
@@ -147,6 +148,106 @@ test("live anchors keep the same location stable between DM and Player projectio
     featureFor(mapFor(dm, "location.thalorien.valeros"), "location.thalorien.brackenford")?.geometry,
     { x: 232, y: 647 },
   );
+});
+
+test("live maps declare one canonical frame and preserve exact parent anchor identity", () => {
+  const envelope = connectedCampaignToHubEnvelope(connected("dm"));
+  for (const map of envelope.world.maps) {
+    assert.deepEqual(map.coordinateSpace, {
+      id: `space.live.${map.subject.id}`,
+      unit: "normalized",
+      width: 1000,
+      height: 1000,
+      frame: { origin: "top-left", xAxis: "right", yAxis: "down", orientation: "north-up" },
+    });
+    for (const feature of map.features) {
+      assert.equal(feature.coordinateSpaceId, map.coordinateSpace.id);
+      assert.ok(feature.geometry.x >= 0 && feature.geometry.x <= 1000);
+      assert.ok(feature.geometry.y >= 0 && feature.geometry.y <= 1000);
+    }
+    for (const link of map.scopeLinks) {
+      const child = envelope.world.maps.find((candidate) => candidate.id === link.childMapId);
+      assert.equal(child?.parentMapId, map.id);
+      if (link.viaFeatureId === null) {
+        assert.equal(link.parentAnchor, null);
+        continue;
+      }
+      const feature = map.features.find((candidate) => candidate.id === link.viaFeatureId);
+      assert.deepEqual(link.parentAnchor, {
+        coordinateSpaceId: map.coordinateSpace.id,
+        featureId: feature.id,
+        geometry: feature.geometry,
+      });
+    }
+  }
+});
+
+test("adding and renaming locations updates data overlays without changing raster identity", () => {
+  const initialEntries = directory("dm");
+  const initial = connectedCampaignToHubEnvelope(connected("dm", initialEntries));
+  const changedEntries = directory("dm").map((entry) => entry.id === "location.thalorien.brackenford"
+    ? { ...entry, name: "Brackenford Crossing" }
+    : entry);
+  changedEntries.push({
+    id: "location.thalorien.bell-tower",
+    name: "North Bell Tower",
+    kind: "site",
+    summary: "A watch site above the road.",
+    containerId: "location.thalorien.valeros",
+    containmentSlot: "location",
+    mapAnchor: { x: 410, y: 335 },
+  });
+  const changed = connectedCampaignToHubEnvelope(connected("dm", changedEntries));
+  const initialParent = mapFor(initial, "location.thalorien.valeros");
+  const changedParent = mapFor(changed, "location.thalorien.valeros");
+  const rasterIdentity = (map) => createHash("sha256").update(JSON.stringify(map.base)).digest("hex");
+
+  assert.equal(rasterIdentity(changedParent), rasterIdentity(initialParent));
+  assert.equal(featureFor(changedParent, "location.thalorien.brackenford")?.name, "Brackenford Crossing");
+  assert.deepEqual(featureFor(changedParent, "location.thalorien.bell-tower"), {
+    id: "feature.live.location.thalorien.valeros.location.thalorien.bell-tower",
+    kind: "point",
+    layerId: "layer.live.region.sites",
+    coordinateSpaceId: "space.live.location.thalorien.valeros",
+    geometry: { x: 410, y: 335 },
+    icon: "site",
+    name: "North Bell Tower",
+    detail: "A watch site above the road.",
+    locationId: "location.thalorien.bell-tower",
+  });
+});
+
+test("site and interior maps render direct child labels from anchors without baking names into rasters", () => {
+  const entries = [
+    { id: "location.detail.region", name: "Detail Region", kind: "region",
+      containerId: "world.thalorien", containmentSlot: "region",
+      mapVisual: visual("detail.region", "Region map") },
+    { id: "location.detail.site", name: "Mallow Abbey", kind: "site",
+      containerId: "location.detail.region", containmentSlot: "location", mapAnchor: { x: 500, y: 500 },
+      mapVisual: visual("detail.site", "Abbey map") },
+    { id: "location.detail.room", name: "Chapter House", kind: "interior",
+      summary: "A vaulted gathering room.", containerId: "location.detail.site",
+      containmentSlot: "location", mapAnchor: { x: 640, y: 370 },
+      mapVisual: visual("detail.room", "Room map") },
+    { id: "location.detail.lectern", name: "Oak Lectern", kind: "site",
+      summary: "A carved lectern.", containerId: "location.detail.room",
+      containmentSlot: "location", mapAnchor: { x: 260, y: 720 } },
+  ];
+  const initial = connectedCampaignToHubEnvelope(connected("dm", entries));
+  const renamed = connectedCampaignToHubEnvelope(connected("dm", entries.map((entry) =>
+    entry.id === "location.detail.room" ? { ...entry, name: "Refectory" } : entry)));
+  const siteMap = mapFor(initial, "location.detail.site");
+  const renamedMap = mapFor(renamed, "location.detail.site");
+  const interiorMap = mapFor(initial, "location.detail.room");
+  const rasterIdentity = (map) => createHash("sha256").update(JSON.stringify(map.base)).digest("hex");
+
+  assert.ok(isReadyHubEnvelope(initial));
+  assert.equal(featureFor(siteMap, "location.detail.room")?.name, "Chapter House");
+  assert.deepEqual(featureFor(siteMap, "location.detail.room")?.geometry, { x: 640, y: 370 });
+  assert.equal(featureFor(interiorMap, "location.detail.lectern")?.name, "Oak Lectern");
+  assert.deepEqual(featureFor(interiorMap, "location.detail.lectern")?.geometry, { x: 260, y: 720 });
+  assert.equal(featureFor(renamedMap, "location.detail.room")?.name, "Refectory");
+  assert.equal(rasterIdentity(renamedMap), rasterIdentity(siteMap));
 });
 
 test("Thalos is the main map and uses authorized media for both perspectives", () => {
@@ -353,6 +454,7 @@ test("an unanchored child is omitted from maps rather than assigned an invented 
     childScope: "location",
     childName: "Nowhere Yet",
     viaFeatureId: null,
+    parentAnchor: null,
   });
   assert.equal(mapFor(envelope, "location.thalorien.unplaced")?.baseState, "absent");
   assert.equal(envelope.world.locations.some((location) => location.id === "location.thalorien.unplaced"), true);
