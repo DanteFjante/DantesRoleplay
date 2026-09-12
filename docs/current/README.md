@@ -13,6 +13,7 @@ This directory is the maintained entry point for humans and LLMs working on Dant
 | Plan platform implementation, shared contracts, and parallel agent ownership | [PLATFORM-IMPLEMENTATION.md](PLATFORM-IMPLEMENTATION.md) |
 | Establish the shared implementation foundation before platform workstreams | [00 — Shared foundation](platform-implementation/00-shared-foundation.md) |
 | Implement the proposed field-based website/object-read design while preserving strict ECS writes | [FIELD-BASED-OBJECTS-PLAN.md](FIELD-BASED-OBJECTS-PLAN.md) |
+| Upgrade or repair the D&D 2024 catalog and React website against the generic platform | [DND2024-UPGRADE-PLAN.md](DND2024-UPGRADE-PLAN.md) |
 | Change code, tests, schemas, or catalog content | [DEVELOPMENT.md](DEVELOPMENT.md) |
 | Improve test runtime, select affected domains, or remove obsolete/redundant tests in slices | [TEST-SUITE-IMPROVEMENT.md](TEST-SUITE-IMPROVEMENT.md) |
 | Compare, validate, export, or import catalog/database records | [CATALOG.md](CATALOG.md) |
