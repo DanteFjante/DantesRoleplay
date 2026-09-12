@@ -4998,8 +4998,10 @@ strong {
   border: 1px solid var(--line-strong);
   border-radius: 14px;
   background:
-    linear-gradient(112deg, rgba(10, 22, 19, 0.97), rgba(31, 36, 29, 0.85)),
-    radial-gradient(circle at 86% 18%, rgba(201, 155, 82, 0.22), transparent 22rem);
+    linear-gradient(112deg,
+      color-mix(in srgb, var(--surface) 96%, var(--green-soft)),
+      color-mix(in srgb, var(--surface-raised) 90%, var(--gold-soft))),
+    radial-gradient(circle at 86% 18%, color-mix(in srgb, var(--gold) 22%, transparent), transparent 22rem);
   box-shadow: var(--shadow);
 }
 
@@ -5009,7 +5011,7 @@ strong {
   bottom: -160px;
   width: 290px;
   height: 290px;
-  border: 1px solid rgba(201, 155, 82, 0.12);
+  border: 1px solid color-mix(in srgb, var(--gold) 24%, transparent);
   border-radius: 50%;
   content: "";
 }
@@ -5023,9 +5025,9 @@ strong {
   place-items: center;
   border: 1px solid var(--line-strong);
   border-radius: 50%;
-  background: rgba(7, 15, 13, 0.62);
+  background: var(--surface-raised);
   color: var(--gold-bright);
-  box-shadow: 0 0 0 8px rgba(201, 155, 82, 0.05);
+  box-shadow: 0 0 0 8px color-mix(in srgb, var(--gold) 10%, transparent);
 }
 
 .campaign-hero > div:last-child {
@@ -5065,7 +5067,7 @@ strong {
   padding: 0 10px;
   border: 1px solid var(--line);
   border-radius: 6px;
-  background: rgba(0, 0, 0, 0.14);
+  background: var(--surface-soft);
   color: var(--muted);
   font-size: 0.66rem;
 }
@@ -5082,7 +5084,7 @@ strong {
   padding: 14px;
   border: 1px solid var(--line);
   border-radius: 9px;
-  background: rgba(0, 0, 0, 0.16);
+  background: var(--surface-raised);
 }
 
 .campaign-premise-editor label {
@@ -5213,9 +5215,9 @@ strong {
 
 .campaign-dm-banner,
 .campaign-dm-context {
-  border: 1px solid rgba(201, 155, 82, 0.26);
+  border: 1px solid color-mix(in srgb, var(--gold) 46%, var(--line));
   border-radius: 9px;
-  background: rgba(201, 155, 82, 0.06);
+  background: var(--gold-soft);
 }
 
 .campaign-dm-banner {
@@ -5227,7 +5229,7 @@ strong {
 
 .campaign-dm-banner > span,
 .campaign-dm-context > span {
-  color: var(--gold-bright);
+  color: var(--ink);
   font-size: 0.62rem;
   font-weight: 900;
   letter-spacing: 0.09em;
