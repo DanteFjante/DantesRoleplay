@@ -37,7 +37,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             "worker-command", "state-revision", InteractionExecutionProfile.Workflow,
             new InteractionInvocationBudget(1, DateTime.UtcNow.AddMinutes(1)));
         var request = new SystemInnerWorkerRequest(host,
-            new("system.inspect", 1, new string('A', 64)),
+            new("system.application-lifecycle", 1, new string('A', 64)),
             "{\"format\":\"dantes-roleplay/inner-procedure-assignment/v1\",\"instruction\":\"Inspect the registry.\"}",
             "{\"type\":\"object\"}");
         var catalog = new SystemCapabilityCatalog(
