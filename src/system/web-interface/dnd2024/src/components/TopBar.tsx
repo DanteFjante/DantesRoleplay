@@ -13,6 +13,7 @@ export function TopBar({
   onOpenContext,
   contextState,
   contextError,
+  sharedAccess = false,
 }: {
   perspective: Perspective;
   allowedPerspectives: Perspective[];
@@ -23,6 +24,7 @@ export function TopBar({
   onOpenContext?: () => void;
   contextState?: DeferredViewState;
   contextError?: string;
+  sharedAccess?: boolean;
 }) {
   return (
     <header className="top-bar">
@@ -41,7 +43,8 @@ export function TopBar({
         loadState={contextState}
         error={contextError}
       />
-      {allowedPerspectives.length > 1 ? <PerspectiveSwitch
+      {sharedAccess ? <span className="perspective-switch__label">Shared table</span>
+        : allowedPerspectives.length > 1 ? <PerspectiveSwitch
         allowedPerspectives={allowedPerspectives}
         busy={busy}
         perspective={perspective}

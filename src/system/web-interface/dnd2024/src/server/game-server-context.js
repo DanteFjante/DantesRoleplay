@@ -3069,6 +3069,7 @@ async function readGameServerContextCore({
 
   const binding = audience(context);
   if (!binding) return unavailable("The game server returned an invalid audience binding.");
+  const sharedAccess = response.headers.get("X-Website-Access") === "shared";
   const hasBoundActor = binding.status === "bound" && binding.role === "actor";
   // A development preference or requested perspective can never promote a server-bound actor.
   const serverRole = binding;
@@ -3078,8 +3079,9 @@ async function readGameServerContextCore({
   const contextAudience = isGameMaster
     ? {
         seat: "dm",
-        perspective: normalizePerspective(normalizedRequestedPerspective),
-        allowedPerspectives: ["dm", "player"],
+        perspective: sharedAccess ? "dm" : normalizePerspective(normalizedRequestedPerspective),
+        allowedPerspectives: sharedAccess ? ["dm"] : ["dm", "player"],
+        ...(sharedAccess ? { websiteAccess: "shared" } : {}),
       }
     : { seat: "player", perspective: "player", allowedPerspectives: ["player"] };
   const effectivePerspective = contextAudience.perspective ?? "player";

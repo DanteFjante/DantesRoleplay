@@ -987,10 +987,12 @@ async function readRegisteredPartyBootstrap({
   return { value, calls };
 }
 
-test("shared website offers both perspectives without promoting the server-bound seat", async () => {
-  const { value, calls } = await readRegisteredPartyBootstrap({ shared: true, perspective: "dm" });
+test("shared website normalizes obsolete Player preference to the full DM table view", async () => {
+  const { value, calls } = await readRegisteredPartyBootstrap({ shared: true, perspective: "player" });
   assert.equal(value.status, "connected");
-  assert.deepEqual(value.audience, { seat: "dm", perspective: "dm", allowedPerspectives: ["dm", "player"] });
+  assert.deepEqual(value.audience, {
+    seat: "dm", perspective: "dm", allowedPerspectives: ["dm"], websiteAccess: "shared",
+  });
   const hub = connectedCampaignToHubEnvelope(value);
   assert.equal(resolveHubSurface(hub), "table");
   assert.equal(hub.party.length, 1);

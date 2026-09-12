@@ -1169,6 +1169,7 @@ export function connectedCampaignToHubEnvelope(
       seat: connection.audience.seat,
       perspective,
       allowedPerspectives: connection.audience.allowedPerspectives,
+      ...(connection.audience.websiteAccess === "shared" ? { websiteAccess: "shared" as const } : {}),
     },
     ...(connection.campaign.projection || connection.currentPlayProjection ? {
       objectQueries: { campaignSummary: connection.campaign.projection, currentPlay: connection.currentPlayProjection },

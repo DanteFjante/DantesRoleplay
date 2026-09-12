@@ -911,6 +911,8 @@ export type HubAudience = {
   seat: Perspective;
   perspective: Perspective;
   allowedPerspectives: Perspective[];
+  /** Exact transport evidence that the host owns one shared, full-table website view. */
+  websiteAccess?: "shared";
 };
 
 export type HubContextSelection = {
@@ -1170,6 +1172,7 @@ export type ConnectedCampaignEnvelope = {
     seat: Perspective;
     perspective?: Perspective;
     allowedPerspectives: Perspective[];
+    websiteAccess?: "shared";
   };
   contextSelection: HubContextSelection;
   campaign: {

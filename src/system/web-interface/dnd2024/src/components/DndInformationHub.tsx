@@ -1861,6 +1861,7 @@ function DndInformationHubContent({
         onOpenContext={loadDeferredSection ? () => void requestDeferred("context") : undefined}
         contextState={deferredStates.context}
         contextError={deferredErrors.context}
+        sharedAccess={envelope.audience.websiteAccess === "shared"}
       />
       {hubError ? <p className="perspective-notice" role="alert">{hubError}</p> : null}
       {deferredPartialFailure}

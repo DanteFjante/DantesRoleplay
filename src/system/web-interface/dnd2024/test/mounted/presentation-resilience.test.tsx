@@ -8,6 +8,7 @@ import { createRoot } from "react-dom/client";
 import { MainNavigation } from "../../src/components/MainNavigation";
 import { PanelErrorBoundary } from "../../src/components/PanelState";
 import { SystemControls } from "../../src/components/SystemControls";
+import { TopBar } from "../../src/components/TopBar";
 import { WorldFactions } from "../../src/components/WorldFactions";
 import { WorldLore } from "../../src/components/WorldLore";
 import { WorldOverview } from "../../src/components/WorldOverview";
@@ -130,10 +131,35 @@ test("DND navigation supports roving keyboard focus and a mobile select", async 
   } finally { await view.cleanup(); }
 });
 
-test("the DND shell consumes the shared application navigation and theme owner", async () => {
+test("the DND shell consumes one shared navigation and theme owner", async () => {
   const view = await mount(<SystemControls />);
   try {
     assert.equal(view.container.querySelector("system-navigation")?.getAttribute("application-id"), "dnd2024");
-    assert.equal(view.container.querySelector("system-theme-toggle")?.getAttribute("aria-label"), "Color theme");
+    assert.equal(view.container.querySelectorAll("system-theme-toggle").length, 0,
+      "system-navigation owns the single shared theme control");
+  } finally { await view.cleanup(); }
+});
+
+test("the shared table header omits obsolete perspective controls", async () => {
+  const view = await mount(<TopBar
+    allowedPerspectives={["dm"]}
+    busy={false}
+    contextSelection={{
+      selectedWorldId: "world.fixture",
+      selectedCampaignId: "campaign.fixture",
+      worlds: [{ id: "world.fixture", name: "Fixture world", campaigns: [
+        { id: "campaign.fixture", name: "Fixture campaign" },
+      ] }],
+    }}
+    onCampaignChange={() => undefined}
+    onPerspectiveChange={() => undefined}
+    perspective="dm"
+    sharedAccess
+  />);
+  try {
+    assert.equal(view.container.querySelector(".perspective-switch"), null);
+    assert.match(view.container.textContent ?? "", /Shared table/u);
+    assert.equal(view.container.querySelectorAll("system-navigation").length, 1);
+    assert.equal(view.container.querySelectorAll("system-theme-toggle").length, 0);
   } finally { await view.cleanup(); }
 });
