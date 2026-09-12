@@ -91,8 +91,7 @@ public sealed class CodexCaptureAppServerClient(CodexCaptureOptions options) :
             await input.WriteLineAsync(JsonSerializer.Serialize(new { method = "initialized" }).AsMemory(), timeout.Token);
             await SendAsync(input, 2, "thread/read", new { threadId, includeTurns = false }, timeout.Token);
             var metadata = await ReadResponseAsync(output, 2, timeout.Token);
-            if (!metadata.TryGetProperty("thread", out var thread) || !string.Equals(OptionalString(thread, "id"), threadId, StringComparison.Ordinal))
-                throw Failure("CODEX_CAPTURE_THREAD_MISMATCH", "Codex returned a different thread.");
+            ValidateThreadMetadata(metadata, threadId, options.RepositoryRoot);
 
             JsonElement selected = default;
             string? cursor = null;
@@ -166,9 +165,7 @@ public sealed class CodexCaptureAppServerClient(CodexCaptureOptions options) :
             await input.WriteLineAsync(JsonSerializer.Serialize(new { method = "initialized" }).AsMemory(), timeout.Token);
             await SendAsync(input, 2, "thread/read", new { threadId, includeTurns = false }, timeout.Token);
             var metadata = await ReadResponseAsync(output, 2, timeout.Token);
-            if (!metadata.TryGetProperty("thread", out var thread)
-                || !string.Equals(OptionalString(thread, "id"), threadId, StringComparison.Ordinal))
-                throw Failure("CODEX_CAPTURE_THREAD_MISMATCH", "Codex returned a different thread.");
+            ValidateThreadMetadata(metadata, threadId, options.RepositoryRoot);
             var discovered = new List<string>();
             string? cursor = null;
             var requestId = 3L;
@@ -268,6 +265,15 @@ public sealed class CodexCaptureAppServerClient(CodexCaptureOptions options) :
     }
 
     private static string Bound(string value, int maximum) => string.IsNullOrWhiteSpace(value) ? "Codex process failed." : value.Length <= maximum ? value : value[..maximum];
+    internal static void ValidateThreadMetadata(JsonElement metadata, string expectedThreadId, string repositoryRoot)
+    {
+        if (!metadata.TryGetProperty("thread", out var thread)
+            || !string.Equals(OptionalString(thread, "id"), expectedThreadId, StringComparison.Ordinal))
+            throw Failure("CODEX_CAPTURE_THREAD_MISMATCH", "Codex returned a different thread.");
+        if (!new CodexGameplayCaptureBinding(repositoryRoot, "capture", "capture", expectedThreadId)
+            .Matches(expectedThreadId, OptionalString(thread, "cwd")))
+            throw Failure("CODEX_CAPTURE_THREAD_MISMATCH", "Codex returned a thread outside the configured repository.");
+    }
     private static string OptionalString(JsonElement parent, string name) => parent.ValueKind == JsonValueKind.Object && parent.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() ?? string.Empty : string.Empty;
     private static string? NullableString(JsonElement parent, string name) => parent.ValueKind == JsonValueKind.Object && parent.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
     private static CodexBridgeException Failure(string code, string message) => new(code, message);

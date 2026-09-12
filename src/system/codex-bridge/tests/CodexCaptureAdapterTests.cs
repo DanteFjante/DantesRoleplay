@@ -9,6 +9,23 @@ public sealed class CodexCaptureAdapterTests
     private const string Repository = "C:\\repo\\DantesRoleplay-gameplay-memory";
 
     [Fact]
+    public void App_server_thread_metadata_requires_the_configured_repository()
+    {
+        CodexCaptureAppServerClient.ValidateThreadMetadata(
+            Json("""{"thread":{"id":"thread.gameplay","cwd":"C:\\repo\\DantesRoleplay-gameplay-memory\\"}}"""),
+            "thread.gameplay", Repository);
+
+        var wrong = Assert.Throws<CodexBridgeException>(() => CodexCaptureAppServerClient.ValidateThreadMetadata(
+            Json("""{"thread":{"id":"thread.gameplay","cwd":"C:\\repo\\engineering"}}"""),
+            "thread.gameplay", Repository));
+        Assert.Equal("CODEX_CAPTURE_THREAD_MISMATCH", wrong.Code);
+
+        var missing = Assert.Throws<CodexBridgeException>(() => CodexCaptureAppServerClient.ValidateThreadMetadata(
+            Json("""{"thread":{"id":"thread.gameplay"}}"""), "thread.gameplay", Repository));
+        Assert.Equal("CODEX_CAPTURE_THREAD_MISMATCH", missing.Code);
+    }
+
+    [Fact]
     public async Task Reads_only_the_requested_completed_turn_with_real_visible_messages()
     {
         var client = new FakeReadClient(Thread("thread.gameplay", "turn.1", "completed", "User words", "Visible answer"));
