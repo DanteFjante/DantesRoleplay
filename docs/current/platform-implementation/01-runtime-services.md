@@ -1,6 +1,6 @@
 # 01 — Runtime services and JavaScript execution
 
-This proposed workstream turns existing JavaScript evaluation and typed actions into a reusable service runtime for the website and Codex integration. It implements no device or provider bridges. Other APIs remain future extension points. Names below describe contracts; this plan allocates no runtime identifiers. [Platform requirements](../PLATFORM-REQUIREMENTS.md) remains the current-state baseline.
+This workstream extends existing JavaScript evaluation and typed actions into the reusable service runtime used by the website and Codex integration. It implements no device or provider bridges. Other APIs remain future extension points. Names below describe contracts; this plan allocates no runtime identifiers. [Platform requirements](../PLATFORM-REQUIREMENTS.md) remains the current-state baseline.
 
 Prerequisite: implement [00 — Shared foundation](00-shared-foundation.md) first and have the coordinator supply its accepted foundation revision and contract baseline. This workstream consumes those shared contracts and does not redefine them independently.
 
@@ -44,8 +44,8 @@ content never falls back to an earlier executable. This pinning does not itself 
 catalog provider, authorize old-generation commits, or implement activation and rollback.
 
 The internal `JintMechanicEngine.PrepareMechanicProgram` method is the exact executable preparation
-seam for coordinated activation integration. Existing activation preparation remains separately
-owned until that integration is accepted. The registered read-only service adapter consumes the
+seam consumed by candidate validation and publication. Each invocation still constructs a fresh
+engine and resolves the exact selected application generation. The registered service adapter consumes the
 standing-grant read adapter and owner-resolved grant targets, with no legacy permission fallback.
 Its registered workflow profile exposes exact actions and durable procedure jobs declared by the
 retained `requirements.service.actions` and `requirements.service.jobs` contracts. Each action
@@ -68,16 +68,16 @@ calling capabilities after handoff. `ctx.services.job.status(handle)` treats the
 input and routes it through the durable owner's current state-scope and `ReadTask` authorization before
 returning bounded inert status data. The public root atomic adapter still rejects parented requests,
 and read-only engine instances still
-return the canonical unavailable result for `ctx.services.action` and `ctx.services.job`. Atomic
-service execution, resumable `ctx.services.wait`, JavaScript-stack checkpoints and AI callbacks remain
-unavailable until their real dependencies and shared contracts are integrated.
+return the canonical unavailable result for `ctx.services.action` and `ctx.services.job`. Resumable
+`ctx.services.wait`, JavaScript-stack checkpoints, arbitrary durable JavaScript heaps and in-process
+AI callbacks are not part of this runtime boundary.
 
-The internal candidate runtime validator consumes the activation owner's retained pure-mechanic
-closure evidence. That evidence covers every changed Markdown/JavaScript pair through the existing
-normalized record and requirements owners. The initial profile permits only empty requirements or
-an input schema; broader dependency completeness remains false. Every selected mechanic needs a
-retained input/expected-data sample, with at most four per definition and sixteen per request. The
-entire request and report each obey the 64 KiB/depth 32 bound.
+The registered candidate runtime validator consumes the activation owner's retained closure evidence.
+Pure candidates run against retained samples. The workflow-service path validates the closed declared
+reads and dry-runs its first action, or validates its first declared procedure job, through the real
+owners without committing effects or creating a task. Every selected mechanic needs a retained
+input/expected-data sample, with at most four per definition and sixteen per request. The entire
+request and report each obey the 64 KiB/depth 32 bound.
 
 Publication through the compatible mechanic-body, reviewed closed-pure, and Matches-only paths
 atomically advances runtime and application-publication state spaces whose application revision,
@@ -93,10 +93,9 @@ the validator creates no transaction, budget, service capability or effect dispa
 original sample ordinals, actual attempt status and bounded data fingerprints, including partial
 progress when cancellation or exhaustion stops execution. The selection pin is the pure closure's
 evidence fingerprint; the policy pin includes the actual parser/runtime, harness, schema profile and
-execution limits. Known non-data outputs are rejected. Completed means only that these sample
-checks passed, never global candidate validity or publication approval. This internal validator
-remains unregistered pending coordinator integration with retained validation reports and the
-remaining preparation/reuse/publication gates.
+execution limits. Known non-data outputs are rejected. Completed means only that these checks passed,
+never global candidate validity or publication approval. The authoring owner retains the report and
+independently enforces its reuse, compatibility, authority and publication gates.
 
 The frozen read-only service contract bounds each JSON exchange to 64 KiB/depth 32 and the root
 exchange total to 1 MiB. The root consumes one shared operation; each registered read consumes one

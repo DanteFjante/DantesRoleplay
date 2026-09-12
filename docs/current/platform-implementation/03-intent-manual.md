@@ -1,8 +1,8 @@
 # 03 — Intent discovery and the operating manual
 
-Status: discovery owner implementation with accepted additive context contracts; dependent publication,
-execution and transport integration remain pending. Initial callers are the website and Codex through
-MCP; other protocols remain extension points. Discovery creates no runtime authorization or permanent IDs.
+Status: discovery, manual context, reuse-review context, alternate-intent authoring, publication
+refresh and the website/Codex gateway integration are implemented within the boundary below. Other
+protocols remain extension points. Discovery creates no runtime authorization or permanent IDs.
 
 ## Implemented owner boundary
 
@@ -62,14 +62,13 @@ select a new generation. The procedure store remains authoritative, and every se
 is rechecked before a packet returns. Missing, stale or failed section generations preserve current
 lexical section selection.
 The accepted context seam is `IInteractionManualContextService` with `InteractionManualContextRequest`.
-Coordinator integration owns constructor registration and MCP/website mapping. Production standing
-grant policy/ownership resolution and publication are supplied by plan 02; consumer fixtures do not
-prove issuance or production authorization. Candidate-bound equivalence review and end-to-end
-invocation through plans 01/05/06 remain separate
-integration dependencies; discovery tests do not prove those dependent scenarios.
+The coordinator registers it and maps the selected-application website/Codex gateways. Production
+standing-grant policy, ownership resolution and publication remain owned by plan 02; discovery
+evidence itself does not prove issuance, execution authority or publication.
 
-Candidate reuse preparation implements `IApplicationCandidateReuseReview` without a successful
-semantic-review path. It normalizes verified retained text through the existing catalog parser,
+Candidate reuse preparation implements `IApplicationCandidateReuseReview` with a conservative
+structural result and a candidate-bound semantic-review path when that result is insufficient. It
+normalizes verified retained text through the existing catalog parser,
 requires explicit application Read authority for candidate definitions and active alternatives,
 and rechecks exact targets and generation before returning evidence. An exact copy under a different
 ID is Invalid: the conservative comparator removes only the top-level ID from otherwise identical
@@ -85,9 +84,10 @@ The proposed reuse-judgment input freezes full retained text, the full implement
 authorized manual packet and exact alternative contracts. It permits at most 16 documents and
 16 alternatives within 64,000 UTF-8 input bytes, and 8,000 UTF-8 output bytes with 500-character
 judgment reasons. Nothing is truncated to fit. Strict output checks pin identity and alternative
-coverage but do not create an attestation. The host-selected read-only plan 05 worker and verified
-plan 04 accounting/worker provenance must be integrated before the host can accept a candidate-bound
-Valid judgment. No-hit retrieval, a nonempty reason, model output or usage counters alone are insufficient.
+coverage but do not create an attestation. The host-selected read-only plan 05 worker and plan 04
+accounting/worker provenance supply the candidate-bound review path. The authoring owner still
+verifies the exact retained judgment and current authority before accepting it. No-hit retrieval, a
+nonempty reason, model output or usage counters alone are insufficient.
 
 The additive V2 selected-context contract keeps the full candidate and base activation references
 host-only. Its selection, input and manual-result fingerprints derive exclusively from authorized

@@ -1,6 +1,9 @@
 # Focused INNER AI workers
 
-Status: procedure-workflow workers, durable execution/readback, and selected-application submit/read/list/wait/cancel capabilities are implemented, 2026-09-12. The website and selected-application AI use the existing capability gateway. Live provider acceptance and website progress presentation remain outside this boundary.
+Status: procedure-workflow workers, durable execution/readback, and selected-application
+submit/read/list/wait/cancel capabilities are implemented. The website, scripts and Codex use the
+existing capability gateway and typed result presentation. Live external-provider acceptance remains
+outside this boundary.
 
 Prerequisite: implement [00 — Shared foundation](00-shared-foundation.md) first and have the coordinator supply its accepted foundation revision and contract baseline. This workstream consumes those shared contracts and does not redefine them independently.
 
@@ -190,7 +193,7 @@ client independently bounds direct callbacks. Exact duplicate calls remain separ
 activities even when the compact call list deduplicates them. Authority and durable allowance checks
 still belong at each actual tool boundary. Cancellation sends a bounded best-effort interrupt before
 session disposal; it does not prove that remote billing stopped. These deterministic tests do not
-establish live provider acceptance, persistent accounting or INNER runtime availability.
+establish live external-provider acceptance or provider billing reconciliation.
 
 `SystemInnerWorkerAiReservationEvidence` and `SystemInnerWorkerAiUsageReport` are inert host/owner
 data, serialized with `JsonSerializerDefaults.Web` for camelCase. `TotalTokens` preserves independent
@@ -219,7 +222,7 @@ establish provider guarantees or a live-provider billing reconciliation run.
 
 OUTER Codex coordinates intent and outcomes while focused INNER workers perform bounded repetitive work with only the procedure, context, and tools needed for their assignment. JavaScript can submit the same worker requests. Several independent assignments can run concurrently; dependent assignments wait for accepted prerequisite results.
 
-Reuse [AiService](../../../DantesRoleplay.LocalAI/Services/AiService.cs), [CodexAiProvider](../../../DantesRoleplay.LocalAI/Providers/CodexAiProvider.cs), [SystemAiAgentService](../../../src/system/system-capabilities/hosting/SystemAiAgentService.cs), [interaction context](../../../src/system/interaction-orchestration/hosting/InteractionTaskContextMaterializer.cs), and [system tasks](../../../src/system/system-task-orchestration/domain/SystemTaskContracts.cs). The current AI runner already supports host profiles, selected tools, response schemas, and call/token bounds. Interaction receipts already carry parent delegation identity. Web inner/outer profiles and continued-subtask requests do not yet provide the desired child-worker lifecycle.
+Reuse [AiService](../../../DantesRoleplay.LocalAI/Services/AiService.cs), [CodexAiProvider](../../../DantesRoleplay.LocalAI/Providers/CodexAiProvider.cs), [SystemAiAgentService](../../../src/system/system-capabilities/hosting/SystemAiAgentService.cs), [interaction context](../../../src/system/interaction-orchestration/hosting/InteractionTaskContextMaterializer.cs), and [system tasks](../../../src/system/system-task-orchestration/domain/SystemTaskContracts.cs). The AI runner supports host profiles, selected tools, response schemas, and call/token bounds. The durable lifecycle now supplies parent/dependency links, admission, waiting, cancellation, journaled provider calls, replay and bounded readback to the website, scripts and Codex gateway.
 
 Use these existing owners rather than another provider implementation, parallel agent framework, or replacement project. Existing providers remain compatible; this work adds no new provider or external service integration.
 
