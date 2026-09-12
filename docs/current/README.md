@@ -6,6 +6,7 @@ This directory is the maintained entry point for humans and LLMs working on Dant
 
 | Task | Read next |
 | --- | --- |
+| Implement DM/Player knowledge views, consistent map overlays, starting-area preparation, and outer-AI conversation memory | [GAMEPLAY-EXPERIENCE-PLAN.md](GAMEPLAY-EXPERIENCE-PLAN.md) |
 | Resume the active upgrade, master landing, cleanup, manual, website, and DND2024 work | [UPGRADE-COORDINATION.md](UPGRADE-COORDINATION.md) |
 | Decide where behavior belongs or understand runtime boundaries | [ARCHITECTURE.md](ARCHITECTURE.md) |
 | Understand the generic platform's implemented requirements, dynamism, web, AI, retrieval, and storage | [PLATFORM-REQUIREMENTS.md](PLATFORM-REQUIREMENTS.md) |
