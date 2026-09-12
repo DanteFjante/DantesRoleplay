@@ -315,7 +315,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
                 StringComparison.Ordinal);
             Assert.Equal(3, provider.Calls);
 
-            await RevokeInnerWorkerGrantAsync(db);
+            await RevokeProcedureWorkerGrantAsync(db);
             var revokedRead = await gateway.InvokeAsync(host.Principal, Application,
                 SystemCapabilityIds.InnerWorkerRead, JsonSerializer.Serialize(new
                 {
@@ -381,7 +381,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         await db.SaveChangesAsync();
     }
 
-    private static async Task RevokeInnerWorkerGrantAsync(DantesRoleplayDbContext db)
+    private static async Task RevokeProcedureWorkerGrantAsync(DantesRoleplayDbContext db)
     {
         var prior = SqliteStandingGrantPolicy.Parse(await db.Set<StandingGrantRevisionRecord>()
             .SingleAsync(value => value.GrantId == "inner-grant" && value.Revision == 1));
