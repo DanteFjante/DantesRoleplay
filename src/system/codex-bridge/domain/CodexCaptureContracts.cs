@@ -206,6 +206,7 @@ public interface ICodexThreadTurnDiscoveryClient
 {
     Task<IReadOnlyList<string>> ListCompletedTurnIdsAsync(
         string threadId,
+        string? afterTurnId,
         CancellationToken cancellationToken = default);
 }
 

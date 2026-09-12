@@ -142,6 +142,7 @@ public sealed class CodexCaptureAppServerClient(CodexCaptureOptions options) :
     /// <summary>Returns only the latest bounded page of completed turn identities for one pinned thread.</summary>
     public async Task<IReadOnlyList<string>> ListCompletedTurnIdsAsync(
         string threadId,
+        string? afterTurnId,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(threadId) || threadId.Length > 200)
@@ -167,23 +168,43 @@ public sealed class CodexCaptureAppServerClient(CodexCaptureOptions options) :
             if (!metadata.TryGetProperty("thread", out var thread)
                 || !string.Equals(OptionalString(thread, "id"), threadId, StringComparison.Ordinal))
                 throw Failure("CODEX_CAPTURE_THREAD_MISMATCH", "Codex returned a different thread.");
-            await SendAsync(input, 3, "thread/turns/list", new
+            var discovered = new List<string>();
+            string? cursor = null;
+            var requestId = 3L;
+            for (var page = 0; page < MaximumTurnPages; page++)
             {
-                threadId,
-                cursor = (string?)null,
-                limit = PageSize,
-                sortDirection = "desc",
-                itemsView = "notLoaded"
-            }, timeout.Token);
-            var turns = await ReadResponseAsync(output, 3, timeout.Token);
-            if (!turns.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Array)
-                throw Failure("CODEX_CAPTURE_PROTOCOL_INVALID", "Codex returned an invalid turn page.");
-            return data.EnumerateArray()
-                .Where(value => string.Equals(OptionalString(value, "status"), "completed", StringComparison.Ordinal))
-                .Select(value => OptionalString(value, "id"))
-                .Where(value => !string.IsNullOrWhiteSpace(value) && value.Length <= 200)
-                .Reverse()
-                .ToArray();
+                await SendAsync(input, requestId, "thread/turns/list", new
+                {
+                    threadId,
+                    cursor,
+                    limit = PageSize,
+                    sortDirection = "desc",
+                    itemsView = "notLoaded"
+                }, timeout.Token);
+                var turns = await ReadResponseAsync(output, requestId++, timeout.Token);
+                if (!turns.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Array)
+                    throw Failure("CODEX_CAPTURE_PROTOCOL_INVALID", "Codex returned an invalid turn page.");
+                foreach (var value in data.EnumerateArray())
+                {
+                    var id = OptionalString(value, "id");
+                    if (string.IsNullOrWhiteSpace(id) || id.Length > 200)
+                        throw Failure("CODEX_CAPTURE_PROTOCOL_INVALID", "Codex returned a turn without a valid identity.");
+                    if (afterTurnId is not null && string.Equals(id, afterTurnId, StringComparison.Ordinal))
+                    {
+                        discovered.Reverse();
+                        return discovered;
+                    }
+                    if (string.Equals(OptionalString(value, "status"), "completed", StringComparison.Ordinal))
+                        discovered.Add(id);
+                }
+                cursor = NullableString(turns, "nextCursor");
+                if (afterTurnId is null || cursor is null) break;
+            }
+            if (afterTurnId is not null)
+                throw Failure("CODEX_CAPTURE_WATCH_GAP",
+                    "The watch anchor was not found within the bounded Codex turn history.");
+            discovered.Reverse();
+            return discovered;
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {

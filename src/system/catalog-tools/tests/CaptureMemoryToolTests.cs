@@ -487,13 +487,15 @@ public sealed class CaptureMemoryToolTests
 
         public Task<IReadOnlyList<string>> ListCompletedTurnIdsAsync(
             string requestedThreadId,
+            string? afterTurnId,
             CancellationToken cancellationToken = default)
         {
             Assert.Equal(threadId, requestedThreadId);
             discoveries++;
+            Assert.Equal(discoveries == 1 ? null : discoveries == 2 ? existingTurnId : newTurnId, afterTurnId);
             return Task.FromResult<IReadOnlyList<string>>(discoveries == 1
                 ? [existingTurnId]
-                : [existingTurnId, newTurnId]);
+                : discoveries == 2 ? [newTurnId] : []);
         }
 
         public Task<JsonElement> ReadTurnAsync(string requestedThreadId, string requestedTurnId,
