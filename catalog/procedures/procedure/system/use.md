@@ -50,6 +50,10 @@ get operational context for a task
   `procedure.system.trigger-scheduling`.
 - INNER task submission, dependencies, read/list/wait/cancel, typed results, and reconnect recovery:
   the exact `procedure.system.inner-worker.*` contract.
+- Explicitly linked private conversation-journal capture, inspection, recovery, retention, and
+  deletion: `procedure.system.conversation-memory`. Source-pinned dreaming follows
+  `procedure.system.conversation-dream` through its configured application-owned executable
+  procedure; it does not capture unrelated conversations or establish played state.
 - Composed pages, query/action bindings, publication, assets, worker result presentation, and current
   theme limitation: `procedure.system.web-composition`.
 - Generic entity/component/relationship inspection and audited history: `procedure.system.inspect`.
@@ -68,14 +72,14 @@ procedure and live descriptor supply the actual schema.
   `system.dependencies`, `system.catalogs`, `system.catalog.browse`, `system.catalog.search`,
   `system.catalog.record`, `system.feature-search`, `system.interaction-plan`,
   `system.interaction-receipt`, `system.interaction-recipes`, `system.trigger-scheduling`,
-  `system.blobs`, `namespaces`, and `history`.
+  `system.conversation-memory`, `system.blobs`, `namespaces`, and `history`.
 - Commit kinds: `application.action.execute`, `system.application-object.submit`, `feedback`,
   `system.application.register`, `system.source.register`, `system.extension.register`,
   `system.component-type.register`, `system.application.activate`, `system.state-space.create`,
   `system.state-space.upgrade`, `system.state-space.adopt-legacy`, `system.world-state.sync`,
   `system.interaction-execute`, `system.interaction-recipe-review`, `system.trigger-scheduling`,
-  `system.knowledge-state.sync`, `system.namespace.register`, `system.blob-upload.begin`, and
-  `system.blob-upload.finalize`.
+  `system.knowledge-state.sync`, `system.conversation-memory`, `system.namespace.register`,
+  `system.blob-upload.begin`, and `system.blob-upload.finalize`.
 
 ### Common result protocol
 Treat `tag` and `code` as authoritative. `completed` is read/computation success; `committed` requires
