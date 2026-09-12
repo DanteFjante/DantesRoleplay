@@ -244,7 +244,7 @@ test('known hidden or disabled pages are suppressed without being reported as ma
   assert.equal(value.isClickable, false);
 });
 
-test('publication navigation visibly reports partial page coverage while retaining usable links', async () => {
+test('publication navigation retains usable links without exposing partial publication diagnostics', async () => {
   const value = normalizePublishedApplication(application({pages: [
     page({entityId: 'web-page:bad', slug: 'bad', url: 'javascript:bad'}),
     page({entityId: 'web-page:good', slug: 'good', order: 2}),
@@ -253,18 +253,70 @@ test('publication navigation visibly reports partial page coverage while retaini
   try {
     assert.equal(mounted.navigation.shadowRoot.querySelectorAll('[part="page-link"]').length, 1);
     assert.equal(mounted.navigation.shadowRoot.querySelector('[part="page-link"]')?.textContent, 'Rules');
-    assert.equal(mounted.navigation.shadowRoot.querySelector('[part="partial-status"]')?.textContent,
-      'Some application pages are unavailable.');
+    assert.equal(mounted.navigation.shadowRoot.querySelector('[part="partial-status"]'), null);
   } finally { mounted.dom.window.close(); }
 });
 
-test('application navigation reports partial application details without claiming pages are unavailable', async () => {
+test('application navigation does not expose partial publication details to users', async () => {
   const value = normalizePublishedApplication(application({displayName: undefined}), origin);
   const mounted = await mountApplicationNavigation(value);
   try {
-    assert.equal(mounted.navigation.shadowRoot.querySelector('[part="partial-status"]')?.textContent,
-      'Some application publication details are unavailable.');
+    assert.equal(mounted.navigation.shadowRoot.querySelector('[part="partial-status"]'), null);
   } finally { mounted.dom.window.close(); }
+});
+
+test('page-only navigation promotes one page and keeps keyboard menus for additional pages', async () => {
+  const onePage = normalizePublishedApplication(application({
+    indexPage: null,
+    isClickable: false,
+    pages: [
+      page({entityId: 'web-page:first', slug: 'first', navigationLabel: 'First', order: 1, url: '/ui/sample/first'})
+    ]
+  }), origin);
+  const mounted = await mountApplicationNavigation(onePage);
+  try {
+    const primary = mounted.navigation.shadowRoot.querySelector('[part="application-link"]');
+    assert.equal(primary?.getAttribute('href'), '/ui/sample/first');
+    assert.equal(mounted.navigation.shadowRoot.querySelector('[part="menu-trigger"]'), null);
+    assert.equal(mounted.navigation.shadowRoot.querySelector('[part="menu"]'), null);
+  } finally { mounted.dom.window.close(); }
+
+  const twoPages = normalizePublishedApplication(application({
+    indexPage: null,
+    isClickable: false,
+    pages: [
+      page({entityId: 'web-page:first', slug: 'first', navigationLabel: 'First', order: 1, url: '/ui/sample/first'}),
+      page({entityId: 'web-page:second', slug: 'second', navigationLabel: 'Second', order: 2, url: '/ui/sample/second'})
+    ]
+  }), origin);
+  const menuMounted = await mountApplicationNavigation(twoPages);
+  try {
+    const trigger = menuMounted.navigation.shadowRoot.querySelector('[part="menu-trigger"]');
+    const menu = menuMounted.navigation.shadowRoot.querySelector('[part="menu"]');
+    assert.equal(menuMounted.navigation.shadowRoot.querySelector('[part="application-link"]')?.getAttribute('href'), '/ui/sample/first');
+    assert.ok(trigger);
+    assert.ok(menu);
+    const links = menu.querySelectorAll('[role="menuitem"]');
+    trigger.dispatchEvent(new menuMounted.dom.window.KeyboardEvent('keydown', {key: 'ArrowDown', bubbles: true}));
+    assert.equal(menu.hidden, false);
+    assert.equal(menuMounted.navigation.shadowRoot.activeElement, links[0]);
+    links[0].dispatchEvent(new menuMounted.dom.window.KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
+    assert.equal(menu.hidden, true);
+    assert.equal(menuMounted.navigation.shadowRoot.activeElement, trigger);
+  } finally { menuMounted.dom.window.close(); }
+
+  const nonpublishable = normalizePublishedApplication(application({
+    isPublishable: false,
+    isClickable: false,
+    publicationStatus: 'unavailable'
+  }), origin);
+  const unavailable = await mountApplicationNavigation(nonpublishable);
+  try {
+    assert.equal(unavailable.navigation.shadowRoot.querySelector('[part="application-link"]'), null);
+    assert.equal(unavailable.navigation.shadowRoot.querySelector('button'), null);
+    assert.equal(unavailable.navigation.shadowRoot.querySelector('[part="menu-trigger"]'), null);
+    assert.equal(unavailable.navigation.shadowRoot.querySelector('[part="menu"]'), null);
+  } finally { unavailable.dom.window.close(); }
 });
 
 test('prototype-only publication fields are not admitted as trusted display data', () => {

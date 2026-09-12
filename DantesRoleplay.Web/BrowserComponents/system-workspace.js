@@ -4,6 +4,7 @@ import '/components/ai-workspace.js';
 import '/components/page-administration.js';
 import '/components/governance-control-center.js';
 import '/components/application-capability-center.js';
+import '/components/system-theme.js';
 
 const CONTROL_CENTER_PATH = '/ui/control-center';
 
@@ -17,6 +18,7 @@ class SystemNavigation extends HTMLElement {
     this._request = null;
     this._client = systemWebClient;
     this._routeChanged = () => this._updateCurrent();
+    this._drawerOpen = false;
     this.attachShadow({mode: 'open'});
     this._renderShell();
   }
@@ -54,27 +56,54 @@ class SystemNavigation extends HTMLElement {
   _renderShell() {
     const style = document.createElement('style');
     style.textContent = `
-      :host { display: block; color: var(--system-navigation-color, inherit); font: inherit; }
-      nav, [part='system-pages'], [part='applications'] { display: flex; flex-direction: var(--system-navigation-direction, row); flex-wrap: wrap; gap: var(--system-navigation-gap, .45rem); align-items: var(--system-navigation-align, center); }
-      a, button { box-sizing: border-box; border: 1px solid transparent; border-radius: var(--system-navigation-radius, 999px); color: var(--system-navigation-link-color, inherit); font: inherit; font-size: var(--system-navigation-font-size, .85rem); line-height: 1.25; padding: var(--system-navigation-padding, .5rem .75rem); text-decoration: none; }
-      a:hover, a:focus-visible, button:hover:not(:disabled), button:focus-visible { border-color: var(--system-navigation-border-color, currentColor); outline: 2px solid var(--system-navigation-focus-color, currentColor); outline-offset: 2px; }
-      a[aria-current='page'], button[data-current='true'] { background: var(--system-navigation-current-background, rgba(128, 170, 128, .16)); border-color: var(--system-navigation-current-border-color, currentColor); }
-      [part='application'] { display: inline-flex; align-items: center; gap: .15rem; position: relative; }
-      [part='application'][data-current='true'] { border-radius: var(--system-navigation-radius, 999px); box-shadow: 0 0 0 1px var(--system-navigation-current-border-color, currentColor); }
-      [part='application-link']:disabled { cursor: not-allowed; opacity: .58; }
-      [part='menu-trigger'] { cursor: pointer; padding-inline: .55rem; }
-      [part='menu'] { background: var(--system-navigation-menu-background, Canvas); border: 1px solid var(--system-navigation-border-color, currentColor); border-radius: .6rem; box-shadow: 0 .5rem 1.5rem rgba(0,0,0,.2); display: grid; gap: .15rem; left: 0; min-width: 12rem; padding: .3rem; position: absolute; top: calc(100% + .25rem); z-index: 100; }
-      [part='menu'] a { border-radius: .4rem; white-space: nowrap; }
-      [part='application-state'] { color: var(--system-navigation-muted-color, inherit); font-size: .72rem; max-width: 12rem; }
-      [part='status'] { color: var(--system-navigation-muted-color, inherit); font-size: var(--system-navigation-status-font-size, .76rem); margin: 0; padding: .25rem .4rem; }
-      [part='retry'] { background: var(--system-navigation-button-background, transparent); cursor: pointer; }
+      :host { display: block; color: var(--system-navigation-color, var(--system-color-text, inherit)); font: var(--system-navigation-font, inherit); }
+      nav, [part='navigation-content'], [part='system-pages'], [part='applications'] { align-items: var(--system-navigation-align, center); display: flex; flex-wrap: wrap; gap: var(--system-navigation-gap, .55rem); }
+      nav { position: relative; }
+      a, button, select { box-sizing: border-box; min-height: 2.35rem; border: 1px solid transparent; border-radius: var(--system-navigation-radius, var(--system-radius-small, .5rem)); color: var(--system-navigation-link-color, var(--system-color-text, inherit)); font: inherit; font-size: var(--system-navigation-font-size, .84rem); line-height: 1.25; }
+      a, button { align-items: center; display: inline-flex; padding: var(--system-navigation-padding, .48rem .7rem); text-decoration: none; }
+      button { background: var(--system-navigation-button-background, transparent); cursor: pointer; }
+      a:hover, a:focus-visible, button:hover, button:focus-visible, select:focus-visible { border-color: var(--system-navigation-border-color, var(--system-color-border, currentColor)); outline: 2px solid var(--system-navigation-focus-color, var(--system-color-focus, currentColor)); outline-offset: 2px; }
+      a[aria-current='page'] { background: var(--system-navigation-current-background, var(--system-color-surface-raised, rgba(127,127,127,.12))); border-color: var(--system-navigation-current-border-color, var(--system-color-border, currentColor)); }
+      [part='drawer-trigger'] { display: none; }
+      [part='application-picker'] { align-items: center; display: inline-flex; gap: .4rem; color: var(--system-navigation-muted-color, var(--system-color-muted, inherit)); font-size: .76rem; font-weight: 650; }
+      select { max-width: min(18rem, 40vw); border-color: var(--system-navigation-border-color, var(--system-color-border, currentColor)); background: var(--system-navigation-menu-background, var(--system-color-surface, Canvas)); padding: .38rem 1.8rem .38rem .55rem; }
+      [part='local-navigation'] { display: flex; }
+      [part='status'] { color: var(--system-navigation-muted-color, var(--system-color-muted, inherit)); font-size: var(--system-navigation-status-font-size, .74rem); margin: 0; padding: .2rem .35rem; }
+      [part='retry'] { border-color: var(--system-navigation-border-color, var(--system-color-border, currentColor)); }
+      @media (max-width: 680px) {
+        nav { display: block; }
+        [part='drawer-trigger'] { display: inline-flex; }
+        [part='navigation-content'] { align-items: stretch; display: none; flex-direction: column; min-width: min(22rem, calc(100vw - 2rem)); margin-top: .55rem; padding: .7rem; border: 1px solid var(--system-navigation-border-color, var(--system-color-border, currentColor)); border-radius: var(--system-radius-medium, .85rem); background: var(--system-navigation-menu-background, var(--system-color-surface, Canvas)); box-shadow: var(--system-shadow-raised, 0 .8rem 2rem rgba(0,0,0,.2)); position: absolute; right: 0; top: 100%; z-index: 100; }
+        :host([data-drawer-open='true']) [part='navigation-content'] { display: flex; }
+        [part='system-pages'], [part='applications'] { align-items: stretch; flex-direction: column; }
+        [part='system-pages'] a { width: 100%; }
+        [part='application-picker'] { align-items: stretch; flex-direction: column; }
+        select { max-width: none; width: 100%; }
+      }
       [hidden] { display: none !important; }
     `;
     this._navigation = document.createElement('nav');
     this._navigation.setAttribute('part', 'navigation');
     this._navigation.setAttribute('aria-label', 'Site navigation');
+    this._drawer = document.createElement('button');
+    this._drawer.type = 'button';
+    this._drawer.textContent = 'Menu';
+    this._drawer.setAttribute('part', 'drawer-trigger');
+    this._drawer.setAttribute('aria-expanded', 'false');
+    this._drawer.setAttribute('aria-controls', 'system-navigation-content');
+    this._drawer.addEventListener('click', () => this._setDrawer(!this._drawerOpen));
+    this._content = document.createElement('div');
+    this._content.id = 'system-navigation-content';
+    this._content.setAttribute('part', 'navigation-content');
+    this._navigation.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && this._drawerOpen) {
+        this._setDrawer(false);
+        this._drawer.focus();
+        event.preventDefault();
+      }
+    });
     this._home = this._link('/', 'Home', 'home-link');
-    this._control = this._link(CONTROL_CENTER_PATH, 'Control center', 'control-link');
+    this._control = this._link(CONTROL_CENTER_PATH, 'Manage', 'control-link');
     this._systemPages = document.createElement('span');
     this._systemPages.setAttribute('part', 'system-pages');
     this._systemPages.setAttribute('role', 'group');
@@ -82,8 +111,16 @@ class SystemNavigation extends HTMLElement {
     this._systemPages.append(this._home, this._control);
     this._applicationList = document.createElement('span');
     this._applicationList.setAttribute('part', 'applications');
-    this._applicationList.setAttribute('role', 'group');
-    this._applicationList.setAttribute('aria-label', 'Applications');
+    const picker = document.createElement('label');
+    picker.setAttribute('part', 'application-picker');
+    picker.textContent = 'Application';
+    this._applicationSelect = document.createElement('select');
+    this._applicationSelect.setAttribute('aria-label', 'Open application');
+    this._applicationSelect.addEventListener('change', () => this._openSelectedApplication());
+    picker.append(this._applicationSelect);
+    this._localNavigation = document.createElement('span');
+    this._localNavigation.setAttribute('part', 'local-navigation');
+    this._applicationList.append(picker, this._localNavigation);
     this._status = document.createElement('p');
     this._status.setAttribute('part', 'status');
     this._status.setAttribute('role', 'status');
@@ -94,8 +131,16 @@ class SystemNavigation extends HTMLElement {
     this._retry.hidden = true;
     this._retry.setAttribute('part', 'retry');
     this._retry.addEventListener('click', () => this._loadApplications());
-    this._navigation.append(this._systemPages, this._applicationList, this._status, this._retry);
+    this._theme = document.createElement('system-theme-toggle');
+    this._content.append(this._systemPages, this._applicationList, this._status, this._retry, this._theme);
+    this._navigation.append(this._drawer, this._content);
     this.shadowRoot.append(style, this._navigation);
+  }
+
+  _setDrawer(open) {
+    this._drawerOpen = open;
+    this.dataset.drawerOpen = String(open);
+    this._drawer.setAttribute('aria-expanded', String(open));
   }
 
   _link(href, label, part) {
@@ -103,6 +148,7 @@ class SystemNavigation extends HTMLElement {
     link.href = href;
     link.textContent = label;
     link.setAttribute('part', part);
+    link.addEventListener('click', () => this._setDrawer(false));
     return link;
   }
 
@@ -111,15 +157,17 @@ class SystemNavigation extends HTMLElement {
     const request = new AbortController();
     this._request = request;
     this._applications = [];
-    this._applicationList.replaceChildren();
+    this._renderApplications();
+    this._applicationSelect.disabled = true;
     this._retry.hidden = true;
     this._status.textContent = 'Loading applications…';
     this._emit('system-progress', {phase: 'loading'});
     try {
       const result = await this._client.discoverAllApplications({signal: request.signal});
       if (request.signal.aborted || !this._connected) return;
-      const applications = result.applications;
-      this._applications = applications;
+      const discoveredApplications = result.applications;
+      this._applications = discoveredApplications.filter(application => application.isPublishable === true &&
+        (application.indexPage !== null || application.pages.length > 0));
       this._renderApplications();
       const unavailableFields = Array.isArray(result.unavailableFields) ? result.unavailableFields : [];
       const applicationsUnavailable = unavailableFields.includes('applications');
@@ -128,20 +176,21 @@ class SystemNavigation extends HTMLElement {
         ? 'Application and system-page publication entries are unavailable.'
         : applicationsUnavailable ? 'Application publication entries are unavailable.'
           : systemPagesUnavailable ? 'System-page publication entries are unavailable.'
-            : 'No applications registered.';
+            : 'No published application pages available.';
       const partialSuffix = applicationsUnavailable && systemPagesUnavailable
         ? '; some application and system-page entries are unavailable.'
         : applicationsUnavailable ? '; some application entries are unavailable.'
           : systemPagesUnavailable ? '; some system-page entries are unavailable.' : '';
-      this._status.textContent = applications.length === 0
+      this._status.textContent = this._applications.length === 0
         ? emptyStatus
-        : `${applications.length} application${applications.length === 1 ? '' : 's'}${partialSuffix}`;
-      this._emit('system-progress', {phase: 'ready', applicationCount: applications.length,
+        : `${this._applications.length} application${this._applications.length === 1 ? '' : 's'}${partialSuffix}`;
+      this._emit('system-progress', {phase: 'ready', applicationCount: discoveredApplications.length,
+        navigableApplicationCount: this._applications.length,
         pageCount: result.pageCount, resolutionFingerprints: result.resolutionFingerprints});
     } catch (error) {
       if (request.signal.aborted) return;
       this._applications = [];
-      this._applicationList.replaceChildren();
+      this._renderApplications();
       this._status.textContent = 'Applications are unavailable.';
       this._retry.hidden = false;
       this._updateCurrent();
@@ -152,17 +201,55 @@ class SystemNavigation extends HTMLElement {
   }
 
   _renderApplications() {
-    const fragment = document.createDocumentFragment();
+    const selectedApplication = this._selectedApplication();
+    const options = document.createDocumentFragment();
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = this._applications.length === 0
+      ? 'No published applications'
+      : 'Choose an application';
+    options.append(placeholder);
     for (const application of this._applications) {
-      const item = document.createElement('application-navigation');
-      item.application = application;
-      item.setAttribute('current-path', window.location.pathname);
-      const selected = this._selectedApplication();
-      if (selected) item.setAttribute('selected', selected);
-      fragment.append(item);
+      const option = document.createElement('option');
+      option.value = application.applicationId;
+      option.textContent = application.displayName;
+      options.append(option);
     }
-    this._applicationList.replaceChildren(fragment);
+    this._applicationSelect.replaceChildren(options);
+    this._applicationSelect.disabled = this._applications.length === 0;
+    this._applicationSelect.value = this._applications.some(value =>
+      value.applicationId === selectedApplication) ? selectedApplication : '';
+    this._renderLocalNavigation(selectedApplication);
     this._updateCurrent();
+  }
+
+  _renderLocalNavigation(selectedApplication) {
+    const selected = this._applications.find(value => value.applicationId === selectedApplication);
+    const current = this._localNavigation.querySelector('application-navigation')?.application?.applicationId;
+    if (current === selected?.applicationId) return;
+    this._localNavigation.replaceChildren();
+    if (selected) {
+      const item = document.createElement('application-navigation');
+      item.application = selected;
+      item.setAttribute('current-path', window.location.pathname);
+      item.setAttribute('selected', selected.applicationId);
+      this._localNavigation.append(item);
+    }
+  }
+
+  _openSelectedApplication() {
+    const application = this._applications.find(value =>
+      value.applicationId === this._applicationSelect.value);
+    const page = application?.indexPage ?? application?.pages[0] ?? null;
+    if (!application || !page) return;
+    this._setDrawer(false);
+    this._emit('system-navigate', {
+      applicationId: application.applicationId,
+      pageSlug: page.slug,
+      entityId: page.entityId,
+      url: page.url
+    });
+    window.location.assign(page.url);
   }
 
   _updateCurrent() {
@@ -170,7 +257,10 @@ class SystemNavigation extends HTMLElement {
     this._home.removeAttribute('aria-current');
     this._control.removeAttribute('aria-current');
     const path = this._routePath(window.location.pathname);
-    for (const navigation of this._applicationList.querySelectorAll('application-navigation')) {
+    this._applicationSelect.value = this._applications.some(value =>
+      value.applicationId === selectedApplication) ? selectedApplication : '';
+    this._renderLocalNavigation(selectedApplication);
+    for (const navigation of this._localNavigation.querySelectorAll('application-navigation')) {
       navigation.setAttribute('current-path', window.location.pathname);
       if (selectedApplication) navigation.setAttribute('selected', selectedApplication);
       else navigation.removeAttribute('selected');
@@ -1293,12 +1383,13 @@ class SystemActionButton extends SystemInteractionElement {
     this._propertyInput = undefined;
     const style = document.createElement('style');
     style.textContent = `
-      :host { display: grid; gap: var(--system-action-gap, .55rem); color: var(--system-action-color, inherit); font: inherit; }
-      button { justify-self: start; cursor: pointer; border: 1px solid var(--system-action-border-color, currentColor); border-radius: var(--system-action-radius, .55rem); background: var(--system-action-background, transparent); color: inherit; font: inherit; padding: var(--system-action-padding, .55rem .8rem); }
+      :host { display: grid; gap: var(--system-action-gap, .55rem); color: var(--system-action-color, var(--system-color-text, inherit)); font: inherit; }
+      button { justify-self: start; cursor: pointer; border: 1px solid var(--system-action-border-color, var(--system-color-accent, currentColor)); border-radius: var(--system-action-radius, var(--system-radius-small, .55rem)); background: var(--system-action-background, var(--system-color-accent, transparent)); color: var(--system-action-button-color, var(--system-color-accent-contrast, inherit)); font: inherit; padding: var(--system-action-padding, .55rem .8rem); }
+      button:focus-visible { outline: 2px solid var(--system-color-focus, currentColor); outline-offset: 2px; }
       button:disabled { cursor: not-allowed; opacity: .65; }
       [part='status'], [part='summary'], [part='contract'], [part='affected-label'], [part='warning'], [part='fingerprint'], [part='error'] { margin: 0; overflow-wrap: anywhere; }
       [part='status'], [part='contract'] { font-size: .85rem; }
-      [part='proposal'], [part='receipt'] { display: grid; gap: .5rem; border: 1px solid var(--system-action-border-color, currentColor); border-radius: var(--system-action-radius, .55rem); padding: .75rem; }
+      [part='proposal'], [part='receipt'] { display: grid; gap: .5rem; background: var(--system-color-surface, transparent); border: 1px solid var(--system-action-border-color, var(--system-color-border, currentColor)); border-radius: var(--system-action-radius, var(--system-radius-small, .55rem)); padding: .75rem; }
       [part='proposal'] h3, [part='receipt'] h3 { margin: 0; font-size: 1rem; }
       pre { max-height: 15rem; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
     `;
@@ -1377,17 +1468,18 @@ class SystemForm extends SystemInteractionElement {
     this._fields = [];
     const style = document.createElement('style');
     style.textContent = `
-      :host { display: grid; gap: var(--system-form-gap, .7rem); color: var(--system-form-color, inherit); font: inherit; }
+      :host { display: grid; gap: var(--system-form-gap, .7rem); color: var(--system-form-color, var(--system-color-text, inherit)); font: inherit; }
       form, [part='fields'] { display: grid; gap: .7rem; }
       [part='field'] { display: grid; gap: .25rem; }
       label, legend { font-weight: 600; }
-      input:not([type='checkbox']), select, textarea { box-sizing: border-box; width: 100%; border: 1px solid var(--system-form-border-color, currentColor); border-radius: var(--system-form-radius, .45rem); background: var(--system-form-input-background, transparent); color: inherit; font: inherit; padding: .5rem; }
+      input:not([type='checkbox']), select, textarea { box-sizing: border-box; width: 100%; border: 1px solid var(--system-form-border-color, var(--system-color-border, currentColor)); border-radius: var(--system-form-radius, var(--system-radius-small, .45rem)); background: var(--system-form-input-background, var(--system-color-surface-raised, transparent)); color: inherit; font: inherit; padding: .5rem; }
       textarea { min-height: 6rem; resize: vertical; }
-      button { justify-self: start; cursor: pointer; border: 1px solid var(--system-form-border-color, currentColor); border-radius: var(--system-form-radius, .45rem); background: var(--system-form-button-background, transparent); color: inherit; font: inherit; padding: .55rem .8rem; }
+      button { justify-self: start; cursor: pointer; border: 1px solid var(--system-form-button-border-color, var(--system-color-accent, currentColor)); border-radius: var(--system-form-radius, var(--system-radius-small, .45rem)); background: var(--system-form-button-background, var(--system-color-accent, transparent)); color: var(--system-form-button-color, var(--system-color-accent-contrast, inherit)); font: inherit; padding: .55rem .8rem; }
+      input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible { outline: 2px solid var(--system-color-focus, currentColor); outline-offset: 2px; }
       button:disabled { cursor: not-allowed; opacity: .65; }
       [part='description'], [part='status'], [part='help'], [part='summary'], [part='contract'], [part='affected-label'], [part='warning'], [part='fingerprint'], [part='error'] { margin: 0; overflow-wrap: anywhere; }
       [part='status'], [part='help'], [part='contract'] { font-size: .85rem; }
-      [part='proposal'], [part='receipt'] { display: grid; gap: .5rem; border: 1px solid var(--system-form-border-color, currentColor); border-radius: var(--system-form-radius, .45rem); padding: .75rem; }
+      [part='proposal'], [part='receipt'] { display: grid; gap: .5rem; background: var(--system-color-surface, transparent); border: 1px solid var(--system-form-border-color, var(--system-color-border, currentColor)); border-radius: var(--system-form-radius, var(--system-radius-small, .45rem)); padding: .75rem; }
       [part='proposal'] h3, [part='receipt'] h3 { margin: 0; font-size: 1rem; }
       pre { max-height: 15rem; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
       output { overflow-wrap: anywhere; }

@@ -137,7 +137,7 @@ public sealed class WebInterfaceTests
         Assert.DoesNotContain("-play", systemWorkspace, StringComparison.Ordinal);
         Assert.DoesNotContain("#/applications/${encodeURIComponent(application.id)}", systemWorkspace,
             StringComparison.Ordinal);
-        Assert.Contains("No applications registered.", systemWorkspace, StringComparison.Ordinal);
+        Assert.Contains("No published application pages available.", systemWorkspace, StringComparison.Ordinal);
         Assert.Contains("Applications are unavailable.", systemWorkspace, StringComparison.Ordinal);
         Assert.Contains("APPLICATION_DISCOVERY_UNAVAILABLE", systemWorkspace,
             StringComparison.Ordinal);
@@ -150,8 +150,20 @@ public sealed class WebInterfaceTests
             StringComparison.Ordinal);
         var client = await BrowserComponentAssets.ReadAsync("system-client");
         var publication = await BrowserComponentAssets.ReadAsync("system-publication");
+        var theme = await BrowserComponentAssets.ReadAsync("system-theme");
         Assert.NotNull(client);
         Assert.NotNull(publication);
+        Assert.NotNull(theme);
+        Assert.Contains("SYSTEM_THEME_STORAGE_KEY = 'dantes.system-theme.v1'", theme,
+            StringComparison.Ordinal);
+        Assert.Contains("SYSTEM_THEME_EVENT = 'system-theme-change'", theme,
+            StringComparison.Ordinal);
+        Assert.Contains("customElements.define('system-theme-toggle'", theme,
+            StringComparison.Ordinal);
+        Assert.Contains("--system-color-canvas", theme, StringComparison.Ordinal);
+        Assert.Contains("--system-color-surface", theme, StringComparison.Ordinal);
+        Assert.Contains("--system-color-text", theme, StringComparison.Ordinal);
+        Assert.Contains("--system-color-accent", theme, StringComparison.Ordinal);
         Assert.Contains("MAXIMUM_PAGES = 10", client, StringComparison.Ordinal);
         Assert.Contains("MAXIMUM_APPLICATIONS = 1000", client, StringComparison.Ordinal);
         Assert.Contains("WEB_RESOLUTION_FINGERPRINT_STALE", client, StringComparison.Ordinal);
@@ -3015,8 +3027,12 @@ public sealed class WebInterfaceTests
         foreach (var page in new[] { home, controlCenter, application })
         {
             Assert.Contains("<system-navigation", page, StringComparison.Ordinal);
+            Assert.Contains("type=\"module\" src=\"/components/system-theme.js\"", page,
+                StringComparison.Ordinal);
             Assert.Contains("type=\"module\" src=\"/components/system-workspace.js\"", page,
                 StringComparison.Ordinal);
+            Assert.Contains("--system-color-", page, StringComparison.Ordinal);
+            Assert.DoesNotContain("color-scheme: dark", page, StringComparison.Ordinal);
             Assert.Equal(1, page.Split("<system-navigation", StringSplitOptions.None).Length - 1);
         }
 
@@ -3027,6 +3043,9 @@ public sealed class WebInterfaceTests
         Assert.Contains("#/applications/", controlCenter, StringComparison.Ordinal);
         Assert.Contains("const CONTROL_CENTER_PATH = '/ui/control-center'", navigation,
             StringComparison.Ordinal);
+        Assert.Contains("import '/components/system-theme.js'", navigation, StringComparison.Ordinal);
+        Assert.Contains("'Manage'", navigation, StringComparison.Ordinal);
+        Assert.Contains("navigableApplicationCount", navigation, StringComparison.Ordinal);
         Assert.DoesNotContain("/ui/control-center/index.html", navigation, StringComparison.Ordinal);
     }
 
