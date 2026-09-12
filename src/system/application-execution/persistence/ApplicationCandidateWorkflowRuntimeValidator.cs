@@ -38,7 +38,6 @@ internal sealed class ApplicationCandidateWorkflowRuntimeValidator(
     IStandingGrantTargetResolver targets,
     IStandingGrantPolicy grants,
     IStandingGrantApplicationReadModelInvocationAdapter reads,
-    IProcedureStore procedures,
     IBoundedJsonSchemaValidator schemas,
     JintMechanicEngine engine)
 {
@@ -112,7 +111,7 @@ internal sealed class ApplicationCandidateWorkflowRuntimeValidator(
                     "WORKFLOW_RUNTIME_AUTHORING_AUTHORITY_UNAVAILABLE",
                     "Current candidate Read and Validate authority is unavailable.");
 
-            var closure = await ResolveClosureAsync(update, cancellationToken);
+            var closure = ResolveClosure(update);
             if (closure is null)
                 return Unavailable(request.Candidate, update.Fingerprint, results,
                     "WORKFLOW_RUNTIME_DEPENDENCY_UNAVAILABLE",
@@ -266,7 +265,7 @@ internal sealed class ApplicationCandidateWorkflowRuntimeValidator(
             || !catalogs.TryGet(request.Candidate.ApplicationId, out _)
             || !await AuthorizeCandidateAsync(authoringHost, update, cancellationToken)
             || samples.Any(sample => sample.Definition != update.Definition)) return false;
-        var closure = await ResolveClosureAsync(update, cancellationToken);
+        var closure = ResolveClosure(update);
         if (closure is null || !closure.Dependencies.SequenceEqual(report.Dependencies)) return false;
         for (var index = 0; index < samples.Count; index++)
         {
@@ -313,9 +312,7 @@ internal sealed class ApplicationCandidateWorkflowRuntimeValidator(
             evidence.EvidenceFingerprint, selection.Targets[0], evidence.Dependencies);
     }
 
-    private async Task<WorkflowClosure?> ResolveClosureAsync(
-        ApplicationCandidateWorkflowUpdate update,
-        CancellationToken cancellationToken)
+    private WorkflowClosure? ResolveClosure(ApplicationCandidateWorkflowUpdate update)
     {
         try
         {
@@ -343,9 +340,7 @@ internal sealed class ApplicationCandidateWorkflowRuntimeValidator(
                     || !catalogs.TryGet(update.Candidate.ApplicationId, out var catalog)) return null;
                 var record = catalog.Inspect(new(update.Candidate.ApplicationId,
                     update.Candidate.ApplicationId.Value, job.QualifiedProcedureId));
-                var procedure = await procedures.GetAsync(job.QualifiedProcedureId,
-                    job.ProcedureVersion, cancellationToken);
-                if (!ProcedureMatches(record, procedure, job)
+                if (ProcedureContractFingerprint(record, job) is null
                     || schemas.Compile(job.ResultSchemaJson) is not { IsAccepted: true } compiled
                     || compiled.SchemaHash != job.ResultSchemaFingerprint) return null;
                 requirements.Add(new(reference, StandingGrantCapability.Execute));
@@ -493,14 +488,13 @@ internal sealed class ApplicationCandidateWorkflowRuntimeValidator(
         if (!host.Budget.TryConsumeOperation()) return null;
         _ = InteractionCanonicalJson.CanonicalizeObject(input);
         _ = SystemInnerWorkerAssignmentV1.Parse(input);
-        var procedure = await procedures.GetAsync(declaration.QualifiedProcedureId,
-            declaration.ProcedureVersion, cancellationToken);
         var catalog = catalogs.TryGet(host.ApplicationRevision.ApplicationId, out var current)
             ? current : null;
         if (catalog is null) return null;
         var record = catalog.Inspect(new(host.ApplicationRevision.ApplicationId,
             host.ApplicationRevision.ApplicationId.Value, declaration.QualifiedProcedureId));
-        if (!ProcedureMatches(record, procedure, declaration)) return null;
+        var sourceFingerprint = ProcedureContractFingerprint(record, declaration);
+        if (sourceFingerprint is null) return null;
         var reference = new StandingGrantDefinitionReference(declaration.QualifiedProcedureId,
             "procedure", declaration.ProcedureVersion, declaration.ContentFingerprint);
         var target = await targets.ResolveAsync(host, reference, cancellationToken);
@@ -510,7 +504,7 @@ internal sealed class ApplicationCandidateWorkflowRuntimeValidator(
         if (!ExactGrant(host, authority, grant.GrantReference)) return null;
         var evidence = new ApplicationCandidateRuntimeProposal(
             ApplicationCandidateRuntimeProposalKind.Job, declaration.Alias, reference,
-            DataFingerprint(input), procedure!.SourceHash,
+            DataFingerprint(input), sourceFingerprint,
             declaration.ResultSchemaFingerprint, null, null, []);
         return new(evidence, null, null);
     }
@@ -666,15 +660,13 @@ internal sealed class ApplicationCandidateWorkflowRuntimeValidator(
         return await grants.EvaluateAsync(host, requirement, cancellationToken);
     }
 
-    private static bool ProcedureMatches(CatalogRecordView record, ProcedureDetail? procedure,
+    private static string? ProcedureContractFingerprint(CatalogRecordView record,
         ApplicationServiceJobDeclaration declaration)
     {
-        if (procedure is null || procedure.Status != ProcedureStatus.Active
-            || procedure.Version != procedure.LatestVersion || procedure.Version != declaration.ProcedureVersion
-            || record.Summary.Kind != "procedure" || record.Summary.Status != "active"
+        if (record.Summary.Kind != "procedure" || record.Summary.Status != "active"
             || record.Summary.QualifiedId != declaration.QualifiedProcedureId
             || record.Summary.Version != declaration.ProcedureVersion
-            || record.Summary.ContentFingerprint != declaration.ContentFingerprint) return false;
+            || record.Summary.ContentFingerprint != declaration.ContentFingerprint) return null;
         try
         {
             using var content = JsonDocument.Parse(record.ContentJson);
@@ -687,12 +679,11 @@ internal sealed class ApplicationCandidateWorkflowRuntimeValidator(
                 "archived" => ProcedureStatus.Archived,
                 _ => throw new JsonException()
             };
-            var contractFingerprint = ContentHash.ForProcedure(Text("category"), Text("name"),
+            return ContentHash.ForProcedure(Text("category"), Text("name"),
                 Text("description"), Text("governs"), Text("instructions"), Text("constraints"), status);
-            return procedure.SourceHash == contractFingerprint;
         }
         catch (Exception error) when (error is JsonException or KeyNotFoundException
-            or InvalidOperationException) { return false; }
+            or InvalidOperationException) { return null; }
     }
 
     private static InteractionInvocationHost StateHost(InteractionInvocationHost source,

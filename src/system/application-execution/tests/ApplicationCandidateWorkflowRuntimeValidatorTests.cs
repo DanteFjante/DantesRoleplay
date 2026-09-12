@@ -29,7 +29,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
     private const string WorkflowServiceSourcePath = "content/mechanics/workflow-service.js";
 
     [Fact]
-    public async Task Workflow_candidate_runs_real_reads_and_stops_after_one_typed_action_dry_run()
+    public async Task Workflow_candidate_runs_real_reads_and_validates_catalog_job_without_procedure_store_row()
     {
         await using var db = fixture.CreateContext();
         var setup = Setup(db);
@@ -88,19 +88,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
                 procedureRecord.ContentFingerprint, actionOutput.SchemaHash,
                 actionOutput.NormalizedSchema, schemas)]);
         await ActivateAsync(setup, setup.Activation.Current(Application)!.ActivationFingerprint);
-        _ = await new ProcedureStore(db).WriteAsync(new WriteProcedureRequest
-        {
-            Id = "demo.runtime.inspect",
-            Category = "runtime.inspect",
-            Name = "Inspect runtime",
-            Description = "Inspect the active runtime definition.",
-            Governs = "query(kind: \"runtime.inspect\")",
-            Instructions = "1. Inspect it.",
-            Constraints = "- Preserve it.",
-            Status = ProcedureStatus.Active,
-            CreatedBy = "fixture",
-            ChangeNote = "Workflow validation fixture."
-        });
+        Assert.Null(await new ProcedureStore(db).GetAsync("demo.runtime.inspect", procedureRecord.Version));
         await SeedWorkflowAuthoringGrantAsync(db);
 
         var active = setup.Activation.Current(Application)!;
@@ -167,7 +155,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             setup.Activation, reviewClosures, catalogs, spaces, mapping, evaluator, runner,
             effectApplier, new SqliteStandingGrantReadCandidateReader(db), setup.Resolver, policy,
             new StandingGrantApplicationReadModelInvocationAdapter(policy, setup.Resolver,
-                spaces, readModels), new ProcedureStore(db), schemas, engine);
+                spaces, readModels), schemas, engine);
         var expectedEffects = InteractionCanonicalJson.Canonicalize(JsonSerializer.Serialize(new[]
         {
             new ApplicationEcsEffect { Type = ApplicationEcsEffectType.EntityCreate,
