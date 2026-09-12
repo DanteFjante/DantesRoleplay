@@ -172,6 +172,48 @@ session-wide approval or choose its sandbox. If the configured executable is ina
 (including some packaged desktop-app binaries), install an independently accessible CLI or point
 `Codex__ExecutablePath` to one.
 
+### Link a gameplay task to conversation memory
+
+Read the [canonical conversation-memory manual](../../catalog/procedures/procedure/system/conversation-memory.md)
+before enabling capture. Choose one actual gameplay task and copy its exact Codex task/thread ID;
+do not use an engineering task or infer a task from other conversations. Configure the server's six
+`ConversationMemoryCapture` binding values for that application, state space, gameplay session,
+Codex project, repository root and thread. Use the same values in one private checkpoint-backed
+helper invocation. Select the Tools executable from the same verified release as the running
+server, and the pinned Codex executable used for capture acceptance:
+
+```powershell
+$captureTool = '<absolute-release-path-to-roleplay.exe>'
+$capture = @(
+  'capture-memory', '--principal', '<host-principal-id>',
+  '--application', '<application-id>', '--state-space', '<state-space-id>',
+  '--gameplay-session', '<session-context-id>', '--project', '<codex-project-id>',
+  '--repository', '<absolute-repository-root>', '--thread', '<codex-task-id>',
+  '--checkpoint', '<absolute-private-checkpoint-path>', '--database', '<database-path>',
+  '--codex', '<absolute-pinned-codex-executable>'
+)
+'' | & $captureTool @capture --connect
+& $captureTool @capture --watch --watch-ms 3600000 --poll-ms 5000
+```
+
+Run the watcher in a dedicated or hidden terminal. Before sending the first gameplay prompt, inspect
+the checkpoint and require `watchInitialized` to be `true`; `pending` shows queued correlations and
+`completedTurnIds` shows durable deduplication anchors. The first initialization establishes a
+baseline and excludes older completed turns. Inspect the private journal through the existing MCP
+read after connection or failure:
+
+```text
+query(
+  kind: "system.conversation-memory",
+  applicationId: "<application-id>",
+  stateSpaceId: "<state-space-id>",
+  request: "{\"operation\":\"state\",\"sessionContextId\":\"<session-context-id>\"}"
+)
+```
+
+Treat the manual as authority for retry, disconnect, retention, deletion and capture limits. The
+watcher links only the configured task and does not discover conversations or start model turns.
+
 Application candidate review submissions remain queued until the host-owned validation worker is
 enabled. It is disabled by default; enable it only in a reviewed release configuration after the
 Codex bridge is ready:
