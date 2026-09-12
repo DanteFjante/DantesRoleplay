@@ -170,21 +170,15 @@ public sealed class SqliteObservationTriggerWorker(
             .SingleOrDefaultAsync(value => value.ApplicationId == lease.ApplicationId.Value &&
                 value.Id == lease.TriggerId && value.Version == lease.TriggerVersion, cancellationToken);
         if (row is null) throw Stale();
-        var sourceCurrent = await db.TriggerObservationSourceCurrent.AsNoTracking().SingleOrDefaultAsync(value =>
-            value.ApplicationId == row.ApplicationId && value.Id == row.SourceId, cancellationToken);
         var source = await db.TriggerObservationSources.AsNoTracking().Include(value => value.AllowedStructures)
             .SingleOrDefaultAsync(value => value.ApplicationId == row.ApplicationId && value.Id == row.SourceId &&
                 value.Version == row.SourceVersion, cancellationToken);
-        var structureCurrent = await db.TriggerObservationStructureCurrent.AsNoTracking().SingleOrDefaultAsync(value =>
-            value.ApplicationId == row.ApplicationId && value.Id == row.StructureId, cancellationToken);
         var structure = await db.TriggerObservationStructures.AsNoTracking().SingleOrDefaultAsync(value =>
             value.ApplicationId == row.ApplicationId && value.Id == row.StructureId &&
                 value.Version == row.StructureVersion, cancellationToken);
-        if (sourceCurrent?.CurrentVersion != row.SourceVersion || source?.Status != "enabled" ||
-            !source.AllowedStructures.Any(value => value.StructureId == row.StructureId &&
+        if (source is null || !source.AllowedStructures.Any(value => value.StructureId == row.StructureId &&
                 value.StructureVersion == row.StructureVersion) ||
-            structureCurrent?.CurrentVersion != row.StructureVersion || structure?.Status != "active" ||
-            structure.SchemaHash != row.StructureHash) throw Stale();
+            structure is null || structure.SchemaHash != row.StructureHash) throw Stale();
         var observation = await db.TriggerObservations.AsNoTracking().SingleOrDefaultAsync(value =>
             value.Id == lease.ObservationId && value.ApplicationId == row.ApplicationId &&
             value.SourceId == row.SourceId && value.SourceVersion == row.SourceVersion &&

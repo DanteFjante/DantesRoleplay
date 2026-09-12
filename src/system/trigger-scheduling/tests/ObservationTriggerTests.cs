@@ -123,7 +123,7 @@ public sealed class ObservationTriggerTests : IDisposable
     }
 
     [Fact]
-    public async Task Superseded_structure_prevents_delivery_without_discarding_observation()
+    public async Task Queued_match_retains_structure_after_structure_replacement()
     {
         var setup = await SetupAsync(fixture.CreateContext());
         await setup.MatchStore.AppendAsync(Definition(setup.Structure.SchemaHash));
@@ -135,16 +135,16 @@ public sealed class ObservationTriggerTests : IDisposable
         var status = await new SqliteObservationTriggerStatusReader(setup.Db)
             .GetAsync(App, "trigger.arrival.entered");
 
-        Assert.Equal(1, result.Failed);
+        Assert.Equal(1, result.Completed);
         Assert.Single(setup.Db.TriggerObservations);
-        Assert.Equal("stale-trigger", setup.Db.ObservationTriggerMatchWork.Single().FailureKind);
-        Assert.Empty(setup.Db.ObservationTriggerMatchReceipts);
-        Assert.Empty(setup.Db.Notifications);
+        Assert.Null(setup.Db.ObservationTriggerMatchWork.Single().FailureKind);
+        Assert.Single(setup.Db.ObservationTriggerMatchReceipts);
+        Assert.Single(setup.Db.Notifications);
         Assert.Equal(ObservationTriggerStatus.StaleStructure, status!.Status);
     }
 
     [Fact]
-    public async Task Superseded_or_disabled_source_prevents_delivery()
+    public async Task Queued_match_retains_source_after_source_disable()
     {
         var setup = await SetupAsync(fixture.CreateContext());
         await setup.MatchStore.AppendAsync(Definition(setup.Structure.SchemaHash));
@@ -156,8 +156,8 @@ public sealed class ObservationTriggerTests : IDisposable
         var status = await new SqliteObservationTriggerStatusReader(setup.Db)
             .GetAsync(App, "trigger.arrival.entered");
 
-        Assert.Equal(1, result.Failed);
-        Assert.Empty(setup.Db.Notifications);
+        Assert.Equal(1, result.Completed);
+        Assert.Single(setup.Db.Notifications);
         Assert.Equal(ObservationTriggerStatus.StaleSource, status!.Status);
     }
 
