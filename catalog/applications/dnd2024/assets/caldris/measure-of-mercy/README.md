@@ -11,7 +11,11 @@ play material. Its five clues are unrevealed GM records, its three scenes are un
 player-orientation candidate requires an explicit knowledge admission to
 `actor.caldris.ganji`. The full situation also has a canonical `game.core.world.secret` payload,
 linked to the campaign, chapter, and world so the authorized knowledge owner can retrieve it.
-`image-prompts.json` records the selected image-generation requests and output identities.
+`image-prompts.json` records the selected image-generation requests and output identities. The
+selected atlas is `caldris-atlas-clean-v2.png`; it revises only the western Eredane landmass
+against the retained Eredane regional reference. The superseded `caldris-atlas-clean-v1.png`
+remains unchanged for review and recovery. Scope maps are independent north-up detail frames,
+with the direct-parent terrain correspondences recorded in the manifest.
 
 ## Import boundary
 
@@ -32,9 +36,11 @@ linked to the campaign, chapter, and world so the authorized knowledge owner can
    attachment, append the new illustration once by SHA-256, and write with the freshly read
    component revision. A stale CAS must restart the read/merge. These are ordinary prepared
    location illustrations; attaching them records no active scene or played event.
-7. Import the five clue entities, their required truth-support links, and the prepared-situation
-   secret as unrevealed/DM-only knowledge. Do not admit knowledge, move a character, create a
-   session or encounter, resolve a quest, or award a reward.
+7. Import the five clue entities under `location.caldris.atlas` / `opening-clues`, their required
+   truth-support links, and the prepared-situation secret under `location.caldris.atlas` /
+   `knowledge` as unrevealed/DM-only knowledge. Use these exact reviewed containment values; the
+   synchronization adapter must not infer a container. Do not admit knowledge, move a character,
+   create a session or encounter, resolve a quest, or award a reward.
 8. Read back blobs, entities, components, containments, relationships, map projections, and Player
    and DM audience results before selecting the new application generation.
 

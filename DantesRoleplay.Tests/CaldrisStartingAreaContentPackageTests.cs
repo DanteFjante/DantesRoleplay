@@ -34,6 +34,16 @@ public sealed class CaldrisStartingAreaContentPackageTests
         Assert.Equal(3, assets.Count(value => value.GetProperty("kind").GetString() == "scene"));
         Assert.Equal(11, assets.Select(value => value.GetProperty("logicalAssetKey").GetString()).Distinct().Count());
 
+        var atlas = Assert.Single(assets, value => value.GetProperty("ownerLocationId").GetString()
+            == "location.caldris.atlas");
+        Assert.Equal("caldris.map.atlas.clean.v2", atlas.GetProperty("logicalAssetKey").GetString());
+        Assert.Equal("142d6050d58e17590d986f7f2cde1a4d83fad0e89e6c1b795cad5d87f9220be4",
+            atlas.GetProperty("sha256").GetString());
+        var supersededAtlas = atlas.GetProperty("supersedesPackageAsset");
+        var supersededAtlasPath = Path.Combine(directory, supersededAtlas.GetProperty("relativePath").GetString()!);
+        Assert.Equal("f2a9aeb6b3d38b494c507e5373a659837f5c633e278824d4e2d67d05fd5a5b0d",
+            Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(supersededAtlasPath))).ToLowerInvariant());
+
         foreach (var asset in assets)
         {
             var bytes = File.ReadAllBytes(Path.Combine(directory, asset.GetProperty("relativePath").GetString()!));
@@ -67,6 +77,34 @@ public sealed class CaldrisStartingAreaContentPackageTests
         Assert.All(assets.Where(value => value.GetProperty("kind").GetString() == "scene"),
             value => Assert.Equal("guarded-location-gallery-append",
                 value.GetProperty("activationDisposition").GetString()));
+    }
+
+    [Fact]
+    public void Map_zoom_chain_records_exact_parent_anchors_and_identifiable_geography()
+    {
+        using var manifest = Read(Path.Combine(PackageDirectory(), "asset-import-manifest.json"));
+        var review = manifest.RootElement.GetProperty("geographicContinuityReview");
+        Assert.Contains("independent north-up detail frames", review.GetProperty("scopeBoundary").GetString());
+        var chain = review.GetProperty("anchorChain").EnumerateArray().ToArray();
+        Assert.Equal(7, chain.Length);
+
+        var mapAssets = manifest.RootElement.GetProperty("assets").EnumerateArray()
+            .Where(value => value.GetProperty("kind").GetString() == "map")
+            .ToDictionary(value => value.GetProperty("ownerLocationId").GetString()!, StringComparer.Ordinal);
+        foreach (var link in chain)
+        {
+            var child = link.GetProperty("child").GetString()!;
+            var asset = mapAssets[child];
+            Assert.Equal(link.GetProperty("parent").GetString(), asset.GetProperty("parentLocationId").GetString());
+            Assert.Equal(link.GetProperty("x").GetInt32(), asset.GetProperty("mapAnchor").GetProperty("x").GetInt32());
+            Assert.Equal(link.GetProperty("y").GetInt32(), asset.GetProperty("mapAnchor").GetProperty("y").GetInt32());
+            Assert.False(string.IsNullOrWhiteSpace(link.GetProperty("evidence").GetString()));
+        }
+
+        var atlas = mapAssets["location.caldris.atlas"];
+        var continuity = atlas.GetProperty("geographicContinuity");
+        Assert.Equal("caldris.map.eredane.clean.v1", continuity.GetProperty("referenceAssetKey").GetString());
+        Assert.Equal(4, continuity.GetProperty("reviewedCorrespondences").GetArrayLength());
     }
 
     [Fact]
@@ -123,6 +161,8 @@ public sealed class CaldrisStartingAreaContentPackageTests
         Assert.Equal(5, clues.Select(value => value.GetProperty("id").GetString()).Distinct().Count());
         foreach (var clue in clues)
         {
+            Assert.Equal("location.caldris.atlas", clue.GetProperty("container").GetProperty("id").GetString());
+            Assert.Equal("opening-clues", clue.GetProperty("container").GetProperty("slot").GetString());
             var value = clue.GetProperty("components").GetProperty("game.core.world.clue");
             Assert.Equal("unrevealed", value.GetProperty("status").GetString());
             Assert.Equal("gm", value.GetProperty("visibility").GetString());
@@ -158,6 +198,59 @@ public sealed class CaldrisStartingAreaContentPackageTests
             var prompt = promptAssets[asset.GetProperty("logicalAssetKey").GetString()!];
             Assert.Equal(asset.GetProperty("sha256").GetString(), prompt.GetProperty("selectedSha256").GetString());
             Assert.Equal("OpenAI image_gen", prompt.GetProperty("tool").GetString());
+        }
+    }
+
+    [Fact]
+    public void Every_new_entity_has_an_explicit_reviewed_path_to_the_world_root()
+    {
+        var directory = PackageDirectory();
+        using var manifest = Read(Path.Combine(directory, "asset-import-manifest.json"));
+        using var situation = Read(Path.Combine(directory, "prepared-situation.json"));
+        var parents = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["location.caldris.atlas"] = "world.caldris"
+        };
+
+        foreach (var asset in manifest.RootElement.GetProperty("assets").EnumerateArray()
+                     .Where(value => value.GetProperty("kind").GetString() == "map"
+                         && value.GetProperty("parentLocationId").ValueKind == JsonValueKind.String))
+            parents.Add(asset.GetProperty("ownerLocationId").GetString()!,
+                asset.GetProperty("parentLocationId").GetString()!);
+
+        var newEntityIds = new List<string>();
+        foreach (var location in manifest.RootElement.GetProperty("locationCreates").EnumerateArray())
+        {
+            var id = location.GetProperty("id").GetString()!;
+            parents.Add(id, location.GetProperty("container").GetProperty("id").GetString()!);
+            newEntityIds.Add(id);
+        }
+        foreach (var clue in situation.RootElement.GetProperty("clueCreates").EnumerateArray())
+        {
+            var id = clue.GetProperty("id").GetString()!;
+            parents.Add(id, clue.GetProperty("container").GetProperty("id").GetString()!);
+            newEntityIds.Add(id);
+        }
+
+        var secret = situation.RootElement.GetProperty("canonicalKnowledgeRecord").GetProperty("entityCreate");
+        Assert.Equal("knowledge", secret.GetProperty("container").GetProperty("slot").GetString());
+        var secretId = secret.GetProperty("id").GetString()!;
+        parents.Add(secretId, secret.GetProperty("container").GetProperty("id").GetString()!);
+        newEntityIds.Add(secretId);
+
+        Assert.Equal(20, newEntityIds.Count);
+        foreach (var entityId in newEntityIds)
+        {
+            var current = entityId;
+            var visited = new HashSet<string>(StringComparer.Ordinal);
+            for (var depth = 0; current != "world.caldris" && depth < 12; depth++)
+            {
+                Assert.True(visited.Add(current), $"Containment cycle from {entityId} at {current}.");
+                Assert.True(parents.TryGetValue(current, out var parent),
+                    $"No reviewed containment path from {entityId}; missing parent for {current}.");
+                current = parent;
+            }
+            Assert.Equal("world.caldris", current);
         }
     }
 

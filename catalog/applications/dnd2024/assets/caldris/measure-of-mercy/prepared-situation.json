@@ -49,6 +49,10 @@
     {
       "id": "clue.caldris.thirteenth-bell.dry-flour",
       "name": "Dry Flour Under Wet Canvas",
+      "container": {
+        "id": "location.caldris.atlas",
+        "slot": "opening-clues"
+      },
       "components": {
         "game.core.world.clue": {
           "status": "unrevealed",
@@ -65,6 +69,10 @@
     {
       "id": "clue.caldris.thirteenth-bell.pulley-fibers",
       "name": "Theatre-Pulley Fibers",
+      "container": {
+        "id": "location.caldris.atlas",
+        "slot": "opening-clues"
+      },
       "components": {
         "game.core.world.clue": {
           "status": "unrevealed",
@@ -81,6 +89,10 @@
     {
       "id": "clue.caldris.thirteenth-bell.changed-whistle",
       "name": "A Changed Watch Whistle",
+      "container": {
+        "id": "location.caldris.atlas",
+        "slot": "opening-clues"
+      },
       "components": {
         "game.core.world.clue": {
           "status": "unrevealed",
@@ -97,6 +109,10 @@
     {
       "id": "clue.caldris.thirteenth-bell.altered-alley-map",
       "name": "Altered Alley Map",
+      "container": {
+        "id": "location.caldris.atlas",
+        "slot": "opening-clues"
+      },
       "components": {
         "game.core.world.clue": {
           "status": "unrevealed",
@@ -113,6 +129,10 @@
     {
       "id": "clue.caldris.thirteenth-bell.barge-signal-timing",
       "name": "Barge-Signal Timing",
+      "container": {
+        "id": "location.caldris.atlas",
+        "slot": "opening-clues"
+      },
       "components": {
         "game.core.world.clue": {
           "status": "unrevealed",
@@ -367,6 +387,10 @@
     "entityCreate": {
       "id": "secret.caldris.measure-of-mercy.before-the-fourteenth-stroke",
       "name": "Before the Fourteenth Stroke — Prepared Situation",
+      "container": {
+        "id": "location.caldris.atlas",
+        "slot": "knowledge"
+      },
       "components": {
         "game.core.world.secret": {
           "status": "active",

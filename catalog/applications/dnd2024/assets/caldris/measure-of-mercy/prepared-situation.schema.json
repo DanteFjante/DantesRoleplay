@@ -144,6 +144,7 @@
         "required": [
           "id",
           "name",
+          "container",
           "components"
         ],
         "properties": {
@@ -158,6 +159,22 @@
             "minLength": 1,
             "maxLength": 240,
             "pattern": "\\S"
+          },
+          "container": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "slot"
+            ],
+            "properties": {
+              "id": {
+                "const": "location.caldris.atlas"
+              },
+              "slot": {
+                "const": "opening-clues"
+              }
+            }
           },
           "components": {
             "type": "object",
@@ -375,6 +392,7 @@
           "required": [
             "id",
             "name",
+            "container",
             "components"
           ],
           "properties": {
@@ -389,6 +407,22 @@
               "minLength": 1,
               "maxLength": 240,
               "pattern": "\\S"
+            },
+            "container": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "slot"
+              ],
+              "properties": {
+                "id": {
+                  "const": "location.caldris.atlas"
+                },
+                "slot": {
+                  "const": "knowledge"
+                }
+              }
             },
             "components": {
               "type": "object",

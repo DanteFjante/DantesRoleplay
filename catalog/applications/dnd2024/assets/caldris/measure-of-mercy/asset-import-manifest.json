@@ -27,7 +27,7 @@
   },
   "assets": [
     {
-      "logicalAssetKey": "caldris.map.atlas.clean.v1",
+      "logicalAssetKey": "caldris.map.atlas.clean.v2",
       "kind": "map",
       "ownerLocationId": "location.caldris.atlas",
       "parentLocationId": null,
@@ -39,19 +39,19 @@
         "dm"
       ],
       "activationDisposition": "candidate-for-map-publication",
-      "relativePath": "caldris-atlas-clean-v1.png",
-      "sha256": "f2a9aeb6b3d38b494c507e5373a659837f5c633e278824d4e2d67d05fd5a5b0d",
+      "relativePath": "caldris-atlas-clean-v2.png",
+      "sha256": "142d6050d58e17590d986f7f2cde1a4d83fad0e89e6c1b795cad5d87f9220be4",
       "mimeType": "image/png",
       "width": 1448,
       "height": 1086,
-      "length": 2714615,
-      "alt": "Caldris atlas terrain without baked labels or markers.",
+      "length": 2615458,
+      "alt": "Caldris atlas terrain with Eredane's broad western coastline and watershed preserved without baked labels or markers.",
       "provenance": {
         "kind": "generated",
         "credit": "OpenAI image generation",
-        "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/caldris-atlas-clean-v1.png",
+        "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/caldris-atlas-clean-v2.png",
         "reviewedOn": "2026-09-12",
-        "version": 1
+        "version": 2
       },
       "previousActiveMap": {
         "componentRevision": 4,
@@ -70,39 +70,58 @@
           "status": "active",
           "variants": {
             "player": {
-              "sha256": "f2a9aeb6b3d38b494c507e5373a659837f5c633e278824d4e2d67d05fd5a5b0d",
+              "sha256": "142d6050d58e17590d986f7f2cde1a4d83fad0e89e6c1b795cad5d87f9220be4",
               "mimeType": "image/png",
               "width": 1448,
               "height": 1086,
-              "alt": "Caldris atlas terrain without baked labels or markers.",
-              "caption": "",
+              "alt": "Caldris atlas terrain with Eredane's broad western coastline and watershed preserved without baked labels or markers.",
+              "caption": "Western Eredane geography revised against the retained Eredane regional master; no overlay data is baked into the image.",
               "order": 0,
               "provenance": {
                 "kind": "generated",
                 "credit": "OpenAI image generation",
-                "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/caldris-atlas-clean-v1.png",
+                "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/caldris-atlas-clean-v2.png",
                 "reviewedOn": "2026-09-12",
-                "version": 1
+                "version": 2
               }
             },
             "dm": {
-              "sha256": "f2a9aeb6b3d38b494c507e5373a659837f5c633e278824d4e2d67d05fd5a5b0d",
+              "sha256": "142d6050d58e17590d986f7f2cde1a4d83fad0e89e6c1b795cad5d87f9220be4",
               "mimeType": "image/png",
               "width": 1448,
               "height": 1086,
-              "alt": "Caldris atlas terrain without baked labels or markers.",
-              "caption": "",
+              "alt": "Caldris atlas terrain with Eredane's broad western coastline and watershed preserved without baked labels or markers.",
+              "caption": "Western Eredane geography revised against the retained Eredane regional master; no overlay data is baked into the image.",
               "order": 0,
               "provenance": {
                 "kind": "generated",
                 "credit": "OpenAI image generation",
-                "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/caldris-atlas-clean-v1.png",
+                "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/caldris-atlas-clean-v2.png",
                 "reviewedOn": "2026-09-12",
-                "version": 1
+                "version": 2
               }
             }
           }
         }
+      },
+      "supersedesPackageAsset": {
+        "logicalAssetKey": "caldris.map.atlas.clean.v1",
+        "relativePath": "caldris-atlas-clean-v1.png",
+        "sha256": "f2a9aeb6b3d38b494c507e5373a659837f5c633e278824d4e2d67d05fd5a5b0d",
+        "disposition": "retained-unmodified-for-review-and-recovery"
+      },
+      "geographicContinuity": {
+        "referenceAssetKey": "caldris.map.eredane.clean.v1",
+        "childAnchor": {
+          "x": 255,
+          "y": 380
+        },
+        "reviewedCorrespondences": [
+          "Eredane is the broad east-west western continent in both frames, with a long northern coast and a southeast taper.",
+          "Both frames retain the northwest mountain arc and western mountain-and-forest mass.",
+          "Both frames retain the eastern mountain chain separated from the western highlands by central lowlands.",
+          "Both frames retain a north-and-central watershed draining toward the southeast coast."
+        ]
       }
     },
     {
@@ -1263,6 +1282,61 @@
     "knownContractDependencies": [
       "P2 must accept direct map-owning parents of kind site or interior.",
       "The live registered game.core.world.map.visual schema stores content-addressed metadata, while the authored catalog schema currently stores assetKey and alt; coordinator must choose and migrate one contract."
+    ]
+  },
+  "geographicContinuityReview": {
+    "reviewedOn": "2026-09-12",
+    "scopeBoundary": "Scope maps are independent north-up detail frames rather than seamless tiles; acceptance requires shared named geography and identifiable terrain at every direct-parent anchor.",
+    "anchorChain": [
+      {
+        "parent": "location.caldris.atlas",
+        "child": "location.caldris.eredane",
+        "x": 255,
+        "y": 380,
+        "evidence": "Corrected western-continent silhouette plus northwest highlands, central watershed, eastern ranges, and southeast drainage."
+      },
+      {
+        "parent": "location.caldris.eredane",
+        "child": "location.caldris.alderwick",
+        "x": 525,
+        "y": 530,
+        "evidence": "Central Eredane river country expands to Alderwick's Weir/Lark/Mere confluence and eastern coast."
+      },
+      {
+        "parent": "location.caldris.alderwick",
+        "child": "location.caldris.atlas.bramble-country",
+        "x": 510,
+        "y": 400,
+        "evidence": "The Bramble Country anchor lies on the Weir above the Mere confluence; its detail keeps the north-south Weir, eastern tributary, western highlands, and southeast wetlands."
+      },
+      {
+        "parent": "location.caldris.atlas.bramble-country",
+        "child": "location.caldris.bramblebridge",
+        "x": 455,
+        "y": 450,
+        "evidence": "Bramblebridge remains the central settlement at the Weir crossing."
+      },
+      {
+        "parent": "location.caldris.bramblebridge",
+        "child": "location.caldris.gilded-kettle",
+        "x": 280,
+        "y": 575,
+        "evidence": "The anchor lands in the western road district at the retained Gilded Kettle site."
+      },
+      {
+        "parent": "location.caldris.bramblebridge",
+        "child": "location.caldris.atlas.weir-bridge",
+        "x": 655,
+        "y": 505,
+        "evidence": "The anchor lands on the town's visible river crossing; the detail preserves the east-west road, north-south Weir, toll barrier, and west-side Bridge House."
+      },
+      {
+        "parent": "location.caldris.atlas.bramble-country",
+        "child": "location.caldris.bramblebridge.mallow-abbey",
+        "x": 230,
+        "y": 325,
+        "evidence": "The anchor lands in the northwest farm-and-forest district; the detail preserves its road, orchard, meadow, stream, and wet ground."
+      }
     ]
   }
 }

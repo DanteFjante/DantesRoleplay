@@ -6,17 +6,23 @@
     "Correct PNG dimensions retained.",
     "No baked labels, markers, legends, or secret symbols on maps.",
     "No text or solution-revealing detail in scenes.",
-    "One selected master per scope; no independently generated zoom levels."
+    "Scope maps are independent north-up detail frames; direct-parent anchors and identifiable terrain correspondences are reviewed in the import manifest."
   ],
   "assets": [
     {
-      "logicalAssetKey": "caldris.map.atlas.clean.v1",
+      "logicalAssetKey": "caldris.map.atlas.clean.v2",
       "tool": "OpenAI image_gen",
-      "generatedOutputId": "exec-bfe3cd69-8d3e-4d0b-b6aa-ddb99429a355.png",
-      "prompt": "Create a clean north-up fantasy map master for the named Caldris scope, preserving the established terrain, watercourses, roads, entrances, and architecture. Use parchment-toned painterly cartography. Remove every baked place name, text label, icon, pin, route highlight, legend, border coordinate, and secret marker. Leave clear terrain and architectural space for normalized 0..1000 DOM overlays; do not invent alternate zoom geography.",
-      "specificIntent": "Caldris atlas terrain without baked labels or markers.",
-      "referencePolicy": "Existing retained map/setting reference was inspected before generation when available. New site maps follow the recorded parent geography and anchors.",
-      "selectedSha256": "f2a9aeb6b3d38b494c507e5373a659837f5c633e278824d4e2d67d05fd5a5b0d"
+      "generatedOutputId": "exec-3aac6f3b-e8eb-4be3-8a3d-20d054ce8778.png",
+      "prompt": "Change only the western Eredane continent in the clean Caldris atlas candidate. Make its outline unmistakably broad east-west like the retained clean Eredane regional reference: about 1.4 times wider than tall, with a long nearly horizontal northern coast, broad southern coast, rounded western side, and southeast taper. Preserve and scale the northwest mountain arc, western mountain-and-forest mass, central lowlands and marsh, eastern mountain chain, and major rivers draining toward the southeast coast. Keep Solasca, the central sea, islands, border, corner flowers, clouds, palette, lighting, exact 1448x1086 dimensions, north-up orientation, and label-free presentation stable. Add no text, labels, letters, compass, icons, pins, routes, legends, symbols, markers, watermark, or third landmass.",
+      "specificIntent": "Caldris atlas with an Eredane western landmass visibly coherent with the retained Eredane regional map.",
+      "referencePolicy": "The prior clean atlas was the edit target and the retained clean Eredane map was the coastline and watershed reference. The prior atlas selection remains retained unmodified.",
+      "selectedSha256": "142d6050d58e17590d986f7f2cde1a4d83fad0e89e6c1b795cad5d87f9220be4",
+      "supersededSelection": {
+        "generatedOutputId": "exec-bfe3cd69-8d3e-4d0b-b6aa-ddb99429a355.png",
+        "relativePath": "caldris-atlas-clean-v1.png",
+        "sha256": "f2a9aeb6b3d38b494c507e5373a659837f5c633e278824d4e2d67d05fd5a5b0d",
+        "disposition": "retained-unmodified-for-review-and-recovery"
+      }
     },
     {
       "logicalAssetKey": "caldris.map.eredane.clean.v1",
