@@ -58,7 +58,11 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             var setup = Setup(db);
             RegisterQueryNamespaces(setup);
             var firstProjection = WriteQueryProjection("page-summary-one", QueryProjectionOne, "old");
-            var secondProjection = WriteQueryProjection("page-summary-two", QueryProjectionTwo, "new");
+            var secondProjection = WriteQueryProjection("page-summary-two", QueryProjectionTwo, "new",
+                "{\"type\":\"object\",\"additionalProperties\":false,\"minProperties\":0,\"maxProperties\":0}");
+            var requiredInputProjection = WriteQueryProjection("page-summary-required-input",
+                "demo.runtime.projection.page-summary-required-input", "required",
+                "{\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"value\"],\"properties\":{\"value\":{\"type\":\"string\"}}}");
             WriteQuery(QueryText(QueryProjectionOne, firstProjection, QueryOutputSchema, "Initial page summary."));
             await ActivateAsync(setup);
             await SeedQueryAuthoringGrantAsync(db);
@@ -167,6 +171,13 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
                     QueryOutputSchema, "Incompatible role contract.", additionalRole: true)),
                 (Name: "dependency", Text: QueryText(QueryProjectionTwo, new string('A', 64),
                     QueryOutputSchema, "Unavailable projection dependency.",
+                    mediaOwnerReference: MediaOwnerReference)),
+                (Name: "projection-input", Text: QueryText("demo.runtime.projection.page-summary-required-input",
+                    requiredInputProjection, QueryOutputSchema, "Projection refuses the fixed empty input.",
+                    mediaOwnerReference: MediaOwnerReference)),
+                (Name: "query-input-change", Text: QueryText(QueryProjectionTwo, secondProjection,
+                    QueryOutputSchema, "Changed query input contract.", inputSchema:
+                    "{\"type\":\"object\",\"additionalProperties\":false,\"minProperties\":0,\"maxProperties\":0}",
                     mediaOwnerReference: MediaOwnerReference)),
                 (Name: "media-removal", Text: QueryText(QueryProjectionTwo, secondProjection,
                     QueryOutputSchema, "Media owner proof removed.")),
@@ -328,7 +339,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             ReviewNote: "Reviewed query projection fixture."));
     }
 
-    private string WriteQueryProjection(string file, string id, string label)
+    private string WriteQueryProjection(string file, string id, string label, string? inputSchema = null)
     {
         var relative = "content/mechanics/" + file + ".md";
         var sourceRelative = "content/mechanics/" + file + ".js";
@@ -345,10 +356,14 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
 
             ## Requirements
             ```json
-            {"roles":{"subject":{"components":[]}}}
+            __REQUIREMENTS__
             ```
             """.Replace("__ID__", id, StringComparison.Ordinal)
-                .Replace("__NAME__", file, StringComparison.Ordinal);
+                .Replace("__NAME__", file, StringComparison.Ordinal)
+                .Replace("__REQUIREMENTS__", inputSchema is null
+                    ? "{\"roles\":{\"subject\":{\"components\":[]}}}"
+                    : "{\"roles\":{\"subject\":{\"components\":[]}},\"inputSchema\":" + inputSchema + "}",
+                    StringComparison.Ordinal);
         var source = $"return {{ data: {{ label: '{label}', state: 'ready', subject: {{ id: ctx.roles.subject.id }} }} }};";
         WriteFile(relative, markdown);
         WriteFile(sourceRelative, source);
@@ -368,7 +383,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
 
     private static string QueryText(string projectionId, string projectionHash,
         string outputSchema, string description, bool additionalRole = false,
-        ApplicationQueryMediaOwnerReference? mediaOwnerReference = null)
+        ApplicationQueryMediaOwnerReference? mediaOwnerReference = null, string? inputSchema = null)
     {
         var schemas = new BoundedJsonSchemaValidator();
         var compiled = schemas.Compile(outputSchema);
@@ -407,15 +422,16 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             exposure = "binding-only",
             status = "active"
         });
-        if (mediaOwnerReference is null) return content;
+        if (mediaOwnerReference is null && inputSchema is null) return content;
         var document = JsonNode.Parse(content)!.AsObject();
-        document["mediaOwnerReference"] = JsonSerializer.SerializeToNode(new
+        if (mediaOwnerReference is not null) document["mediaOwnerReference"] = JsonSerializer.SerializeToNode(new
         {
             role = mediaOwnerReference.Role,
             resultPointer = mediaOwnerReference.ResultPointer,
             availabilityPointer = mediaOwnerReference.AvailabilityPointer,
             availabilityValue = mediaOwnerReference.AvailabilityValue
         });
+        if (inputSchema is not null) document["inputSchema"] = JsonNode.Parse(inputSchema);
         return document.ToJsonString();
     }
 

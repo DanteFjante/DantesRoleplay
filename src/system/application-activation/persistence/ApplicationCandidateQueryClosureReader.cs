@@ -25,7 +25,7 @@ internal sealed class ApplicationCandidateQueryClosureReader(
     IActiveCatalogFeatureSnapshotProvider snapshots,
     IBoundedJsonSchemaValidator schemas) : IApplicationCandidateReviewClosureReader
 {
-    public const string GrammarVersion = "existing-query-mechanic-projection-v2";
+    public const string GrammarVersion = "existing-query-mechanic-projection-v3";
     public string Grammar => GrammarVersion;
 
     public async Task<ApplicationCandidateReviewClosureReadResult> ReadAsync(
@@ -245,8 +245,15 @@ internal sealed class ApplicationCandidateQueryClosureReader(
         var roles = requirements.Roles.Keys.Concat(requirements.GraphSnapshots.Values
             .Select(value => value.RootRole)).Distinct(StringComparer.Ordinal).ToHashSet(StringComparer.Ordinal);
         if (!roles.SetEquals(query.Roles.Keys)) return false;
-        if ((query.InputSchemaJson is null) != (requirements.InputSchema is null)) return false;
-        if (query.InputSchemaJson is null) return true;
+        if (query.InputSchemaJson is null)
+        {
+            if (requirements.InputSchema is null) return true;
+            var fixedInput = schemas.Compile(requirements.InputSchema.Value.GetRawText());
+            return fixedInput.IsAccepted
+                && schemas.Validate(fixedInput.ProfileId, fixedInput.NormalizedSchema, "{}").Status
+                    == SchemaValueStatus.Valid;
+        }
+        if (requirements.InputSchema is null) return false;
         var queryInput = schemas.Compile(query.InputSchemaJson);
         var mechanicInput = schemas.Compile(requirements.InputSchema!.Value.GetRawText());
         return queryInput.IsAccepted && mechanicInput.IsAccepted
@@ -299,7 +306,7 @@ internal sealed class ApplicationCandidateQueryReviewClosureEvidence : IApplicat
         ReviewDocuments = [new(selected.Definition, ApplicationCandidateReviewDocumentRole.Changed,
             selected.Document, selected.RetainedBytes), .. projectionDocuments];
         EvidenceFingerprint = InteractionCanonicalJson.Fingerprint(
-            "dantes-roleplay/application-candidate-query-closure/v2",
+            "dantes-roleplay/application-candidate-query-closure/v3",
             InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
             {
                 Candidate, BaseOrigin, SelectionEvidenceFingerprint,
