@@ -21,11 +21,12 @@ Last coordinator update: 2026-09-12, 09:08 UTC. This is a checkpoint, not a clai
 | --- | --- |
 | Original platform plan | All 30 scoped slices implemented and integrated at 9395cd8e |
 | Platform acceptance | Both reported failures fixed at fe60517c; focused checks and catalog validation passed; corrected build passed with one existing warning; full suite rerun is active |
-| master before this documentation change | be7d0609; platform code has NOT yet been landed there |
+| master documentation checkpoint | d32489ab records this coordination plan on top of be7d0609; platform code has NOT yet been landed there |
 | Prepared master/platform merge | Detached 6023d31bd1233bd20d5d061a17736d1674b5ca05, zero conflicts, preserves master's portrait change |
 | Existing guide alignment | 497b212c, ready to integrate after the source freeze |
 | Branch cleanup | Verified backups prepared; no branches deleted |
-| New manual, shared website, DND website, DND plan | Assigned below; not yet accepted or deployed |
+| Manual, shared website, DND website | Implementation active; shared theme bridge delivered to the DND worker; not yet accepted or deployed |
+| DND upgrade plan | Draft cc0fd197 delivered in the detached planning worktree; compatibility revision requested for parallel ownership, shared theme/navigation, existing website work, and durable checkpoints |
 
 Implementation, verification, landing on master, and deployment are separate states. Never call a worktree delivery a master update or a live deployment.
 

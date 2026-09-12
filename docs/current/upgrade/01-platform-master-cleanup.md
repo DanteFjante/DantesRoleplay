@@ -40,13 +40,15 @@ Record actual paths if reruns use different names. Do not overwrite useful faile
 
 ## Current checkpoint
 
+- Updated 2026-09-12 09:15 UTC by verification worker `website_integration`.
 - Full solution build at 9395cd8e: passed, zero warnings/errors.
-- First full-suite totals: awaiting verification worker's durable update.
+- First full-suite run at 9395cd8e completed in 14m05s: 3,450 passed, 2 failed, 0 skipped, 3,452 total. Failed report: `C:/repo/DantesRoleplay-foundation/.tmp/test-results/platform-final/platform-final.trx`.
 - Reported failures: GuardTests.No_catalog_contract_names_a_verb_kind_the_protocol_does_not_serve; SqliteStandingGrantTargetResolverTests.Existing_stateful_body_runs_real_dry_run_publishes_and_rechecks_current_authority.
 - Manual diagnosis: catalog/procedures/procedure/system/inner-worker/submit.md uses the placeholder query(kind: "<qualified-id>"); the guard's existing placeholder convention is "...". Correct the authored example, not the guard or public protocol.
 - Runtime diagnosis from worker: a derived state host reused a 16-operation parent validation budget although its selected state grant allowed eight. Narrow the child budget to the selected grant and expiry while retaining the shared parent ledger; prove stateful and workflow paths.
 - Both fixes committed at fe60517c6df24b567bad60a9ae455f4f1372694b. Focused guard/manual/stateful/workflow checks: 4/4 passed. Corrected full build: one existing CS8604 test warning, zero errors. Fresh catalog validation: 614 records valid with seven known legacy warnings.
-- Full suite rerun is active on the corrected, frozen source. Next: record complete first-run and rerun results, finish protocol verification, and release source ownership for landing.
+- Foundation checkout is clean at fe60517c6df24b567bad60a9ae455f4f1372694b. Full suite rerun is active as process session 14449 on the corrected, frozen source; expected report is `C:/repo/DantesRoleplay-foundation/.tmp/test-results/platform-final/platform-final-rerun.trx`.
+- Next: record rerun totals, run the opt-in protocol walk, rerun fresh-built catalog validation for final evidence, verify exact HEAD/clean status, then explicitly release integration ownership for landing.
 - master landing / branch deletion: NOT performed.
 
 ## Required handoff fields
