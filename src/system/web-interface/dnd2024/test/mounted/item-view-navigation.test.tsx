@@ -346,7 +346,7 @@ test("shared table upgrades obsolete Player inventory links without offering a r
     dmPrincipalIds: ["dm.fixture"],
   })) as ReadyHubEnvelope;
   const initial: ReadyHubEnvelope = { ...projected, party,
-    audience: { seat: "dm", perspective: "dm", allowedPerspectives: ["dm"] },
+    audience: { seat: "dm", perspective: "dm", allowedPerspectives: ["dm"], websiteAccess: "shared" },
     contextSelection: { selectedWorldId: projected.world.id, selectedCampaignId: "campaign.test",
       worlds: [{ id: projected.world.id, name: projected.world.name,
         campaigns: [{ id: "campaign.test", name: "Fixture" }] }] } };
