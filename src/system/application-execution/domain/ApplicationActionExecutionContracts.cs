@@ -92,3 +92,13 @@ public interface IApplicationActionInvocationAdapter
     Task<InteractionInvocationResult> ExecuteAsync(ApplicationActionInvocationRequest request,
         CancellationToken cancellationToken = default);
 }
+
+/// <summary>
+/// Executes one root Atomic action under an exact current StateSpace standing grant and rechecks
+/// the grant's allowed effect kinds inside the guarded effect write.
+/// </summary>
+public interface IStandingGrantApplicationActionInvocationAdapter
+{
+    Task<InteractionInvocationResult> ExecuteAsync(ApplicationActionInvocationRequest request,
+        CancellationToken cancellationToken = default);
+}

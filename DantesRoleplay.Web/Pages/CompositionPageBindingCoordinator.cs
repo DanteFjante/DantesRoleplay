@@ -5,6 +5,7 @@ using DantesRoleplay.ApplicationExecution;
 using DantesRoleplay.Authorization;
 using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.Interactions;
+using DantesRoleplay.Mechanics;
 using DantesRoleplay.SchemaValidation;
 using DantesRoleplay.Web.Hosting;
 using DantesRoleplay.Web.Data;
@@ -20,7 +21,8 @@ public sealed class CompositionPageBindingCoordinator(
     IStandingGrantPolicy grants,
     IStandingGrantReadCandidateReader candidates,
     CompositionQueryMaterializer materializer,
-    IApplicationActionInvocationAdapter actions)
+    IApplicationActionInvocationAdapter actions,
+    IStandingGrantApplicationActionInvocationAdapter? standingActions = null)
 {
     public async Task<WebCompositionRenderResult> RenderAsync(
         WebPagePublicationSelection selection,
@@ -142,8 +144,18 @@ public sealed class CompositionPageBindingCoordinator(
             return InteractionInvocationResult.Failed("JSON_TOO_LARGE", "The page action input is too large.");
 
         var application = selection.Publication.ApplicationRevision;
+        var routeRoles = RouteRoles(record!, selection.Entity.EntityId);
+        if (routeRoles.Status == PageActionScopeStatus.Unavailable)
+            return InteractionInvocationResult.Unavailable("COMPOSITION_ACTION_ROLES_UNAVAILABLE",
+                "The page action cannot bind its roles from the selected route entity.");
+        var stateful = routeRoles.Status == PageActionScopeStatus.Stateful;
+        if (stateful && standingActions is null)
+            return InteractionInvocationResult.Unavailable("COMPOSITION_ACTION_AUTHORITY_UNAVAILABLE",
+                "Current stateful page action authority is unavailable.");
+        var scope = stateful ? StandingGrantScope.StateSpace : StandingGrantScope.Application;
+        var stateSpaceId = stateful ? selection.Publication.StateSpaceId : null;
         var grantCandidates = await candidates.ReadAsync(principal, application.ApplicationId,
-            StandingGrantScope.Application, null,
+            scope, stateSpaceId,
             new HashSet<StandingGrantCapability> { StandingGrantCapability.Read, StandingGrantCapability.Execute },
             cancellationToken);
         if (grantCandidates.Status != StandingGrantReadCandidateStatus.Available)
@@ -151,10 +163,17 @@ public sealed class CompositionPageBindingCoordinator(
         var budget = new InteractionInvocationBudget(1, deadlineUtc);
         foreach (var candidate in grantCandidates.Candidates)
         {
-            var host = InteractionInvocationHost.ForApplication(principal, application, candidate.GrantReference, commandId,
-                InteractionExecutionProfile.Atomic, budget);
-            var result = await actions.ExecuteAsync(new(host, mechanicId, record!.Summary.Version,
-                record.Summary.ContentFingerprint, new Dictionary<string, string>(), canonicalInput), cancellationToken);
+            var host = stateful
+                ? new InteractionInvocationHost(principal, application, selection.Publication.StateSpaceId,
+                    candidate.GrantReference, commandId, InteractionStateRevision.From(selection.Publication),
+                    InteractionExecutionProfile.Atomic, budget)
+                : InteractionInvocationHost.ForApplication(principal, application, candidate.GrantReference, commandId,
+                    InteractionExecutionProfile.Atomic, budget);
+            var request = new ApplicationActionInvocationRequest(host, mechanicId, record!.Summary.Version,
+                record.Summary.ContentFingerprint, routeRoles.Roles, canonicalInput);
+            var result = stateful
+                ? await standingActions!.ExecuteAsync(request, cancellationToken)
+                : await actions.ExecuteAsync(request, cancellationToken);
             if (result.Code == "INVOCATION_NOT_AUTHORIZED") continue;
             return result;
         }
@@ -187,6 +206,42 @@ public sealed class CompositionPageBindingCoordinator(
         new(null, [new("$", code, message)]);
     private static WebCompositionRenderResult UnavailableCatalog() =>
         Error("COMPOSITION_CATALOG_UNAVAILABLE", "The exact active application catalog is unavailable.");
+
+    private static PageActionScope RouteRoles(CatalogRecordView record, string routeEntityId)
+    {
+        try
+        {
+            using var content = JsonDocument.Parse(record.ContentJson,
+                new JsonDocumentOptions { MaxDepth = InteractionContractLimits.JsonDepth });
+            if (content.RootElement.ValueKind != JsonValueKind.Object
+                || content.RootElement.TryGetProperty("service", out _))
+                return PageActionScope.Unavailable;
+            if (!content.RootElement.TryGetProperty("requirements", out var encoded)
+                || encoded.ValueKind != JsonValueKind.String)
+                return PageActionScope.Pure;
+            var requirementsJson = encoded.GetString()!;
+            using var raw = JsonDocument.Parse(requirementsJson,
+                new JsonDocumentOptions { MaxDepth = InteractionContractLimits.JsonDepth });
+            if (raw.RootElement.ValueKind != JsonValueKind.Object) return PageActionScope.Unavailable;
+            var fields = raw.RootElement.EnumerateObject().Select(value => value.Name).ToArray();
+            if (fields.All(value => value.Equals("inputSchema", StringComparison.OrdinalIgnoreCase)))
+                return PageActionScope.Pure;
+            var requirements = MechanicRequirements.Parse(requirementsJson);
+            if (requirements.Roles.Count > 1
+                || requirements.ObjectRoles.Count != 0 || requirements.SnapshotObjects.Count != 0
+                || requirements.GraphSnapshots.Count != 0 || requirements.Children.Count != 0
+                || requirements.AuthorizedContext is not null || requirements.Event is not null)
+                return PageActionScope.Unavailable;
+            var roles = requirements.Roles.Keys.Order(StringComparer.Ordinal)
+                .ToDictionary(value => value, _ => routeEntityId, StringComparer.Ordinal);
+            return new(PageActionScopeStatus.Stateful,
+                new ReadOnlyDictionary<string, string>(roles));
+        }
+        catch (Exception exception) when (exception is JsonException or ArgumentException or InvalidOperationException)
+        {
+            return PageActionScope.Unavailable;
+        }
+    }
 
     private static WebCompositionRenderResult WithActions(WebCompositionRenderResult rendered,
         WebCompositionDocument document, WebPagePublicationSelection selection)
@@ -238,4 +293,12 @@ public sealed class CompositionPageBindingCoordinator(
     }
     private sealed record QuerySelection(string QueryId, InteractionQueryContractReference Contract,
         IReadOnlyDictionary<string, string> Roles, string InputJson);
+    private enum PageActionScopeStatus { Pure, Stateful, Unavailable }
+    private sealed record PageActionScope(PageActionScopeStatus Status, IReadOnlyDictionary<string, string> Roles)
+    {
+        internal static PageActionScope Pure { get; } = new(PageActionScopeStatus.Pure,
+            new ReadOnlyDictionary<string, string>(new Dictionary<string, string>()));
+        internal static PageActionScope Unavailable { get; } = new(PageActionScopeStatus.Unavailable,
+            new ReadOnlyDictionary<string, string>(new Dictionary<string, string>()));
+    }
 }

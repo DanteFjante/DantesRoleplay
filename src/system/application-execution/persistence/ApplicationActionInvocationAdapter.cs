@@ -17,20 +17,27 @@ internal sealed class ApplicationActionInvocationAdapter(
     IApplicationPureActionExecutor? pureActions = null,
     IStandingGrantTargetResolver? grantTargets = null,
     IStandingGrantPolicy? standingGrants = null,
-    IEcsWriteTransactionFactory? transactions = null) : IApplicationActionInvocationAdapter
+    IEcsWriteTransactionFactory? transactions = null) :
+    IApplicationActionInvocationAdapter, IStandingGrantApplicationActionInvocationAdapter
 {
     public async Task<InteractionInvocationResult> ExecuteAsync(ApplicationActionInvocationRequest request,
         CancellationToken cancellationToken = default) =>
-        await ExecuteAsync(request, trustedWorkflowChild: false, cancellationToken);
+        await ExecuteAsync(request, trustedWorkflowChild: false, standingGrantRoot: false, cancellationToken);
+
+    async Task<InteractionInvocationResult> IStandingGrantApplicationActionInvocationAdapter.ExecuteAsync(
+        ApplicationActionInvocationRequest request,
+        CancellationToken cancellationToken) =>
+        await ExecuteAsync(request, trustedWorkflowChild: false, standingGrantRoot: true, cancellationToken);
 
     internal async Task<InteractionInvocationResult> ExecuteWorkflowChildAsync(
         ApplicationActionInvocationRequest request,
         CancellationToken cancellationToken = default)
-        => await ExecuteAsync(request, trustedWorkflowChild: true, cancellationToken);
+        => await ExecuteAsync(request, trustedWorkflowChild: true, standingGrantRoot: false, cancellationToken);
 
     private async Task<InteractionInvocationResult> ExecuteAsync(
         ApplicationActionInvocationRequest request,
         bool trustedWorkflowChild,
+        bool standingGrantRoot,
         CancellationToken cancellationToken)
     {
         ApplicationEcsExecutionIdentity? executionIdentity = null;
@@ -55,9 +62,11 @@ internal sealed class ApplicationActionInvocationAdapter(
                 return InteractionInvocationResult.Cancelled("INVOCATION_DEADLINE_EXCEEDED", "The invocation deadline elapsed before the action started.");
             if (!request.Host.Budget.TryConsumeOperation())
                 return InteractionInvocationResult.Failed("INVOCATION_BUDGET_EXHAUSTED", "The invocation operation budget is exhausted.");
-            if (trustedWorkflowChild)
+            if (trustedWorkflowChild || standingGrantRoot)
             {
-                var authority = await AuthorizeWorkflowSelectionAsync(request, cancellationToken);
+                var authority = await AuthorizeStandingGrantSelectionAsync(request,
+                    trustedWorkflowChild ? "WORKFLOW_ACTION_AUTHORITY_UNAVAILABLE" : "ACTION_AUTHORITY_UNAVAILABLE",
+                    cancellationToken);
                 if (authority is not null) return authority;
             }
             else
@@ -87,18 +96,19 @@ internal sealed class ApplicationActionInvocationAdapter(
                 request.QualifiedMechanicId, request.MechanicVersion, request.ContentFingerprint, roles,
                 input, seed, executionIdentity);
             ApplicationActionExecutionResult result;
-            if (trustedWorkflowChild)
+            if (trustedWorkflowChild || standingGrantRoot)
             {
                 if (actions is not ApplicationActionRunner trustedActions
                     || grantTargets is null || standingGrants is null)
                     return InteractionInvocationResult.Unavailable(
-                        "WORKFLOW_ACTION_AUTHORITY_UNAVAILABLE",
-                        "The workflow action commit authority is unavailable.");
+                        trustedWorkflowChild ? "WORKFLOW_ACTION_AUTHORITY_UNAVAILABLE" : "ACTION_AUTHORITY_UNAVAILABLE",
+                        "The action commit authority is unavailable.");
                 result = await trustedActions.RunAuthorizedAsync(execution,
-                    new WorkflowActionCommitGuard(
+                    new StandingGrantActionCommitGuard(
                         request.Host, stateSpaces, grantTargets, standingGrants,
                         new(request.QualifiedMechanicId, CatalogNamespaceKinds.Mechanic,
-                            request.MechanicVersion, request.ContentFingerprint)),
+                            request.MechanicVersion, request.ContentFingerprint),
+                        trustedWorkflowChild ? "WORKFLOW_ACTION_AUTHORITY_UNAVAILABLE" : "ACTION_AUTHORITY_UNAVAILABLE"),
                     deadline.Token);
             }
             else
@@ -137,13 +147,14 @@ internal sealed class ApplicationActionInvocationAdapter(
         }
     }
 
-    private async Task<InteractionInvocationResult?> AuthorizeWorkflowSelectionAsync(
+    private async Task<InteractionInvocationResult?> AuthorizeStandingGrantSelectionAsync(
         ApplicationActionInvocationRequest request,
+        string unavailableCode,
         CancellationToken cancellationToken)
     {
         if (grantTargets is null || standingGrants is null || transactions is null)
             return InteractionInvocationResult.Unavailable(
-                "WORKFLOW_ACTION_AUTHORITY_UNAVAILABLE", "Current workflow action authority is unavailable.");
+                unavailableCode, "Current action authority is unavailable.");
         using var deadline = Deadline(request.Host.Budget, cancellationToken);
         await using var transaction = await transactions.BeginAsync(deadline.Token);
         if (!transactions.OwnsCurrent(transaction))
@@ -161,7 +172,7 @@ internal sealed class ApplicationActionInvocationAdapter(
                 ? InteractionInvocationResult.Failed(
                     "INVOCATION_NOT_AUTHORIZED", "The action is not authorized for this scope.")
                 : InteractionInvocationResult.Unavailable(
-                    "WORKFLOW_ACTION_AUTHORITY_UNAVAILABLE", "Current workflow action authority is unavailable.");
+                    unavailableCode, "Current action authority is unavailable.");
         var decision = await standingGrants.EvaluateAsync(request.Host,
             new(StandingGrantCapability.Execute, StandingGrantScope.StateSpace, [target], []), deadline.Token);
         if (!ExactAllowedDecision(request.Host, target, [], decision))
@@ -171,12 +182,13 @@ internal sealed class ApplicationActionInvocationAdapter(
         return null;
     }
 
-    private sealed class WorkflowActionCommitGuard(
+    private sealed class StandingGrantActionCommitGuard(
         InteractionInvocationHost host,
         IStateSpaceRegistry stateSpaces,
         IStandingGrantTargetResolver grantTargets,
         IStandingGrantPolicy standingGrants,
-        StandingGrantDefinitionReference selection) : IApplicationEcsCommitGuard
+        StandingGrantDefinitionReference selection,
+        string unavailableCode) : IApplicationEcsCommitGuard
     {
         public async Task<ApplicationEcsCommitGuardDecision> EvaluateAsync(
             ApplicationEcsEffectBatch committedBatch,
@@ -199,7 +211,7 @@ internal sealed class ApplicationActionInvocationAdapter(
                     || target.Candidate is not null || target.RetainedActivation is not null)
                     return Denied(resolution?.Status == StandingGrantTargetResolutionStatus.Denied
                         ? "INVOCATION_NOT_AUTHORIZED"
-                        : "WORKFLOW_ACTION_AUTHORITY_UNAVAILABLE");
+                        : unavailableCode);
                 var effectKinds = committedBatch.Effects.Select(effect => effect.Type)
                     .Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray();
                 var decision = await standingGrants.EvaluateAsync(host,
@@ -212,7 +224,7 @@ internal sealed class ApplicationActionInvocationAdapter(
             catch (OperationCanceledException) { throw; }
             catch
             {
-                return Denied("WORKFLOW_ACTION_AUTHORITY_UNAVAILABLE");
+                return Denied(unavailableCode);
             }
         }
 

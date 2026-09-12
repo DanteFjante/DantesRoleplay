@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using DantesRoleplay.ApplicationExecution;
 using DantesRoleplay.Applications;
 using DantesRoleplay.Authorization;
@@ -137,6 +138,86 @@ public sealed class CompositionPageBindingCoordinatorTests
         Assert.Equal(grant.GrantReference, request.Host.GrantReference);
     }
 
+    [Fact]
+    public async Task Stateful_action_binds_its_single_role_to_the_server_selected_page_entity_and_state_scope()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var expectedMechanicId = fixture.ApplicationId.Value + ".mechanic.update";
+        var (selection, document) = await PublishCompositionAsync(fixture, $$$$"""
+            {"formatVersion":1,"generation":"retained","actions":[{"name":"update","mechanic":"{{{{expectedMechanicId}}}}"}],
+             "components":[],"root":{"kind":"element","tag":"button","action":"update","children":[]}}
+            """);
+        var schemas = new BoundedJsonSchemaValidator();
+        var catalog = ActionCatalog(selection, out var mechanicId, out var target,
+            "{\"roles\":{\"subject\":{\"components\":[]}}}");
+        Assert.Equal(expectedMechanicId, mechanicId);
+        var grant = new StandingGrantRevision("action@1", "action", 1, new string('D', 64),
+            "principal." + new string('a', 64), fixture.ApplicationId,
+            StandingGrantScope.StateSpace, selection.Publication.StateSpaceId,
+            [StandingGrantCapability.Read, StandingGrantCapability.Execute],
+            new(StandingGrantDefinitionMode.ExactIds, [mechanicId], []), ["component.set"], 1,
+            DateTime.UtcNow.AddMinutes(5), false, "fixture-operation");
+        var action = new ActionAdapter(InteractionInvocationResult.Committed(
+            new("a".PadLeft(32, 'a'), new string('E', 64), [], false)));
+        var candidates = new CandidateReader(grant);
+        var coordinator = new CompositionPageBindingCoordinator(
+            new InMemoryPublicApplicationCatalogProvider(new Dictionary<ApplicationIdentifier, ICatalogNavigator>
+                { [fixture.ApplicationId] = catalog }),
+            new ApplicationQueryRoleBindingResolver(schemas), schemas, new TargetResolver(target),
+            new AllowPolicy(grant), candidates, new CompositionQueryMaterializer(new ReadAdapter()),
+            action, action);
+        var principal = TrustedPrincipalContext.VerifiedPrincipal(grant.PrincipalReference, "test");
+
+        var result = await coordinator.InvokeActionAsync(selection, document, principal,
+            "update", "web-page.action-2", "{\"amount\":2}", DateTime.UtcNow.AddMinutes(1), default);
+
+        Assert.Equal(InteractionInvocationResultTag.Committed, result.Tag);
+        Assert.Equal(StandingGrantScope.StateSpace, candidates.RequestedScope);
+        Assert.Equal(selection.Publication.StateSpaceId, candidates.RequestedStateSpaceId);
+        var request = Assert.Single(action.Requests);
+        Assert.Equal(selection.Publication.StateSpaceId, request.Host.StateSpaceId);
+        Assert.Equal(InteractionStateRevision.From(selection.Publication), request.Host.StateRevision);
+        Assert.Equal(new[] { "subject" }, request.RoleEntityIds.Keys);
+        Assert.All(request.RoleEntityIds.Values, value => Assert.Equal(selection.Entity.EntityId, value));
+    }
+
+    [Fact]
+    public async Task Stateful_action_with_no_roles_uses_state_scope_without_accepting_authored_subjects()
+    {
+        await using var fixture = await Fixture.CreateAsync();
+        var expectedMechanicId = fixture.ApplicationId.Value + ".mechanic.update";
+        var (selection, document) = await PublishCompositionAsync(fixture, $$$$"""
+            {"formatVersion":1,"generation":"retained","actions":[{"name":"update","mechanic":"{{{{expectedMechanicId}}}}"}],
+             "components":[],"root":{"kind":"element","tag":"button","action":"update","children":[]}}
+            """);
+        var schemas = new BoundedJsonSchemaValidator();
+        var catalog = ActionCatalog(selection, out var mechanicId, out var target,
+            "{\"effectComponentIds\":[\"counter\"]}");
+        var grant = new StandingGrantRevision("action@1", "action", 1, new string('D', 64),
+            "principal." + new string('a', 64), fixture.ApplicationId,
+            StandingGrantScope.StateSpace, selection.Publication.StateSpaceId,
+            [StandingGrantCapability.Read, StandingGrantCapability.Execute],
+            new(StandingGrantDefinitionMode.ExactIds, [mechanicId], []), ["component.set"], 1,
+            DateTime.UtcNow.AddMinutes(5), false, "fixture-operation");
+        var action = new ActionAdapter(InteractionInvocationResult.Committed(
+            new("b".PadLeft(32, 'b'), new string('E', 64), [], false)));
+        var candidates = new CandidateReader(grant);
+        var coordinator = new CompositionPageBindingCoordinator(
+            new InMemoryPublicApplicationCatalogProvider(new Dictionary<ApplicationIdentifier, ICatalogNavigator>
+                { [fixture.ApplicationId] = catalog }),
+            new ApplicationQueryRoleBindingResolver(schemas), schemas, new TargetResolver(target),
+            new AllowPolicy(grant), candidates, new CompositionQueryMaterializer(new ReadAdapter()),
+            action, action);
+
+        var result = await coordinator.InvokeActionAsync(selection, document,
+            TrustedPrincipalContext.VerifiedPrincipal(grant.PrincipalReference, "test"),
+            "update", "web-page.action-3", "{}", DateTime.UtcNow.AddMinutes(1), default);
+
+        Assert.Equal(InteractionInvocationResultTag.Committed, result.Tag);
+        Assert.Equal(StandingGrantScope.StateSpace, candidates.RequestedScope);
+        Assert.Empty(Assert.Single(action.Requests).RoleEntityIds);
+    }
+
     private static async Task<(WebPagePublicationSelection Selection, WebCompositionDocument Document)>
         PublishCompositionAsync(Fixture fixture, string composition)
     {
@@ -183,10 +264,14 @@ public sealed class CompositionPageBindingCoordinatorTests
     }
 
     private static ICatalogNavigator ActionCatalog(WebPagePublicationSelection selection,
-        out string mechanicId, out StandingGrantDefinitionTarget target)
+        out string mechanicId, out StandingGrantDefinitionTarget target,
+        string? requirementsJson = null)
     {
         mechanicId = selection.Publication.ApplicationRevision.ApplicationId.Value + ".mechanic.calculate";
-        const string content = "{}";
+        if (requirementsJson is not null) mechanicId = selection.Publication.ApplicationRevision.ApplicationId.Value + ".mechanic.update";
+        var content = requirementsJson is null
+            ? "{}"
+            : JsonSerializer.Serialize(new { requirements = requirementsJson });
         var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(content)));
         var record = new CatalogRecordDefinition("bindings", "mechanic", mechanicId, "Calculate", "Calculate.", [], [],
             "", "active", 1, content, hash, "fixture", "mechanics/calculate.json");
@@ -210,11 +295,18 @@ public sealed class CompositionPageBindingCoordinatorTests
 
     private sealed class CandidateReader(StandingGrantRevision grant) : IStandingGrantReadCandidateReader
     {
+        public StandingGrantScope? RequestedScope { get; private set; }
+        public string? RequestedStateSpaceId { get; private set; }
         public Task<StandingGrantReadCandidateResult> ReadAsync(TrustedPrincipalContext principal,
             ApplicationIdentifier applicationId, CancellationToken cancellationToken = default) => Result();
         public Task<StandingGrantReadCandidateResult> ReadAsync(TrustedPrincipalContext principal,
             ApplicationIdentifier applicationId, StandingGrantScope scope, string? stateSpaceId,
-            IReadOnlySet<StandingGrantCapability> requiredCapabilities, CancellationToken cancellationToken = default) => Result();
+            IReadOnlySet<StandingGrantCapability> requiredCapabilities, CancellationToken cancellationToken = default)
+        {
+            RequestedScope = scope;
+            RequestedStateSpaceId = stateSpaceId;
+            return Result();
+        }
         private Task<StandingGrantReadCandidateResult> Result() => Task.FromResult(new StandingGrantReadCandidateResult(
             StandingGrantReadCandidateStatus.Available, "available", [grant]));
     }
@@ -258,7 +350,8 @@ public sealed class CompositionPageBindingCoordinatorTests
         }
     }
 
-    private sealed class ActionAdapter(InteractionInvocationResult? result = null) : IApplicationActionInvocationAdapter
+    private sealed class ActionAdapter(InteractionInvocationResult? result = null) :
+        IApplicationActionInvocationAdapter, IStandingGrantApplicationActionInvocationAdapter
     {
         public List<ApplicationActionInvocationRequest> Requests { get; } = [];
         public Task<InteractionInvocationResult> ExecuteAsync(ApplicationActionInvocationRequest request,
