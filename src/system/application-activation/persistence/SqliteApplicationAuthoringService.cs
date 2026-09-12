@@ -51,11 +51,11 @@ public sealed partial class SqliteApplicationAuthoringService : IApplicationAuth
         IStandingGrantPolicy grants, IStandingGrantTargetResolver targets, IOperationLog operations,
         IApplicationCandidatePreparation? preparation, IInteractionManualContextService? manuals,
         ApplicationCandidateReviewedPureUpdateReader? reviewedPureUpdates,
-        ApplicationCandidateReviewedProcedureUpdateReader? reviewedProcedureUpdates = null,
         IApplicationCatalogSynchronizationEvidenceReader? synchronization = null,
         ApplicationCandidateStatefulRuntimeValidator? statefulRuntime = null,
         ApplicationCandidateStatefulReviewClosureReader? statefulReviewClosures = null,
-        ApplicationCandidateReviewedStatefulUpdateReader? reviewedStatefulUpdates = null)
+        ApplicationCandidateReviewedStatefulUpdateReader? reviewedStatefulUpdates = null,
+        ApplicationCandidateReviewedProcedureUpdateReader? reviewedProcedureUpdates = null)
     {
         this.db = db; this.applications = applications; this.activations = activations; this.evidence = evidence;
         this.sources = sources; this.grants = grants; this.targets = targets; this.operations = operations;
