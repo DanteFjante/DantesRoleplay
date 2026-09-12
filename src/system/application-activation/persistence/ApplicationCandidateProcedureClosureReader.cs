@@ -8,6 +8,7 @@ using DantesRoleplay.Authorization;
 using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.DataAccess.Bootstrap;
+using DantesRoleplay.DataAccess.Composition;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Sources;
 using DantesRoleplay.SystemCapabilities;
@@ -24,7 +25,7 @@ internal sealed class ApplicationCandidateProcedureClosureReader(
     IStandingGrantTargetResolver targets,
     IActiveCatalogFeatureSnapshotProvider snapshots) : IApplicationCandidateReviewClosureReader
 {
-    public string Grammar => "procedure-governed-references-v1";
+    public string Grammar => "procedure-governed-references-v2";
 
     public async Task<ApplicationCandidateReviewClosureReadResult> ReadAsync(
         InteractionInvocationHost host, ApplicationCandidateReference candidate,
@@ -68,12 +69,14 @@ internal sealed class ApplicationCandidateProcedureClosureReader(
             var references = SystemInnerWorkerGovernedReferences.Parse(successor.Governs);
             if (!ExplicitReferencesWellFormed(successor.Governs, references))
                 return ApplicationCandidateReviewClosureReadResult.Rejected();
-            var dependencies = await DependenciesAsync(host, candidate, basis, snapshot, references, cancellationToken);
+            var dependencies = await DependenciesAsync(host, candidate, basis, snapshot,
+                target.DefinitionId, references, cancellationToken);
             if (dependencies is null) return ApplicationCandidateReviewClosureReadResult.Rejected();
             return ApplicationCandidateReviewClosureReadResult.Available(
                 ApplicationCandidateProcedureReviewClosureEvidence.FromVerified(
                     selection, selected, predecessor.Definition,
-                    dependencies.Value.Definitions, dependencies.Value.Documents));
+                    dependencies.Value.Definitions, dependencies.Value.SystemCapabilities,
+                    dependencies.Value.Documents));
         }
         catch (Exception exception) when (exception is ArgumentException or InvalidOperationException
             or JsonException or DecoderFallbackException or InteractionContractException
@@ -152,15 +155,25 @@ internal sealed class ApplicationCandidateProcedureClosureReader(
     }
 
     private async Task<(ImmutableArray<StandingGrantDefinitionReference> Definitions,
+        ImmutableArray<SystemInnerWorkerGovernedSystemCapabilityEvidence> SystemCapabilities,
         ImmutableArray<ApplicationCandidateReviewClosureDocument> Documents)?> DependenciesAsync(
         InteractionInvocationHost host, ApplicationCandidateReference candidate, ActiveApplicationManifest basis,
-        ActiveCatalogFeatureSnapshot snapshot, IReadOnlyList<SystemInnerWorkerGovernedReference> references,
-        CancellationToken cancellationToken)
+        ActiveCatalogFeatureSnapshot snapshot, string procedureDefinitionId,
+        IReadOnlyList<SystemInnerWorkerGovernedReference> references, CancellationToken cancellationToken)
     {
         var definitions = ImmutableArray.CreateBuilder<StandingGrantDefinitionReference>();
+        var systemCapabilities = ImmutableArray.CreateBuilder<SystemInnerWorkerGovernedSystemCapabilityEvidence>();
         var documents = ImmutableArray.CreateBuilder<ApplicationCandidateReviewClosureDocument>();
         foreach (var reference in references)
         {
+            if (reference.Kind == SystemInnerWorkerGovernedReferenceKind.SystemCapability)
+            {
+                var reviewed = SystemInnerWorkerProcedureIdentity.ReviewSystemCapability(
+                    candidate.ApplicationId, procedureDefinitionId, reference.QualifiedId);
+                if (reviewed is null) return null;
+                systemCapabilities.Add(reviewed);
+                continue;
+            }
             var kind = reference.Kind == SystemInnerWorkerGovernedReferenceKind.Action ? "mechanic" : "query";
             var record = snapshot.Documents.Where(value => value.Trust == SourceTrust.Trusted
                 && value.Record.Kind == kind && value.Record.Status == "active"
@@ -179,7 +192,7 @@ internal sealed class ApplicationCandidateProcedureClosureReader(
             if (source is null) return null;
             definitions.Add(definition); documents.AddRange(source.Value);
         }
-        return (definitions.ToImmutable(), documents.ToImmutable());
+        return (definitions.ToImmutable(), systemCapabilities.ToImmutable(), documents.ToImmutable());
     }
 
     private Task<ImmutableArray<ApplicationCandidateReviewClosureDocument>?> SourceDocumentsAsync(ApplicationIdentifier application,
@@ -216,15 +229,26 @@ internal sealed class ApplicationCandidateProcedureClosureReader(
     private static bool ExplicitReferencesWellFormed(string governs,
         IReadOnlyList<SystemInnerWorkerGovernedReference> references)
     {
-        // Ordinary explanation has no executable meaning.  A lower-case clause which begins with
-        // execute, and every query(kind: marker, is an explicit attempt at this closed grammar.
+        // Ordinary explanation has no executable meaning. A lower-case clause which begins with
+        // execute or system capability, and every query(kind: marker, is an explicit attempt at
+        // this closed grammar.
         var actions = references.Where(value => value.Kind == SystemInnerWorkerGovernedReferenceKind.Action)
+            .Select(value => value.QualifiedId).ToHashSet(StringComparer.Ordinal);
+        var systemCapabilities = references
+            .Where(value => value.Kind == SystemInnerWorkerGovernedReferenceKind.SystemCapability)
             .Select(value => value.QualifiedId).ToHashSet(StringComparer.Ordinal);
         foreach (var clause in governs.Split([';', ',']))
         {
             var value = clause.Trim();
-            if (!value.StartsWith("execute", StringComparison.Ordinal)) continue;
-            if (!ActionClause.IsMatch(value) || !actions.Contains(value[8..].Trim())) return false;
+            if (value.StartsWith("execute", StringComparison.Ordinal))
+            {
+                if (!ActionClause.IsMatch(value) || !actions.Contains(value[8..].Trim())) return false;
+            }
+            else if (value.StartsWith("system capability", StringComparison.Ordinal))
+            {
+                if (!SystemCapabilityClause.IsMatch(value)
+                    || !systemCapabilities.Contains(value[18..].Trim())) return false;
+            }
         }
         return QueryMarker.Matches(governs).Count == QueryClause.Matches(governs).Count;
     }
@@ -234,6 +258,8 @@ internal sealed class ApplicationCandidateProcedureClosureReader(
     private static readonly Regex QueryMarker = new("query\\(kind:", RegexOptions.CultureInvariant);
     private static readonly Regex QueryClause = new("query\\(kind:\\s*\"[a-z0-9][a-z0-9._-]{2,159}\"\\)",
         RegexOptions.CultureInvariant);
+    private static readonly Regex SystemCapabilityClause = new(
+        "^system capability\\s+([a-z0-9][a-z0-9._-]{2,159})$", RegexOptions.CultureInvariant);
 
     private static string Text(ImmutableArray<byte> bytes) => new UTF8Encoding(false, true).GetString(bytes.AsSpan());
 
@@ -246,6 +272,7 @@ internal sealed class ApplicationCandidateProcedureReviewClosureEvidence
         ApplicationCandidateSelectionEvidence selection, ApplicationCandidateSelectedDocument selected,
         StandingGrantDefinitionReference? predecessor,
         ImmutableArray<StandingGrantDefinitionReference> dependencies,
+        ImmutableArray<SystemInnerWorkerGovernedSystemCapabilityEvidence> systemCapabilities,
         ImmutableArray<ApplicationCandidateReviewClosureDocument> dependencyDocuments)
     {
         Candidate = selection.Candidate;
@@ -254,24 +281,27 @@ internal sealed class ApplicationCandidateProcedureReviewClosureEvidence
         Successor = selected.Definition;
         Predecessor = predecessor;
         Dependencies = dependencies;
+        SystemCapabilities = systemCapabilities;
         ReviewDocuments = [new(selected.Definition, ApplicationCandidateReviewDocumentRole.Changed,
             selected.Document, selected.RetainedBytes), .. dependencyDocuments];
         EvidenceFingerprint = InteractionCanonicalJson.Fingerprint(
-            "dantes-roleplay/application-candidate-procedure-closure/v1",
+            "dantes-roleplay/application-candidate-procedure-closure/v2",
             InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
             {
                 Candidate, BaseOrigin, SelectionEvidenceFingerprint,
-                grammar = "procedure-governed-references-v1", Successor, predecessor, dependencies,
+                grammar = "procedure-governed-references-v2", Successor, predecessor, dependencies,
+                systemCapabilities,
                 documents = ReviewDocuments.Select(value => new { value.Definition, value.Role, value.Document })
             })));
     }
 
-    public string Grammar => "procedure-governed-references-v1";
+    public string Grammar => "procedure-governed-references-v2";
     public ApplicationCandidateReference Candidate { get; }
     public string SelectionEvidenceFingerprint { get; }
     public string EvidenceFingerprint { get; }
     public ImmutableArray<ApplicationCandidateReviewClosureDocument> ReviewDocuments { get; }
     public ImmutableArray<StandingGrantDefinitionReference> Dependencies { get; }
+    internal ImmutableArray<SystemInnerWorkerGovernedSystemCapabilityEvidence> SystemCapabilities { get; }
     internal StandingGrantActivationOrigin BaseOrigin { get; }
     internal StandingGrantDefinitionReference Successor { get; }
     internal StandingGrantDefinitionReference? Predecessor { get; }
@@ -280,6 +310,7 @@ internal sealed class ApplicationCandidateProcedureReviewClosureEvidence
         ApplicationCandidateSelectionEvidence selection, ApplicationCandidateSelectedDocument selected,
         StandingGrantDefinitionReference? predecessor,
         ImmutableArray<StandingGrantDefinitionReference> dependencies,
+        ImmutableArray<SystemInnerWorkerGovernedSystemCapabilityEvidence> systemCapabilities,
         ImmutableArray<ApplicationCandidateReviewClosureDocument> dependencyDocuments) =>
-        new(selection, selected, predecessor, dependencies, dependencyDocuments);
+        new(selection, selected, predecessor, dependencies, systemCapabilities, dependencyDocuments);
 }

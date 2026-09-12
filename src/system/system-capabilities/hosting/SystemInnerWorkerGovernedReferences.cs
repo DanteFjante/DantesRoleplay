@@ -28,7 +28,7 @@ internal static partial class SystemInnerWorkerGovernedReferences
             .ToArray();
         if (values.Length > 16)
             throw new InteractionContractException("INNER_WORKER_GOVERNED_REFERENCES_EXCEEDED",
-                "The procedure governs more explicit application tools than the focused worker can admit.");
+                "The procedure governs more explicit tools than the focused worker can admit.");
         return Array.AsReadOnly(values);
     }
 

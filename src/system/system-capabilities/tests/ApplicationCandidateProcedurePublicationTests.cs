@@ -29,10 +29,14 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
     private const string ProcedureActionId = "demo.runtime.action.sample";
     private const string ProcedureActionMarkdownPath = "content/mechanics/action.md";
     private const string ProcedureActionJavaScriptPath = "content/mechanics/action.js";
+    private const string ConversationDreamProcedureId = "demo.procedure.conversation-dream";
+    private const string ConversationDreamPath = "content/procedures/conversation-dream.md";
 
     [Theory]
     [InlineData("query(kind: \"runtime.inspect\")")]
     [InlineData("query(kind: \"demo.runtime.missing\"")]
+    [InlineData("system capability system.conversation-memory")]
+    [InlineData("system capability SYSTEM.conversation-memory")]
     public async Task Procedure_review_closure_rejects_unresolved_or_malformed_explicit_references(
         string governs)
     {
@@ -64,6 +68,45 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             setup.Activation, setup.Activation, setup.Resolver, snapshots);
         await using var transaction = await db.Database.BeginTransactionAsync();
         var host = ApplicationHost(setup, "procedure-invalid-reference-review");
+        var selection = await new ApplicationCandidateSelectionReader(
+            db, setup.Applications, setup.Activation, setup.Resolver).ReadAsync(host, candidate);
+
+        var result = await closure.ReadAsync(host, candidate, selection!);
+
+        Assert.Equal(ApplicationCandidateReviewClosureReadStatus.Rejected, result.Status);
+        Assert.Null(result.Evidence);
+    }
+
+    [Fact]
+    public async Task Conversation_dream_review_closure_rejects_unknown_system_capability()
+    {
+        await using var db = fixture.CreateContext();
+        var setup = Setup(db);
+        RegisterConversationDreamNamespace(setup);
+        await ActivateAsync(setup);
+        await SeedProcedurePublicationGrantAsync(db);
+        var before = setup.Activation.Current(Application)!;
+        var written = await Service(db, setup).WriteCandidateAsync(
+            ApplicationHost(setup, "procedure-unknown-system-capability", InteractionExecutionProfile.Atomic),
+            new(null, 0, before.ActivationFingerprint, "runtime", null,
+                "Add the conversation dream procedure.",
+                [new("file:" + ConversationDreamPath, "catalog", ConversationDreamPath,
+                    "text/markdown", ConversationDreamProcedureText("system.unregistered"))]));
+        Assert.Equal(InteractionInvocationResultTag.Committed, written.Tag);
+        var row = await db.Set<ApplicationCandidateRevisionRecord>().AsNoTracking().SingleAsync();
+        var candidate = new ApplicationCandidateReference(Application, row.CandidateId,
+            row.Revision, row.ContentFingerprint);
+        var materializer = new ActivatedApplicationCatalogMaterializer(
+            setup.Applications, setup.Activation, setup.Sources, setup.Roots, setup.Extensions)
+            .UsePreparationCache(new ActivatedApplicationCatalogSnapshotCache(),
+                new ActivatedApplicationCatalogCacheAuthority());
+        var snapshots = new ActivatedApplicationCatalogProvider(
+            new ConfiguredPublicApplicationCatalogPolicy([Application.Value]), materializer,
+            new CatalogCursorCodec(RandomNumberGenerator.GetBytes(32)), setup.Activation);
+        var closure = new ApplicationCandidateProcedureClosureReader(
+            setup.Activation, setup.Activation, setup.Resolver, snapshots);
+        await using var transaction = await db.Database.BeginTransactionAsync();
+        var host = ApplicationHost(setup, "procedure-unknown-system-capability-review");
         var selection = await new ApplicationCandidateSelectionReader(
             db, setup.Applications, setup.Activation, setup.Resolver).ReadAsync(host, candidate);
 
@@ -281,6 +324,193 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         }
     }
 
+    [Fact]
+    public async Task Candidate_gateway_publishes_reviewed_conversation_dream_system_capability()
+    {
+        var databasePath = Path.Combine(Path.GetTempPath(), $"procedure-dream-publication-{Guid.NewGuid():N}.db");
+        try
+        {
+            var options = new DbContextOptionsBuilder<DantesRoleplayDbContext>()
+                .UseSqlite("Filename=" + databasePath).Options;
+            await using var db = new DantesRoleplayDbContext(options);
+            await db.Database.EnsureCreatedAsync();
+            var setup = Setup(db);
+            RegisterConversationDreamNamespace(setup);
+            await ActivateAsync(setup);
+            await SeedProcedurePublicationGrantAsync(db);
+            db.ChangeTracker.Clear();
+
+            var before = setup.Activation.Current(Application)!;
+            var materializer = new ActivatedApplicationCatalogMaterializer(
+                setup.Applications, setup.Activation, setup.Sources, setup.Roots, setup.Extensions)
+                .UsePreparationCache(new ActivatedApplicationCatalogSnapshotCache(),
+                    new ActivatedApplicationCatalogCacheAuthority());
+            var snapshots = new ActivatedApplicationCatalogProvider(
+                new ConfiguredPublicApplicationCatalogPolicy([Application.Value]), materializer,
+                new CatalogCursorCodec(RandomNumberGenerator.GetBytes(32)), setup.Activation);
+            var features = new InteractionFeatureRetriever(snapshots,
+                namespaces: setup.Namespaces, changes: setup.Activation);
+            var policy = new SqliteStandingGrantPolicy(db, setup.Resolver);
+            var manuals = new InteractionManualContextService(new ProcedureStore(db), features,
+                policy, setup.Resolver, setup.Activation, ["system"]);
+            var procedureClosure = new ApplicationCandidateProcedureClosureReader(
+                setup.Activation, setup.Activation, setup.Resolver, snapshots);
+            var gate = new SystemTaskApplicationValidationGate(db, setup.Applications,
+                setup.Activation, setup.Resolver, policy, TimeProvider.System,
+                pureClosures: null, manuals, features, [procedureClosure]);
+            var reviews = new SystemTaskApplicationValidationService(db, gate, TimeProvider.System);
+            var reviewed = new ApplicationCandidateReviewedProcedureUpdateReader(
+                db, setup.Applications, setup.Activation, setup.Resolver, gate);
+            var authoring = new SqliteApplicationAuthoringService(db, setup.Applications,
+                setup.Activation, setup.Activation, setup.Sources, policy, setup.Resolver,
+                new OperationLog(db), preparation: null, manuals, reviewedPureUpdates: null,
+                reviewedProcedureUpdates: reviewed);
+            var gateway = new ApplicationCandidateCapabilityGateway(
+                CandidateCatalog(db, setup, authoring, reviews));
+            var principal = TrustedPrincipalContext.VerifiedPrincipal(
+                "principal." + new string('a', 64), "test");
+
+            const string writeKey = "procedure-dream-publication-write";
+            var written = await gateway.InvokeAsync(principal, Application,
+                SystemCapabilityIds.ApplicationCandidateWrite,
+                JsonSerializer.Serialize(new
+                {
+                    applicationId = Application.Value,
+                    candidateId = (string?)null,
+                    expectedCandidateRevision = 0,
+                    expectedActiveFingerprint = before.ActivationFingerprint,
+                    origin = "runtime",
+                    synchronizationEvidenceReference = (string?)null,
+                    newImplementationReason = "Add the exact conversation dream procedure.",
+                    documents = new[]
+                    {
+                        new
+                        {
+                            logicalIdentity = "file:" + ConversationDreamPath,
+                            sourceId = "catalog",
+                            relativePath = ConversationDreamPath,
+                            mediaType = "text/markdown",
+                            text = ConversationDreamProcedureText(SystemCapabilityIds.ConversationMemory)
+                        }
+                    }
+                }), writeKey, "website");
+            Assert.True(written.Ok, written.Error?.Code + ": " + written.Error?.Message);
+            var row = await db.Set<ApplicationCandidateRevisionRecord>().AsNoTracking()
+                .SingleAsync(value => value.SourceOperationId == written.OperationId);
+            var candidate = new ApplicationCandidateReference(Application, row.CandidateId,
+                row.Revision, row.ContentFingerprint);
+
+            await using (var boundary = await SystemTaskValidationTransaction.OpenAsync(
+                db, TimeProvider.System, false, default))
+            {
+                var reviewHost = PureReviewHost(setup, "procedure-dream-closure");
+                var selection = await new ApplicationCandidateSelectionReader(
+                    db, setup.Applications, setup.Activation, setup.Resolver)
+                    .ReadAsync(reviewHost, candidate);
+                Assert.NotNull(selection);
+                var target = Assert.Single(selection.Targets);
+                Assert.Equal(ConversationDreamProcedureId, target.DefinitionId);
+                var unresolved = await setup.Resolver.ResolveCurrentAsync(
+                    reviewHost, target.DefinitionId, target.Kind);
+                Assert.Equal("STANDING_GRANT_DEFINITION_UNAVAILABLE", unresolved.Code);
+                var selected = Assert.Single(selection.Documents);
+                var parsed = DantesRoleplay.DataAccess.Bootstrap.ProcedureFile.Parse(
+                    Encoding.UTF8.GetString(selected.RetainedBytes.AsSpan()), selected.Document.RelativePath);
+                Assert.Equal(ConversationDreamProcedureId, parsed.Id);
+                Assert.NotNull(SystemInnerWorkerProcedureIdentity.ReviewSystemCapability(
+                    Application, target.DefinitionId, SystemCapabilityIds.ConversationMemory));
+                var closureResult = await procedureClosure.ReadAsync(
+                    reviewHost, candidate, selection!);
+                Assert.Equal(ApplicationCandidateReviewClosureReadStatus.Available,
+                    closureResult.Status);
+            }
+
+            var submitted = await gateway.InvokeAsync(principal, Application,
+                SystemCapabilityIds.ApplicationCandidateReviewSubmit,
+                JsonSerializer.Serialize(new
+                {
+                    applicationId = Application.Value,
+                    candidateId = candidate.CandidateId,
+                    revision = candidate.Revision,
+                    contentFingerprint = candidate.ContentFingerprint,
+                    authoringOperationId = row.SourceOperationId,
+                    authoringCommandId = GatewayCommandId(
+                        principal, SystemCapabilityIds.ApplicationCandidateWrite, writeKey)
+                }), "procedure-dream-publication-review", "website");
+            Assert.True(submitted.Ok, submitted.Error?.Code + ": " + submitted.Error?.Message);
+
+            SystemTaskValidationAuthority prepared;
+            await using (var boundary = await SystemTaskValidationTransaction.OpenAsync(
+                db, TimeProvider.System, false, default))
+                prepared = await gate.CheckAsync(PureReviewHost(setup, "procedure-dream-review-provider"),
+                    candidate, true);
+            Assert.Null(SystemTaskApplicationValidationGate.ExecutionPrerequisite(prepared));
+            var closure = Assert.IsType<ApplicationCandidateProcedureReviewClosureEvidence>(
+                prepared.ReviewClosure);
+            Assert.Empty(closure.Dependencies);
+            var capability = Assert.Single(closure.SystemCapabilities);
+            Assert.Equal(SystemCapabilityIds.ConversationMemory, capability.CapabilityId);
+            Assert.Equal(1, capability.PolicyVersion);
+            Assert.Matches("^[0-9A-F]{64}$", capability.PolicyFingerprint);
+
+            var provider = new RetainedReviewProvider(prepared.ReviewInput!, "justifiedNew");
+            var invoker = new SystemInnerWorkerValidationInvoker(
+                new AiService([provider]), TimeProvider.System);
+            var lifecycleServices = new ServiceCollection()
+                .AddSingleton(db).AddSingleton(gate)
+                .AddSingleton<TimeProvider>(TimeProvider.System).BuildServiceProvider();
+            await using (lifecycleServices)
+            {
+                var lifecycles = new SystemTaskAiInvocationLifecycleFactory(
+                    lifecycleServices.GetRequiredService<IServiceScopeFactory>(), TimeProvider.System);
+                Assert.True(await reviews.RunNextAsync("procedure-dream-publication-reviewer", invoker,
+                    ReviewerConfiguration(), lifecycles));
+            }
+
+            var validated = await gateway.InvokeAsync(principal, Application,
+                SystemCapabilityIds.ApplicationCandidateValidate,
+                JsonSerializer.Serialize(new
+                {
+                    applicationId = Application.Value,
+                    candidateId = candidate.CandidateId,
+                    revision = candidate.Revision,
+                    contentFingerprint = candidate.ContentFingerprint,
+                    samples = Array.Empty<object>()
+                }), "procedure-dream-publication-validate", "codex");
+            Assert.True(validated.Ok, validated.Error?.Code + ": " + validated.Error?.Message);
+            var validation = await db.Set<ApplicationCandidateValidationRecord>().AsNoTracking()
+                .SingleAsync(value => value.OperationId == validated.OperationId);
+            Assert.Equal("valid", validation.Outcome);
+            Assert.Equal(ApplicationCandidateReviewedProcedureUpdateValidation.PreparationVersion,
+                validation.PreparationVersion);
+
+            var activated = await gateway.InvokeAsync(principal, Application,
+                SystemCapabilityIds.ApplicationCandidateActivate,
+                JsonSerializer.Serialize(new
+                {
+                    applicationId = Application.Value,
+                    candidateId = candidate.CandidateId,
+                    revision = candidate.Revision,
+                    contentFingerprint = candidate.ContentFingerprint,
+                    validationOperationId = validated.OperationId
+                }), "procedure-dream-publication-activate", "website");
+            Assert.True(activated.Ok, activated.Error?.Code + ": " + activated.Error?.Message);
+            var current = setup.Activation.Current(Application)!;
+            Assert.Equal(before.ActivationRevision + 1, current.ActivationRevision);
+            Assert.Equal(before.Winners.Count + 1, current.Winners.Count);
+            Assert.True(snapshots.TryGetSnapshot(Application, out var snapshot));
+            var procedure = snapshot.Documents.Single(value =>
+                value.Record.QualifiedId == ConversationDreamProcedureId).Record;
+            Assert.Contains(SystemCapabilityIds.ConversationMemory, procedure.ContentJson,
+                StringComparison.Ordinal);
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            if (File.Exists(databasePath)) File.Delete(databasePath);
+        }
+    }
+
     private void WriteProcedureAction()
     {
         var directory = Path.Combine(root, "content", "mechanics");
@@ -308,6 +538,13 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             "return { data: { selected: true } };", new UTF8Encoding(false));
     }
 
+    private static void RegisterConversationDreamNamespace(SetupState setup) =>
+        setup.Namespaces.Register(new CatalogNamespaceRegistration(
+            "demo.procedure", "human-domain-label", "Reviewed fixture procedures.",
+            [CatalogNamespaceKinds.Procedure],
+            ReviewStatus: CatalogNamespaceReviewStatuses.Reviewed,
+            ReviewNote: "Reviewed conversation dream publication fixture."));
+
     private static string PublishedProcedureText() => $$"""
         ---
         id: demo.runtime.inspect
@@ -327,6 +564,25 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         - Preserve it.
         """;
 
+    private static string ConversationDreamProcedureText(string capabilityId) => $$"""
+        ---
+        id: {{ConversationDreamProcedureId}}
+        category: runtime.conversation
+        name: Conversation dream
+        governs: system capability {{capabilityId}}
+        status: active
+        ---
+
+        ## Description
+        Prepare a bounded conversation dream from exact private memory.
+
+        ## Instructions
+        1. Read only the exact governed conversation memory.
+
+        ## Constraints
+        - Preserve source revision boundaries.
+        """;
+
     private static string GatewayCommandId(TrustedPrincipalContext principal,
         string capabilityId, string key) => Convert.ToHexStringLower(SHA256.HashData(
             Encoding.UTF8.GetBytes("dantes-roleplay/application-authoring-request/v1\n"
@@ -340,7 +596,8 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
                 StandingGrantCapability.Validate, StandingGrantCapability.Activate],
             new(StandingGrantDefinitionMode.ApplicationOwned, [],
                 [new("demo.runtime", true,
-                    [CatalogNamespaceKinds.Procedure, CatalogNamespaceKinds.Mechanic])]),
+                    [CatalogNamespaceKinds.Procedure, CatalogNamespaceKinds.Mechanic]),
+                 new("demo.procedure", true, [CatalogNamespaceKinds.Procedure])]),
             [], 16, DateTime.UtcNow.AddMinutes(10), false, "procedure-publication-grant");
         await PersistGrantAsync(db, grant, "application");
     }

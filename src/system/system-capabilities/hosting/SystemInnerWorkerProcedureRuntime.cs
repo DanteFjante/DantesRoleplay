@@ -96,14 +96,17 @@ internal sealed class SystemInnerWorkerHostPolicy(
         var governedSystemIds = new HashSet<string>(StringComparer.Ordinal);
         if (governedSystemCapabilities is { Count: > 0 })
         {
-            if (governedSystemCapabilities.Any(value => value != SystemCapabilityIds.ConversationMemory))
+            if (governedSystemCapabilities.Any(value =>
+                    !SystemInnerWorkerProcedureIdentity.IsSupportedSystemCapability(value)))
                 throw Failure("INNER_WORKER_SYSTEM_CAPABILITY_UNSUPPORTED",
                     "The procedure declares a system capability that is not available to focused workers.");
-            if (!SystemInnerWorkerProcedureIdentity.IsConversationDream(
-                    worker.InvocationHost.ApplicationRevision.ApplicationId, procedure.ExactDefinitionId))
+            if (governedSystemCapabilities.Any(value =>
+                    SystemInnerWorkerProcedureIdentity.ReviewSystemCapability(
+                        worker.InvocationHost.ApplicationRevision.ApplicationId,
+                        procedure.ExactDefinitionId, value) is null))
                 throw Failure("INNER_WORKER_SYSTEM_CAPABILITY_NOT_CONFIGURED",
                     "The application procedure is not the configured focused-worker owner of this system capability.");
-            governedSystemIds.Add(SystemCapabilityIds.ConversationMemory);
+            governedSystemIds.UnionWith(governedSystemCapabilities);
         }
         var descriptors = capabilities?.Discover(context) is { Ok: true } discovered
             ? discovered.Capabilities
@@ -322,10 +325,34 @@ internal sealed class SystemInnerWorkerProcedureResolver(
 internal static class SystemInnerWorkerProcedureIdentity
 {
     internal const string ConversationDreamSuffix = ".procedure.conversation-dream";
+    private const int GovernedSystemCapabilityPolicyVersion = 1;
 
     internal static string ConversationDream(ApplicationIdentifier application) =>
         application.Value + ConversationDreamSuffix;
 
     internal static bool IsConversationDream(ApplicationIdentifier application, string definitionId) =>
         definitionId == ConversationDream(application);
+
+    internal static bool IsSupportedSystemCapability(string capabilityId) =>
+        capabilityId == SystemCapabilityIds.ConversationMemory;
+
+    internal static SystemInnerWorkerGovernedSystemCapabilityEvidence? ReviewSystemCapability(
+        ApplicationIdentifier application, string procedureDefinitionId, string capabilityId)
+    {
+        if (!IsSupportedSystemCapability(capabilityId)
+            || !IsConversationDream(application, procedureDefinitionId)) return null;
+        var fingerprint = InteractionCanonicalJson.Fingerprint(
+            "dantes-roleplay/inner-worker-governed-system-capability-policy/v1",
+            InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
+            {
+                applicationId = application.Value,
+                procedureDefinitionId,
+                capabilityId,
+                policyVersion = GovernedSystemCapabilityPolicyVersion
+            })));
+        return new(capabilityId, GovernedSystemCapabilityPolicyVersion, fingerprint);
+    }
 }
+
+internal sealed record SystemInnerWorkerGovernedSystemCapabilityEvidence(
+    string CapabilityId, int PolicyVersion, string PolicyFingerprint);
