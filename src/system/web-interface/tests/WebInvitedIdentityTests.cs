@@ -99,7 +99,7 @@ public sealed class WebInvitedIdentityTests
         Assert.False(decision.Allowed);
         Assert.Null(decision.Principal);
         Assert.Equal("PRIVATE_OPERATOR_DENIED", decision.ErrorCode);
-        Assert.Equal("PRIVATE_OPERATOR_INVITED_IDENTITY", decision.Evidence.ReasonCode);
+        Assert.Equal("PRIVATE_OPERATOR_UNPRIVILEGED_IDENTITY", decision.Evidence.ReasonCode);
         Assert.Equal("tailscale-invited-web", decision.Evidence.AuthenticationMethod);
     }
 

@@ -266,8 +266,9 @@ Implementation anchors: [page storage](../../DantesRoleplay.Web/Storage/WebPageS
   synchronous replication of all state into the browser.
 - Ordinary web access uses the local operator model. Optional Tailscale access checks a configured
   hostname and allowlisted login. Browser mutations retain operator and same-origin checks.
-- An explicit anonymous-public-access option grants network visitors website operator capabilities.
-  It must not be represented as read-only anonymous access or a per-user multi-tenant permission model.
+- An explicit anonymous-public-access option grants network visitors only Player-safe website reads.
+  It does not grant operator, DM, control-center, raw record, blob, event, or mutation capabilities.
+  A public hostname remains public when a reverse proxy connects to the service over loopback.
 
 Authored pages run trusted same-origin website code. The current content-security policy allows
 inline scripts/styles and restricts resource/network access; it is not isolation for hostile

@@ -5,6 +5,7 @@ using DantesRoleplay.Ecs;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Knowledge;
 using DantesRoleplay.Mechanics;
+using DantesRoleplay.Media;
 using DantesRoleplay.MCPServer.Mcp;
 using DantesRoleplay.Projections;
 
@@ -41,7 +42,10 @@ public static class ApplicationReadModelWebEndpoint
         IApplicationQueryRoleBindingResolver? roleResolver = null,
         IApplicationQueryAuthorizedContextProvider? authorizedContext = null,
         IEntityComponentStore? entities = null,
-        IStateSpaceRegistry? stateSpaces = null)
+        IStateSpaceRegistry? stateSpaces = null,
+        IEntityMediaService? media = null,
+        IReadModelMediaLinkStore? mediaLinks = null,
+        IKnowledgeApplicationBindingResolver? knowledgeBindings = null)
     {
         context.Response.Headers.CacheControl = "private, no-store";
         var inputAware = context.Request.Query.ContainsKey("input") || context.Request.Query.ContainsKey("campaignId")
@@ -121,7 +125,7 @@ public static class ApplicationReadModelWebEndpoint
                 roleBindings = roleResolver.Resolve(queryContract, input,
                     new(entityId, authorizedRoles));
                 if (roleBindings.Values.Any(roleEntityId =>
-                        !ApplicationObjectHostAccess.CanReadRoleEntity(seat, roleEntityId, authorizedRoles)))
+                        !ApplicationObjectHostAccess.CanReadRoleEntity(seat, roleEntityId, authorizedRoles, entityId)))
                     return SafeError("READ_MODEL_FORBIDDEN");
                 foreach (var roleEntityId in roleBindings.Values.Distinct(StringComparer.Ordinal))
                     if (await entities.GetEntityAsync(stateSpaceId, roleEntityId, cancellationToken) is null)
@@ -134,16 +138,73 @@ public static class ApplicationReadModelWebEndpoint
                     code = "READ_MODEL_ROLES_UNAVAILABLE",
                     message = "The current audience context cannot bind every declared read-model role."
                 }, statusCode: StatusCodes.Status422UnprocessableEntity);
-            var result = await readModels.ReadAsync(new(
+            var viewRequest = new ApplicationReadModelRequest(
                 stateSpaceId,
                 application!,
                 qualifiedQueryId,
                 roleBindings,
                 audience, input,
                 suppliedCursor.Count == 1 ? suppliedCursor[0] : null,
-                suppliedLimit.Count == 1 ? parsedLimit : null), cancellationToken);
+                suppliedLimit.Count == 1 ? parsedLimit : null);
+            var result = await readModels.ReadAsync(viewRequest, cancellationToken);
             using var data = JsonDocument.Parse(result.DataJson);
-            return Results.Json(new
+            object? projectedMedia = null;
+            if (seat.Role == KnowledgeAudienceRole.PlayerGroup &&
+                SharedWebsiteContext.IsPlayerWebsite(context) &&
+                media is not null && mediaLinks is not null && knowledgeBindings is not null &&
+                ReadModelMediaWebEndpoint.ProjectionContainsAuthorizedOwnerReference(
+                    data.RootElement, entityId))
+            {
+                try
+                {
+                    var binding = await knowledgeBindings.ResolveAsync(seat.CampaignId, cancellationToken);
+                    if (result.ApplicationId == application.Value &&
+                        result.StateSpaceId == stateSpaceId &&
+                        result.QualifiedQueryId == qualifiedQueryId &&
+                        binding is not null && binding.ApplicationId == application.Value &&
+                        binding.StateSpaceId == stateSpaceId &&
+                        binding.CampaignEntityId == seat.CampaignId)
+                    {
+                        binding.Validate();
+                        var discovery = await media.DiscoverAsync(application, stateSpaceId, entityId,
+                            EntityMediaAudience.Player, diagnostics: false, cancellationToken);
+                        if (discovery.ApplicationId == application.Value &&
+                            discovery.StateSpaceId == stateSpaceId && discovery.EntityId == entityId)
+                        {
+                            projectedMedia = new
+                            {
+                                entityId,
+                                attachments = discovery.Attachments
+                                    .Where(value => value.MediaType is "image/png" or "image/jpeg" or "image/webp")
+                                    .Take(64)
+                                    .Select(value => new
+                                    {
+                                        value.MediaId,
+                                        value.Role,
+                                        value.MediaType,
+                                        value.Width,
+                                        value.Height,
+                                        value.Alt,
+                                        value.Caption,
+                                        value.Order,
+                                        contentUrl = mediaLinks.GetOrCreate(new(
+                                            viewRequest, seat.CampaignId, seat.PrincipalId, entityId,
+                                            value.MediaId, ReadModelMediaLinkStore.Fingerprint(
+                                                value, result.SourceRevisionFingerprint,
+                                                binding.BindingRevision)))
+                                    }).ToArray()
+                            };
+                        }
+                    }
+                }
+                catch (Exception exception) when (exception is EntityMediaException or IOException
+                    or DantesRoleplay.Blobs.BlobTransferException or ArgumentException)
+                {
+                    // Media is optional presentation data. Its failure cannot widen or fail the view.
+                }
+            }
+            var clonedData = data.RootElement.Clone();
+            var envelope = new
             {
                 result.ApplicationId,
                 result.StateSpaceId,
@@ -153,8 +214,23 @@ public static class ApplicationReadModelWebEndpoint
                 result.OutputSchemaHash,
                 result.ResultFingerprint,
                 result.SourceRevisionFingerprint,
-                data = data.RootElement.Clone()
-            });
+                data = clonedData
+            };
+            return projectedMedia is null
+                ? Results.Json(envelope)
+                : Results.Json(new
+                {
+                    envelope.ApplicationId,
+                    envelope.StateSpaceId,
+                    envelope.QualifiedQueryId,
+                    envelope.StateSpaceFingerprint,
+                    envelope.ResolutionFingerprint,
+                    envelope.OutputSchemaHash,
+                    envelope.ResultFingerprint,
+                    envelope.SourceRevisionFingerprint,
+                    envelope.data,
+                    media = projectedMedia
+                });
         }
         catch (ApplicationReadModelException exception)
         {
@@ -368,7 +444,7 @@ public static class ApplicationReadModelWebEndpoint
     {
         applicationId = null;
         if (!seat.Enabled || seat.ApplicationId != requestedApplicationId
-            || seat.Role is not (KnowledgeAudienceRole.Actor or KnowledgeAudienceRole.GameMaster)
+            || seat.Role is not (KnowledgeAudienceRole.Actor or KnowledgeAudienceRole.GameMaster or KnowledgeAudienceRole.PlayerGroup)
             || string.IsNullOrWhiteSpace(entityId) || entityId.Length > 200
             || seat.Role == KnowledgeAudienceRole.Actor && string.IsNullOrWhiteSpace(seat.ActorId))
             return false;

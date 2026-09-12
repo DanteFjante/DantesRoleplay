@@ -327,8 +327,12 @@ Website and AI callers discover media through the owning entity. They must not t
 or a repository path into a public URL, because doing so would bypass Player/DM visibility.
 The host binds `system_entity_media`, `system_current_location_media`, and
 `system_current_location_map` to its trusted seat and returns structured attachments; models and
-browsers never choose an audience. Runtime item media overrides the same role inherited from its
-definition, while unoverridden illustration and icon roles remain inherited.
+browsers never choose an audience. Direct owner-addressed discovery and content routes are limited to
+the owner-capable website and bind issued content URLs to the selected Player or DM perspective.
+Unprivileged public pages receive media only through opaque read-model tickets that replay the
+authorized projection before opening bytes; a guessed entity or media ID grants nothing. Runtime item
+media overrides the same role inherited from its definition, while unoverridden illustration and icon
+roles remain inherited.
 
 The play conversation resolves its persisted current situation's exact location through the same
 owner-bound media endpoint. It prefers a setting or scene card, re-resolves it after location
@@ -367,6 +371,9 @@ confirmed absent map opens its nearest mapped parent and selects that parent's e
 coordinates are never transferred between map scopes. Failed lookups retain their retry state.
 Scopes without a usable image show readable places without a canvas or zoom controls.
 The illustrated map frame follows the decoded image's proportions, not a fixed viewport height.
+An active site or interior that owns an active map visual is also a display plane: its direct
+non-region child locations may carry the same normalized 0–1,000 anchors used by regional maps.
+Without an active visual, a site or interior does not authorize anchored children.
 Image, marker and overlay layers share the same untransformed stage. Image changes and container
 resizes re-constrain the local pan/zoom: fitting images are centered, larger images stay bounded,
 and zooming does not resize the surrounding page or change authored marker coordinates.
@@ -404,10 +411,14 @@ separately from the registered Campaign bootstrap. Deferred views distinguish un
 ready/empty and failed states; changing campaign or perspective aborts their pending reads. The
 legacy World adapters follow all continuations inside a 2,000-request per-view safety ceiling. This
 ceiling prevents runaway reads; it is not the complete-workload performance acceptance budget.
-The shared website has full application authority after admission and offers no role switch.
-Obsolete Player preferences and deep links normalize to the full shared view. Optional knowledge
-preview requires an explicit observer before it can be reintroduced; non-website Actor knowledge
-and media projections retain their existing contracts. See OPERATIONS.md for the admission boundary.
+Website admission and presentation are separate. An authenticated local or allow-listed Tailscale
+owner keeps the configured GameMaster seat and may switch between fresh DM and Player projections.
+Anonymous public and other unprivileged website identities receive the non-actor `player-group` grant and Player only. The Player projection
+is the union of admitted knowledge for the current party plus eligible public facts; it never falls
+back to one configured notebook or to DM truth. The browser selector, deep links, query/body/header
+values, forwarded headers, and saved preferences cannot promote the server-issued audience.
+Changing perspective, campaign, or party membership retires pending reads and clears scoped caches
+before replacement data can display. See OPERATIONS.md for the admission boundary.
 Read-only source probes, a served browser traversal and a matched complete-workload benchmark are
 different evidence and must not be reported interchangeably.
 

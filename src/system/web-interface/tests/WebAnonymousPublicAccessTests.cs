@@ -41,7 +41,7 @@ public sealed class WebAnonymousPublicAccessTests
     [InlineData(PrivateOperatorCapability.ControlPagesWrite, true)]
     [InlineData(PrivateOperatorCapability.ControlSettingsWrite, true)]
     [InlineData(PrivateOperatorCapability.ControlAiMessage, true)]
-    public void Public_operator_can_use_control_routes_at_the_external_http_origin(
+    public void Public_identity_cannot_use_control_routes_at_the_external_http_origin(
         PrivateOperatorCapability capability, bool mutation)
     {
         var context = PublicRequest();
@@ -50,13 +50,9 @@ public sealed class WebAnonymousPublicAccessTests
         context.Request.Headers.Origin = "http://198.51.100.10";
         var guard = new WebControlRequestGuard(new(Policy(true), new PrivateOperatorAuthorizationPolicy()));
         var decision = guard.Evaluate(context, capability, mutation);
-        Assert.True(decision.Allowed, decision.ErrorMessage);
+        Assert.False(decision.Allowed);
+        Assert.Equal("PRIVATE_OPERATOR_DENIED", decision.ErrorCode);
         Assert.Equal("anonymous-public-web", decision.Evidence.AuthenticationMethod);
-        if (mutation)
-        {
-            context.Request.Headers.Origin = "http://other.example";
-            Assert.Equal("CONTROL_ORIGIN_DENIED", guard.Evaluate(context, capability, true).ErrorCode);
-        }
     }
 
     [Fact]
@@ -115,7 +111,9 @@ public sealed class WebAnonymousPublicAccessTests
     {
         var raw = PublicRequest();
         var projection = PublicRequest();
-        var filter = new WebInterfaceSecurityFilter(new(Policy(true), new PrivateOperatorAuthorizationPolicy()));
+        var policy = Policy(true);
+        var filter = new WebInterfaceSecurityFilter(
+            new(policy, new PrivateOperatorAuthorizationPolicy()), policy);
         var rawInvoked = false;
         var projectionInvoked = false;
         raw.Request.Path = "/api/data/entity/secret";
@@ -136,9 +134,56 @@ public sealed class WebAnonymousPublicAccessTests
         Assert.True(projectionInvoked);
     }
 
+    [Theory]
+    [InlineData("/", true)]
+    [InlineData("/ui/dnd2024", true)]
+    [InlineData("/components/system-workspace.js", true)]
+    [InlineData("/api/web/applications", true)]
+    [InlineData("/api/readiness/applications/dnd2024", true)]
+    [InlineData("/api/audience-context", true)]
+    [InlineData("/api/applications/dnd2024/content", true)]
+    [InlineData("/api/applications/dnd2024/rules", true)]
+    [InlineData("/api/applications/dnd2024/state-spaces/main/entities/hero/read-models/query", true)]
+    [InlineData("/api/applications/dnd2024/state-spaces/main/media-batch", false)]
+    [InlineData("/api/applications/dnd2024/state-spaces/main/entities/hero/media", false)]
+    [InlineData("/api/applications/dnd2024/state-spaces/foreign/entities/undiscovered/media/player-visible/content", false)]
+    [InlineData("/api/data/entity/secret", false)]
+    [InlineData("/api/changes", false)]
+    [InlineData("/api/applications/dnd2024/catalog/browse", false)]
+    [InlineData("/api/applications/dnd2024/state-spaces/main/entities/hero", false)]
+    [InlineData("/api/applications/dnd2024/state-spaces/main/entities/hero/components", false)]
+    [InlineData("/api/blobs/secret", false)]
+    [InlineData("/ui/control-center", false)]
+    public void Anonymous_route_surface_contains_the_player_site_without_raw_authority(
+        string path, bool expected)
+    {
+        Assert.Equal(expected, WebAccessPolicy.IsPlayerSafePublicPath(path));
+    }
+
+    [Fact]
+    public async Task Anonymous_player_routes_are_read_only_even_when_the_path_has_an_action_shape()
+    {
+        var context = PublicRequest();
+        context.Request.Method = HttpMethods.Post;
+        context.Request.Path = "/ui/dnd2024/actions/change-premise";
+        var policy = Policy(true);
+        var filter = new WebInterfaceSecurityFilter(
+            new(policy, new PrivateOperatorAuthorizationPolicy()), policy);
+        var invoked = false;
+
+        await filter.InvokeAsync(new DefaultEndpointFilterInvocationContext(context), _ =>
+        {
+            invoked = true;
+            return ValueTask.FromResult<object?>(Results.Ok());
+        });
+
+        Assert.False(invoked);
+    }
+
     private static DefaultHttpContext PublicRequest()
     {
         var context = new DefaultHttpContext();
+        context.Request.Method = HttpMethods.Get;
         context.Connection.RemoteIpAddress = IPAddress.Parse("203.0.113.4");
         context.Connection.LocalPort = 6217;
         context.Request.Scheme = "http";

@@ -598,7 +598,7 @@ public sealed class ItemDetailsProjectionTests
             context.RequestServices = services;
             var seat = new Seats(new(true, "principal", Game.ApplicationId, Game.Campaign, Policy.IsDm ? null : actor ?? Game.Actor,
                 Policy.IsDm ? KnowledgeAudienceRole.GameMaster : KnowledgeAudienceRole.Actor, ["fixture-source"]));
-            var result = await ReadModelMediaWebEndpoint.ReadAsync(url.Split('/')[3], context, seat, Links, this, Policy, Media, CancellationToken.None);
+            var result = await ReadModelMediaWebEndpoint.ReadAsync(url.Split('/')[3], context, seat, Links, this, Policy, new Binding(Game.Binding), Media, CancellationToken.None);
             await result.ExecuteAsync(context);
             Assert.Equal("private, no-store", context.Response.Headers.CacheControl.ToString());
             Assert.Equal("nosniff", context.Response.Headers.XContentTypeOptions.ToString());

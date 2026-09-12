@@ -53,7 +53,8 @@ internal sealed class SystemAudienceContextHandler
         if (!audience.Granted || grant is null || grant.PrincipalId != configured.PrincipalId ||
             grant.CampaignId != campaignId || grant.Role != configured.Role ||
             (grant.Role == KnowledgeAudienceRole.Actor && grant.ActorId != configured.ActorId) ||
-            (grant.Role == KnowledgeAudienceRole.GameMaster && grant.ActorId is not null))
+            (grant.Role is KnowledgeAudienceRole.GameMaster or KnowledgeAudienceRole.PlayerGroup &&
+                grant.ActorId is not null))
             return Denied();
 
         var binding = await bindings.ResolveAsync(grant.CampaignId, cancellationToken);
@@ -77,6 +78,22 @@ internal sealed class SystemAudienceContextHandler
                 policyRevision = grant.PolicyRevision,
                 bindingRevision = binding.BindingRevision
             }, "Returned the current host-authorized audience context.",
+            "query(kind: \"system.interaction-plan\", applicationId: \"...\", request: \"{...}\")");
+        }
+
+        if (grant.Role == KnowledgeAudienceRole.PlayerGroup)
+        {
+            return ToolOutcome.OkAbout(grant.CampaignId, new
+            {
+                status = "bound",
+                applicationId = binding.ApplicationId,
+                stateSpaceId = binding.StateSpaceId,
+                campaignId = grant.CampaignId,
+                role = "player-group",
+                roleHints = new { },
+                policyRevision = grant.PolicyRevision,
+                bindingRevision = binding.BindingRevision
+            }, "Returned the current host-authorized group Player context.",
             "query(kind: \"system.interaction-plan\", applicationId: \"...\", request: \"{...}\")");
         }
 
@@ -120,9 +137,10 @@ internal sealed class SystemAudienceContextHandler
     private static bool Configured(LocalKnowledgeSeatSnapshot value) =>
         value.Enabled && Token(value.PrincipalId) && Token(value.ApplicationId) &&
         Token(value.CampaignId) && Enum.IsDefined(value.Role) &&
-        (value.Role == KnowledgeAudienceRole.GameMaster
-            ? value.ActorId is null
-            : Token(value.ActorId));
+        (value.Role == KnowledgeAudienceRole.Actor
+            ? Token(value.ActorId)
+            : (value.Role is KnowledgeAudienceRole.GameMaster or KnowledgeAudienceRole.PlayerGroup) &&
+                value.ActorId is null);
 
     private static bool Token(string? value) => !string.IsNullOrWhiteSpace(value) &&
         value == value.Trim() && value.Length <= 200 && !value.Any(char.IsWhiteSpace);

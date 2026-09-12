@@ -43,14 +43,15 @@ export function TopBar({
         loadState={contextState}
         error={contextError}
       />
-      {sharedAccess ? <span className="perspective-switch__label">Shared table</span>
-        : allowedPerspectives.length > 1 ? <PerspectiveSwitch
+      {allowedPerspectives.length > 1 ? <PerspectiveSwitch
         allowedPerspectives={allowedPerspectives}
         busy={busy}
         perspective={perspective}
         onChange={onPerspectiveChange}
-      /> : <span className="perspective-switch__label">Shared table</span>}
-      <SystemControls />
+      /> : <span className="perspective-switch__label">
+        {sharedAccess && perspective === "dm" ? "Shared table" : "Player view"}
+      </span>}
+      <SystemControls playerOnly={!allowedPerspectives.includes("dm")} />
     </header>
   );
 }

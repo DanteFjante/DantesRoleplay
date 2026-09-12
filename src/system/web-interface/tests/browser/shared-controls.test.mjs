@@ -946,6 +946,29 @@ test('shared navigation links and marks the canonical control center route', asy
   } finally { navigation.remove(); fixture.window.close(); }
 });
 
+test('shared navigation hides the operator route for a server-selected Player entry', async () => {
+  const source = await readFile(new URL('system-workspace.js', root), 'utf8');
+  const fixture = new JSDOM('<!doctype html><body></body>', {
+    url: 'https://system.example.test/ui/dnd2024', runScripts: 'outside-only'
+  });
+  fixture.window.systemWebClient = {discoverAllApplications: async () => ({
+    applications: [], systemPages: [], unavailableFields: [], pageCount: 0,
+    resolutionFingerprints: []
+  })};
+  fixture.window.validSystemIdentifier = value => typeof value === 'string' && value.length > 0;
+  fixture.window.interruptedRequestStore = {read: () => null, write: () => true, remove: () => {}};
+  fixture.window.eval(source.replace(/^import[^;]+;\s*/gm, '').replace(/import[^;]+;\s*/g, ''));
+  const navigation = fixture.window.document.createElement('system-navigation');
+  navigation.setAttribute('access-mode', 'player');
+  fixture.window.document.body.append(navigation);
+  await tick();
+  try {
+    assert.equal(navigation.shadowRoot.querySelector('[part="control-link"]').hidden, true);
+    navigation.setAttribute('access-mode', 'operator');
+    assert.equal(navigation.shadowRoot.querySelector('[part="control-link"]').hidden, false);
+  } finally { navigation.remove(); fixture.window.close(); }
+});
+
 test('shared navigation retains page-only applications and never navigates for an empty selector value', async () => {
   const source = await readFile(new URL('system-workspace.js', root), 'utf8');
   const fixture = await dom();

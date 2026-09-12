@@ -5,6 +5,12 @@ using DantesRoleplay.Blobs;
 using DantesRoleplay.DataAccess.Composition;
 using DantesRoleplay.Ecs;
 using DantesRoleplay.Media;
+using DantesRoleplay.MCPServer;
+using DantesRoleplay.Knowledge;
+using DantesRoleplay.Web.Security;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Json;
+using Microsoft.Extensions.DependencyInjection;
 using DantesRoleplay.SystemCapabilities;
 using System.Text.Json;
 
@@ -137,6 +143,41 @@ public sealed class EntityMediaTests
     }
 
     [Fact]
+    public async Task Web_discovery_content_url_retains_the_narrowed_player_perspective()
+    {
+        var context = OwnerContext("?perspective=player");
+        var result = await EntityMediaWebEndpoints.DiscoverAsync("fixture", "space", "hero", context,
+            new Seats(), Service(Visual("""
+              {"role":"portrait","visibility":["player","dm"],"sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","mimeType":"image/png","width":100,"height":120,"alt":"Hero portrait","caption":"","order":0,"provenance":{"kind":"original","credit":"Artist","source":"fixture","reviewedOn":"2026-09-01","version":1}}
+            """)), default);
+
+        await result.ExecuteAsync(context);
+        context.Response.Body.Position = 0;
+        using var body = await JsonDocument.ParseAsync(context.Response.Body);
+        var contentUrl = body.RootElement.GetProperty("attachments")[0].GetProperty("contentUrl").GetString();
+        Assert.Equal("/api/applications/fixture/state-spaces/space/entities/hero/media/visual-0/content?perspective=player", contentUrl);
+    }
+
+    [Fact]
+    public async Task Web_content_read_rechecks_the_perspective_carried_by_discovery()
+    {
+        var service = Service(Visual("""
+          {"role":"handout","visibility":["dm"],"sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","mimeType":"image/png","width":1,"height":1,"alt":"Private handout","caption":"","order":0,"provenance":{"kind":"original","credit":"Artist","source":"fixture","reviewedOn":"2026-09-01","version":1}}
+        """));
+        var player = OwnerContext("?perspective=player");
+        var denied = await EntityMediaWebEndpoints.ReadAsync("fixture", "space", "hero", "visual-0",
+            player, new Seats(), service, default);
+        await denied.ExecuteAsync(player);
+        Assert.Equal(StatusCodes.Status404NotFound, player.Response.StatusCode);
+
+        var gameMaster = OwnerContext("?perspective=dm");
+        var allowed = await EntityMediaWebEndpoints.ReadAsync("fixture", "space", "hero", "visual-0",
+            gameMaster, new Seats(), service, default);
+        await allowed.ExecuteAsync(gameMaster);
+        Assert.Equal(StatusCodes.Status200OK, gameMaster.Response.StatusCode);
+    }
+
+    [Fact]
     public async Task Current_location_map_is_resolved_from_the_host_bound_actor()
     {
         var source = new EntityMediaAiToolSource(Service(Visual("""
@@ -204,6 +245,24 @@ public sealed class EntityMediaTests
         Assert.Equal("location", attached.EntityId);
         Assert.Equal("setting", attached.Role);
         Assert.Equal("Arrival view", attached.Caption);
+    }
+
+    private static DefaultHttpContext OwnerContext(string query)
+    {
+        var context = new DefaultHttpContext();
+        context.Connection.RemoteIpAddress = System.Net.IPAddress.Loopback;
+        context.Request.Method = HttpMethods.Get;
+        context.Request.QueryString = new QueryString(query);
+        context.Response.Body = new MemoryStream();
+        context.RequestServices = new ServiceCollection().AddLogging().AddOptions<JsonOptions>().Services.BuildServiceProvider();
+        context.User = WebAccessPolicy.CreatePrincipal(new(true, WebAccessMode.Local));
+        return context;
+    }
+
+    private sealed class Seats : ILocalKnowledgeSeatProvider
+    {
+        public LocalKnowledgeSeatSnapshot Current() =>
+            new(true, "shared-website", "fixture", "campaign", null, KnowledgeAudienceRole.GameMaster);
     }
 
     private static EntityMediaService Service(string value) => new(

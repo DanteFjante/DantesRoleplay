@@ -229,11 +229,15 @@ internal static class ApplicationObjectHostAccess
     internal static bool CanReadRoleEntity(
         LocalKnowledgeSeatSnapshot seat,
         string entityId,
-        IReadOnlyDictionary<string, string> authorizedRoleEntityIds) =>
+        IReadOnlyDictionary<string, string> authorizedRoleEntityIds,
+        string routeEntityId) =>
         seat.Enabled && (seat.Role == KnowledgeAudienceRole.GameMaster
             || seat.Role == KnowledgeAudienceRole.Actor
-            && (entityId == seat.ActorId
-                || authorizedRoleEntityIds.Values.Contains(entityId, StringComparer.Ordinal)));
+                && (entityId == seat.ActorId
+                    || authorizedRoleEntityIds.Values.Contains(entityId, StringComparer.Ordinal))
+            || seat.Role == KnowledgeAudienceRole.PlayerGroup
+                && (entityId == routeEntityId
+                    || authorizedRoleEntityIds.Values.Contains(entityId, StringComparer.Ordinal)));
 
     internal static MechanicAudienceContext PrivilegedReadAudience => MechanicAudienceContext.GameMaster;
     internal static string PrivilegedWritePerspective => MechanicAudienceContext.GameMaster.Perspective;

@@ -60,6 +60,22 @@ public sealed class KnowledgeCoreTests
     }
 
     [Fact]
+    public async Task Player_group_does_not_enter_the_actor_or_game_master_candidate_pipeline()
+    {
+        var policy = new Policy(new(new("public-website", "campaign-fixture",
+            KnowledgeAudienceRole.PlayerGroup, null, "policy.1")));
+        var untouched = new UntouchedDependencies();
+        var resolver = new AuthorizedKnowledgeCandidateResolver(policy, untouched, untouched,
+            untouched, untouched, untouched);
+
+        var result = await resolver.ResolveAsync(new("campaign-fixture", "archive ledger"));
+
+        Assert.False(result.Granted);
+        Assert.Equal(1, policy.Calls);
+        Assert.Equal(0, untouched.Calls);
+    }
+
+    [Fact]
     public async Task Activated_binding_resolves_only_the_exact_active_campaign_space()
     {
         using var fixture = new KnowledgeFixture();

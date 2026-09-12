@@ -15,8 +15,8 @@ public sealed class WebRemoteAccessOptions
 
     public bool Enabled { get; set; }
 
-    // Legacy explicit host opt-in: every network visitor receives the website's operator capabilities.
-    // This does not create an invited identity or a standing platform grant.
+    // Explicit host opt-in for anonymous Player-safe website reads. This does not create an
+    // operator identity, an invited identity, or a standing platform grant.
     public bool AllowAnonymousPublicAccess { get; set; }
 
     public string? TailscaleHost { get; set; }
@@ -173,10 +173,11 @@ public sealed class WebAccessPolicy
 
     /// <summary>Routes backed by public data or a server-selected player projection.</summary>
     public static bool IsPlayerSafePublicPath(PathString path) =>
-        path == "/" || path.StartsWithSegments("/ui") || path.StartsWithSegments("/components") ||
+        path == "/" || path.StartsWithSegments("/ui") && !path.StartsWithSegments("/ui/control-center") ||
+        path.StartsWithSegments("/components") ||
         path.StartsWithSegments("/api/session") || path.StartsWithSegments("/api/web/applications") ||
         path == "/api/audience-context" || IsReadinessPath(path) || IsReadModelMediaPath(path) ||
-        IsApplicationPlayerProjectionPath(path) || IsApplicationEntityMediaPath(path);
+        IsApplicationResolvedReadPath(path) || IsApplicationPlayerProjectionPath(path);
 
     private static bool IsApplicationPlayerProjectionPath(PathString path)
     {
@@ -426,7 +427,8 @@ public sealed class WebPrivateOperatorGuard(
                 ? PrivateOperatorCapability.Read
                 : PrivateOperatorCapability.Modify);
 
-        if (accessDecision is { Allowed: true, Mode: WebAccessMode.InvitedTailscale })
+        if (accessDecision is { Allowed: true,
+            Mode: WebAccessMode.InvitedTailscale or WebAccessMode.AnonymousPublic })
         {
             PrivateOperatorCapabilityNames.TryGetAuditName(capability, out var capabilityName);
             var evidence = new AuthorizationAuditEvidence(
@@ -436,13 +438,13 @@ public sealed class WebPrivateOperatorGuard(
                 PrivateOperatorAuthorizationPolicy.PrivateHostScope,
                 Correlation(context.TraceIdentifier),
                 false,
-                "PRIVATE_OPERATOR_INVITED_IDENTITY");
+                "PRIVATE_OPERATOR_UNPRIVILEGED_IDENTITY");
             return new(
                 false,
                 null,
                 evidence,
                 "PRIVATE_OPERATOR_DENIED",
-                "Invited identities cannot use private-operator endpoints.");
+                "This website identity cannot use private-operator endpoints.");
         }
 
         var decision = authorization.Evaluate(new(

@@ -189,7 +189,7 @@ Required logical partitions, with final internal names chosen once in slice 5:
 - Request states and local field diagnostics, without domain-object admission schemas.
 - UI selection and unsaved edits, separate from confirmed server data.
 
-Do not reconstruct canonical component objects from display projections unless the server supplies the necessary source identity and coverage. Two audience-filtered projections of the same entity must not be merged into a more privileged object. Scope partitioning is mandatory even where the current shared website admits a full-authority seat.
+Do not reconstruct canonical component objects from display projections unless the server supplies the necessary source identity and coverage. Two audience-filtered projections of the same entity must not be merged into a more privileged object. Scope partitioning is mandatory: the owner-capable shared website may admit a full-authority seat, while unprivileged public visitors receive only the Player projection.
 
 The existing request coordinator can temporarily remain a transport/in-flight deduplication adapter. It must not remain a second canonical copy of every migrated response. Keep controllers/promises outside Redux serializable state. Preserve bounded memory, request sharing, cancellation, expiry, late-response fences and no persisted private response bodies.
 

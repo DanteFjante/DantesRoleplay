@@ -50,10 +50,12 @@ public static class WebInterfaceSecurity
 public sealed class WebInterfaceSecurityFilter : IEndpointFilter
 {
     private readonly WebPrivateOperatorGuard guard;
+    private readonly WebAccessPolicy access;
 
-    public WebInterfaceSecurityFilter(WebPrivateOperatorGuard guard)
+    public WebInterfaceSecurityFilter(WebPrivateOperatorGuard guard, WebAccessPolicy access)
     {
         this.guard = guard;
+        this.access = access;
     }
 
     public async ValueTask<object?> InvokeAsync(
@@ -61,6 +63,21 @@ public sealed class WebInterfaceSecurityFilter : IEndpointFilter
         EndpointFilterDelegate next)
     {
         WebInterfaceSecurity.ApplyHeaders(context.HttpContext.Response);
+        var accessDecision = access.Evaluate(context.HttpContext);
+        if (accessDecision is { Allowed: true, Mode: WebAccessMode.AnonymousPublic or WebAccessMode.InvitedTailscale })
+        {
+            if (!(HttpMethods.IsGet(context.HttpContext.Request.Method) ||
+                    HttpMethods.IsHead(context.HttpContext.Request.Method)) ||
+                !WebAccessPolicy.IsPlayerSafePublicPath(context.HttpContext.Request.Path))
+            {
+                return Results.Json(new { error = "PLAYER_SAFE_ROUTE_REQUIRED",
+                    message = "This route is not available to unprivileged visitors." },
+                    statusCode: StatusCodes.Status403Forbidden);
+            }
+            context.HttpContext.User = WebAccessPolicy.CreatePrincipal(accessDecision);
+            return await next(context);
+        }
+
         var decision = guard.Evaluate(context.HttpContext);
         if (!decision.Allowed)
         {
@@ -70,15 +87,6 @@ public sealed class WebInterfaceSecurityFilter : IEndpointFilter
                     error = decision.ErrorCode,
                     message = decision.ErrorMessage
                 },
-                statusCode: StatusCodes.Status403Forbidden);
-        }
-
-        if (decision.Principal!.Identity?.AuthenticationType ==
-            WebAccessPolicy.AnonymousPublicAuthenticationType &&
-            !WebAccessPolicy.IsPlayerSafePublicPath(context.HttpContext.Request.Path))
-        {
-            return Results.Json(new { error = "PLAYER_SAFE_ROUTE_REQUIRED",
-                message = "This route is not available to anonymous visitors." },
                 statusCode: StatusCodes.Status403Forbidden);
         }
 

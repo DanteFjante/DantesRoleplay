@@ -52,9 +52,11 @@ internal sealed class LocalEntityMediaAudienceResolver(
     {
         var seat = seats.Current();
         if (!seat.Enabled || seat.ApplicationId != applicationId.Value ||
-            seat.Role is not (KnowledgeAudienceRole.Actor or KnowledgeAudienceRole.GameMaster)) return null;
+            seat.Role is not (KnowledgeAudienceRole.Actor or KnowledgeAudienceRole.GameMaster or
+                KnowledgeAudienceRole.PlayerGroup)) return null;
         if (seat.Role == KnowledgeAudienceRole.Actor && !Token(seat.ActorId)) return null;
-        if (seat.Role == KnowledgeAudienceRole.GameMaster && seat.ActorId is not null) return null;
+        if (seat.Role is KnowledgeAudienceRole.GameMaster or KnowledgeAudienceRole.PlayerGroup &&
+            seat.ActorId is not null) return null;
         var gameMaster = seat.Role == KnowledgeAudienceRole.GameMaster &&
             SharedWebsiteContext.CanUseGameMaster(http.HttpContext);
         return new(
@@ -80,7 +82,15 @@ internal static class SharedWebsiteContext
         identity.AuthenticationType is WebAccessPolicy.LocalAuthenticationType or
             WebAccessPolicy.TailscaleAuthenticationType;
 
-    public static bool CanUseGameMaster(HttpContext? context) => IsTrusted(context);
+    public static bool CanUseGameMaster(HttpContext? context) =>
+        IsTrusted(context) || IsLoopbackMcp(context);
+
+    public static bool IsPlayerWebsite(HttpContext? context) =>
+        context?.Connection.RemoteIpAddress is not null &&
+        !context.Request.Path.StartsWithSegments(ServerConfiguration.McpEndpoint) &&
+        context.User.Identity is { IsAuthenticated: true } identity &&
+        identity.AuthenticationType is WebAccessPolicy.AnonymousPublicAuthenticationType or
+            WebAccessPolicy.InvitedTailscaleAuthenticationType;
 
     public static bool IsLoopbackMcp(HttpContext? context) =>
         context is not null && context.Request.Path.StartsWithSegments(ServerConfiguration.McpEndpoint) &&
@@ -107,6 +117,10 @@ internal sealed class ConfigurationLocalKnowledgeSeatProvider(
         if (SharedWebsiteContext.IsTrusted(http?.HttpContext))
             return new(true, "shared-website", section?["ApplicationId"] ?? "",
                 section?["CampaignId"] ?? "", null, KnowledgeAudienceRole.GameMaster,
+                AuthorizedRoleEntityIds: authorizedRoles);
+        if (SharedWebsiteContext.IsPlayerWebsite(http?.HttpContext))
+            return new(true, "public-website", section?["ApplicationId"] ?? "",
+                section?["CampaignId"] ?? "", null, KnowledgeAudienceRole.PlayerGroup,
                 AuthorizedRoleEntityIds: authorizedRoles);
         var role = section?["Role"] switch
         {
@@ -188,9 +202,11 @@ internal sealed class LocalKnowledgeAudiencePolicy(
     {
         cancellationToken.ThrowIfCancellationRequested();
         var seat = seats.Current();
+        var playerWebsite = SharedWebsiteContext.IsPlayerWebsite(http.HttpContext);
         if (!Valid(seat) || !Token(campaignId) ||
             (seat.Role != KnowledgeAudienceRole.GameMaster && campaignId != seat.CampaignId) ||
             !(SharedWebsiteContext.CanUseGameMaster(http.HttpContext) ||
+                playerWebsite ||
                 SharedWebsiteContext.IsLoopbackMcp(http.HttpContext)))
             return Task.FromResult(KnowledgeAudienceResolution.Denied());
 
@@ -201,7 +217,8 @@ internal sealed class LocalKnowledgeAudiencePolicy(
         var revision = Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(new
         {
             policy = SharedWebsiteContext.IsTrusted(http.HttpContext)
-                ? "shared-website-v1" : "local-loopback-seat-v1",
+                ? "shared-website-v2"
+                : playerWebsite ? "public-website-player-v1" : "local-loopback-seat-v1",
             seat.Enabled,
             seat.PrincipalId,
             seat.ApplicationId,
@@ -227,7 +244,8 @@ internal sealed class LocalKnowledgeAudiencePolicy(
             seat.SourceIds is not null && (seat.SourceIds.Any(value => !Token(value)) ||
                 seat.SourceIds.Distinct(StringComparer.Ordinal).Count() != seat.SourceIds.Count))
             return false;
-        if (seat.Role == KnowledgeAudienceRole.GameMaster && seat.ActorId is not null) return false;
+        if (seat.Role is KnowledgeAudienceRole.GameMaster or KnowledgeAudienceRole.PlayerGroup &&
+            seat.ActorId is not null) return false;
         if (seat.Role == KnowledgeAudienceRole.Actor && !Token(seat.ActorId)) return false;
         try { return ApplicationIdentifier.Parse(seat.ApplicationId).Value == seat.ApplicationId; }
         catch (ArgumentException) { return false; }

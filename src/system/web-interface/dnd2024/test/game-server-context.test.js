@@ -165,6 +165,37 @@ test("world location scope reads a non-conventional exact identity and batches o
   assert.ok(calls.every(({ url }) => !/\/entities$/u.test(url.pathname)));
 });
 
+test("projection-bound owner media renders the public map without a direct owner media request", async () => {
+  const calls = [];
+  const ticket = "/api/read-model-media/" + "a".repeat(64) + "/content";
+  const result = await readRegisteredWorldLocationScope({
+    origin: "http://localhost:6217", applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
+    scopeId: "realm-root-7", perspective: "player",
+    fetchImpl: async (input, init = {}) => {
+      const requested = new URL(input);
+      calls.push({ requested, init });
+      if (requested.pathname.endsWith("/media-batch")) return response(403, {});
+      return response(200, {
+        ...worldScopeEnvelope(worldLocationScopeData()),
+        media: {
+          entityId: "realm-root-7",
+          attachments: [{
+            mediaId: "map.realm-7", role: "map", mediaType: "image/webp",
+            width: 1000, height: 1000, alt: "Map of the Seventh Realm",
+            caption: "", order: 0, contentUrl: ticket,
+          }],
+        },
+      });
+    },
+  });
+
+  assert.equal(result.status, "ready");
+  assert.equal(result.items[0].mapVisualState, "ready");
+  assert.equal(result.items[0].mapVisual.imageUrl, ticket);
+  assert.equal(result.items[1].mapVisualState, "unavailable");
+  assert.deepEqual(JSON.parse(calls[1].init.body).entityIds, ["place-azure"]);
+});
+
 test("a failed location media batch remains unavailable instead of becoming false map absence", async () => {
   const result = await readRegisteredWorldLocationScope({
     origin: "http://localhost:6217", applicationId: "dnd2024", stateSpaceId: "dnd2024-main",
@@ -934,7 +965,7 @@ const partyReference = (index) => ({
 
 async function readRegisteredPartyBootstrap({
   party = [partyReference(0)], summary = {}, perspective = "dm", role = "game-master",
-  queryResponse, localSeat, shared = false,
+  queryResponse, localSeat, shared = false, publicAccess = false,
 } = {}) {
   const calls = [];
   const value = await readGameServerContext({
@@ -947,7 +978,7 @@ async function readRegisteredPartyBootstrap({
         campaignId: "campaign.caldris.measure-of-mercy", role,
         ...(role === "actor" ? { actorId: "actor.0" } : {}),
       });
-        if (shared) result.headers.set("X-Website-Access", "shared");
+        if (shared || publicAccess) result.headers.set("X-Website-Access", shared ? "shared" : "public");
         return result;
       }
       if (role === "actor" && request.pathname.endsWith("/entities/actor.0"))
@@ -987,15 +1018,37 @@ async function readRegisteredPartyBootstrap({
   return { value, calls };
 }
 
-test("shared website normalizes obsolete Player preference to the full DM table view", async () => {
-  const { value, calls } = await readRegisteredPartyBootstrap({ shared: true, perspective: "player" });
+test("shared website keeps the server-authorized owner seat and honors Player preview", async () => {
+  const playerSafeParty = [{ ...partyReference(0), actors: [] }];
+  const { value, calls } = await readRegisteredPartyBootstrap({
+    shared: true, perspective: "player", party: playerSafeParty,
+  });
   assert.equal(value.status, "connected");
   assert.deepEqual(value.audience, {
-    seat: "dm", perspective: "dm", allowedPerspectives: ["dm"], websiteAccess: "shared",
+    seat: "dm", perspective: "player", allowedPerspectives: ["dm", "player"], websiteAccess: "shared",
   });
+  assert.deepEqual(value.party.map(({ id, name }) => ({ id, name })), [
+    { id: "participation.0", name: "Participation 0" },
+  ]);
   const hub = connectedCampaignToHubEnvelope(value);
   assert.equal(resolveHubSurface(hub), "table");
   assert.equal(hub.party.length, 1);
+  assert.equal(calls.length, 3);
+});
+
+test("public website accepts only the truthful group Player binding before any data read", async () => {
+  const playerSafeParty = [{ ...partyReference(0), actors: [] }];
+  const { value, calls } = await readRegisteredPartyBootstrap({
+    publicAccess: true, perspective: "dm", party: playerSafeParty, role: "player-group",
+  });
+  assert.equal(value.status, "connected");
+  assert.deepEqual(value.audience, {
+    seat: "player", perspective: "player", allowedPerspectives: ["player"], websiteAccess: "public",
+  });
+  assert.deepEqual(value.actor, { id: "shared-party", name: "Player" });
+  assert.deepEqual(value.party.map(({ id, name }) => ({ id, name })), [
+    { id: "participation.0", name: "Participation 0" },
+  ]);
   assert.equal(calls.length, 3);
 });
 
@@ -1485,6 +1538,19 @@ test("visual media consumes only owner-authorized discovery and returns no priva
   const serialized = JSON.stringify(projectMediaVisual(record));
   assert.equal(serialized.includes(MEDIA_HASH), false);
   assert.equal(serialized.includes("provenance"), false);
+});
+
+test("visual media accepts one explicit narrowed perspective and rejects audience-like query tricks", () => {
+  for (const perspective of ["player", "dm"]) {
+    const attachment = mediaAttachment();
+    attachment.contentUrl += `?perspective=${perspective}`;
+    assert.equal(projectMediaVisual(mediaRecord(attachment)).portrait.imageUrl, attachment.contentUrl);
+  }
+  for (const suffix of ["?perspective=player&perspective=dm", "?perspective=owner", "?perspective=player#dm"]) {
+    const attachment = mediaAttachment();
+    attachment.contentUrl += suffix;
+    assert.equal(projectMediaVisual(mediaRecord(attachment)), null);
+  }
 });
 
 test("item media inherits definition roles while explicit instance roles win", () => {

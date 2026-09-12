@@ -13,6 +13,8 @@ public sealed class ReadModelMediaLinkStore(TimeProvider? clock = null) : IReadM
     private sealed record Entry(string Key, ReadModelMediaTicket Ticket, DateTimeOffset Expires);
     public static string Url(string token) => "/api/read-model-media/" + token + "/content";
     public static string Fingerprint(EntityMediaAttachment attachment) => Hash(JsonSerializer.Serialize(attachment));
+    public static string Fingerprint(EntityMediaAttachment attachment, string sourceRevisionFingerprint,
+        string bindingRevision) => Hash(Fingerprint(attachment) + ":" + sourceRevisionFingerprint + ":" + bindingRevision);
     private static string Hash(string value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
 
     public string GetOrCreate(ReadModelMediaTicket ticket)

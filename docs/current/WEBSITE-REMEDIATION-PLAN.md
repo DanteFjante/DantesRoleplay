@@ -1,5 +1,7 @@
 # Website reassessment and remediation plan
 
+> **Superseded access premise (2026-09-12):** The current platform requirement separates an owner-capable shared website from an unprivileged public Player view. Statements below that grant every website visitor application or DM authority are retained as planning history and no longer define the access contract.
+
 ## Scope and decision
 
 This is the requested evidence-based follow-up to [WEBSITE-OBJECT-PLAN.md](WEBSITE-OBJECT-PLAN.md), dated 2026-09-08. It reviews W00–W11 and proposes independently implementable slices R00–R14. Given the breadth of the findings, this uses the user's offered planning fallback for the larger repair. This audit changes documentation only; it does not repair or publish the website.

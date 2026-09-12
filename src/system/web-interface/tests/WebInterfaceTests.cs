@@ -2141,7 +2141,7 @@ public sealed class WebInterfaceTests
     [InlineData("localhost:6217", "http://localhost:6218", "application/json", 403, "CONTROL_ORIGIN_DENIED")]
     [InlineData("localhost:6217", "https://localhost:6217", "application/json", 403, "CONTROL_ORIGIN_DENIED")]
     [InlineData("localhost:6217", "http://localhost:6217/path", "application/json", 403, "CONTROL_ORIGIN_DENIED")]
-    [InlineData("evil.example:6217", "http://evil.example:6217", "application/json", 403, "CONTROL_HOST_DENIED")]
+    [InlineData("evil.example:6217", "http://evil.example:6217", "application/json", 403, "LOCAL_ACCESS_REQUIRED")]
     [InlineData("localhost:6217", "http://localhost:6217", "text/plain", 415, "CONTROL_JSON_REQUIRED")]
     public void Invalid_control_mutation_inputs_fail_before_owner_invocation(
         string host,
@@ -3650,12 +3650,15 @@ public sealed class WebInterfaceTests
         var context = RequestContext("roleplay.example.ts.net", IPAddress.Loopback);
         context.Request.Method = HttpMethods.Put;
         context.Request.Headers[WebAccessPolicy.TailscaleLoginHeader] = "intruder@example.com";
-        var filter = new WebInterfaceSecurityFilter(OperatorGuard(new WebRemoteAccessOptions
+        var options = new WebRemoteAccessOptions
         {
             Enabled = true,
             TailscaleHost = "roleplay.example.ts.net",
             AllowedLogins = ["operator@example.com"]
-        }));
+        };
+        var access = new WebAccessPolicy(Options.Create(options));
+        var filter = new WebInterfaceSecurityFilter(
+            new WebPrivateOperatorGuard(access, new PrivateOperatorAuthorizationPolicy()), access);
         var invoked = false;
 
         await filter.InvokeAsync(new TestFilterContext(context), _ =>

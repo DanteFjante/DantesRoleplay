@@ -54,6 +54,23 @@ Multiple roles, object/snapshot roles, graph snapshots, child mechanics, authori
 requirements, and service calls are unsupported from a page. Browser JSON never selects principal,
 grant, application generation, state revision, command authority, budgets, or deadlines.
 
+### Audience and operator admission
+The HTTP admission identity selects the maximum website authority. A local-loopback owner and an
+allow-listed private-network owner may use their configured operator grant. Anonymous public and
+other unprivileged website identities receive only routes whose server projections are Player-safe.
+Connection topology is not identity: a public Host forwarded over a loopback proxy does not become a
+local owner, and Host, Origin, forwarded headers, URL/query/body values, saved preferences, or page
+components cannot promote an audience.
+
+For an authorized GameMaster owner, DM and Player are presentation choices backed by separate server
+reads. For an unprivileged visitor, the host issues a non-actor `player-group` grant and only Player is available. Player content is the application-owned
+party projection plus eligible public facts; the website does not assemble private notebooks or hide
+DM fields with CSS. The same audience applies to summaries, details, search, map overlays and media,
+object/read-model responses, events, and caches. Public media bytes use opaque links issued by an
+authorized projection and revalidated on read; entity-addressed discovery remains an operator route.
+Switching perspective, campaign, or party scope
+cancels stale reads and clears audience-scoped cached results before rendering replacement data.
+
 ### Publication and serving
 Retain a draft first, validate its exact candidate and binding contracts, then publish the selected
 revision through the existing web and application-publication owners. Serving reselects the live ECS

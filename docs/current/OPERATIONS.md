@@ -29,16 +29,24 @@ all IPv4 interfaces at port 6217. Router forwarding maps external TCP 80 to this
 PowerShell window. This rule also applies when the Ethernet connection uses the Public profile.
 
 Anonymous public website access is explicitly enabled in this checkout through
-`WebInterface:RemoteAccess:AllowAnonymousPublicAccess`. Every direct network visitor receives
-website operator access, including DM views and control-center operations; there is no sign-in.
-Its audit identity is `anonymous-public-web`, distinct from the local operator. Every admitted
-website request uses the same full application context, regardless of the MCP Actor/Role/Enabled
-settings. `Knowledge:LocalPlayer:ApplicationId` and `CampaignId` seed the initial workspace;
-the UI selects world, campaign, and character. No role arguments or separate Actor server are
-needed. The website reports `X-Website-Access: shared` on bootstrap, ignores obsolete Player
-preferences, and does not offer the old role switch. Character-knowledge preview is deferred until
-it can select an explicit observer without changing application authority.
-Same-origin control and public mapped-edit/action checks use the external request host and port.
+`WebInterface:RemoteAccess:AllowAnonymousPublicAccess`. Direct network visitors receive only
+Player-safe website routes and the current party's authorized Player projection; they cannot open
+DM, raw entity/component/catalog/blob, control-center, write, or private event routes. Their audit
+identity is `anonymous-public-web`, distinct from the local operator. Public Player knowledge is the
+union of admitted knowledge for active party members plus eligible public facts. Missing admissions
+remain empty or unavailable and never fall back to DM truth.
+Public pages cannot call entity-addressed media discovery or content routes. Images are available only
+when an authorized read model issues an opaque link that is revalidated when the bytes are opened.
+
+The local owner on a direct localhost/loopback host and an allow-listed Tailscale owner receive the
+configured operator seat. When that seat is GameMaster, the website reports
+`X-Website-Access: shared` and offers server-authorized DM and Player presentations. A public or
+unprivileged bootstrap reports `X-Website-Access: public`, returns the non-actor `player-group` role, and offers Player only. An arbitrary public
+Host that reaches the process through a loopback reverse proxy is still public; Host, Origin, query,
+body, forwarded headers, saved preferences, and the selector cannot create owner authority.
+`Knowledge:LocalPlayer:ApplicationId` and `CampaignId` seed the initial workspace. Owner browser
+mutations retain same-origin checks against the external request host and port; public mutations are
+rejected before their handlers run.
 Set the option to `false` and
 restart to reject anonymous network visitors; the option defaults to false when omitted.
 Private MCP operations retain their existing loopback-only authorization.

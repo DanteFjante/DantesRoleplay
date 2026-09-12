@@ -140,6 +140,30 @@ public sealed class SystemAudienceContextHandlerTests
     }
 
     [Fact]
+    public async Task Returns_verified_player_group_context_without_actor_or_participation_read()
+    {
+        var bindings = new Bindings(Binding());
+        var participation = new Participation(ParticipationState.Active);
+        var seat = GameMasterSeat() with
+        {
+            Role = KnowledgeAudienceRole.PlayerGroup
+        };
+
+        var result = await SystemAudienceContextHandler.ResolveAsync(
+            new Seats(seat), new Audience(true, KnowledgeAudienceRole.PlayerGroup), bindings,
+            participation, CancellationToken.None);
+
+        Assert.Null(result.Error);
+        Assert.Equal("campaign.fixture", result.Subject);
+        using var data = JsonDocument.Parse(JsonSerializer.Serialize(result.Data));
+        Assert.Equal("bound", data.RootElement.GetProperty("status").GetString());
+        Assert.Equal("player-group", data.RootElement.GetProperty("role").GetString());
+        Assert.False(data.RootElement.TryGetProperty("actorId", out _));
+        Assert.Equal(1, bindings.Calls);
+        Assert.Equal(0, participation.Calls);
+    }
+
+    [Fact]
     public void Dnd_chat_contract_uses_the_server_bound_creation_identity()
     {
         var path = Path.Combine(RepositoryRoot(), "catalog", "applications", "dnd2024", "procedures",

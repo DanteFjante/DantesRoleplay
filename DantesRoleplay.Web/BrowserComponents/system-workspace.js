@@ -9,7 +9,7 @@ import '/components/system-theme.js';
 const CONTROL_CENTER_PATH = '/ui/control-center';
 
 class SystemNavigation extends HTMLElement {
-  static get observedAttributes() { return ['application-id']; }
+  static get observedAttributes() { return ['application-id', 'access-mode']; }
 
   constructor() {
     super();
@@ -41,7 +41,10 @@ class SystemNavigation extends HTMLElement {
   }
 
   attributeChangedCallback() {
-    if (this.shadowRoot) this._updateCurrent();
+    if (this.shadowRoot) {
+      this._updateCurrent();
+      this._updateAccess();
+    }
   }
 
   set client(value) {
@@ -104,6 +107,7 @@ class SystemNavigation extends HTMLElement {
     });
     this._home = this._link('/', 'Home', 'home-link');
     this._control = this._link(CONTROL_CENTER_PATH, 'Manage', 'control-link');
+    this._updateAccess();
     this._systemPages = document.createElement('span');
     this._systemPages.setAttribute('part', 'system-pages');
     this._systemPages.setAttribute('role', 'group');
@@ -141,6 +145,10 @@ class SystemNavigation extends HTMLElement {
     this._drawerOpen = open;
     this.dataset.drawerOpen = String(open);
     this._drawer.setAttribute('aria-expanded', String(open));
+  }
+
+  _updateAccess() {
+    if (this._control) this._control.hidden = this.getAttribute('access-mode') === 'player';
   }
 
   _link(href, label, part) {

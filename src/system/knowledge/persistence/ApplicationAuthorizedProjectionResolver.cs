@@ -43,6 +43,7 @@ public sealed class ApplicationAuthorizedProjectionResolver(
             var audience = await audiences.ResolveAsync(campaign, cancellationToken);
             var grant = audience.Grant;
             if (!audience.Granted || grant is null || grant.CampaignId != campaign ||
+                grant.Role == KnowledgeAudienceRole.PlayerGroup ||
                 grant.Role == KnowledgeAudienceRole.Actor &&
                     (grant.ActorId != observer || request.Audience.Perspective != "player") ||
                 grant.Role == KnowledgeAudienceRole.GameMaster && grant.ActorId is not null ||

@@ -27,6 +27,8 @@ public sealed class AuthorizedKnowledgeCandidateResolver(
             return AuthorizedKnowledgeCandidateSet.Denied();
 
         var grant = resolvedAudience.Grant;
+        if (grant.Role == KnowledgeAudienceRole.PlayerGroup)
+            return AuthorizedKnowledgeCandidateSet.Denied();
         try
         {
             var binding = await bindings.ResolveAsync(request.CampaignId, cancellationToken);

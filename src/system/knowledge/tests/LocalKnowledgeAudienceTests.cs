@@ -130,7 +130,8 @@ public sealed class LocalKnowledgeAudienceTests
 
         var webAccess = new WebAccessPolicy(Options.Create(new WebRemoteAccessOptions
             { AllowAnonymousPublicAccess = enabled }));
-        var filter = new WebInterfaceSecurityFilter(new(webAccess, new PrivateOperatorAuthorizationPolicy()));
+        var filter = new WebInterfaceSecurityFilter(
+            new(webAccess, new PrivateOperatorAuthorizationPolicy()), webAccess);
         KnowledgeAudienceResolution? audience = null;
         await filter.InvokeAsync(new DefaultEndpointFilterInvocationContext(context), async _ =>
         {
@@ -138,7 +139,15 @@ public sealed class LocalKnowledgeAudienceTests
             return Results.Ok();
         });
 
-        Assert.False(audience?.Granted == true);
+        if (enabled)
+        {
+            Assert.True(audience?.Granted);
+            Assert.Equal("campaign.fixture", audience!.Grant!.CampaignId);
+            Assert.Equal("public-website", audience.Grant.PrincipalId);
+            Assert.Equal(KnowledgeAudienceRole.PlayerGroup, audience.Grant.Role);
+            Assert.Null(audience.Grant.ActorId);
+        }
+        else Assert.False(audience?.Granted == true);
         Assert.False((await policy.ResolveAsync("campaign.other")).Granted);
         context.Request.Path = "/mcp";
         Assert.False((await policy.ResolveAsync("campaign.fixture")).Granted);
@@ -175,6 +184,24 @@ public sealed class LocalKnowledgeAudienceTests
         context.Request.Path = "/api/audience-context";
         context.User = new();
         Assert.False((await policy.ResolveAsync("campaign.fixture")).Granted);
+    }
+
+    [Fact]
+    public async Task Configured_game_master_mcp_retains_game_master_media_authority()
+    {
+        using var app = Host(gameMaster: true);
+        var context = Context(IPAddress.Loopback);
+        context.Request.Path = ServerConfiguration.McpEndpoint;
+        app.Services.GetRequiredService<IHttpContextAccessor>().HttpContext = context;
+
+        var grant = await app.Services.GetRequiredService<IAuthorizedKnowledgeAudiencePolicy>()
+            .ResolveAsync("campaign.fixture");
+
+        Assert.True(grant.Granted);
+        Assert.Equal(KnowledgeAudienceRole.GameMaster, grant.Grant!.Role);
+        Assert.Equal(DantesRoleplay.Media.EntityMediaAudience.GameMaster,
+            app.Services.GetRequiredService<DantesRoleplay.Media.IEntityMediaAudienceResolver>()
+                .Resolve(DantesRoleplay.Applications.ApplicationIdentifier.Parse("fixture"))!.Audience);
     }
 
     [Fact]
@@ -217,6 +244,7 @@ public sealed class LocalKnowledgeAudienceTests
     private static DefaultHttpContext Context(IPAddress address)
     {
         var context = new DefaultHttpContext();
+        context.Request.Method = HttpMethods.Get;
         context.Connection.RemoteIpAddress = address;
         context.Request.Path = ServerConfiguration.McpEndpoint;
         return context;

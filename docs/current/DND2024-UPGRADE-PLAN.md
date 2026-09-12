@@ -293,7 +293,7 @@ Integrate D&D with shared `system-navigation`; do not implement application disc
 inside the D&D package. Preserve D&D local routes and show the shared empty state when no website
 application is available. Import `system-theme.js`, initialize it once in the shell, and use its
 toggle, change event, and shared CSS tokens. Verify focus, labels, contrast, narrow layouts, and
-route restoration for `system`, `light`, and `dark`.
+route restoration for the default `green-wood` and explicit `system`, `light`, and `dark` preferences.
 
 Outcome: shared navigation switches among authorized website applications and pages. Nonwebsite
 packages remain absent, and D&D follows the single shared theme preference without a second storage
@@ -516,7 +516,7 @@ The coordinator runs one final acceptance after all integrated slices:
    Without that fixture, report these scenarios unavailable and do not replace them with test data
    that bypasses registration or activation.
 5. Exercise the website in a browser: multiple authorized applications, hidden nonwebsite packages,
-   direct routes, the shared `system`/`light`/`dark` preference, extra props, missing required props,
+   direct routes, the default `green-wood` and explicit `system`/`light`/`dark` preferences, extra props, missing required props,
    a malformed sibling, query success/denial/staleness/recovery, and the campaign-premise write's confirmation,
    idempotency, audit, and readback.
 6. Run the protocol walk only if MCP transport or dependency registration changed.

@@ -120,9 +120,11 @@ function audience(value) {
   const actorId = token(value?.actorId);
   const role = value?.role === "game-master"
     ? "game-master"
-    : (value?.role === "actor" || actorId ? "actor" : null);
+    : value?.role === "player-group"
+      ? "player-group"
+      : (value?.role === "actor" || actorId ? "actor" : null);
   if (value?.status !== "bound" || !applicationId || !stateSpaceId || !campaignId || !role) return null;
-  if (role === "game-master") {
+  if (role === "game-master" || role === "player-group") {
     return actorId ? null : { status: "bound", applicationId, stateSpaceId, campaignId, role };
   }
   return actorId ? { status: "bound", applicationId, stateSpaceId, campaignId, actorId, role } : null;
@@ -269,6 +271,19 @@ export function projectMediaVisual(value) {
   return result.complete ? result.visual : null;
 }
 
+function entityMediaContentUrl(value) {
+  if (typeof value !== "string") return null;
+  try {
+    const parsed = new URL(value, "http://media.invalid");
+    if (parsed.origin !== "http://media.invalid" || parsed.hash) return null;
+    if (/^\/api\/read-model-media\/[a-f0-9]{64}\/content$/u.test(parsed.pathname))
+      return parsed.search === "" ? value : null;
+    if (!/^\/api\/applications\/[^/?#\\\s]+\/state-spaces\/[^/?#\\\s]+\/(?:entities\/[^/?#\\\s]+\/)?media\/[^/?#\\\s]+\/content$/u.test(parsed.pathname) ||
+        !(parsed.search === "" || /^\?perspective=(?:player|dm)$/u.test(parsed.search))) return null;
+    return value;
+  } catch { return null; }
+}
+
 function projectMediaAttachments(value) {
   if (!value || typeof value !== "object" || Array.isArray(value) || !Array.isArray(value.attachments) ||
       value.attachments.length > 64) return { visual: null, complete: false };
@@ -291,9 +306,7 @@ function projectMediaAttachments(value) {
         !["image/png", "image/jpeg", "image/webp"].includes(attachment.mediaType) ||
         !Number.isInteger(attachment.width) || attachment.width < 1 || attachment.width > 10_000 ||
         !Number.isInteger(attachment.height) || attachment.height < 1 || attachment.height > 10_000 ||
-        typeof attachment.contentUrl !== "string" ||
-        !/^\/api\/applications\/[^/?#\\\s]+\/state-spaces\/[^/?#\\\s]+\/(?:entities\/[^/?#\\\s]+\/)?media\/[^/?#\\\s]+\/content$/u.test(attachment.contentUrl) ||
-        new URL(attachment.contentUrl, "http://media.invalid").pathname !== attachment.contentUrl) {
+        !entityMediaContentUrl(attachment.contentUrl)) {
       complete = false;
       continue;
     }
@@ -313,6 +326,12 @@ function projectMediaAttachments(value) {
   }
   if (gallery.length > 1) projected.gallery = gallery;
   return { visual: Object.keys(projected).length > 0 ? projected : null, complete };
+}
+
+function projectReadModelOwnerMedia(value, ownerId) {
+  return hasExactKeys(value, ["entityId", "attachments"]) && value.entityId === ownerId
+    ? projectMediaAttachments(value)
+    : null;
 }
 
 function projectLocationMediaBatch(value, applicationId, stateSpaceId, recordIds) {
@@ -1488,18 +1507,25 @@ export async function readRegisteredWorldLocationScope({
     };
     const { records, coverage } = projectWorldLocationRecords(result.data);
     const mediaById = new Map();
-    if (includeMedia && records.length > 0) {
+    const ownerMedia = includeMedia
+      ? projectReadModelOwnerMedia(result.media, scopeId)
+      : null;
+    if (ownerMedia) mediaById.set(scopeId, ownerMedia);
+    const pendingMediaIds = records
+      .map((record) => record.id)
+      .filter((recordId) => recordId !== scopeId || ownerMedia?.complete !== true);
+    if (includeMedia && pendingMediaIds.length > 0) {
       try {
         const response = await fetchImpl(url(origin, `${applicationRoot}/media-batch`), {
           method: "POST",
           headers: { "Content-Type": "application/json", Accept: "application/json" },
           cache: "no-store",
-          body: JSON.stringify({ entityIds: records.map((record) => record.id), perspective }),
+          body: JSON.stringify({ entityIds: pendingMediaIds, perspective }),
         });
         const decoded = response?.ok ? await readBoundedJson(response, 4 * 1024 * 1024) : null;
         const media = decoded?.status === "ready" ? decoded.value : null;
         const projected = projectLocationMediaBatch(
-          media, applicationId, stateSpaceId, records.map((record) => record.id),
+          media, applicationId, stateSpaceId, pendingMediaIds,
         );
         if (projected) {
           for (const [entityId, visual] of projected) mediaById.set(entityId, visual);
@@ -1588,18 +1614,25 @@ export async function readRegisteredWorldLocationScopePage({
     };
     const { records, coverage } = projectWorldLocationRecords(result.data);
     const mediaById = new Map();
-    if (includeMedia && records.length > 0) {
+    const ownerMedia = includeMedia
+      ? projectReadModelOwnerMedia(result.media, scopeId)
+      : null;
+    if (ownerMedia) mediaById.set(scopeId, ownerMedia);
+    const pendingMediaIds = records
+      .map((record) => record.id)
+      .filter((recordId) => recordId !== scopeId || ownerMedia?.complete !== true);
+    if (includeMedia && pendingMediaIds.length > 0) {
       try {
         const response = await fetchImpl(url(origin, `${applicationRoot}/media-batch`), {
           method: "POST",
           headers: { "Content-Type": "application/json", Accept: "application/json" },
           cache: "no-store",
-          body: JSON.stringify({ entityIds: records.map((record) => record.id), perspective }),
+          body: JSON.stringify({ entityIds: pendingMediaIds, perspective }),
         });
         const decoded = response?.ok ? await readBoundedJson(response, 4 * 1024 * 1024) : null;
         const media = decoded?.status === "ready" ? decoded.value : null;
         const projected = projectLocationMediaBatch(
-          media, applicationId, stateSpaceId, records.map((record) => record.id),
+          media, applicationId, stateSpaceId, pendingMediaIds,
         );
         if (projected) {
           for (const [entityId, visual] of projected) mediaById.set(entityId, visual);
@@ -3069,21 +3102,30 @@ async function readGameServerContextCore({
 
   const binding = audience(context);
   if (!binding) return unavailable("The game server returned an invalid audience binding.");
-  const sharedAccess = response.headers.get("X-Website-Access") === "shared";
+  const websiteAccess = response.headers.get("X-Website-Access");
+  const sharedAccess = websiteAccess === "shared";
+  const publicAccess = websiteAccess === "public";
   const hasBoundActor = binding.status === "bound" && binding.role === "actor";
   // A development preference or requested perspective can never promote a server-bound actor.
   const serverRole = binding;
-  const isGameMaster = serverRole.role === "game-master";
+  if ((publicAccess && serverRole.role !== "player-group") ||
+      (serverRole.role === "player-group" && !publicAccess) ||
+      (sharedAccess && serverRole.role !== "game-master")) {
+    return unavailable("The game server returned an audience binding that does not match this website.");
+  }
+  const isPartyPlayer = publicAccess && serverRole.role === "player-group";
+  const isGameMaster = serverRole.role === "game-master" && !isPartyPlayer;
   // The server grants the seat; a preference changes only its presentation. The registered
   // party query filters Player knowledge on the server, including on the shared local table.
   const contextAudience = isGameMaster
     ? {
         seat: "dm",
-        perspective: sharedAccess ? "dm" : normalizePerspective(normalizedRequestedPerspective),
-        allowedPerspectives: sharedAccess ? ["dm"] : ["dm", "player"],
+        perspective: normalizePerspective(normalizedRequestedPerspective),
+        allowedPerspectives: ["dm", "player"],
         ...(sharedAccess ? { websiteAccess: "shared" } : {}),
       }
-    : { seat: "player", perspective: "player", allowedPerspectives: ["player"] };
+    : { seat: "player", perspective: "player", allowedPerspectives: ["player"],
+        ...(publicAccess ? { websiteAccess: "public" } : {}) };
   const effectivePerspective = contextAudience.perspective ?? "player";
   const shouldReadBoundActor = hasBoundActor && effectivePerspective === "player";
   if (binding.status === "character-creation-required") {
@@ -3147,9 +3189,11 @@ async function readGameServerContextCore({
   const boundActorEntity = shouldReadBoundActor && actorResponse?.ok
     ? entity(actor, binding.actorId)
     : null;
-  const actorEntity = isGameMaster
-    ? { id: "local-game-master", name: "Dungeon Master" }
-    : boundActorEntity;
+  const actorEntity = isPartyPlayer
+    ? { id: "shared-party", name: "Player" }
+    : serverRole.role === "game-master"
+      ? { id: "local-game-master", name: "Dungeon Master" }
+      : boundActorEntity;
   if (!campaignEntity || !selectedContext || !actorEntity || !registeredCampaign) {
     return unavailable("The campaign binding no longer matches readable game state.");
   }
@@ -3158,7 +3202,7 @@ async function readGameServerContextCore({
   }
   const deferredParty = isGameMaster && effectivePerspective === "dm"
     ? projectRegisteredPartyReferences(registeredCampaign.party)
-    : isGameMaster ? registeredCampaign.party.filter((entry) => entry.status === "active").map((entry) => ({
+    : isGameMaster || isPartyPlayer ? registeredCampaign.party.filter((entry) => entry.status === "active").map((entry) => ({
       id: entry.id,
       name: entry.name,
       state: entry.status,

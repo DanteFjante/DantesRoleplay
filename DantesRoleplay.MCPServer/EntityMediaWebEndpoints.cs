@@ -35,7 +35,7 @@ public static class EntityMediaWebEndpoints
                         diagnostics: false, deadline.Token);
                     items.Add(new { entityId, attachments = result.Attachments.Select(value => new {
                         value.MediaId, value.Role, value.MediaType, value.Width, value.Height, value.Alt,
-                        value.Caption, value.Order, contentUrl = ContentPath(applicationId, stateSpaceId, entityId, value.MediaId)
+                        value.Caption, value.Order, contentUrl = ContentPath(applicationId, stateSpaceId, entityId, value.MediaId, audience)
                     }).ToArray() });
                 }
                 catch (EntityMediaException) { items.Add(new { entityId, attachments = Array.Empty<object>() }); }
@@ -87,7 +87,7 @@ public static class EntityMediaWebEndpoints
                     value.Alt,
                     value.Caption,
                     value.Order,
-                    contentUrl = ContentPath(applicationId, stateSpaceId, entityId, value.MediaId)
+                    contentUrl = ContentPath(applicationId, stateSpaceId, entityId, value.MediaId, audience)
                 })
             });
         }
@@ -110,6 +110,12 @@ public static class EntityMediaWebEndpoints
         context.Response.Headers.CacheControl = "private, no-store";
         if (!TryAudience(seats.Current(), applicationId, context, out var application, out var audience))
             return Denied();
+        var perspective = context.Request.Query["perspective"];
+        if (perspective.Count > 1 || perspective.Count == 1 && perspective[0] is not ("player" or "dm"))
+            return Results.BadRequest(new { code = "MEDIA_PERSPECTIVE_INVALID" });
+        if (perspective == "dm" && audience != EntityMediaAudience.GameMaster) return Denied();
+        if (perspective == "player") audience = EntityMediaAudience.Player;
+
         try
         {
             var result = await media.OpenReadAsync(
@@ -143,9 +149,11 @@ public static class EntityMediaWebEndpoints
         return true;
     }
 
-    private static string ContentPath(string applicationId, string stateSpaceId, string entityId, string mediaId) =>
+    private static string ContentPath(string applicationId, string stateSpaceId, string entityId, string mediaId,
+        EntityMediaAudience audience) =>
         $"/api/applications/{Uri.EscapeDataString(applicationId)}/state-spaces/{Uri.EscapeDataString(stateSpaceId)}" +
-        $"/entities/{Uri.EscapeDataString(entityId)}/media/{Uri.EscapeDataString(mediaId)}/content";
+        $"/entities/{Uri.EscapeDataString(entityId)}/media/{Uri.EscapeDataString(mediaId)}/content" +
+        $"?perspective={(audience == EntityMediaAudience.GameMaster ? "dm" : "player")}";
 
     private static IResult Denied() => Results.Json(new
     {

@@ -91,7 +91,7 @@ export async function readBoundedJson(response, maximumBodyBytes) {
  *   consume?: (value: unknown) => T | null,
  *   verify?: (value: T) => boolean,
  * }} contract
- * @returns {{data: T, evidence: ReadModelEvidence} | null}
+ * @returns {{data: T, evidence: ReadModelEvidence, media?: unknown} | null}
  */
 export function validateReadModelEnvelope(value, {
   applicationId,
@@ -128,6 +128,7 @@ export function validateReadModelEnvelope(value, {
       resultFingerprint: /** @type {string} */ (record.resultFingerprint),
       sourceRevisionFingerprint: /** @type {string} */ (record.sourceRevisionFingerprint),
     },
+    ...(Object.hasOwn(record, "media") ? { media: record.media } : {}),
   };
 }
 
@@ -152,7 +153,7 @@ export function validateReadModelEnvelope(value, {
  *   expectedSourceRevision?: string | null,
  * }} options
  * @returns {Promise<
- *   {status: "ready", data: T, evidence: ReadModelEvidence, response: Response} |
+ *   {status: "ready", data: T, evidence: ReadModelEvidence, media?: unknown, response: Response} |
  *   {status: "forbidden" | "stale" | "unavailable", data: null, httpStatus: number, response: Response} |
  *   {status: "incompatible", data: null, httpStatus: number, reason: string, response: Response}
  * >}
@@ -199,6 +200,7 @@ export async function readModelResponse({
     status: "ready",
     data: envelope.data,
     evidence: envelope.evidence,
+    ...(Object.hasOwn(envelope, "media") ? { media: envelope.media } : {}),
     response,
   };
 }

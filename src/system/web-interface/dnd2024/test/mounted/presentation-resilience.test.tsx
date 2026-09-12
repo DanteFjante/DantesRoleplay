@@ -140,9 +140,9 @@ test("the DND shell consumes one shared navigation and theme owner", async () =>
   } finally { await view.cleanup(); }
 });
 
-test("the shared table header omits obsolete perspective controls", async () => {
+test("the shared owner header exposes only the server-authorized perspective controls", async () => {
   const view = await mount(<TopBar
-    allowedPerspectives={["dm"]}
+    allowedPerspectives={["dm", "player"]}
     busy={false}
     contextSelection={{
       selectedWorldId: "world.fixture",
@@ -157,9 +157,33 @@ test("the shared table header omits obsolete perspective controls", async () => 
     sharedAccess
   />);
   try {
-    assert.equal(view.container.querySelector(".perspective-switch"), null);
-    assert.match(view.container.textContent ?? "", /Shared table/u);
+    assert.ok(view.container.querySelector(".perspective-switch"));
+    assert.deepEqual([...view.container.querySelectorAll(".perspective-switch button")]
+      .map((button) => button.textContent), ["DM", "Player"]);
     assert.equal(view.container.querySelectorAll("system-navigation").length, 1);
     assert.equal(view.container.querySelectorAll("system-theme-toggle").length, 0);
+  } finally { await view.cleanup(); }
+});
+
+test("a player-only shared entry cannot render a DM selector", async () => {
+  const view = await mount(<TopBar
+    allowedPerspectives={["player"]}
+    busy={false}
+    contextSelection={{
+      selectedWorldId: "world.fixture",
+      selectedCampaignId: "campaign.fixture",
+      worlds: [{ id: "world.fixture", name: "Fixture world", campaigns: [
+        { id: "campaign.fixture", name: "Fixture campaign" },
+      ] }],
+    }}
+    onCampaignChange={() => undefined}
+    onPerspectiveChange={() => undefined}
+    perspective="player"
+    sharedAccess
+  />);
+  try {
+    assert.equal(view.container.querySelector(".perspective-switch"), null);
+    assert.match(view.container.textContent ?? "", /Player view/u);
+    assert.equal(view.container.querySelector("system-navigation")?.getAttribute("access-mode"), "player");
   } finally { await view.cleanup(); }
 });

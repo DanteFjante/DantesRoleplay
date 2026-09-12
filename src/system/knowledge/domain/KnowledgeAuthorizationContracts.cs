@@ -3,7 +3,8 @@ namespace DantesRoleplay.Knowledge;
 public enum KnowledgeAudienceRole
 {
     GameMaster,
-    Actor
+    Actor,
+    PlayerGroup
 }
 
 /// <summary>
@@ -19,9 +20,9 @@ public sealed record KnowledgeAudienceGrant(
 {
     public bool Valid =>
         Bounded(PrincipalId) && Bounded(CampaignId) && Bounded(PolicyRevision) &&
-        (Role == KnowledgeAudienceRole.GameMaster
-            ? ActorId is null
-            : Bounded(ActorId));
+        (Role == KnowledgeAudienceRole.Actor
+            ? Bounded(ActorId)
+            : (Role is KnowledgeAudienceRole.GameMaster or KnowledgeAudienceRole.PlayerGroup) && ActorId is null);
 
     private static bool Bounded(string? value) =>
         !string.IsNullOrWhiteSpace(value) && value == value.Trim() && value.Length <= 200;
