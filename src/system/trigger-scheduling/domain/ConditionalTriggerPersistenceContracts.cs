@@ -17,7 +17,12 @@ public sealed record StoredConditionalTrigger(
     TriggerNotificationTarget Notification,
     bool? CurrentTruth,
     bool Armed,
-    DateTimeOffset RecordedAt);
+    DateTimeOffset RecordedAt,
+    TriggerFireTarget Target = TriggerFireTarget.NotificationOnly,
+    IReadOnlyList<ConditionalTriggerRelationshipDependency>? RelationshipDependencies = null,
+    ConditionalTriggerObserverPredicate? Predicate = null,
+    string? ProcedureWorkflowFingerprint = null,
+    string? PredicateFingerprint = null);
 
 public interface IConditionalTriggerStore
 {

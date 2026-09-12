@@ -39,6 +39,7 @@ internal sealed class SystemTaskTriggerTransactionParticipant(
                 TriggerScheduleKind.OneTime => await OneTimeAsync(lease, admittedAt, cancellationToken),
                 TriggerScheduleKind.Recurring => await RecurringAsync(lease, admittedAt, cancellationToken),
                 TriggerScheduleKind.Observation => await ObservationAsync(lease, admittedAt, cancellationToken),
+                TriggerScheduleKind.Conditional => await ConditionalAsync(lease, admittedAt, cancellationToken),
                 _ => null
             };
             if (target is null)
@@ -47,7 +48,19 @@ internal sealed class SystemTaskTriggerTransactionParticipant(
                 target.Submission.SelectedDefinition, target.Submission.InputJson,
                 target.ResultSchemaJson, target.Submission.DependencyHandles);
             var preparation = await procedureWorkers.ResolveAsync(request, cancellationToken);
-            var staged = await durableTasks.StageTriggerAsync(preparation, cancellationToken);
+            SystemTaskTriggerCausalReservationRequest? causal = null;
+            if (lease.ScheduleKind == TriggerScheduleKind.Conditional)
+            {
+                var work = await db.ConditionalTriggerFireWork.AsNoTracking().SingleOrDefaultAsync(value =>
+                    value.FireId == lease.FireId, cancellationToken);
+                var binding = await db.ConditionalTriggerPredicateBindings.AsNoTracking().SingleOrDefaultAsync(value =>
+                    value.ApplicationId == lease.ApplicationId.Value && value.TriggerId == lease.TriggerId &&
+                    value.TriggerVersion == lease.TriggerVersion, cancellationToken);
+                if (work?.CausalAllowanceId is null || binding is null)
+                    return TriggerFireAttemptResult.Permanent();
+                causal = new(work.CausalAllowanceId, lease.FireId, binding.MaximumOperationsPerFire);
+            }
+            var staged = await durableTasks.StageTriggerAsync(preparation, causal, cancellationToken);
             return staged.Accepted
                 ? TriggerFireAttemptResult.Succeeded()
                 : staged.Transient
@@ -80,20 +93,39 @@ internal sealed class SystemTaskTriggerTransactionParticipant(
         DateTimeOffset admittedAt, CancellationToken cancellationToken)
     {
         if (lease.ObservationId is null) return null;
-        var current = await db.ObservationTriggerCurrent.AsNoTracking().SingleOrDefaultAsync(value =>
-            value.ApplicationId == lease.ApplicationId.Value && value.Id == lease.TriggerId, cancellationToken);
-        if (current?.CurrentVersion != lease.TriggerVersion) return null;
         var row = await db.ObservationTriggers.AsNoTracking().Include(value => value.WorkflowBinding)
             .SingleOrDefaultAsync(value => value.ApplicationId == lease.ApplicationId.Value &&
                 value.Id == lease.TriggerId && value.Version == lease.TriggerVersion, cancellationToken);
         var observation = await db.TriggerObservations.AsNoTracking().SingleOrDefaultAsync(value =>
             value.Id == lease.ObservationId && value.ApplicationId == lease.ApplicationId.Value,
             cancellationToken);
-        if (row is null || row.Target != "procedure-workflow" || row.Lifecycle != "active" ||
+        if (row is null || row.Target != "procedure-workflow" ||
             row.WorkflowBinding is null || observation is null || observation.SourceId != row.SourceId ||
             observation.SourceVersion != row.SourceVersion || observation.StructureId != row.StructureId ||
             observation.StructureVersion != row.StructureVersion || observation.StructureHash != row.StructureHash)
             return null;
+        return TriggerProcedureWorkflowBindingPersistence.Materialize(row.Id, row.Version, lease.FireId,
+            admittedAt, row.WorkflowBinding);
+    }
+
+    private async Task<SystemTaskDurableTriggerTarget?> ConditionalAsync(TriggerFireLease lease,
+        DateTimeOffset admittedAt, CancellationToken cancellationToken)
+    {
+        if (lease.ChangeOperationId is null) return null;
+        var row = await db.ConditionalTriggers.AsNoTracking().Include(value => value.WorkflowBinding)
+            .Include(value => value.PredicateBinding)
+            .SingleOrDefaultAsync(value => value.ApplicationId == lease.ApplicationId.Value &&
+                value.Id == lease.TriggerId && value.Version == lease.TriggerVersion, cancellationToken);
+        var work = await db.ConditionalTriggerFireWork.AsNoTracking().SingleOrDefaultAsync(value =>
+            value.FireId == lease.FireId && value.ApplicationId == lease.ApplicationId.Value &&
+            value.TriggerId == lease.TriggerId && value.TriggerVersion == lease.TriggerVersion &&
+            value.ChangeOperationId == lease.ChangeOperationId, cancellationToken);
+        if (row is null || row.Target != "procedure-workflow" || row.WorkflowBinding is null ||
+            row.PredicateBinding is null || work?.PredicateCaptureJson is null ||
+            work.PredicateCaptureFingerprint is null || work.CausalAllowanceId is null)
+            return null;
+        _ = ConditionalTriggerPredicatePersistence.DeserializeCapture(work.PredicateCaptureJson,
+            work.PredicateCaptureFingerprint);
         return TriggerProcedureWorkflowBindingPersistence.Materialize(row.Id, row.Version, lease.FireId,
             admittedAt, row.WorkflowBinding);
     }

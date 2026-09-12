@@ -9,6 +9,36 @@ namespace DantesRoleplay.TriggerScheduling;
 
 internal static class TriggerProcedureWorkflowBindingPersistence
 {
+    internal static ConditionalTriggerWorkflowBindingRecord Conditional(
+        ConditionalTriggerDefinition definition)
+    {
+        var target = definition.ProcedureWorkflow ?? throw new InvalidDataException("A workflow trigger is missing its admitted binding.");
+        var data = Data(target);
+        return new ConditionalTriggerWorkflowBindingRecord
+        {
+            ApplicationId = definition.ApplicationId.Value,
+            TriggerId = definition.Id,
+            TriggerVersion = definition.Version,
+            PrincipalReference = data.PrincipalReference,
+            AuthenticationMethod = data.AuthenticationMethod,
+            ApplicationRevision = data.ApplicationRevision,
+            ApplicationFingerprint = data.ApplicationFingerprint,
+            BaseApplicationsJson = data.BaseApplicationsJson,
+            StateSpaceId = data.StateSpaceId,
+            GrantReference = data.GrantReference,
+            StateRevision = data.StateRevision,
+            DefinitionId = data.DefinitionId,
+            DefinitionVersion = data.DefinitionVersion,
+            DefinitionFingerprint = data.DefinitionFingerprint,
+            ExecutionRequestJson = data.ExecutionRequestJson,
+            ResultSchemaJson = data.ResultSchemaJson,
+            ResultSchemaFingerprint = data.ResultSchemaFingerprint,
+            MaximumOperations = data.MaximumOperations,
+            RuntimeWindowSeconds = data.RuntimeWindowSeconds,
+            BindingFingerprint = data.BindingFingerprint
+        };
+    }
+
     internal static OneTimeTriggerWorkflowBindingRecord OneTime(
         OneTimeTriggerDefinition definition)
     {
@@ -108,12 +138,23 @@ internal static class TriggerProcedureWorkflowBindingPersistence
     internal static bool Same(RecurringTriggerWorkflowBindingRecord? row, TriggerProcedureWorkflowTarget? target) =>
         row is null ? target is null : target is not null && row.BindingFingerprint == target.Fingerprint;
 
+    internal static bool Same(ConditionalTriggerWorkflowBindingRecord? row, TriggerProcedureWorkflowTarget? target) =>
+        row is null ? target is null : target is not null && row.BindingFingerprint == target.Fingerprint;
+
     internal static SystemTaskDurableTriggerTarget? Materialize(
         string bindingId,
         int bindingVersion,
         string occurrenceId,
         DateTimeOffset admittedAt,
         OneTimeTriggerWorkflowBindingRecord row) =>
+        Materialize(bindingId, bindingVersion, occurrenceId, admittedAt, Data(row));
+
+    internal static SystemTaskDurableTriggerTarget? Materialize(
+        string bindingId,
+        int bindingVersion,
+        string occurrenceId,
+        DateTimeOffset admittedAt,
+        ConditionalTriggerWorkflowBindingRecord row) =>
         Materialize(bindingId, bindingVersion, occurrenceId, admittedAt, Data(row));
 
     internal static SystemTaskDurableTriggerTarget? Materialize(
@@ -190,6 +231,13 @@ internal static class TriggerProcedureWorkflowBindingPersistence
         row.MaximumOperations, row.RuntimeWindowSeconds, row.BindingFingerprint);
 
     private static BindingData Data(RecurringTriggerWorkflowBindingRecord row) => new(
+        row.PrincipalReference, row.AuthenticationMethod, row.ApplicationId, row.ApplicationRevision,
+        row.ApplicationFingerprint, row.BaseApplicationsJson, row.StateSpaceId, row.GrantReference,
+        row.StateRevision, row.DefinitionId, row.DefinitionVersion, row.DefinitionFingerprint,
+        row.ExecutionRequestJson, row.ResultSchemaJson, row.ResultSchemaFingerprint,
+        row.MaximumOperations, row.RuntimeWindowSeconds, row.BindingFingerprint);
+
+    private static BindingData Data(ConditionalTriggerWorkflowBindingRecord row) => new(
         row.PrincipalReference, row.AuthenticationMethod, row.ApplicationId, row.ApplicationRevision,
         row.ApplicationFingerprint, row.BaseApplicationsJson, row.StateSpaceId, row.GrantReference,
         row.StateRevision, row.DefinitionId, row.DefinitionVersion, row.DefinitionFingerprint,
