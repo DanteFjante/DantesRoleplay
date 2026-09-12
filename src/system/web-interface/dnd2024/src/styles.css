@@ -4010,7 +4010,7 @@ strong {
   padding: 10px;
   overflow-x: auto;
   border: 1px solid var(--line);
-  background: rgba(4, 13, 11, 0.58);
+  background: var(--surface-soft);
 }
 
 .rules-section-nav button {
@@ -4021,7 +4021,7 @@ strong {
   padding: 0 13px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: rgba(12, 28, 24, 0.72);
+  background: var(--surface-raised);
   color: var(--muted);
   cursor: pointer;
   font: inherit;
@@ -4032,17 +4032,17 @@ strong {
 
 .rules-section-nav button:hover,
 .rules-section-nav button[aria-current="page"] {
-  border-color: var(--line-strong);
-  background: var(--gold-soft);
-  color: var(--gold-bright);
+  border-color: var(--gold);
+  background: color-mix(in srgb, var(--surface-raised) 86%, var(--gold));
+  color: var(--ink);
 }
 
 .rules-section-nav small {
   min-width: 20px;
   padding: 2px 5px;
   border-radius: 999px;
-  background: rgba(4, 13, 11, 0.6);
-  color: var(--quiet);
+  background: var(--surface);
+  color: var(--muted);
   text-align: center;
 }
 
@@ -4054,7 +4054,7 @@ strong {
   margin-bottom: 10px;
   padding: 18px;
   border: 1px solid var(--line);
-  background: rgba(12, 28, 24, 0.72);
+  background: var(--surface-raised);
   box-shadow: var(--shadow);
 }
 
@@ -4081,13 +4081,13 @@ strong {
   padding: 0 13px;
   border: 1px solid var(--line);
   border-radius: 7px;
-  background: rgba(4, 13, 11, 0.7);
+  background: var(--surface);
   color: var(--gold);
 }
 
 .rules-search__field:focus-within {
-  border-color: var(--gold);
-  box-shadow: 0 0 0 2px rgba(201, 155, 82, 0.16);
+  border-color: var(--system-color-focus, var(--gold));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--system-color-focus, var(--gold)) 22%, transparent);
 }
 
 .rules-search input {
@@ -4095,7 +4095,7 @@ strong {
   border: 0;
   outline: 0;
   background: transparent;
-  color: var(--text);
+  color: var(--ink);
   font: inherit;
   font-size: 0.74rem;
 }
@@ -4116,7 +4116,7 @@ strong {
   padding: 0 14px;
   border: 1px solid var(--line);
   border-radius: 7px;
-  background: rgba(4, 13, 11, 0.7);
+  background: var(--surface);
   color: var(--muted);
   cursor: pointer;
   font-size: 0.65rem;
@@ -4126,7 +4126,7 @@ strong {
 .rules-category-filter select {
   width: 100%;
   min-width: 170px;
-  color: var(--text);
+  color: var(--ink);
 }
 
 .rules-refresh {
@@ -4135,7 +4135,7 @@ strong {
   justify-content: center;
   gap: 8px;
   align-self: end;
-  color: var(--gold-bright);
+  color: var(--ink);
 }
 
 .rules-refresh:disabled {
@@ -4145,8 +4145,8 @@ strong {
 
 .rules-refresh:hover:not(:disabled),
 .rules-load-more:hover {
-  border-color: var(--line-strong);
-  background: var(--gold-soft);
+  border-color: var(--gold);
+  background: color-mix(in srgb, var(--surface-raised) 86%, var(--gold));
 }
 
 .rules-results-summary {
@@ -4184,7 +4184,7 @@ strong {
 
 .rules-load-more {
   width: 100%;
-  color: var(--gold-bright);
+  color: var(--ink);
 }
 
 .rule-index-card {
@@ -4196,8 +4196,8 @@ strong {
   padding: 14px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(12, 28, 24, 0.66);
-  color: var(--text);
+  background: var(--surface-raised);
+  color: var(--ink);
   cursor: pointer;
   text-align: left;
   transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
@@ -4205,8 +4205,8 @@ strong {
 
 .rule-index-card:hover,
 .rule-index-card[aria-pressed="true"] {
-  border-color: var(--line-strong);
-  background: rgba(30, 55, 47, 0.76);
+  border-color: var(--gold);
+  background: color-mix(in srgb, var(--surface-raised) 88%, var(--gold));
 }
 
 .rule-index-card:hover {
@@ -4239,7 +4239,7 @@ strong {
 
 .rule-index-card small,
 .rule-detail small {
-  color: var(--gold);
+  color: var(--muted);
   font-size: 0.54rem;
   font-weight: 800;
   letter-spacing: 0.1em;
@@ -4271,10 +4271,10 @@ strong {
   margin-top: 4px;
   padding: 3px 7px;
   overflow: visible;
-  border: 1px solid rgba(201, 155, 82, 0.3);
+  border: 1px solid color-mix(in srgb, var(--gold) 48%, var(--line));
   border-radius: 999px;
-  background: rgba(201, 155, 82, 0.08);
-  color: var(--gold-bright);
+  background: var(--gold-soft);
+  color: var(--ink);
   font-family: var(--sans);
   font-size: 0.5rem;
   font-weight: 800;
@@ -4286,16 +4286,16 @@ strong {
 }
 
 .rule-source-badge--homebrew {
-  border-color: rgba(157, 113, 210, 0.45);
-  background: rgba(112, 66, 162, 0.18);
-  color: #d9bdf7;
+  border-color: color-mix(in srgb, var(--red) 62%, var(--line));
+  background: var(--red-soft);
+  color: var(--ink);
 }
 
 .rule-source-badge--compatibility,
 .rule-source-badge--third-party {
-  border-color: rgba(102, 172, 188, 0.42);
-  background: rgba(54, 122, 138, 0.16);
-  color: #b7e2e9;
+  border-color: color-mix(in srgb, var(--green) 62%, var(--line));
+  background: var(--green-soft);
+  color: var(--ink);
 }
 
 .rule-detail {
@@ -4305,8 +4305,11 @@ strong {
   padding: clamp(24px, 4vw, 42px);
   border: 1px solid var(--line-strong);
   background:
-    linear-gradient(145deg, rgba(30, 55, 47, 0.92), rgba(8, 20, 17, 0.96)),
-    repeating-linear-gradient(45deg, transparent 0 22px, rgba(201, 155, 82, 0.04) 22px 23px);
+    linear-gradient(145deg,
+      color-mix(in srgb, var(--surface-raised) 94%, var(--green-soft)),
+      var(--surface)),
+    repeating-linear-gradient(45deg, transparent 0 22px,
+      color-mix(in srgb, var(--gold) 7%, transparent) 22px 23px);
   box-shadow: var(--shadow);
 }
 
@@ -4342,7 +4345,7 @@ strong {
 
 .rule-detail > p {
   margin: 28px 0 34px;
-  color: var(--text);
+  color: var(--ink);
   font-family: var(--serif);
   font-size: 1rem;
   line-height: 1.75;
@@ -4357,11 +4360,11 @@ strong {
 .rule-readable-block {
   padding: 17px 19px;
   border-left: 2px solid var(--line-strong);
-  background: rgba(4, 13, 11, 0.42);
+  background: var(--surface-soft);
 }
 
 .rule-readable-block--callout {
-  border: 1px solid rgba(201, 155, 82, 0.38);
+  border: 1px solid color-mix(in srgb, var(--gold) 58%, var(--line));
   border-left-width: 4px;
   background: var(--gold-soft);
 }
@@ -4371,7 +4374,7 @@ strong {
 .rule-related > h3,
 .rule-detail__sources h3 {
   margin: 0 0 9px;
-  color: var(--gold-bright);
+  color: var(--ink);
   font-family: var(--serif);
   font-size: 1rem;
   font-weight: 600;
@@ -4399,6 +4402,28 @@ strong {
   padding-left: 22px;
 }
 
+.rule-readable-block table {
+  width: 100%;
+  margin-top: 10px;
+  border-collapse: collapse;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 0.72rem;
+}
+
+.rule-readable-block th,
+.rule-readable-block td {
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.rule-readable-block th {
+  background: var(--surface-raised);
+  color: var(--ink);
+}
+
 .rule-examples,
 .rule-related {
   margin-top: 25px;
@@ -4410,12 +4435,12 @@ strong {
   margin-top: 10px;
   padding: 15px 17px;
   border: 1px solid var(--line);
-  background: rgba(4, 13, 11, 0.36);
+  background: var(--surface-soft);
 }
 
 .rule-examples h4 {
   margin: 0 0 6px;
-  color: var(--text);
+  color: var(--ink);
   font-size: 0.72rem;
 }
 
@@ -4430,20 +4455,20 @@ strong {
   padding: 7px 10px;
   border: 1px solid var(--line);
   border-radius: 6px;
-  background: rgba(4, 13, 11, 0.55);
+  background: var(--surface-raised);
   color: var(--muted);
   font: inherit;
   font-size: 0.6rem;
 }
 
 .rule-related button {
-  color: var(--gold-bright);
+  color: var(--ink);
   cursor: pointer;
 }
 
 .rule-related button:hover {
-  border-color: var(--line-strong);
-  background: var(--gold-soft);
+  border-color: var(--gold);
+  background: color-mix(in srgb, var(--surface-raised) 86%, var(--gold));
 }
 
 .rule-detail footer.rule-detail__sources {
@@ -4519,7 +4544,17 @@ strong {
   gap: 17px;
   padding: 26px;
   border: 1px dashed var(--line-strong);
-  background: rgba(12, 28, 24, 0.55);
+  background: var(--surface-raised);
+}
+
+.rules-empty-state--error {
+  border-color: color-mix(in srgb, var(--red) 64%, var(--line));
+  background: color-mix(in srgb, var(--surface-raised) 88%, var(--red-soft));
+}
+
+.rules-empty-state--error > span {
+  background: var(--red-soft);
+  color: var(--red);
 }
 
 .rules-empty-state > span {
