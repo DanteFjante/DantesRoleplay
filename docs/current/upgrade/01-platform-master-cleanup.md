@@ -47,8 +47,8 @@ Record actual paths if reruns use different names. Do not overwrite useful faile
 - Manual diagnosis: catalog/procedures/procedure/system/inner-worker/submit.md uses the placeholder query(kind: "<qualified-id>"); the guard's existing placeholder convention is "...". Correct the authored example, not the guard or public protocol.
 - Runtime diagnosis from worker: a derived state host reused a 16-operation parent validation budget although its selected state grant allowed eight. Narrow the child budget to the selected grant and expiry while retaining the shared parent ledger; prove stateful and workflow paths.
 - Both fixes committed at fe60517c6df24b567bad60a9ae455f4f1372694b. Focused guard/manual/stateful/workflow checks: 4/4 passed. Corrected full build: one existing CS8604 test warning, zero errors. Fresh catalog validation: 614 records valid with seven known legacy warnings.
-- Foundation checkout is clean at fe60517c6df24b567bad60a9ae455f4f1372694b. Full suite rerun is active as process session 14449 on the corrected, frozen source; expected report is `C:/repo/DantesRoleplay-foundation/.tmp/test-results/platform-final/platform-final-rerun.trx`.
-- Next: record rerun totals, run the opt-in protocol walk, rerun fresh-built catalog validation for final evidence, verify exact HEAD/clean status, then explicitly release integration ownership for landing.
+- Foundation checkout is clean at fe60517c6df24b567bad60a9ae455f4f1372694b. The corrected full suite passed in 16m26s: 3,452 passed, 0 failed, 0 skipped, 3,452 total. Green report: `C:/repo/DantesRoleplay-foundation/.tmp/test-results/platform-final/platform-final-rerun.trx`.
+- Next: run the opt-in protocol walk, rerun fresh-built catalog validation for final evidence, verify exact HEAD/clean status, then explicitly release integration ownership for landing.
 - master landing / branch deletion: NOT performed.
 
 ## Required handoff fields

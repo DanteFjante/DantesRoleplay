@@ -34,7 +34,7 @@ D&D 2024 coverage.
 
 Key evidence and constraints are recorded in the plan: the generic composition contract already
 supports bounded structure with free-form props and minimum required props; the D&D frontend needs
-an application registry, component failure isolation, and a safe bridge to existing generic
+a reconciled component mapping, component failure isolation, and a safe bridge to existing generic
 bindings. Thirty-one canonical/legacy duplicate IDs have different bytes and are protected by
 compatibility retention, so none can be removed without provenance and consumer evidence. Live
 application/source registration is unknown, and no concrete D&D declarative workflow, durable
@@ -43,15 +43,19 @@ fixtures and dependencies exist.
 
 Validation was documentation-scoped: the staged diff check passed, every named existing owner
 path was verified, and an independent Luna review was incorporated. No full suite, live database,
-or external provider was run. The detached worktree is clean. The original checkout was clean at
-`d32489ab15407657b045d0ecb3d049525613f4f0` before this checkpoint-only edit and now has only the
-coordinator-owned checkpoint change from this lane.
+or external provider was run. The original checkout was clean at
+`d32489ab15407657b045d0ecb3d049525613f4f0` before checkpoint updates began; this lane staged or
+committed none of its coordinator-owned checkpoint changes.
 
-Next action: coordinator reviews and cherry-picks `cc0fd197b26a2021464aeeb8162adcc12cfaf5c3`
-onto master, then workstream 04 implements the website slices against that integrated baseline.
+Coordinator review produced a docs-only compatibility revision at
+`03d3f25ee89c030e30ee7a395c1e468a437c61e5`. It aligns the plan with shared
+`system-navigation`/`system-theme.js`, allows compatible parallel lanes with disjoint file owners,
+makes proposed D&D seams provisional against workstream 04, removes mandatory helper gates, and
+adds this durable checkpoint requirement to every starter prompt. The detached worktree is clean
+at `03d3f25ee89c030e30ee7a395c1e468a437c61e5`.
 
-Coordinator review is complete. A docs-only compatibility revision is in progress to align the
-plan with the active shared `system-navigation` and `system-theme.js` contracts, permit compatible
-parallel implementation lanes, make D&D file seams provisional against workstream 04, and require
-workers to update this checkpoint without staging or committing the original checkout. The next
-checkpoint will replace the integration action with the exact revision commit range.
+Next action: coordinator cherry-picks the two-commit range
+`cc0fd197b26a2021464aeeb8162adcc12cfaf5c3^..03d3f25ee89c030e30ee7a395c1e468a437c61e5`
+onto master. Workstream 04 then reconciles its current website delivery against Slices 0–5; later
+catalog/runtime and game repair work begins only when the plan's real fixtures and dependencies are
+available.
