@@ -6,6 +6,7 @@ This directory is the maintained entry point for humans and LLMs working on Dant
 
 | Task | Read next |
 | --- | --- |
+| Resume the active upgrade, master landing, cleanup, manual, website, and DND2024 work | [UPGRADE-COORDINATION.md](UPGRADE-COORDINATION.md) |
 | Decide where behavior belongs or understand runtime boundaries | [ARCHITECTURE.md](ARCHITECTURE.md) |
 | Understand the generic platform's implemented requirements, dynamism, web, AI, retrieval, and storage | [PLATFORM-REQUIREMENTS.md](PLATFORM-REQUIREMENTS.md) |
 | Discuss the intended product, differences from today's platform, and the draft alignment plan | [PRODUCT-DIRECTION.md](PRODUCT-DIRECTION.md) |
