@@ -16,7 +16,7 @@ Display data may contain additional fields. Each component checks the fields it 
 
 ## Current checkpoint
 
-Last coordinator update: 2026-09-12, 12:49 UTC. The scoped implementation, local cleanup, master landing, live deployment, and reported Rules/Campaign theme corrections are complete.
+Last coordinator update: 2026-09-12, 13:24 UTC. The scoped implementation, cleanup, deployment, theme corrections, and new Green & Wood default theme are complete.
 
 | Boundary | Verified state |
 | --- | --- |
@@ -31,6 +31,7 @@ Last coordinator update: 2026-09-12, 12:49 UTC. The scoped implementation, local
 | DND website | Merged on master through ef73bab1; full mounted tests 79/79, typecheck/build passed; root preview recheck shows zero accessibility violations in the controlled inventory fixture in light and dark |
 | DND upgrade plan | Landed on master as 73eaf060 and 53a43029; parallel ownership, shared theme/navigation, existing website work, and durable checkpoints reconciled |
 | Live deployment | COMPLETE: database migrations, reviewed catalog changes, application activation 66, state-space binding 40, home 9, and corrected DND page 80 are live on port 6217; launcher, database integrity, live MCP/manual retrieval, and final live browser checks passed. |
+| Shared theme default | Green & Wood with original gold accent is implemented on master at 1764d64c and live; explicit System/Light/Dark choices remain supported; canonical web-composition manual synchronized at v2 |
 
 Implementation, verification, landing on master, and deployment are separate states. Never call a worktree delivery a master update or a live deployment.
 
@@ -43,6 +44,8 @@ The broader DND2024 rules and catalog follow-up remains the separately requested
 The reported Rules theme gap was corrected in the existing stylesheet and published as DND page 79. Navigation, filters, selected cards, detail blocks, related controls, and empty/error states now use shared theme values. Ten focused Rules checks and the production build passed; live light/dark inspection, all 14 published rules, search-empty behavior, focus styling, and browser error checks passed. The launcher profile was updated and its owned process restarted to retain matching page verification on future starts.
 
 The reported Campaign Overview theme gap was corrected at `182ebf18` and published as page 80. The hero gradient, crest, decorative ring, metadata, premise editor surface, and DM banner now use shared theme values. Five focused Campaign checks and the production build passed. Live light/dark inspection confirmed the actual campaign content and readable themed surfaces with no browser warnings or errors; the saved launcher profile matches page 80.
+
+The requested Green & Wood theme restores the earlier forest surfaces, warm ivory, wood borders, and gold `#c99b52` as the shared default. Master `1764d64c` passed 100 shared browser checks, the host asset check, and catalog validation. An isolated host/source release contains the reviewed theme and manual change; only the existing web-composition manual advanced to v2. Live homepage and DND checks confirmed appearance, persistence, and clean browser logs. Green & Wood remains selected in the user's browser; DND page 80 and gameplay state are retained.
 
 ## Workstreams and ownership
 
