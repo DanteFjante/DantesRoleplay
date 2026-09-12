@@ -3,10 +3,11 @@
   "owner": "dnd2024",
   "description": "Namespace for existing authored D&D 2024 application features.",
   "allowedKinds": [
-    "document"
+    "document",
+    "query"
   ],
   "aliases": [],
   "enabled": true,
   "reviewStatus": "reviewed",
-  "reviewNote": "Existing application feature prefixes reviewed for exact retrieval and public contract discovery. Does not admit legacy-store records or create new game capabilities."
+  "reviewNote": "Reviewed for existing application query contracts and their documents, including versioned candidate publication. Does not admit legacy-store records or create new game capabilities."
 }
