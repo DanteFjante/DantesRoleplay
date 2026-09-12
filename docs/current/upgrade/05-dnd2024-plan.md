@@ -54,8 +54,8 @@ makes proposed D&D seams provisional against workstream 04, removes mandatory he
 adds this durable checkpoint requirement to every starter prompt. The detached worktree is clean
 at `03d3f25ee89c030e30ee7a395c1e468a437c61e5`.
 
-Next action: coordinator cherry-picks the two-commit range
-`cc0fd197b26a2021464aeeb8162adcc12cfaf5c3^..03d3f25ee89c030e30ee7a395c1e468a437c61e5`
-onto master. Workstream 04 then reconciles its current website delivery against Slices 0–5; later
+Landing complete: the two plan commits are on master as `73eaf060` and `53a43029`, preserved in
+platform merge `5795db00`. The durable plan is `docs/current/DND2024-UPGRADE-PLAN.md`.
+Next: reconcile workstream 04's current website delivery against Slices 0–5; later
 catalog/runtime and game repair work begins only when the plan's real fixtures and dependencies are
 available.

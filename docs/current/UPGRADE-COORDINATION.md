@@ -15,24 +15,26 @@ Display data may contain additional fields. Each component checks the fields it 
 
 ## Current checkpoint
 
-Last coordinator update: 2026-09-12, 09:28 UTC. This is a checkpoint, not a claim that later work has finished.
+Last coordinator update: 2026-09-12, 09:32 UTC. This is a checkpoint, not a claim that later work has finished.
 
 | Boundary | Verified state |
 | --- | --- |
 | Original platform plan | All 30 scoped slices implemented and integrated at 9395cd8e |
-| Platform acceptance | Corrected full suite at fe60517c passed 3,452/3,452 with zero failures/skips in 16m26s; final opt-in protocol and catalog checks are active |
-| master documentation checkpoint | 2ae9168c preserves all workstream checkpoints; platform code has NOT yet been landed there |
-| Prepared master/platform merge | Detached 8e2b9da20fd827dc4bd5e767165a7edefc5387e3, zero conflicts; preserves master, includes fe60517c and guide alignment; all non-documentation files match the platform test target |
+| Platform acceptance | Complete at fe60517c: 3,452/3,452 full tests; protocol 8 passed and 2 intentional retired cases skipped; 614 catalog records valid with seven known warnings |
+| master landing | COMPLETE at 5795db00460973728a2d596a1c7c5a645e9c3892; upgraded platform is actually on master, together with previous master changes and the DND upgrade plan |
+| Source verification | Master includes fe60517c and all prior master history; every non-documentation file matches the accepted platform test target |
 | Existing guide alignment | 497b212c incorporated in the candidate as e32878d8 |
-| Branch cleanup | Refreshed verified backup covers 41 local branches, 29 worktrees, and two stashes; deletion prepared but not run |
+| Branch cleanup | COMPLETE: deleted 40 local non-master branches, detached 22 clean worktrees at their exact commits; master is the only local branch; remote refs, both stashes, and all worktree directories preserved |
 | Manual | e0c8e95f and 8ee31837 delivered; 45 focused checks plus four final theme-retrieval checks passed, 618 catalog records valid; combined manual/website integration assigned to the same worker |
 | Shared website | ff3c486d delivered; 63 browser and three focused host tests passed; desktop/mobile and light/dark previews inspected |
 | DND website | 220018aa delivered after shared ff3c486d; full mounted tests 79/79, typecheck/build passed; root preview recheck shows zero accessibility violations in the controlled inventory fixture in light and dark |
-| DND upgrade plan | cc0fd197 and compatibility revision 03d3f25e delivered; parallel ownership, shared theme/navigation, existing website work, and durable checkpoints reconciled |
+| DND upgrade plan | Landed on master as 73eaf060 and 53a43029; parallel ownership, shared theme/navigation, existing website work, and durable checkpoints reconciled |
 
 Implementation, verification, landing on master, and deployment are separate states. Never call a worktree delivery a master update or a live deployment.
 
-Latest pre-cleanup backup: `C:/repo/DantesRoleplay/.tmp/branch-cleanup/20260912-111912/local-refs-pre-cleanup.bundle`, SHA256 `FD74420DE89A742BFDE0BFD7AFF0E6D459FE65A07AC2F8D087F3462593D1E2C7`. The adjacent manifest records exact branch tips, worktree commits, remote refs, and stashes. Active detached working directories are preserved. Cleanup helpers are in the original checkout's ignored `.tmp` directory; run the final helper only after acceptance releases the foundation checkout and the accepted platform is an ancestor of master.
+Final verified pre-deletion backup: `C:/repo/DantesRoleplay/.tmp/branch-cleanup/20260912-113124/local-refs-pre-cleanup.bundle`, SHA256 `4589002B80F55D9E1F7FE8C7BA6D6BF0A50C16AC8749842FF033B837E61ED045`. The adjacent manifest records exact branch tips, worktree commits, remote refs, and stashes; `result.json` records completed cleanup. Every worktree's current HEAD was checked against the refreshed bundle before deletion. Active detached working directories are preserved.
+
+The newer extensive manual and shared/DND website changes are undergoing their own combined acceptance at detached `5c11b4f7` in `C:/repo/DantesRoleplay-platform-manual`. They are not part of the completed platform landing yet. That worker owns its source and build until release; root owns the next master merge. No live database cutover, provider acceptance, deployment, or remote push has occurred.
 
 ## Workstreams and ownership
 
