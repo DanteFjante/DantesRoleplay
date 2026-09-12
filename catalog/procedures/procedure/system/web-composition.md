@@ -72,15 +72,19 @@ selected; the newer draft remains inert. If the web compatibility pointer disagr
 revisions and reconcile explicitly. A transaction does not span the content and ECS databases.
 Wrong-audience or revoked-grant reads return no page content and do not broaden authority.
 
-Theme authoring has no published capability contract yet. The planned presentation-only client seam
-is `/components/system-theme.js`: it uses persisted key `dantes.system-theme.v1` with `system`,
-`light`, or `dark`, reflects selection through `documentElement.dataset.systemTheme`, and binds a
-native select marked `system-theme-toggle`. Its semantic CSS variables include
+Theme authoring has no published capability contract. The shared presentation-only browser asset
+`/components/system-theme.js` provides `initializeSystemTheme`, `getSystemTheme`, `setSystemTheme`,
+`onSystemThemeChange`, and `SystemThemeToggle`. It persists the key
+`dantes.system-theme.v1` with `system`, `light`, or `dark`, reflects selection through
+`documentElement.dataset.systemTheme`, binds a native select marked `system-theme-toggle`, and emits
+the `system-theme-change` window event with `{preference, resolvedTheme}`. Its semantic CSS variables include
 `--system-color-canvas`, `--system-color-surface`, `--system-color-surface-raised`,
 `--system-color-text`, `--system-color-muted`, `--system-color-border`, `--system-color-accent`,
 `--system-color-accent-contrast`, and `--system-color-danger`. This seam is presentation only and
-grants no authority. Until it is delivered and exposed by the actual website, treat CSS/assets as
-ordinary retained content and do not invent a theme tool, runtime-authored payload, or receipt.
+grants no authority. Legacy surfaces with hard-coded dark colors still require migration to these
+tokens before every control follows the selected theme. Treat CSS/assets as ordinary retained content;
+do not invent a theme tool, runtime-authored payload, or receipt. Source availability does not mean
+the asset is published to a live website.
 
 ## Constraints
 - Composition JSON and each source/canonical document are bounded; exact limits come from the current
