@@ -39,15 +39,7 @@ public sealed class CaptureMemoryToolTests
                     new("play-fixture-space", revision, new string('A', 64)));
             }
 
-            var hook = JsonSerializer.Serialize(new
-            {
-                event_name = "Stop",
-                session_id = externalThread,
-                cwd = root,
-                transcript_path = Path.Combine(root, "must-not-be-opened.jsonl"),
-                turn_id = turn,
-                prompt = ""
-            });
+            var hook = Hook("Stop", externalThread, root, turn);
             var reads = new Queue<TextReader>([
                 new StringReader(string.Empty), new StringReader(hook), new StringReader(string.Empty)
             ]);
@@ -169,7 +161,8 @@ public sealed class CaptureMemoryToolTests
                 () => new StringReader(Hook("Stop", externalThread, root, "turn.stop")));
             var prompt = new CaptureMemoryTool(_ => client,
                 () => new StringReader(Hook("UserPromptSubmit", externalThread, root, "turn.prompt", "Next prompt.")));
-            var stopTask = stop.RunAsync(Context(database, common), default);
+            var stopOutput = new StringWriter();
+            var stopTask = stop.RunAsync(Context(database, common, output: stopOutput), default);
             await client.Entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
             var promptTask = prompt.RunAsync(Context(database, common), default);
             await Task.Delay(100);
@@ -178,6 +171,7 @@ public sealed class CaptureMemoryToolTests
 
             Assert.Equal(0, await stopTask);
             Assert.Equal(0, await promptTask);
+            Assert.Equal(string.Empty, stopOutput.ToString());
             var final = await CodexCaptureCheckpointFile.LoadAsync(checkpoint);
             Assert.Equal("turn.prompt", Assert.Single(final.Pending).TurnId);
             Assert.Equal("turn.stop", Assert.Single(final.CompletedTurnIds));
@@ -187,6 +181,35 @@ public sealed class CaptureMemoryToolTests
             SqliteConnection.ClearAllPools();
             if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
         }
+    }
+
+    [Fact]
+    public void Hook_parser_accepts_the_current_Codex_field_and_rejects_a_conflicting_alias()
+    {
+        var currentJson = JsonSerializer.Serialize(new
+        {
+            hook_event_name = "UserPromptSubmit",
+            session_id = "thread.current",
+            transcript_path = (string?)null,
+            cwd = "C:\\repo\\play",
+            model = "gpt-5.6-sol",
+            permission_mode = "default",
+            turn_id = "turn.current",
+            prompt = "Remember this turn."
+        });
+        var current = CodexCaptureHookInputParser.Parse("\uFEFF" + currentJson);
+
+        Assert.Equal("UserPromptSubmit", current.EventName);
+        var error = Assert.Throws<InvalidOperationException>(() =>
+            CodexCaptureHookInputParser.Parse(JsonSerializer.Serialize(new
+            {
+                hook_event_name = "Stop",
+                event_name = "UserPromptSubmit",
+                session_id = "thread.current",
+                cwd = "C:\\repo\\play",
+                turn_id = "turn.current"
+            })));
+        Assert.Contains("conflicts", error.Message, StringComparison.Ordinal);
     }
 
     private static async Task<DbContextOptions<DantesRoleplayDbContext>> CreateDatabaseAsync(string database)
@@ -218,23 +241,33 @@ public sealed class CaptureMemoryToolTests
         };
 
     private static ToolContext Context(string database, Dictionary<string, string> common,
-        bool connect = false, StringWriter? error = null)
+        bool connect = false, StringWriter? output = null, StringWriter? error = null)
     {
         var options = new Dictionary<string, string>(common, StringComparer.Ordinal);
         if (connect) options["connect"] = "";
-        return new([], options, database, new StringWriter(), error ?? new StringWriter());
+        return new([], options, database, output ?? new StringWriter(), error ?? new StringWriter());
     }
 
-    private static string Hook(string eventName, string thread, string root, string turn, string prompt = "") =>
-        JsonSerializer.Serialize(new
+    private static string Hook(string eventName, string thread, string root, string turn, string prompt = "")
+    {
+        var input = new Dictionary<string, object?>(StringComparer.Ordinal)
         {
-            event_name = eventName,
-            session_id = thread,
-            cwd = root,
-            transcript_path = Path.Combine(root, "must-not-be-opened.jsonl"),
-            turn_id = turn,
-            prompt
-        });
+            ["session_id"] = thread,
+            ["transcript_path"] = Path.Combine(root, "must-not-be-opened.jsonl"),
+            ["cwd"] = root,
+            ["hook_event_name"] = eventName,
+            ["model"] = "gpt-5.6-sol",
+            ["permission_mode"] = "default",
+            ["turn_id"] = turn
+        };
+        if (eventName == "UserPromptSubmit") input["prompt"] = prompt;
+        if (eventName == "Stop")
+        {
+            input["stop_hook_active"] = false;
+            input["last_assistant_message"] = "Answer.";
+        }
+        return JsonSerializer.Serialize(input);
+    }
 
     private sealed class FailFirstCaptureClient(string threadId, string turnId) : ICodexThreadReadClient
     {

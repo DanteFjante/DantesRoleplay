@@ -37,10 +37,13 @@ public sealed class CaptureMemoryTool : ITool
 
         Run once with --connect and empty stdin to create or explicitly reconnect the binding.
         Run with --retry and empty stdin after the journal retry operation to deliver one saved item.
-        Normal hook invocations omit --connect. The accepted hook object uses event_name, session_id, cwd, transcript_path, turn_id, and
-        prompt. transcript_path is correlation metadata only and is never opened. UserPromptSubmit
+        Normal hook invocations omit --connect. The accepted Codex hook object uses hook_event_name,
+        session_id, cwd, transcript_path, and turn_id, plus prompt for UserPromptSubmit.
+        event_name is a compatibility alias and conflicts are rejected. transcript_path is correlation
+        metadata only and is never opened. UserPromptSubmit
         checkpoints the turn; Stop reads that exact completed turn through Codex app-server,
-        commits the full visible message batch, then acknowledges the local queue item.
+        commits the full visible message batch, then acknowledges the local queue item. Successful
+        automatic hooks keep stdout empty; explicit --retry prints the retained receipt summary.
         """;
 
     public async Task<int> RunAsync(ToolContext context, CancellationToken cancellationToken)
@@ -125,7 +128,7 @@ public sealed class CaptureMemoryTool : ITool
         try
         {
             var captured = await service.CaptureNextAsync(cancellationToken);
-            if (captured is not null)
+            if (captured is not null && retryRequested)
                 context.Out.WriteLine($"{captured.ReceiptId}\t{captured.Messages.Count}\t{captured.Journal.Revision}");
             return 0;
         }
@@ -155,16 +158,30 @@ internal static class CodexCaptureHookInputParser
 {
     internal static CodexCaptureHookInput Parse(string json)
     {
+        if (json.Length > 0 && json[0] == '\uFEFF') json = json[1..];
         using var document = JsonDocument.Parse(json);
         var root = document.RootElement;
         if (root.ValueKind != JsonValueKind.Object) throw new InvalidOperationException("Hook input must be an object.");
         return new(
-            RequiredString(root, "event_name"),
+            EventName(root),
             RequiredString(root, "session_id"),
             RequiredString(root, "cwd"),
             OptionalString(root, "transcript_path"),
             RequiredString(root, "turn_id"),
             OptionalString(root, "prompt"));
+    }
+
+    private static string EventName(JsonElement root)
+    {
+        var current = OptionalString(root, "hook_event_name");
+        var compatibility = OptionalString(root, "event_name");
+        if (current.Length > 0 && compatibility.Length > 0
+            && current != compatibility)
+            throw new InvalidOperationException(
+                "hook_event_name conflicts with the event_name compatibility alias.");
+        return current.Length > 0 ? current
+            : compatibility.Length > 0 ? compatibility
+            : throw new InvalidOperationException("hook_event_name is required.");
     }
 
     private static string RequiredString(JsonElement root, string name) =>
