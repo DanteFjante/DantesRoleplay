@@ -29,20 +29,24 @@ public interface ILocalKnowledgeSeatProvider
     LocalKnowledgeSeatSnapshot Current();
 }
 
-internal sealed class LocalReadableRulesAudienceProvider(ILocalKnowledgeSeatProvider seats)
+internal sealed class LocalReadableRulesAudienceProvider(
+    ILocalKnowledgeSeatProvider seats,
+    IHttpContextAccessor http)
     : IWebReadableRulesAudienceProvider
 {
     public ReadableRuleAudience Current()
     {
         var seat = seats.Current();
-        return seat.Enabled && seat.Role == KnowledgeAudienceRole.GameMaster
+        return seat.Enabled && seat.Role == KnowledgeAudienceRole.GameMaster &&
+            SharedWebsiteContext.CanUseGameMaster(http.HttpContext)
             ? ReadableRuleAudience.Dm
             : ReadableRuleAudience.Public;
     }
 }
 
 internal sealed class LocalEntityMediaAudienceResolver(
-    ILocalKnowledgeSeatProvider seats) : IEntityMediaAudienceResolver
+    ILocalKnowledgeSeatProvider seats,
+    IHttpContextAccessor http) : IEntityMediaAudienceResolver
 {
     public EntityMediaAudienceContext? Resolve(ApplicationIdentifier applicationId)
     {
@@ -51,11 +55,13 @@ internal sealed class LocalEntityMediaAudienceResolver(
             seat.Role is not (KnowledgeAudienceRole.Actor or KnowledgeAudienceRole.GameMaster)) return null;
         if (seat.Role == KnowledgeAudienceRole.Actor && !Token(seat.ActorId)) return null;
         if (seat.Role == KnowledgeAudienceRole.GameMaster && seat.ActorId is not null) return null;
+        var gameMaster = seat.Role == KnowledgeAudienceRole.GameMaster &&
+            SharedWebsiteContext.CanUseGameMaster(http.HttpContext);
         return new(
-            seat.Role == KnowledgeAudienceRole.GameMaster
+            gameMaster
                 ? EntityMediaAudience.GameMaster
                 : EntityMediaAudience.Player,
-            seat.ActorId);
+            gameMaster ? null : seat.ActorId);
     }
 
     private static bool Token(string? value) => !string.IsNullOrWhiteSpace(value) &&
@@ -65,13 +71,27 @@ internal sealed class LocalEntityMediaAudienceResolver(
 internal static class SharedWebsiteContext
 {
     // Only the endpoint access filter creates these principals. Never infer website authority
-    // from a URL, forwarded identity header, browser perspective, or an MCP request.
+    // from a URL, forwarded identity header, browser perspective, or an MCP request. Anonymous
+    // and invited website identities may use player-facing routes, but are never owners.
     public static bool IsTrusted(HttpContext? context) =>
         context?.Connection.RemoteIpAddress is not null &&
         !context.Request.Path.StartsWithSegments(ServerConfiguration.McpEndpoint) &&
         context.User.Identity is { IsAuthenticated: true } identity &&
         identity.AuthenticationType is WebAccessPolicy.LocalAuthenticationType or
-            WebAccessPolicy.TailscaleAuthenticationType or WebAccessPolicy.AnonymousPublicAuthenticationType;
+            WebAccessPolicy.TailscaleAuthenticationType;
+
+    public static bool CanUseGameMaster(HttpContext? context) => IsTrusted(context);
+
+    public static bool IsLoopbackMcp(HttpContext? context) =>
+        context is not null && context.Request.Path.StartsWithSegments(ServerConfiguration.McpEndpoint) &&
+        Loopback(context.Connection.RemoteIpAddress);
+
+    private static bool Loopback(IPAddress? address)
+    {
+        if (address is null) return false;
+        if (address.IsIPv4MappedToIPv6) address = address.MapToIPv4();
+        return IPAddress.IsLoopback(address);
+    }
 }
 
 internal sealed class ConfigurationLocalKnowledgeSeatProvider(
@@ -170,7 +190,8 @@ internal sealed class LocalKnowledgeAudiencePolicy(
         var seat = seats.Current();
         if (!Valid(seat) || !Token(campaignId) ||
             (seat.Role != KnowledgeAudienceRole.GameMaster && campaignId != seat.CampaignId) ||
-            !(Loopback(http.HttpContext?.Connection.RemoteIpAddress) || SharedWebsiteContext.IsTrusted(http.HttpContext)))
+            !(SharedWebsiteContext.CanUseGameMaster(http.HttpContext) ||
+                SharedWebsiteContext.IsLoopbackMcp(http.HttpContext)))
             return Task.FromResult(KnowledgeAudienceResolution.Denied());
 
         var effectiveCampaignId = seat.Role == KnowledgeAudienceRole.GameMaster

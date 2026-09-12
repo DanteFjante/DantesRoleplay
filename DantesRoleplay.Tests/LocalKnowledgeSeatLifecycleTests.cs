@@ -47,6 +47,7 @@ public sealed class LocalKnowledgeSeatLifecycleTests
     {
         var context = new DefaultHttpContext();
         context.Connection.RemoteIpAddress = IPAddress.Loopback;
+        context.Request.Path = ServerConfiguration.McpEndpoint;
         var accessor = new HttpContextAccessor { HttpContext = context };
         var seat = new LocalKnowledgeSeatSnapshot(true, "principal.fixture", "dnd2024",
             "campaign.fixture", null, KnowledgeAudienceRole.GameMaster, ["dnd2024-core"]);

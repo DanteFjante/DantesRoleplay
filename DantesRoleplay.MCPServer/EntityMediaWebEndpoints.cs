@@ -14,7 +14,7 @@ public static class EntityMediaWebEndpoints
         IEntityMediaService media, CancellationToken cancellationToken)
     {
         context.Response.Headers.CacheControl = "private, no-store";
-        if (!TryAudience(seats.Current(), applicationId, out var application, out var audience)) return Denied();
+        if (!TryAudience(seats.Current(), applicationId, context, out var application, out var audience)) return Denied();
         if (request.EntityIds is null || request.EntityIds.Length is < 1 or > 256 ||
             request.EntityIds.Any(id => string.IsNullOrWhiteSpace(id) || id.Length > 200 || id.Any(char.IsControl)) ||
             request.EntityIds.Distinct(StringComparer.Ordinal).Count() != request.EntityIds.Length ||
@@ -60,7 +60,7 @@ public static class EntityMediaWebEndpoints
         CancellationToken cancellationToken)
     {
         context.Response.Headers.CacheControl = "private, no-store";
-        if (!TryAudience(seats.Current(), applicationId, out var application, out var audience))
+        if (!TryAudience(seats.Current(), applicationId, context, out var application, out var audience))
             return Denied();
         var perspective = context.Request.Query["perspective"];
         if (perspective.Count > 1 || perspective.Count == 1 && perspective[0] is not ("player" or "dm"))
@@ -108,7 +108,7 @@ public static class EntityMediaWebEndpoints
         CancellationToken cancellationToken)
     {
         context.Response.Headers.CacheControl = "private, no-store";
-        if (!TryAudience(seats.Current(), applicationId, out var application, out var audience))
+        if (!TryAudience(seats.Current(), applicationId, context, out var application, out var audience))
             return Denied();
         try
         {
@@ -127,6 +127,7 @@ public static class EntityMediaWebEndpoints
     private static bool TryAudience(
         LocalKnowledgeSeatSnapshot seat,
         string requestedApplicationId,
+        HttpContext context,
         out ApplicationIdentifier? applicationId,
         out EntityMediaAudience audience)
     {
@@ -136,7 +137,7 @@ public static class EntityMediaWebEndpoints
             seat.Role is not (KnowledgeAudienceRole.Actor or KnowledgeAudienceRole.GameMaster)) return false;
         try { applicationId = ApplicationIdentifier.Parse(requestedApplicationId); }
         catch (ArgumentException) { return false; }
-        audience = seat.Role == KnowledgeAudienceRole.GameMaster
+        audience = seat.Role == KnowledgeAudienceRole.GameMaster && SharedWebsiteContext.CanUseGameMaster(context)
             ? EntityMediaAudience.GameMaster
             : EntityMediaAudience.Player;
         return true;

@@ -22,6 +22,8 @@ internal static class AudienceContextWebEndpoint
         context.Response.Headers.CacheControl = "private, no-store";
         if (SharedWebsiteContext.IsTrusted(context))
             context.Response.Headers["X-Website-Access"] = "shared";
+        else if (context.User.Identity?.IsAuthenticated == true)
+            context.Response.Headers["X-Website-Access"] = "public";
         var outcome = await SystemAudienceContextHandler.ResolveAsync(
             seats, audiences, bindings, participation, cancellationToken);
         if (outcome.Error is null)

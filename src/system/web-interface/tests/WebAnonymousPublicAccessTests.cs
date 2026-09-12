@@ -64,10 +64,28 @@ public sealed class WebAnonymousPublicAccessTests
     {
         var context = PublicRequest();
         context.Connection.RemoteIpAddress = IPAddress.Loopback;
+        context.Request.Host = new HostString("localhost");
         Assert.Equal(WebAccessMode.Local, Policy(true).Evaluate(context).Mode);
         context.Connection.RemoteIpAddress = null;
         Assert.False(Policy(true).Evaluate(context).Allowed);
         Assert.False(WebTrustedPrincipalContextFactory.FromPrincipal(new ClaimsPrincipal()).Verified);
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, true)]
+    public void Loopback_reverse_proxy_with_a_public_host_never_becomes_local_owner(bool anonymousEnabled,
+        bool allowed)
+    {
+        var context = PublicRequest();
+        context.Connection.RemoteIpAddress = IPAddress.Loopback;
+        context.Request.Host = new HostString("public.example");
+
+        var decision = Policy(anonymousEnabled).Evaluate(context);
+
+        Assert.Equal(allowed, decision.Allowed);
+        if (allowed) Assert.Equal(WebAccessMode.AnonymousPublic, decision.Mode);
+        else Assert.Equal("LOCAL_ACCESS_REQUIRED", decision.ErrorCode);
     }
 
     private static WebAccessPolicy Policy(bool enabled) => new(Options.Create(new WebRemoteAccessOptions
@@ -90,6 +108,32 @@ public sealed class WebAnonymousPublicAccessTests
             return ValueTask.FromResult<object?>(Results.Ok());
         });
         Assert.Equal(allowed, invoked);
+    }
+
+    [Fact]
+    public async Task Anonymous_visitors_cannot_call_raw_routes_but_can_call_player_projection_routes()
+    {
+        var raw = PublicRequest();
+        var projection = PublicRequest();
+        var filter = new WebInterfaceSecurityFilter(new(Policy(true), new PrivateOperatorAuthorizationPolicy()));
+        var rawInvoked = false;
+        var projectionInvoked = false;
+        raw.Request.Path = "/api/data/entity/secret";
+        projection.Request.Path = "/api/applications/dnd2024/state-spaces/main/entities/hero/read-models/dnd2024.query.party";
+
+        await filter.InvokeAsync(new DefaultEndpointFilterInvocationContext(raw), _ =>
+        {
+            rawInvoked = true;
+            return ValueTask.FromResult<object?>(Results.Ok());
+        });
+        await filter.InvokeAsync(new DefaultEndpointFilterInvocationContext(projection), _ =>
+        {
+            projectionInvoked = true;
+            return ValueTask.FromResult<object?>(Results.Ok());
+        });
+
+        Assert.False(rawInvoked);
+        Assert.True(projectionInvoked);
     }
 
     private static DefaultHttpContext PublicRequest()

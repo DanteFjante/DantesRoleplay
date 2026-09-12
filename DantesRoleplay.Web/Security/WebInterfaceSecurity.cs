@@ -73,6 +73,15 @@ public sealed class WebInterfaceSecurityFilter : IEndpointFilter
                 statusCode: StatusCodes.Status403Forbidden);
         }
 
+        if (decision.Principal!.Identity?.AuthenticationType ==
+            WebAccessPolicy.AnonymousPublicAuthenticationType &&
+            !WebAccessPolicy.IsPlayerSafePublicPath(context.HttpContext.Request.Path))
+        {
+            return Results.Json(new { error = "PLAYER_SAFE_ROUTE_REQUIRED",
+                message = "This route is not available to anonymous visitors." },
+                statusCode: StatusCodes.Status403Forbidden);
+        }
+
         context.HttpContext.User = decision.Principal!;
         return await next(context);
     }

@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using System.Net;
 using DantesRoleplay.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -81,43 +82,65 @@ public sealed class WebAccessPolicy
 
         var host = NormaliseHost(context.Request.Host.Host);
         var login = ReadLogin(context.Request);
-        if (!IsRemoteCandidate(host, login.Present))
+        if (IsRemoteCandidate(host, login.Present))
         {
-            return new WebAccessDecision(true, WebAccessMode.Local);
+            var configuredHost = NormaliseHost(remote.TailscaleHost);
+            if (!remote.Enabled ||
+                configuredHost is null ||
+                !IsTailscaleHost(configuredHost) ||
+                !string.Equals(host, configuredHost, StringComparison.OrdinalIgnoreCase))
+            {
+                return Denied(
+                    "REMOTE_ACCESS_DENIED",
+                    "This private web hostname is not enabled for remote access.");
+            }
+
+            if (!login.Valid)
+            {
+                return Denied(
+                    login.ErrorCode,
+                    login.ErrorMessage);
+            }
+
+            var allowed = (remote.AllowedLogins ?? []).Any(candidate =>
+                !string.IsNullOrWhiteSpace(candidate) &&
+                string.Equals(candidate.Trim(), login.Value, StringComparison.OrdinalIgnoreCase));
+            if (allowed)
+                return new WebAccessDecision(true, WebAccessMode.Tailscale, login.Value);
+
+            var invited = (remote.InvitedLogins ?? []).Any(candidate =>
+                !string.IsNullOrWhiteSpace(candidate) &&
+                string.Equals(candidate.Trim(), login.Value, StringComparison.OrdinalIgnoreCase));
+            return invited
+                ? new WebAccessDecision(true, WebAccessMode.InvitedTailscale, login.Value)
+                : Denied(
+                    "REMOTE_ACCESS_DENIED",
+                    "This Tailscale user is not allowed to use the web interface.");
         }
 
-        var configuredHost = NormaliseHost(remote.TailscaleHost);
-        if (!remote.Enabled ||
-            configuredHost is null ||
-            !IsTailscaleHost(configuredHost) ||
-            !string.Equals(host, configuredHost, StringComparison.OrdinalIgnoreCase))
+        // A reverse proxy commonly reaches the host over loopback. Its public Host value is not
+        // an owner credential, so it must not turn that external request into a local operator.
+        // Direct local clients use an empty, localhost, or loopback host; forwarded headers are
+        // intentionally ignored because this boundary has not authenticated a forwarding proxy.
+        if (!IsLocalHost(host))
         {
-            return Denied(
-                "REMOTE_ACCESS_DENIED",
-                "This private web hostname is not enabled for remote access.");
+            return remote.AllowAnonymousPublicAccess
+                ? new WebAccessDecision(true, WebAccessMode.AnonymousPublic)
+                : Denied(
+                    "LOCAL_ACCESS_REQUIRED",
+                    "The web interface accepts direct requests only from this computer.");
         }
 
-        if (!login.Valid)
-        {
-            return Denied(
-                login.ErrorCode,
-                login.ErrorMessage);
-        }
+        return new WebAccessDecision(true, WebAccessMode.Local);
+    }
 
-        var allowed = (remote.AllowedLogins ?? []).Any(candidate =>
-            !string.IsNullOrWhiteSpace(candidate) &&
-            string.Equals(candidate.Trim(), login.Value, StringComparison.OrdinalIgnoreCase));
-        if (allowed)
-            return new WebAccessDecision(true, WebAccessMode.Tailscale, login.Value);
-
-        var invited = (remote.InvitedLogins ?? []).Any(candidate =>
-            !string.IsNullOrWhiteSpace(candidate) &&
-            string.Equals(candidate.Trim(), login.Value, StringComparison.OrdinalIgnoreCase));
-        return invited
-            ? new WebAccessDecision(true, WebAccessMode.InvitedTailscale, login.Value)
-            : Denied(
-                "REMOTE_ACCESS_DENIED",
-                "This Tailscale user is not allowed to use the web interface.");
+    private static bool IsLocalHost(string? host)
+    {
+        if (host is null || string.Equals(host, "localhost", StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (!IPAddress.TryParse(host, out var address)) return false;
+        if (address.IsIPv4MappedToIPv6) address = address.MapToIPv4();
+        return IPAddress.IsLoopback(address);
     }
 
     public static bool IsRemoteCandidate(HttpRequest request)
@@ -147,6 +170,36 @@ public sealed class WebAccessPolicy
         IsApplicationStateReadPath(path) ||
         IsObservationPath(path) ||
         path.StartsWithSegments(WebControlEndpointConventions.RoutePrefix);
+
+    /// <summary>Routes backed by public data or a server-selected player projection.</summary>
+    public static bool IsPlayerSafePublicPath(PathString path) =>
+        path == "/" || path.StartsWithSegments("/ui") || path.StartsWithSegments("/components") ||
+        path.StartsWithSegments("/api/session") || path.StartsWithSegments("/api/web/applications") ||
+        path == "/api/audience-context" || IsReadinessPath(path) || IsReadModelMediaPath(path) ||
+        IsApplicationPlayerProjectionPath(path) || IsApplicationEntityMediaPath(path);
+
+    private static bool IsApplicationPlayerProjectionPath(PathString path)
+    {
+        var parts = path.Value?.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        return parts is { Length: 9 } && parts[0] == "api" && parts[1] == "applications" &&
+            IsRouteIdentifier(parts[2], 63) && parts[3] == "state-spaces" &&
+            IsRouteIdentifier(parts[4], 200) && parts[5] == "entities" &&
+            IsRouteIdentifier(parts[6], 200) && parts[7] == "read-models" &&
+            IsRouteIdentifier(parts[8], 200);
+    }
+
+    private static bool IsApplicationEntityMediaPath(PathString path)
+    {
+        var parts = path.Value?.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (parts is { Length: 6 } && parts[0] == "api" && parts[1] == "applications" &&
+            IsRouteIdentifier(parts[2], 63) && parts[3] == "state-spaces" &&
+            IsRouteIdentifier(parts[4], 200) && parts[5] == "media-batch") return true;
+        return parts is { Length: 8 or 10 } && parts[0] == "api" && parts[1] == "applications" &&
+            IsRouteIdentifier(parts[2], 63) && parts[3] == "state-spaces" &&
+            IsRouteIdentifier(parts[4], 200) && parts[5] == "entities" &&
+            IsRouteIdentifier(parts[6], 200) && parts[7] == "media" &&
+            (parts.Length == 8 || IsRouteIdentifier(parts[8], 200) && parts[9] == "content");
+    }
 
     private static bool IsApplicationMechanicPath(PathString path)
     {

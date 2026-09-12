@@ -116,7 +116,7 @@ public sealed class LocalKnowledgeAudienceTests
     [InlineData(false, true)]
     [InlineData(true, false)]
     [InlineData(true, true)]
-    public async Task Anonymous_website_has_shared_authority_only_after_the_web_filter_allows_it(
+    public async Task Anonymous_website_never_receives_shared_game_master_authority(
         bool enabled, bool gameMaster)
     {
         using var app = Host(gameMaster);
@@ -138,14 +138,8 @@ public sealed class LocalKnowledgeAudienceTests
             return Results.Ok();
         });
 
-        Assert.Equal(enabled, audience?.Granted == true);
-        if (enabled)
-        {
-            Assert.Equal("shared-website", audience!.Grant!.PrincipalId);
-            Assert.Equal(KnowledgeAudienceRole.GameMaster, audience.Grant.Role);
-            Assert.Null(audience.Grant.ActorId);
-            Assert.True((await policy.ResolveAsync("campaign.other")).Granted);
-        }
+        Assert.False(audience?.Granted == true);
+        Assert.False((await policy.ResolveAsync("campaign.other")).Granted);
         context.Request.Path = "/mcp";
         Assert.False((await policy.ResolveAsync("campaign.fixture")).Granted);
         context.Request.Path = "/api/audience-context";
@@ -156,7 +150,6 @@ public sealed class LocalKnowledgeAudienceTests
     [Theory]
     [InlineData(WebAccessMode.Local)]
     [InlineData(WebAccessMode.Tailscale)]
-    [InlineData(WebAccessMode.AnonymousPublic)]
     public async Task Website_reads_media_and_rules_share_authority_without_an_enabled_MCP_actor(WebAccessMode mode)
     {
         using var app = Host();
@@ -184,6 +177,22 @@ public sealed class LocalKnowledgeAudienceTests
         Assert.False((await policy.ResolveAsync("campaign.fixture")).Granted);
     }
 
+    [Fact]
+    public void Anonymous_website_forces_rules_and_media_to_player_audience()
+    {
+        using var app = Host(gameMaster: true);
+        var context = Context(IPAddress.Parse("203.0.113.4"));
+        context.Request.Path = "/api/audience-context";
+        context.User = WebAccessPolicy.CreatePrincipal(new(true, WebAccessMode.AnonymousPublic));
+        app.Services.GetRequiredService<IHttpContextAccessor>().HttpContext = context;
+
+        Assert.Equal(DantesRoleplay.CatalogNavigation.ReadableRuleAudience.Public,
+            app.Services.GetRequiredService<DantesRoleplay.Web.Hosting.IWebReadableRulesAudienceProvider>().Current());
+        Assert.Equal(DantesRoleplay.Media.EntityMediaAudience.Player,
+            app.Services.GetRequiredService<DantesRoleplay.Media.IEntityMediaAudienceResolver>()
+                .Resolve(DantesRoleplay.Applications.ApplicationIdentifier.Parse("fixture"))!.Audience);
+    }
+
     private static WebApplication Host(bool gameMaster = false)
     {
         var builder = WebApplication.CreateSlimBuilder();
@@ -209,6 +218,7 @@ public sealed class LocalKnowledgeAudienceTests
     {
         var context = new DefaultHttpContext();
         context.Connection.RemoteIpAddress = address;
+        context.Request.Path = ServerConfiguration.McpEndpoint;
         return context;
     }
 

@@ -65,14 +65,16 @@ public static class ApplicationReadModelWebEndpoint
             return Results.Json(new { code = "READ_MODEL_INVALID_PERSPECTIVE" },
                 statusCode: StatusCodes.Status400BadRequest);
         }
-        if (perspective == "dm" && seat.Role != KnowledgeAudienceRole.GameMaster)
+        if (perspective == "dm" && (seat.Role != KnowledgeAudienceRole.GameMaster ||
+            !SharedWebsiteContext.CanUseGameMaster(context)))
         {
             if (inputAware) return SafeError("READ_MODEL_FORBIDDEN");
             return Results.Json(new { code = "READ_MODEL_AUDIENCE_DENIED" },
                 statusCode: StatusCodes.Status403Forbidden);
         }
         // A preview may narrow the host's grant, but can never elevate an actor seat.
-        var audience = seat.Role == KnowledgeAudienceRole.GameMaster && perspective != "player"
+        var audience = seat.Role == KnowledgeAudienceRole.GameMaster && perspective != "player" &&
+            SharedWebsiteContext.CanUseGameMaster(context)
             ? MechanicAudienceContext.GameMaster
             : MechanicAudienceContext.Player;
 

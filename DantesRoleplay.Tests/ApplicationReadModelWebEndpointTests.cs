@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Net;
 using DantesRoleplay.Applications;
 using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.Ecs;
@@ -8,6 +9,7 @@ using DantesRoleplay.Knowledge;
 using DantesRoleplay.Mechanics;
 using DantesRoleplay.MCPServer;
 using DantesRoleplay.Web.Live;
+using DantesRoleplay.Web.Security;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.Extensions.DependencyInjection;
@@ -235,6 +237,8 @@ public sealed class ApplicationReadModelWebEndpointTests
         IStateSpaceRegistry? stateSpaces = null)
     {
         var context = new DefaultHttpContext();
+        context.Connection.RemoteIpAddress = IPAddress.Loopback;
+        context.User = WebAccessPolicy.CreatePrincipal(new(true, WebAccessMode.Local));
         if (perspective is not null) context.Request.QueryString = new QueryString("?perspective=" + perspective);
         if (query is not null) context.Request.QueryString = new QueryString("?" + query);
         context.Response.Body = new MemoryStream();
