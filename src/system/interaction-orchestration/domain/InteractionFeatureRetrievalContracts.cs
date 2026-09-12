@@ -15,7 +15,8 @@ public enum InteractionRetrievalLane
 {
     TrustedFeature,
     UntrustedReference,
-    TrustedRecipe
+    TrustedRecipe,
+    SystemManual
 }
 
 public enum InteractionRetrievalMode
@@ -236,6 +237,19 @@ public interface IInteractionDerivedVectorIndex
 {
     Task ReplaceAsync(InteractionRetrievalGeneration generation, IReadOnlyList<InteractionVectorDocument> documents, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<InteractionVectorCandidate>> SearchAsync(InteractionRetrievalGeneration generation, float[] query, int limit, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Ranks only the exact current identifiers already authorized by the host. Implementations that
+    /// cannot filter before ranking fail closed so the retrieval owner can retain lexical fallback.
+    /// </summary>
+    Task<IReadOnlyList<InteractionVectorCandidate>> SearchAuthorizedAsync(
+        InteractionRetrievalGeneration generation,
+        float[] query,
+        IReadOnlyCollection<string> authorizedQualifiedIds,
+        int limit,
+        CancellationToken cancellationToken = default) =>
+        throw new InteractionContractException("VECTOR_AUTHORIZED_SUBSET_UNAVAILABLE",
+            "The derived index cannot rank an authorized subset.");
 }
 
 public interface IInteractionFeatureRetriever

@@ -400,3 +400,5 @@ DantesRoleplay.MCPServer/data/dantesroleplay.db
 
 # Local test-suite inventories, traces and timing experiments.
 /.tmp/test-suite/
+# Disposable databases, derived data and verification output for isolated platform worktrees.
+/.tmp/platform-runtime/

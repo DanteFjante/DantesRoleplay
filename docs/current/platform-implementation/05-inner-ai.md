@@ -1,14 +1,228 @@
 # Focused INNER AI workers
 
-Status: concrete implementation plan, 2026-09-11. Documentation only; implementation requires its assigned execution task. Initial integration is the existing Codex provider and website, with runtime JavaScript as another caller.
+Status: procedure-workflow workers, durable execution/readback, and selected-application
+submit/read/list/wait/cancel capabilities are implemented. The website, scripts and Codex use the
+existing capability gateway and typed result presentation. Live external-provider acceptance remains
+outside this boundary.
 
 Prerequisite: implement [00 — Shared foundation](00-shared-foundation.md) first and have the coordinator supply its accepted foundation revision and contract baseline. This workstream consumes those shared contracts and does not redefine them independently.
+
+## Implemented boundary and integration requirements
+
+`SystemInnerWorkerPreparation` in `system-capabilities/hosting` rechecks host-only procedure content
+from the exact trusted active catalog snapshot (while legacy callers retain `IProcedureStore`), requests fresh context through the existing
+`IInteractionTaskContextMaterializer`, and selects only explicitly required references from the
+bounded version-2 packet. It rejects stale procedures, scope mismatch, missing context, expired or
+exhausted operation budgets, atomic work, malformed packets, and output-contract mismatch. The
+combined assignment/context JSON is capped at 64 KiB; the source context packet keeps its existing
+32 KiB/64-item bound. Host profile identity and model configuration remain separate from assignment
+data; procedure instructions replace prior profile instructions. Tool names are an explicit host
+allowlist. These internal preparation types are not a new public profile/authority contract.
+
+Preparation does not authorize standing grants, consume operation allowance, execute AI, load
+dependencies from storage, or persist evidence. Its `PromptBytes` measures the assignment/context message only;
+it excludes the AI runner's system prompt, tool schemas and provider overhead. Existing per-request
+tool-round/output limits are preserved, but are not an aggregate token or descendant budget.
+
+The durable procedure executor resolves prerequisite results immediately before lifecycle admission
+through the existing task service and a fresh current `ReadTask` authorization check. It accepts only
+successful terminal results whose retained task/command identity, typed output-contract fingerprint,
+canonical data, and completion evidence are present. Optional named RFC 6901 mappings select only from
+that validated output data; authority and receipt fields are never selectable. When mappings are absent,
+each declared dependency is included under its exact handle identity. Canonical prerequisite data is
+limited to 16 KiB, placed in a separately labelled user-data section, and included in the existing
+64 KiB prompt limit. The retained admission payload and AI enrollment fingerprint pin the mapping, and
+the existing provider request journal pins the resolved values before dispatch. Missing, failed, stale,
+unauthorized, malformed, or oversized inputs stop execution before a provider call.
+
+`SystemInnerWorkerResultAdapter.MapStoredResult` is an internal readback projection for a terminal
+AI response already persisted by the lifecycle owner. It validates the command identity and typed
+output, requires an existing result-evidence reference, and returns compact computation data with
+the task handle, procedure/output-contract identity and summary. Earlier authoritative commits stay
+in the shared result envelope, using the coordinator's accepted additive result contract. Detailed
+activity remains in the existing AI response/task record. Model text and tool-success activity are
+never commit evidence. Unresolved operation identity produces a reconciliation-required failure;
+this mapper neither checks leases nor proves that the supplied evidence was persisted.
+The lifecycle owner separately verifies that supplied prior commits/recovery identity belong to
+the current invocation. A foreign candidate result is rejected while those verified current
+receipts remain visible; unresolved evidence ownership requires reconciliation without disclosure.
+
+`AiService.SendAgentRequestAsync` restricts agent tools to the host-materialized instances, including
+when a static tool has the same name. Direct requests retain their explicitly selected static tools.
+Failed provider rounds, tool-round exhaustion and invalid structured output retain measured tokens
+and earlier observed tool calls. These fields describe runner activity, not committed effects.
+
+The additive `IAiService.SendAgentRequestAsync` overload requires an `IAiInvocationLifecycle` supplied
+by the durable host. Existing callers retain the original overload; implementations without lifecycle
+support fail unavailable on the new one. The runner admits every provider round and every validated
+selected-tool invocation, then records its return, throw, cancellation or admitted-but-not-started
+outcome in `finally` before proceeding. Dynamic callbacks and returned tool calls share the same
+tool boundary. Provider settlement excludes separately reserved tool executions. Host-only descriptors
+copy mutable payloads, clear provider executors, and reject JSON; concrete scope implementations must
+also reject JSON and keep authority private. Plan 04 owns committed admission, fresh authority/fences,
+and bounded outcome persistence independent of the cancelled worker token. No such adapter or ledger
+is supplied by the runner.
+
+`AiResponse.ToolResults` is populated only on the required-lifecycle path and retains actual returned
+tool data even if outcome recording fails. It does not establish world-commit authority. The serialized
+result collection shares the request's configured byte allowance. If a result exceeds that allowance,
+the runner keeps a small `AI_TOOL_RESULT_UNAVAILABLE` diagnostic with bounded dispatch identity, marks
+the actual output unavailable, and stops for reconciliation; it fabricates no receipt and does not
+silently truncate the result. These fixed-size diagnostics are separate from the retained payload
+allowance and remain bounded by the tool-call limit. Already admitted parallel calls may still return
+evidence. Failed persistence stops new work and preserves evidence from actions that already returned;
+late billing evidence never restores a stale worker's permission to publish a result or effect.
+
+The task-orchestration composition now registers `SystemInnerWorkerService`, its procedure resolver,
+the purpose-filtered durable runner, lifecycle factory, and selected-application capability handlers.
+`system.inner-worker.submit`, `system.inner-worker.read`, `system.inner-worker.list`,
+`system.inner-worker.wait`, and `system.inner-worker.cancel` reuse the
+existing website/Codex gateway. They construct fresh state-scoped hosts from current standing grants;
+caller JSON selects the state, exact procedure, instruction, result schema, and dependency handles,
+while optional prerequisite names/pointers can select data only from the declared dependency handles;
+provider, model, tools, grants, budgets, leases, and evidence remain host-owned. Submit and
+cancel use stable idempotency keys. Read, list, wait, and replay query current grants again. Deterministic
+acceptance covers the real gateway, SQLite task lifecycle, hosted runner, cancellation, reconnect
+readback, and grant revocation with a controlled provider. It does not establish a live provider run.
+
+Current integration boundaries:
+
+- The host-owned procedure profile retained alongside `SystemInnerWorkerRequest` pins the exact procedure
+  revision/fingerprint, existing `AiAgentProfile` identity, allowed operation/tool references,
+  required context references, output schema/fingerprint, and narrowed budgets. Plans 02/03 must
+  resolve this from current authorized definitions; assignment JSON must not populate authority.
+  Existing consumers are the runtime gateway, context materializer and INNER executor.
+- The execution/readback binding uses `SystemTaskAttemptIdentity`,
+  `SystemTaskSelectedDefinition`, `SystemTaskDurableHandle` and `InteractionInvocationHost`.
+  The lifecycle owner must reserve shared allowances across descendants/retries, reauthorize at
+  execution and tool invocation, validate procedure freshness, and fence persistence/notification.
+  Bind the result evidence to principal, application/state scope, grant revision, stable command,
+  attempt/fencing counter, selected procedure/schema fingerprints and the actual provider response.
+  `SystemInnerWorkerResultAdapter` checks only the command and output portion of this binding;
+  it must not be exposed as an evidence-verification service.
+  AI input/evidence/results stay in those task records without a second history. The durable
+  lifecycle owns aggregate provider-token and tool-call accounting.
+- Bounded list/wait readback reuses the durable service and selected-application owner. List returns
+  at most 16 freshly authorized tasks per page for the exact principal, application, and state.
+  Wait polls one exact handle for at most 25 seconds, releases database resources between reads,
+  retains one host deadline and budget, and refreshes the current state revision without selecting
+  a fresh grant each time. Timeout returns the actual pending result; terminal and recovery evidence
+  stays on the existing result envelope. Plan 06 owns display.
+
+### Concrete profile and AI accounting contracts
+
+The additive contracts are in `system-capabilities/domain/SystemInnerWorkerProfileContracts.cs` and
+`SystemInnerWorkerBudgetContracts.cs`, with matching contract fixtures under that owner's `tests/`.
+They are connected to the procedure resolver and the existing durable lifecycle owner. Plan 04 owns
+their persistence and accounting; no separate worker migration or history is introduced.
+
+`SystemInnerWorkerResolvedProfile` wraps the existing `SystemInnerWorkerRequest` and `AiAgentProfile`.
+It pins a profile revision, output-schema hash, up to 16 named tool bindings with exact capability
+revisions, up to 64 required context references (1,024 characters each), the existing manual packet's
+reference/fingerprint, and authority evidence/grant revision/fingerprint. Host scope comes only from
+the wrapped invocation. Source-to-profile/tool mapping and current authority must still be verified
+by the resolver; constructing the DTO is not permission. Both profile and invocation authority reject
+JSON import/export. `IInteractionManualContextService` remains the manual source; no packet is copied.
+
+Worker subjects are closed: `ProcedureWorkflow` retains its exact procedure and real state scope;
+`ApplicationCandidateValidation` retains an exact host-only candidate reference, has no executable
+procedure, and requires `InteractionInvocationHost.ForApplication` with the read-only profile and
+absent state pair. The existing host/procedure constructor remains; the new constructor takes the
+subject first. Validation profiles require separate Read and Validate provenance, no tools, a zero
+tool-call budget, and the exact immutable `inner.application-candidate-reuse-review` version-1
+definition and fields. Profile selection never grants authority or makes the reviewer executable.
+
+The built-in reviewer consumes only plan 03's selected-material V2 input and output schema. Its
+model-visible pins describe the authorized selection, not full candidate/base generations; actual
+owner evidence must separately establish complete coverage. `SystemInnerWorkerValidationRequestBuilder`
+checks input/schema/manual agreement and narrows tool calls and rounds to zero, response bytes to
+at most 8,000, and elapsed time to the host deadline. It neither dispatches nor authorizes. The
+durable lifecycle bounds the actual provider descriptor and owns selection, authority, admission,
+accounting, and result publication.
+
+`SystemInnerWorkerValidationInvoker` consumes the lifecycle callback supplied by plan 04's actual
+lease/profile factory and uses only the required-lifecycle AI overload. Its ephemeral computation
+retains the actual response, usage and activity even when the V2 parser rejects exact alternative
+coverage after schema validation. Callers must check the typed judgment and failure code, not the
+runner's success flag alone. The invoker does not retry, persist, authorize or attest; incomplete
+owner selection still prevents production admission and provider dispatch.
+
+`SystemInnerWorkerAiBudget` defaults to a measured-stop threshold of 32,768 total provider input/output
+tokens including provider overhead, 8 tool dispatches and 2 concurrent provider requests per root. Host ceilings are configurable
+up to 131,072 tokens, 16 tools and 4 concurrent requests. Child ceilings only narrow and preserve the
+root's token mode. Existing shared
+operations/deadline limits remain independent. `SystemInnerWorkerAiReservationRequest` supplies the
+trusted host, current task/attempt/fence, stable reservation identity, selected ceiling and reserved
+amounts. Its immutable reservation fingerprint includes the mode and concurrency limit. Plan 04
+resolves root and every ancestor, checks remaining balances and applies all debits
+atomically. A child cannot supply an ancestry list or replace a root balance. Unchanged reservation
+redelivery must not charge twice; changed payload conflicts; retries consume new reservations.
+
+Every provider dispatch must reserve a nonzero admission charge. In `hard-cap` mode, dispatch also
+requires host-verified total-token upper-bound evidence; otherwise `ProviderBoundFailure()` returns
+`INNER_AI_PROVIDER_BOUND_UNAVAILABLE`. A maximum-output setting or estimate is insufficient proof.
+In the default `measured-stop` mode, the hold is bounded by the remaining threshold after known charges
+and outstanding holds. It is an admission charge, not a guaranteed usage bound. Already admitted
+in-flight requests may overrun; actual usage is retained without clamping. No new call is admitted
+when known charges/holds exhaust the threshold, usage is unknown, or configured concurrency is full.
+The pure `ProviderReservationAmount` calculation does not reserve anything: plan 04 must apply it
+atomically across the root and every ancestor. Independent root concurrency remains host policy.
+Tool-only reservations cannot authorize provider calls. Their zero-provider-token amount exempts only
+provider-bound evidence, not common admission checks: every ancestor must remain below its provider
+threshold after charged usage and outstanding holds, and the applicable independent tool allowance
+must remain available, before any new provider or tool dispatch. Evidence recording, settlement,
+valid terminal publication, cleanup, cancellation and readback are lifecycle actions rather than new
+AI dispatches; ordinary authority and fencing still apply to them.
+
+Local inspection of Codex CLI 0.153.4's generated app-server schema established the implemented usage
+and terminal field names. The existing repository pin remains 0.149.1. `CodexAiClient` always starts a
+fresh thread and retains the latest matching, monotonic cumulative usage snapshot; repeated snapshots
+are not summed. Foreign usage is ignored. Missing, malformed or regressing evidence cannot establish
+complete usage. Completion additionally requires matching terminal thread/turn identities. A failed,
+cancelled or interrupted request retains credible partial usage with `IsComplete=false`; legacy zero
+counters cannot establish known usage. The existing event stream ends at terminal: accounting evidence
+arriving only afterward is unavailable. Live acceptance must verify provider event ordering and totals.
+
+There is no maximum-output-token parameter in the inspected per-turn schema, and the adapter does not
+claim to enforce remote output tokens or a hard total cap. Host request settings instead cap received
+UTF-8 delta/reply bytes (262,144 default, 1,048,576 maximum), total tool callback attempts (8 default,
+16 maximum) and cooperative elapsed time (10 minutes default/maximum, narrowed to the owning deadline
+by integration). Received text is checked before retention, including repeated final text. The AI
+runner applies its tool-attempt limit across provider rounds and concurrent callbacks; the Codex
+client independently bounds direct callbacks. Exact duplicate calls remain separate requested
+activities even when the compact call list deduplicates them. Authority and durable allowance checks
+still belong at each actual tool boundary. Cancellation sends a bounded best-effort interrupt before
+session disposal; it does not prove that remote billing stopped. These deterministic tests do not
+establish live external-provider acceptance or provider billing reconciliation.
+
+`SystemInnerWorkerAiReservationEvidence` and `SystemInnerWorkerAiUsageReport` are inert host/owner
+data, serialized with `JsonSerializerDefaults.Web` for camelCase. `TotalTokens` preserves independent
+provider totals including overhead; input/output components must not replace that total. Only explicit
+`IsComplete` with a present total can settle known provider usage. Missing total or incomplete evidence
+retains the reservation and any larger credible lower bound. Null token fields mean unknown,
+including provider failures where zero usage cannot be proved. Their source must be verified against
+the original provider response/host dispatch record. Public task readback must not expose lease tokens.
+`SystemInnerWorkerAiUsageReconciliation.Calculate` supplies only bounded arithmetic: known usage
+charges actual counts and releases the unused difference; unknown usage retains the entire reservation
+or a larger observed lower bound, releases nothing and requires explicit reconciliation. Actual
+overruns are retained without clamping. `INNER_AI_USAGE_UNKNOWN` retains the admission hold and blocks
+automatic dispatch until reviewed reconciliation. A complete `INNER_AI_RESERVATION_EXCEEDED` outcome
+settles actual usage and releases in-flight ownership; it does not itself require evidence
+reconciliation or prevent an otherwise valid terminal result, cleanup, cancellation or readback.
+Remaining ancestor balances govern further dispatch. Neither outcome implies rollback of a committed
+tool action, and terminal publication still requires current ownership and authoritative evidence.
+
+The persisted task lifecycle implements the accounting rules directly: it settles once across every
+ancestor, preserves unknown debits after cancellation, and prevents late usage from granting stale
+workers publication rights. The standalone `ISystemInnerWorkerAiBudgetAccounting` contract remains
+unregistered; constructing its DTOs does not grant runtime authority. Deterministic fixtures do not
+establish provider guarantees or a live-provider billing reconciliation run.
 
 ## Outcome and existing owners
 
 OUTER Codex coordinates intent and outcomes while focused INNER workers perform bounded repetitive work with only the procedure, context, and tools needed for their assignment. JavaScript can submit the same worker requests. Several independent assignments can run concurrently; dependent assignments wait for accepted prerequisite results.
 
-Reuse [AiService](../../../DantesRoleplay.LocalAI/Services/AiService.cs), [CodexAiProvider](../../../DantesRoleplay.LocalAI/Providers/CodexAiProvider.cs), [SystemAiAgentService](../../../src/system/system-capabilities/hosting/SystemAiAgentService.cs), [interaction context](../../../src/system/interaction-orchestration/hosting/InteractionTaskContextMaterializer.cs), and [system tasks](../../../src/system/system-task-orchestration/domain/SystemTaskContracts.cs). The current AI runner already supports host profiles, selected tools, response schemas, and call/token bounds. Interaction receipts already carry parent delegation identity. Web inner/outer profiles and continued-subtask requests do not yet provide the desired child-worker lifecycle.
+Reuse [AiService](../../../DantesRoleplay.LocalAI/Services/AiService.cs), [CodexAiProvider](../../../DantesRoleplay.LocalAI/Providers/CodexAiProvider.cs), [SystemAiAgentService](../../../src/system/system-capabilities/hosting/SystemAiAgentService.cs), [interaction context](../../../src/system/interaction-orchestration/hosting/InteractionTaskContextMaterializer.cs), and [system tasks](../../../src/system/system-task-orchestration/domain/SystemTaskContracts.cs). The AI runner supports host profiles, selected tools, response schemas, and call/token bounds. The durable lifecycle now supplies parent/dependency links, admission, waiting, cancellation, journaled provider calls, replay and bounded readback to the website, scripts and Codex gateway.
 
 Use these existing owners rather than another provider implementation, parallel agent framework, or replacement project. Existing providers remain compatible; this work adds no new provider or external service integration.
 

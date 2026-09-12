@@ -23,6 +23,26 @@ public sealed class ProcedureStore(DantesRoleplayDbContext db) : IProcedureStore
 
     private readonly DantesRoleplayDbContext _db = db;
 
+    /// <summary>Host-selected orientation categories are exact, not namespace/branch grants.</summary>
+    internal async Task<IReadOnlyList<ProcedureDetail>> ReadOperationalManualAsync(
+        IReadOnlyCollection<string> exactCategories, int limit, CancellationToken cancellationToken)
+    {
+        if (limit is < 1 or > CandidateCap) throw new ArgumentOutOfRangeException(nameof(limit));
+        var categories = exactCategories.ToArray();
+        return await _db.ProcedureContracts.AsNoTracking()
+            .Where(contract => contract.Status == ProcedureStatus.Active && categories.Contains(contract.Category))
+            .Join(_db.ProcedureContractVersions.AsNoTracking(),
+                contract => new { ContractId = contract.Id, Version = contract.CurrentVersion },
+                version => new { version.ContractId, version.Version }, (contract, version) => new { contract, version })
+            .OrderBy(value => value.contract.Category).ThenBy(value => value.contract.Id).Take(limit)
+            .Select(value => new ProcedureDetail(value.contract.Id, value.contract.Category, value.version.Name,
+                value.version.Description, value.version.Governs, value.version.Matches, value.version.Instructions,
+                value.version.Constraints, value.contract.Status, value.version.Version, value.contract.CurrentVersion,
+                value.version.CreatedBy, value.version.ChangeNote, value.version.CreatedAt)
+                { SourceHash = value.version.SourceHash })
+            .ToArrayAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<ProcedureSummary>> FindAsync(
         string? query = null,
         string? category = null,

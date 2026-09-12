@@ -276,12 +276,21 @@ public sealed class InteractionRecipeStore(DantesRoleplayDbContext db) : IIntera
         return row is null ? null : Project(row);
     }
 
-    public async Task<IReadOnlyList<InteractionRecipeProjection>> SearchAsync(
+    public Task<IReadOnlyList<InteractionRecipeProjection>> SearchAsync(
         ApplicationIdentifier applicationId,
         string query,
         InteractionRecipeStatus? status = null,
         int limit = 20,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) => SearchCoreAsync(applicationId, query, status, limit, null, cancellationToken);
+
+    internal Task<IReadOnlyList<InteractionRecipeProjection>> SearchAuthorizedAsync(ApplicationIdentifier applicationId,
+        string query, Func<InteractionRecipeProjection, CancellationToken, Task<bool>> authorize,
+        int limit, CancellationToken cancellationToken) =>
+        SearchCoreAsync(applicationId, query, InteractionRecipeStatus.Verified, limit, authorize, cancellationToken);
+
+    private async Task<IReadOnlyList<InteractionRecipeProjection>> SearchCoreAsync(ApplicationIdentifier applicationId,
+        string query, InteractionRecipeStatus? status, int limit,
+        Func<InteractionRecipeProjection, CancellationToken, Task<bool>>? authorize, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(applicationId);
         var normalized = NormalizeQuery(query);
@@ -292,6 +301,18 @@ public sealed class InteractionRecipeStore(DantesRoleplayDbContext db) : IIntera
             .Where(value => value.ApplicationId == applicationId.Value)
             .ToArrayAsync(cancellationToken);
         var words = normalized.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (authorize is not null)
+        {
+            var allowed = new List<InteractionRecipe>();
+            foreach (var candidate in candidates)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var projection = Project(candidate);
+                if ((status is null || projection.Status == status) && await authorize(projection, cancellationToken))
+                    allowed.Add(candidate);
+            }
+            candidates = allowed.ToArray();
+        }
         return candidates.Select(row => new
             {
                 Row = row,

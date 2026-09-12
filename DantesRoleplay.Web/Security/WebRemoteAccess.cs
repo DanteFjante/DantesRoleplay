@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 using DantesRoleplay.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -12,19 +14,23 @@ public sealed class WebRemoteAccessOptions
 
     public bool Enabled { get; set; }
 
-    // Explicit host opt-in: every network visitor receives the website's operator capabilities.
+    // Legacy explicit host opt-in: every network visitor receives the website's operator capabilities.
+    // This does not create an invited identity or a standing platform grant.
     public bool AllowAnonymousPublicAccess { get; set; }
 
     public string? TailscaleHost { get; set; }
 
     public string[] AllowedLogins { get; set; } = [];
+
+    public string[] InvitedLogins { get; set; } = [];
 }
 
 public enum WebAccessMode
 {
     Local,
     Tailscale,
-    AnonymousPublic
+    AnonymousPublic,
+    InvitedTailscale
 }
 
 public sealed record WebAccessDecision(
@@ -41,14 +47,24 @@ public sealed record WebPrivateOperatorDecision(
     string? ErrorCode = null,
     string? ErrorMessage = null);
 
-public sealed class WebAccessPolicy(IOptions<WebRemoteAccessOptions> options)
+public sealed class WebAccessPolicy
 {
+    private const int MaximumLoginLength = 320;
+
     public const string TailscaleLoginHeader = "Tailscale-User-Login";
     public const string LocalAuthenticationType = "DantesRoleplay.Local";
     public const string TailscaleAuthenticationType = "TailscaleServe";
+    public const string InvitedTailscaleAuthenticationType = "DantesRoleplay.InvitedTailscale";
     public const string AnonymousPublicAuthenticationType = "DantesRoleplay.AnonymousPublic";
 
-    private readonly WebRemoteAccessOptions remote = options.Value;
+    private readonly WebRemoteAccessOptions remote;
+
+    public WebAccessPolicy(IOptions<WebRemoteAccessOptions> options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        remote = options.Value;
+        EnsureDistinctLoginClasses(remote);
+    }
 
     public WebAccessDecision Evaluate(HttpContext context)
     {
@@ -64,8 +80,8 @@ public sealed class WebAccessPolicy(IOptions<WebRemoteAccessOptions> options)
         }
 
         var host = NormaliseHost(context.Request.Host.Host);
-        var login = context.Request.Headers[TailscaleLoginHeader].FirstOrDefault();
-        if (!IsRemoteCandidate(host, login))
+        var login = ReadLogin(context.Request);
+        if (!IsRemoteCandidate(host, login.Present))
         {
             return new WebAccessDecision(true, WebAccessMode.Local);
         }
@@ -81,18 +97,24 @@ public sealed class WebAccessPolicy(IOptions<WebRemoteAccessOptions> options)
                 "This private web hostname is not enabled for remote access.");
         }
 
-        if (string.IsNullOrWhiteSpace(login))
+        if (!login.Valid)
         {
             return Denied(
-                "REMOTE_IDENTITY_REQUIRED",
-                "A verified Tailscale user identity is required.");
+                login.ErrorCode,
+                login.ErrorMessage);
         }
 
         var allowed = (remote.AllowedLogins ?? []).Any(candidate =>
             !string.IsNullOrWhiteSpace(candidate) &&
-            string.Equals(candidate.Trim(), login, StringComparison.OrdinalIgnoreCase));
-        return allowed
-            ? new WebAccessDecision(true, WebAccessMode.Tailscale, login)
+            string.Equals(candidate.Trim(), login.Value, StringComparison.OrdinalIgnoreCase));
+        if (allowed)
+            return new WebAccessDecision(true, WebAccessMode.Tailscale, login.Value);
+
+        var invited = (remote.InvitedLogins ?? []).Any(candidate =>
+            !string.IsNullOrWhiteSpace(candidate) &&
+            string.Equals(candidate.Trim(), login.Value, StringComparison.OrdinalIgnoreCase));
+        return invited
+            ? new WebAccessDecision(true, WebAccessMode.InvitedTailscale, login.Value)
             : Denied(
                 "REMOTE_ACCESS_DENIED",
                 "This Tailscale user is not allowed to use the web interface.");
@@ -103,7 +125,7 @@ public sealed class WebAccessPolicy(IOptions<WebRemoteAccessOptions> options)
         ArgumentNullException.ThrowIfNull(request);
         return IsRemoteCandidate(
             NormaliseHost(request.Host.Host),
-            request.Headers[TailscaleLoginHeader].FirstOrDefault());
+            request.Headers.ContainsKey(TailscaleLoginHeader));
     }
 
     public static bool IsAllowedRemotePath(PathString path) =>
@@ -243,6 +265,7 @@ public sealed class WebAccessPolicy(IOptions<WebRemoteAccessOptions> options)
         var authenticationType = decision.Mode switch
         {
             WebAccessMode.Tailscale => TailscaleAuthenticationType,
+            WebAccessMode.InvitedTailscale => InvitedTailscaleAuthenticationType,
             WebAccessMode.AnonymousPublic => AnonymousPublicAuthenticationType,
             _ => LocalAuthenticationType
         };
@@ -259,8 +282,8 @@ public sealed class WebAccessPolicy(IOptions<WebRemoteAccessOptions> options)
     private static WebAccessDecision Denied(string code, string message) =>
         new(false, WebAccessMode.Local, ErrorCode: code, ErrorMessage: message);
 
-    private static bool IsRemoteCandidate(string? host, string? login) =>
-        IsTailscaleHost(host) || !string.IsNullOrWhiteSpace(login);
+    private static bool IsRemoteCandidate(string? host, bool loginHeaderPresent) =>
+        IsTailscaleHost(host) || loginHeaderPresent;
 
     private static bool IsTailscaleHost(string? host) =>
         host is not null && host.EndsWith(".ts.net", StringComparison.OrdinalIgnoreCase);
@@ -269,6 +292,65 @@ public sealed class WebAccessPolicy(IOptions<WebRemoteAccessOptions> options)
     {
         var normalised = host?.Trim().TrimEnd('.');
         return string.IsNullOrWhiteSpace(normalised) ? null : normalised;
+    }
+
+    private static LoginHeader ReadLogin(HttpRequest request)
+    {
+        if (!request.Headers.TryGetValue(TailscaleLoginHeader, out var values))
+            return LoginHeader.Missing();
+        if (values.Count != 1)
+            return LoginHeader.Invalid(
+                "REMOTE_IDENTITY_AMBIGUOUS",
+                "Exactly one Tailscale user identity is required.");
+
+        var value = values[0];
+        if (string.IsNullOrWhiteSpace(value))
+            return LoginHeader.Missing(present: true);
+        var normalized = value.Trim();
+        if (value.Length > MaximumLoginLength || normalized.Any(char.IsControl) || normalized.Contains(','))
+            return LoginHeader.Invalid(
+                "REMOTE_IDENTITY_INVALID",
+                "The Tailscale user identity is invalid.");
+        return LoginHeader.Accepted(normalized);
+    }
+
+    private static void EnsureDistinctLoginClasses(WebRemoteAccessOptions options)
+    {
+        var operators = (options.AllowedLogins ?? [])
+            .Where(candidate => !string.IsNullOrWhiteSpace(candidate))
+            .Select(candidate => candidate.Trim())
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var overlap = (options.InvitedLogins ?? [])
+            .Where(candidate => !string.IsNullOrWhiteSpace(candidate))
+            .Select(candidate => candidate.Trim())
+            .FirstOrDefault(operators.Contains);
+        if (overlap is not null)
+        {
+            throw new OptionsValidationException(
+                WebRemoteAccessOptions.SectionName,
+                typeof(WebRemoteAccessOptions),
+                ["AllowedLogins and InvitedLogins must not contain the same normalized login."]);
+        }
+    }
+
+    private readonly record struct LoginHeader(
+        bool Present,
+        bool Valid,
+        string? Value,
+        string ErrorCode,
+        string ErrorMessage)
+    {
+        public static LoginHeader Accepted(string value) => new(true, true, value, "", "");
+
+        public static LoginHeader Missing(bool present = false) => new(
+            present,
+            false,
+            null,
+            "REMOTE_IDENTITY_REQUIRED",
+            "A verified Tailscale user identity is required.");
+
+        public static LoginHeader Invalid(string code, string message) =>
+            new(true, false, null, code, message);
     }
 }
 
@@ -290,6 +372,26 @@ public sealed class WebPrivateOperatorGuard(
             (HttpMethods.IsGet(context.Request.Method) || HttpMethods.IsHead(context.Request.Method)
                 ? PrivateOperatorCapability.Read
                 : PrivateOperatorCapability.Modify);
+
+        if (accessDecision is { Allowed: true, Mode: WebAccessMode.InvitedTailscale })
+        {
+            PrivateOperatorCapabilityNames.TryGetAuditName(capability, out var capabilityName);
+            var evidence = new AuthorizationAuditEvidence(
+                principal.PrincipalId,
+                principal.AuthenticationMethod,
+                capabilityName ?? "invalid",
+                PrivateOperatorAuthorizationPolicy.PrivateHostScope,
+                Correlation(context.TraceIdentifier),
+                false,
+                "PRIVATE_OPERATOR_INVITED_IDENTITY");
+            return new(
+                false,
+                null,
+                evidence,
+                "PRIVATE_OPERATOR_DENIED",
+                "Invited identities cannot use private-operator endpoints.");
+        }
+
         var decision = authorization.Evaluate(new(
             principal,
             capability,
@@ -316,6 +418,7 @@ public static class WebTrustedPrincipalContextFactory
             {
                 WebAccessPolicy.LocalAuthenticationType => Create(new(true, WebAccessMode.Local)),
                 WebAccessPolicy.TailscaleAuthenticationType => Create(new(true, WebAccessMode.Tailscale, principal.Identity.Name)),
+                WebAccessPolicy.InvitedTailscaleAuthenticationType => Create(new(true, WebAccessMode.InvitedTailscale, principal.Identity.Name)),
                 WebAccessPolicy.AnonymousPublicAuthenticationType => Create(new(true, WebAccessMode.AnonymousPublic)),
                 _ => TrustedPrincipalContext.Unauthenticated("WEB_IDENTITY_UNAVAILABLE")
             };
@@ -327,12 +430,34 @@ public static class WebTrustedPrincipalContextFactory
         var (method, subject) = decision.Mode switch
         {
             WebAccessMode.Tailscale => ("tailscale-serve", decision.Login?.Trim().ToLowerInvariant()),
+            WebAccessMode.InvitedTailscale => ("tailscale-invited-web", decision.Login?.Trim().ToLowerInvariant()),
             WebAccessMode.AnonymousPublic => ("anonymous-public-web", "anonymous-public-operator"),
             _ => ("local-loopback", "local-operator")
         };
         if (string.IsNullOrWhiteSpace(subject))
             return TrustedPrincipalContext.Unauthenticated("WEB_IDENTITY_UNAVAILABLE");
-        return PrivateOperatorPrincipal.Create(method, subject);
+        return decision.Mode == WebAccessMode.InvitedTailscale
+            ? InvitedWebPrincipal.Create(method, subject)
+            : PrivateOperatorPrincipal.Create(method, subject);
+    }
+}
+
+internal static class InvitedWebPrincipal
+{
+    private const string Domain = "dantes-roleplay/invited-web/v1\0";
+
+    public static TrustedPrincipalContext Create(string authenticationMethod, string trustedSubject)
+    {
+        if (string.IsNullOrWhiteSpace(authenticationMethod) || authenticationMethod.Length > 64)
+            throw new ArgumentException("The authentication method is invalid.", nameof(authenticationMethod));
+        if (string.IsNullOrWhiteSpace(trustedSubject) || trustedSubject.Length > 320)
+            throw new ArgumentException("The trusted subject is invalid.", nameof(trustedSubject));
+        var normalizedSubject = trustedSubject.Trim().ToLowerInvariant();
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(
+            Domain + authenticationMethod + "\0" + normalizedSubject));
+        return TrustedPrincipalContext.VerifiedPrincipal(
+            "principal." + Convert.ToHexStringLower(hash),
+            authenticationMethod);
     }
 }
 

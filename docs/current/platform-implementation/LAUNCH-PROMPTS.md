@@ -1,0 +1,62 @@
+# Platform workstream launch prompts
+
+Status: ready to issue. Accepted implementation revision: `0bd06dd0bc38e48d0ded594aaf5bc3aca0ef6546` on `codex/platform-foundation`. This packet is finalized in a documentation-only follow-up; all six workstreams start from the implementation revision below. No tasks have been launched.
+
+## Model assignments
+
+| Role | Model | Reasoning | Use |
+| --- | --- | --- | --- |
+| Lead | `gpt-6-astra` | medium | Owns the plan, reviews work, assigns bounded work, and resolves blockers. |
+| Bounded implementation | `gpt-5.6-terra` | medium | Routine scoped implementation. |
+| Runtime/durable/transaction worker | `gpt-5.6-sol` | high | Difficult runtime, durable, or transaction slices only. |
+| Narrow check/documentation worker | `gpt-5.6-luna` | low or medium | Focused searches, checks, and documentation. |
+
+Task allocation below is a proposed starting policy, not a guarantee of cost savings. Model
+capabilities and tradeoffs should be checked against the [OpenAI model documentation](https://developers.openai.com/api/docs/models)
+and [latest-model guidance](https://developers.openai.com/api/docs/guides/latest-model).
+
+## Start instructions
+
+Use the accepted SHA above and the Implemented agreement section of docs/current/platform-implementation/00-shared-foundation.md. The foundation coordinator owns shared changes and final integration; each workstream reports required shared changes promptly while continuing independent work. Each lead uses a separate Git worktree created from that SHA, then runs `scripts/start-platform-worktree.ps1` inside it; never reset the original checkout or original master. The script supplies disposable database, blobs, derived data, output, and ports, and disables embedding, remote planning, completion, local outer, and Codex providers. Website and Codex are the only initial external surfaces. Use at most one implementation worker plus one useful independent helper per lead initially. Workers receive short contexts and explicit models, not full conversation history. Use subagents for delegated work; do not create additional user tasks. Exclude `_to_delete/`, `docs/world/`, and application-specific game logic.
+
+Every lead owns only its plan’s exact owner family and assigned files. Shared contracts, dependency injection/registration, transports, migrations, and generated snapshots are coordinator-only: propose changes with the exact contract, reason, affected consumers, and compatibility impact. The lead reviews, assigns, integrates feedback, and resolves blockers. Begin independent work when a dependency is missing by returning truthful `unavailable` behavior and recording the dependency; acceptance waits for the real dependency. Return a compact handoff with commit(s), exact files, focused/full tests and results, dependency status, `unavailable` paths, and blockers.
+
+Workers may delegate within the same overall worker limit. Defer lore and factions defects until after the overhaul; other API integrations are out of scope.
+
+## Copyable prompts
+
+### 01 — Runtime services and JavaScript execution
+
+```text
+You are the Astra lead for plan 01. Work in a separate worktree from 0bd06dd0bc38e48d0ded594aaf5bc3aca0ef6546 on branch codex/platform-01-runtime; do not reset the original checkout or original master. Read AGENTS.md and docs/current/README.md, then docs/current/platform-implementation/01-runtime-services.md and the Implemented agreement in docs/current/platform-implementation/00-shared-foundation.md. Implement the assigned plan through its acceptance criteria within your ownership boundary. As lead, delegate routine implementation and focus your own work on design decisions, integration, and review. Extend and reuse the existing normalized adapters and activation preparation owners; do not reimplement them. Use `gpt-6-astra` with medium reasoning. At one time, use at most one implementation worker (`gpt-5.6-sol`, high; short context) plus one independent helper (`gpt-5.6-luna`, low; short context). Workers run focused checks; the lead runs required acceptance after integration. Shared contracts, DI/registration, transports, migrations, and snapshots are coordinator-only; propose them. Use scripts/start-platform-worktree.ps1 and disposable tests. Missing 04/05 capabilities stay unavailable; acceptance waits for real dependencies. Website and Codex only; exclude _to_delete, docs/world, and application-specific logic. Finish with compact commits, files, tests/results, dependency status, unavailable paths, and blockers; do not claim dependent scenarios passed with test doubles.
+```
+
+### 02 — Runtime authoring and recoverable activation
+
+```text
+You are the Astra lead for plan 02. Work in a separate worktree from 0bd06dd0bc38e48d0ded594aaf5bc3aca0ef6546 on branch codex/platform-02-authoring; do not reset the original checkout or original master. Read AGENTS.md and docs/current/README.md, then docs/current/platform-implementation/02-authoring-activation.md and the Implemented agreement in docs/current/platform-implementation/00-shared-foundation.md. Implement the assigned plan through its acceptance criteria within your ownership boundary. As lead, delegate routine implementation and focus your own work on design decisions, integration, and review. Extend the foundation’s retained-content activation and existing stores; do not reimplement retained-content activation. Use `gpt-6-astra` with medium reasoning. At one time, use at most one implementation worker (`gpt-5.6-terra`, medium; short context) plus one independent helper (`gpt-5.6-luna`, low; short context). Workers run focused checks; the lead runs required acceptance after integration. Shared contracts, DI/registration, transports, migrations, and snapshots are coordinator-only; propose exact changes. Launch through scripts/start-platform-worktree.ps1 with disposable tests and disabled providers. Missing 01/03 capabilities remain unavailable; acceptance waits for real deps. Website and Codex only; exclude _to_delete, docs/world, and app-specific logic. Finish with compact commits, files, tests/results, dependency status, unavailable paths, and blockers; do not claim dependent scenarios passed with test doubles.
+```
+
+### 03 — Intent discovery and operating manual
+
+```text
+You are the Astra lead for plan 03. Work in a separate worktree from 0bd06dd0bc38e48d0ded594aaf5bc3aca0ef6546 on branch codex/platform-03-intent; do not reset the original checkout or original master. Read AGENTS.md and docs/current/README.md, then docs/current/platform-implementation/03-intent-manual.md and the Implemented agreement in docs/current/platform-implementation/00-shared-foundation.md. Implement the assigned plan through its acceptance criteria within your ownership boundary. As lead, delegate routine implementation and focus your own work on design decisions, integration, and review. Use `gpt-6-astra` with medium reasoning. At one time, use at most one implementation worker (`gpt-5.6-terra`, medium; short context) plus one independent helper (`gpt-5.6-luna`, low; short context). Workers run focused checks; the lead runs required acceptance after integration. Shared contracts, DI/registration, transports, migrations, and snapshots are coordinator-only; propose them. Use scripts/start-platform-worktree.ps1, disposable tests, disabled providers, and website/Codex only. Use the foundation activation change feed now; integrate new authoring grants from 02 when available. Exclude _to_delete, docs/world, and app-specific logic. Finish with compact commits, files, tests/results, dependency status, unavailable paths, and blockers; do not claim dependent scenarios passed with test doubles.
+```
+
+### 04 — Durable jobs, schedules, and observers
+
+```text
+You are the Astra lead for plan 04. Work in a separate worktree from 0bd06dd0bc38e48d0ded594aaf5bc3aca0ef6546 on branch codex/platform-04-jobs; do not reset the original checkout or original master. Read AGENTS.md and docs/current/README.md, then docs/current/platform-implementation/04-jobs-events.md and the Implemented agreement in docs/current/platform-implementation/00-shared-foundation.md. Implement the assigned plan through its acceptance criteria within your ownership boundary. As lead, delegate routine implementation and focus your own work on design decisions, integration, and review. Use `gpt-6-astra` with medium reasoning. At one time, use at most one implementation worker (`gpt-5.6-sol`, high; short context) plus one independent helper (`gpt-5.6-luna`, low; short context). Workers run focused checks; the lead runs required acceptance after integration. Shared contracts, DI/registration, transports, migrations, and snapshots are coordinator-only; propose exact changes. Use scripts/start-platform-worktree.ps1 and disposable tests. Own generic task parents, dependencies, cycles, fan-out, leases, retries, and cancellation here. Implement the core lifecycle independently; integrate runtime and grants from 01/02 before accepting those combined scenarios. Website/Codex only; exclude _to_delete, docs/world, app-specific logic. Finish with compact commits, files, tests/results, dependency status, unavailable paths, and blockers; do not claim dependent scenarios passed with test doubles.
+```
+
+### 05 — Focused INNER AI workers
+
+```text
+You are the Astra lead for plan 05. Work in a separate worktree from 0bd06dd0bc38e48d0ded594aaf5bc3aca0ef6546 on branch codex/platform-05-inner-ai; do not reset the original checkout or original master. Read AGENTS.md and docs/current/README.md, then docs/current/platform-implementation/05-inner-ai.md and the Implemented agreement in docs/current/platform-implementation/00-shared-foundation.md. Implement the assigned plan through its acceptance criteria within your ownership boundary. As lead, delegate routine implementation and focus your own work on design decisions, integration, and review. Use `gpt-6-astra` with medium reasoning. At one time, use at most one implementation worker (`gpt-5.6-terra`, medium; short context) plus one independent helper (`gpt-5.6-luna`, low; short context). Workers run focused checks; the lead runs required acceptance after integration. Shared contracts, DI/registration, transports, migrations, and snapshots are coordinator-only; propose them. Use scripts/start-platform-worktree.ps1 with disposable tests and disabled providers. Reuse the task lifecycle from plan 04; create no second task state or execution history, and let no worker self-authorize. Full worker execution requires runtime/grants/context/lifecycle from 01–04. Website presentation is owned by 06. Website/Codex only; exclude _to_delete, docs/world, app-specific logic. Finish with compact commits, files, tests/results, dependency status, unavailable paths, and blockers; do not claim dependent scenarios passed with test doubles.
+```
+
+### 06 — Website composition and operator interface
+
+```text
+You are the Astra lead for plan 06. Work in a separate worktree from 0bd06dd0bc38e48d0ded594aaf5bc3aca0ef6546 on branch codex/platform-06-website; do not reset the original checkout or original master. Read AGENTS.md and docs/current/README.md, then docs/current/platform-implementation/06-website.md and the Implemented agreement in docs/current/platform-implementation/00-shared-foundation.md. Implement the assigned plan through its acceptance criteria within your ownership boundary. As lead, delegate routine implementation and focus your own work on design decisions, integration, and review. Use `gpt-6-astra` with medium reasoning. At one time, use at most one implementation worker (`gpt-5.6-terra`, medium; short context) plus one independent helper (`gpt-5.6-luna`, low; short context). Workers run focused checks; the lead runs required acceptance after integration. Shared contracts, DI/registration, transports, migrations, and snapshots are coordinator-only; propose exact changes. Use scripts/start-platform-worktree.ps1, disposable tests, disabled providers, and website/Codex only. Keep the website out of execution authority and render shared results honestly. Missing 01–05 capabilities remain unavailable; acceptance waits for real deps. Exclude _to_delete, docs/world, and app-specific logic. Finish with compact commits, files, tests/results, dependency status, unavailable paths, and blockers; do not claim dependent scenarios passed with test doubles.
+```

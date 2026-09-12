@@ -1,7 +1,10 @@
 # Platform implementation coordination
 
-Status: separate implementation plans prepared for review and agent assignment. No runtime work,
-migration, release, or completed feature acceptance is implied by these documents.
+Status: the shared foundation and the scoped implementation slices in all six workstreams are
+integrated. Their guides distinguish the delivered boundaries from deliberate limitations and
+remaining full-repository acceptance. Focused acceptance for those boundaries has passed; the full
+repository suite remains pending. An integrated migration file does not imply live-database deployment
+or completed platform acceptance.
 
 [PRODUCT-DIRECTION.md](PRODUCT-DIRECTION.md) records the agreed product and working defaults.
 This page coordinates six bounded plans. Plan numbers identify workstreams, not a requirement to
@@ -11,8 +14,8 @@ owners; it does not need to preload all six plans or historical audits.
 Implement [00 — Shared foundation](platform-implementation/00-shared-foundation.md) first. It
 publishes the shared code contracts, adapters, conformance fixtures, and agreed source baseline;
 the six workstreams then implement against the accepted foundation revision and contract baseline.
-All six can develop independent slices, while cross-feature acceptance still waits for its stated
-dependencies and coordinator integration.
+The workstream guides retain their separate ownership boundaries and describe the integrated
+connections between them. Protocol checks remain governed by the public surfaces that changed.
 
 ## Initial scope
 

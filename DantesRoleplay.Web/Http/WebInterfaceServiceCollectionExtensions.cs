@@ -46,6 +46,11 @@ public static class WebInterfaceServiceCollectionExtensions
                 connectionString,
                 sqlite => sqlite.MigrationsHistoryTable(MigrationHistoryTable)));
         services.AddScoped<IWebPageStore, WebPageStore>();
+        services.AddScoped<IStandingGrantResourceTargetOwner, WebPageStandingGrantResourceTargetOwner>();
+        services.AddScoped<WebPagePermissionedReader>();
+        services.AddScoped<WebPermissionedPageRouteAdapter>();
+        services.AddScoped<CompositionQueryMaterializer>();
+        services.AddScoped<CompositionPageBindingCoordinator>();
         services.AddSingleton<WebPageIdentityMigrationState>();
         services.AddScoped<WebPagePublicationService>();
         services.AddScoped<IWebPagePublicationDirectory>(provider =>
@@ -80,6 +85,8 @@ public static class WebInterfaceServiceCollectionExtensions
         services.TryAddScoped<ISystemTaskService, UnavailableSystemTaskService>();
         services.AddScoped<ControlSystemTaskExplorer>();
         services.AddScoped<ControlSystemCapabilityExplorer>();
+        services.TryAddScoped<IApplicationCandidateCapabilityGateway,
+            UnavailableApplicationCandidateCapabilityGateway>();
         services.TryAddSingleton<IAiAgentProfileRegistry>(_ => new AiAgentProfileRegistry([
             new(
                 "web.outer",
@@ -110,6 +117,7 @@ public static class WebInterfaceServiceCollectionExtensions
         services.AddSingleton<WebAccessPolicy>();
         services.TryAddSingleton<IPrivateOperatorAuthorizationPolicy, PrivateOperatorAuthorizationPolicy>();
         services.AddSingleton<WebPrivateOperatorGuard>();
+        services.AddSingleton<WebPlatformAccessGuard>();
         services.AddSingleton<WebInterfaceSecurityFilter>();
         services.AddSingleton<WebControlRequestGuard>();
         services.AddSingleton<WebControlRequestFilter>();

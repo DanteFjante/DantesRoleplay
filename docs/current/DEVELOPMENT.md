@@ -33,6 +33,39 @@ one exact schema/profile key share only their in-flight build; distinct keys com
 short LRU lock, and evaluation of one retained schema graph remains serialized. Edited schemas use
 new keys immediately; no time-based expiry can serve an older contract for changed contents.
 
+Information metadata writes validate the source's declared schema through that bounded validator.
+Changing a source schema must also validate its existing records in the same write transaction;
+incompatible values are preserved and reported for explicit correction. These ordinary information
+updates do not provide immutable draft history or executable publication. Runtime candidates and
+standing grants require the coordinated authoring contracts and storage boundary.
+
+Standing-grant evaluation rehydrates current grant and definition ownership in the same scoped
+SQLite transaction. Mutation owners acquire an immediate writer before evaluation; the policy does
+not introspect writer mode or mutate rows. Standalone permission reads use one deferred snapshot.
+Active target resolution reuses the catalog's pure retained-record parser and requires exact source
+registration affiliation plus an enabled, reviewed namespace. Namespace `Owner` is a domain label,
+not an application identity. Definition fingerprints refer to normalized catalog content; the
+separate owner evidence also pins raw retained bytes. Selected lookups are limited to 128 text
+documents and 16 MiB. Inert candidate ownership resolves only changed definitions and their
+same-source mechanic sidecars; it never materializes the whole base catalog to authorize a write.
+This evidence does not establish complete dependency coverage or uniqueness against unchanged
+definitions. Unchanged candidate targets remain unavailable until exact dependency selection exists;
+publication must reject collisions against the complete effective generation. Candidate validation
+retains explicit unavailable diagnostics while runtime preparation, samples, or reuse review are absent.
+Sample-bearing validation uses the request-first overload. Its canonical operation retains at most
+four pure-data examples per exact definition and sixteen total, inside the existing aggregate 64 KiB
+request bound. Changing a retained example changes retry identity. A runtime report is evidence for
+the authoring owner to retain; runtime completion alone supplies no publication approval or durable receipt.
+Historical procedure task access requires its exact stored activation origin and current authority;
+unsupported component targets remain unavailable. Invited or AI principals never gain operator issuance from
+`Verified=true`; the coordinator supplies the separate installation-operator attestation.
+
+Activation may reuse retained document evidence only while its bytes still match their recorded
+length and fingerprint. A new unchanged confirmation checks that evidence too. Missing bytes from
+a prepared revision require recovery; only legacy metadata-only evidence may acquire source bytes
+at a new validated activation. Replaying an already committed command returns its historical receipt
+and does not certify the present health of retained content or refresh derived indexes.
+
 Every repository-authored application mechanic declares a closed `inputSchema` in its requirements.
 Capability discovery exposes that schema plus generated valid and invalid examples; the common
 descriptor also carries the closed output envelope, owner, lifecycle, roles, authorization,

@@ -117,6 +117,7 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
     public DbSet<TriggerObservationSourcePrincipalRecord> TriggerObservationSourcePrincipals => Set<TriggerObservationSourcePrincipalRecord>();
     public DbSet<OneTimeTriggerRecord> OneTimeTriggers => Set<OneTimeTriggerRecord>();
     public DbSet<OneTimeTriggerNotificationEntityRecord> OneTimeTriggerNotificationEntities => Set<OneTimeTriggerNotificationEntityRecord>();
+    public DbSet<OneTimeTriggerWorkflowBindingRecord> OneTimeTriggerWorkflowBindings => Set<OneTimeTriggerWorkflowBindingRecord>();
     public DbSet<OneTimeTriggerCurrentRecord> OneTimeTriggerCurrent => Set<OneTimeTriggerCurrentRecord>();
     public DbSet<TriggerObservationRecord> TriggerObservations => Set<TriggerObservationRecord>();
     public DbSet<TriggerFireReceiptRecord> TriggerFireReceipts => Set<TriggerFireReceiptRecord>();
@@ -124,6 +125,7 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
     public DbSet<TriggerNotificationLinkRecord> TriggerNotificationLinks => Set<TriggerNotificationLinkRecord>();
     public DbSet<RecurringTriggerRecord> RecurringTriggers => Set<RecurringTriggerRecord>();
     public DbSet<RecurringTriggerNotificationEntityRecord> RecurringTriggerNotificationEntities => Set<RecurringTriggerNotificationEntityRecord>();
+    public DbSet<RecurringTriggerWorkflowBindingRecord> RecurringTriggerWorkflowBindings => Set<RecurringTriggerWorkflowBindingRecord>();
     public DbSet<RecurringTriggerCurrentRecord> RecurringTriggerCurrent => Set<RecurringTriggerCurrentRecord>();
     public DbSet<RecurringTriggerStateRecord> RecurringTriggerState => Set<RecurringTriggerStateRecord>();
     public DbSet<RecurringTriggerFireWorkRecord> RecurringTriggerFireWork => Set<RecurringTriggerFireWorkRecord>();
@@ -131,14 +133,20 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
     public DbSet<RecurringTriggerNotificationLinkRecord> RecurringTriggerNotificationLinks => Set<RecurringTriggerNotificationLinkRecord>();
     public DbSet<ConditionalTriggerRecord> ConditionalTriggers => Set<ConditionalTriggerRecord>();
     public DbSet<ConditionalTriggerDependencyRecord> ConditionalTriggerDependencies => Set<ConditionalTriggerDependencyRecord>();
+    public DbSet<ConditionalTriggerRelationshipDependencyRecord> ConditionalTriggerRelationshipDependencies => Set<ConditionalTriggerRelationshipDependencyRecord>();
+    public DbSet<ConditionalTriggerWorkflowBindingRecord> ConditionalTriggerWorkflowBindings => Set<ConditionalTriggerWorkflowBindingRecord>();
+    public DbSet<ConditionalTriggerPredicateBindingRecord> ConditionalTriggerPredicateBindings => Set<ConditionalTriggerPredicateBindingRecord>();
     public DbSet<ConditionalTriggerNotificationEntityRecord> ConditionalTriggerNotificationEntities => Set<ConditionalTriggerNotificationEntityRecord>();
     public DbSet<ConditionalTriggerCurrentRecord> ConditionalTriggerCurrent => Set<ConditionalTriggerCurrentRecord>();
     public DbSet<ConditionalTriggerStateRecord> ConditionalTriggerState => Set<ConditionalTriggerStateRecord>();
     public DbSet<ConditionalTriggerFireWorkRecord> ConditionalTriggerFireWork => Set<ConditionalTriggerFireWorkRecord>();
     public DbSet<ConditionalTriggerFireReceiptRecord> ConditionalTriggerFireReceipts => Set<ConditionalTriggerFireReceiptRecord>();
     public DbSet<ConditionalTriggerNotificationLinkRecord> ConditionalTriggerNotificationLinks => Set<ConditionalTriggerNotificationLinkRecord>();
+    public DbSet<TriggerCausalAllowanceRecord> TriggerCausalAllowances => Set<TriggerCausalAllowanceRecord>();
+    public DbSet<TriggerCausalReservationRecord> TriggerCausalReservations => Set<TriggerCausalReservationRecord>();
     public DbSet<ObservationTriggerRecord> ObservationTriggers => Set<ObservationTriggerRecord>();
     public DbSet<ObservationTriggerNotificationEntityRecord> ObservationTriggerNotificationEntities => Set<ObservationTriggerNotificationEntityRecord>();
+    public DbSet<ObservationTriggerWorkflowBindingRecord> ObservationTriggerWorkflowBindings => Set<ObservationTriggerWorkflowBindingRecord>();
     public DbSet<ObservationTriggerCurrentRecord> ObservationTriggerCurrent => Set<ObservationTriggerCurrentRecord>();
     public DbSet<ObservationTriggerMatchWorkRecord> ObservationTriggerMatchWork => Set<ObservationTriggerMatchWorkRecord>();
     public DbSet<ObservationTriggerMatchReceiptRecord> ObservationTriggerMatchReceipts => Set<ObservationTriggerMatchReceiptRecord>();
@@ -197,6 +205,12 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
         ConfigureProjectionMaterialization(modelBuilder);
         ConfigureApplicationObjectChanges(modelBuilder);
         ApplicationActivationModelConfiguration.Configure(modelBuilder);
+        ApplicationAuthoringModelConfiguration.Configure(modelBuilder);
+        StandingGrantModelConfiguration.Configure(modelBuilder);
+        InformationHistoryModelConfiguration.Configure(modelBuilder);
+        InformationSourceOwnershipModelConfiguration.Configure(modelBuilder);
+        global::DantesRoleplay.SystemTasks.Persistence.SystemTaskLifecycleModelConfiguration.Configure(modelBuilder);
+        global::DantesRoleplay.SystemTasks.Persistence.SystemTaskAiAccountingModelConfiguration.Configure(modelBuilder);
         ConfigureLegacyStateAdoption(modelBuilder);
     }
 
@@ -933,6 +947,8 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
             entity.Property(x => x.Name).HasMaxLength(200).IsRequired();
             entity.Property(x => x.Description).HasMaxLength(1000).IsRequired();
             entity.Property(x => x.MetadataSchemaJson).HasMaxLength(8000).IsRequired();
+            entity.Property(x => x.MetadataSchemaQualifiedId).HasMaxLength(200);
+            entity.Property(x => x.MetadataSchemaHash).HasMaxLength(64);
             entity.Property(x => x.ContentHash).HasMaxLength(64).IsRequired();
             entity.Property(x => x.Revision).IsConcurrencyToken().IsRequired();
             entity.HasIndex(x => new { x.ScopeId, x.Id });
@@ -950,6 +966,7 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
             entity.Property(x => x.Title).HasMaxLength(500).IsRequired();
             entity.Property(x => x.Content).HasMaxLength(16000).IsRequired();
             entity.Property(x => x.MetadataJson).HasMaxLength(8000).IsRequired();
+            entity.Property(x => x.MetadataSchemaSourceRevision).IsRequired();
             entity.Property(x => x.ContentHash).HasMaxLength(64).IsRequired();
             entity.Property(x => x.Revision).IsConcurrencyToken().IsRequired();
             entity.HasOne(x => x.Source).WithMany(x => x.Records).HasForeignKey(x => x.SourceId).OnDelete(DeleteBehavior.Restrict);
@@ -1599,11 +1616,13 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
                 TriggerObservationSourcePrincipalRecord or
                 OneTimeTriggerRecord or
                 OneTimeTriggerNotificationEntityRecord or
+                OneTimeTriggerWorkflowBindingRecord or
                 TriggerObservationRecord or
                 TriggerFireReceiptRecord or
                 TriggerNotificationLinkRecord or
                 RecurringTriggerRecord or
                 RecurringTriggerNotificationEntityRecord or
+                RecurringTriggerWorkflowBindingRecord or
                 RecurringTriggerFireReceiptRecord or
                 RecurringTriggerNotificationLinkRecord or
                 ConditionalTriggerRecord or
@@ -1613,12 +1632,24 @@ public sealed class DantesRoleplayDbContext(DbContextOptions<DantesRoleplayDbCon
                 ConditionalTriggerNotificationLinkRecord or
                 ObservationTriggerRecord or
                 ObservationTriggerNotificationEntityRecord or
+                ObservationTriggerWorkflowBindingRecord or
+                ConditionalTriggerWorkflowBindingRecord or
+                ConditionalTriggerPredicateBindingRecord or
+                ConditionalTriggerRelationshipDependencyRecord or
+                TriggerCausalReservationRecord or
                 ObservationTriggerMatchReceiptRecord or
                 ObservationTriggerNotificationLinkRecord or
                 PhoneCompanionDeviceRecord or
                 PhoneCompanionDeviceStructureRecord or
                 PhoneCompanionDeviceStatusRecord);
         if (forbidden is not null)
+            throw new InvalidOperationException("TRIGGER_SCHEDULING_IMMUTABLE");
+        var forbiddenAllowance = ChangeTracker.Entries<TriggerCausalAllowanceRecord>().Any(entry =>
+            entry.State == EntityState.Deleted || entry.State == EntityState.Modified &&
+            entry.Properties.Any(property => property.IsModified &&
+                property.Metadata.Name is not nameof(TriggerCausalAllowanceRecord.ReservedOperations)
+                    and not nameof(TriggerCausalAllowanceRecord.UpdatedAtUtc)));
+        if (forbiddenAllowance)
             throw new InvalidOperationException("TRIGGER_SCHEDULING_IMMUTABLE");
     }
 

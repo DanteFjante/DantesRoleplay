@@ -84,8 +84,46 @@ public sealed class ObservationTriggerTests : IDisposable
         Assert.Empty(setup.Db.Events);
     }
 
+    [Theory]
+    [InlineData(ObservationTriggerLifecycle.Active)]
+    [InlineData(ObservationTriggerLifecycle.Paused)]
+    [InlineData(ObservationTriggerLifecycle.Cancelled)]
+    public async Task Staged_match_completes_against_retained_revision_after_current_revision_changes(
+        ObservationTriggerLifecycle replacementLifecycle)
+    {
+        var setup = await SetupAsync(fixture.CreateContext());
+        await setup.MatchStore.AppendAsync(Definition(setup.Structure.SchemaHash));
+        await setup.ObservationStore.AppendObservationAsync(Principal, App,
+            Submission('c', "arrival.retained", "{\"transition\":\"entered\"}"));
+        await setup.MatchStore.AppendAsync(Definition(setup.Structure.SchemaHash,
+            version: 2, lifecycle: replacementLifecycle));
+
+        var result = await setup.Worker.RunBatchAsync("observation.retained");
+
+        Assert.Equal(1, result.Completed);
+        Assert.Equal(1, Assert.Single(setup.Db.ObservationTriggerMatchReceipts).TriggerVersion);
+        Assert.Equal(1, Assert.Single(setup.Db.ObservationTriggerNotificationLinks).TriggerVersion);
+    }
+
+    [Theory]
+    [InlineData(ObservationTriggerLifecycle.Paused)]
+    [InlineData(ObservationTriggerLifecycle.Cancelled)]
+    public async Task Inactive_current_revision_does_not_stage_future_observations(
+        ObservationTriggerLifecycle lifecycle)
+    {
+        var setup = await SetupAsync(fixture.CreateContext());
+        await setup.MatchStore.AppendAsync(Definition(setup.Structure.SchemaHash));
+        await setup.MatchStore.AppendAsync(Definition(setup.Structure.SchemaHash,
+            version: 2, lifecycle: lifecycle));
+
+        await setup.ObservationStore.AppendObservationAsync(Principal, App,
+            Submission('d', "arrival.inactive", "{\"transition\":\"entered\"}"));
+
+        Assert.Empty(setup.Db.ObservationTriggerMatchWork);
+    }
+
     [Fact]
-    public async Task Superseded_structure_prevents_delivery_without_discarding_observation()
+    public async Task Queued_match_retains_structure_after_structure_replacement()
     {
         var setup = await SetupAsync(fixture.CreateContext());
         await setup.MatchStore.AppendAsync(Definition(setup.Structure.SchemaHash));
@@ -97,16 +135,16 @@ public sealed class ObservationTriggerTests : IDisposable
         var status = await new SqliteObservationTriggerStatusReader(setup.Db)
             .GetAsync(App, "trigger.arrival.entered");
 
-        Assert.Equal(1, result.Failed);
+        Assert.Equal(1, result.Completed);
         Assert.Single(setup.Db.TriggerObservations);
-        Assert.Equal("stale-trigger", setup.Db.ObservationTriggerMatchWork.Single().FailureKind);
-        Assert.Empty(setup.Db.ObservationTriggerMatchReceipts);
-        Assert.Empty(setup.Db.Notifications);
+        Assert.Null(setup.Db.ObservationTriggerMatchWork.Single().FailureKind);
+        Assert.Single(setup.Db.ObservationTriggerMatchReceipts);
+        Assert.Single(setup.Db.Notifications);
         Assert.Equal(ObservationTriggerStatus.StaleStructure, status!.Status);
     }
 
     [Fact]
-    public async Task Superseded_or_disabled_source_prevents_delivery()
+    public async Task Queued_match_retains_source_after_source_disable()
     {
         var setup = await SetupAsync(fixture.CreateContext());
         await setup.MatchStore.AppendAsync(Definition(setup.Structure.SchemaHash));
@@ -118,8 +156,8 @@ public sealed class ObservationTriggerTests : IDisposable
         var status = await new SqliteObservationTriggerStatusReader(setup.Db)
             .GetAsync(App, "trigger.arrival.entered");
 
-        Assert.Equal(1, result.Failed);
-        Assert.Empty(setup.Db.Notifications);
+        Assert.Equal(1, result.Completed);
+        Assert.Single(setup.Db.Notifications);
         Assert.Equal(ObservationTriggerStatus.StaleSource, status!.Status);
     }
 
@@ -377,9 +415,11 @@ public sealed class ObservationTriggerTests : IDisposable
         string config = "{\"matches\":[{\"property\":\"transition\",\"value\":\"entered\"}]}",
         string adapterId = ClosedScalarsObservationMatchAdapter.StableId,
         string triggerId = "trigger.arrival.entered",
-        TriggerNotificationTarget? notification = null) =>
-        ObservationTriggerDefinition.Create(App, triggerId, 1,
-            ObservationTriggerLifecycle.Active, "phone.dante", 1, "device.geofence.transition", 1,
+        TriggerNotificationTarget? notification = null,
+        int version = 1,
+        ObservationTriggerLifecycle lifecycle = ObservationTriggerLifecycle.Active) =>
+        ObservationTriggerDefinition.Create(App, triggerId, version,
+            lifecycle, "phone.dante", 1, "device.geofence.transition", 1,
             structureHash, ObservationMatchAdapterReference.Create(adapterId, 1), config,
             TriggerFireTarget.NotificationOnly, notification ??
             TriggerNotificationTarget.Create("arrival", "Arrived", "The device entered the area."));

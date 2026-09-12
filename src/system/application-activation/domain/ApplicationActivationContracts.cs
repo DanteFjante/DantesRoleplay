@@ -48,6 +48,75 @@ public sealed record ActiveApplicationManifest(
 {
     public string ResolutionFingerprint { get; init; } = ActivationFingerprint;
     public IReadOnlyList<ActivatedApplicationExtension> Extensions { get; init; } = [];
+    /// <summary>
+    /// Identifies the preparation and retained-content rules applied before this revision became
+    /// active. Null identifies a legacy metadata-only revision, whose bytes may still be resolved
+    /// from its registered source under the historical fail-closed fallback.
+    /// </summary>
+    public string? PreparationVersion { get; init; }
+}
+
+public sealed record ActivatedApplicationDocumentEvidence(
+    ApplicationIdentifier ApplicationId,
+    int ActivationRevision,
+    string LogicalIdentity,
+    string ContentFingerprint,
+    long Length,
+    byte[]? RetainedBytes,
+    bool IsLegacyMetadataOnly);
+
+/// <summary>
+/// Reads immutable document evidence for an activation revision. Prepared revisions always return
+/// retained bytes; only legacy metadata-only revisions may return null.
+/// </summary>
+public interface IActivatedApplicationEvidenceReader
+{
+    ActivatedApplicationDocumentEvidence? ReadDocumentEvidence(
+        ApplicationIdentifier applicationId,
+        int activationRevision,
+        string logicalIdentity);
+}
+
+public sealed record ApplicationDefinitionDiscoveryEvidence(
+    IReadOnlyList<string> SourceIds,
+    IReadOnlyList<string> RelativePaths);
+
+public sealed record ApplicationDefinitionDependencyEvidence(
+    string GraphFingerprint,
+    string CoverageVersion,
+    bool CoverageComplete);
+
+public sealed record ApplicationDefinitionDerivedIndexStatus(
+    string Status,
+    bool IsAvailable,
+    bool IsActivationGate);
+
+/// <summary>
+/// Canonical definition-change evidence derived from one immutable activation revision. It is a
+/// definition signal, not an ordinary object/state-change event.
+/// </summary>
+public sealed record ApplicationDefinitionChange(
+    ApplicationIdentifier Target,
+    int Revision,
+    string Fingerprint,
+    string SourceOperationId,
+    DateTime ChangedAtUtc,
+    ApplicationDefinitionDiscoveryEvidence Discovery,
+    ApplicationDefinitionDependencyEvidence Dependencies,
+    ApplicationDefinitionDerivedIndexStatus DerivedIndex);
+
+public interface IApplicationDefinitionChangeReader
+{
+    ApplicationDefinitionChange? CurrentChange(ApplicationIdentifier applicationId);
+
+    ApplicationDefinitionChange? RevisionChange(
+        ApplicationIdentifier applicationId,
+        int activationRevision);
+
+    IReadOnlyList<ApplicationDefinitionChange> ChangesAfter(
+        ApplicationIdentifier applicationId,
+        int afterActivationRevision,
+        int limit);
 }
 
 public sealed record ApplicationActivationRequest(
@@ -75,7 +144,8 @@ public sealed record ApplicationActivationReceipt(
     string Outcome,
     string OperationId);
 
-public sealed class ApplicationActivationException(string code, string message) : Exception(message)
+public sealed class ApplicationActivationException(string code, string message, Exception? inner = null)
+    : Exception(message, inner)
 {
     public string Code { get; } = code;
 }
@@ -83,6 +153,8 @@ public sealed class ApplicationActivationException(string code, string message) 
 public interface IApplicationActivationReader
 {
     ActiveApplicationManifest? Current(ApplicationIdentifier applicationId);
+    /// <summary>Returns an exact retained generation, without substituting today's active generation.</summary>
+    ActiveApplicationManifest? ReadRevision(ApplicationIdentifier applicationId, int activationRevision) => null;
 }
 
 public sealed record ActivatedApplicationTextDocument(

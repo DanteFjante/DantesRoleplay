@@ -983,6 +983,9 @@
             const grid = document.createElement("div");
             grid.className = "explorer-grid";
             body.append(grid);
+            const capabilities = document.createElement("application-capability-center");
+            capabilities.setAttribute("application-id", applicationId);
+            grid.append(capabilities);
             this.renderApplicationChat(applicationId, spaces.items || [], body);
             const spaceList = this.section(grid, "State spaces", true);
             (spaces.items || []).forEach(space => spaceList.append(this.choice(

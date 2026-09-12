@@ -26,13 +26,14 @@ internal sealed class ActivatedApplicationCatalogSnapshotCache
         ActivatedApplicationCatalogCacheAuthority authority,
         ApplicationIdentifier applicationId,
         string preparationFingerprint,
-        Func<ActiveCatalogFeatureSnapshot> factory)
+        Func<ActiveCatalogFeatureSnapshot> factory,
+        Action? register = null)
     {
         ArgumentNullException.ThrowIfNull(authority);
         ArgumentNullException.ThrowIfNull(applicationId);
         ArgumentException.ThrowIfNullOrWhiteSpace(preparationFingerprint);
         ArgumentNullException.ThrowIfNull(factory);
-        Lazy<ActiveCatalogFeatureSnapshot> value;
+        Entry entry;
         lock (_gate)
         {
             var key = (authority, applicationId);
@@ -40,29 +41,66 @@ internal sealed class ActivatedApplicationCatalogSnapshotCache
                 && current.PreparationFingerprint == preparationFingerprint)
             {
                 Interlocked.Increment(ref _hits);
-                value = current.Value;
+                entry = current;
             }
             else
             {
                 Interlocked.Increment(ref _misses);
-                value = new(factory, LazyThreadSafetyMode.ExecutionAndPublication);
+                entry = new(preparationFingerprint, new(factory, LazyThreadSafetyMode.ExecutionAndPublication));
                 if (_entries.ContainsKey(key) || _entries.Keys.Count(existing =>
                         ReferenceEquals(existing.Authority, authority)) < MaximumApplicationsPerAuthority)
-                    _entries[key] = new(preparationFingerprint, value);
+                    _entries[key] = entry;
             }
         }
-        try { return value.Value; }
+        ActiveCatalogFeatureSnapshot snapshot;
+        try { snapshot = entry.Value.Value; }
         catch
         {
             lock (_gate)
             {
                 var key = (authority, applicationId);
-                if (_entries.TryGetValue(key, out var current) && ReferenceEquals(current.Value, value))
+                if (_entries.TryGetValue(key, out var current) && ReferenceEquals(current, entry))
                     _entries.Remove(key);
             }
             throw;
         }
+        if (register is not null)
+        {
+            lock (entry.RegistrationGate)
+            {
+                if (!entry.Registered)
+                {
+                    // Registration failures leave the pure snapshot usable and retryable.
+                    register();
+                    entry.Registered = true;
+                }
+            }
+        }
+        return snapshot;
     }
 
-    private sealed record Entry(string PreparationFingerprint, Lazy<ActiveCatalogFeatureSnapshot> Value);
+    internal bool TryGetPrepared(ActivatedApplicationCatalogCacheAuthority authority, ApplicationIdentifier applicationId,
+        string activationFingerprint, out ActiveCatalogFeatureSnapshot snapshot)
+    {
+        lock (_gate)
+        {
+            if (_entries.TryGetValue((authority, applicationId), out var entry) && entry.Value.IsValueCreated)
+            {
+                var prepared = entry.Value.Value; // IsValueCreated prevents invoking a cold Lazy factory.
+                if (prepared.EffectiveSetFingerprint == activationFingerprint)
+                {
+                    snapshot = prepared;
+                    return true;
+                }
+            }
+        }
+        snapshot = null!;
+        return false;
+    }
+
+    private sealed record Entry(string PreparationFingerprint, Lazy<ActiveCatalogFeatureSnapshot> Value)
+    {
+        internal object RegistrationGate { get; } = new();
+        internal bool Registered { get; set; }
+    }
 }

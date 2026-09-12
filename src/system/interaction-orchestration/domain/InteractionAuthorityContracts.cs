@@ -8,7 +8,8 @@ public enum InteractionCapability
 {
     Plan,
     Execute,
-    ReadReceipt
+    ReadReceipt,
+    Read
 }
 
 public enum InteractionPlannerPreference

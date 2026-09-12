@@ -57,6 +57,24 @@ public sealed class WebInterfaceTests
     }
 
     [Fact]
+    public void Application_authoring_routes_are_shared_authenticated_application_endpoints()
+    {
+        var builder = WebApplication.CreateBuilder();
+        builder.Services.AddDantesRoleplayWeb("Data Source=:memory:", new ConfigurationBuilder().Build());
+        var application = builder.Build();
+        application.MapDantesRoleplayWeb();
+        var routes = ((IEndpointRouteBuilder)application).DataSources.SelectMany(source => source.Endpoints)
+            .OfType<RouteEndpoint>().ToArray();
+        var discovery = Assert.Single(routes, endpoint => endpoint.RoutePattern.RawText ==
+            "/api/applications/{applicationId}/authoring/capabilities");
+        var invocation = Assert.Single(routes, endpoint => endpoint.RoutePattern.RawText ==
+            "/api/applications/{applicationId}/authoring/capabilities/{capabilityId}");
+
+        Assert.Equal([HttpMethods.Get], discovery.Metadata.GetMetadata<HttpMethodMetadata>()!.HttpMethods);
+        Assert.Equal([HttpMethods.Post], invocation.Metadata.GetMetadata<HttpMethodMetadata>()!.HttpMethods);
+    }
+
+    [Fact]
     public async Task System_task_body_is_closed_and_allows_bounded_large_semantic_agendas()
     {
         var invalid = new DefaultHttpContext();
@@ -881,6 +899,8 @@ public sealed class WebInterfaceTests
             ("/api/applications/{applicationId}/conversations", HttpMethods.Post),
             ("/api/applications/{applicationId}/conversations/{conversationId}/turns", HttpMethods.Post),
             ("/api/applications/{applicationId}/conversations/{conversationId}/execute", HttpMethods.Post),
+            ("/api/applications/{applicationId}/authoring/capabilities", HttpMethods.Get),
+            ("/api/applications/{applicationId}/authoring/capabilities/{capabilityId}", HttpMethods.Post),
             ("/api/applications/{applicationId}/observations", HttpMethods.Post)
         ], routes);
         var applicationStateReads = ((IEndpointRouteBuilder)application).DataSources
@@ -960,6 +980,21 @@ public sealed class WebInterfaceTests
         Assert.DoesNotContain("method: 'PUT'", applicationScript, StringComparison.Ordinal);
         Assert.DoesNotContain("method: 'DELETE'", applicationScript, StringComparison.Ordinal);
         Assert.DoesNotContain("innerHTML", applicationScript, StringComparison.Ordinal);
+
+        var capabilityCenter = await BrowserComponentAssets.ReadAsync("application-capability-center");
+        Assert.NotNull(capabilityCenter);
+        Assert.Contains("/authoring/capabilities", capabilityCenter, StringComparison.Ordinal);
+        Assert.Contains("renderInvocation", capabilityCenter, StringComparison.Ordinal);
+        Assert.Contains("previousCommits", await BrowserComponentAssets.ReadAsync("composition-bindings"),
+            StringComparison.Ordinal);
+        Assert.DoesNotContain("/api/control", capabilityCenter, StringComparison.Ordinal);
+        Assert.DoesNotContain("/mcp", capabilityCenter, StringComparison.OrdinalIgnoreCase);
+        var controlCenter = File.ReadAllText(Path.Combine(RepositoryRoot(), "src", "system", "web-interface",
+            "examples", "control-center", "index.html"));
+        Assert.Contains("document.createElement(\"application-capability-center\")", controlCenter,
+            StringComparison.Ordinal);
+        Assert.Contains("/components/application-capability-center.js",
+            await BrowserComponentAssets.ReadAsync("system-workspace"), StringComparison.Ordinal);
 
         Assert.Null(await BrowserComponentAssets.ReadAsync("missing-browser-component"));
 
@@ -1419,7 +1454,7 @@ public sealed class WebInterfaceTests
 
         await db.Database.MigrateAsync();
 
-        Assert.Equal(4, (await db.Database.GetAppliedMigrationsAsync()).Count());
+        Assert.Equal(db.Database.GetMigrations().Count(), (await db.Database.GetAppliedMigrationsAsync()).Count());
         var schemaRows = await db.Database.SqlQueryRaw<string>(
                 "SELECT name AS Value FROM sqlite_schema WHERE type IN ('table', 'index')")
             .ToListAsync();
@@ -1443,8 +1478,7 @@ public sealed class WebInterfaceTests
         await using var connection = new SqliteConnection("Filename=:memory:");
         await connection.OpenAsync();
         await using var db = CreateWebContext(connection);
-        var migrations = db.Database.GetMigrations().ToArray();
-        var previous = migrations[^2];
+        const string previous = "20260831200049_PageIdentityMigrationAudit";
         await db.GetService<IMigrator>().MigrateAsync(previous);
         var content = Encoding.UTF8.GetBytes("shared migration payload");
         var hash = Convert.ToHexString(SHA256.HashData(content));

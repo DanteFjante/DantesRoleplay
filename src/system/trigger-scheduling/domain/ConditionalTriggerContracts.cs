@@ -10,6 +10,7 @@ public enum ConditionalTriggerKind { WorldClockThreshold, StateCondition }
 public enum ConditionalTriggerLifecycle { Active, Paused, Cancelled }
 public enum ConditionalTriggerActivation { RisingEdge, Level }
 public enum ConditionalTriggerRearm { OnFalse, Manual }
+public enum ConditionalTriggerCoalescing { PerOperation }
 
 public sealed record ConditionalTriggerAdapterReference
 {
@@ -48,6 +49,55 @@ public sealed record ConditionalTriggerDependency
         new(entityId, componentType);
 }
 
+public sealed record ConditionalTriggerRelationshipDependency
+{
+    private ConditionalTriggerRelationshipDependency(string qualifiedKind, string anchorEntityId, bool incoming)
+    {
+        QualifiedKind = TriggerSchedulingIdentifier.Qualified(qualifiedKind, nameof(qualifiedKind));
+        if (string.IsNullOrWhiteSpace(anchorEntityId) || anchorEntityId.Length > 200 ||
+            anchorEntityId.Any(char.IsControl))
+            throw Failure("CONDITIONAL_RELATIONSHIP_ENTITY",
+                "A bounded relationship anchor entity ID is required.");
+        AnchorEntityId = anchorEntityId;
+        Incoming = incoming;
+    }
+
+    public string QualifiedKind { get; }
+    public string AnchorEntityId { get; }
+    public bool Incoming { get; }
+    public static ConditionalTriggerRelationshipDependency Create(
+        string qualifiedKind, string anchorEntityId, bool incoming = false) =>
+        new(qualifiedKind, anchorEntityId, incoming);
+}
+
+public sealed record ConditionalTriggerObserverPredicate
+{
+    public const string StableAdapterId = "system.trigger.application-mechanic";
+    public const int StableAdapterVersion = 1;
+    private ConditionalTriggerObserverPredicate(ApplicationObserverPredicateSelection selection,
+        int maximumOperationsPerFire, ConditionalTriggerCoalescing coalescing)
+    {
+        Selection = selection ?? throw new ArgumentNullException(nameof(selection));
+        if (maximumOperationsPerFire is < 1 or > 16)
+            throw Failure("CONDITIONAL_CAUSAL_BUDGET",
+                "An observer must reserve from one through sixteen operations per fire.");
+        if (coalescing != ConditionalTriggerCoalescing.PerOperation)
+            throw Failure("CONDITIONAL_COALESCING", "The observer coalescing policy is unsupported.");
+        MaximumOperationsPerFire = maximumOperationsPerFire;
+        Coalescing = coalescing;
+    }
+
+    public ApplicationObserverPredicateSelection Selection { get; }
+    public int MaximumOperationsPerFire { get; }
+    public ConditionalTriggerCoalescing Coalescing { get; }
+
+    public static ConditionalTriggerObserverPredicate Create(
+        ApplicationObserverPredicateSelection selection,
+        int maximumOperationsPerFire,
+        ConditionalTriggerCoalescing coalescing = ConditionalTriggerCoalescing.PerOperation) =>
+        new(selection, maximumOperationsPerFire, coalescing);
+}
+
 public sealed record ConditionalTriggerDefinition
 {
     private ConditionalTriggerDefinition(
@@ -63,7 +113,11 @@ public sealed record ConditionalTriggerDefinition
         ConditionalTriggerAdapterReference adapter,
         CanonicalObservationData adapterConfiguration,
         TriggerFireTarget target,
-        TriggerNotificationTarget notification)
+        TriggerNotificationTarget notification,
+        IReadOnlyList<ConditionalTriggerRelationshipDependency>? relationshipDependencies,
+        ConditionalTriggerObserverPredicate? predicate,
+        TriggerProcedureWorkflowTarget? procedureWorkflow,
+        bool requireWorkflowPayload = true)
     {
         ApplicationId = applicationId ?? throw new ArgumentNullException(nameof(applicationId));
         Id = TriggerSchedulingIdentifier.Qualified(id, nameof(id));
@@ -74,15 +128,32 @@ public sealed record ConditionalTriggerDefinition
         if (string.IsNullOrWhiteSpace(stateSpaceId) || stateSpaceId.Length > 200)
             throw Failure("CONDITIONAL_STATE_SPACE", "A bounded state-space ID is required.");
         ArgumentNullException.ThrowIfNull(dependencies);
-        if (dependencies.Count is < 1 or > 16 || dependencies.Any(value => value is null))
-            throw Failure("CONDITIONAL_DEPENDENCY_COUNT", "A condition requires 1 to 16 exact dependencies.");
+        var relationships = relationshipDependencies?.ToArray() ?? [];
+        if (dependencies.Count + relationships.Length is < 1 or > 16 ||
+            dependencies.Any(value => value is null) || relationships.Any(value => value is null))
+            throw Failure("CONDITIONAL_DEPENDENCY_COUNT",
+                "A condition requires 1 to 16 exact component or relationship dependencies.");
         if (dependencies.Select(value => (value.EntityId, value.ComponentType.QualifiedTypeId))
             .Distinct().Count() != dependencies.Count)
             throw Failure("CONDITIONAL_DEPENDENCY_DUPLICATE", "Condition dependencies must be distinct.");
+        if (relationships.Select(value => (value.QualifiedKind, value.AnchorEntityId, value.Incoming))
+            .Distinct().Count() != relationships.Length)
+            throw Failure("CONDITIONAL_DEPENDENCY_DUPLICATE", "Condition dependencies must be distinct.");
         Adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
         AdapterConfiguration = adapterConfiguration ?? throw new ArgumentNullException(nameof(adapterConfiguration));
-        if (target != TriggerFireTarget.NotificationOnly)
-            throw Failure("CONDITIONAL_TARGET", "Conditional triggers currently support notification-only targets.");
+        if (!Enum.IsDefined(target) ||
+            (target == TriggerFireTarget.NotificationOnly && (predicate is not null || procedureWorkflow is not null)) ||
+            (target == TriggerFireTarget.ProcedureWorkflow &&
+             (predicate is null || requireWorkflowPayload && procedureWorkflow is null)))
+            throw Failure("CONDITIONAL_TARGET", "The conditional trigger target does not match its closed payload shape.");
+        if (predicate is not null && predicate.Selection.ApplicationId != applicationId)
+            throw Failure("CONDITIONAL_PREDICATE_APPLICATION",
+                "The observer predicate must belong to the trigger application.");
+        if (procedureWorkflow is not null &&
+            (procedureWorkflow.InvocationHost.ApplicationRevision.ApplicationId != applicationId ||
+             procedureWorkflow.InvocationHost.StateSpaceId != stateSpaceId))
+            throw Failure("CONDITIONAL_WORKFLOW_SCOPE",
+                "The observer workflow must use the trigger application and state space.");
         Notification = notification ?? throw new ArgumentNullException(nameof(notification));
         if (kind == ConditionalTriggerKind.WorldClockThreshold &&
             (activation != ConditionalTriggerActivation.RisingEdge || rearm != ConditionalTriggerRearm.Manual))
@@ -95,7 +166,10 @@ public sealed record ConditionalTriggerDefinition
         Rearm = rearm;
         StateSpaceId = stateSpaceId;
         Dependencies = Array.AsReadOnly(dependencies.ToArray());
+        RelationshipDependencies = Array.AsReadOnly(relationships);
         Target = target;
+        Predicate = predicate;
+        ProcedureWorkflow = procedureWorkflow;
     }
 
     public ApplicationIdentifier ApplicationId { get; }
@@ -107,10 +181,13 @@ public sealed record ConditionalTriggerDefinition
     public ConditionalTriggerRearm Rearm { get; }
     public string StateSpaceId { get; }
     public IReadOnlyList<ConditionalTriggerDependency> Dependencies { get; }
+    public IReadOnlyList<ConditionalTriggerRelationshipDependency> RelationshipDependencies { get; }
     public ConditionalTriggerAdapterReference Adapter { get; }
     public CanonicalObservationData AdapterConfiguration { get; }
     public TriggerFireTarget Target { get; }
     public TriggerNotificationTarget Notification { get; }
+    public ConditionalTriggerObserverPredicate? Predicate { get; }
+    public TriggerProcedureWorkflowTarget? ProcedureWorkflow { get; }
 
     public static ConditionalTriggerDefinition Create(
         ApplicationIdentifier applicationId,
@@ -125,9 +202,26 @@ public sealed record ConditionalTriggerDefinition
         ConditionalTriggerAdapterReference adapter,
         string adapterConfigurationJson,
         TriggerFireTarget target,
-        TriggerNotificationTarget notification) =>
+        TriggerNotificationTarget notification,
+        IReadOnlyList<ConditionalTriggerRelationshipDependency>? relationshipDependencies = null,
+        ConditionalTriggerObserverPredicate? predicate = null,
+        TriggerProcedureWorkflowTarget? procedureWorkflow = null) =>
         new(applicationId, id, version, lifecycle, kind, activation, rearm, stateSpaceId,
-            dependencies, adapter, ObservationDataCanonicalizer.ParseObject(adapterConfigurationJson), target, notification);
+            dependencies, adapter, ObservationDataCanonicalizer.ParseObject(adapterConfigurationJson), target, notification,
+            relationshipDependencies, predicate, procedureWorkflow);
+
+    public static ConditionalTriggerDefinition Stored(
+        ApplicationIdentifier applicationId, string id, int version,
+        ConditionalTriggerLifecycle lifecycle, ConditionalTriggerKind kind,
+        ConditionalTriggerActivation activation, ConditionalTriggerRearm rearm,
+        string stateSpaceId, IReadOnlyList<ConditionalTriggerDependency> dependencies,
+        ConditionalTriggerAdapterReference adapter, string adapterConfigurationJson,
+        TriggerFireTarget target, TriggerNotificationTarget notification,
+        IReadOnlyList<ConditionalTriggerRelationshipDependency>? relationshipDependencies = null,
+        ConditionalTriggerObserverPredicate? predicate = null) =>
+        new(applicationId, id, version, lifecycle, kind, activation, rearm, stateSpaceId,
+            dependencies, adapter, ObservationDataCanonicalizer.ParseObject(adapterConfigurationJson), target, notification,
+            relationshipDependencies, predicate, null, requireWorkflowPayload: false);
 }
 
 public sealed record ConditionalTriggerDependencySnapshot(

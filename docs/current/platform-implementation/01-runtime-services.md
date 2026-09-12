@@ -1,16 +1,127 @@
 # 01 — Runtime services and JavaScript execution
 
-This proposed workstream turns existing JavaScript evaluation and typed actions into a reusable service runtime for the website and Codex integration. It implements no device or provider bridges. Other APIs remain future extension points. Names below describe contracts; this plan allocates no runtime identifiers. [Platform requirements](../PLATFORM-REQUIREMENTS.md) remains the current-state baseline.
+This workstream extends existing JavaScript evaluation and typed actions into the reusable service runtime used by the website and Codex integration. It implements no device or provider bridges. Other APIs remain future extension points. Names below describe contracts; this plan allocates no runtime identifiers. [Platform requirements](../PLATFORM-REQUIREMENTS.md) remains the current-state baseline.
 
 Prerequisite: implement [00 — Shared foundation](00-shared-foundation.md) first and have the coordinator supply its accepted foundation revision and contract baseline. This workstream consumes those shared contracts and does not redefine them independently.
 
 ## Existing owners to retain
 
-- [JintMechanicEngine](../../../DantesRoleplay.DataAccess/Mechanics/JintMechanicEngine.cs) creates a constrained engine for each invocation. It caches its trusted harness, but the harness constructs the mechanic with `new Function` each time. Current inputs and outputs are JSON; logging is buffered.
+- [JintMechanicEngine](../../../DantesRoleplay.DataAccess/Mechanics/JintMechanicEngine.cs) creates a constrained engine for each invocation. It reuses immutable prepared mechanic programs and the trusted harness. Current inputs and outputs are JSON; logging is buffered.
 - [ApplicationMechanicEvaluator](../../../src/system/application-execution/persistence/ApplicationMechanicEvaluator.cs) resolves exact definitions, materializes projections and evaluates bounded child composition. Its authorized/object/graph snapshot paths currently reject mutation proposals.
 - [ApplicationActionRunner](../../../src/system/application-execution/persistence/ApplicationActionRunner.cs) and [ApplicationEcsEffectBatchBuilder](../../../src/system/application-execution/persistence/ApplicationEcsEffectBatchBuilder.cs) connect exact mechanic evaluation to checked typed effects.
 - [ApplicationEcsEffectApplier](../../../DantesRoleplay.DataAccess/Ecs/ApplicationEcsEffectApplier.cs) owns operation replay, optimistic expectations, atomic effects, reactions and audit. It requires its own writer transaction.
 - [SqliteApplicationScopedEcsStore](../../../DantesRoleplay.DataAccess/Ecs/SqliteApplicationScopedEcsStore.cs) and [SqliteComponentTypeRegistry](../../../DantesRoleplay.DataAccess/Ecs/SqliteComponentTypeRegistry.cs) retain scoped persistence, schema versions and validation. [PrivateOperatorAuthorization](../../../src/system/authorization/domain/PrivateOperatorAuthorization.cs) supplies existing trusted-principal and authorization contracts.
+
+## Prepared execution and invocation pinning
+
+The mechanic engine validates the source body independently before preparing its executable
+wrapper. The mechanic function and trusted harness have separate lexical scopes. Its process-local
+cache retains at most 256 programs, 16 MiB of UTF-8 source, and one million combined token/node
+work units; these bounds do not measure total interpreter memory. Source is limited to 256 KiB
+before cache indexing. Token, lexical nesting, recursive-expression, syntax-tree size and depth
+checks bound cold preparation. Constant folding is disabled for untrusted preparation so literal
+expressions cannot allocate cached values before interpreter limits apply. The key includes exact
+source, wrapper text and parser/runtime configuration. No engine, JavaScript value, input or random
+state is shared between calls. Interpreter allocation checks are not an OS-enforced process memory
+limit: an individual JavaScript operation can allocate between checks.
+
+Set the AppContext switch `DantesRoleplay.Mechanics.DisablePreparedProgramCache` before constructing
+the engine to use fresh preparation for recovery. The existing singleton registration controls the
+cache lifetime. The `DantesRoleplay.Mechanics.JintMechanicEngine` meter reports separate
+`dantesroleplay.mechanic.preparation.duration`,
+`dantesroleplay.mechanic.context_construction.duration` and
+`dantesroleplay.mechanic.execution.duration` histograms in milliseconds. Preparation includes cache
+lookup/wait time. Preparation runs outside the cache lock, with at most two active preparations
+and 32 admitted callers. Same-source waiters share preparation and observe their own cancellation
+and deadline. A leader's personal cancellation or timeout lets healthy waiters retry under their
+own original budgets. Tokenization and source parsing check cancellation/deadline; the final synchronous
+Jint preparation is structurally bounded and checked before and after. Preparation and context time
+reduce the remaining execution timeout. Diagnostics cannot replace the invocation result.
+
+The evaluator retains one immutable catalog navigator through its entire parent/child invocation
+tree. A later root invocation resolves its navigator independently; unavailable or stale selected
+content never falls back to an earlier executable. This pinning does not itself refresh the active
+catalog provider, authorize old-generation commits, or implement activation and rollback.
+
+The internal `JintMechanicEngine.PrepareMechanicProgram` method is the exact executable preparation
+seam consumed by candidate validation and publication. Each invocation still constructs a fresh
+engine and resolves the exact selected application generation. The registered service adapter consumes the
+standing-grant read adapter and owner-resolved grant targets, with no legacy permission fallback.
+Its registered workflow profile exposes exact actions and durable procedure jobs declared by the
+retained `requirements.service.actions` and `requirements.service.jobs` contracts. Each action
+derives a deterministic child command,
+preserves the parent command, shares the root deadline and operation ledger, rechecks current
+state-scoped Execute authority for the exact action and every actual typed root/reaction effect
+inside the effect applier's writer transaction, and commits through the existing action, effect and
+operation-log owners. A denied commit guard rolls back staged effects without writing an action
+operation. Successful child receipts remain attached to later workflow completion, failure or durable
+handoff. `ctx.services.job(alias, input)` transfers the workflow root's entire remaining operation
+allowance to the exact declared procedure and submits the supported versioned assignment through the
+real focused inner-worker and SQLite durable-task owners. The job declaration pins its normalized
+result schema and fingerprint. Submission resolves the exact retained inner-worker profile and records
+the task lifecycle, worker admission and AI budget enrollment atomically before returning Pending.
+The deterministic durable command retains the ephemeral service root command as explicit causation;
+the lifecycle remains a durable root with its own transferred ledger. Equivalent retries return the
+existing handle without changing its admitted allowance. Pending terminalizes the service invocation
+and releases the Jint engine through a host constraint, so authored exception handling cannot continue
+calling capabilities after handoff. `ctx.services.job.status(handle)` treats the handle as untrusted
+input and routes it through the durable owner's current state-scope and `ReadTask` authorization before
+returning bounded inert status data. The public root atomic adapter still rejects parented requests,
+and read-only engine instances still
+return the canonical unavailable result for `ctx.services.action` and `ctx.services.job`. Resumable
+`ctx.services.wait`, JavaScript-stack checkpoints, arbitrary durable JavaScript heaps and in-process
+AI callbacks are not part of this runtime boundary.
+
+The registered candidate runtime validator consumes the activation owner's retained closure evidence.
+Pure candidates run against retained samples. The workflow-service path validates the closed declared
+reads and dry-runs its first action, or validates its first declared procedure job, through the real
+owners without committing effects or creating a task. Every selected mechanic needs a retained
+input/expected-data sample, with at most four per definition and sixteen per request. The entire
+request and report each obey the 64 KiB/depth 32 bound.
+
+Publication through the compatible mechanic-body, reviewed closed-pure, and Matches-only paths
+atomically advances runtime and application-publication state spaces whose application revision,
+manifest fingerprint, and resolution fingerprint all identify the immediate predecessor. The
+state-space owner preserves the scope and every state row, increments the binding revision, and
+appends immutable predecessor/successor history in the same writer transaction. Older, mixed-pin,
+and other-application spaces remain unchanged and therefore fail the ordinary current-activation
+check until separately upgraded.
+
+Runtime checks require current application Read and Validate authority in the authoring owner's
+existing transaction. Each engine attempt consumes one caller operation and shares its deadline;
+the validator creates no transaction, budget, service capability or effect dispatcher. Reports keep
+original sample ordinals, actual attempt status and bounded data fingerprints, including partial
+progress when cancellation or exhaustion stops execution. The selection pin is the pure closure's
+evidence fingerprint; the policy pin includes the actual parser/runtime, harness, schema profile and
+execution limits. Known non-data outputs are rejected. Completed means only that these checks passed,
+never global candidate validity or publication approval. The authoring owner retains the report and
+independently enforces its reuse, compatibility, authority and publication gates.
+
+The frozen read-only service contract bounds each JSON exchange to 64 KiB/depth 32 and the root
+exchange total to 1 MiB. The root consumes one shared operation; each registered read consumes one
+through its existing adapter, including authorization denial, up to 16 overall. After a terminal
+read failure, further read callbacks return that failure without dispatch or another operation debit;
+the root statement and deadline limits still bound those attempts. `ComputationLimits` controls the root mechanic.
+Child reads retain the existing host-owned `ExecutionLimits.ReadModel` caps and share the invocation
+deadline; callback waits also observe the root's remaining wall time. Root memory, statement and
+recursion limits do not describe aggregate resource use across child interpreters. Progress is a
+transient channel of eight frames, at most 32 attempts and 16 KiB total, with 2 KiB per serialized
+frame; full and closed attempts count, and only accepted frames receive consecutive sequence numbers.
+Reads, actions, job submission/status and progress execute synchronously on the sole engine thread through captured JSON functions;
+CLR capability objects never enter JavaScript. The host resolves and validates the exact retained
+`requirements.service` declaration, pins the exact root target and grant identity, rechecks those
+identities and current authority, and validates output before emitting
+process-local computation evidence. A workflow root uses Execute authority, and every separately
+committed action consumes another operation and returns its independently replayable receipt. That
+evidence is not a durable task or checkpoint.
+
+Trusted application-scoped invocations use `InteractionInvocationHost.ForApplication` with both
+state identity fields absent. The existing constructor, planner context and envelope factory remain
+state-required; state read, action and service adapters reject an application-only host before
+accessing authority or storage. `TryTransferOperations` atomically debits the current budget and
+its ancestors, returning an independent bounded ledger at the same deadline. Downstream spending
+does not debit the original ledger again, and unused or failed work receives no refund. A transfer
+does not establish authority, admit expired work or create durable task history.
 
 ## Proposed execution contract
 

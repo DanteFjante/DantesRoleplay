@@ -198,9 +198,9 @@ public sealed class TriggerSchedulingContractsTests
     }
 
     [Fact]
-    public void One_time_contract_rejects_non_notification_target()
+    public void One_time_contract_rejects_unknown_target()
     {
-        AssertCode("TRIGGER_TARGET_UNSUPPORTED", () => OneTimeTriggerDefinition.Create(
+        AssertCode("TRIGGER_TARGET_SHAPE", () => OneTimeTriggerDefinition.Create(
             Application, "trigger.session.soft-ending", 1, Now,
             TriggerMisfirePolicy.Skip, (TriggerFireTarget)999));
     }

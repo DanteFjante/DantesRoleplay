@@ -1,0 +1,12 @@
+{
+  "id": "procedure.system.inner-worker",
+  "owner": "procedure",
+  "description": "Generic selected-application procedures for submitting, reading, listing, waiting for, and cancelling durable focused inner workers.",
+  "allowedKinds": [
+    "procedure"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed as ruleset-neutral focused inner-worker guidance."
+}

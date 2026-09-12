@@ -42,8 +42,22 @@
     "activeContentReference": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "pageId"
+      "oneOf": [
+        {
+          "required": [
+            "pageId"
+          ],
+          "maxProperties": 1
+        },
+        {
+          "required": [
+            "pageId",
+            "revision",
+            "contentFormat",
+            "contentHash",
+            "assetInventoryFingerprint"
+          ]
+        }
       ],
       "properties": {
         "pageId": {
@@ -51,6 +65,29 @@
           "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
           "minLength": 1,
           "maxLength": 100
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "contentFormat": {
+          "type": "string",
+          "enum": [
+            "html",
+            "composition-v1"
+          ]
+        },
+        "contentHash": {
+          "type": "string",
+          "pattern": "^[0-9A-F]{64}$",
+          "minLength": 64,
+          "maxLength": 64
+        },
+        "assetInventoryFingerprint": {
+          "type": "string",
+          "pattern": "^[0-9A-F]{64}$",
+          "minLength": 64,
+          "maxLength": 64
         }
       }
     }

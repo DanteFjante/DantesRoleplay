@@ -13,7 +13,8 @@ public static class SystemCapabilityAiTools
 {
     public sealed record Options(
         bool IncludeWriteCapabilities = true,
-        bool IncludeSecretCapabilities = false);
+        bool IncludeSecretCapabilities = false,
+        bool ExcludeApplicationCandidateCapabilities = false);
 
     public static IReadOnlyList<IAiTool> CreateTools(
         ISystemCapabilityCatalog catalog,
@@ -27,6 +28,8 @@ public static class SystemCapabilityAiTools
         var discovery = catalog.Discover(context);
         if (!discovery.Ok) return [];
         return discovery.Capabilities
+            .Where(value => !options.ExcludeApplicationCandidateCapabilities ||
+                !ApplicationCandidateCapabilityAccess.Supports(value.Id))
             .Where(value => options.IncludeSecretCapabilities ||
                             value.Sensitivity != SystemCapabilitySensitivity.Secret)
             .Where(value => options.IncludeWriteCapabilities || value.Mode == SystemCapabilityMode.Read)
@@ -137,7 +140,8 @@ public static class SystemCapabilityAiTools
             {
                 data = executed.Data.Value,
                 executed.OperationId,
-                executed.ReadBackFingerprint
+                executed.ReadBackFingerprint,
+                requestFingerprint = checkedWrite.Preflight.PreconditionFingerprint
             }));
         }
 
@@ -184,5 +188,6 @@ public sealed class SystemCapabilityAiToolSource(
         SystemCapabilityAiTools.CreateTools(
             catalog,
             context.Invocation,
-            context.CapabilityWriteApproval);
+            context.CapabilityWriteApproval,
+            new(ExcludeApplicationCandidateCapabilities: context.Invocation.ApplicationId is not null));
 }

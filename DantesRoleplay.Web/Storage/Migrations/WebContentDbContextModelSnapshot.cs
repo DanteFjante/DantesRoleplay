@@ -33,7 +33,7 @@ namespace DantesRoleplay.Web.Persistence.Migrations
 
                     b.ToTable("web_page", null, t =>
                         {
-                            t.HasCheckConstraint("CK_web_page_active_revision", "\"ActiveRevision\" > 0");
+                            t.HasCheckConstraint("CK_web_page_active_revision", "\"ActiveRevision\" >= 0");
                         });
                 });
 
@@ -107,11 +107,57 @@ namespace DantesRoleplay.Web.Persistence.Migrations
                     b.ToTable("web_page_migration_report", (string)null);
                 });
 
+            modelBuilder.Entity("DantesRoleplay.Web.Pages.WebPageResourceIdentity", b =>
+                {
+                    b.Property<string>("ContentPageId")
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OwnerApplicationId")
+                        .IsRequired()
+                        .HasMaxLength(63)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("QualifiedTargetId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SourceOperationId")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("ContentPageId");
+
+                    b.HasIndex("QualifiedTargetId")
+                        .IsUnique();
+
+                    b.ToTable("web_page_resource_identity", (string)null);
+                });
+
             modelBuilder.Entity("DantesRoleplay.Web.Pages.WebPageRevision", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("CompositionHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CompositionJson")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContentFormat")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT")
+                        .HasDefaultValue("html");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
@@ -135,6 +181,8 @@ namespace DantesRoleplay.Web.Persistence.Migrations
 
                     b.ToTable("web_page_revision", null, t =>
                         {
+                            t.HasCheckConstraint("CK_web_page_revision_content", "(\"ContentFormat\" = 'html' AND \"CompositionJson\" IS NULL AND \"CompositionHash\" IS NULL)\r\nOR (\"ContentFormat\" = 'composition-v1' AND \"Html\" = '' AND \"CompositionJson\" IS NOT NULL\r\n    AND json_valid(\"CompositionJson\") AND length(CAST(\"CompositionJson\" AS BLOB)) <= 1048576\r\n    AND \"CompositionHash\" IS NOT NULL AND length(\"CompositionHash\") = 64\r\n    AND \"CompositionHash\" NOT GLOB '*[^0-9A-F]*')");
+
                             t.HasCheckConstraint("CK_web_page_revision_revision", "\"Revision\" > 0");
                         });
                 });
@@ -156,6 +204,15 @@ namespace DantesRoleplay.Web.Persistence.Migrations
                     b.Navigation("PageRevision");
 
                     b.Navigation("Payload");
+                });
+
+            modelBuilder.Entity("DantesRoleplay.Web.Pages.WebPageResourceIdentity", b =>
+                {
+                    b.HasOne("DantesRoleplay.Web.Pages.WebPage", null)
+                        .WithMany()
+                        .HasForeignKey("ContentPageId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("DantesRoleplay.Web.Pages.WebPageRevision", b =>

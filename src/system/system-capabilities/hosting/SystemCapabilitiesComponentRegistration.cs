@@ -11,6 +11,8 @@ using DantesRoleplay.SchemaValidation;
 using DantesRoleplay.Sources;
 using DantesRoleplay.StateSpaceAdministration;
 using DantesRoleplay.DataAccess.Composition;
+using DantesRoleplay.SystemTasks.Persistence;
+using DantesRoleplay.Interactions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -24,6 +26,9 @@ internal static class SystemCapabilitiesComponentRegistration
         services.AddScoped<ISystemReadCapabilityHandler, SourcesSystemCapabilityHandler>();
         services.AddScoped<ISystemReadCapabilityHandler, ApplicationPreviewSystemCapabilityHandler>();
         services.AddScoped<ISystemReadCapabilityHandler, DependenciesSystemCapabilityHandler>();
+        services.AddScoped<ISystemReadCapabilityHandler, ApplicationCandidateInspectCapabilityHandler>();
+        services.AddScoped<ISystemReadCapabilityHandler, ApplicationCandidateReviewReadCapabilityHandler>();
+        services.AddScoped<ISystemReadCapabilityHandler, ApplicationCandidateCatalogCompareCapabilityHandler>();
         foreach (var id in new[]
         {
             SystemCapabilityIds.ApplicationRegister,
@@ -31,6 +36,14 @@ internal static class SystemCapabilitiesComponentRegistration
             SystemCapabilityIds.ExtensionRegister,
             SystemCapabilityIds.ComponentTypeRegister,
             SystemCapabilityIds.ApplicationActivate,
+            SystemCapabilityIds.ApplicationCandidateWrite,
+            SystemCapabilityIds.ApplicationCandidateIntentUpdate,
+            SystemCapabilityIds.ApplicationCandidateValidate,
+            SystemCapabilityIds.ApplicationCandidateActivate,
+            SystemCapabilityIds.ApplicationCandidateRecover,
+            SystemCapabilityIds.ApplicationCandidateReviewSubmit,
+            SystemCapabilityIds.ApplicationCandidateReviewCancel,
+            SystemCapabilityIds.StandingGrantAdmin,
             SystemCapabilityIds.StateSpaceCreate,
             SystemCapabilityIds.StateSpaceUpgrade,
             SystemCapabilityIds.StateSpaceAdoptLegacy
@@ -40,16 +53,43 @@ internal static class SystemCapabilitiesComponentRegistration
             services.AddScoped<ISystemWriteCapabilityHandler>(provider => Write(provider, capabilityId));
         }
         services.AddScoped<ISystemCapabilityCatalog, SystemCapabilityCatalog>();
+        services.AddScoped<IntentMatchAssociationService>();
+        services.AddScoped<IApplicationCandidateCapabilityGateway, ApplicationCandidateCapabilityGateway>();
         services.AddScoped<ISystemAiToolSource, SystemCapabilityAiToolSource>();
+        services.AddScoped<ISystemAiToolSource, ApplicationCandidateCapabilityAiToolSource>();
         services.AddScoped<ISystemAiToolSource, EcsLifecycleAiToolSource>();
         services.AddScoped<ISystemAiAgentService, SystemAiAgentService>();
+        services.TryAddScoped<ISystemInnerWorkerService, UnavailableSystemInnerWorkerService>();
         services.TryAddSingleton<IPrivateOperatorAuthorizationPolicy, PrivateOperatorAuthorizationPolicy>();
         return services;
     }
 
-    private static SystemAdministrationWriteCapabilityHandler Write(
+    private static ISystemWriteCapabilityHandler Write(
         IServiceProvider provider,
-        string id) => new(
+        string id) => id == SystemCapabilityIds.ApplicationCandidateIntentUpdate
+        ? new ApplicationCandidateIntentUpdateCapabilityHandler(
+            provider.GetRequiredService<DantesRoleplay.DataAccess.DantesRoleplayDbContext>(),
+            provider.GetRequiredService<IApplicationRegistry>(),
+            provider.GetRequiredService<IntentMatchAssociationService>())
+        : id is SystemCapabilityIds.ApplicationCandidateWrite
+            or SystemCapabilityIds.ApplicationCandidateValidate
+            or SystemCapabilityIds.ApplicationCandidateActivate
+            or SystemCapabilityIds.ApplicationCandidateRecover
+        ? new ApplicationCandidateWriteCapabilityHandler(
+            id,
+            provider.GetRequiredService<DantesRoleplay.DataAccess.DantesRoleplayDbContext>(),
+            provider.GetRequiredService<IApplicationRegistry>(),
+            provider.GetRequiredService<IApplicationAuthoringService>())
+        : id == SystemCapabilityIds.StandingGrantAdmin
+        ? new StandingGrantAdministrationSystemCapabilityHandler(provider)
+        : id is SystemCapabilityIds.ApplicationCandidateReviewSubmit
+            or SystemCapabilityIds.ApplicationCandidateReviewCancel
+        ? new ApplicationCandidateReviewWriteCapabilityHandler(
+            id,
+            provider.GetRequiredService<DantesRoleplay.DataAccess.DantesRoleplayDbContext>(),
+            provider.GetRequiredService<IApplicationRegistry>(),
+            provider.GetRequiredService<SystemTaskApplicationValidationService>())
+        : new SystemAdministrationWriteCapabilityHandler(
             id,
             provider.GetRequiredService<IApplicationRegistry>(),
             provider.GetRequiredService<ISourceRegistry>(),

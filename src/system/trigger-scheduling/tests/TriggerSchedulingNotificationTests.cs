@@ -18,7 +18,7 @@ public sealed class TriggerSchedulingNotificationTests : IDisposable
     public void Dispose() => fixture.Dispose();
 
     [Fact]
-    public void Production_composition_enables_only_the_notification_participant_and_status_reader()
+    public void Production_composition_registers_the_composite_participant_and_status_reader()
     {
         using var services = new ServiceCollection()
             .AddDantesRoleplayDataAccess("Data Source=:memory:")
@@ -27,7 +27,7 @@ public sealed class TriggerSchedulingNotificationTests : IDisposable
 
         var participant = scope.ServiceProvider.GetRequiredService<ITriggerFireTransactionParticipant>();
 
-        Assert.IsType<TriggerNotificationTransactionParticipant>(participant);
+        Assert.IsType<SystemTaskTriggerTransactionParticipant>(participant);
         Assert.True(participant.IsAvailable);
         Assert.IsType<SqliteTriggerScheduleStatusReader>(
             scope.ServiceProvider.GetRequiredService<ITriggerScheduleStatusReader>());

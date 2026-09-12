@@ -27,7 +27,8 @@ public sealed record ObservationTriggerDefinition
         ObservationTriggerLifecycle lifecycle, string sourceId, int sourceVersion, string structureId,
         int structureVersion, string structureHash, ObservationMatchAdapterReference adapter,
         CanonicalObservationData adapterConfiguration, TriggerFireTarget target,
-        TriggerNotificationTarget notification)
+        TriggerNotificationTarget notification, TriggerProcedureWorkflowTarget? procedureWorkflow,
+        bool requireWorkflowPayload = true)
     {
         ApplicationId = applicationId ?? throw new ArgumentNullException(nameof(applicationId));
         Id = TriggerSchedulingIdentifier.Qualified(id, nameof(id));
@@ -41,8 +42,10 @@ public sealed record ObservationTriggerDefinition
         if (structureHash is not { Length: 64 } ||
             !structureHash.All(value => char.IsAsciiDigit(value) || value is >= 'A' and <= 'F'))
             throw Failure("OBSERVATION_TRIGGER_STRUCTURE_HASH", "An exact uppercase structure hash is required.");
-        if (target != TriggerFireTarget.NotificationOnly) throw Failure("OBSERVATION_TRIGGER_TARGET",
-            "Observation triggers currently support notification-only targets.");
+        if (!Enum.IsDefined(target) ||
+            (target == TriggerFireTarget.NotificationOnly && procedureWorkflow is not null) ||
+            (requireWorkflowPayload && target == TriggerFireTarget.ProcedureWorkflow && procedureWorkflow is null))
+            throw Failure("OBSERVATION_TRIGGER_TARGET", "The observation trigger target does not match its closed payload shape.");
         Version = version;
         Lifecycle = lifecycle;
         SourceVersion = sourceVersion;
@@ -52,6 +55,7 @@ public sealed record ObservationTriggerDefinition
         AdapterConfiguration = adapterConfiguration ?? throw new ArgumentNullException(nameof(adapterConfiguration));
         Target = target;
         Notification = notification ?? throw new ArgumentNullException(nameof(notification));
+        ProcedureWorkflow = procedureWorkflow;
     }
 
     public ApplicationIdentifier ApplicationId { get; }
@@ -67,15 +71,26 @@ public sealed record ObservationTriggerDefinition
     public CanonicalObservationData AdapterConfiguration { get; }
     public TriggerFireTarget Target { get; }
     public TriggerNotificationTarget Notification { get; }
+    public TriggerProcedureWorkflowTarget? ProcedureWorkflow { get; }
 
     public static ObservationTriggerDefinition Create(ApplicationIdentifier applicationId, string id,
         int version, ObservationTriggerLifecycle lifecycle, string sourceId, int sourceVersion,
         string structureId, int structureVersion, string structureHash,
         ObservationMatchAdapterReference adapter, string adapterConfigurationJson,
-        TriggerFireTarget target, TriggerNotificationTarget notification) =>
+        TriggerFireTarget target, TriggerNotificationTarget notification,
+        TriggerProcedureWorkflowTarget? procedureWorkflow = null) =>
         new(applicationId, id, version, lifecycle, sourceId, sourceVersion, structureId,
             structureVersion, structureHash, adapter,
-            ObservationDataCanonicalizer.ParseObject(adapterConfigurationJson), target, notification);
+            ObservationDataCanonicalizer.ParseObject(adapterConfigurationJson), target, notification, procedureWorkflow);
+
+    public static ObservationTriggerDefinition Stored(ApplicationIdentifier applicationId, string id,
+        int version, ObservationTriggerLifecycle lifecycle, string sourceId, int sourceVersion,
+        string structureId, int structureVersion, string structureHash,
+        ObservationMatchAdapterReference adapter, string adapterConfigurationJson,
+        TriggerFireTarget target, TriggerNotificationTarget notification) =>
+        new(applicationId, id, version, lifecycle, sourceId, sourceVersion, structureId,
+            structureVersion, structureHash, adapter, ObservationDataCanonicalizer.ParseObject(adapterConfigurationJson),
+            target, notification, null, requireWorkflowPayload: false);
 }
 
 public sealed record ObservationMatchInput(

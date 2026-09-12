@@ -166,7 +166,17 @@ public sealed record AiProviderRequest(
     string ResponseSchemaJson,
     IReadOnlyList<AiToolDefinition> Tools,
     AiToolExecutor? ToolExecutor,
-    int MaximumOutputTokens);
+    int MaximumOutputTokens,
+    int MaximumToolCalls = 8,
+    int MaximumResponseBytes = 262_144,
+    TimeSpan? MaximumDuration = null);
+
+/// <summary>Provider-observed counts. Incomplete evidence is only a lower bound; null means unknown.</summary>
+public sealed record AiTokenUsageEvidence(
+    long InputTokens,
+    long OutputTokens,
+    long TotalTokens,
+    bool IsComplete = false);
 
 public sealed record AiProviderResponse(
     bool Ok,
@@ -179,7 +189,8 @@ public sealed record AiProviderResponse(
     string ConversationId = "",
     string ErrorCode = "",
     string ErrorMessage = "",
-    string ReasoningSummary = "")
+    string ReasoningSummary = "",
+    AiTokenUsageEvidence? Usage = null)
 {
     public static AiProviderResponse Failure(string code, string message) =>
         new(false, null, "", "", [], ErrorCode: code, ErrorMessage: message);
@@ -206,7 +217,10 @@ public sealed record AiRequest(
     string ResponseSchemaJson = "",
     IReadOnlyList<string>? AllowedTools = null,
     int MaximumToolRounds = 4,
-    int MaximumOutputTokens = 2_048);
+    int MaximumOutputTokens = 2_048,
+    int MaximumToolCalls = 8,
+    int MaximumResponseBytes = 262_144,
+    TimeSpan? MaximumDuration = null);
 
 public sealed record AiExecutionActivity(
     int Sequence,
@@ -217,6 +231,13 @@ public sealed record AiExecutionActivity(
     string ToolName = "",
     bool InputValidated = false,
     string ErrorCode = "");
+
+/// <summary>
+/// Actual host-returned tool data retained by the required-lifecycle path, not proof of a domain commit.
+/// AI_TOOL_RESULT_UNAVAILABLE marks an oversized result whose content could not be retained; its
+/// Call contains bounded identity only and its Result is a diagnostic, never a fabricated receipt.
+/// </summary>
+public sealed record AiToolExecutionResult(int DispatchOrdinal, AiToolCall Call, AiToolResult Result);
 
 public sealed record AiResponse(
     bool Ok,
@@ -231,7 +252,10 @@ public sealed record AiResponse(
     string ErrorMessage = "",
     string ReasoningSummary = "",
     IReadOnlyList<AiExecutionActivity>? Activities = null,
-    IReadOnlyList<AiMediaContent>? Media = null)
+    IReadOnlyList<AiMediaContent>? Media = null,
+    AiTokenUsageEvidence? Usage = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    IReadOnlyList<AiToolExecutionResult>? ToolResults = null)
 {
     public static AiResponse Failure(string code, string message) =>
         new(false, null, "", null, [], 0, 0, ErrorCode: code, ErrorMessage: message);
@@ -277,4 +301,13 @@ public interface IAiService
         AiRequest request,
         IReadOnlyList<IAiTool> authorizedTools,
         CancellationToken cancellationToken = default);
+
+    /// <summary>Required-lifecycle path. Unsupported implementations fail closed instead of ignoring admission.</summary>
+    Task<AiResponse> SendAgentRequestAsync(
+        AiAgentProfile profile,
+        AiRequest request,
+        IReadOnlyList<IAiTool> authorizedTools,
+        IAiInvocationLifecycle lifecycle,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(AiResponse.Failure("AI_LIFECYCLE_UNAVAILABLE", "This AI service does not support durable dispatch admission."));
 }

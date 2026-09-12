@@ -18,6 +18,7 @@ using DantesRoleplay.Knowledge;
 using DantesRoleplay.Play;
 using DantesRoleplay.SystemConversations;
 using DantesRoleplay.SystemTasks;
+using DantesRoleplay.SystemCapabilities;
 using DantesRoleplay.Ecs;
 using DantesRoleplay.Web.Interactions;
 using Microsoft.AspNetCore.Builder;
@@ -108,12 +109,98 @@ public static partial class WebInterfaceEndpoints
                 "/api/applications/{applicationId}/conversations/{conversationId}/execute",
                 ExecuteApplicationConversationAsync)
             .RequireDantesRoleplayUploadAccess();
+        endpoints.MapGet(
+                "/api/applications/{applicationId}/authoring/capabilities",
+                GetApplicationAuthoringCapabilities)
+            .RequireDantesRoleplayReadAccess();
+        endpoints.MapPost(
+                "/api/applications/{applicationId}/authoring/capabilities/{capabilityId}",
+                InvokeApplicationAuthoringCapabilityAsync)
+            .RequireDantesRoleplayUploadAccess();
 
         // Observation ingestion authenticates phone credentials and supplies its own principal.
         endpoints.MapPost("/api/applications/{applicationId}/observations", SubmitObservationAsync)
             .AddEndpointFilter<WebObservationRequestFilter>()
             .RequireRateLimiting(WebInterfaceSecurity.UploadRateLimitPolicy);
     }
+
+    private static IResult GetApplicationAuthoringCapabilities(
+        string applicationId,
+        HttpContext context,
+        [FromServices] WebPlatformAccessGuard access,
+        [FromServices] IApplicationCandidateCapabilityGateway gateway)
+    {
+        var admitted = access.Evaluate(context);
+        if (!admitted.Authenticated || admitted.TrustedPrincipal is null)
+            return ApplicationAuthoringAccessError(admitted);
+        ApplicationIdentifier app;
+        try { app = ApplicationIdentifier.Parse(applicationId); }
+        catch (ArgumentException)
+        { return Results.Json(new { code = "APPLICATION_ID_INVALID", message = "The application identifier is invalid." }, statusCode: 400); }
+        var result = gateway.Discover(admitted.TrustedPrincipal, app, context.TraceIdentifier);
+        return result.Ok
+            ? Results.Json(new { applicationId = app.Value, capabilities = result.Capabilities })
+            : ApplicationAuthoringError(result.Error);
+    }
+
+    private static async Task<IResult> InvokeApplicationAuthoringCapabilityAsync(
+        string applicationId,
+        string capabilityId,
+        HttpContext context,
+        [FromServices] WebPlatformAccessGuard access,
+        [FromServices] IApplicationCandidateCapabilityGateway gateway,
+        CancellationToken cancellationToken)
+    {
+        var admitted = access.Evaluate(context);
+        if (!admitted.Authenticated || admitted.TrustedPrincipal is null)
+            return ApplicationAuthoringAccessError(admitted);
+        ApplicationIdentifier app;
+        try { app = ApplicationIdentifier.Parse(applicationId); }
+        catch (ArgumentException)
+        { return Results.Json(new { code = "APPLICATION_ID_INVALID", message = "The application identifier is invalid." }, statusCode: 400); }
+        ApplicationAuthoringCapabilityWebRequest request;
+        try { request = await ReadApplicationAuthoringBodyAsync<ApplicationAuthoringCapabilityWebRequest>(context, cancellationToken); }
+        catch (Exception exception) when (exception is JsonException or InvalidOperationException
+            or InteractionContractException or DecoderFallbackException)
+        { return Results.Json(new { code = "APPLICATION_AUTHORING_INPUT_INVALID", message = "The application authoring request is invalid." }, statusCode: 400); }
+        var result = await gateway.InvokeAsync(admitted.TrustedPrincipal, app, capabilityId,
+            request.Input.GetRawText(), request.IdempotencyKey, context.TraceIdentifier, cancellationToken);
+        return result.Ok ? Results.Json(result) : ApplicationAuthoringError(result.Error);
+    }
+
+    private static IResult ApplicationAuthoringAccessError(WebPlatformAccessDecision decision) =>
+        Results.Json(new
+        {
+            code = decision.ErrorCode ?? "PLATFORM_AUTHENTICATION_REQUIRED",
+            message = decision.ErrorMessage ?? "Authenticated platform access is required."
+        }, statusCode: StatusCodes.Status401Unauthorized);
+
+    private static IResult ApplicationAuthoringError(SystemCapabilityError? error)
+    {
+        var code = error?.Code ?? "APPLICATION_AUTHORING_UNAVAILABLE";
+        var status = code.Contains("UNAUTHENTICATED", StringComparison.Ordinal)
+            ? StatusCodes.Status401Unauthorized
+            : code.Contains("DENIED", StringComparison.Ordinal)
+                || code.Contains("NOT_AUTHORIZED", StringComparison.Ordinal)
+                ? StatusCodes.Status403Forbidden
+                : code.Contains("INVALID", StringComparison.Ordinal) || code.EndsWith("REQUIRED", StringComparison.Ordinal)
+                    ? StatusCodes.Status400BadRequest
+                    : code.Contains("CONFLICT", StringComparison.Ordinal) || code.Contains("STALE", StringComparison.Ordinal)
+                        || code.Contains("MISMATCH", StringComparison.Ordinal)
+                        ? StatusCodes.Status409Conflict
+                        : StatusCodes.Status503ServiceUnavailable;
+        return Results.Json(new
+        {
+            code,
+            message = error?.Message ?? "Application candidate authoring is unavailable.",
+            recovery = error?.Recovery ?? "Retry after the current application and permission owners are available."
+        }, statusCode: status);
+    }
+
+    [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+    private sealed record ApplicationAuthoringCapabilityWebRequest(
+        [property: JsonRequired] JsonElement Input,
+        string? IdempotencyKey);
 
     private static async Task<IResult> SubmitObservationAsync(
         string applicationId,
@@ -412,6 +499,34 @@ public static partial class WebInterfaceEndpoints
         return JsonSerializer.Deserialize<T>(canonical, StrictInteractionJson)
             ?? throw new InteractionContractException("INTERACTION_REQUEST_INVALID",
                 "The application action request body is required.");
+    }
+
+    private static async Task<T> ReadApplicationAuthoringBodyAsync<T>(
+        HttpContext context, CancellationToken cancellationToken)
+    {
+        const int maximumBytes = 1_100_000;
+        if (context.Request.ContentLength > maximumBytes)
+            throw new InteractionContractException("APPLICATION_AUTHORING_REQUEST_TOO_LARGE",
+                "The application authoring request is too large.");
+        using var stream = new MemoryStream();
+        var buffer = new byte[8192];
+        while (true)
+        {
+            var read = await context.Request.Body.ReadAsync(buffer, cancellationToken);
+            if (read == 0) break;
+            if (stream.Length + read > maximumBytes)
+                throw new InteractionContractException("APPLICATION_AUTHORING_REQUEST_TOO_LARGE",
+                    "The application authoring request is too large.");
+            stream.Write(buffer, 0, read);
+        }
+        if (stream.Length == 0)
+            throw new InteractionContractException("APPLICATION_AUTHORING_REQUEST_INVALID",
+                "The application authoring request body is required.");
+        var json = StrictInteractionUtf8.GetString(stream.ToArray());
+        var canonical = InteractionCanonicalJson.CanonicalizeObject(json);
+        return JsonSerializer.Deserialize<T>(canonical, StrictInteractionJson)
+            ?? throw new InteractionContractException("APPLICATION_AUTHORING_REQUEST_INVALID",
+                "The application authoring request body is required.");
     }
 
     private static async Task<T> ReadInteractionBodyAsync<T>(HttpContext context, CancellationToken cancellationToken)

@@ -3,6 +3,8 @@ using System.Text;
 using DantesRoleplay.Applications;
 using DantesRoleplay.DataAccess;
 using DantesRoleplay.Ecs;
+using DantesRoleplay.SystemTasks;
+using DantesRoleplay.SystemTasks.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace DantesRoleplay.TriggerScheduling;
@@ -13,15 +15,25 @@ public sealed class SqliteConditionalTriggerStore(
     IApplicationComponentTypeRegistry componentTypes,
     IEntityComponentStore components,
     IEnumerable<IConditionalTriggerAdapter> adapters,
-    ITriggerClock clock) : IConditionalTriggerStore
+    ITriggerClock clock,
+    ISystemTaskDurableService? durableTasks = null) : IConditionalTriggerStore
 {
     public async Task<TriggerSchedulingWriteResult<StoredConditionalTrigger>> AppendAsync(
         ConditionalTriggerDefinition definition,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(definition);
-        var adapter = ResolveAdapter(definition.Adapter);
-        adapter.Validate(definition);
+        IConditionalTriggerAdapter? adapter = null;
+        if (definition.Predicate is null)
+        {
+            adapter = ResolveAdapter(definition.Adapter);
+            adapter.Validate(definition);
+        }
+        else if (definition.Adapter.Id != ConditionalTriggerObserverPredicate.StableAdapterId ||
+                 definition.Adapter.Version != ConditionalTriggerObserverPredicate.StableAdapterVersion ||
+                 definition.AdapterConfiguration.Json != "{}")
+            throw new TriggerSchedulingContractException("CONDITIONAL_PREDICATE_ADAPTER",
+                "Application predicates require the exact registered application-mechanic adapter.");
 
         var existing = await ExistingAsync(definition, cancellationToken);
         if (existing is not null)
@@ -38,6 +50,17 @@ public sealed class SqliteConditionalTriggerStore(
             ? await db.Database.BeginTransactionAsync(cancellationToken) : null;
         try
         {
+            if (definition.Target == TriggerFireTarget.ProcedureWorkflow)
+            {
+                var workflow = definition.ProcedureWorkflow!;
+                var admission = durableTasks is SqliteSystemTaskDurableService durable
+                    ? await durable.AuthorizeTriggerBindingAsync(workflow.InvocationHost,
+                        workflow.SelectedDefinition, definition.ApplicationId, cancellationToken)
+                    : SystemTaskTriggerAdmissionDecision.Deny("SYSTEM_TASK_TRIGGER_UNAVAILABLE", true);
+                if (!admission.Accepted)
+                    throw new TriggerSchedulingContractException(admission.Code,
+                        "The conditional workflow observer could not be authorized for this exact revision.");
+            }
             var current = await db.ConditionalTriggerCurrent.SingleOrDefaultAsync(value =>
                 value.ApplicationId == definition.ApplicationId.Value && value.Id == definition.Id,
                 cancellationToken);
@@ -47,10 +70,10 @@ public sealed class SqliteConditionalTriggerStore(
                     $"Conditional trigger revisions must be appended without gaps (requested {definition.Version}, current {current?.CurrentVersion.ToString() ?? "none"}).");
 
             var snapshots = await SnapshotsAsync(definition, cancellationToken);
-            var truth = definition.Lifecycle == ConditionalTriggerLifecycle.Active
+            var truth = definition.Lifecycle == ConditionalTriggerLifecycle.Active && adapter is not null
                 ? adapter.Evaluate(definition, snapshots) : (bool?)null;
             var armed = definition.Lifecycle == ConditionalTriggerLifecycle.Active &&
-                (definition.Kind != ConditionalTriggerKind.WorldClockThreshold || truth != true);
+                (definition.Predicate is not null || definition.Kind != ConditionalTriggerKind.WorldClockThreshold || truth != true);
             var row = Row(definition, now);
             db.ConditionalTriggers.Add(row);
             if (current is null)
@@ -115,7 +138,9 @@ public sealed class SqliteConditionalTriggerStore(
 
     private Task<ConditionalTriggerRecord?> ExistingAsync(ConditionalTriggerDefinition definition,
         CancellationToken cancellationToken) => db.ConditionalTriggers.AsNoTracking()
-        .Include(value => value.Dependencies).Include(value => value.NotificationEntities)
+        .Include(value => value.Dependencies).Include(value => value.RelationshipDependencies)
+        .Include(value => value.NotificationEntities).Include(value => value.WorkflowBinding)
+        .Include(value => value.PredicateBinding)
         .SingleOrDefaultAsync(value => value.ApplicationId == definition.ApplicationId.Value &&
             value.Id == definition.Id && value.Version == definition.Version, cancellationToken);
 
@@ -166,6 +191,16 @@ public sealed class SqliteConditionalTriggerStore(
                 throw new TriggerSchedulingContractException("CONDITIONAL_DEPENDENCY_ENTITY_MISSING",
                     "A condition dependency entity is missing or deleted.");
         }
+        foreach (var dependency in definition.RelationshipDependencies)
+        {
+            if (!dependency.QualifiedKind.StartsWith(definition.ApplicationId.Value + ".", StringComparison.Ordinal))
+                throw new TriggerSchedulingContractException("CONDITIONAL_RELATIONSHIP_CONTRACT",
+                    "A relationship dependency must be qualified in the trigger application.");
+            if (await components.GetEntityAsync(definition.StateSpaceId, dependency.AnchorEntityId,
+                    cancellationToken) is null)
+                throw new TriggerSchedulingContractException("CONDITIONAL_RELATIONSHIP_ENTITY_MISSING",
+                    "A relationship dependency anchor is missing or deleted.");
+        }
         if (definition.Notification.StateSpaceId is null)
         {
             if (definition.Notification.EntityIds.Count != 0)
@@ -200,13 +235,19 @@ public sealed class SqliteConditionalTriggerStore(
             AdapterVersion = definition.Adapter.Version,
             AdapterConfigurationJson = definition.AdapterConfiguration.Json,
             AdapterConfigurationHash = definition.AdapterConfiguration.Hash,
-            Target = "notification-only",
+            Target = definition.Target == TriggerFireTarget.ProcedureWorkflow
+                ? "procedure-workflow" : "notification-only",
             NotificationTopic = definition.Notification.Topic,
             NotificationSubject = definition.Notification.Subject,
             NotificationBody = definition.Notification.Body,
             NotificationStateSpaceId = definition.Notification.StateSpaceId,
             RecordedAtUtc = now.UtcDateTime
         };
+        if (definition.Target == TriggerFireTarget.ProcedureWorkflow)
+        {
+            row.WorkflowBinding = TriggerProcedureWorkflowBindingPersistence.Conditional(definition);
+            row.PredicateBinding = ConditionalTriggerPredicatePersistence.Create(definition);
+        }
         for (var ordinal = 0; ordinal < definition.Dependencies.Count; ordinal++)
         {
             var value = definition.Dependencies[ordinal];
@@ -221,6 +262,21 @@ public sealed class SqliteConditionalTriggerStore(
                 QualifiedTypeId = value.ComponentType.QualifiedTypeId,
                 TypeVersion = value.ComponentType.TypeVersion,
                 SchemaHash = value.ComponentType.SchemaHash
+            });
+        }
+        for (var ordinal = 0; ordinal < definition.RelationshipDependencies.Count; ordinal++)
+        {
+            var value = definition.RelationshipDependencies[ordinal];
+            row.RelationshipDependencies.Add(new ConditionalTriggerRelationshipDependencyRecord
+            {
+                ApplicationId = definition.ApplicationId.Value,
+                TriggerId = definition.Id,
+                TriggerVersion = definition.Version,
+                Ordinal = ordinal,
+                StateSpaceId = definition.StateSpaceId,
+                QualifiedKind = value.QualifiedKind,
+                AnchorEntityId = value.AnchorEntityId,
+                Incoming = value.Incoming
             });
         }
         for (var ordinal = 0; ordinal < definition.Notification.EntityIds.Count; ordinal++)
@@ -241,14 +297,22 @@ public sealed class SqliteConditionalTriggerStore(
         var dependencies = row.Dependencies.OrderBy(value => value.Ordinal)
             .Select(value => ConditionalTriggerDependency.Create(value.EntityId,
                 new EcsComponentReference(value.QualifiedTypeId, value.TypeVersion, value.SchemaHash))).ToArray();
-        return ConditionalTriggerDefinition.Create(ApplicationIdentifier.Parse(row.ApplicationId), row.Id,
+        var relationships = row.RelationshipDependencies.OrderBy(value => value.Ordinal)
+            .Select(value => ConditionalTriggerRelationshipDependency.Create(value.QualifiedKind,
+                value.AnchorEntityId, value.Incoming)).ToArray();
+        var target = row.Target == "procedure-workflow"
+            ? TriggerFireTarget.ProcedureWorkflow : TriggerFireTarget.NotificationOnly;
+        var predicate = row.PredicateBinding is null ? null
+            : ConditionalTriggerPredicatePersistence.Materialize(row.PredicateBinding);
+        return ConditionalTriggerDefinition.Stored(ApplicationIdentifier.Parse(row.ApplicationId), row.Id,
             row.Version, ParseLifecycle(row.Lifecycle), ParseKind(row.Kind), ParseActivation(row.Activation),
             ParseRearm(row.Rearm), row.StateSpaceId, dependencies,
             ConditionalTriggerAdapterReference.Create(row.AdapterId, row.AdapterVersion),
-            row.AdapterConfigurationJson, TriggerFireTarget.NotificationOnly,
+            row.AdapterConfigurationJson, target,
             TriggerNotificationTarget.Create(row.NotificationTopic, row.NotificationSubject,
                 row.NotificationBody, row.NotificationStateSpaceId,
-                row.NotificationEntities.OrderBy(value => value.Ordinal).Select(value => value.EntityId).ToArray()));
+                row.NotificationEntities.OrderBy(value => value.Ordinal).Select(value => value.EntityId).ToArray()),
+            relationships, predicate);
     }
 
     private async Task<StoredConditionalTrigger> ProjectAsync(ConditionalTriggerRecord row,
@@ -262,7 +326,9 @@ public sealed class SqliteConditionalTriggerStore(
             definition.Lifecycle, definition.Kind, definition.Activation, definition.Rearm,
             definition.StateSpaceId, definition.Dependencies, definition.Adapter,
             definition.AdapterConfiguration, definition.Notification, state?.CurrentTruth,
-            state?.Armed ?? false, Utc(row.RecordedAtUtc));
+            state?.Armed ?? false, Utc(row.RecordedAtUtc), definition.Target,
+            definition.RelationshipDependencies, definition.Predicate,
+            row.WorkflowBinding?.BindingFingerprint, row.PredicateBinding?.BindingFingerprint);
     }
 
     private static bool Equivalent(ConditionalTriggerDefinition value, StoredConditionalTrigger stored) =>
@@ -270,6 +336,11 @@ public sealed class SqliteConditionalTriggerStore(
         value.Lifecycle == stored.Lifecycle && value.Kind == stored.Kind && value.Activation == stored.Activation &&
         value.Rearm == stored.Rearm && value.StateSpaceId == stored.StateSpaceId && value.Adapter == stored.Adapter &&
         value.AdapterConfiguration.Hash == stored.AdapterConfiguration.Hash &&
+        value.Target == stored.Target &&
+        (value.Predicate is null ? null : ConditionalTriggerPredicatePersistence.Create(value).BindingFingerprint)
+            == stored.PredicateFingerprint &&
+        value.RelationshipDependencies.SequenceEqual(stored.RelationshipDependencies ?? []) &&
+        value.ProcedureWorkflow?.Fingerprint == stored.ProcedureWorkflowFingerprint &&
         value.Notification.Topic == stored.Notification.Topic &&
         value.Notification.Subject == stored.Notification.Subject &&
         value.Notification.Body == stored.Notification.Body &&

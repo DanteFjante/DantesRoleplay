@@ -1,5 +1,6 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
+using DantesRoleplay.ApplicationActivation;
 using DantesRoleplay.Applications;
 using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.CatalogNamespaces;
@@ -178,6 +179,38 @@ public sealed class InteractionFeatureRetrievalTests : IDisposable
     }
 
     [Fact]
+    public async Task Retired_records_are_excluded_from_operational_retrieval()
+    {
+        var retired = Record("sample-app.retired", "Retired", "No longer operational.", ["legacy operation"])
+            with { Status = "retired" };
+        var retriever = new InteractionFeatureRetriever(new MutableSnapshots(Snapshot([retired])));
+
+        var result = await retriever.SearchAsync(
+            new(Application, InteractionRetrievalLane.TrustedFeature), new("legacy operation"));
+
+        Assert.Empty(result.Hits);
+    }
+
+    [Fact]
+    public async Task Definition_change_reader_rejects_a_snapshot_from_an_older_activation()
+    {
+        var snapshot = Snapshot();
+        var changes = new MutableDefinitionChanges(Application, snapshot.EffectiveSetFingerprint);
+        var retriever = new InteractionFeatureRetriever(new MutableSnapshots(snapshot), changes: changes);
+        changes.Fingerprint = new string('C', 64);
+
+        var search = await retriever.SearchAsync(
+            new(Application, InteractionRetrievalLane.TrustedFeature), new("find", 10));
+        var rebuild = await retriever.RebuildAsync(
+            new(Application, InteractionRetrievalLane.TrustedFeature));
+
+        Assert.Equal(InteractionRetrievalMode.Unavailable, search.Mode);
+        Assert.Equal("CATALOG_GENERATION_STALE", search.AvailabilityCode);
+        Assert.False(rebuild.Rebuilt);
+        Assert.Equal("CATALOG_GENERATION_STALE", rebuild.AvailabilityCode);
+    }
+
+    [Fact]
     public async Task Rebuild_and_hybrid_search_use_only_current_same_lane_documents()
     {
         var provider = new MutableSnapshots(Snapshot());
@@ -211,6 +244,241 @@ public sealed class InteractionFeatureRetrievalTests : IDisposable
         var alpha = Assert.Single(result.Hits, hit => hit.Reference.QualifiedId == "sample-app.alpha");
         Assert.Equal(Hash("{\"id\":\"sample-app.alpha\",\"description\":\"Current replacement feature.\"}"), alpha.Reference.ContentFingerprint);
         Assert.Contains("Current replacement", alpha.Description, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Current_definition_change_rebuilds_a_missing_disposable_sqlite_generation()
+    {
+        var location = InteractionDerivedIndexLocation.Create(_temporaryRoot);
+        var provider = new MutableSnapshots(Snapshot());
+        var changes = new MutableDefinitionChanges(Application, provider.Snapshot.EffectiveSetFingerprint);
+        var retriever = new InteractionFeatureRetriever(provider, new DeterministicEmbeddings(),
+            new SqliteInteractionDerivedVectorIndex(location), changes: changes);
+        var scope = new InteractionFeatureRetrievalScope(Application, InteractionRetrievalLane.TrustedFeature);
+        Assert.True((await retriever.RebuildAsync(scope)).Rebuilt);
+
+        provider.Snapshot = Snapshot(fingerprintMarker: 'B', alphaDescription: "Fresh sqlite feature.");
+        changes.Fingerprint = provider.Snapshot.EffectiveSetFingerprint;
+        var result = await retriever.SearchAsync(scope, new("alpha current", 10));
+
+        Assert.Equal(InteractionRetrievalMode.Hybrid, result.Mode);
+        Assert.Contains(result.Hits, value => value.Description == "Fresh sqlite feature.");
+    }
+
+    [Fact]
+    public async Task Restricted_discovery_falls_back_after_embedding_failure_without_disclosing_denied_records()
+    {
+        var allowed = Record("sample-app.allowed", "Allowed", "Inspect target", ["show permitted"]);
+        var denied = Enumerable.Range(0, 12).Select(index => Record("sample-app.denied-" + index,
+            "Hidden", "Inspect target secret", ["inspect target"]));
+        var embeddings = new ProhibitedEmbeddings();
+        var retriever = new InteractionFeatureRetriever(new MutableSnapshots(Snapshot(denied.Append(allowed).ToArray())),
+            embeddings, new MemoryVectors());
+        var result = await retriever.SearchAuthorizedAsync(new(Application, InteractionRetrievalLane.TrustedFeature),
+            new("inspect target", 1), (reference, _) => Task.FromResult(reference.QualifiedId == allowed.QualifiedId));
+        var hit = Assert.Single(result.Hits);
+        Assert.Equal(allowed.QualifiedId, hit.Reference.QualifiedId);
+        var baseline = await new InteractionFeatureRetriever(new MutableSnapshots(Snapshot([allowed])))
+            .SearchAuthorizedAsync(new(Application, InteractionRetrievalLane.TrustedFeature), new("inspect target", 1),
+                (_, _) => Task.FromResult(true));
+        Assert.Equal(Assert.Single(baseline.Hits).LexicalRank, hit.LexicalRank);
+        Assert.Null(hit.VectorRank);
+        Assert.False(hit.Exact);
+        Assert.Equal("EMBEDDING_UNAVAILABLE", result.AvailabilityCode);
+        Assert.Equal(1, embeddings.Calls);
+        Assert.Empty(result.ResolutionDiagnostics!);
+    }
+
+    [Fact]
+    public async Task Vector_index_without_subset_support_retains_authorized_lexical_fallback()
+    {
+        var retriever = new InteractionFeatureRetriever(new MutableSnapshots(Snapshot()),
+            new DeterministicEmbeddings(), new EmptyCurrentVectors());
+
+        var result = await retriever.SearchAuthorizedAsync(
+            new(Application, InteractionRetrievalLane.TrustedFeature), new("find", 1),
+            (reference, _) => Task.FromResult(reference.QualifiedId == "sample-app.trusted"));
+
+        Assert.Equal(InteractionRetrievalMode.LexicalFallback, result.Mode);
+        Assert.Equal("VECTOR_AUTHORIZED_SUBSET_UNAVAILABLE", result.AvailabilityCode);
+        Assert.Equal("sample-app.trusted", Assert.Single(result.Hits).Reference.QualifiedId);
+        Assert.Empty(result.ResolutionDiagnostics!);
+    }
+
+    [Fact]
+    public async Task Authorized_semantic_search_filters_denied_records_before_ranking_and_survives_restart()
+    {
+        var allowed = Record("sample-app.allowed", "Allowed", "Permitted operation authorized-vector", []);
+        var denied = Enumerable.Range(0, 12).Select(index => Record("sample-app.denied-" + index,
+            "Hidden", "Restricted operation denied-vector", [])).ToArray();
+        var provider = new MutableSnapshots(Snapshot(denied.Append(allowed).ToArray()));
+        var embeddings = new AuthorizedSubsetEmbeddings();
+        var location = InteractionDerivedIndexLocation.Create(_temporaryRoot);
+        var vectors = new SqliteInteractionDerivedVectorIndex(location);
+        var scope = new InteractionFeatureRetrievalScope(Application, InteractionRetrievalLane.TrustedFeature);
+        Assert.True((await new InteractionFeatureRetriever(provider, embeddings, vectors).RebuildAsync(scope)).Rebuilt);
+        embeddings.Inputs.Clear();
+
+        // A new retriever instance exercises the persisted disposable generation after restart.
+        var restarted = new InteractionFeatureRetriever(provider, embeddings,
+            new SqliteInteractionDerivedVectorIndex(location));
+        var result = await restarted.SearchAuthorizedAsync(scope, new("semantic request", 1),
+            (reference, _) => Task.FromResult(reference.QualifiedId == allowed.QualifiedId));
+
+        var hit = Assert.Single(result.Hits);
+        Assert.Equal(InteractionRetrievalMode.Hybrid, result.Mode);
+        Assert.Equal(allowed.QualifiedId, hit.Reference.QualifiedId);
+        Assert.Equal(1, hit.VectorRank);
+        Assert.Null(hit.LexicalRank);
+        Assert.Empty(result.ResolutionDiagnostics!);
+        Assert.Equal(["semantic request"], Assert.Single(embeddings.Inputs));
+    }
+
+    [Fact]
+    public async Task Authorized_stale_generation_falls_back_to_current_lexical_view_without_rebuild()
+    {
+        var allowed = Record("sample-app.allowed", "Allowed", "Old description authorized-vector", []);
+        var provider = new MutableSnapshots(Snapshot([allowed]));
+        var changes = new MutableDefinitionChanges(Application, provider.Snapshot.EffectiveSetFingerprint);
+        var embeddings = new AuthorizedSubsetEmbeddings();
+        var vectors = new MemoryVectors();
+        var scope = new InteractionFeatureRetrievalScope(Application, InteractionRetrievalLane.TrustedFeature);
+        var retriever = new InteractionFeatureRetriever(provider, embeddings, vectors, changes: changes);
+        Assert.True((await retriever.RebuildAsync(scope)).Rebuilt);
+        provider.Snapshot = Snapshot([Record("sample-app.allowed", "Allowed", "Current lexical marker", [])], 'B');
+        changes.Fingerprint = provider.Snapshot.EffectiveSetFingerprint;
+        embeddings.Inputs.Clear();
+
+        var result = await retriever.SearchAuthorizedAsync(scope, new("current lexical marker", 1),
+            (reference, _) => Task.FromResult(reference.QualifiedId == allowed.QualifiedId));
+
+        Assert.Equal(InteractionRetrievalMode.LexicalFallback, result.Mode);
+        Assert.Equal("VECTOR_INDEX_STALE", result.AvailabilityCode);
+        Assert.Equal("Current lexical marker", Assert.Single(result.Hits).Description);
+        Assert.Equal(["current lexical marker"], Assert.Single(embeddings.Inputs));
+        Assert.Equal(1, vectors.Replacements);
+    }
+
+    [Fact]
+    public async Task Denied_aliases_do_not_change_authorized_exact_resolution_or_expose_presence()
+    {
+        var allowed = Record("sample-app.allowed", "Allowed", "Inspect", ["inspect target"]);
+        var denied = Record("sample-app.denied", "Hidden", "Secret", ["inspect target"]);
+        var scope = new InteractionFeatureRetrievalScope(Application, InteractionRetrievalLane.TrustedFeature);
+        var withDenied = new InteractionFeatureRetriever(new MutableSnapshots(Snapshot([allowed, denied])));
+        var result = await withDenied.SearchAuthorizedAsync(scope, new("inspect target"),
+            (reference, _) => Task.FromResult(reference.QualifiedId == allowed.QualifiedId));
+        Assert.Equal(InteractionRetrievalMode.Exact, result.Mode);
+        Assert.Equal(allowed.QualifiedId, Assert.Single(result.Hits).Reference.QualifiedId);
+        var deniedOnly = await withDenied.SearchAuthorizedAsync(scope, new("inspect target"), (_, _) => Task.FromResult(false));
+        var empty = await new InteractionFeatureRetriever(new MutableSnapshots(Snapshot(Array.Empty<CatalogRecordDefinition>())))
+            .SearchAuthorizedAsync(scope, new("inspect target"), (_, _) => Task.FromResult(false));
+        Assert.Equal(empty.Mode, deniedOnly.Mode);
+        Assert.Equal(empty.AvailabilityCode, deniedOnly.AvailabilityCode);
+        Assert.Equal(empty.AvailabilityMessage, deniedOnly.AvailabilityMessage);
+        Assert.Empty(deniedOnly.Hits);
+        Assert.Empty(deniedOnly.ResolutionDiagnostics!);
+    }
+
+    [Fact]
+    public async Task Definition_change_during_target_authorization_rejects_the_stale_view()
+    {
+        var snapshots = new MutableSnapshots(Snapshot());
+        var changes = new MutableDefinitionChanges(Application, snapshots.Snapshot.EffectiveSetFingerprint);
+        var retriever = new InteractionFeatureRetriever(snapshots, changes: changes);
+        var result = await retriever.SearchAuthorizedAsync(new(Application, InteractionRetrievalLane.TrustedFeature),
+            new("find"), (_, _) => { changes.Fingerprint = new string('B', 64); return Task.FromResult(true); });
+        Assert.Equal("CATALOG_GENERATION_STALE", result.AvailabilityCode);
+        Assert.Empty(result.Hits);
+    }
+
+    [Fact]
+    public async Task Legitimately_empty_current_generation_does_not_reembed_catalog()
+    {
+        var provider = new MutableSnapshots(Snapshot());
+        var changes = new MutableDefinitionChanges(Application, provider.Snapshot.EffectiveSetFingerprint);
+        var embeddings = new ControlledEmbeddings();
+        embeddings.Release.TrySetResult();
+        var vectors = new EmptyCurrentVectors();
+        var retriever = new InteractionFeatureRetriever(provider, embeddings, vectors, changes: changes);
+        var result = await retriever.SearchAsync(new(Application, InteractionRetrievalLane.TrustedFeature), new("find", 10));
+        Assert.Equal(InteractionRetrievalMode.Hybrid, result.Mode);
+        Assert.Equal(0, embeddings.CatalogBatches);
+        Assert.Equal(0, vectors.Replacements);
+    }
+
+    [Fact]
+    public async Task Concurrent_scoped_misses_share_one_refresh_and_cancelled_waiter_does_not_cancel_owner()
+    {
+        var provider = new MutableSnapshots(Snapshot());
+        var changes = new MutableDefinitionChanges(Application, provider.Snapshot.EffectiveSetFingerprint);
+        var embeddings = new ControlledEmbeddings();
+        var vectors = new MemoryVectors();
+        var coordinator = new InteractionRetrievalRefreshCoordinator();
+        var leaderRetriever = new InteractionFeatureRetriever(provider, embeddings, vectors, changes: changes, refresh: coordinator);
+        var waiterRetriever = new InteractionFeatureRetriever(provider, embeddings, vectors, changes: changes, refresh: coordinator);
+        var scope = new InteractionFeatureRetrievalScope(Application, InteractionRetrievalLane.TrustedFeature);
+        var leader = leaderRetriever.SearchAsync(scope, new("find", 10));
+        await embeddings.Started.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        using var cancelled = new CancellationTokenSource();
+        var waiter = waiterRetriever.SearchAsync(scope, new("find", 10));
+        var cancelledWaiter = waiterRetriever.SearchAsync(scope, new("find", 10), cancelled.Token);
+        try
+        {
+            cancelled.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => cancelledWaiter);
+            Assert.False(leader.IsCompleted);
+            Assert.Equal(1, embeddings.CatalogBatches);
+        }
+        finally { embeddings.Release.TrySetResult(); }
+        Assert.All(await Task.WhenAll(leader, waiter), result => Assert.Equal(InteractionRetrievalMode.Hybrid, result.Mode));
+        Assert.Equal(1, embeddings.CatalogBatches);
+    }
+
+    [Fact]
+    public async Task Activation_change_during_shared_refresh_cannot_publish_or_disclose_old_generation()
+    {
+        var provider = new MutableSnapshots(Snapshot());
+        var changes = new MutableDefinitionChanges(Application, provider.Snapshot.EffectiveSetFingerprint);
+        var embeddings = new ControlledEmbeddings();
+        var vectors = new MemoryVectors();
+        var retriever = new InteractionFeatureRetriever(provider, embeddings, vectors, changes: changes);
+        var scope = new InteractionFeatureRetrievalScope(Application, InteractionRetrievalLane.TrustedFeature);
+        var search = retriever.SearchAsync(scope, new("find", 10));
+        await embeddings.Started.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        provider.Snapshot = Snapshot(fingerprintMarker: 'B');
+        changes.Fingerprint = provider.Snapshot.EffectiveSetFingerprint;
+        embeddings.Release.TrySetResult();
+        var stale = await search;
+        Assert.Equal(InteractionRetrievalMode.Unavailable, stale.Mode);
+        Assert.Equal("CATALOG_GENERATION_STALE", stale.AvailabilityCode);
+        Assert.Empty(stale.Hits);
+        Assert.Empty(vectors.Ids);
+        var fresh = await retriever.SearchAsync(scope, new("find", 10));
+        Assert.Equal(InteractionRetrievalMode.Hybrid, fresh.Mode);
+        Assert.All(fresh.Hits, hit => Assert.Equal(provider.Snapshot.Manifest.Fingerprint, hit.Reference.CatalogFingerprint));
+    }
+
+    [Fact]
+    public async Task Cancelled_refresh_owner_releases_capacity_for_a_later_retry()
+    {
+        var provider = new MutableSnapshots(Snapshot());
+        var changes = new MutableDefinitionChanges(Application, provider.Snapshot.EffectiveSetFingerprint);
+        var embeddings = new ControlledEmbeddings();
+        var vectors = new MemoryVectors();
+        var retriever = new InteractionFeatureRetriever(provider, embeddings, vectors, changes: changes);
+        var scope = new InteractionFeatureRetrievalScope(Application, InteractionRetrievalLane.TrustedFeature);
+        using var cancelled = new CancellationTokenSource();
+        var owner = retriever.SearchAsync(scope, new("find", 10), cancelled.Token);
+        await embeddings.Started.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        var waiter = retriever.SearchAsync(scope, new("find", 10));
+        cancelled.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => owner);
+        Assert.Equal(InteractionRetrievalMode.LexicalFallback, (await waiter).Mode);
+        Assert.Empty(vectors.Ids);
+        embeddings.Release.TrySetResult();
+        Assert.Equal(InteractionRetrievalMode.Hybrid, (await retriever.SearchAsync(scope, new("find", 10))).Mode);
+        Assert.Equal(2, embeddings.CatalogBatches);
     }
 
     [Fact]
@@ -323,9 +591,9 @@ public sealed class InteractionFeatureRetrievalTests : IDisposable
         ]);
     }
 
-    private static ActiveCatalogFeatureSnapshot Snapshot(IReadOnlyList<CatalogRecordDefinition> records)
+    private static ActiveCatalogFeatureSnapshot Snapshot(IReadOnlyList<CatalogRecordDefinition> records, char fingerprintMarker = 'A')
     {
-        var manifest = CatalogNavigationManifest.Create(Application, new string('A', 64), "catalog-lexical-v1",
+        var manifest = CatalogNavigationManifest.Create(Application, new string(fingerprintMarker, 64), "catalog-lexical-v1",
             [new("sample", "Sample", "Generic sample contracts.")],
             [new("sample", "", "Sample", "Generic sample contracts.", CatalogDescriptionStatus.Authored)], records);
         return new(manifest, records.Select(record => new ActiveCatalogFeatureDocument(record, SourceTrust.Trusted)).ToArray());
@@ -369,6 +637,23 @@ public sealed class InteractionFeatureRetrievalTests : IDisposable
         }
     }
 
+    private sealed class MutableDefinitionChanges(ApplicationIdentifier application, string fingerprint)
+        : IApplicationDefinitionChangeReader
+    {
+        public string Fingerprint { get; set; } = fingerprint;
+
+        public ApplicationDefinitionChange? CurrentChange(ApplicationIdentifier applicationId) => applicationId == application
+            ? new(application, 1, Fingerprint, "fixture-operation", DateTime.UnixEpoch,
+                new([], []), new(new string('A', 64), "fixture", true), new("rebuildable", false, false))
+            : null;
+
+        public ApplicationDefinitionChange? RevisionChange(ApplicationIdentifier applicationId, int activationRevision) =>
+            applicationId == application && activationRevision == 1 ? CurrentChange(applicationId) : null;
+
+        public IReadOnlyList<ApplicationDefinitionChange> ChangesAfter(ApplicationIdentifier applicationId,
+            int afterActivationRevision, int limit) => [];
+    }
+
     private sealed class DeterministicEmbeddings : ITextEmbeddingProvider
     {
         private static readonly EmbeddingProviderIdentity Identity = new("fixture", "embedding", "1", 2);
@@ -381,18 +666,50 @@ public sealed class InteractionFeatureRetrievalTests : IDisposable
 
     private sealed class MemoryVectors : IInteractionDerivedVectorIndex
     {
-        private readonly Dictionary<string, IReadOnlyList<InteractionVectorDocument>> _documents = new(StringComparer.Ordinal);
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<string, IReadOnlyList<InteractionVectorDocument>> _documents = new(StringComparer.Ordinal);
+        internal int Replacements;
         public IReadOnlyList<string> Ids => _documents.Values.SelectMany(value => value).Select(value => value.Reference.QualifiedId).ToArray();
         public Task ReplaceAsync(InteractionRetrievalGeneration generation, IReadOnlyList<InteractionVectorDocument> documents, CancellationToken cancellationToken = default)
         {
+            Replacements++;
             _documents[generation.GenerationKey] = documents.ToArray();
             return Task.CompletedTask;
         }
         public Task<IReadOnlyList<InteractionVectorCandidate>> SearchAsync(InteractionRetrievalGeneration generation, float[] query, int limit, CancellationToken cancellationToken = default)
         {
-            if (!_documents.TryGetValue(generation.GenerationKey, out var documents)) return Task.FromResult<IReadOnlyList<InteractionVectorCandidate>>([]);
+            if (!_documents.TryGetValue(generation.GenerationKey, out var documents))
+                throw new InteractionContractException("VECTOR_INDEX_STALE", "The fixture has no current generation.");
             return Task.FromResult<IReadOnlyList<InteractionVectorCandidate>>(documents.Select(value => new InteractionVectorCandidate(
                 value.Reference.QualifiedId, value.Vector[0] == query[0] ? 0 : 1)).OrderBy(value => value.Distance).ThenBy(value => value.QualifiedId, StringComparer.Ordinal).Take(limit).ToArray());
+        }
+        public Task<IReadOnlyList<InteractionVectorCandidate>> SearchAuthorizedAsync(InteractionRetrievalGeneration generation,
+            float[] query, IReadOnlyCollection<string> authorizedQualifiedIds, int limit,
+            CancellationToken cancellationToken = default)
+        {
+            if (!_documents.TryGetValue(generation.GenerationKey, out var documents))
+                throw new InteractionContractException("VECTOR_INDEX_STALE", "The fixture has no current generation.");
+            var allowed = authorizedQualifiedIds.ToHashSet(StringComparer.Ordinal);
+            return Task.FromResult<IReadOnlyList<InteractionVectorCandidate>>(documents
+                .Where(value => allowed.Contains(value.Reference.QualifiedId))
+                .Select(value => new InteractionVectorCandidate(value.Reference.QualifiedId,
+                    value.Vector[0] == query[0] ? 0 : 1))
+                .OrderBy(value => value.Distance).ThenBy(value => value.QualifiedId, StringComparer.Ordinal)
+                .Take(limit).ToArray());
+        }
+    }
+
+    private sealed class AuthorizedSubsetEmbeddings : ITextEmbeddingProvider
+    {
+        private static readonly EmbeddingProviderIdentity Identity = new("fixture", "authorized-subset", "1", 2);
+        internal List<string[]> Inputs { get; } = [];
+        public Task<EmbeddingProviderStatus> CheckAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult(new EmbeddingProviderStatus(true, Identity));
+        public Task<EmbeddingBatchResult> EmbedAsync(IReadOnlyList<string> inputs, CancellationToken cancellationToken = default)
+        {
+            Inputs.Add(inputs.ToArray());
+            return Task.FromResult(new EmbeddingBatchResult(Identity, inputs.Select(value =>
+                value.Contains("semantic request", StringComparison.OrdinalIgnoreCase)
+                || value.Contains("-vector", StringComparison.OrdinalIgnoreCase) ? new[] { 0f, 1f } : new[] { 1f, 0f }).ToArray()));
         }
     }
 
@@ -400,5 +717,43 @@ public sealed class InteractionFeatureRetrievalTests : IDisposable
     {
         public Task ReplaceAsync(InteractionRetrievalGeneration generation, IReadOnlyList<InteractionVectorDocument> documents, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
         public Task<IReadOnlyList<InteractionVectorCandidate>> SearchAsync(InteractionRetrievalGeneration generation, float[] query, int limit, CancellationToken cancellationToken = default) => throw new InvalidOperationException();
+    }
+
+    private sealed class ControlledEmbeddings : ITextEmbeddingProvider
+    {
+        private static readonly EmbeddingProviderIdentity Identity = new("fixture", "controlled", "1", 2);
+        internal readonly TaskCompletionSource Started = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        internal readonly TaskCompletionSource Release = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        internal int CatalogBatches;
+        public Task<EmbeddingProviderStatus> CheckAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult(new EmbeddingProviderStatus(true, Identity));
+        public async Task<EmbeddingBatchResult> EmbedAsync(IReadOnlyList<string> inputs, CancellationToken cancellationToken = default)
+        {
+            if (inputs.Count > 1)
+            {
+                Interlocked.Increment(ref CatalogBatches);
+                Started.TrySetResult();
+                await Release.Task.WaitAsync(cancellationToken);
+            }
+            return new(Identity, inputs.Select(_ => new[] { 1f, 0f }).ToArray());
+        }
+    }
+
+    private sealed class EmptyCurrentVectors : IInteractionDerivedVectorIndex
+    {
+        internal int Replacements;
+        public Task ReplaceAsync(InteractionRetrievalGeneration generation, IReadOnlyList<InteractionVectorDocument> documents,
+            CancellationToken cancellationToken = default) { Replacements++; return Task.CompletedTask; }
+        public Task<IReadOnlyList<InteractionVectorCandidate>> SearchAsync(InteractionRetrievalGeneration generation,
+            float[] query, int limit, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<InteractionVectorCandidate>>([]);
+    }
+
+    private sealed class ProhibitedEmbeddings : ITextEmbeddingProvider
+    {
+        internal int Calls;
+        public Task<EmbeddingProviderStatus> CheckAsync(CancellationToken cancellationToken = default)
+        { Calls++; throw new InvalidOperationException("Restricted retrieval must not call embeddings."); }
+        public Task<EmbeddingBatchResult> EmbedAsync(IReadOnlyList<string> inputs, CancellationToken cancellationToken = default)
+        { Calls++; throw new InvalidOperationException("Restricted retrieval must not call embeddings."); }
     }
 }

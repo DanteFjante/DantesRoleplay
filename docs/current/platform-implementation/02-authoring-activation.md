@@ -1,16 +1,22 @@
 # 02 — Runtime authoring and recoverable activation
 
-Status: proposed implementation plan. This document authorizes no runtime change by itself. Initial callers are the website and Codex through MCP, on one user-controlled installation. Other APIs remain extension points; device and provider bridges are excluded.
+Status: the scoped candidate, validation, reviewed publication, activation and recovery paths below
+are implemented for the website and Codex through MCP on one user-controlled installation. Other
+APIs remain extension points; device and provider bridges are excluded.
 
 Prerequisite: implement [00 — Shared foundation](00-shared-foundation.md) first and have the coordinator supply its accepted foundation revision and contract baseline. This workstream consumes those shared contracts and does not redefine them independently.
 
 ## Outcome and existing owners
 
-An authorized caller can create or revise information, schemas, queries, and JavaScript actions, validate the candidate, activate it within configured permissions, and inspect the resulting revision without rebuilding the host. Application behavior remains authored content; the kernel enforces generic storage, validation, execution, and authority boundaries.
+An authorized caller can use the reviewed candidate paths below to create or revise supported runtime
+definitions and ordinary registered metadata, validate a candidate, activate it within configured
+permissions, and inspect the resulting revision without rebuilding the host. Application behavior
+remains authored content; the kernel enforces generic storage, validation, execution, and authority
+boundaries.
 
 Reuse [InformationStore](../../../src/system/information/persistence/InformationStore.cs), [MechanicStore](../../../src/system/mechanics/persistence/MechanicStore.cs), [the scoped ECS store](../../../DantesRoleplay.DataAccess/Ecs/SqliteApplicationScopedEcsStore.cs), and [schema validation](../../../src/system/schema-validation/persistence/BoundedJsonSchemaValidator.cs). Information records currently update their stored revision; mechanic definitions retain immutable versions. Neither fact establishes one consistent draft-to-activation lifecycle today. Information metadata currently receives bounded JSON-object checks; schema-declared validation requires explicit work.
 
-[Registry administration](../../../src/system/registry-administration/persistence/RegistryAdministrationService.cs) already records registration and audit together. [Application activation](../../../src/system/application-activation/persistence/ApplicationActivationService.cs) validates an exact preview, expected active fingerprint, dependency evidence, and replay identity in a transaction. Its manifest retains document fingerprints and paths; retaining that manifest alone does not preserve changed source bytes. The proposed lifecycle must make runtime-authored revisions recoverable.
+[Registry administration](../../../src/system/registry-administration/persistence/RegistryAdministrationService.cs) records registration and audit together. [Application activation](../../../src/system/application-activation/persistence/ApplicationActivationService.cs) owns exact previews, retained source bytes, immutable generations, active pointers, and publication receipts. Runtime candidates share its retained document identities and evidence rather than introducing a second active catalog.
 
 Extend these owners rather than create a replacement project: they already own authoritative records, dependencies, transactions, and audit. A parallel authoring registry would introduce competing identities and publication state without removing their responsibilities.
 
@@ -18,7 +24,52 @@ Extend these owners rather than create a replacement project: they already own a
 
 The coordinator establishes shared invocation and permission contracts before implementation. Every command carries trusted principal, scope, grant reference, definition revision, operation/parent identity, and budgets. Results carry outcome, data, commit evidence, and an optional task handle. These fields do not create another audit log.
 
-Standing execute, author, and activate permissions are proposed additions; [current authorization](../../../src/system/authorization/domain/PrivateOperatorAuthorization.cs) has no durable grant store. The coordinator owns shared authorization contracts, database migrations, host registration, and cross-workstream wiring. This workstream owns candidate and activation behavior within existing subsystem files. Workstream 01 supplies execution validation; 03 supplies reuse discovery; 04/05 consume activation and grant evidence; 06 supplies website integration. No permanent runtime IDs are allocated here.
+Durable standing grants separate author, validate, activate, read, and execute capabilities. The coordinator owns shared authorization contracts, database migrations, host registration, and cross-workstream wiring. This workstream owns candidate and activation behavior within existing subsystem files. Workstream 01 supplies execution validation; 03 supplies reuse discovery; 04/05 consume activation and grant evidence; 06 supplies website integration. No permanent runtime IDs are allocated here.
+
+## Implemented publication boundary
+
+`SqliteApplicationAuthoringService` retains inert candidates and invokes the registered JavaScript validator against their exact retained source and supplied samples. Validation stores the canonical runtime report, policy fingerprint, sample outcomes, and report hash in operation evidence. Inspection and replay verify that evidence; successful samples alone do not approve a general candidate.
+
+The first automatic publication path updates existing pure JavaScript mechanic bodies. Every Markdown contract, identity, declared requirement, and other generation document must remain unchanged. The owner verifies the original authoring receipt, the complete selected pure mechanic set, current Read/Validate permissions, bounded execution samples, and current Read authority for the predecessor definitions. It retains a real permissioned manual packet and a deterministic reuse review proving that the existing identities and contracts are reused. This case needs no AI equivalence judgment because it creates no competing identity.
+
+New and contract-changed mechanics can use a second automatic path only when the complete candidate remains within the same closed, state-free pure grammar and preserves every other source document. A successful retained fixed-reviewer task supplements the owner proofs: publication independently verifies its canonical result hash, exact candidate and manual input, current grant provenance, completed lease, provider-only accounting, positive reuse judgment, runtime policy, and sample outcomes. Uncertain or incomplete judgments confer no publication authority. Schema conversions and mechanics with services or effects still require their broader validation paths.
+
+New or changed atomic mechanics have a reviewed path within the retained stateful grammar. Each
+stateful sample pins the exact state-space binding revision, role entities, expected data, and
+canonical typed effects. Validation runs the candidate through the real projection, Jint,
+typed-batch, and ECS dry-run owners, retains the canonical batch and current Read/Execute grant
+evidence, and rechecks those pins in the authoring and activation writer. Publication atomically
+rebinds compatible state spaces to the successor activation without changing their data; replay
+verifies the retained binding transition and current authority. Services, events and schema
+conversion remain outside this path.
+
+Reviewed workflow-service candidates have a separate narrow path for one procedure and one workflow
+mechanic Markdown/JavaScript pair. Validation proves that exact retained content, its closed
+query/action/procedure dependencies, current application and state-space authority, and each pinned
+state sample. It executes real reads, dry-runs the first action, or validates the first retained
+catalog procedure job without committing effects or creating tasks. Publication requires the
+authenticated positive reuse judgment, retained runtime report, unchanged dependency/state evidence,
+and current authority, then atomically activates and rebinds compatible state spaces. A failed
+validation leaves the prior activation authoritative, and successful publication is replayable from
+its retained receipt.
+
+Existing query definitions have a distinct reviewed update path; this path does not create a new
+query. The candidate preserves the exact query ID, exposure, executor, roles, route-entity bindings,
+and canonical input/output schemas and hashes. Only a compatible projection update is accepted, and
+the changed projection must resolve as an exact current trusted read-only dependency. Publication
+rechecks the authenticated `ExtendExisting` review receipt and current Read, Validate, and Activate
+authority, then activates and rebinds compatible state spaces through the same retained-history
+boundary.
+
+Publication independently checks current Read/Activate permissions and exact retained validation, compatibility, and policy evidence. The activation owner writes the new generation, active pointer, and both activation and candidate receipts in one SQLite transaction. A failed publication leaves the prior generation and validation intact; an identical retry returns the recorded receipt. Existing change-feed consumers refresh from the new active generation. Recovery creates another inert candidate from retained historical bytes and still requires validation and activation; it does not undo data changes. Legacy scanner MIME labels for decoded JavaScript are treated as equivalent to explicit JavaScript labels when comparing source identity.
+
+Conditional information sources can bind metadata to an exact immutable registered component schema by qualified ID, version, and hash. The information owner stores that schema with its identity, validates each conditional record write against the exact registration, and pins the record to the retained source revision that supplied its schema. Permissioned current or historical reads recheck the retained record, retained source schema, current Read grant, and registered schema identity. A source without a registered reference keeps the existing inline schema behavior and reports that mode explicitly. Incompatible schema changes, stale writes, missing history, and registry drift preserve existing rows and fail with actionable evidence.
+
+The schema-binding migration backfills each live legacy record with its source revision at upgrade so ordinary current-row search remains available; that value does not reconstruct historical schema provenance. A permissioned current read may expose matching legacy content after checking current ownership, Read authority, current-row hashes, and the current source schema, and reports `inline-current-unpinned` or `registered-current-unpinned`. Explicit revision reads still require an exact retained record-to-source pin and return unavailable when old retained JSON lacks it. Migration never rewrites immutable history or guesses which earlier schema accepted the record.
+
+Catalog synchronization starts with a bounded, explicit record selection under an opaque host-configured source root. The catalog owner records the exact application and base activation, manifest identity, file/database/common-ancestor fingerprints, current trusted source identities, and selected file bytes in the existing operation log. Conflict, live database drift needing export, incomplete scans, and oversized selections remain inspectable but cannot authorize a `catalog-sync` candidate. Candidate authoring re-runs the comparison inside its writer transaction and requires every proposed path, source, media type, length, and byte hash to match the receipt before retaining its reference. Comparison never calls export or import, and never chooses or overwrites either divergent version; `CatalogImporter.ApplyAsync` remains a separate explicit boundary.
+
+The website and Codex selected-application gateway exposes that owner as `system.application-candidate.catalog-compare`. Its closed request names one opaque configured root, the expected active fingerprint, and at most sixteen exact mechanic or procedure identities. The server constructs the principal, application revision, command, grant reference, deadline, and one-operation budget. One current grant must contain both Read and Author and cover every selected identity; comparison and replay recheck the registered source bytes, reviewed namespace ownership, and both capabilities before returning any file, database, or ancestor metadata. The result contains the existing invocation envelope and opaque synchronization evidence reference, never a filesystem path or an import/export action.
 
 ## Deliverable slices
 

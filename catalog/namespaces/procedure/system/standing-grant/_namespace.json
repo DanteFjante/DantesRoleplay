@@ -1,0 +1,12 @@
+{
+  "id": "procedure.system.standing-grant",
+  "owner": "procedure",
+  "description": "Generic operator procedures for administering application standing grants.",
+  "allowedKinds": [
+    "procedure"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed as ruleset-neutral standing grant administration guidance."
+}

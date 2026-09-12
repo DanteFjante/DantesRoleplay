@@ -23,6 +23,10 @@ public sealed class WebPageRevision
 
     public required string Html { get; set; }
 
+    public string ContentFormat { get; set; } = WebPageContentFormat.Html;
+    public string? CompositionJson { get; set; }
+    public string? CompositionHash { get; set; }
+
     public DateTime CreatedAt { get; set; }
 
     public List<WebPageAsset> Assets { get; set; } = [];
@@ -67,7 +71,12 @@ public sealed record WebPageDocument(
     string Id,
     int Revision,
     string Html,
-    DateTime CreatedAt);
+    DateTime CreatedAt)
+{
+    public string ContentFormat { get; init; } = WebPageContentFormat.Html;
+    public string? CompositionJson { get; init; }
+    public string? CompositionHash { get; init; }
+}
 
 public sealed record WebPageAssetDocument(
     string PageId,
@@ -100,7 +109,11 @@ public sealed record WebPageRevisionSummary(
     DateTime CreatedAtUtc,
     string ContentHash,
     int AssetCount,
-    long AssetBytes);
+    long AssetBytes)
+{
+    public string ContentFormat { get; init; } = WebPageContentFormat.Html;
+    public string? CompositionHash { get; init; }
+}
 
 public sealed record WebPageRevisionDiscoveryPage(
     IReadOnlyList<WebPageRevisionSummary> Revisions,
@@ -109,7 +122,12 @@ public sealed record WebPageRevisionDiscoveryPage(
 public sealed record WebPageRevisionDocument(
     WebPageRevisionSummary Summary,
     string Html,
-    IReadOnlyList<WebPageAssetDocument> Assets);
+    IReadOnlyList<WebPageAssetDocument> Assets)
+{
+    public string ContentFormat { get; init; } = WebPageContentFormat.Html;
+    public string? CompositionJson { get; init; }
+    public string? CompositionHash { get; init; }
+}
 
 public sealed record WebPageActivationResult(
     string PageId,

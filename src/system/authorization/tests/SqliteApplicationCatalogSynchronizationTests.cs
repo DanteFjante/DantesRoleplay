@@ -1,0 +1,326 @@
+using System.Text.Json;
+using DantesRoleplay.ApplicationActivation;
+using DantesRoleplay.Applications;
+using DantesRoleplay.CatalogNamespaces;
+using DantesRoleplay.DataAccess;
+using DantesRoleplay.DataAccess.Bootstrap;
+using DantesRoleplay.DataAccess.Catalog;
+using DantesRoleplay.DataAccess.Composition;
+using DantesRoleplay.CatalogNavigation;
+using DantesRoleplay.Events;
+using DantesRoleplay.Information;
+using DantesRoleplay.Interactions;
+using DantesRoleplay.LocalAI;
+using DantesRoleplay.Mechanics;
+using DantesRoleplay.Operations;
+using DantesRoleplay.Procedures;
+using DantesRoleplay.Sources;
+using DantesRoleplay.World;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace DantesRoleplay.Authorization.Tests;
+
+public sealed partial class SqliteStandingGrantTargetResolverTests
+{
+    [Fact]
+    public void Production_registration_shares_the_catalog_synchronization_owner_with_candidate_admission()
+    {
+        var services = new ServiceCollection();
+        services.AddDantesRoleplayDataAccess("Filename=:memory:");
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateScopes = true });
+        using var scope = provider.CreateScope();
+
+        var owner = scope.ServiceProvider.GetRequiredService<CatalogSynchronizationService>();
+        Assert.Same(owner, scope.ServiceProvider.GetRequiredService<ICatalogSynchronizationService>());
+        Assert.Same(owner, scope.ServiceProvider.GetRequiredService<IApplicationCatalogSynchronizationEvidenceReader>());
+        Assert.NotNull(scope.ServiceProvider.GetRequiredService<IApplicationAuthoringService>());
+    }
+
+    [Fact]
+    public async Task Catalog_comparison_receipt_replays_and_admits_only_the_exact_reviewed_candidate()
+    {
+        await using var db = fixture.CreateContext();
+        var setup = Setup(db); await ActivateAsync(setup);
+        await SeedGrantAsync(db, [StandingGrantCapability.Author, StandingGrantCapability.Read]);
+        var prepared = await PrepareSynchronizationAsync(db, setup, "Reviewed catalog edit.");
+        var host = ApplicationHost(setup, "catalog-compare");
+        var comparison = await prepared.Service.CompareAsync(host, prepared.CompareRequest);
+        var replay = await prepared.Service.CompareAsync(ApplicationHost(setup, "catalog-compare"), prepared.CompareRequest);
+        var reference = EvidenceReference(comparison);
+        var request = Candidate(prepared, reference);
+        var authoring = Service(db, setup, synchronization: prepared.Service);
+
+        var written = await authoring.WriteCandidateAsync(
+            ApplicationHost(setup, "catalog-candidate", InteractionExecutionProfile.Atomic), request);
+        await File.AppendAllTextAsync(prepared.Path, "\nChanged after the committed candidate.\n");
+        var writeReplay = await authoring.WriteCandidateAsync(
+            ApplicationHost(setup, "catalog-candidate", InteractionExecutionProfile.Atomic), request);
+
+        Assert.Equal(InteractionInvocationResultTag.Completed, comparison.Tag);
+        Assert.Equal(comparison.DataJson, replay.DataJson);
+        Assert.Equal(InteractionInvocationResultTag.Committed, written.Tag);
+        Assert.Equal(InteractionInvocationResultTag.Committed, writeReplay.Tag);
+        var row = Assert.Single(await db.Set<ApplicationCandidateRevisionRecord>().AsNoTracking().ToArrayAsync());
+        Assert.Equal("catalog-sync", row.Origin);
+        Assert.Equal(reference, row.SynchronizationEvidenceReference);
+        Assert.Single(await db.Operations.Where(value => value.Tool == "catalog-synchronization-compare").ToArrayAsync());
+        Assert.Single(await db.Operations.Where(value => value.Tool == "application-candidate").ToArrayAsync());
+    }
+
+    [Theory]
+    [InlineData(StandingGrantCapability.Read)]
+    [InlineData(StandingGrantCapability.Author)]
+    public async Task Catalog_comparison_requires_both_current_read_and_author_authority(
+        StandingGrantCapability capability)
+    {
+        await using var db = fixture.CreateContext();
+        var setup = Setup(db); await ActivateAsync(setup);
+        await SeedGrantAsync(db, [capability]);
+        var prepared = await PrepareSynchronizationAsync(db, setup, "Reviewed catalog edit.");
+
+        var result = await prepared.Service.CompareAsync(
+            ApplicationHost(setup, "catalog-permission-" + capability), prepared.CompareRequest);
+
+        Assert.Equal(InteractionInvocationResultTag.Failed, result.Tag);
+        Assert.Equal("STANDING_GRANT_DENIED", result.Code);
+        Assert.Null(result.DataJson);
+        Assert.Empty(await db.Operations.Where(value => value.Tool == "catalog-synchronization-compare").ToArrayAsync());
+    }
+
+    [Fact]
+    public async Task Catalog_comparison_authorizes_a_file_only_identity_through_its_registered_namespace()
+    {
+        await using var db = fixture.CreateContext();
+        var setup = Setup(db); await ActivateAsync(setup);
+        await SeedGrantAsync(db, [StandingGrantCapability.Author, StandingGrantCapability.Read]);
+        var prepared = await PrepareSynchronizationAsync(db, setup, "Reviewed catalog edit.");
+        const string id = "demo.runtime.new-inspect";
+        var relativePath = CatalogLayout.ProcedureMarkdown("", id);
+        var path = CatalogLayout.ToFileSystemPath(Path.Combine(root, "synchronization"), relativePath);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        await File.WriteAllTextAsync(path, ProcedureText("New catalog procedure.")
+            .Replace("demo.runtime.inspect", id, StringComparison.Ordinal));
+        var request = prepared.CompareRequest with
+        {
+            Records = [new(CatalogRecordKind.Procedure, id)]
+        };
+
+        var result = await prepared.Service.CompareAsync(
+            ApplicationHost(setup, "catalog-new-file"), request);
+
+        Assert.Equal(InteractionInvocationResultTag.Completed, result.Tag);
+        Assert.Equal("ready", JsonDocument.Parse(result.DataJson!).RootElement.GetProperty("status").GetString());
+        Assert.Null(await new ProcedureStore(db).GetAsync(id));
+    }
+
+    [Fact]
+    public async Task Catalog_comparison_replay_rechecks_revoked_authority_before_returning_metadata()
+    {
+        await using var db = fixture.CreateContext();
+        var setup = Setup(db); await ActivateAsync(setup);
+        await SeedGrantAsync(db, [StandingGrantCapability.Author, StandingGrantCapability.Read]);
+        var prepared = await PrepareSynchronizationAsync(db, setup, "Reviewed catalog edit.");
+        var first = await prepared.Service.CompareAsync(
+            ApplicationHost(setup, "catalog-revoked-replay"), prepared.CompareRequest);
+        await RevokeGrantAsync(db);
+
+        var replay = await prepared.Service.CompareAsync(
+            ApplicationHost(setup, "catalog-revoked-replay"), prepared.CompareRequest);
+
+        Assert.Equal(InteractionInvocationResultTag.Completed, first.Tag);
+        Assert.Equal(InteractionInvocationResultTag.Failed, replay.Tag);
+        Assert.Equal("STANDING_GRANT_NOT_CURRENT", replay.Code);
+        Assert.Null(replay.DataJson);
+        Assert.Single(await db.Operations.Where(value => value.Tool == "catalog-synchronization-compare").ToArrayAsync());
+    }
+
+    [Fact]
+    public async Task Catalog_comparison_evidence_can_be_used_by_another_currently_authorized_author()
+    {
+        await using var db = fixture.CreateContext();
+        var setup = Setup(db); await ActivateAsync(setup);
+        await SeedGrantAsync(db, [StandingGrantCapability.Author, StandingGrantCapability.Read]);
+        var prepared = await PrepareSynchronizationAsync(db, setup, "Reviewed catalog edit.");
+        var comparison = await prepared.Service.CompareAsync(
+            ApplicationHost(setup, "catalog-shared-evidence"), prepared.CompareRequest);
+        const string secondPrincipal = "principal.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+        await SeedAdditionalAuthorGrantAsync(db, secondPrincipal);
+        var revision = new ApplicationRevision(Application, 1, setup.Applications.Get(Application)!.Fingerprint, []);
+        var secondHost = InteractionInvocationHost.ForApplication(
+            TrustedPrincipalContext.VerifiedPrincipal(secondPrincipal, "test"), revision, "grant-b@1",
+            "catalog-shared-candidate", InteractionExecutionProfile.Atomic,
+            new InteractionInvocationBudget(1, DateTime.UtcNow.AddMinutes(1)));
+
+        var result = await Service(db, setup, synchronization: prepared.Service).WriteCandidateAsync(
+            secondHost, Candidate(prepared, EvidenceReference(comparison)));
+
+        Assert.Equal(InteractionInvocationResultTag.Committed, result.Tag);
+        var row = Assert.Single(await db.Set<ApplicationCandidateRevisionRecord>().AsNoTracking().ToArrayAsync());
+        Assert.Equal("grant-b@1", row.AuthorGrantReference);
+    }
+
+    [Fact]
+    public async Task Catalog_candidate_rejects_bytes_that_differ_from_the_reviewed_selection()
+    {
+        await using var db = fixture.CreateContext();
+        var setup = Setup(db); await ActivateAsync(setup);
+        await SeedGrantAsync(db, [StandingGrantCapability.Author, StandingGrantCapability.Read]);
+        var prepared = await PrepareSynchronizationAsync(db, setup, "Reviewed catalog edit.");
+        var comparison = await prepared.Service.CompareAsync(
+            ApplicationHost(setup, "catalog-byte-compare"), prepared.CompareRequest);
+        var request = Candidate(prepared, EvidenceReference(comparison));
+        request = request with { Documents = [request.Documents[0] with { Text = request.Documents[0].Text + "\nChanged after review." }] };
+
+        var result = await Service(db, setup, synchronization: prepared.Service).WriteCandidateAsync(
+            ApplicationHost(setup, "catalog-byte-write", InteractionExecutionProfile.Atomic), request);
+
+        Assert.Equal(InteractionInvocationResultTag.Failed, result.Tag);
+        Assert.Equal("APPLICATION_CANDIDATE_SYNC_DOCUMENT_MISMATCH", result.Code);
+        Assert.Empty(await db.Set<ApplicationCandidateRevisionRecord>().ToArrayAsync());
+    }
+
+    [Fact]
+    public async Task Catalog_candidate_rechecks_and_rejects_a_stale_comparison()
+    {
+        await using var db = fixture.CreateContext();
+        var setup = Setup(db); await ActivateAsync(setup);
+        await SeedGrantAsync(db, [StandingGrantCapability.Author, StandingGrantCapability.Read]);
+        var prepared = await PrepareSynchronizationAsync(db, setup, "Reviewed catalog edit.");
+        var comparison = await prepared.Service.CompareAsync(
+            ApplicationHost(setup, "catalog-stale-compare"), prepared.CompareRequest);
+        var request = Candidate(prepared, EvidenceReference(comparison));
+        await File.AppendAllTextAsync(prepared.Path, "\nChanged after comparison.\n");
+
+        var result = await Service(db, setup, synchronization: prepared.Service).WriteCandidateAsync(
+            ApplicationHost(setup, "catalog-stale-write", InteractionExecutionProfile.Atomic), request);
+
+        Assert.Equal(InteractionInvocationResultTag.Failed, result.Tag);
+        Assert.Equal("APPLICATION_CANDIDATE_SYNC_EVIDENCE_STALE", result.Code);
+        Assert.Empty(await db.Set<ApplicationCandidateRevisionRecord>().ToArrayAsync());
+    }
+
+    [Fact]
+    public async Task Catalog_conflict_receipt_preserves_both_versions_and_cannot_admit_a_candidate()
+    {
+        await using var db = fixture.CreateContext();
+        var setup = Setup(db); await ActivateAsync(setup);
+        await SeedGrantAsync(db, [StandingGrantCapability.Author, StandingGrantCapability.Read]);
+        var prepared = await PrepareSynchronizationAsync(db, setup, "File-side version.");
+        var beforeFile = await File.ReadAllTextAsync(prepared.Path);
+        var beforeVersion = (await new ProcedureStore(db).GetAsync("demo.runtime.inspect"))!.Version;
+        await WriteStoredProcedureAsync(db, "Database-side version.");
+        var databaseVersion = (await new ProcedureStore(db).GetAsync("demo.runtime.inspect"))!.Version;
+
+        var comparison = await prepared.Service.CompareAsync(
+            ApplicationHost(setup, "catalog-conflict-compare"), prepared.CompareRequest);
+        var reference = EvidenceReference(comparison);
+        var operation = await db.Operations.AsNoTracking().SingleAsync(value => value.Id == reference);
+        using var evidence = JsonDocument.Parse(operation.GuardEvidenceJson);
+        var recordEvidence = evidence.RootElement.GetProperty("Records")[0];
+        var result = await Service(db, setup, synchronization: prepared.Service).WriteCandidateAsync(
+            ApplicationHost(setup, "catalog-conflict-write", InteractionExecutionProfile.Atomic),
+            Candidate(prepared, reference));
+
+        Assert.Equal("conflict", JsonDocument.Parse(comparison.DataJson!).RootElement.GetProperty("status").GetString());
+        Assert.Equal(InteractionInvocationResultTag.Failed, result.Tag);
+        Assert.Equal("APPLICATION_CANDIDATE_SYNC_CONFLICT", result.Code);
+        Assert.NotEqual(recordEvidence.GetProperty("FileFingerprint").GetString(),
+            recordEvidence.GetProperty("DatabaseFingerprint").GetString());
+        Assert.NotEqual(recordEvidence.GetProperty("AncestorFingerprint").GetString(),
+            recordEvidence.GetProperty("FileFingerprint").GetString());
+        Assert.NotEqual(recordEvidence.GetProperty("AncestorFingerprint").GetString(),
+            recordEvidence.GetProperty("DatabaseFingerprint").GetString());
+        Assert.Equal(beforeFile, await File.ReadAllTextAsync(prepared.Path));
+        Assert.Equal(beforeVersion + 1, databaseVersion);
+        Assert.Equal(databaseVersion, (await new ProcedureStore(db).GetAsync("demo.runtime.inspect"))!.Version);
+        Assert.Empty(await db.Set<ApplicationCandidateRevisionRecord>().ToArrayAsync());
+    }
+
+    private async Task<SynchronizationFixture> PrepareSynchronizationAsync(
+        DantesRoleplayDbContext db, SetupState setup, string fileInstruction)
+    {
+        await WriteStoredProcedureAsync(db, "Inspect it.");
+        var synchronizationRoot = Path.Combine(root, "synchronization");
+        await new CatalogExporter(db).ExportAsync(synchronizationRoot, new CatalogExportOptions(RulesOnly: true));
+        var path = CatalogLayout.ToFileSystemPath(synchronizationRoot,
+            CatalogLayout.ProcedureMarkdown("", "demo.runtime.inspect"));
+        var text = (await File.ReadAllTextAsync(path)).Replace("Inspect it.", fileInstruction, StringComparison.Ordinal);
+        await File.WriteAllTextAsync(path, text);
+        setup.Sources.Register(new(Application, "synchronization-catalog", "synchronization-root",
+            "procedures/**/*.md", SourceTrust.Trusted, 10, "synchronization-catalog"));
+        var roots = new SynchronizationRoots(synchronizationRoot);
+        var importer = new CatalogImporter(db, new MechanicStore(db), new ProcedureStore(db), new WorldStore(db),
+            new EventTypeStore(db), new SubscriptionStore(db));
+        var scanner = new RegisteredSourceScanner(setup.Sources, roots, new LocalDocumentScanner());
+        var overlays = new SourceOverlayResolver();
+        var targets = new SqliteStandingGrantTargetResolver(db, setup.Applications, setup.Activation,
+            setup.Activation, setup.Sources, setup.Extensions, setup.Namespaces,
+            new ActivatedApplicationCatalogMaterializer(setup.Applications, setup.Activation,
+                setup.Sources, roots, setup.Extensions), scanner, overlays, roots);
+        var service = new CatalogSynchronizationService(db, importer, setup.Applications, setup.Activation,
+            setup.Sources, roots, scanner, overlays, new OperationLog(db),
+            new SqliteStandingGrantPolicy(db, targets), targets);
+        var request = new CatalogSynchronizationCompareRequest("synchronization-root",
+            setup.Activation.Current(Application)!.ActivationFingerprint,
+            [new(CatalogRecordKind.Procedure, "demo.runtime.inspect")]);
+        return new(service, request, path, text, CatalogLayout.ProcedureMarkdown("", "demo.runtime.inspect"));
+    }
+
+    private static async Task WriteStoredProcedureAsync(DantesRoleplayDbContext db, string instruction)
+    {
+        await new ProcedureStore(db).WriteAsync(new WriteProcedureRequest
+        {
+            Id = "demo.runtime.inspect", Category = "runtime.inspect", Name = "Inspect runtime",
+            Description = "Inspect the active runtime definition.", Governs = "query(kind: \"runtime.inspect\")",
+            Instructions = "1. " + instruction, Constraints = "- Preserve it.",
+            Status = ProcedureStatus.Active, CreatedBy = "test", ChangeNote = "Synchronization fixture."
+        });
+    }
+
+    private static async Task SeedAdditionalAuthorGrantAsync(
+        DantesRoleplayDbContext db, string principal)
+    {
+        var grant = new StandingGrantRevision("grant-b@1", "grant-b", 1, new string('0', 64), principal,
+            Application, StandingGrantScope.Application, null, [StandingGrantCapability.Author],
+            new(StandingGrantDefinitionMode.ApplicationOwned, [],
+                [new("demo.runtime", true, [CatalogNamespaceKinds.Procedure])]), [], 1,
+            DateTime.UtcNow.AddMinutes(10), false, "grant-b-operation");
+        db.Add(new Operation { Id = grant.IssuedByOperationId, Timestamp = DateTime.UtcNow, Tool = "test" });
+        db.Add(new StandingGrantRevisionRecord
+        {
+            GrantId = grant.GrantId, Revision = grant.Revision, GrantReference = grant.GrantReference,
+            PrincipalReference = grant.PrincipalReference, ApplicationId = grant.ApplicationId.Value,
+            Scope = "application", PermissionsJson = StandingGrantRevisionCanonicalization.PermissionsJson(grant),
+            ContentFingerprint = StandingGrantRevisionCanonicalization.ContentFingerprint(grant),
+            MaximumOperations = grant.MaximumOperations, ExpiresAtUtc = grant.ExpiresAtUtc,
+            IssuedByOperationId = grant.IssuedByOperationId
+        });
+        db.Add(new StandingGrantCurrentRecord { GrantId = grant.GrantId, Revision = grant.Revision });
+        await db.SaveChangesAsync();
+    }
+
+    private static ApplicationCandidateWriteRequest Candidate(SynchronizationFixture fixture, string reference) =>
+        new(null, 0, fixture.CompareRequest.ExpectedActiveFingerprint, "catalog-sync", reference,
+            "Reviewed catalog synchronization.",
+            [new("file:" + fixture.RelativePath, "synchronization-catalog", fixture.RelativePath,
+                "text/markdown", fixture.Text)]);
+
+    private static string EvidenceReference(InteractionInvocationResult result)
+    {
+        Assert.Equal(InteractionInvocationResultTag.Completed, result.Tag);
+        return JsonDocument.Parse(result.DataJson!).RootElement.GetProperty("evidenceReference").GetString()!;
+    }
+
+    private sealed record SynchronizationFixture(CatalogSynchronizationService Service,
+        CatalogSynchronizationCompareRequest CompareRequest, string Path, string Text, string RelativePath);
+
+    private sealed class SynchronizationRoots(string root) : IAllowedSourceRootResolver
+    {
+        public bool TryResolve(string allowedRootId, out string canonicalPath)
+        {
+            canonicalPath = allowedRootId == "synchronization-root" ? root : string.Empty;
+            return canonicalPath.Length != 0;
+        }
+    }
+}

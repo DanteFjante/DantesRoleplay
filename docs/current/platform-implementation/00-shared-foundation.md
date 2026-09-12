@@ -1,9 +1,114 @@
 # Shared executable foundation
 
-Status: precursor implementation plan. Implement this document before assigning plans 01–06. It
-does not create runtime IDs, provider configuration, worker chats, migrations, or a claim that a
-durable workflow exists. The product boundary remains the operator-run website and Codex through
-the current MCP surface; additional APIs are later work.
+Status: foundation implementation accepted for plans 01–06. Assign work only from the
+accepted revision supplied in [the launch prompts](LAUNCH-PROMPTS.md). Initial external surfaces
+remain the operator-run website and Codex through the current MCP surface; additional APIs are
+later work. Durable workflows and focused inner workers remain downstream implementations.
+
+## Implemented agreement for workstream leads
+
+These are the concrete shared owners. The remaining sections explain the foundation's acceptance
+and coordination rules; they do not authorize workstreams to replace this agreement independently.
+
+For an additive shared contract, a lead may prepare a separate proposal commit within its owner
+family, with exact symbols, bounded payload examples, evidence semantics and affected consumers.
+The coordinator reviews, freezes and integrates that proposal before other workstreams adopt it.
+Drafting a proposal does not authorize changing frozen contracts, exposing operations, or generating
+competing migrations. Dependency registration, public transports, migrations and snapshots remain
+coordinated centrally while leads continue independent implementation.
+
+| Boundary | Implemented symbols and location | Availability |
+| --- | --- | --- |
+| Invocation and result | [InteractionInvocationContracts.cs](../../../src/system/interaction-orchestration/domain/InteractionInvocationContracts.cs): `InteractionInvocationHost`, `InteractionInvocationBudget`, `InteractionExecutionProfile`, `InteractionInvocationResult`, `InteractionInvocationIdentity` | Trusted C# host context; authored JSON cannot deserialize authority. Reuse the existing principal and application revision types. |
+| Registered reads | [ApplicationReadModelContracts.cs](../../../src/system/interaction-orchestration/domain/ApplicationReadModelContracts.cs): `IApplicationReadModelInvocationAdapter`, `ApplicationReadModelInvocationRequest` | Real registered reads under the `read-only` profile, current authorization, exact query contract and state binding. |
+| Root atomic actions | [ApplicationActionExecutionContracts.cs](../../../src/system/application-execution/domain/ApplicationActionExecutionContracts.cs): `IApplicationActionInvocationAdapter`, `ApplicationActionInvocationRequest` | Real action/effect execution and authoritative audit receipts. Child proposals and workflow execution return unavailable until their workstreams implement them. |
+| Compact manual context | [InteractionManualContextContracts.cs](../../../src/system/interaction-orchestration/domain/InteractionManualContextContracts.cs): `InteractionManualContextRequest`, `IInteractionManualContextService`, `InteractionManualContextPacket` | Accepted additive request/packet contract. Concrete service, registration and public routes remain plan 03 integration work. |
+| Activation and changes | [ApplicationActivationContracts.cs](../../../src/system/application-activation/domain/ApplicationActivationContracts.cs): `PreparationVersion`, `IActivatedApplicationEvidenceReader`, `IApplicationDefinitionChangeReader` | Accepted bytes, mechanic preparation, old revision reads, and a bounded revision change feed. This feed derives from durable activation history; it is distinct from state-change events. |
+| Durable execution | [SystemTaskDurableContracts.cs](../../../src/system/system-task-orchestration/domain/SystemTaskDurableContracts.cs): `SystemTaskDurableHandle`, `SystemTaskCheckpoint`, `SystemTaskAttemptIdentity`, `SystemTaskSelectedDefinition`, `ISystemTaskDurableService` | Contracts plus registered production `UnavailableSystemTaskDurableService`. No new queue, lease runner, checkpoint persistence or pending handle is claimed. Plan 04 owns that implementation. |
+| Focused inner workers | [SystemInnerWorkerContracts.cs](../../../src/system/system-capabilities/domain/SystemInnerWorkerContracts.cs): `SystemInnerWorkerRequest`, `ISystemInnerWorkerService` | Registered `UnavailableSystemInnerWorkerService`; existing direct AI services remain separate. Plan 05 consumes plan 04's lifecycle. |
+
+The invocation host binds verified principal, application revision, state space and binding revision,
+authorization evidence (`GrantReference`), stable command ID, optional parent command, profile and
+shared budget. The adapters reauthorize rather than treating a grant string as permission. Foundation
+uses the existing private operator authorization policy. Invited-user policy and standing grants
+belong to plan 02; unsupported grants fail closed. Read requests carry their exact
+`InteractionQueryContractReference`; action requests pin mechanic ID, version and content hash.
+
+`InteractionInvocationResult.ToJson()` and normal JSON serialization emit the same closed envelope:
+`tag`, `code`, `message`, `dataJson`, `readEvidence`, `receipt`, `proposal`, `pending`,
+`completionEvidenceReference`, `previousCommits`, and `recoveryIdentity`. Absent scalar/object fields
+are JSON null, and absent prior commits are an empty array. `dataJson` is bounded canonical JSON
+encoded as a string; it is present only for completed output. Tags are `completed`, `proposed`,
+`committed`, `pending`, `failed`, `cancelled`, and `unavailable`. A denial/conflict uses `failed`
+with its stable code. Results cannot be deserialized as new authority.
+
+Completed reads retain state-space, resolution, schema, result and source-revision fingerprints.
+Computation/AI output instead names its validated runner/task result evidence. A committed result
+requires an authoritative operation receipt; audit-only recovery marks `EffectDetailsAvailable`
+false instead of implying that no effects occurred. Completed computations, pending tasks and
+failed/cancelled workflows can retain explicitly labelled previous commits through the optional
+`previousCommits` argument. Completion still needs result evidence, and pending still needs a durable
+handle; earlier commits do not prove remaining work succeeded. Read results, proposals, root commit
+receipts and unavailable results do not carry prior workflow commits. An unresolved execution carries `RecoveryIdentity` separately from its
+stable error code; reconcile that identity before deciding whether to retry. No model report is a
+commit receipt. Command identity remains stable across attempts; changing a canonical command
+payload conflicts with a previously committed command.
+
+The host budget allows 1–16 operations per root, shared through all descendants. Child limits and
+deadlines cannot grow, and retries consume allowance. Input and checkpoint JSON reuse the existing
+64 KiB/depth-32 canonical JSON limits and reject duplicate keys. Task dependencies are bounded to
+16 unique handles. These are current shared limits; propose coordinated changes when a workstream
+needs more. Durable JSON contracts describe named checkpoints and handlers, not serialized engines.
+
+Manual discovery consumes one operation through the trusted invocation host and returns a completed
+computation with source/result evidence. Its intent is at most 256 characters, canonical object input
+at most 2,000 characters, and serialized packet budget 4,000–24,000 characters (default 16,000).
+`InteractionManualContextPacket.ToJson` supplies bounded camelCase serialization; the existing result
+envelope canonicalizes that JSON. A packet has at most eight features, four recipes and eight manual
+sections of at most 2,000 characters each. An optional selected action is a recommendation and must
+be revalidated before execution. Global procedure IDs remain real global IDs; stored synchronization
+hashes and independent match-phrase evidence remain distinct. The result fingerprint hashes canonical
+packet JSON with `resultFingerprint` set to 64 zeroes. An expected resolution fingerprint detects
+drift; it does not grant authority. These contracts alone do not establish service availability.
+
+Production activation requires source services and retains up to 10 MiB per document and 256 MiB
+per candidate. It validates containment, regular source paths, exact length/hash, and the existing
+mechanic Markdown/JavaScript pairing before activation. Browser assets are retained but are not
+evaluated as mechanic bodies. `PreparationVersion` identifies these rules. Prepared revisions fail
+closed on missing/corrupt bytes; historical null-version revisions preserve the legacy source-file
+fallback. `DerivedIndex` describes rebuildability and non-gating policy, not a successful embedding
+refresh. Plans 02/03 own subsequent authoring and derived-generation refresh.
+
+The nullable-column migration is
+`20260911162616_RetainedApplicationActivationEvidence`. It preserves legacy metadata without
+inventing historical bytes. Apply it only at the normal reviewed migration boundary; live operation
+requires a pre-upgrade database/blob backup. Downgrading discards retained content, so operational
+rollback restores that backup. Foundation development and verification use disposable databases.
+
+### Isolation and verification
+
+The selected source base is `97d30712ae1337a6d1fd9956af6afaabb44b6194`, which includes the other
+task's committed platform and website work. No uncommitted source was copied into the foundation;
+unrelated world media and machine-local configuration remain in the original checkout. The accepted
+foundation revision in the launch packet supersedes this source base for all six worktrees.
+
+Create each worktree from that accepted revision. Then run
+[start-platform-worktree.ps1](../../../scripts/start-platform-worktree.ps1) there. `-ValidateOnly`
+reports paths without creating files or starting the host. Normal execution creates a new directory
+under that worktree's ignored `.tmp/platform-runtime/`, uses separate database/blob/derived/output
+paths and a loopback port, and disables model providers/Codex execution. The script launches an
+existing worktree; it does not create Git worktrees. Never copy the original local settings or data.
+Provider integration tests later need explicit disposable configuration rather than enabling a live
+provider inside ordinary verification.
+
+Conformance fixtures are `InteractionInvocationContractTests`, `InteractionInvocationWireTests`,
+`InteractionInvocationAdapterTests`, `SystemTaskDurableContractTests`, and
+`SystemInnerWorkerContractTests`. Activation fixtures are `ApplicationActivationPreparationTests`
+and `ApplicationActivationMigrationTests`, alongside existing activation/catalog/migration checks.
+Tests of unavailable services prove only truthful behavior, not execution or crash recovery.
+The coordinator runs the full solution build, full test suite and opt-in `ProtocolWalkTests` after
+integration. Keep future build/test outputs per worktree; Windows test hosts can lock their loaded
+binaries, so sequence builds and test runs within each worktree.
 
 ## Deliverable and source base
 

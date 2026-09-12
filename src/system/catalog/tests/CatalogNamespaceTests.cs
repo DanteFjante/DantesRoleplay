@@ -102,6 +102,25 @@ public sealed class CatalogNamespaceTests : IDisposable
     }
 
     [Fact]
+    public void Reviewed_query_namespaces_accept_queries_and_preserve_closed_kinds()
+    {
+        using var db = _fixture.CreateContext();
+        var registry = new SqliteCatalogNamespaceRegistry(db);
+        registry.Register(new CatalogNamespaceRegistration("app", "app", "Application records.",
+            [CatalogNamespaceKinds.Query], ReviewStatus: CatalogNamespaceReviewStatuses.Reviewed,
+            ReviewNote: "Reviewed query namespace."));
+        Assert.Equal("app", registry.RequireRecordNamespace("app.summary", CatalogNamespaceKinds.Query).Id);
+
+        registry.Register(new CatalogNamespaceRegistration("other", "other", "Other records.",
+            [CatalogNamespaceKinds.Mechanic], ReviewStatus: CatalogNamespaceReviewStatuses.Reviewed,
+            ReviewNote: "Reviewed mechanic namespace."));
+        Assert.Equal("NAMESPACE_KIND_FORBIDDEN", Assert.Throws<CatalogNamespaceException>(() =>
+            registry.RequireRecordNamespace("other.summary", CatalogNamespaceKinds.Query)).Code);
+        Assert.Throws<ArgumentException>(() =>
+            registry.Register(new CatalogNamespaceRegistration("unknown", "unknown", "Unknown.", ["unknown"])));
+    }
+
+    [Fact]
     public void Search_uses_descriptions_and_disabled_namespaces_are_hidden_by_default()
     {
         using var db = _fixture.CreateContext();

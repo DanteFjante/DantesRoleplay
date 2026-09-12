@@ -235,13 +235,14 @@ public sealed class SqliteOneTimeTriggerWorker(
                 await transaction.RollbackAsync(cancellationToken);
                 return null;
             }
-            var attempt = await db.TriggerFireWork.AsNoTracking()
+            var claimed = await db.TriggerFireWork.AsNoTracking()
                 .Where(value => value.FireId == fireId && value.LeaseToken == token)
-                .Select(value => value.AttemptCount)
+                .Select(value => new { value.AttemptCount, value.CreatedAtUtc })
                 .SingleAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             return new(fireId, trigger.ApplicationId, trigger.Id, trigger.Version, trigger.DueAt,
-                trigger.MisfirePolicy, trigger.Target, attempt, workerId, token, expires);
+                trigger.MisfirePolicy, trigger.Target, claimed.AttemptCount, workerId, token, expires)
+            { AdmittedAt = new DateTimeOffset(DateTime.SpecifyKind(claimed.CreatedAtUtc, DateTimeKind.Utc)) };
         }
         catch
         {
@@ -431,11 +432,11 @@ public sealed class SqliteOneTimeTriggerWorker(
             .OrderBy(link => link.Ordinal)
             .Select(link => link.EntityId)
             .ToArrayAsync(cancellationToken);
-        return OneTimeTriggerDefinition.Create(
+        return OneTimeTriggerDefinition.Stored(
             ApplicationIdentifier.Parse(value.ApplicationId), value.Id, value.Version,
             new DateTimeOffset(value.DueAtUtc, TimeSpan.Zero),
             value.MisfirePolicy == "skip" ? TriggerMisfirePolicy.Skip : TriggerMisfirePolicy.FireOnce,
-            TriggerFireTarget.NotificationOnly, TriggerLifecycle.Active,
+            SqliteTriggerSchedulingStore.ParseTarget(value.Target), TriggerLifecycle.Active,
             TriggerNotificationTarget.Create(value.NotificationTopic, value.NotificationSubject,
                 value.NotificationBody, value.NotificationStateSpaceId, entityIds));
     }

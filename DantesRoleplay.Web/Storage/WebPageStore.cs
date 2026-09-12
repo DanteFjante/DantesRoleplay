@@ -1,7 +1,10 @@
 using System.Security.Cryptography;
+using System.Data;
 using DantesRoleplay.Web.Pages;
 using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace DantesRoleplay.Web.Persistence;
 
@@ -82,6 +85,8 @@ public sealed class WebPageStore(WebContentDbContext db) : IWebPageStore
             {
                 revision.Revision,
                 revision.Html,
+                revision.ContentFormat,
+                revision.CompositionHash,
                 revision.CreatedAt,
                 AssetCount = revision.Assets.Count,
                 AssetBytes = revision.Assets.Select(asset => (long?)asset.Payload!.Content.Length).Sum() ?? 0
@@ -94,9 +99,10 @@ public sealed class WebPageStore(WebContentDbContext db) : IWebPageStore
                 revision.Revision,
                 revision.Revision == page.ActiveRevision,
                 revision.CreatedAt,
-                HtmlHash(revision.Html),
+                revision.CompositionHash ?? HtmlHash(revision.Html),
                 revision.AssetCount,
-                revision.AssetBytes))
+                revision.AssetBytes)
+            { ContentFormat = revision.ContentFormat, CompositionHash = revision.CompositionHash })
             .ToArray();
         return new(values, hasMore ? values[^1].Revision : null);
     }
@@ -132,7 +138,7 @@ public sealed class WebPageStore(WebContentDbContext db) : IWebPageStore
         RequirePageId(id);
         RequireRevision(baseRevision, nameof(baseRevision));
         RequireRevision(expectedLatestRevision, nameof(expectedLatestRevision));
-        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        await using var transaction = await BeginWriterAsync(cancellationToken);
         var page = await db.Pages.SingleOrDefaultAsync(value => value.Id == id, cancellationToken)
             ?? throw new WebPageStoreException("PAGE_UNKNOWN", "The page is unknown.");
         var latestRevision = await db.PageRevisions
@@ -148,6 +154,8 @@ public sealed class WebPageStore(WebContentDbContext db) : IWebPageStore
                 value => value.PageId == id && value.Revision == baseRevision,
                 cancellationToken)
             ?? throw new WebPageStoreException("REVISION_UNKNOWN", "The base revision is unknown.");
+        if (baseRow.ContentFormat != WebPageContentFormat.Html)
+            throw new WebPageStoreException("PAGE_FORMAT_MISMATCH", "HTML editing cannot replace a composition revision. Submit an explicit content bundle.");
         var assets = baseRow.Assets
             .OrderBy(asset => asset.Path, StringComparer.Ordinal)
             .Select(asset => new WebPageAssetUpload(asset.Path, asset.Payload!.Content))
@@ -169,23 +177,31 @@ public sealed class WebPageStore(WebContentDbContext db) : IWebPageStore
         CancellationToken cancellationToken = default)
     {
         RequirePageId(id);
-        RequireRevision(expectedLatestRevision, nameof(expectedLatestRevision));
+        if (expectedLatestRevision < 0) throw new ArgumentOutOfRangeException(nameof(expectedLatestRevision));
         ArgumentNullException.ThrowIfNull(bundle);
         ArgumentNullException.ThrowIfNull(bundle.Assets);
-        var validatedAssets = ValidateContent(bundle.Html, bundle.Assets);
+        var content = WebPageContentValidator.Normalize(bundle);
+        var validatedAssets = content.Assets.Select(asset => (asset.Path, asset.Content)).ToArray();
 
-        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-        var page = await db.Pages.SingleOrDefaultAsync(value => value.Id == id, cancellationToken)
-            ?? throw new WebPageStoreException("PAGE_UNKNOWN", "The page is unknown.");
-        var latestRevision = await db.PageRevisions
-            .Where(value => value.PageId == id)
-            .MaxAsync(value => value.Revision, cancellationToken);
+        await using var transaction = await BeginWriterAsync(cancellationToken);
+        var page = await db.Pages.SingleOrDefaultAsync(value => value.Id == id, cancellationToken);
+        if (page is null && expectedLatestRevision != 0)
+            throw new WebPageStoreException("PAGE_UNKNOWN", "The page is unknown.");
+        if (page is not null && expectedLatestRevision == 0)
+            throw new WebPageStoreException("PAGE_LATEST_STALE", "The page already exists. Reload before saving another draft.");
+        var latestRevision = page is null ? 0 : await db.PageRevisions
+            .Where(value => value.PageId == id).MaxAsync(value => value.Revision, cancellationToken);
         if (latestRevision != expectedLatestRevision)
             throw new WebPageStoreException("PAGE_LATEST_STALE", "The page has a newer revision. Reload before saving another draft.");
 
         var now = DateTime.UtcNow;
+        if (page is null)
+            db.Pages.Add(new WebPage { Id = id, ActiveRevision = 0, UpdatedAt = now });
         var row = await CreateRevisionAsync(
-            id, latestRevision + 1, bundle.Html, validatedAssets, now, cancellationToken);
+            id, latestRevision + 1, content.Html, validatedAssets, now, cancellationToken);
+        row.ContentFormat = content.ContentFormat;
+        row.CompositionJson = content.CompositionJson;
+        row.CompositionHash = content.CompositionHash;
         db.PageRevisions.Add(row);
         await db.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
@@ -200,18 +216,20 @@ public sealed class WebPageStore(WebContentDbContext db) : IWebPageStore
     {
         RequirePageId(id);
         RequireRevision(revision, nameof(revision));
-        RequireRevision(expectedActiveRevision, nameof(expectedActiveRevision));
-        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        if (expectedActiveRevision < 0) throw new ArgumentOutOfRangeException(nameof(expectedActiveRevision));
+        await using var transaction = await BeginWriterAsync(cancellationToken);
         var page = await db.Pages.SingleOrDefaultAsync(value => value.Id == id, cancellationToken)
             ?? throw new WebPageStoreException("PAGE_UNKNOWN", "The page is unknown.");
+        await db.Entry(page).ReloadAsync(cancellationToken);
         if (page.ActiveRevision != expectedActiveRevision)
             throw new WebPageStoreException("PAGE_ACTIVE_STALE", "The active page changed. Reload before publishing or rolling back.");
         if (revision == page.ActiveRevision)
             throw new WebPageStoreException("PAGE_ALREADY_ACTIVE", "The target revision is already active.");
-        if (!await db.PageRevisions.AnyAsync(
-                value => value.PageId == id && value.Revision == revision,
-                cancellationToken))
-            throw new WebPageStoreException("REVISION_UNKNOWN", "The target revision is unknown.");
+        var candidate = await db.PageRevisions.AsNoTracking().SingleOrDefaultAsync(
+            value => value.PageId == id && value.Revision == revision, cancellationToken)
+            ?? throw new WebPageStoreException("REVISION_UNKNOWN", "The target revision is unknown.");
+        if (candidate.ContentFormat != WebPageContentFormat.Html)
+            throw new WebPageStoreException("COMPOSITION_ACTIVATION_UNAVAILABLE", "Composition activation requires the coordinated authoring and publication adapter.");
 
         page.ActiveRevision = revision;
         page.UpdatedAt = DateTime.UtcNow;
@@ -236,6 +254,10 @@ public sealed class WebPageStore(WebContentDbContext db) : IWebPageStore
     {
         ArgumentNullException.ThrowIfNull(bundle);
         ArgumentNullException.ThrowIfNull(bundle.Assets);
+        if (bundle.ContentFormat == WebPageContentFormat.Composition)
+            throw new WebPageStoreException("COMPOSITION_ACTIVATION_UNAVAILABLE", "Composition activation requires the coordinated authoring and publication adapter.");
+        if (bundle.ContentFormat != WebPageContentFormat.Html || bundle.CompositionJson is not null || bundle.CompositionHash is not null)
+            throw new WebPageStoreException("PAGE_FORMAT_MISMATCH", "The legacy activation path accepts only HTML content.");
         if (EncodingByteCount(bundle.Html) > WebPageBundleLimits.MaximumHtmlBytes)
         {
             throw new ArgumentException("The bundle HTML exceeds its size limit.", nameof(bundle));
@@ -253,10 +275,11 @@ public sealed class WebPageStore(WebContentDbContext db) : IWebPageStore
         RequirePageId(id);
         var validatedAssets = ValidateContent(html, assets);
 
-        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        await using var transaction = await BeginWriterAsync(cancellationToken);
 
         var page = await db.Pages
             .SingleOrDefaultAsync(candidate => candidate.Id == id, cancellationToken);
+        if (page is not null) await db.Entry(page).ReloadAsync(cancellationToken);
         var nextRevision = page is null
             ? 1
             : await db.PageRevisions
@@ -301,7 +324,7 @@ public sealed class WebPageStore(WebContentDbContext db) : IWebPageStore
 
         return db.Pages
             .AsNoTracking()
-            .Where(page => page.Id == id)
+            .Where(page => page.Id == id && page.ActiveRevision > 0)
             .Join(
                 db.PageRevisions.AsNoTracking(),
                 page => new { PageId = page.Id, Revision = page.ActiveRevision },
@@ -310,7 +333,8 @@ public sealed class WebPageStore(WebContentDbContext db) : IWebPageStore
                     revision.PageId,
                     revision.Revision,
                     revision.Html,
-                    revision.CreatedAt))
+                    revision.CreatedAt)
+                { ContentFormat = revision.ContentFormat, CompositionJson = revision.CompositionJson, CompositionHash = revision.CompositionHash })
             .SingleOrDefaultAsync(cancellationToken);
     }
 
@@ -329,7 +353,7 @@ public sealed class WebPageStore(WebContentDbContext db) : IWebPageStore
 
         return db.Pages
             .AsNoTracking()
-            .Where(page => page.Id == id)
+            .Where(page => page.Id == id && page.ActiveRevision > 0)
             .Join(
                 db.PageRevisions.AsNoTracking(),
                 page => new { PageId = page.Id, Revision = page.ActiveRevision },
@@ -351,6 +375,22 @@ public sealed class WebPageStore(WebContentDbContext db) : IWebPageStore
                     value.asset.ContentType,
                     value.asset.ContentHash,
                     payload.Content))
+            .SingleOrDefaultAsync(cancellationToken);
+    }
+
+    public Task<WebPageAssetDocument?> GetRevisionAssetAsync(
+        string id, int revision, string path, CancellationToken cancellationToken = default)
+    {
+        if (!WebPageId.IsValid(id) || revision < 1 || !WebPageAssetPath.TryValidate(path, out var validatedPath) ||
+            !validatedPath.StartsWith("assets/", StringComparison.Ordinal))
+            return Task.FromResult<WebPageAssetDocument?>(null);
+        return db.PageRevisions.AsNoTracking()
+            .Where(value => value.PageId == id && value.Revision == revision)
+            .Join(db.PageAssets.AsNoTracking().Where(asset => asset.Path == validatedPath),
+                value => value.Id, asset => asset.PageRevisionId, (value, asset) => new { value, asset })
+            .Join(db.PageAssetContents.AsNoTracking(), pair => pair.asset.ContentHash, payload => payload.ContentHash,
+                (pair, payload) => new WebPageAssetDocument(pair.value.PageId, pair.value.Revision,
+                    pair.asset.Path, pair.asset.ContentType, pair.asset.ContentHash, payload.Content))
             .SingleOrDefaultAsync(cancellationToken);
     }
 
@@ -477,11 +517,53 @@ public sealed class WebPageStore(WebContentDbContext db) : IWebPageStore
                 row.Revision,
                 row.Revision == activeRevision,
                 row.CreatedAt,
-                HtmlHash(row.Html),
+                row.CompositionHash ?? HtmlHash(row.Html),
                 assets.Length,
-                assets.Sum(asset => (long)asset.Content.Length)),
+                assets.Sum(asset => (long)asset.Content.Length))
+            { ContentFormat = row.ContentFormat, CompositionHash = row.CompositionHash },
             row.Html,
-            assets);
+            assets)
+        { ContentFormat = row.ContentFormat, CompositionJson = row.CompositionJson, CompositionHash = row.CompositionHash };
+    }
+
+    private async Task<WriterReservation> BeginWriterAsync(CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var connection = (SqliteConnection)db.Database.GetDbConnection();
+        var close = connection.State != ConnectionState.Open;
+        if (close) await db.Database.OpenConnectionAsync(cancellationToken);
+        SqliteTransaction? sqlite = null;
+        try
+        {
+            // Reserve the single SQLite writer BEFORE comparing any page/revision state.
+            // In particular two first drafts cannot both observe an absent page.
+            sqlite = connection.BeginTransaction(IsolationLevel.Serializable, deferred: false);
+            var transaction = await db.Database.UseTransactionAsync(sqlite, cancellationToken);
+            return new(db, sqlite, transaction!, close);
+        }
+        catch (Exception exception)
+        {
+            if (sqlite is not null) await sqlite.DisposeAsync();
+            if (close) await db.Database.CloseConnectionAsync();
+            if (exception is SqliteException { SqliteErrorCode: 5 or 6 })
+                throw new WebPageStoreException("PAGE_WRITE_BUSY", "Another content writer is active. Reload before retrying.");
+            throw;
+        }
+    }
+
+    private sealed class WriterReservation(WebContentDbContext context, SqliteTransaction sqlite,
+        IDbContextTransaction transaction, bool close) : IAsyncDisposable
+    {
+        public Task CommitAsync(CancellationToken cancellationToken) => transaction.CommitAsync(cancellationToken);
+        public async ValueTask DisposeAsync()
+        {
+            try { await transaction.DisposeAsync(); }
+            finally
+            {
+                try { await sqlite.DisposeAsync(); }
+                finally { if (close) await context.Database.CloseConnectionAsync(); }
+            }
+        }
     }
 
     private static string HtmlHash(string html) =>

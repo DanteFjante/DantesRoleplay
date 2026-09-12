@@ -13,6 +13,13 @@ internal static class CatalogComponentRegistration
         services.AddScoped<EventTypeSeeder>();
         services.AddScoped<MechanicSeeder>();
         services.AddScoped<ContentHashBackfill>();
+        services.AddScoped<CatalogExporter>();
+        services.AddScoped<CatalogImporter>();
+        services.AddScoped<CatalogSynchronizationService>();
+        services.AddScoped<ICatalogSynchronizationService>(provider =>
+            provider.GetRequiredService<CatalogSynchronizationService>());
+        services.AddScoped<IApplicationCatalogSynchronizationEvidenceReader>(provider =>
+            provider.GetRequiredService<CatalogSynchronizationService>());
         services.AddScoped<SqliteCatalogNamespaceRegistry>();
         services.AddScoped<ICatalogNamespaceRegistry>(provider =>
             provider.GetRequiredService<SqliteCatalogNamespaceRegistry>());

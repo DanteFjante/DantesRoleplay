@@ -172,7 +172,7 @@ internal static class TriggerSchedulingModelConfiguration
         {
             entity.ToTable("trigger_one_time_definition", table =>
             {
-                table.HasCheckConstraint("CK_trigger_one_time_definition_values", $"{application} AND {identifier} AND \"Version\" > 0 AND \"MisfirePolicy\" IN ('skip', 'fire-once') AND \"Target\" = 'notification-only' AND \"Lifecycle\" IN ('active', 'cancelled')");
+                table.HasCheckConstraint("CK_trigger_one_time_definition_values", $"{application} AND {identifier} AND \"Version\" > 0 AND \"MisfirePolicy\" IN ('skip', 'fire-once') AND \"Target\" IN ('notification-only', 'procedure-workflow') AND \"Lifecycle\" IN ('active', 'cancelled')");
                 table.HasCheckConstraint("CK_trigger_one_time_notification_values",
                     "length(\"NotificationTopic\") BETWEEN 1 AND 200 AND length(\"NotificationSubject\") BETWEEN 1 AND 400 AND length(CAST(\"NotificationBody\" AS BLOB)) <= 16384 AND (\"NotificationStateSpaceId\" IS NULL OR length(\"NotificationStateSpaceId\") BETWEEN 1 AND 200)");
             });
@@ -206,6 +206,14 @@ internal static class TriggerSchedulingModelConfiguration
                 .HasForeignKey(row => new { row.ApplicationId, Id = row.TriggerId, Version = row.TriggerVersion })
                 .OnDelete(DeleteBehavior.Restrict);
         });
+
+        ConfigureWorkflowBinding<OneTimeTriggerWorkflowBindingRecord>(modelBuilder,
+            "trigger_one_time_workflow_binding");
+        modelBuilder.Entity<OneTimeTriggerWorkflowBindingRecord>()
+            .HasOne(row => row.Trigger).WithOne(row => row.WorkflowBinding)
+            .HasForeignKey<OneTimeTriggerWorkflowBindingRecord>(row => new
+                { row.ApplicationId, Id = row.TriggerId, Version = row.TriggerVersion })
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<OneTimeTriggerCurrentRecord>(entity =>
         {
@@ -346,7 +354,7 @@ internal static class TriggerSchedulingModelConfiguration
             entity.ToTable("trigger_recurring_definition", table =>
             {
                 table.HasCheckConstraint("CK_trigger_recurring_definition_values",
-                    $"{application} AND {identifier} AND \"Version\" > 0 AND \"Lifecycle\" IN ('active', 'paused', 'cancelled') AND \"Kind\" IN ('daily', 'weekly', 'monthly') AND \"Interval\" BETWEEN 1 AND 365 AND \"LocalTimeSeconds\" BETWEEN 0 AND 86399 AND length(\"TimeZoneId\") BETWEEN 3 AND 100 AND \"GapPolicy\" IN ('skip', 'next-valid') AND \"OverlapPolicy\" IN ('earlier', 'later') AND \"MisfirePolicy\" IN ('skip', 'fire-once') AND \"Target\" = 'notification-only'");
+                    $"{application} AND {identifier} AND \"Version\" > 0 AND \"Lifecycle\" IN ('active', 'paused', 'cancelled') AND \"Kind\" IN ('daily', 'weekly', 'monthly') AND \"Interval\" BETWEEN 1 AND 365 AND \"LocalTimeSeconds\" BETWEEN 0 AND 86399 AND length(\"TimeZoneId\") BETWEEN 3 AND 100 AND \"GapPolicy\" IN ('skip', 'next-valid') AND \"OverlapPolicy\" IN ('earlier', 'later') AND \"MisfirePolicy\" IN ('skip', 'fire-once') AND \"Target\" IN ('notification-only', 'procedure-workflow')");
                 table.HasCheckConstraint("CK_trigger_recurring_definition_shape",
                     "(\"Kind\" = 'daily' AND \"WeekdaysMask\" = 0 AND \"DayOfMonth\" IS NULL) OR " +
                     "(\"Kind\" = 'weekly' AND \"WeekdaysMask\" BETWEEN 1 AND 127 AND \"DayOfMonth\" IS NULL) OR " +
@@ -373,6 +381,17 @@ internal static class TriggerSchedulingModelConfiguration
             entity.HasOne<ApplicationRegistryRecord>().WithMany().HasForeignKey(row => row.ApplicationId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
+
+        ConfigureWorkflowBinding<RecurringTriggerWorkflowBindingRecord>(modelBuilder,
+            "trigger_recurring_workflow_binding");
+        modelBuilder.Entity<RecurringTriggerWorkflowBindingRecord>()
+            .HasOne(row => row.Trigger).WithOne(row => row.WorkflowBinding)
+            .HasForeignKey<RecurringTriggerWorkflowBindingRecord>(row => new
+            {
+                row.ApplicationId,
+                Id = row.TriggerId,
+                Version = row.TriggerVersion
+            }).OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<RecurringTriggerNotificationEntityRecord>(entity =>
         {
@@ -516,7 +535,7 @@ internal static class TriggerSchedulingModelConfiguration
             entity.ToTable("trigger_conditional_definition", table =>
             {
                 table.HasCheckConstraint("CK_trigger_conditional_definition_values",
-                    $"{application} AND {identifier} AND \"Version\" > 0 AND \"Lifecycle\" IN ('active', 'paused', 'cancelled') AND \"Kind\" IN ('world-clock-threshold', 'state-condition') AND \"Activation\" IN ('rising-edge', 'level') AND \"Rearm\" IN ('on-false', 'manual') AND length(\"StateSpaceId\") BETWEEN 1 AND 200 AND length(\"AdapterId\") BETWEEN 3 AND 200 AND \"AdapterVersion\" > 0 AND \"Target\" = 'notification-only'");
+                    $"{application} AND {identifier} AND \"Version\" > 0 AND \"Lifecycle\" IN ('active', 'paused', 'cancelled') AND \"Kind\" IN ('world-clock-threshold', 'state-condition') AND \"Activation\" IN ('rising-edge', 'level') AND \"Rearm\" IN ('on-false', 'manual') AND length(\"StateSpaceId\") BETWEEN 1 AND 200 AND length(\"AdapterId\") BETWEEN 3 AND 200 AND \"AdapterVersion\" > 0 AND \"Target\" IN ('notification-only', 'procedure-workflow')");
                 table.HasCheckConstraint("CK_trigger_conditional_definition_clock_policy",
                     "\"Kind\" <> 'world-clock-threshold' OR (\"Activation\" = 'rising-edge' AND \"Rearm\" = 'manual')");
                 table.HasCheckConstraint("CK_trigger_conditional_definition_config",
@@ -570,6 +589,68 @@ internal static class TriggerSchedulingModelConfiguration
                 .OnDelete(DeleteBehavior.Restrict);
             entity.HasOne<ApplicationEcsEntityRecord>().WithMany()
                 .HasForeignKey(row => new { row.StateSpaceId, Id = row.EntityId })
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ConditionalTriggerRelationshipDependencyRecord>(entity =>
+        {
+            entity.ToTable("trigger_conditional_relationship_dependency", table =>
+                table.HasCheckConstraint("CK_trigger_conditional_relationship_dependency_values",
+                    $"{application} AND length(\"TriggerId\") BETWEEN 3 AND 200 AND \"TriggerVersion\" > 0 AND \"Ordinal\" BETWEEN 0 AND 15 AND length(\"StateSpaceId\") BETWEEN 1 AND 200 AND length(\"QualifiedKind\") BETWEEN 3 AND 200 AND length(\"AnchorEntityId\") BETWEEN 1 AND 200"));
+            entity.HasKey(row => new { row.ApplicationId, row.TriggerId, row.TriggerVersion, row.Ordinal });
+            entity.Property(row => row.ApplicationId).HasMaxLength(63);
+            entity.Property(row => row.TriggerId).HasMaxLength(200);
+            entity.Property(row => row.StateSpaceId).HasMaxLength(200);
+            entity.Property(row => row.QualifiedKind).HasMaxLength(200);
+            entity.Property(row => row.AnchorEntityId).HasMaxLength(200);
+            entity.HasIndex(row => new { row.StateSpaceId, row.QualifiedKind, row.AnchorEntityId, row.Incoming });
+            entity.HasIndex(row => new { row.ApplicationId, row.TriggerId, row.TriggerVersion,
+                row.QualifiedKind, row.AnchorEntityId, row.Incoming }).IsUnique();
+            entity.HasOne(row => row.Trigger).WithMany(row => row.RelationshipDependencies)
+                .HasForeignKey(row => new { row.ApplicationId, Id = row.TriggerId, Version = row.TriggerVersion })
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<ApplicationEcsEntityRecord>().WithMany()
+                .HasForeignKey(row => new { row.StateSpaceId, Id = row.AnchorEntityId })
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        ConfigureWorkflowBinding<ConditionalTriggerWorkflowBindingRecord>(modelBuilder,
+            "trigger_conditional_workflow_binding");
+        modelBuilder.Entity<ConditionalTriggerWorkflowBindingRecord>()
+            .HasOne(row => row.Trigger).WithOne(row => row.WorkflowBinding)
+            .HasForeignKey<ConditionalTriggerWorkflowBindingRecord>(row => new
+                { row.ApplicationId, Id = row.TriggerId, Version = row.TriggerVersion })
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<ConditionalTriggerPredicateBindingRecord>(entity =>
+        {
+            entity.ToTable("trigger_conditional_predicate_binding", table =>
+            {
+                table.HasCheckConstraint("CK_trigger_conditional_predicate_binding_values",
+                    $"{application} AND length(\"TriggerId\") BETWEEN 3 AND 200 AND \"TriggerVersion\" > 0 AND length(\"MechanicId\") BETWEEN 3 AND 200 AND \"MechanicVersion\" > 0 AND \"ActivationRevision\" > 0 AND \"ActivationApplicationRevision\" > 0 AND length(\"RequirementsJson\") BETWEEN 2 AND 65536 AND json_valid(\"RequirementsJson\") AND json_type(\"RequirementsJson\") = 'object' AND length(\"RoleEntityIdsJson\") BETWEEN 2 AND 32768 AND json_valid(\"RoleEntityIdsJson\") AND json_type(\"RoleEntityIdsJson\") = 'object' AND \"Coalescing\" = 'per-operation' AND \"MaximumOperationsPerFire\" BETWEEN 1 AND 16");
+                table.HasCheckConstraint("CK_trigger_conditional_predicate_binding_hashes",
+                    string.Join(" AND ", new[] { "MechanicFingerprint", "ActivationFingerprint",
+                        "ActivationApplicationFingerprint", "SourceRegistrationFingerprint",
+                        "RequirementsFingerprint", "RoleEntityIdsFingerprint", "BindingFingerprint" }
+                        .Select(value => string.Format(hash, value))));
+            });
+            entity.HasKey(row => new { row.ApplicationId, row.TriggerId, row.TriggerVersion });
+            entity.Property(row => row.ApplicationId).HasMaxLength(63);
+            entity.Property(row => row.TriggerId).HasMaxLength(200);
+            entity.Property(row => row.MechanicId).HasMaxLength(200);
+            entity.Property(row => row.MechanicFingerprint).HasMaxLength(64);
+            entity.Property(row => row.ActivationFingerprint).HasMaxLength(64);
+            entity.Property(row => row.ActivationApplicationFingerprint).HasMaxLength(64);
+            entity.Property(row => row.SourceRegistrationFingerprint).HasMaxLength(64);
+            entity.Property(row => row.RequirementsJson).HasMaxLength(65_536);
+            entity.Property(row => row.RequirementsFingerprint).HasMaxLength(64);
+            entity.Property(row => row.RoleEntityIdsJson).HasMaxLength(32_768);
+            entity.Property(row => row.RoleEntityIdsFingerprint).HasMaxLength(64);
+            entity.Property(row => row.Coalescing).HasMaxLength(30);
+            entity.Property(row => row.BindingFingerprint).HasMaxLength(64);
+            entity.HasOne(row => row.Trigger).WithOne(row => row.PredicateBinding)
+                .HasForeignKey<ConditionalTriggerPredicateBindingRecord>(row => new
+                    { row.ApplicationId, Id = row.TriggerId, Version = row.TriggerVersion })
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
@@ -643,12 +724,17 @@ internal static class TriggerSchedulingModelConfiguration
                     "\"LeaseOwner\" IS NULL OR (length(\"LeaseOwner\") BETWEEN 1 AND 128 AND \"LeaseOwner\" NOT GLOB '*[^A-Za-z0-9._:-]*')");
                 table.HasCheckConstraint("CK_trigger_conditional_fire_work_token",
                     "\"LeaseToken\" IS NULL OR (length(\"LeaseToken\") = 32 AND \"LeaseToken\" NOT GLOB '*[^0-9a-f]*')");
+                table.HasCheckConstraint("CK_trigger_conditional_fire_work_predicate",
+                    "((\"PredicateCaptureJson\" IS NULL AND \"PredicateCaptureFingerprint\" IS NULL AND \"CausalAllowanceId\" IS NULL AND \"PredicatePriorTruth\" IS NULL AND \"PredicatePriorArmed\" IS NULL) OR (length(\"PredicateCaptureJson\") BETWEEN 2 AND 2000000 AND json_valid(\"PredicateCaptureJson\") AND json_type(\"PredicateCaptureJson\") = 'object' AND length(\"PredicateCaptureFingerprint\") = 64 AND \"PredicateCaptureFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"CausalAllowanceId\") = 39 AND substr(\"CausalAllowanceId\", 1, 7) = 'causal.' AND \"PredicatePriorArmed\" IS NOT NULL))");
             });
             entity.HasKey(row => row.FireId);
             entity.Property(row => row.FireId).HasMaxLength(45);
             entity.Property(row => row.ApplicationId).HasMaxLength(63).IsRequired();
             entity.Property(row => row.TriggerId).HasMaxLength(200).IsRequired();
             entity.Property(row => row.ChangeOperationId).HasMaxLength(32).IsRequired();
+            entity.Property(row => row.CausalAllowanceId).HasMaxLength(39);
+            entity.Property(row => row.PredicateCaptureJson).HasMaxLength(2_000_000);
+            entity.Property(row => row.PredicateCaptureFingerprint).HasMaxLength(64);
             entity.Property(row => row.State).HasMaxLength(20).IsRequired();
             entity.Property(row => row.LeaseOwner).HasMaxLength(128);
             entity.Property(row => row.LeaseToken).HasMaxLength(32);
@@ -659,6 +745,8 @@ internal static class TriggerSchedulingModelConfiguration
             entity.HasOne<ConditionalTriggerRecord>().WithMany()
                 .HasForeignKey(row => new { row.ApplicationId, Id = row.TriggerId, Version = row.TriggerVersion })
                 .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<TriggerCausalAllowanceRecord>().WithMany().HasForeignKey(row => row.CausalAllowanceId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<ConditionalTriggerFireReceiptRecord>(entity =>
@@ -668,7 +756,7 @@ internal static class TriggerSchedulingModelConfiguration
                 table.HasCheckConstraint("CK_trigger_conditional_fire_receipt_id",
                     "length(\"Id\") = 45 AND substr(\"Id\", 1, 13) = 'trigger-fire.' AND substr(\"Id\", 14) NOT GLOB '*[^0-9a-f]*'");
                 table.HasCheckConstraint("CK_trigger_conditional_fire_receipt_values",
-                    $"{application} AND length(\"TriggerId\") BETWEEN 3 AND 200 AND \"TriggerVersion\" > 0 AND length(\"ChangeOperationId\") = 32 AND \"ChangeOperationId\" NOT GLOB '*[^0-9a-f]*' AND \"Disposition\" = 'due'");
+                    $"{application} AND length(\"TriggerId\") BETWEEN 3 AND 200 AND \"TriggerVersion\" > 0 AND length(\"ChangeOperationId\") = 32 AND \"ChangeOperationId\" NOT GLOB '*[^0-9a-f]*' AND \"Disposition\" IN ('due', 'not-matched')");
             });
             entity.HasKey(row => row.Id);
             entity.Property(row => row.Id).HasMaxLength(45);
@@ -709,12 +797,51 @@ internal static class TriggerSchedulingModelConfiguration
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+        modelBuilder.Entity<TriggerCausalAllowanceRecord>(entity =>
+        {
+            entity.ToTable("trigger_causal_allowance", table =>
+            {
+                table.HasCheckConstraint("CK_trigger_causal_allowance_id",
+                    "length(\"Id\") = 39 AND substr(\"Id\", 1, 7) = 'causal.' AND substr(\"Id\", 8) NOT GLOB '*[^0-9a-f]*'");
+                table.HasCheckConstraint("CK_trigger_causal_allowance_values",
+                    "\"SourceKind\" IN ('ecs-operation', 'observation') AND length(\"SourceId\") BETWEEN 1 AND 64 AND \"MaximumOperations\" = 64 AND \"ReservedOperations\" BETWEEN 0 AND \"MaximumOperations\"");
+                table.HasCheckConstraint("CK_trigger_causal_allowance_hash", string.Format(hash, "IdentityFingerprint"));
+            });
+            entity.HasKey(row => row.Id);
+            entity.Property(row => row.Id).HasMaxLength(39);
+            entity.Property(row => row.SourceKind).HasMaxLength(30);
+            entity.Property(row => row.SourceId).HasMaxLength(64);
+            entity.Property(row => row.IdentityFingerprint).HasMaxLength(64);
+            entity.HasIndex(row => new { row.SourceKind, row.SourceId }).IsUnique();
+        });
+
+        modelBuilder.Entity<TriggerCausalReservationRecord>(entity =>
+        {
+            entity.ToTable("trigger_causal_reservation", table =>
+            {
+                table.HasCheckConstraint("CK_trigger_causal_reservation_values",
+                    "length(\"CausalAllowanceId\") = 39 AND length(\"FireId\") = 45 AND \"Operations\" BETWEEN 1 AND 16 AND length(\"CommandId\") BETWEEN 1 AND 128");
+                table.HasCheckConstraint("CK_trigger_causal_reservation_hash", string.Format(hash, "RequestFingerprint"));
+            });
+            entity.HasKey(row => new { row.CausalAllowanceId, row.FireId });
+            entity.Property(row => row.CausalAllowanceId).HasMaxLength(39);
+            entity.Property(row => row.FireId).HasMaxLength(45);
+            entity.Property(row => row.CommandId).HasMaxLength(128);
+            entity.Property(row => row.RequestFingerprint).HasMaxLength(64);
+            entity.HasIndex(row => row.FireId).IsUnique();
+            entity.HasOne<TriggerCausalAllowanceRecord>().WithMany().HasForeignKey(row => row.CausalAllowanceId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne<ConditionalTriggerFireWorkRecord>().WithOne()
+                .HasForeignKey<TriggerCausalReservationRecord>(row => row.FireId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
         modelBuilder.Entity<ObservationTriggerRecord>(entity =>
         {
             entity.ToTable("trigger_observation_match_definition", table =>
             {
                 table.HasCheckConstraint("CK_trigger_observation_match_definition_values",
-                    $"{application} AND {identifier} AND \"Version\" > 0 AND \"Lifecycle\" IN ('active', 'paused', 'cancelled') AND length(\"SourceId\") BETWEEN 3 AND 200 AND \"SourceVersion\" > 0 AND length(\"StructureId\") BETWEEN 3 AND 200 AND \"StructureVersion\" > 0 AND length(\"AdapterId\") BETWEEN 3 AND 200 AND \"AdapterVersion\" > 0 AND \"Target\" = 'notification-only'");
+                    $"{application} AND {identifier} AND \"Version\" > 0 AND \"Lifecycle\" IN ('active', 'paused', 'cancelled') AND length(\"SourceId\") BETWEEN 3 AND 200 AND \"SourceVersion\" > 0 AND length(\"StructureId\") BETWEEN 3 AND 200 AND \"StructureVersion\" > 0 AND length(\"AdapterId\") BETWEEN 3 AND 200 AND \"AdapterVersion\" > 0 AND \"Target\" IN ('notification-only', 'procedure-workflow')");
                 table.HasCheckConstraint("CK_trigger_observation_match_definition_hashes",
                     string.Format(hash, "StructureHash") + " AND " + string.Format(hash, "AdapterConfigurationHash"));
                 table.HasCheckConstraint("CK_trigger_observation_match_definition_config",
@@ -767,6 +894,14 @@ internal static class TriggerSchedulingModelConfiguration
                 .HasForeignKey(row => new { row.StateSpaceId, Id = row.EntityId })
                 .OnDelete(DeleteBehavior.Restrict);
         });
+
+        ConfigureWorkflowBinding<ObservationTriggerWorkflowBindingRecord>(modelBuilder,
+            "trigger_observation_match_workflow_binding");
+        modelBuilder.Entity<ObservationTriggerWorkflowBindingRecord>()
+            .HasOne(row => row.Trigger).WithOne(row => row.WorkflowBinding)
+            .HasForeignKey<ObservationTriggerWorkflowBindingRecord>(row => new
+                { row.ApplicationId, Id = row.TriggerId, Version = row.TriggerVersion })
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<ObservationTriggerCurrentRecord>(entity =>
         {
@@ -900,5 +1035,38 @@ internal static class TriggerSchedulingModelConfiguration
             entity.HasOne<Notification>().WithOne().HasForeignKey<ScheduledAiTaskWorkRecord>(row => row.NotificationId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
+    }
+
+    private static void ConfigureWorkflowBinding<T>(ModelBuilder modelBuilder, string tableName)
+        where T : class
+    {
+        var entity = modelBuilder.Entity<T>();
+        entity.ToTable(tableName, table =>
+        {
+            table.HasCheckConstraint("CK_" + tableName + "_principal",
+                "length(\"PrincipalReference\") = 74 AND substr(\"PrincipalReference\", 1, 10) = 'principal.' AND substr(\"PrincipalReference\", 11) NOT GLOB '*[^0-9a-f]*'");
+            table.HasCheckConstraint("CK_" + tableName + "_values",
+                "length(\"ApplicationId\") BETWEEN 1 AND 63 AND length(\"TriggerId\") BETWEEN 3 AND 200 AND \"TriggerVersion\" > 0 AND length(\"AuthenticationMethod\") BETWEEN 1 AND 64 AND \"ApplicationRevision\" > 0 AND length(\"BaseApplicationsJson\") BETWEEN 2 AND 4096 AND json_valid(\"BaseApplicationsJson\") AND json_type(\"BaseApplicationsJson\") = 'array' AND length(\"StateSpaceId\") BETWEEN 1 AND 200 AND length(\"GrantReference\") BETWEEN 1 AND 200 AND length(\"StateRevision\") BETWEEN 1 AND 200 AND length(\"DefinitionId\") BETWEEN 1 AND 200 AND \"DefinitionVersion\" > 0 AND length(\"ExecutionRequestJson\") BETWEEN 2 AND 98304 AND json_valid(\"ExecutionRequestJson\") AND json_type(\"ExecutionRequestJson\") = 'object' AND \"MaximumOperations\" BETWEEN 2 AND 16 AND \"RuntimeWindowSeconds\" BETWEEN 5 AND 600");
+            table.HasCheckConstraint("CK_" + tableName + "_hashes",
+                "length(\"ApplicationFingerprint\") = 64 AND \"ApplicationFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"DefinitionFingerprint\") = 64 AND \"DefinitionFingerprint\" NOT GLOB '*[^0-9A-F]*' AND length(\"BindingFingerprint\") = 64 AND \"BindingFingerprint\" NOT GLOB '*[^0-9A-F]*'");
+            table.HasCheckConstraint("CK_" + tableName + "_result_schema",
+                "((\"ResultSchemaJson\" IS NULL AND \"ResultSchemaFingerprint\" IS NULL) OR (length(\"ResultSchemaJson\") BETWEEN 2 AND 65536 AND json_valid(\"ResultSchemaJson\") AND json_type(\"ResultSchemaJson\") = 'object' AND length(\"ResultSchemaFingerprint\") = 64 AND \"ResultSchemaFingerprint\" NOT GLOB '*[^0-9A-F]*'))");
+        });
+        entity.HasKey("ApplicationId", "TriggerId", "TriggerVersion");
+        entity.Property("ApplicationId").HasMaxLength(63);
+        entity.Property("TriggerId").HasMaxLength(200);
+        entity.Property("PrincipalReference").HasMaxLength(74).IsRequired();
+        entity.Property("AuthenticationMethod").HasMaxLength(64).IsRequired();
+        entity.Property("ApplicationFingerprint").HasMaxLength(64).IsRequired();
+        entity.Property("BaseApplicationsJson").HasMaxLength(4096).IsRequired();
+        entity.Property("StateSpaceId").HasMaxLength(200).IsRequired();
+        entity.Property("GrantReference").HasMaxLength(200).IsRequired();
+        entity.Property("StateRevision").HasMaxLength(200).IsRequired();
+        entity.Property("DefinitionId").HasMaxLength(200).IsRequired();
+        entity.Property("DefinitionFingerprint").HasMaxLength(64).IsRequired();
+        entity.Property("ExecutionRequestJson").HasMaxLength(98_304).IsRequired();
+        entity.Property("ResultSchemaJson").HasMaxLength(65_536);
+        entity.Property("ResultSchemaFingerprint").HasMaxLength(64);
+        entity.Property("BindingFingerprint").HasMaxLength(64).IsRequired();
     }
 }

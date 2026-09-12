@@ -27,6 +27,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DantesRoleplay.Web.Hosting;
 
@@ -55,6 +56,10 @@ public static partial class WebInterfaceEndpoints
         endpoints.MapGet("/", GetHomePageAsync).RequireDantesRoleplayReadAccess();
         endpoints.MapGet("/ui/{id}", GetPageAsync).RequireDantesRoleplayReadAccess();
         endpoints.MapGet("/ui/{id}/assets/{**path}", GetAssetAsync).RequireDantesRoleplayReadAccess();
+        endpoints.MapGet("/ui/{id}/content/{pageId}/revisions/{revision:int}/{**path}", GetVersionedAssetAsync)
+            .RequireDantesRoleplayReadAccess();
+        endpoints.MapPost("/ui/{id}/actions/{binding}", InvokePageActionAsync)
+            .RequireDantesRoleplayUploadAccess();
         endpoints.MapGet("/api/data/entity/{id}", GetEntityDataAsync).RequireDantesRoleplayReadAccess();
         endpoints.MapGet("/api/data/{componentType}/{entityId}", GetComponentDataAsync)
             .RequireDantesRoleplayReadAccess();
@@ -335,12 +340,21 @@ public static partial class WebInterfaceEndpoints
         HttpContext context,
         IWebPageStore pages,
         [FromServices] IWebPublicationDiscovery publications,
+        IServiceProvider services,
         CancellationToken cancellationToken)
     {
         context.Response.Headers.CacheControl = "private, no-store";
         var contentPageId = id;
         if (!SystemWebPageIds.IsSystemOwned(id))
         {
+            var hostRoute = await HostRouteAsync(services, id, cancellationToken);
+            if (hostRoute?.Candidate?.ActiveContentReference.IsPinned == true)
+            {
+                var result = await services.GetRequiredService<WebPermissionedPageRouteAdapter>()
+                    .ReadPageAsync(WebTrustedPrincipalContextFactory.FromPrincipal(context.User), id, cancellationToken);
+                return result.Status == "ready" ? Results.Text(result.Html!, "text/html", Encoding.UTF8)
+                    : PermissionedRouteError(result.Status);
+            }
             var route = await publications.ResolvePageRouteAsync(id, cancellationToken);
             if (route.Status != "ready" || route.Page is null) return PublicationRouteError(route.Status);
             contentPageId = route.Page.ContentPageId;
@@ -356,8 +370,9 @@ public static partial class WebInterfaceEndpoints
         HttpContext context,
         IWebPageStore pages,
         [FromServices] IWebPublicationDiscovery publications,
+        IServiceProvider services,
         CancellationToken cancellationToken) =>
-        GetPageAsync(HomePageId, context, pages, publications, cancellationToken);
+        GetPageAsync(HomePageId, context, pages, publications, services, cancellationToken);
 
     private static async Task<IResult> GetAssetAsync(
         string id,
@@ -365,6 +380,7 @@ public static partial class WebInterfaceEndpoints
         HttpContext context,
         IWebPageStore pages,
         [FromServices] IWebPublicationDiscovery publications,
+        IServiceProvider services,
         CancellationToken cancellationToken)
     {
         if (path is null)
@@ -375,6 +391,15 @@ public static partial class WebInterfaceEndpoints
         var contentPageId = id;
         if (!SystemWebPageIds.IsSystemOwned(id))
         {
+            var hostRoute = await HostRouteAsync(services, id, cancellationToken);
+            if (hostRoute?.Candidate?.ActiveContentReference.IsPinned == true)
+            {
+                context.Response.Headers.CacheControl = "private, no-store";
+                var result = await services.GetRequiredService<WebPermissionedPageRouteAdapter>().ReadAssetAsync(WebTrustedPrincipalContextFactory.FromPrincipal(context.User), id,
+                    "assets/" + path, cancellationToken);
+                if (result.Status != "ready" || result.Asset is null) return PermissionedRouteError(result.Status);
+                return Results.File(result.Asset.Content, result.Asset.ContentType);
+            }
             var route = await publications.ResolvePageRouteAsync(id, cancellationToken);
             if (route.Status != "ready" || route.Page is null) return Results.NotFound();
             contentPageId = route.Page.ContentPageId;
@@ -386,6 +411,60 @@ public static partial class WebInterfaceEndpoints
         return asset is null
             ? Results.NotFound()
             : Results.File(asset.Content, asset.ContentType);
+    }
+
+    private static async Task<IResult> GetVersionedAssetAsync(string id, string pageId, int revision, string? path,
+        HttpContext context, [FromServices] WebPermissionedPageRouteAdapter permissioned, CancellationToken cancellationToken)
+    {
+        context.Response.Headers.CacheControl = "private, no-store";
+        if (path is null || revision < 1) return Results.NotFound();
+        var result = await permissioned.ReadVersionedAssetAsync(WebTrustedPrincipalContextFactory.FromPrincipal(context.User),
+            id, pageId, revision, path, cancellationToken);
+        return result.Status == "ready" && result.Asset is not null
+            ? Results.File(result.Asset.Content, result.Asset.ContentType) : PermissionedRouteError(result.Status);
+    }
+
+    private static async Task<IResult> InvokePageActionAsync(string id, string binding,
+        HttpContext context, [FromServices] WebPermissionedPageRouteAdapter permissioned,
+        CancellationToken cancellationToken)
+    {
+        context.Response.Headers.CacheControl = "private, no-store";
+        try
+        {
+            var request = await ReadApplicationMechanicBodyAsync<WebCompositionActionRequest>(context, cancellationToken);
+            if (request.CommandId is not { Length: > 0 and <= 128 }
+                || request.CommandId.Any(value => !(char.IsAsciiLetterOrDigit(value) || value is '.' or '_' or ':' or '-'))
+                || request.Input.ValueKind != JsonValueKind.Object)
+                return Results.Json(InteractionInvocationResult.Failed("COMPOSITION_ACTION_REQUEST_INVALID",
+                    "A bounded command ID and object input are required."), statusCode: StatusCodes.Status400BadRequest);
+            var result = await permissioned.InvokeActionAsync(WebTrustedPrincipalContextFactory.FromPrincipal(context.User),
+                id, binding, request.CommandId, request.Input.GetRawText(), cancellationToken);
+            return Results.Json(result);
+        }
+        catch (Exception exception) when (exception is InteractionContractException or JsonException
+            or DecoderFallbackException)
+        {
+            return Results.Json(InteractionInvocationResult.Failed("COMPOSITION_ACTION_REQUEST_INVALID",
+                "The page action request is invalid."), statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    private static IResult PermissionedRouteError(string status) => status switch
+    {
+        "forbidden" => Results.StatusCode(StatusCodes.Status403Forbidden),
+        "unavailable" => Results.StatusCode(StatusCodes.Status503ServiceUnavailable),
+        _ => Results.NotFound()
+    };
+
+    private static async Task<WebPageHostRouteResolution?> HostRouteAsync(IServiceProvider services, string slug,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var discovery = services.GetService<WebPublicationDiscovery>();
+            return discovery is null ? null : await discovery.ResolveHostRouteAsync(slug, cancellationToken);
+        }
+        catch (InvalidOperationException) { return null; }
     }
 
     private static bool IsContentAddressedAsset(string path)
@@ -444,3 +523,5 @@ public static partial class WebInterfaceEndpoints
     }
 
 }
+
+internal sealed record WebCompositionActionRequest(string? CommandId, JsonElement Input);

@@ -713,11 +713,27 @@ internal sealed class CodexAppServerProcessSession : ICodexAppServerSession
 
     internal static CodexProtocolEvent? NormalizeNotification(string method, JsonElement parameters)
     {
-        if (parameters.ValueKind != JsonValueKind.Object) return null;
+        if (parameters.ValueKind != JsonValueKind.Object)
+            return method == "thread/tokenUsage/updated"
+                ? new("usage", ErrorCode: "CODEX_USAGE_INVALID", ErrorMessage: "Codex returned malformed token usage.")
+                : null;
         if (method == "serverRequest/resolved" && parameters.TryGetProperty("requestId", out var requestId))
             return new("approval-resolved", ExternalRequestId: CanonicalRequestId(requestId));
         if (method == "item/agentMessage/delta")
-            return new("delta", Delta: Bound(OptionalString(parameters, "delta"), 8_000));
+            return new("delta", Delta: OptionalString(parameters, "delta"));
+        if (method == "thread/tokenUsage/updated")
+        {
+            if (!parameters.TryGetProperty("threadId", out var thread) || thread.ValueKind != JsonValueKind.String
+                || !parameters.TryGetProperty("turnId", out var turn) || turn.ValueKind != JsonValueKind.String
+                || !parameters.TryGetProperty("tokenUsage", out var usage) || usage.ValueKind != JsonValueKind.Object
+                || !usage.TryGetProperty("total", out var total) || total.ValueKind != JsonValueKind.Object
+                || !total.TryGetProperty("inputTokens", out var input) || input.ValueKind != JsonValueKind.Number || !input.TryGetInt64(out var inputTokens)
+                || !total.TryGetProperty("outputTokens", out var output) || output.ValueKind != JsonValueKind.Number || !output.TryGetInt64(out var outputTokens)
+                || !total.TryGetProperty("totalTokens", out var all) || all.ValueKind != JsonValueKind.Number || !all.TryGetInt64(out var totalTokens))
+                return new("usage", ErrorCode: "CODEX_USAGE_INVALID", ErrorMessage: "Codex returned malformed token usage.",
+                    ThreadId: OptionalString(parameters, "threadId"), TurnId: OptionalString(parameters, "turnId"));
+            return new("usage", Usage: new(thread.GetString()!, turn.GetString()!, inputTokens, outputTokens, totalTokens));
+        }
         if (method == "turn/completed")
         {
             var turn = RequiredObject(parameters, "turn");
@@ -725,7 +741,7 @@ internal sealed class CodexAppServerProcessSession : ICodexAppServerSession
             var error = turn.TryGetProperty("error", out var errorElement) && errorElement.ValueKind != JsonValueKind.Null
                 ? Bound(JsonText(errorElement), 500) : string.Empty;
             return new("terminal", Status: status, ErrorCode: status == "failed" ? "CODEX_TURN_FAILED" : "",
-                ErrorMessage: error);
+                ErrorMessage: error, ThreadId: OptionalString(parameters, "threadId"), TurnId: OptionalString(turn, "id"));
         }
         if (method is "warning" or "error")
         {
@@ -739,7 +755,7 @@ internal sealed class CodexAppServerProcessSession : ICodexAppServerSession
             return null;
         var type = OptionalString(item, "type");
         var id = OptionalString(item, "id");
-        if (type == "agentMessage") return new("reply", Reply: Bound(OptionalString(item, "text"), 8_001));
+        if (type == "agentMessage") return new("reply", Reply: OptionalString(item, "text"));
         var statusValue = OptionalString(item, "status");
         return type switch
         {

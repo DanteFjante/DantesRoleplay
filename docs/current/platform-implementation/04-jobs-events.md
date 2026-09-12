@@ -1,6 +1,8 @@
 # Durable JavaScript jobs, schedules, and observers
 
-Status: concrete implementation plan, 2026-09-11. This document authorizes no runtime changes. Initial callers are the website, Codex, and runtime JavaScript; additional external integrations remain future extension seams.
+Status: the durable lifecycle, trigger integration and scoped caller paths below are implemented.
+Initial callers are the website, Codex and runtime JavaScript; additional external integrations
+remain future extension seams.
 
 Prerequisite: implement [00 — Shared foundation](00-shared-foundation.md) first and have the coordinator supply its accepted foundation revision and contract baseline. This workstream consumes those shared contracts and does not redefine them independently.
 
@@ -29,6 +31,85 @@ Do not serialize a live Jint heap. Plan 01 must provide explicit resumable steps
 4. **Add runtime observer registration.** Register a versioned observer with declared event/component/relationship inputs, a bounded pure predicate, scope, target action/job, and causal budgets. A JavaScript predicate receives admitted data only; it cannot recursively perform service calls while matching. Use existing event and conditional-trigger owners to stage durable matching work, with bounded fan-out and explicit coalescing policy. Acceptance: an authorized state change starts the declared action without application-specific host code, while unrelated changes do not execute it. Observer replacement/disable preserves audit evidence and governs future matches; queued jobs retain their own revision and permission checks.
 
 5. **Close cancellation, retries, and operator recovery.** Expose lifecycle readback through this workstream's services and the coordinator's MCP adapters; plan 03 supplies their discoverable contracts and plan 06 presents progress and cancellation. Stop new steps after cancellation, propagate cancellation to linked child work where declared, and preserve already committed effects. Retry only classified transient failures within limits. A stale input result requires fresh reads and a new planned attempt; an uncertain commit requires receipt reconciliation. Acceptance: dependency failure, cancellation, exhausted retries, and restart yield inspectable outcomes with bounded evidence and no silent duplicate writes.
+
+## Implemented lifecycle boundary
+
+The lifecycle store owns bounded parent/dependency graphs, shared ancestor operation allowances,
+fenced attempts, checkpoints and durable waits, classified retries, cancellation propagation, and
+host-call journals. Internal staging methods join the caller's SQLite writer transaction; the
+caller commits before dispatch. Public submission owns its commit boundary and rechecks current
+scope and grants. Submission retains the resolver's exact activation origin; read and cancellation
+resolve that retained origin under current authority. Legacy rows without provenance can resolve
+only their exact current selection, with no inferred historical origin or lookup fallback.
+Origin-bearing workflow rows retain the original bounded canonical admission payload; readback
+verifies its hash and immutable identity before using the origin. Legacy admission fingerprints
+remain unchanged and cannot acquire historical authority by adding provenance columns later.
+Readback exposes bounded diagnostics without returning retained authority,
+lease tokens, raw input, or checkpoint state.
+
+The persistence model distinguishes procedure workflows from application-candidate validation.
+Validation has an exact candidate reference and no state or executable-definition identity;
+its optional causation reference restricts deletion of the existing operation record. AI ceilings
+reference the task and its purpose together. These schema boundaries do not enable validation
+admission or execution; those require the shared application host, current Read/Validate authority,
+candidate receipt rehydration when causation is supplied, and the INNER subject contract.
+
+The internal validation core now retains and verifies its own original admission commitment,
+including candidate, reviewer/schema/context, both grant provenance references, and AI budget.
+Equivalent command replay precedes a fresh-root allowance transfer; durable children use the
+existing persisted ancestor ledger. Validation enrollment must match that original commitment.
+Workflow admission and enrollment fingerprints remain unchanged. Readback requires current
+application Read; cancellation requires current Read and Validate for every affected candidate.
+Neither operation borrows state-workflow permissions or exposes a semantic validation result.
+
+The registered AI lifecycle factory opens a fresh service scope and short transaction for each
+admission or observation. It rehydrates the actual task, original proof, enrollment, fenced attempt,
+current candidate, and current Read/Validate authority before reserving and recording dispatch.
+Dispatch commits before the provider receives its scope. Late accounting uses an independent
+bounded scope and cannot restore execution authority. Hard-cap mode remains unavailable without
+an owner-supplied total-token bound. Candidate validation submission rehydrates the actual candidate,
+selected-source closure, permissioned manual context and immutable reviewer binding before allowance
+transfer, enqueue or provider dispatch. A caller-created profile or V2 DTO is not that proof.
+
+AI accounting uses the same task/attempt history. Host-resolved enrollment and dispatch
+reservations debit every persisted ancestor; provider and tool observations are separate,
+bounded evidence. Enrolled and per-reservation deadlines are retained independently and cannot
+widen. Charged tokens plus outstanding holds gate every new provider/tool admission at each
+ancestor. Unknown usage retains its hold and blocks automatic execution. Complete usage
+settles actual, unclamped charges and releases provider concurrency, including an overrun; it
+does not prevent an otherwise valid terminal result, cancellation, or readback. Late observations
+can settle original usage without restoring an expired lease or permitting stale publication.
+Dispatch and usage hashes are checked when rehydrated; admission and result readback verify
+settlement counters against retained observations before treating them as accounted usage.
+
+The production host registers the durable workflow lifecycle, the focused procedure executor,
+and one purpose-filtered background claimant. Each callback runs in its own service scope so a
+cancelled or fenced callback cannot continue through a disposed scoped dependency. The runner
+claims, renews, retries, resumes, and publishes through the persisted fencing token; it never holds
+the SQLite writer transaction while procedure or model work runs.
+
+One-time schedules, recurring schedules, and observation matches may target a procedure workflow.
+Each trigger revision retains an immutable sidecar containing the exact principal, application and
+state revision, grant reference, selected procedure version and fingerprint, canonical assignment,
+canonical result schema and fingerprint, operation allowance, and runtime window. Legacy workflow
+bindings without the result schema pair fail closed until replaced. Every firing derives one stable
+command from the binding revision and exact occurrence, resolves the retained procedure through the
+actual catalog owner, and rechecks current Execute authority. Recurring occurrences retain distinct
+identities while duplicate delivery and registration replay converge on the same durable evidence.
+
+Conditional observers execute their retained catalog JavaScript predicate against admitted event,
+component and directed-relationship captures. A queued match retains its immutable observer revision.
+Each firing receives a shared causal ledger of 64 operations and may admit from 1 through 16 workflow
+targets within that bound. The preserving observer migration is integrated in source; applying it to
+a live database remains an explicit deployment boundary.
+
+Trigger evidence, lifecycle admission, and AI enrollment share the worker transaction and an
+enclosing savepoint. A denied grant, stale or corrupt binding, failed enrollment, lost lease, or
+superseded trigger leaves no executable task and no success receipt. Notification-only targets keep
+their existing behavior. Focused acceptance covers actual one-time, recurring, and observation
+admission plus controlled-provider execution, durable readback and application-candidate validation
+through its exact reviewer/context binding. An uncertain action commit still requires authoritative
+receipt reconciliation before retry.
 
 ## Atomic effects versus orchestration
 

@@ -1,12 +1,255 @@
 # Website composition and operator interface
 
-Status: implementation plan, not implemented or accepted. The
+Status: retained composition storage and permissioned publication rendering are implemented, including
+exact queries, pure application actions, and the page-owned stateful Atomic action binding described below.
+Coordinator registration and the scoped dependent integrations described below are implemented;
+full platform acceptance remains pending. The
 [coordination plan](../PLATFORM-IMPLEMENTATION.md) defines shared contracts and scheduling; the
 coordinator includes the relevant agreement with each assignment. This file owns the website
 workstream. Initial integrations are the website and Codex. Application-specific
 pages and DND2024 behavior are outside this plan.
 
 Prerequisite: implement [00 — Shared foundation](00-shared-foundation.md) first and have the coordinator supply its accepted foundation revision and contract baseline. This workstream consumes those shared contracts and does not redefine them independently.
+
+## Shared operator gateways
+
+The website and Codex use common generic system-capability catalogs. Authenticated application
+endpoints and the Codex application-authoring source expose application-candidate inspect, write,
+validate, activate, recover, and reuse-review submit/read/cancel operations; the private operator
+catalog exposes current standing-grant administration. These surfaces require no application-specific
+handlers. Candidate descriptors report the required current standing-grant capabilities; reuse-review
+submit and cancel require Read plus Validate, and status read requires Read. The application gateway
+derives command tokens from trusted principal, application, capability, and caller idempotency identity.
+Browser JSON cannot provide a principal, grant, worker profile, provider, tool set, application
+generation, or execution authority.
+
+Reuse-review submit binds one exact candidate to its authoring operation receipt and causal command.
+The task owner rehydrates the immutable reviewer profile and stages an actual durable Pending task.
+Read returns the current lifecycle status and exposes the bounded retained result only after completion
+and AI-accounting reconciliation. Cancel requests cancellation through the same owner. A Pending task,
+worker judgment, or completed result is not candidate validation or publication evidence by itself;
+the authoring owner independently rechecks the exact retained proof and current grants before a reviewed
+pure candidate can validate or activate. Foreign handles and revoked grants fail closed. Live providers
+remain disabled in tests, and provider-dependent operation remains unavailable until configured.
+
+The website presents these shared results without becoming an execution owner. HTTP authorization
+failures preserve the owner code as forbidden, while invalid input, stale/conflicting requests, pending
+tasks, cancellation, unavailable dependencies, and committed receipts remain distinct outcomes.
+
+The selected-application control-center view uses `application-capability-center` to discover the
+current application capability descriptors from that existing route and invoke their closed JSON
+contracts. Its result panel delegates to the shared `InteractionInvocationResult` presentation, so
+durable inner-worker task and command identity, current result/progress, prior commits, and recovery
+identity keep their distinct meanings. It sends no automatic retry and cannot provide grants, state
+revision, provider/model/tool selection, budgets, deadlines, or control authority. The incoming
+`system.inner-worker.submit`, `system.inner-worker.read`, and `system.inner-worker.cancel` entries
+appear only when their real owner registrations and current grants make them discoverable.
+
+Schedules and observers remain in the existing trigger-scheduling panel. That view reads current
+application schedules and past fires, distinguishes conditional and observation listeners, and uses
+the established preview/apply owner endpoints. No composition-specific schedule store or task state
+was added.
+
+## Independent implementation boundary
+
+[WebComposition.cs](../../../DantesRoleplay.Web/Pages/WebComposition.cs) parses a closed, page-local
+declarative document into an opaque immutable tree. Component IDs/revisions resolve only inside
+that document; `generation` is an authored label, not proof of an active database revision. The
+coordinator pins the exact retained document bytes/hash and selected content revision for production
+rendering. There is no global component registry; retained content uses the existing
+versioned page store and asset payload owner.
+
+The renderer permits escaped text/values, allowlisted elements, conditions, loops, required props,
+and caller-scoped slots. It validates references/cycles and rejects duplicate/unknown JSON fields,
+unsafe URLs and undeclared bindings. Asset references must occur in the host-supplied selected
+revision inventory; render accepts the legacy `/ui/{slug}/` base or the exact retained base
+`/ui/{slug}/content/{contentPageId}/revisions/{revision}/`. The current active-asset
+route does not pin asset reads to the rendered revision. Published compositions therefore use the
+exact retained revision asset route. A published composition enables only action bindings resolved to
+exact active mechanics by the registered server coordinator.
+
+Bounds: 1 MiB document, JSON/node depth 32, 64 component definitions, 4,096 authored nodes,
+16 query/action declarations each, 100 items per loop, 16,384 expanded render nodes, and
+1,048,576 output characters. Binding/property identifiers are ASCII and at most 80 characters.
+`props` is reserved. Missing query data is a render error, never an empty successful result.
+
+[CompositionPagePreview](../../../DantesRoleplay.Web/Pages/CompositionPagePreview.cs) requires exactly
+the declared query names. [CompositionQueryMaterializer](../../../DantesRoleplay.Web/Reads/CompositionQueryMaterializer.cs)
+accepts only host-selected `ApplicationReadModelInvocationRequest` values sharing one read-only
+`InteractionInvocationHost`. It delegates reauthorization, scope checking, exact query contracts,
+and budget consumption to the existing real adapter. Reads are sequential, bounded to one page
+per binding (1–100 items, opaque cursor at most 1,024 characters), and are never cached by this
+consumer. This does not claim all queries share a database snapshot. Any failed read suppresses
+render values; original shared outcomes remain available for diagnostics.
+
+Stateful page actions use a separate standing-grant adapter over the existing action runner. The
+coordinator reads the exact active mechanic requirements and supports zero or one simple root role;
+when present, that role is bound to the server-selected route entity. Multiple roles, object or
+snapshot roles, graph snapshots, child mechanics, authorized context, and event requirements remain
+unavailable from a page. The host supplies the current application-publication state space, state
+revision, audience principal, grant candidate, command identity, deadline, and Atomic profile.
+The adapter rechecks the exact mechanic target before execution and the allowed effect kinds inside
+the same database write that commits the effects. Pure actions retain their existing application-scoped
+path. Browser-authored input cannot select any of this authority.
+
+[composition-bindings.js](../../../DantesRoleplay.Web/BrowserComponents/composition-bindings.js)
+provides result/operator presentation and a controller accepting injected read/dispatch functions.
+`bindControls` enables only the host-supplied available binding names, obtains input through the
+host callback, and removes listeners/disables controls on disposal; absent input stays recoverable.
+It declares no new HTTP endpoint and accepts no principal, grant or state authority. The host
+adapter must resolve each binding within its selected generation; browser input is never authority.
+Missing adapters/readback sections report unavailable. It separates read/worker output, proposals,
+pending tasks, current receipts, prior workflow receipts and recovery identities. Commits refresh
+authoritative data; uncertain actions remain fenced without retry. Existing scoped stream events
+invalidate reads, reconnect refreshes data, and a page-revision event disposes old controls before
+the host reloads compatible content. No task lifecycle or authorization semantics live in this UI.
+
+Example composition payload:
+
+```json
+{
+  "formatVersion": 1,
+  "generation": "example-generation",
+  "queries": [{"name": "records", "query": "example.query.records", "input": {}}],
+  "actions": [{"name": "refresh_record", "mechanic": "example.mechanic.refresh-record"}],
+  "components": [
+    {"id": "heading", "revision": "1", "requiredProps": ["title"],
+     "template": {"kind": "element", "tag": "h2", "children": [{"kind": "value", "path": "props.title"}]}},
+    {"id": "command", "revision": "1", "template": {"kind": "element", "tag": "button", "action": "refresh_record",
+     "children": [{"kind": "text", "text": "Refresh record"}]}}
+  ],
+  "root": {"kind": "element", "tag": "main", "children": [
+    {"kind": "component", "id": "heading", "revision": "1", "props": {"title": "Records"}},
+    {"kind": "each", "items": "records", "as": "record", "children": [{"kind": "value", "path": "record.name"}]},
+    {"kind": "component", "id": "command", "revision": "1"},
+    {"kind": "component", "id": "heading", "revision": "1", "props": {"title": "Operation results"}}
+  ]}
+```
+
+`records` is only a local binding name. The coordinator resolves the authored qualified query to its exact
+`InteractionQueryContractReference` (projection ID/version/content hash, schema hash/schema,
+exposure/roles), selected application/state revision and trusted caller host. `refresh_record`
+similarly resolves through the active catalog and requires the real action owner to pin mechanic ID/version/content hash and command
+identity. Neither declaration can select authority or advertise availability by itself.
+
+## Retained content and coordinator integration
+
+- The accepted content model adds `ContentFormat` (`html` by default or `composition-v1`),
+  `CompositionJson` and `CompositionHash` to the existing bundle/revision/read owners. Legacy
+  constructors/defaults and HTML hashes remain compatible; revision summaries expose format/hash
+  without duplicating JSON. `WebPageBundleReader` accepts exactly one root `index.html` or
+  `composition.json`, plus assets, within the existing ZIP/strict UTF-8 bounds. HTML and composition
+  payloads are mutually exclusive. Composition has empty HTML and validated JSON, canonicalized by
+  ordinal property ordering (array order/JSON number tokens preserved), with the uppercase SHA-256
+  of those retained UTF-8 bytes. Both source and canonical JSON are at most 1 MiB; total retained
+  content/assets remain at most 25 MiB. Optional caller hash must match. The accepted coordinator
+  migration `20260911175529_RetainedWebCompositionDrafts` installs format/JSON/hash/size constraints.
+  It refuses downgrade while composition or unpublished (`ActiveRevision=0`) pages exist.
+- `AppendBundleDraftAsync` now accepts `expectedLatestRevision=0` only when the page is absent,
+  creating revision 1 with `ActiveRevision=0`. Positive expectations compare exactly against the
+  current latest revision. An explicit non-deferred SQLite writer reservation precedes reads and
+  writes; a busy reservation returns `PAGE_WRITE_BUSY` without replaying a write. Revision/blob/
+  page creation is one web-content transaction. Active reads never fall back to a first draft.
+  `GetRevisionAssetAsync` reads the requested retained revision, and requires caller-authorized
+  historical/draft access. This creates no public draft asset route. Existing direct HTML editing
+  preserves legacy validation semantics and rejects a composition base instead of implicitly
+  changing its format. `ActivateRevisionAsync` and `SaveBundleAndActivateAsync` refuse composition
+  with `COMPOSITION_ACTIVATION_UNAVAILABLE`; a first HTML draft can activate with expected active 0.
+  Validate the exact candidate and binding contracts via plan 02 before any composition active pointer
+  advances. Failed candidates retain previous content/assets; reconcile ECS identity and content
+  references explicitly without assuming a transaction spans both owners.
+- In `WebInterfaceEndpoints.GetPageAsync` and the root path, retain publication discovery and
+  existing access filters; branch on the selected revision's content format and invoke
+  `CompositionPagePreview`. Supply the verified host, exact selected queries and asset base,
+  serve audience-specific results without shared HTML caching, and map missing/denied/incompatible
+  reads distinctly. Coordinate revision-pinned asset reads and retention with the same publication.
+  The immutable asset base is `/ui/{slug}/content/{contentPageId}/revisions/{revision}/`; the
+  coordinator enforces its access semantics and transport. It is not a public draft preview URL.
+- The read materializer/preview is registered in the existing coordinator-owned web registration.
+  Browser actions bind to the common plan 01 dispatch boundary in
+  `WebInterfaceApplicationEndpoints`; preserve stable command identity and reconcile uncertain
+  receipts. Plans 02–05 supply authoring/grants, manuals, schedules/observers and child-task readback.
+  These integrations retain their separate owner contracts and authority checks.
+
+`WebPageContentReference` preserves the legacy pageId-only reference or requires all four pin
+fields: `revision`, `contentFormat`, `contentHash`, and `assetInventoryFingerprint`. It derives
+the content hash from actual retained bytes and verifies canonical composition and every asset
+payload. The inventory fingerprint is uppercase SHA-256 over UTF-8
+`dantes-roleplay/web-page-asset-inventory/v1`, a NUL separator, and compact JSON containing
+ordinal-path-sorted `[path, contentType, contentHash, length]` arrays. Asset bodies remain in the
+web content store. Metadata updates preserve the whole reference.
+
+The selection methods in `WebPagePublicationService` capture and recheck the exact
+application-publication binding, application generation, entity, component type/revision/value,
+and retained content pin. Draft selection names its revision; published selection refuses an
+unpinned reference. Literal component/slot rendering needs no synthetic invocation host; query
+and action declarations execute only after their actual owners select exact contracts.
+The publication CAS writes only the ECS component reference after content retention.
+`ReadCompatibilityPointerAsync` reports disagreement with the separate web `ActiveRevision`;
+it neither repairs the pointer nor promises a transaction across the two databases. Legacy
+discovery refuses to send pinned content through the old mutable-active HTML route.
+If a later publication loses its compare-and-swap or fails caller-owned constraint validation, the
+prior ECS pin remains selected and its exact retained assets remain readable. The newer content draft
+stays retained and inert. The compatibility pointer reports the pinned and legacy active revisions
+separately, including `RequiresReconciliation`, so recovery is explicit rather than inferred from a
+failed request.
+
+Selections and pins are evidence, never permission tokens. The coordinator's `web-page` resource
+permission maps to the retained web content page and immutable owning application; publication
+entities are current links to it. Schema Read, namespace prefixes, a verified principal, and
+legacy private access do not substitute for that resource permission. Page Read/authoring/activation
+are Application-scoped; audience queries separately require exact StateSpace Read. Their hosts
+must share a principal/application generation and operation/deadline ledger while retaining their
+actual distinct scopes and grants. The website does not construct broader query authority.
+
+`WebPageStandingGrantResourceTargetOwner` implements the fixed `web-page` resource-owner seam.
+It reads the immutable content-page mapping, verifies the actual owning application generation
+and the complete enabled/reviewed namespace registration, and verifies exact retained content and
+asset bytes. Its evidence binds the mapping, full content pin and namespace metadata; the shared
+grant policy rehydrates that evidence on every use. Exact resource resolution does not require an
+ECS publication link. `ResolveCurrentAsync` selects the latest retained revision for inspection or
+authoring only; it never selects what a published route serves.
+
+`WebPagePermissionedReader` is the registered serving consumer. It accepts a host-created read-only
+invocation, normally created with `InteractionInvocationHost.ForApplication`. Existing trusted hosts
+may also carry state context; that context never substitutes for the required Application-scoped
+Read grant. The reader selects the live ECS publication pin and resolves that exact retained resource.
+It consumes one shared operation and rechecks authority
+and the publication before returning HTML or exact revision assets. Query bindings consume child
+operations from the same bounded root ledger and a common deadline; failures return no content.
+The coordinator supplies host construction, binding resolution, registration,
+HTTP routing and response cache policy. This consumer does not provide resource adoption, candidate
+acceptance, publication authorization, or mutation receipts. Existing legacy publish/activate and
+directory paths refuse pinned references rather than changing or reading the compatibility pointer.
+
+The internal `WebPublicationDiscovery.ResolveHostRouteAsync` supplies routing candidates for the
+host without loading content or claiming readiness. It shares existing page inspection and route
+ambiguity/visibility/index checks, preserves the exact content reference, and refuses an incomplete
+bounded state-space scan. The host must still construct current application authority and reselect
+the exact publication through the permissioned reader. Legacy discovery continues to omit pinned
+content; a routing candidate is not a new public discovery record or an authorization token.
+
+`StageContentReferenceAsync` requires the publication owner's exact current transaction, proved by
+`IEcsWriteTransactionFactory.OwnsCurrent`. The generic factory fails closed for unsupported factories
+and recognizes only its own live wrapper and current database transaction. Staging rechecks retained
+bytes and the exact ECS selection, then uses the existing validated component write. Its SaveChanges
+remains inside the caller transaction; staging never begins, commits or rolls back a transaction.
+The caller must validate generic state-space constraints and owns current grants, candidate validation,
+audit and commit/rollback. The independent CAS wrapper uses the same stage, requires the actual
+constraint validator, and validates before committing. A returned staged component is uncommitted
+evidence, not an operation receipt; rolling back does not remove the separately retained web draft.
+
+Library and migrated SQLite fixtures demonstrate composition, inert retention, exact historical
+asset readback, local transaction rollback, cross-owner failed-publication recovery, and consumer
+conformance. A disposable SQLite integration follows a published page through the real standing-grant
+read and action adapters, Jint mechanic, guarded ECS commit, fresh publication selection, and authorized
+query readback; wrong-audience and revoked-grant attempts remain denied without another write. Reviewed
+new stateful mechanic publication is proven by the application-candidate owner separately. The
+integrated plan 02 query path updates an existing query only when its canonical contract is preserved
+and its projection change is compatible; it does not create an arbitrary new query. Focused integration
+follows that actual query update through publication, fresh page readback and recovery, and covers the
+zero-or-one server-bound root-role Atomic action path. Multiple roles, child mechanics, service calls
+and other advanced page action contexts remain outside the supported page boundary.
 
 ## Outcome and existing owners
 

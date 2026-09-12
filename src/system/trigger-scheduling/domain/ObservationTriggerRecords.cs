@@ -23,6 +23,32 @@ public sealed class ObservationTriggerRecord
     public DateTime RecordedAtUtc { get; set; }
     public ICollection<ObservationTriggerNotificationEntityRecord> NotificationEntities { get; } =
         new List<ObservationTriggerNotificationEntityRecord>();
+    public ObservationTriggerWorkflowBindingRecord? WorkflowBinding { get; set; }
+}
+
+public sealed class ObservationTriggerWorkflowBindingRecord
+{
+    public required string ApplicationId { get; set; }
+    public required string TriggerId { get; set; }
+    public int TriggerVersion { get; set; }
+    public required string PrincipalReference { get; set; }
+    public required string AuthenticationMethod { get; set; }
+    public int ApplicationRevision { get; set; }
+    public required string ApplicationFingerprint { get; set; }
+    public required string BaseApplicationsJson { get; set; }
+    public required string StateSpaceId { get; set; }
+    public required string GrantReference { get; set; }
+    public required string StateRevision { get; set; }
+    public required string DefinitionId { get; set; }
+    public int DefinitionVersion { get; set; }
+    public required string DefinitionFingerprint { get; set; }
+    public required string ExecutionRequestJson { get; set; }
+    public string? ResultSchemaJson { get; set; }
+    public string? ResultSchemaFingerprint { get; set; }
+    public int MaximumOperations { get; set; }
+    public int RuntimeWindowSeconds { get; set; }
+    public required string BindingFingerprint { get; set; }
+    public ObservationTriggerRecord? Trigger { get; set; }
 }
 
 public sealed class ObservationTriggerNotificationEntityRecord

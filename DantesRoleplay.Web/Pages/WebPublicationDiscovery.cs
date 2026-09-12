@@ -53,6 +53,13 @@ public sealed record WebPageRouteResolution(
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? ApplicationId = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] WebPublishedPageView? Page = null);
 
+/// <summary>Host routing input only. It carries no content, permission or readiness evidence.</summary>
+internal sealed record WebPageHostRouteCandidate(ApplicationIdentifier ApplicationId,
+    string PublicationStateSpaceId, string EntityId, string Slug,
+    WebPageContentReference ActiveContentReference, bool IsIndexPage);
+
+internal sealed record WebPageHostRouteResolution(string Status, WebPageHostRouteCandidate? Candidate = null);
+
 public sealed class WebPublicationException(string code, string message) : InvalidOperationException(message)
 {
     public string Code { get; } = code;
@@ -165,31 +172,55 @@ public sealed class WebPublicationDiscovery(
         string slug,
         CancellationToken cancellationToken = default)
     {
+        var match = await ResolveRouteMatchAsync(slug, inspectContent: true, cancellationToken);
+        if (match.Page is null) return new(match.Status, match.ApplicationId?.Value);
+        if (!match.Page.IsUsable) return new("content-missing", match.ApplicationId!.Value);
+        return new("ready", match.ApplicationId!.Value, ToView(match.Page));
+    }
+
+    /// <summary>
+    /// Selects a unique enabled visible route, preserving the exact authored content reference.
+    /// The host must construct current authority and reselect/authorize before serving anything.
+    /// This lookup does not inspect content or turn a routing candidate into a usable publication.
+    /// </summary>
+    internal async Task<WebPageHostRouteResolution> ResolveHostRouteAsync(string slug,
+        CancellationToken cancellationToken = default)
+    {
+        var match = await ResolveRouteMatchAsync(slug, inspectContent: false, cancellationToken);
+        return match.Page is null ? new(match.Status) : new("candidate", new(match.ApplicationId!,
+            match.Publication!.Publication!.StateSpaceId, match.Page.EntityId, match.Page.Slug,
+            match.Page.ActiveContentReference, match.Page.IsIndexPage));
+    }
+
+    private async Task<RouteMatch> ResolveRouteMatchAsync(string slug, bool inspectContent,
+        CancellationToken cancellationToken)
+    {
         if (!WebPageId.IsValid(slug)) return new("application-unavailable");
-        var matches = new List<(ApplicationRegistration Application, PublicationRead Publication, InspectedPage Page)>();
+        RouteMatch? selected = null;
+        var matches = 0;
+        ApplicationIdentifier? firstApplication = null;
         foreach (var registration in AllApplications())
         {
-            var publication = await ReadPublicationAsync(registration, diagnostics: true, cancellationToken);
-            matches.AddRange(publication.PagesForInspection
-                .Where(value => value.Slug == slug)
-                .Select(value => (registration, publication, value)));
+            cancellationToken.ThrowIfCancellationRequested();
+            var publication = await ReadPublicationAsync(registration, diagnostics: true, cancellationToken, inspectContent);
+            if (!inspectContent && publication.StateSpaceListTruncated) return new("publication-invalid");
+            foreach (var page in publication.PagesForInspection.Where(value => value.Slug == slug))
+            {
+                if (matches++ == 0) firstApplication = registration.Id;
+                if (!page.Enabled) continue;
+                if (selected is not null) return new("publication-invalid");
+                selected = new("candidate", registration.Id, publication, page);
+            }
         }
-        if (matches.Count == 0) return new("application-unavailable");
-        var enabledMatches = matches.Where(value => value.Page.Enabled).ToArray();
-        if (enabledMatches.Length > 1) return new("publication-invalid");
-        if (enabledMatches.Length == 0)
-            return new("page-disabled", matches.Count == 1 ? matches[0].Application.Id.Value : null);
-
-        var match = enabledMatches[0];
-        var enabled = match.Publication.PagesForInspection.Where(value => value.Enabled).ToArray();
-        if (match.Publication.PublicationCount != 1
+        if (matches == 0) return new("application-unavailable");
+        if (selected is null) return new("page-disabled", matches == 1 ? firstApplication : null);
+        var enabled = selected.Publication!.PagesForInspection.Where(value => value.Enabled).ToArray();
+        if (selected.Publication.PublicationCount != 1
             || enabled.Count(value => value.Slug == slug) > 1
             || enabled.Count(value => value.IsIndexPage) > 1)
-            return new("publication-invalid", match.Application.Id.Value);
-        if (!match.Page.Enabled) return new("page-disabled", match.Application.Id.Value);
-        if (match.Page.Visibility == "hidden") return new("page-hidden", match.Application.Id.Value);
-        if (!match.Page.IsUsable) return new("content-missing", match.Application.Id.Value);
-        return new("ready", match.Application.Id.Value, ToView(match.Page));
+            return new("publication-invalid", selected.ApplicationId);
+        if (selected.Page!.Visibility == "hidden") return new("page-hidden", selected.ApplicationId);
+        return selected;
     }
 
     private async Task<WebApplicationPublicationView> BuildApplicationAsync(
@@ -255,11 +286,13 @@ public sealed class WebPublicationDiscovery(
     private async Task<PublicationRead> ReadPublicationAsync(
         ApplicationRegistration registration,
         bool diagnostics,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool inspectContent = true)
     {
-        var publicationSpaces = stateSpaces.ListPage(registration.Id, null, 100).StateSpaces
+        var stateSpacePage = stateSpaces.ListPage(registration.Id, null, 100);
+        var publicationSpaces = stateSpacePage.StateSpaces
             .Where(value => value.Scope == EcsStateSpaceScope.ApplicationPublication).ToArray();
-        if (publicationSpaces.Length == 0) return new(null, 0, [], []);
+        if (publicationSpaces.Length == 0) return new(null, 0, [], [], stateSpacePage.NextStateSpaceId is not null);
         var evidence = new List<WebPublicationEvidence>();
         if (publicationSpaces.Length > 1)
             evidence.Add(new("MULTIPLE_PUBLICATION_SPACES", "The application has more than one publication state space."));
@@ -291,7 +324,7 @@ public sealed class WebPublicationDiscovery(
 
                 PageValue? parsed;
                 try { parsed = JsonSerializer.Deserialize<PageValue>(pageComponent.ValueJson, Json); }
-                catch (JsonException exception)
+                catch (Exception exception) when (exception is JsonException or WebPageStoreException)
                 {
                     evidence.Add(new("PAGE_COMPONENT_MALFORMED", exception.Message, entity.EntityId,
                         Enabled: entity.DeletedAtUtc is null));
@@ -304,10 +337,16 @@ public sealed class WebPublicationDiscovery(
                     continue;
                 }
 
-                var pageContent = await content.GetSummaryAsync(parsed!.ActiveContentReference.PageId, cancellationToken);
-                var contentAvailable = pageContent is { ActiveRevision: > 0 };
-                if (!contentAvailable)
-                    evidence.Add(new("PAGE_CONTENT_MISSING", "The active content reference does not resolve to active web content.",
+                var pageContent = inspectContent
+                    ? await content.GetSummaryAsync(parsed!.ActiveContentReference.PageId, cancellationToken) : null;
+                // Permissioned pinned content must be selected and authorized by the new owner
+                // adapter. The legacy HTML route must never substitute its mutable active pointer.
+                var contentAvailable = !parsed!.ActiveContentReference.IsPinned && pageContent is { ActiveRevision: > 0 };
+                if (inspectContent && !contentAvailable)
+                    evidence.Add(new(parsed.ActiveContentReference.IsPinned ? "PAGE_PERMISSIONED_CONTENT_UNAVAILABLE" : "PAGE_CONTENT_MISSING",
+                        parsed.ActiveContentReference.IsPinned
+                            ? "Pinned content requires the permissioned composition publication adapter."
+                            : "The active content reference does not resolve to active web content.",
                         entity.EntityId, parsed.Slug, entity.DeletedAtUtc is null));
                 if (diagnostics && entity.DeletedAtUtc is not null)
                     evidence.Add(new("PAGE_ENTITY_DISABLED", "The page entity is disabled and excluded from public discovery.",
@@ -317,12 +356,12 @@ public sealed class WebPublicationDiscovery(
                         entity.EntityId, parsed.Slug, entity.DeletedAtUtc is null));
 
                 values.Add(new(entity.EntityId, parsed.Title, parsed.NavigationLabel, parsed.Slug,
-                    parsed.Order, parsed.Visibility, parsed.ActiveContentReference.PageId,
+                    parsed.Order, parsed.Visibility, parsed.ActiveContentReference,
                     marker is not null, entity.DeletedAtUtc is null, contentAvailable));
             }
             cursor = batch.NextEntityId;
         } while (cursor is not null);
-        return new(publication, publicationSpaces.Length, values.AsReadOnly(), evidence.AsReadOnly());
+        return new(publication, publicationSpaces.Length, values.AsReadOnly(), evidence.AsReadOnly(), stateSpacePage.NextStateSpaceId is not null);
     }
 
     private Task<EcsComponentView?> ComponentAsync(
@@ -425,11 +464,15 @@ public sealed class WebPublicationDiscovery(
     private static WebPublicationException Error(string code, string message) => new(code, message);
 
     private sealed record CursorValue(int Version, string AfterApplicationId, string SnapshotFingerprint);
-    private sealed record ContentReference(string PageId);
     private sealed record PageValue(string Title, string NavigationLabel, string Slug, int Order,
-        string Visibility, ContentReference ActiveContentReference);
+        string Visibility, WebPageContentReference ActiveContentReference);
     private sealed record InspectedPage(string EntityId, string Title, string NavigationLabel, string Slug,
-        int Order, string Visibility, string ContentPageId, bool IsIndexPage, bool Enabled, bool IsUsable);
+        int Order, string Visibility, WebPageContentReference ActiveContentReference, bool IsIndexPage, bool Enabled, bool IsUsable)
+    {
+        public string ContentPageId => ActiveContentReference.PageId;
+    }
     private sealed record PublicationRead(StateSpaceView? Publication, int PublicationCount,
-        IReadOnlyList<InspectedPage> PagesForInspection, IReadOnlyList<WebPublicationEvidence> Evidence);
+        IReadOnlyList<InspectedPage> PagesForInspection, IReadOnlyList<WebPublicationEvidence> Evidence, bool StateSpaceListTruncated);
+    private sealed record RouteMatch(string Status, ApplicationIdentifier? ApplicationId = null,
+        PublicationRead? Publication = null, InspectedPage? Page = null);
 }

@@ -143,4 +143,7 @@ public interface IEcsWriteTransaction : IAsyncDisposable
 public interface IEcsWriteTransactionFactory
 {
     Task<IEcsWriteTransaction> BeginAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>True only while this factory's own private transaction is current and usable.</summary>
+    bool OwnsCurrent(IEcsWriteTransaction transaction) => false;
 }

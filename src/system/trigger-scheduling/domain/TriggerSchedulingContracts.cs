@@ -35,7 +35,77 @@ public enum TriggerMisfirePolicy
 
 public enum TriggerFireTarget
 {
-    NotificationOnly
+    NotificationOnly,
+    ProcedureWorkflow
+}
+
+/// <summary>
+/// Trusted, immutable workflow material captured when a trigger revision is admitted. The host
+/// object is used only for the admission decision; persistence stores its inert fields and never
+/// treats retained data as authority.
+/// </summary>
+public sealed record TriggerProcedureWorkflowTarget
+{
+    private TriggerProcedureWorkflowTarget(
+        DantesRoleplay.Interactions.InteractionInvocationHost invocationHost,
+        DantesRoleplay.SystemTasks.SystemTaskSelectedDefinition selectedDefinition,
+        string executionRequestJson,
+        string resultSchemaJson,
+        TimeSpan runtimeWindow)
+    {
+        InvocationHost = invocationHost ?? throw new ArgumentNullException(nameof(invocationHost));
+        SelectedDefinition = selectedDefinition ?? throw new ArgumentNullException(nameof(selectedDefinition));
+        if (invocationHost.Profile != DantesRoleplay.Interactions.InteractionExecutionProfile.Workflow ||
+            invocationHost.StateSpaceId is null || invocationHost.StateRevision is null ||
+            invocationHost.ParentCommandId is not null)
+            throw Failure("TRIGGER_WORKFLOW_SCOPE", "A trigger workflow requires a root workflow invocation with an exact state scope.");
+        if (invocationHost.Budget.MaximumOperations < 2)
+            throw Failure("TRIGGER_WORKFLOW_BUDGET", "A trigger workflow requires at least two durable operations.");
+        if (runtimeWindow < TimeSpan.FromSeconds(5) || runtimeWindow > TimeSpan.FromMinutes(10) ||
+            runtimeWindow.Ticks % TimeSpan.TicksPerSecond != 0)
+            throw Failure("TRIGGER_WORKFLOW_WINDOW", "The trigger workflow runtime window must be an integral number of seconds from five through six hundred.");
+        ExecutionRequestJson = DantesRoleplay.Interactions.InteractionCanonicalJson.CanonicalizeObject(executionRequestJson);
+        ResultSchemaJson = DantesRoleplay.Interactions.InteractionCanonicalJson.CanonicalizeObject(resultSchemaJson);
+        ResultSchemaFingerprint = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(ResultSchemaJson)));
+        RuntimeWindow = runtimeWindow;
+        Fingerprint = DantesRoleplay.Interactions.InteractionCanonicalJson.Fingerprint(
+            "dantes-roleplay/trigger-procedure-workflow-binding/v1",
+            DantesRoleplay.Interactions.InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
+            {
+                principalReference = invocationHost.Principal.PrincipalId,
+                invocationHost.Principal.AuthenticationMethod,
+                applicationId = invocationHost.ApplicationRevision.ApplicationId.Value,
+                applicationRevision = invocationHost.ApplicationRevision.Revision,
+                applicationFingerprint = invocationHost.ApplicationRevision.Fingerprint,
+                baseApplications = invocationHost.ApplicationRevision.BaseApplications.Select(value => value.Value),
+                invocationHost.StateSpaceId,
+                invocationHost.GrantReference,
+                invocationHost.StateRevision,
+                selectedDefinition.ExactDefinitionId,
+                definitionVersion = selectedDefinition.Version,
+                definitionFingerprint = selectedDefinition.Fingerprint,
+                executionRequest = ExecutionRequestJson,
+                resultSchema = ResultSchemaJson,
+                maximumOperations = invocationHost.Budget.MaximumOperations,
+                runtimeWindowSeconds = (int)runtimeWindow.TotalSeconds
+            })));
+    }
+
+    public DantesRoleplay.Interactions.InteractionInvocationHost InvocationHost { get; }
+    public DantesRoleplay.SystemTasks.SystemTaskSelectedDefinition SelectedDefinition { get; }
+    public string ExecutionRequestJson { get; }
+    public string ResultSchemaJson { get; }
+    public string ResultSchemaFingerprint { get; }
+    public TimeSpan RuntimeWindow { get; }
+    public string Fingerprint { get; }
+
+    public static TriggerProcedureWorkflowTarget Create(
+        DantesRoleplay.Interactions.InteractionInvocationHost invocationHost,
+        DantesRoleplay.SystemTasks.SystemTaskSelectedDefinition selectedDefinition,
+        string executionRequestJson,
+        string resultSchemaJson,
+        TimeSpan runtimeWindow) =>
+        new(invocationHost, selectedDefinition, executionRequestJson, resultSchemaJson, runtimeWindow);
 }
 
 public enum TriggerLifecycle
@@ -583,7 +653,9 @@ public sealed record OneTimeTriggerDefinition
         TriggerMisfirePolicy misfirePolicy,
         TriggerFireTarget target,
         TriggerLifecycle lifecycle,
-        TriggerNotificationTarget? notification)
+        TriggerNotificationTarget? notification,
+        TriggerProcedureWorkflowTarget? procedureWorkflow,
+        bool requireWorkflowPayload = true)
     {
         ApplicationId = applicationId ?? throw new ArgumentNullException(nameof(applicationId));
         Id = TriggerSchedulingIdentifier.Qualified(id, nameof(id));
@@ -592,8 +664,10 @@ public sealed record OneTimeTriggerDefinition
             throw Failure("TRIGGER_DUE_NOT_UTC", "The trigger due time must be UTC.");
         if (!Enum.IsDefined(misfirePolicy))
             throw Failure("TRIGGER_MISFIRE_POLICY", "The trigger misfire policy is invalid.");
-        if (target != TriggerFireTarget.NotificationOnly)
-            throw Failure("TRIGGER_TARGET_UNSUPPORTED", "Only notification-only triggers are supported.");
+        if (!Enum.IsDefined(target) ||
+            (target == TriggerFireTarget.NotificationOnly && procedureWorkflow is not null) ||
+            (requireWorkflowPayload && target == TriggerFireTarget.ProcedureWorkflow && procedureWorkflow is null))
+            throw Failure("TRIGGER_TARGET_SHAPE", "The trigger target does not match its closed payload shape.");
         if (!Enum.IsDefined(lifecycle))
             throw Failure("TRIGGER_LIFECYCLE", "The trigger lifecycle is invalid.");
         Version = version;
@@ -602,6 +676,7 @@ public sealed record OneTimeTriggerDefinition
         Target = target;
         Lifecycle = lifecycle;
         Notification = notification ?? TriggerNotificationTarget.Default(Id);
+        ProcedureWorkflow = procedureWorkflow;
     }
 
     public ApplicationIdentifier ApplicationId { get; }
@@ -612,6 +687,7 @@ public sealed record OneTimeTriggerDefinition
     public TriggerFireTarget Target { get; }
     public TriggerLifecycle Lifecycle { get; }
     public TriggerNotificationTarget Notification { get; }
+    public TriggerProcedureWorkflowTarget? ProcedureWorkflow { get; }
 
     public static OneTimeTriggerDefinition Create(
         ApplicationIdentifier applicationId,
@@ -621,8 +697,21 @@ public sealed record OneTimeTriggerDefinition
         TriggerMisfirePolicy misfirePolicy,
         TriggerFireTarget target = TriggerFireTarget.NotificationOnly,
         TriggerLifecycle lifecycle = TriggerLifecycle.Active,
-        TriggerNotificationTarget? notification = null) =>
-        new(applicationId, id, version, dueAt, misfirePolicy, target, lifecycle, notification);
+        TriggerNotificationTarget? notification = null,
+        TriggerProcedureWorkflowTarget? procedureWorkflow = null) =>
+        new(applicationId, id, version, dueAt, misfirePolicy, target, lifecycle, notification, procedureWorkflow);
+
+    public static OneTimeTriggerDefinition Stored(
+        ApplicationIdentifier applicationId,
+        string id,
+        int version,
+        DateTimeOffset dueAt,
+        TriggerMisfirePolicy misfirePolicy,
+        TriggerFireTarget target,
+        TriggerLifecycle lifecycle,
+        TriggerNotificationTarget notification) =>
+        new(applicationId, id, version, dueAt, misfirePolicy, target, lifecycle, notification,
+            null, requireWorkflowPayload: false);
 }
 
 public sealed record OneTimeTriggerEvaluation(

@@ -19,6 +19,32 @@ public sealed class LocalDocumentScannerTests : IDisposable
     }
 
     [Fact]
+    public void Relative_matcher_is_bounded_and_does_not_require_existing_files()
+    {
+        Assert.True(LocalDocumentScanner.MatchesNormalizedRelativeGlob("uncreated/**/*.md", "uncreated/new.md"));
+        Assert.False(LocalDocumentScanner.MatchesNormalizedRelativeGlob(new string('x', 1025), "entry.md"));
+        Assert.False(LocalDocumentScanner.MatchesNormalizedRelativeGlob("**/*", new string('x', 1025)));
+    }
+
+    [Theory]
+    [InlineData("content/**/*.md", "content/new.md", true)]
+    [InlineData("content/**/*.md", "content/nested/new.md", true)]
+    [InlineData("content/*.md", "content/nested/new.md", false)]
+    [InlineData("content/file?.md", "content/file1.md", true)]
+    [InlineData("content/file?.md", "content/file12.md", false)]
+    [InlineData("content/file.md", "content/file.md", true)]
+    [InlineData("content", "content/file.md", false)]
+    [InlineData("content/**/*", "sibling/file.md", false)]
+    [InlineData("content/**/*", "content/../escape.md", false)]
+    [InlineData("../**/*", "content/file.md", false)]
+    [InlineData("**/*", "C:/file.md", false)]
+    [InlineData("**/*", "content\\file.md", false)]
+    [InlineData("**/*", "content/*.md", false)]
+    public void Relative_matcher_preserves_exact_glob_segments_and_rejects_unnormalized_paths(
+        string specification, string path, bool expected) =>
+        Assert.Equal(expected, LocalDocumentScanner.MatchesNormalizedRelativeGlob(specification, path));
+
+    [Fact]
     public async Task Literal_file_returns_content_hash_media_type_and_text()
     {
         var path = Path.Combine(_root, "root.txt");

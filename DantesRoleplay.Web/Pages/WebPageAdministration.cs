@@ -164,8 +164,11 @@ public sealed class WebPageAdministration(
             publication.StateSpaceId,
             entityId,
             page.Type,
-            Serialize(request.Title, request.NavigationLabel, request.Slug, request.Order,
-                request.Visibility, value.ActiveContentReference.PageId),
+            JsonSerializer.Serialize(value with
+            {
+                Title = request.Title, NavigationLabel = request.NavigationLabel, Slug = request.Slug,
+                Order = request.Order, Visibility = request.Visibility
+            }, Json),
             request.ExpectedComponentRevision), cancellationToken);
         return await GetAsync(applicationId, entityId, cancellationToken)
             ?? throw Error("WEB_PAGE_UNKNOWN", "The page identity disappeared after update.");
@@ -255,11 +258,12 @@ public sealed class WebPageAdministration(
         ApplicationIdentifier applicationId,
         string entityId,
         WebPageBundle bundle,
-        CancellationToken cancellationToken = default) =>
-        await content.SaveBundleAndActivateAsync(
-            await ContentIdAsync(applicationId, entityId, cancellationToken),
-            bundle,
-            cancellationToken);
+        CancellationToken cancellationToken = default)
+    {
+        var reference = await ContentReferenceAsync(applicationId, entityId, cancellationToken);
+        RejectPinnedPublication(reference);
+        return await content.SaveBundleAndActivateAsync(reference.PageId, bundle, cancellationToken);
+    }
 
     public async Task<WebPageRevisionDocument> AppendBundleDraftAsync(
         ApplicationIdentifier applicationId,
@@ -295,10 +299,13 @@ public sealed class WebPageAdministration(
         ApplicationIdentifier applicationId,
         string entityId,
         WebPageRevisionActivationRequest request,
-        CancellationToken cancellationToken = default) =>
-        await content.ActivateRevisionAsync(
-            await ContentIdAsync(applicationId, entityId, cancellationToken),
-            request.Revision, request.ExpectedActiveRevision, cancellationToken);
+        CancellationToken cancellationToken = default)
+    {
+        var reference = await ContentReferenceAsync(applicationId, entityId, cancellationToken);
+        RejectPinnedPublication(reference);
+        return await content.ActivateRevisionAsync(
+            reference.PageId, request.Revision, request.ExpectedActiveRevision, cancellationToken);
+    }
 
     public Task<WebPageIdentityMigrationReport> InspectMigrationAsync(
         CancellationToken cancellationToken = default) => migration.InspectAsync(cancellationToken);
@@ -313,13 +320,26 @@ public sealed class WebPageAdministration(
     private async Task<string> ContentIdAsync(
         ApplicationIdentifier applicationId,
         string entityId,
+        CancellationToken cancellationToken) =>
+        (await ContentReferenceAsync(applicationId, entityId, cancellationToken)).PageId;
+
+    private async Task<WebPageContentReference> ContentReferenceAsync(
+        ApplicationIdentifier applicationId,
+        string entityId,
         CancellationToken cancellationToken)
     {
         var publication = Publication(applicationId);
         var page = await lifecycle.GetComponentIncludingDisabledAsync(
             publication.StateSpaceId, entityId, WebPageComponentTypes.Page, cancellationToken)
             ?? throw Error("WEB_PAGE_UNKNOWN", "The page identity does not exist.");
-        return Parse(page.ValueJson).ActiveContentReference.PageId;
+        return Parse(page.ValueJson).ActiveContentReference;
+    }
+
+    private static void RejectPinnedPublication(WebPageContentReference reference)
+    {
+        if (reference.IsPinned)
+            throw Error("WEB_PINNED_PUBLICATION_UNAVAILABLE",
+                "Legacy publication cannot update content pinned to an immutable revision.");
     }
 
     private async Task<WebPageAdministrationView> ViewAsync(
@@ -332,7 +352,7 @@ public sealed class WebPageAdministration(
         var errors = new List<WebPublicationEvidence>();
         PageValue value;
         try { value = Parse(component.ValueJson); }
-        catch (Exception exception) when (exception is JsonException or InvalidOperationException)
+        catch (Exception exception) when (exception is JsonException or InvalidOperationException or WebPageStoreException)
         {
             return new(applicationId.Value, entity.EntityId, entity.Name, entity.Revision, component.Revision,
                 entity.DeletedAtUtc is null, "", "", "", 0, "", "", false, null,
@@ -398,19 +418,24 @@ public sealed class WebPageAdministration(
         JsonSerializer.Serialize(new PageValue(
             title, navigationLabel, slug, order, visibility, new(pageId)), Json);
 
-    private static PageValue Parse(string json) => JsonSerializer.Deserialize<PageValue>(json, Json)
-        ?? throw new InvalidOperationException("The page component is empty.");
+    private static PageValue Parse(string json)
+    {
+        var value = JsonSerializer.Deserialize<PageValue>(json, Json)
+            ?? throw new InvalidOperationException("The page component is empty.");
+        if (value.ActiveContentReference is null) throw new InvalidOperationException("The page component has no content reference.");
+        value.ActiveContentReference.Validate();
+        return value;
+    }
 
     private static WebPageAdministrationException Error(string code, string message) => new(code, message);
 
-    private sealed record ContentReference(string PageId);
     private sealed record PageValue(
         string Title,
         string NavigationLabel,
         string Slug,
         int Order,
         string Visibility,
-        ContentReference ActiveContentReference);
+        WebPageContentReference ActiveContentReference);
 }
 
 public sealed class WebPageAdministrationException(string code, string message)

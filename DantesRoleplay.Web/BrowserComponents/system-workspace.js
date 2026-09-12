@@ -3,6 +3,7 @@ import '/components/system-publication.js';
 import '/components/ai-workspace.js';
 import '/components/page-administration.js';
 import '/components/governance-control-center.js';
+import '/components/application-capability-center.js';
 
 const CONTROL_CENTER_PATH = '/ui/control-center';
 

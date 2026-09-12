@@ -28,6 +28,16 @@ public sealed class SystemCapabilityCatalogTests
         var descriptors = catalog.Discover(Context()).Capabilities;
 
         Assert.Equal([
+            SystemCapabilityIds.ApplicationCandidateActivate,
+            SystemCapabilityIds.ApplicationCandidateCatalogCompare,
+            SystemCapabilityIds.ApplicationCandidateInspect,
+            SystemCapabilityIds.ApplicationCandidateIntentUpdate,
+            SystemCapabilityIds.ApplicationCandidateRecover,
+            SystemCapabilityIds.ApplicationCandidateReviewCancel,
+            SystemCapabilityIds.ApplicationCandidateReviewRead,
+            SystemCapabilityIds.ApplicationCandidateReviewSubmit,
+            SystemCapabilityIds.ApplicationCandidateValidate,
+            SystemCapabilityIds.ApplicationCandidateWrite,
             SystemCapabilityIds.ApplicationPreview,
             SystemCapabilityIds.ApplicationActivate,
             SystemCapabilityIds.ApplicationRegister,
@@ -35,6 +45,11 @@ public sealed class SystemCapabilityCatalogTests
             SystemCapabilityIds.ComponentTypeRegister,
             SystemCapabilityIds.Dependencies,
             SystemCapabilityIds.ExtensionRegister,
+            SystemCapabilityIds.InnerWorkerCancel,
+            SystemCapabilityIds.InnerWorkerList,
+            SystemCapabilityIds.InnerWorkerRead,
+            SystemCapabilityIds.InnerWorkerSubmit,
+            SystemCapabilityIds.InnerWorkerWait,
             SystemCapabilityIds.InteractionContextPack,
             SystemCapabilityIds.InteractionRecipeReview,
             SystemCapabilityIds.InteractionRecipes,
@@ -44,12 +59,13 @@ public sealed class SystemCapabilityCatalogTests
             SystemCapabilityIds.MechanicSandboxPromote,
             SystemCapabilityIds.SourceRegister,
             SystemCapabilityIds.Sources,
+            SystemCapabilityIds.StandingGrantAdmin,
             SystemCapabilityIds.StateSpaceAdoptLegacy,
             SystemCapabilityIds.StateSpaceCreate,
             SystemCapabilityIds.StateSpaceUpgrade
         ], descriptors.Select(value => value.Id).ToArray());
-        Assert.Equal(8, descriptors.Count(value => value.Mode == SystemCapabilityMode.Read));
-        Assert.Equal(11, descriptors.Count(value => value.Mode == SystemCapabilityMode.Write));
+        Assert.Equal(14, descriptors.Count(value => value.Mode == SystemCapabilityMode.Read));
+        Assert.Equal(21, descriptors.Count(value => value.Mode == SystemCapabilityMode.Write));
         Assert.All(descriptors, descriptor =>
         {
             var contract = descriptor.Contract;

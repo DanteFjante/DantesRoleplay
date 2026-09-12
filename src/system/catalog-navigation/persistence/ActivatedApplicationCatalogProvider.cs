@@ -49,25 +49,44 @@ public sealed class ActivatedApplicationCatalogMaterializer(
     public CatalogNavigationManifest Build(ApplicationIdentifier applicationId) =>
         BuildFeatureSnapshot(applicationId).Manifest;
 
-    public ActiveCatalogFeatureSnapshot BuildFeatureSnapshot(ApplicationIdentifier applicationId)
+    public ActiveCatalogFeatureSnapshot BuildFeatureSnapshot(ApplicationIdentifier applicationId) =>
+        BuildSnapshot(applicationId, null, permissionOnly: false);
+
+    /// <summary>Existing prepared catalog as a locator only; never registers objects or reads legacy source files.</summary>
+    internal ActiveCatalogFeatureSnapshot BuildPermissionSnapshot(ApplicationIdentifier applicationId, ActiveApplicationManifest activation)
+    {
+        if (activation.ApplicationId != applicationId || activation.PreparationVersion is null)
+            throw Failure("CATALOG_RETAINED_LOCATOR_UNAVAILABLE", "Permission lookup requires an exact retained generation.");
+        if (_preparations is not null && _preparationAuthority is not null
+            && _preparations.TryGetPrepared(_preparationAuthority, applicationId, activation.ActivationFingerprint, out var prepared))
+            return prepared;
+        return BuildSnapshot(applicationId, activation, permissionOnly: true);
+    }
+
+    private ActiveCatalogFeatureSnapshot BuildSnapshot(ApplicationIdentifier applicationId,
+        ActiveApplicationManifest? exactActivation, bool permissionOnly)
     {
         ArgumentNullException.ThrowIfNull(applicationId);
         var application = applications.Describe(applicationId)
             ?? throw Failure("APPLICATION_UNKNOWN", "The application registration is unavailable.");
         if (string.IsNullOrWhiteSpace(application.DisplayName) || string.IsNullOrWhiteSpace(application.Description))
             throw Failure("APPLICATION_METADATA_INCOMPLETE", "Published catalogs require authored application metadata.");
-        var activation = activations.Current(applicationId)
+        var activation = exactActivation ?? activations.Current(applicationId)
             ?? throw Failure("APPLICATION_INACTIVE", "The application has no active source manifest.");
         if (activation.Winners.Count > CatalogNavigationLimits.MaximumRecords * 4)
             throw Failure("CATALOG_DOCUMENT_LIMIT", "The active source manifest is too large to materialize.");
+        if (permissionOnly && (activation.Winners.Any(value => value.Length < 0 || value.Length > 10L * 1024 * 1024)
+                || activation.Winners.Sum(value => value.Length) > 256L * 1024 * 1024))
+            throw Failure("CATALOG_DOCUMENT_LIMIT", "Retained permission preparation exceeds the activation byte bounds.");
 
         var registrations = sources.For(applicationId).ToDictionary(value => value.SourceId, StringComparer.Ordinal);
         var extensionRegistrations = (extensions ?? new EmptyApplicationExtensionRegistry()).For(applicationId)
             .ToDictionary(value => value.ExtensionId, StringComparer.Ordinal);
         foreach (var retained in activation.Sources)
         {
-            if (!registrations.TryGetValue(retained.SourceId, out var current)
-                || SourceRegistrationFingerprint.Compute(current) != retained.RegistrationFingerprint)
+            if (activation.PreparationVersion is null
+                && (!registrations.TryGetValue(retained.SourceId, out var current)
+                    || SourceRegistrationFingerprint.Compute(current) != retained.RegistrationFingerprint))
                 throw Failure("SOURCE_REGISTRATION_DRIFT", "An active source registration no longer matches its retained evidence.");
         }
 
@@ -80,18 +99,21 @@ public sealed class ActivatedApplicationCatalogMaterializer(
         }
 
         var winners = activation.Winners.ToDictionary(value => value.RelativePath, StringComparer.Ordinal);
-        var documents = ReadCatalogBytes(activation.Winners, winners, registrations);
+        var documents = ReadCatalogBytes(applicationId, activation, winners, registrations);
         var preparationFingerprint = PreparationFingerprint(application, activation, registrations,
             extensionRegistrations, documents.Keys);
         ActiveCatalogFeatureSnapshot Factory()
         {
-            RegisterObjects(applicationId, activation.Winners, documents);
             return BuildPreparedSnapshot(applicationId, application,
                 activation, winners, extensionRegistrations, documents);
         }
-        return _preparations is null || _preparationAuthority is null
-            ? Factory()
-            : _preparations.GetOrCreate(_preparationAuthority, applicationId, preparationFingerprint, Factory);
+        void Register() => RegisterObjects(applicationId, activation.Winners, documents);
+        if (_preparations is not null && _preparationAuthority is not null)
+            return _preparations.GetOrCreate(_preparationAuthority, applicationId, preparationFingerprint, Factory,
+                permissionOnly ? null : Register);
+        var snapshot = Factory();
+        if (!permissionOnly) Register();
+        return snapshot;
     }
 
     private ActiveCatalogFeatureSnapshot BuildPreparedSnapshot(
@@ -106,18 +128,9 @@ public sealed class ActivatedApplicationCatalogMaterializer(
         foreach (var winner in activation.Winners.OrderBy(value => value.RelativePath, StringComparer.Ordinal))
         {
             if (!TryRecordKind(winner.RelativePath, out var kind)) continue;
-            var sourceText = DecodeText(winner, documents[winner.RelativePath]);
             try
             {
-                records.Add(kind switch
-                {
-                    "procedure" => ProcedureRecord(applicationId, applicationId.Value, winner,
-                        ProcedureFile.Parse(sourceText, winner.RelativePath)),
-                    "query" => QueryRecord(applicationId, applicationId.Value, winner,
-                        ApplicationQueryContract.Parse(sourceText, applicationId)),
-                    "entity" => EntityRecord(applicationId, applicationId.Value, winner, sourceText),
-                    _ => MechanicRecord(applicationId, applicationId.Value, winner, sourceText, winners, documents)
-                });
+                records.Add(ParseRetainedRecord(applicationId, winner, winners, documents)!);
             }
             catch (ApplicationCatalogMaterializationException) { throw; }
             catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or JsonException)
@@ -212,7 +225,32 @@ public sealed class ActivatedApplicationCatalogMaterializer(
         }
     }
 
-    private CatalogRecordDefinition MechanicRecord(
+    /// <summary>
+    /// Pure parsing shared with owner authorization. The caller supplies exact verified retained
+    /// winners/bytes; this method performs no source reads, cache preparation or projection writes.
+    /// Returned fingerprints retain the catalog's existing normalized definition semantics.
+    /// </summary>
+    internal static CatalogRecordDefinition? ParseRetainedRecord(
+        ApplicationIdentifier applicationId, ActivatedApplicationDocument winner,
+        IReadOnlyDictionary<string, ActivatedApplicationDocument> winners,
+        IReadOnlyDictionary<string, byte[]> documents)
+    {
+        if (!TryRecordKind(winner.RelativePath, out var kind)) return null;
+        if (!winners.TryGetValue(winner.RelativePath, out var exact) || exact != winner)
+            throw Failure("CATALOG_PROVENANCE_MISSING", "The document is not an exact retained winner.");
+        var text = DecodeText(winner, documents[winner.RelativePath]);
+        return kind switch
+        {
+            "procedure" => ProcedureRecord(applicationId, applicationId.Value, winner,
+                ProcedureFile.Parse(text, winner.RelativePath)),
+            "query" => QueryRecord(applicationId, applicationId.Value, winner,
+                ApplicationQueryContract.Parse(text, applicationId)),
+            "entity" => EntityRecord(applicationId, applicationId.Value, winner, text),
+            _ => MechanicRecord(applicationId, applicationId.Value, winner, text, winners, documents)
+        };
+    }
+
+    private static CatalogRecordDefinition MechanicRecord(
         ApplicationIdentifier applicationId,
         string collection,
         ActivatedApplicationDocument markdownWinner,
@@ -358,10 +396,12 @@ public sealed class ActivatedApplicationCatalogMaterializer(
     }
 
     private IReadOnlyDictionary<string, byte[]> ReadCatalogBytes(
-        IReadOnlyList<ActivatedApplicationDocument> activationWinners,
+        ApplicationIdentifier applicationId,
+        ActiveApplicationManifest activation,
         IReadOnlyDictionary<string, ActivatedApplicationDocument> winners,
         IReadOnlyDictionary<string, SourceRegistration> registrations)
     {
+        var activationWinners = activation.Winners;
         var used = activationWinners.Where(value => IsObjectDocument(value.RelativePath)
                 || TryRecordKind(value.RelativePath, out _))
             .ToDictionary(value => value.RelativePath, StringComparer.Ordinal);
@@ -372,7 +412,8 @@ public sealed class ActivatedApplicationCatalogMaterializer(
             if (winners.TryGetValue(sourcePath, out var source)) used.TryAdd(sourcePath, source);
         }
         return used.OrderBy(value => value.Key, StringComparer.Ordinal)
-            .ToDictionary(value => value.Key, value => ReadBytes(value.Value, registrations),
+            .ToDictionary(value => value.Key,
+                value => ReadBytes(applicationId, activation, value.Value, registrations),
                 StringComparer.Ordinal);
     }
 
@@ -420,9 +461,33 @@ public sealed class ActivatedApplicationCatalogMaterializer(
     }
 
     private byte[] ReadBytes(
+        ApplicationIdentifier applicationId,
+        ActiveApplicationManifest activation,
         ActivatedApplicationDocument winner,
         IReadOnlyDictionary<string, SourceRegistration> registrations)
     {
+        if (activations is IActivatedApplicationEvidenceReader evidenceReader)
+        {
+            ActivatedApplicationDocumentEvidence? evidence;
+            try
+            {
+                evidence = evidenceReader.ReadDocumentEvidence(
+                    applicationId, activation.ActivationRevision, winner.LogicalIdentity);
+            }
+            catch (ApplicationActivationException exception)
+            {
+                throw Failure(exception.Code, exception.Message, exception);
+            }
+            if (evidence?.RetainedBytes is { } retainedBytes) return retainedBytes;
+            if (activation.PreparationVersion is not null)
+                throw Failure("ACTIVATION_EVIDENCE_MISSING",
+                    "A prepared catalog document has no retained bytes.");
+        }
+        else if (activation.PreparationVersion is not null)
+            throw Failure("ACTIVATION_EVIDENCE_UNAVAILABLE",
+                "The prepared activation evidence reader is unavailable.");
+
+        // Explicit compatibility path for historical metadata-only activation revisions.
         if (!winner.IsText || !registrations.TryGetValue(winner.SourceId, out var registration)
             || !allowedRoots.TryResolve(registration.AllowedRootId, out var configuredRoot)
             || string.IsNullOrWhiteSpace(configuredRoot))
@@ -498,7 +563,7 @@ public sealed class ActivatedApplicationCatalogMaterializer(
     private static string Summary(string value) =>
         string.Join(' ', value.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
 
-    private static bool TryRecordKind(string path, out string kind)
+    internal static bool TryRecordKind(string path, out string kind)
     {
         kind = "";
         var segments = path.Split('/');
@@ -541,13 +606,15 @@ public sealed class ActivatedApplicationCatalogMaterializer(
 public sealed class ActivatedApplicationCatalogProvider(
     IPublicApplicationCatalogPolicy policy,
     ActivatedApplicationCatalogMaterializer materializer,
-    CatalogCursorCodec cursors)
+    CatalogCursorCodec cursors,
+    IApplicationDefinitionChangeReader? changes = null)
     : IPublicApplicationCatalogProvider, IActiveCatalogFeatureSnapshotProvider,
       IPublicApplicationCatalogDiagnostics
 {
     private readonly Dictionary<ApplicationIdentifier, ICatalogNavigator> _cache = [];
     private readonly Dictionary<ApplicationIdentifier, ActiveCatalogFeatureSnapshot> _snapshots = [];
     private readonly Dictionary<ApplicationIdentifier, PublicApplicationCatalogFailure> _failures = [];
+    private readonly Dictionary<ApplicationIdentifier, int> _observedActivationRevisions = [];
 
     public PublicApplicationCatalogFailure? LastFailure(ApplicationIdentifier applicationId)
     {
@@ -560,6 +627,7 @@ public sealed class ActivatedApplicationCatalogProvider(
         ArgumentNullException.ThrowIfNull(applicationId);
         try
         {
+            RefreshForDefinitionChange(applicationId);
             if (!policy.IsPublished(applicationId))
             {
                 _failures[applicationId] = new("APPLICATION_CATALOG_UNPUBLISHED",
@@ -598,5 +666,30 @@ public sealed class ActivatedApplicationCatalogProvider(
             return false;
         }
         return _snapshots.TryGetValue(applicationId, out snapshot!);
+    }
+
+    /// <summary>
+    /// Catalog navigation is scoped, but an activation can advance while the scope remains alive.
+    /// The durable change feed is the authoritative freshness signal, so discard only this
+    /// application's derived navigator and snapshot before rebuilding from active evidence.
+    /// </summary>
+    private void RefreshForDefinitionChange(ApplicationIdentifier applicationId)
+    {
+        if (changes is null) return;
+        var change = changes.CurrentChange(applicationId);
+        if (change is null)
+        {
+            _observedActivationRevisions.Remove(applicationId);
+            _cache.Remove(applicationId);
+            _snapshots.Remove(applicationId);
+            _failures.Remove(applicationId);
+            return;
+        }
+        if (_observedActivationRevisions.TryGetValue(applicationId, out var revision)
+            && revision == change.Revision) return;
+        _observedActivationRevisions[applicationId] = change.Revision;
+        _cache.Remove(applicationId);
+        _snapshots.Remove(applicationId);
+        _failures.Remove(applicationId);
     }
 }

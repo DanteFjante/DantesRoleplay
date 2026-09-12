@@ -1,0 +1,12 @@
+{
+  "id": "procedure.system.application-candidate",
+  "owner": "procedure",
+  "description": "Generic operator and application procedures for inspecting, authoring, validating, activating, and recovering application candidates.",
+  "allowedKinds": [
+    "procedure"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed as ruleset-neutral application candidate authoring guidance."
+}

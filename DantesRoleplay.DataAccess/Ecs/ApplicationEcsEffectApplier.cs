@@ -19,14 +19,28 @@ public sealed class ApplicationEcsEffectApplier(
     IEnumerable<IApplicationEcsTransactionParticipant>? transactionParticipants = null,
     IEcsRoleConstraintValidator? roleConstraints = null,
     IEnumerable<IApplicationEcsEventSourceParticipant>? eventSources = null,
-    IApplicationEcsReactionRouter? reactionRouter = null) : IApplicationEcsEffectApplier
+    IApplicationEcsReactionRouter? reactionRouter = null) : IApplicationEcsEffectApplier,
+    IApplicationEcsGuardedEffectApplier
 {
     private const string AuditIdentity = ApplicationEcsExecutionIdentity.AuditTool;
 
-    public async Task<ApplicationEcsEffectResult> ApplyAsync(
+    public Task<ApplicationEcsEffectResult> ApplyAsync(
         ApplicationEcsEffectBatch batch,
         bool dryRun = false,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) =>
+        ApplyAsync(batch, dryRun, commitGuard: null, cancellationToken);
+
+    Task<ApplicationEcsEffectResult> IApplicationEcsGuardedEffectApplier.ApplyAuthorizedAsync(
+        ApplicationEcsEffectBatch batch,
+        IApplicationEcsCommitGuard commitGuard,
+        CancellationToken cancellationToken) =>
+        ApplyAsync(batch, dryRun: false, commitGuard, cancellationToken);
+
+    private async Task<ApplicationEcsEffectResult> ApplyAsync(
+        ApplicationEcsEffectBatch batch,
+        bool dryRun,
+        IApplicationEcsCommitGuard? commitGuard,
+        CancellationToken cancellationToken)
     {
         if (batch is null)
             return await FailedSafelyAsync(null, dryRun, Operation.NewId(),
@@ -131,11 +145,24 @@ public sealed class ApplicationEcsEffectApplier(
                 transaction.GetDbTransaction(), cancellationToken);
             foreach (var participant in transactionParticipants ?? [])
                 await participant.StageAsync(committed, receipts.AsReadOnly(), operationId, cancellationToken);
+            if (commitGuard is not null)
+            {
+                var authority = await commitGuard.EvaluateAsync(committed, cancellationToken);
+                if (!authority.Allowed)
+                    throw new ApplicationEcsCommitGuardException(authority.Code);
+            }
             await RecordAsync(committed, operationId, success: true, dryRun: false, receipts.Count, "", cancellationToken);
             await SqliteChangeRecovery.AcknowledgeAsync(db.Database.GetDbConnection(),
                 transaction.GetDbTransaction(), recoveryBefore, recoveryAfter, operationId, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             return new(true, false, operationId, receipts.AsReadOnly(), []);
+        }
+        catch (ApplicationEcsCommitGuardException exception)
+        {
+            await RollbackAndClearAsync(transaction);
+            transaction = null;
+            return new(false, dryRun, operationId, [],
+                [new(-1, exception.Code, "Current action authority rejected the typed effect transaction.")]);
         }
         catch (OperationCanceledException)
         {
@@ -464,6 +491,11 @@ public sealed class ApplicationEcsEffectApplier(
         public int Index { get; } = index;
     }
 
+    private sealed class ApplicationEcsCommitGuardException(string code) : Exception
+    {
+        internal string Code { get; } = code;
+    }
+
     private async Task<ApplicationEcsEffectResult> FailedAsync(
         ApplicationEcsEffectBatch? batch,
         bool dryRun,
@@ -570,4 +602,21 @@ public sealed class ApplicationEcsEffectApplier(
         _ when exception.Message.Contains("stale", StringComparison.OrdinalIgnoreCase) => "REVISION_STALE",
         _ => "EFFECT_REJECTED"
     };
+}
+
+internal interface IApplicationEcsCommitGuard
+{
+    Task<ApplicationEcsCommitGuardDecision> EvaluateAsync(
+        ApplicationEcsEffectBatch committedBatch,
+        CancellationToken cancellationToken = default);
+}
+
+internal sealed record ApplicationEcsCommitGuardDecision(bool Allowed, string Code);
+
+internal interface IApplicationEcsGuardedEffectApplier
+{
+    Task<ApplicationEcsEffectResult> ApplyAuthorizedAsync(
+        ApplicationEcsEffectBatch batch,
+        IApplicationEcsCommitGuard commitGuard,
+        CancellationToken cancellationToken = default);
 }

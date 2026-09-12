@@ -1,9 +1,12 @@
 using DantesRoleplay.CatalogNavigation;
+using DantesRoleplay.ApplicationActivation;
+using DantesRoleplay.Authorization;
 using DantesRoleplay.CatalogNamespaces;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Knowledge;
 using DantesRoleplay.Play;
 using DantesRoleplay.Projections;
+using DantesRoleplay.Procedures;
 using DantesRoleplay.SystemCapabilities;
 using DantesRoleplay.Retrieval;
 using Microsoft.Extensions.DependencyInjection;
@@ -68,11 +71,14 @@ internal static class InteractionOrchestrationComponentRegistration
         services.TryAddScoped<IInteractionRecipeLearner, InteractionRecipeLearner>();
         services.TryAddScoped<IInteractionRecipeProvenanceReader, InteractionRecipeProvenanceReader>();
         services.TryAddScoped<IInteractionRecipeReviewService, InteractionRecipeReviewService>();
+        services.TryAddSingleton<InteractionRetrievalRefreshCoordinator>();
         services.TryAddScoped<IInteractionFeatureRetriever>(provider => new InteractionFeatureRetriever(
             provider.GetRequiredService<IActiveCatalogFeatureSnapshotProvider>(),
             provider.GetService<ITextEmbeddingProvider>(),
             provider.GetService<IInteractionDerivedVectorIndex>(),
-            provider.GetService<ICatalogNamespaceRegistry>()));
+            provider.GetService<ICatalogNamespaceRegistry>(),
+            provider.GetRequiredService<IApplicationDefinitionChangeReader>(),
+            provider.GetRequiredService<InteractionRetrievalRefreshCoordinator>()));
         services.TryAddScoped<IVerifiedInteractionRecipeResolver>(provider => new VerifiedInteractionRecipeResolver(
             provider.GetRequiredService<IInteractionRecipeStore>(),
             provider.GetRequiredService<IActiveCatalogFeatureSnapshotProvider>(),
@@ -87,7 +93,23 @@ internal static class InteractionOrchestrationComponentRegistration
         services.TryAddEnumerable(ServiceDescriptor.Scoped<IInteractionQueryExecutor, MechanicProjectionInteractionQueryExecutor>());
         services.TryAddScoped<IInteractionQueryExecutorRegistry, InteractionQueryExecutorRegistry>();
         services.TryAddScoped<IApplicationReadModelService, ApplicationReadModelService>();
+        services.TryAddScoped<IApplicationReadModelInvocationAdapter, ApplicationReadModelInvocationAdapter>();
+        services.AddScoped<IStandingGrantApplicationReadModelInvocationAdapter,
+            StandingGrantApplicationReadModelInvocationAdapter>();
         services.TryAddScoped<IApplicationQueryRoleBindingResolver, ApplicationQueryRoleBindingResolver>();
+        services.TryAddScoped(provider => new ProcedureManualSectionRetriever(
+            provider.GetService<ITextEmbeddingProvider>(),
+            provider.GetService<IInteractionDerivedVectorIndex>(),
+            provider.GetRequiredService<InteractionRetrievalRefreshCoordinator>()));
+        services.AddScoped<IInteractionManualContextService>(provider => new InteractionManualContextService(
+            provider.GetRequiredService<IProcedureStore>(),
+            provider.GetRequiredService<IInteractionFeatureRetriever>(),
+            provider.GetRequiredService<IStandingGrantPolicy>(),
+            provider.GetRequiredService<IStandingGrantTargetResolver>(),
+            provider.GetRequiredService<IApplicationDefinitionChangeReader>(),
+            ["system"],
+            provider.GetRequiredService<IInteractionRecipeStore>(),
+            provider.GetRequiredService<ProcedureManualSectionRetriever>()));
         services.TryAddScoped<IInteractionTaskContextMaterializer>(provider =>
             new InteractionTaskContextMaterializer(
                 provider.GetRequiredService<IInteractionAuthorizationPolicy>(),

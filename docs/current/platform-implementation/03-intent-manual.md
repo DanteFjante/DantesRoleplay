@@ -1,6 +1,130 @@
 # 03 — Intent discovery and the operating manual
 
-Status: proposed plan; no runtime authorization or permanent IDs. Initial callers are the website and Codex through MCP; other protocols remain extension points.
+Status: discovery, manual context, reuse-review context, alternate-intent authoring, publication
+refresh and the website/Codex gateway integration are implemented within the boundary below. Other
+protocols remain extension points. Discovery creates no runtime authorization or permanent IDs.
+
+## Implemented owner boundary
+
+`InteractionManualContextService` derives read-only context through the existing procedure store,
+feature retriever and optional recipe store. It resolves exact current definition ownership through
+`IStandingGrantTargetResolver` and checks `IStandingGrantPolicy` with the full invocation host and
+`Read/Application` before selection and again before returning selected content. A state-space read
+grant does not authorize definition discovery, and definition discovery does not authorize state queries.
+It consumes one operation from the shared budget and observes its deadline, and returns
+the existing `CompletedComputation` envelope. The packet is inert discovery evidence: it never selects
+or executes a write, proves implementation equivalence, or publishes an association. Exact contract,
+input, binding and grant validation remain required at execution.
+
+Operational manual selection includes only active procedures. Global categories require an explicit,
+copied host allow-list with exact category equality before limits; the host default is `["system"]`,
+and an empty list exposes none. This is host-selected orientation, not application authoring authority.
+Application content retains the retriever's trust and namespace filtering, then exact target authorization
+before exact matching, ranking, limits or disclosure. Every recipe step must pass the same check before
+its recipe can influence selection. Unsupported target resolution hides the candidate. Global procedures
+retain their actual IDs rather than being fabricated as
+application features. Historical procedure reads remain available through the existing store.
+
+Manual sections retain heading ancestry, a derived section reference, source revision and content
+hash. References depend on field, heading ancestry/occurrence and chunk position, so callers must
+retain revision evidence across text edits. Stored synchronization hashes remain verbatim and are
+separate from the derived source and match-phrase fingerprints. Match phrases participate in the
+manual resolution hash without changing the catalog synchronization hash. Context defaults to 16,000 characters, with a
+4,000–24,000 range, eight sections of at most 2,000 characters, eight feature candidates and four
+verified recipe candidates. A bounded packet explicitly directs callers to exact source reads;
+omitted constraints have not been validated. Result hashes are computed over canonical packet JSON
+with `resultFingerprint` replaced by 64 zeroes.
+Completion evidence names that final result hash; the separate resolution hash detects source and
+candidate drift even when a caller chooses a different output budget.
+Compact candidate references retain application, lane, ID, kind, revision and content fingerprint.
+Whole catalog and activation generation pins remain host-only for freshness checks; they never enter
+the returned packet or its hashes. Denied definitions cannot alter visible alternatives, ranks, fallback
+modes or fingerprints. Authorized discovery resolves and filters exact current targets before vector
+ranking or result limits. It may query a complete host-built generation, but never rebuilds the full
+catalog under a restricted caller grant or sends denied records to the embedding provider during that
+request. A missing, stale, unsupported or failed authorized vector view falls back to the already-filtered
+lexical view.
+
+The existing activation change reader can invalidate cached catalog snapshots and reject stale
+retrieval generations. Derived index failures preserve lexical discovery and cannot gate activation.
+Missing or stale vector generations trigger refresh; a successful empty search does not. Hosts share
+one `InteractionRetrievalRefreshCoordinator` per derived-index authority across scoped retrievers.
+It admits at most 16 active generations and 64 waiters per generation; waiters cancel with their
+caller or fall back after five seconds. The owner performs awaited work within its caller lifetime,
+pins the requested generation, and releases capacity on failure/cancellation. No background work
+captures scoped services. Without host injection, coordination is limited to one retriever instance.
+System-manual sections use the same disposable derived index under a distinct lane. The generation
+fingerprint covers the host application, exact permitted procedure IDs and revisions, full source and
+section fingerprints, normalized embedding text, format and embedding-provider identity. Exact host
+category filtering happens before any section text reaches the embedding provider. Repeated lookups and
+new scoped service instances reuse an unchanged retained generation; source edits or provider revisions
+select a new generation. The procedure store remains authoritative, and every selected source revision
+is rechecked before a packet returns. Missing, stale or failed section generations preserve current
+lexical section selection.
+The accepted context seam is `IInteractionManualContextService` with `InteractionManualContextRequest`.
+The coordinator registers it and maps the selected-application website/Codex gateways. Production
+standing-grant policy, ownership resolution and publication remain owned by plan 02; discovery
+evidence itself does not prove issuance, execution authority or publication.
+
+Candidate reuse preparation implements `IApplicationCandidateReuseReview` with a conservative
+structural result and a candidate-bound semantic-review path when that result is insufficient. It
+normalizes verified retained text through the existing catalog parser,
+requires explicit application Read authority for candidate definitions and active alternatives,
+and rechecks exact targets and generation before returning evidence. An exact copy under a different
+ID is Invalid: the conservative comparator removes only the top-level ID from otherwise identical
+normalized content. Same-ID revisions and nonidentical content require semantic review; this check
+does not prove behavioral equivalence. Oversized context, unsupported documents, reusable-task
+context without exact review support, missing authority and missing worker evidence remain Unavailable.
+Discovery consumes one shared operation; it never creates a separate invocation budget.
+Read-only review preparation preserves application-only invocations with an absent state-space/revision
+pair, or preserves the caller's complete state pair. Both use the same application-authorized manual
+owner and operation ledger; application-only discovery does not grant state execution authority.
+
+The proposed reuse-judgment input freezes full retained text, the full implementation reason,
+authorized manual packet and exact alternative contracts. It permits at most 16 documents and
+16 alternatives within 64,000 UTF-8 input bytes, and 8,000 UTF-8 output bytes with 500-character
+judgment reasons. Nothing is truncated to fit. Strict output checks pin identity and alternative
+coverage but do not create an attestation. The host-selected read-only plan 05 worker and plan 04
+accounting/worker provenance supply the candidate-bound review path. The authoring owner still
+verifies the exact retained judgment and current authority before accepting it. No-hit retrieval, a
+nonempty reason, model output or usage counters alone are insufficient.
+
+The additive V2 selected-context contract keeps the full candidate and base activation references
+host-only. Its selection, input and manual-result fingerprints derive exclusively from authorized
+selected documents, reason, manual and alternatives. The retained owner must separately prove exact
+changed-document, sidecar and declared-dependency coverage against the full candidate and base,
+and the consuming service must revalidate current Read and Validate authority. A structural
+`closureComplete` flag only guards context construction; it is not evidence or permission to dispatch.
+Incomplete coverage remains Unavailable. V1 fingerprint semantics are unchanged. The final serialized
+provider request has its own size check, including prompts and escaping; fitting the model-input
+bound alone does not guarantee that request fits.
+
+Alternate-intent authoring is internal and limited to existing trusted application procedures and
+mechanics. It accepts an exact current definition reference, expected candidate revision and replacement
+phrase list; active and candidate readers rehydrate retained rows and bytes. Read authority is checked
+before retained source preparation, Author is checked by the candidate writer in its SQLite transaction,
+and Validate and Activate are checked by their existing lifecycle stages. Up to 32 phrases of 200
+characters are trimmed, whitespace-normalized and deduplicated under retrieval matching rules. Selected
+source text and replacement text each have a 32,000-byte UTF-8 bound.
+
+The editor changes only the explicit `## Matches` section and rejects ambiguous section/fence layouts.
+Publication requires a separate exact structural proof: the same existing ID, kind, version, contract,
+requirements and source sidecar; byte-identical authored text outside the editor-owned section; and an
+otherwise identical retained generation. It records validation and publication receipts without runtime
+samples or model equivalence. The existing application candidate and activation histories retain every
+revision. Removing all phrases disables the alternate association while preserving the canonical target
+and its implementation; a later revision may restore or replace phrases. Each publication advances the
+definition-change feed, so catalog and derived retrieval generations refresh from the authoritative
+activation. Existing synchronization/source hash semantics are unchanged.
+
+The authenticated application-candidate gateway exposes the closed
+`system.application-candidate.intent-update` operation to the website and Codex tool adapter. Its
+payload pins the current application, exact procedure or mechanic revision and fingerprint, expected
+candidate revision, and the complete desired phrase set. Gateway selection requires one current grant
+with both Read and Author capabilities and reserves the two operations used by source preparation and
+candidate authoring. Stable gateway idempotency maps retries to the existing candidate write receipt.
+The operation returns that real inert receipt; inspection, validation and activation remain separate
+existing capabilities and are the only publication path.
 
 Prerequisite: implement [00 — Shared foundation](00-shared-foundation.md) first and have the coordinator supply its accepted foundation revision and contract baseline. This workstream consumes those shared contracts and does not redefine them independently.
 

@@ -62,6 +62,25 @@ public interface IApplicationReadModelService
         CancellationToken cancellationToken = default);
 }
 
+public sealed record ApplicationReadModelInvocationRequest(
+    InteractionInvocationHost Host, string QualifiedQueryId, InteractionQueryContractReference ExpectedContract,
+    IReadOnlyDictionary<string, string> RoleBindings, string InputJson = "{}", MechanicAudienceContext? Audience = null,
+    string? Cursor = null, int? PageSize = null);
+
+public interface IApplicationReadModelInvocationAdapter
+{
+    Task<InteractionInvocationResult> ReadAsync(ApplicationReadModelInvocationRequest request,
+        CancellationToken cancellationToken = default);
+}
+
+/// <summary>
+/// Identifies the application read adapter whose authority comes exclusively from a current
+/// standing-grant evaluation. Consumers select it explicitly; it is not a legacy fallback.
+/// </summary>
+public interface IStandingGrantApplicationReadModelInvocationAdapter : IApplicationReadModelInvocationAdapter
+{
+}
+
 /// <summary>Trusted, transport-neutral inputs available while resolving declared query roles.</summary>
 public sealed record ApplicationQueryRoleBindingContext(
     string RouteEntityId,

@@ -1,0 +1,362 @@
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using DantesRoleplay.AI;
+using DantesRoleplay.Content;
+using DantesRoleplay.Interactions;
+using DantesRoleplay.Procedures;
+using DantesRoleplay.SystemTasks;
+using Json.Schema;
+
+namespace DantesRoleplay.SystemCapabilities;
+
+/// <summary>
+/// Host-only inputs for producing a focused worker request.  This is intentionally internal until
+/// the durable worker owner supplies the submission boundary.
+/// </summary>
+internal sealed record SystemInnerWorkerPreparationInput(
+    SystemInnerWorkerRequest Worker,
+    AiAgentProfile HostProfile,
+    AiRequest HostConfiguration,
+    AuthorizedInteractionEnvelope ContextEnvelope,
+    InteractionAuthorizationRequest ContextAuthorization,
+    IReadOnlyList<string> RequiredContextReferences,
+    IReadOnlyList<string> PermittedToolNames,
+    string SelectedResultSchemaJson,
+    string? SelectedProcedureContractFingerprint = null,
+    SystemInnerWorkerTrustedActiveProcedure? TrustedActiveProcedure = null);
+
+/// <summary>
+/// Host-produced procedure content from the exact trusted active catalog snapshot. This evidence is
+/// never materialized from the worker assignment and is rechecked against the selected definition
+/// and interaction snapshot before it can become provider instructions.
+/// </summary>
+internal sealed record SystemInnerWorkerTrustedActiveProcedure(
+    SystemTaskSelectedDefinition SelectedDefinition,
+    string EffectiveSetFingerprint,
+    string ResolutionFingerprint,
+    bool TrustedSource,
+    ProcedureStatus Status,
+    string Category,
+    string Name,
+    string Description,
+    string Governs,
+    string Instructions,
+    string Constraints,
+    string ContractFingerprint);
+
+/// <summary>Immutable evidence and provider inputs produced without starting a worker.</summary>
+internal sealed record SystemInnerWorkerPreparedRequest(
+    AiAgentProfile Profile,
+    AiRequest Request,
+    string ProcedureFingerprint,
+    string ContextFingerprint,
+    string OutputSchemaFingerprint,
+    IReadOnlyList<string> SelectedContextReferences,
+    int PromptBytes);
+
+internal sealed record SystemInnerWorkerResolvedDependency(
+    string Name,
+    SystemTaskDurableHandle Handle,
+    string JsonPointer,
+    string OutputFingerprint,
+    JsonElement Value);
+
+/// <summary>
+/// Converts an exact, host-selected procedure and freshly authorized task-context pack into a
+/// narrow AI request. It has no provider, tool, task, or budget-consumption dependency. The
+/// carried grant is evidence for the later invocation boundary; this pure preparation does not
+/// authorize a grant or make an approval decision.
+/// </summary>
+internal sealed class SystemInnerWorkerPreparation(
+    IProcedureStore procedures,
+    IInteractionTaskContextMaterializer contextMaterializer)
+{
+    private const int MaximumToolNames = 16;
+    private const int MaximumContextReferences = InteractionTaskContextMaterializer.MaximumPackItems;
+    private const int MaximumContextReferenceLength = 1_024;
+    private const int MaximumPromptBytes = InteractionContractLimits.JsonBytes;
+    private const int MaximumPrerequisiteBytes = 16_384;
+
+    internal static SystemInnerWorkerPreparedRequest AddPrerequisites(
+        SystemInnerWorkerPreparedRequest prepared,
+        IReadOnlyList<SystemInnerWorkerResolvedDependency> dependencies)
+    {
+        ArgumentNullException.ThrowIfNull(prepared);
+        ArgumentNullException.ThrowIfNull(dependencies);
+        if (dependencies.Count == 0) return prepared;
+        var prerequisites = InteractionCanonicalJson.Canonicalize(JsonSerializer.Serialize(
+            dependencies.Select(value => new
+            {
+                name = value.Name,
+                handle = new { taskId = value.Handle.TaskId, commandId = value.Handle.CommandId },
+                jsonPointer = value.JsonPointer,
+                outputFingerprint = value.OutputFingerprint,
+                value = value.Value
+            }).ToArray()));
+        if (Encoding.UTF8.GetByteCount(prerequisites) > MaximumPrerequisiteBytes)
+            throw Failure("INNER_WORKER_DEPENDENCY_INPUT_TOO_LARGE",
+                "The selected prerequisite data exceeds its 16 KiB aggregate bound.");
+        if (prepared.Request.Messages.Count != 1)
+            throw Failure("WORKER_PROMPT_INVALID",
+                "The prepared focused-worker request has an invalid message shape.");
+        var source = prepared.Request.Messages[0];
+        if (source.Role != AiMessageRole.User) throw Failure("WORKER_PROMPT_INVALID",
+            "The prepared focused-worker request has an invalid message shape.");
+        using var prompt = JsonDocument.Parse(source.Content);
+        using var prerequisiteDocument = JsonDocument.Parse(prerequisites);
+        if (prompt.RootElement.ValueKind != JsonValueKind.Object
+            || !prompt.RootElement.TryGetProperty("input", out var input)
+            || !prompt.RootElement.TryGetProperty("context", out var context))
+            throw Failure("WORKER_PROMPT_INVALID", "The prepared focused-worker prompt is invalid.");
+        var combined = InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
+        {
+            input,
+            prerequisites = prerequisiteDocument.RootElement,
+            context
+        }));
+        var bytes = Encoding.UTF8.GetByteCount(combined);
+        if (bytes > MaximumPromptBytes)
+            throw Failure("WORKER_PROMPT_BUDGET_EXCEEDED",
+                "The focused worker prompt with prerequisites exceeds its closed byte budget.");
+        return prepared with
+        {
+            Request = prepared.Request with { Messages = [new(AiMessageRole.User, combined)] },
+            PromptBytes = bytes
+        };
+    }
+
+    public async Task<SystemInnerWorkerPreparedRequest> PrepareAsync(
+        SystemInnerWorkerPreparationInput input,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(input);
+        ArgumentNullException.ThrowIfNull(input.Worker);
+        ArgumentNullException.ThrowIfNull(input.HostProfile);
+        ArgumentNullException.ThrowIfNull(input.HostConfiguration);
+        ArgumentNullException.ThrowIfNull(input.ContextEnvelope);
+        ArgumentNullException.ThrowIfNull(input.ContextAuthorization);
+        if (input.Worker.Subject is not SystemInnerWorkerSubject.ProcedureWorkflow workflow)
+            throw Failure("WORKER_PREPARATION_SUBJECT_UNSUPPORTED", "This preparation path requires an exact procedure workflow subject.");
+        var selectedProcedure = workflow.ProcedureVersion;
+        EnsureViableHost(input.Worker.InvocationHost, input.ContextEnvelope, input.ContextAuthorization);
+
+        var trustedProcedure = input.TrustedActiveProcedure;
+        ProcedureDetail? procedure = null;
+        if (trustedProcedure is null)
+        {
+            procedure = await procedures.GetAsync(selectedProcedure.ExactDefinitionId,
+                selectedProcedure.Version, cancellationToken);
+            EnsureCurrentProcedure(procedure, selectedProcedure, input.SelectedProcedureContractFingerprint);
+        }
+        else EnsureTrustedActiveProcedure(trustedProcedure, selectedProcedure, input.ContextEnvelope);
+
+        var resultSchema = CanonicalSchema(input.SelectedResultSchemaJson, "WORKER_RESULT_SCHEMA_INVALID");
+        if (!StringComparer.Ordinal.Equals(resultSchema, input.Worker.ResultSchemaJson))
+            throw Failure("WORKER_RESULT_SCHEMA_MISMATCH", "The worker result schema differs from the host-selected schema.");
+
+        var pack = await contextMaterializer.MaterializeAsync(input.ContextEnvelope, input.ContextAuthorization, cancellationToken);
+        EnsureViableHost(input.Worker.InvocationHost, input.ContextEnvelope, input.ContextAuthorization);
+        var currentProcedure = trustedProcedure is null
+            ? await procedures.GetAsync(selectedProcedure.ExactDefinitionId, selectedProcedure.Version, cancellationToken)
+            : null;
+        cancellationToken.ThrowIfCancellationRequested();
+        EnsureViableHost(input.Worker.InvocationHost, input.ContextEnvelope, input.ContextAuthorization);
+        if (trustedProcedure is null)
+            EnsureCurrentProcedure(currentProcedure, selectedProcedure, input.SelectedProcedureContractFingerprint);
+        else EnsureTrustedActiveProcedure(trustedProcedure, selectedProcedure, input.ContextEnvelope);
+        var selected = SelectContext(pack, input.RequiredContextReferences);
+        var prompt = BuildPrompt(input.Worker.InputJson, selected);
+        var promptBytes = Encoding.UTF8.GetByteCount(prompt);
+        if (promptBytes > MaximumPromptBytes)
+            throw Failure("WORKER_PROMPT_BUDGET_EXCEEDED", "The focused worker prompt exceeds its closed byte budget.");
+
+        var tools = NormalizeNames(input.PermittedToolNames, "INVALID_WORKER_TOOL_ALLOWLIST");
+        var request = BuildRequest(input.HostConfiguration, prompt, resultSchema, tools);
+        var instructions = string.Join("\n\n", (trustedProcedure is null
+            ? new[] { currentProcedure!.Instructions, currentProcedure.Constraints }
+            : new[] { trustedProcedure.Instructions, trustedProcedure.Constraints })
+            .Where(value => !string.IsNullOrWhiteSpace(value)));
+        var profile = input.HostProfile with { Instructions = instructions };
+        ValidateProfile(profile);
+        return new(profile, request, selectedProcedure.Fingerprint, pack.Fingerprint,
+            Sha256(resultSchema), Array.AsReadOnly(selected.Select(value => value.Reference).ToArray()), promptBytes);
+    }
+
+    private static void EnsureViableHost(InteractionInvocationHost worker, AuthorizedInteractionEnvelope envelope,
+        InteractionAuthorizationRequest authorization)
+    {
+        if (worker.StateSpaceId is null || worker.StateRevision is null)
+            throw Failure("WORKER_STATE_SCOPE_REQUIRED", "Procedure preparation requires an actual state scope.");
+        if (worker.Profile == InteractionExecutionProfile.Atomic)
+            throw Failure("ATOMIC_WORKER_PREPARATION_FORBIDDEN", "Atomic work cannot prepare a background worker.");
+        if (worker.Budget.DeadlineUtc <= DateTime.UtcNow)
+            throw Failure("WORKER_PREPARATION_DEADLINE_EXPIRED", "The worker deadline has expired.");
+        if (worker.Budget.RemainingOperations < 1)
+            throw Failure("WORKER_PREPARATION_BUDGET_EXHAUSTED", "The shared worker budget is exhausted.");
+        if (worker.Principal.PrincipalId != envelope.Host.Principal.PrincipalId
+            || worker.ApplicationRevision.ApplicationId != envelope.Host.ApplicationRevision.ApplicationId
+            || worker.ApplicationRevision.Revision != envelope.Host.ApplicationRevision.Revision
+            || worker.ApplicationRevision.Fingerprint != envelope.Host.ApplicationRevision.Fingerprint
+            || worker.StateSpaceId != envelope.Host.StateSpaceId
+            || worker.StateRevision != envelope.Host.StateRevision
+            || authorization.Principal.PrincipalId != worker.Principal.PrincipalId
+            || authorization.ApplicationId != worker.ApplicationRevision.ApplicationId
+            || authorization.StateSpaceId != worker.StateSpaceId
+            || authorization.Capability != InteractionCapability.Plan)
+            throw Failure("WORKER_PREPARATION_SCOPE_MISMATCH", "The worker and context authorization scopes do not match.");
+    }
+
+    private static void EnsureCurrentProcedure(ProcedureDetail? procedure, SystemTaskSelectedDefinition selected,
+        string? selectedContractFingerprint)
+    {
+        if (procedure is null)
+            throw Failure("WORKER_PROCEDURE_MISSING", "The selected worker procedure is unavailable.");
+        if (procedure.Status != ProcedureStatus.Active)
+            throw Failure("WORKER_PROCEDURE_INACTIVE", "The selected worker procedure is not active.");
+        var contractFingerprint = selectedContractFingerprint ?? selected.Fingerprint;
+        if (procedure.Id != selected.ExactDefinitionId || procedure.Version != selected.Version
+            || procedure.LatestVersion != selected.Version || procedure.SourceHash != contractFingerprint)
+            throw Failure("WORKER_PROCEDURE_STALE", "The selected worker procedure is no longer the current exact revision.");
+    }
+
+    private static void EnsureTrustedActiveProcedure(SystemInnerWorkerTrustedActiveProcedure procedure,
+        SystemTaskSelectedDefinition selected, AuthorizedInteractionEnvelope envelope)
+    {
+        var recomputed = ContentHash.ForProcedure(procedure.Category, procedure.Name, procedure.Description,
+            procedure.Governs, procedure.Instructions, procedure.Constraints, procedure.Status);
+        if (!procedure.TrustedSource || procedure.Status != ProcedureStatus.Active
+            || procedure.SelectedDefinition != selected
+            || procedure.EffectiveSetFingerprint != envelope.Host.EffectiveSetFingerprint
+            || procedure.ResolutionFingerprint != envelope.Host.ResolutionFingerprint
+            || procedure.ContractFingerprint != recomputed)
+            throw Failure("WORKER_PROCEDURE_STALE",
+                "The trusted active procedure evidence does not match the selected catalog revision and snapshot.");
+    }
+
+    private static AiRequest BuildRequest(AiRequest configuration, string prompt, string schema, IReadOnlyList<string> tools)
+    {
+        if (string.IsNullOrWhiteSpace(configuration.Provider) || string.IsNullOrWhiteSpace(configuration.Model)
+            || !Enum.IsDefined(configuration.Reasoning)
+            || configuration.MaximumToolRounds < 0 || configuration.MaximumOutputTokens < 1
+            || configuration.MaximumToolCalls is < 0 or > 16
+            || configuration.MaximumResponseBytes is < 1 or > 1_048_576
+            || configuration.MaximumDuration is { } duration && (duration <= TimeSpan.Zero || duration > TimeSpan.FromMinutes(10)))
+            throw Failure("WORKER_HOST_CONFIGURATION_INVALID", "The host AI configuration is invalid.");
+        return configuration with
+        {
+            Messages = [new AiMessage(AiMessageRole.User, prompt)], Kind = AiRequestKind.Task,
+            ResponseSchemaJson = schema, AllowedTools = tools,
+            MaximumToolRounds = Math.Min(configuration.MaximumToolRounds, 16),
+            MaximumOutputTokens = Math.Min(configuration.MaximumOutputTokens, 131_072)
+        };
+    }
+
+    private static string BuildPrompt(string inputJson, IReadOnlyList<SelectedContextItem> context)
+    {
+        var prompt = JsonSerializer.Serialize(new
+        {
+            input = JsonSerializer.Deserialize<JsonElement>(inputJson),
+            context = context.Select(value => new { value.Reference, value.Revision, value.Fingerprint, value.Value })
+        });
+        if (Encoding.UTF8.GetByteCount(prompt) > MaximumPromptBytes)
+            throw Failure("WORKER_PROMPT_BUDGET_EXCEEDED", "The focused worker prompt exceeds its closed byte budget.");
+        return InteractionCanonicalJson.CanonicalizeObject(prompt);
+    }
+
+    private static IReadOnlyList<SelectedContextItem> SelectContext(InteractionTaskContextPack pack,
+        IReadOnlyList<string> requiredReferences)
+    {
+        ArgumentNullException.ThrowIfNull(pack);
+        if (pack.Profile != InteractionTaskContextProfiles.Version2 || string.IsNullOrWhiteSpace(pack.Json)
+            || Encoding.UTF8.GetByteCount(pack.Json) > InteractionTaskContextMaterializer.MaximumPackBytes
+            || !StringComparer.Ordinal.Equals(pack.Json, InteractionCanonicalJson.CanonicalizeObject(pack.Json))
+            || !StringComparer.Ordinal.Equals(pack.Fingerprint, Sha256(pack.Json)))
+            throw Failure("WORKER_CONTEXT_PACK_INVALID", "The materialized task-context pack is malformed or stale.");
+
+        var requested = NormalizeContextReferences(requiredReferences, "INVALID_WORKER_CONTEXT_REFERENCES");
+        using var document = JsonDocument.Parse(pack.Json);
+        var actual = new Dictionary<string, SelectedContextItem>(StringComparer.Ordinal);
+        foreach (var section in new[] { "scope", "capabilities", "readViews", "knowledge", "facts", "continuity", "recentReceipts" })
+        {
+            if (!document.RootElement.TryGetProperty(section, out var values) || values.ValueKind != JsonValueKind.Array)
+                throw Failure("WORKER_CONTEXT_PACK_INVALID", "The task-context pack has an invalid section.");
+            foreach (var value in values.EnumerateArray())
+            {
+                if (value.ValueKind != JsonValueKind.Object
+                    || !TryProperty(value, "reference", "Reference", out var reference) || reference.ValueKind != JsonValueKind.String
+                    || !TryProperty(value, "revision", "Revision", out var revision) || revision.ValueKind != JsonValueKind.String
+                    || !TryProperty(value, "fingerprint", "Fingerprint", out var fingerprint) || fingerprint.ValueKind != JsonValueKind.String
+                    || !TryProperty(value, "value", "Value", out var payload))
+                    throw Failure("WORKER_CONTEXT_PACK_INVALID", "A task-context item is malformed.");
+                var key = reference.GetString()!;
+                if (!actual.TryAdd(key, new(key, revision.GetString()!, fingerprint.GetString()!, payload.Clone())))
+                    throw Failure("WORKER_CONTEXT_PACK_INVALID", "The task-context pack contains duplicate references.");
+            }
+        }
+        var declared = NormalizeContextReferences(pack.SourceReferences, "WORKER_CONTEXT_PACK_INVALID");
+        if (!actual.Keys.Order(StringComparer.Ordinal).SequenceEqual(declared, StringComparer.Ordinal))
+            throw Failure("WORKER_CONTEXT_PACK_INVALID", "The task-context reference evidence does not match the pack.");
+        var selected = new List<SelectedContextItem>();
+        foreach (var reference in requested)
+        {
+            if (!actual.TryGetValue(reference, out var item))
+                throw Failure("WORKER_REQUIRED_CONTEXT_MISSING", $"Required task context '{reference}' is unavailable.");
+            selected.Add(item);
+        }
+        return selected;
+    }
+
+    private static bool TryProperty(JsonElement value, string camel, string declared, out JsonElement property) =>
+        value.TryGetProperty(camel, out property) || value.TryGetProperty(declared, out property);
+
+    private static IReadOnlyList<string> NormalizeNames(IReadOnlyList<string> values, string code)
+    {
+        ArgumentNullException.ThrowIfNull(values);
+        if (values.Count > MaximumToolNames || values.Any(value => !ToolName.IsMatch(value))
+            || values.Distinct(StringComparer.Ordinal).Count() != values.Count)
+            throw Failure(code, "The focused worker selection is invalid or exceeds its bound.");
+        return values.Order(StringComparer.Ordinal).ToArray();
+    }
+
+    private static IReadOnlyList<string> NormalizeContextReferences(IReadOnlyList<string> values, string code)
+    {
+        ArgumentNullException.ThrowIfNull(values);
+        if (values.Count > MaximumContextReferences
+            || values.Any(value => string.IsNullOrWhiteSpace(value) || value.Length > MaximumContextReferenceLength)
+            || values.Distinct(StringComparer.Ordinal).Count() != values.Count)
+            throw Failure(code, "The focused worker context references are invalid or exceed their bound.");
+        return values.Order(StringComparer.Ordinal).ToArray();
+    }
+
+    private static string CanonicalSchema(string schema, string code)
+    {
+        try
+        {
+            var canonical = InteractionCanonicalJson.CanonicalizeObject(schema);
+            _ = JsonSchema.FromText(canonical, new BuildOptions { SchemaRegistry = new SchemaRegistry() });
+            return canonical;
+        }
+        catch (Exception exception) when (exception is JsonException or JsonSchemaException or ArgumentException or InteractionContractException)
+        {
+            throw Failure(code, "The selected worker result schema does not compile.");
+        }
+    }
+
+    private static string Sha256(string value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
+    private static void ValidateProfile(AiAgentProfile profile)
+    {
+        if (!AgentId.IsMatch(profile.Id)
+            || string.IsNullOrWhiteSpace(profile.Name) || profile.Name.Length > 120
+            || string.IsNullOrWhiteSpace(profile.Identity) || profile.Identity.Length > 2_000
+            || profile.Instructions is null || profile.Instructions.Length > 8_000)
+            throw Failure("WORKER_PROFILE_INVALID", "The host AI profile is invalid for focused worker preparation.");
+    }
+
+    private static readonly Regex ToolName = new("^[A-Za-z0-9_-]{1,64}$", RegexOptions.CultureInvariant);
+    private static readonly Regex AgentId = new("^[a-z0-9][a-z0-9._-]{0,79}$", RegexOptions.CultureInvariant);
+    private static InteractionContractException Failure(string code, string message) => new(code, message);
+    private sealed record SelectedContextItem(string Reference, string Revision, string Fingerprint, JsonElement Value);
+}

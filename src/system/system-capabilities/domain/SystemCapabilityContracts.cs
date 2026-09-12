@@ -20,6 +20,22 @@ public static class SystemCapabilityIds
     public const string ExtensionRegister = "system.extension.register";
     public const string ComponentTypeRegister = "system.component-type.register";
     public const string ApplicationActivate = "system.application.activate";
+    public const string ApplicationCandidateInspect = "system.application-candidate.inspect";
+    public const string ApplicationCandidateIntentUpdate = "system.application-candidate.intent-update";
+    public const string ApplicationCandidateCatalogCompare = "system.application-candidate.catalog-compare";
+    public const string ApplicationCandidateWrite = "system.application-candidate.write";
+    public const string ApplicationCandidateValidate = "system.application-candidate.validate";
+    public const string ApplicationCandidateActivate = "system.application-candidate.activate";
+    public const string ApplicationCandidateRecover = "system.application-candidate.recover";
+    public const string ApplicationCandidateReviewSubmit = "system.application-candidate.review-submit";
+    public const string ApplicationCandidateReviewRead = "system.application-candidate.review-read";
+    public const string ApplicationCandidateReviewCancel = "system.application-candidate.review-cancel";
+    public const string InnerWorkerSubmit = "system.inner-worker.submit";
+    public const string InnerWorkerRead = "system.inner-worker.read";
+    public const string InnerWorkerList = "system.inner-worker.list";
+    public const string InnerWorkerWait = "system.inner-worker.wait";
+    public const string InnerWorkerCancel = "system.inner-worker.cancel";
+    public const string StandingGrantAdmin = "system.standing-grant.admin";
     public const string StateSpaceCreate = "system.state-space.create";
     public const string StateSpaceUpgrade = "system.state-space.upgrade";
     public const string StateSpaceAdoptLegacy = "system.state-space.adopt-legacy";
@@ -30,6 +46,41 @@ public static class SystemCapabilityIds
     public const string InteractionRecipes = "system.interaction-recipes";
     public const string InteractionRecipeReview = "system.interaction-recipe.review";
     public const string MechanicOpportunities = "system.mechanic-opportunities";
+}
+
+/// <summary>
+/// Trusted transports use this scope only for the selected-application capabilities below. The
+/// capability handlers still construct current standing-grant hosts and their owners reauthorize
+/// every exact target or task; this marker grants no authority by itself.
+/// </summary>
+public static class ApplicationCandidateCapabilityAccess
+{
+    public const string Scope = "application.authoring";
+
+    public static bool Supports(string? capabilityId) => capabilityId is
+        SystemCapabilityIds.ApplicationCandidateInspect or
+        SystemCapabilityIds.ApplicationCandidateIntentUpdate or
+        SystemCapabilityIds.ApplicationCandidateCatalogCompare or
+        SystemCapabilityIds.ApplicationCandidateWrite or
+        SystemCapabilityIds.ApplicationCandidateValidate or
+        SystemCapabilityIds.ApplicationCandidateActivate or
+        SystemCapabilityIds.ApplicationCandidateRecover or
+        SystemCapabilityIds.ApplicationCandidateReviewSubmit or
+        SystemCapabilityIds.ApplicationCandidateReviewRead or
+        SystemCapabilityIds.ApplicationCandidateReviewCancel or
+        SystemCapabilityIds.InnerWorkerSubmit or
+        SystemCapabilityIds.InnerWorkerRead or
+        SystemCapabilityIds.InnerWorkerList or
+        SystemCapabilityIds.InnerWorkerWait or
+        SystemCapabilityIds.InnerWorkerCancel;
+
+    public static SystemCapabilityInvocationContext Context(
+        TrustedPrincipalContext principal,
+        ApplicationIdentifier applicationId,
+        string correlationId) => new(principal, Scope, correlationId)
+        {
+            ApplicationId = applicationId
+        };
 }
 
 public enum SystemCapabilityMode
@@ -334,6 +385,21 @@ public interface ISystemAiAgentService
         ISystemCapabilityAiWriteApprovalGate? writeApprovalGate = null,
         IAiToolApprovalGate? toolApprovalGate = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Durable agent path. Implementations that cannot preserve the caller's lifecycle boundary
+    /// fail closed instead of silently dispatching through the legacy overload.
+    /// </summary>
+    Task<AiResponse> SendAsync(
+        AiAgentProfile profile,
+        AiRequest request,
+        SystemCapabilityInvocationContext context,
+        IAiInvocationLifecycle lifecycle,
+        ISystemCapabilityAiWriteApprovalGate? writeApprovalGate = null,
+        IAiToolApprovalGate? toolApprovalGate = null,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult(AiResponse.Failure(
+            "AI_LIFECYCLE_UNAVAILABLE", "This system AI service does not support durable dispatch admission."));
 }
 
 public sealed record SystemAiToolSourceContext(

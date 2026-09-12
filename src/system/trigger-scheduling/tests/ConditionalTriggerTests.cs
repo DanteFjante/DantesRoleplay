@@ -182,6 +182,49 @@ public sealed class ConditionalTriggerTests : IDisposable
         Assert.Equal(0, status.CurrentAttemptCount);
     }
 
+    [Theory]
+    [InlineData(ConditionalTriggerLifecycle.Active)]
+    [InlineData(ConditionalTriggerLifecycle.Paused)]
+    [InlineData(ConditionalTriggerLifecycle.Cancelled)]
+    public async Task Staged_fire_completes_against_retained_revision_after_current_revision_changes(
+        ConditionalTriggerLifecycle replacementLifecycle)
+    {
+        var setup = await SetupAsync("{\"minute\":0,\"calendar\":\"main\"}");
+        var dependencies = new[] { ConditionalTriggerDependency.Create("world", setup.Type) };
+        const string config = "{\"property\":\"minute\",\"operator\":\"gte\",\"value\":1}";
+        await setup.Store.AppendAsync(Definition(dependencies, config));
+        await setup.Applier.ApplyAsync(Batch(setup.Type,
+            "{\"minute\":1,\"calendar\":\"main\"}", 1, 'c'));
+        await setup.Store.AppendAsync(Definition(dependencies, config, version: 2,
+            lifecycle: replacementLifecycle));
+        var worker = new SqliteConditionalTriggerWorker(setup.Db, setup.Clock,
+            new TriggerNotificationTransactionParticipant(setup.Db, setup.Clock));
+
+        var result = await worker.RunBatchAsync("conditional.retained");
+
+        Assert.Equal(1, result.Completed);
+        Assert.Equal(1, Assert.Single(setup.Db.ConditionalTriggerFireReceipts).TriggerVersion);
+        Assert.Equal(1, Assert.Single(setup.Db.ConditionalTriggerNotificationLinks).TriggerVersion);
+    }
+
+    [Theory]
+    [InlineData(ConditionalTriggerLifecycle.Paused)]
+    [InlineData(ConditionalTriggerLifecycle.Cancelled)]
+    public async Task Inactive_current_revision_does_not_stage_future_conditional_work(
+        ConditionalTriggerLifecycle lifecycle)
+    {
+        var setup = await SetupAsync("{\"minute\":0,\"calendar\":\"main\"}");
+        var dependencies = new[] { ConditionalTriggerDependency.Create("world", setup.Type) };
+        const string config = "{\"property\":\"minute\",\"operator\":\"gte\",\"value\":1}";
+        await setup.Store.AppendAsync(Definition(dependencies, config));
+        await setup.Store.AppendAsync(Definition(dependencies, config, version: 2, lifecycle: lifecycle));
+
+        await setup.Applier.ApplyAsync(Batch(setup.Type,
+            "{\"minute\":1,\"calendar\":\"main\"}", 1, 'd'));
+
+        Assert.Empty(setup.Db.ConditionalTriggerFireWork);
+    }
+
     [Fact]
     public async Task Conditional_retry_preserves_one_fire_identity_and_completes_after_backoff()
     {
@@ -322,9 +365,11 @@ public sealed class ConditionalTriggerTests : IDisposable
 
     private static ConditionalTriggerDefinition Definition(
         IReadOnlyList<ConditionalTriggerDependency> dependencies, string config,
-        string adapterId = ClosedScalarConditionalTriggerAdapter.StableId) =>
-        ConditionalTriggerDefinition.Create(App, "trigger.world.threshold", 1,
-            ConditionalTriggerLifecycle.Active, ConditionalTriggerKind.WorldClockThreshold,
+        string adapterId = ClosedScalarConditionalTriggerAdapter.StableId,
+        int version = 1,
+        ConditionalTriggerLifecycle lifecycle = ConditionalTriggerLifecycle.Active) =>
+        ConditionalTriggerDefinition.Create(App, "trigger.world.threshold", version,
+            lifecycle, ConditionalTriggerKind.WorldClockThreshold,
             ConditionalTriggerActivation.RisingEdge, ConditionalTriggerRearm.Manual,
             "quest-space", dependencies, ConditionalTriggerAdapterReference.Create(adapterId, 1), config,
             TriggerFireTarget.NotificationOnly, Notification());
