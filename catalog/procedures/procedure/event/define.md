@@ -12,6 +12,8 @@ changeNote: "Re-seeded: the bootstrap file changed."
 Define or revise an event type before any event can use it.
 
 ## Matches
+define a structural event type
+register an event schema
 
 ## Instructions
 1. Read existing event types and reuse one when its payload contract fits.

@@ -22,7 +22,7 @@ public sealed class SourcesSystemCapabilityHandler(
         SystemCapabilityIds.Sources, 1, "source-registry",
         "Inspect immutable source registrations and latest scan evidence for one registered application.",
         SystemCapabilityMode.Read, InputSchema, OutputSchema,
-        ["procedure.system.inspect", "procedure.system.use"],
+        ["procedure.system.application-lifecycle"],
         PrivateOperatorCapability.Read, SystemCapabilitySensitivity.PrivateOperatorMetadata,
         false, false);
 
@@ -116,7 +116,7 @@ public sealed class ApplicationPreviewSystemCapabilityHandler(
         SystemCapabilityIds.ApplicationPreview, 1, "application-preview",
         "Build a disposable safe summary of the current registered source overlay for one application.",
         SystemCapabilityMode.Read, InputSchema, OutputSchema,
-        ["procedure.system.use"], PrivateOperatorCapability.Read,
+        ["procedure.system.application-lifecycle"], PrivateOperatorCapability.Read,
         SystemCapabilitySensitivity.PrivateOperatorMetadata, false, false);
 
     public async Task<SystemCapabilityHandlerResult> ReadAsync(
@@ -198,7 +198,7 @@ public sealed class DependenciesSystemCapabilityHandler(
         SystemCapabilityIds.Dependencies, 1, "projection-materialization",
         "Inspect declared component-field and projection dependency impact for one application.",
         SystemCapabilityMode.Read, InputSchema, OutputSchema,
-        ["procedure.system.inspect"], PrivateOperatorCapability.Read,
+        ["procedure.system.application-lifecycle"], PrivateOperatorCapability.Read,
         SystemCapabilitySensitivity.PrivateOperatorMetadata, false, false);
 
     public Task<SystemCapabilityHandlerResult> ReadAsync(

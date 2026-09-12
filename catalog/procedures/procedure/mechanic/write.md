@@ -14,6 +14,9 @@ activating code. Repository development still authors reviewed `.md` and `.js` p
 owning application catalog.
 
 ## Matches
+draft a JavaScript mechanic
+test a mechanic candidate
+promote a sandbox mechanic draft
 
 ## Instructions
 1. Search active mechanics and unresolved anti-sprawl candidates before drafting. Prefer an

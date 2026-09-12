@@ -14,6 +14,9 @@ proposed, survived every registered guard, and committed in the same transaction
 itself.
 
 ## Matches
+inspect committed events
+trace an event by operation or causation
+read event history
 
 ## Instructions
 1. Start from what you already know. With an operation id from `query(kind: "history")`, use

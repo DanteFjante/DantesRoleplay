@@ -14,6 +14,9 @@ inside the same uncommitted transaction as the change that caused it. What it re
 of that change, so a reaction either commits with the event it answered or nothing commits at all.
 
 ## Matches
+react to a committed event
+register an event reaction
+inspect partial reaction commits
 
 ## Instructions
 1. Declare `requirements.event` with `mode: "reaction"`, the exact event types the rule answers,

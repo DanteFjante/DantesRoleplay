@@ -14,6 +14,10 @@ catalog as one atomic state-space change, without adding game vocabulary to the 
 callers should read `procedure.action.run`; this procedure governs the internal execution owner.
 
 ## Matches
+execute a JavaScript mechanic
+run an application mechanic
+validate typed mechanic effects
+debug a stale mechanic invocation
 
 ## Instructions
 1. Require the exact application, state space, qualified mechanic id, version, content

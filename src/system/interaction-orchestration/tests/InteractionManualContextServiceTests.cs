@@ -69,6 +69,52 @@ public sealed class InteractionManualContextServiceTests : IDisposable
         Assert.Contains("Execute", authored.Description, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("application-lifecycle.md", "upgrade or recover a state space", "MIGRATION_REQUIRED")]
+    [InlineData("runtime-services.md", "recover a partial workflow result", "previousCommits")]
+    [InlineData("trigger-scheduling.md", "run JavaScript when a relationship changes", "directed-relationship")]
+    [InlineData("web-composition.md", "bind a page to an application query", "zero or one simple")]
+    public async Task Cold_start_manual_selects_platform_contracts_with_lexical_fallback(
+        string fileName, string intent, string expectedInstruction)
+    {
+        await using var db = _fixture.CreateContext();
+        var repository = new DirectoryInfo(AppContext.BaseDirectory);
+        while (repository is not null && !File.Exists(Path.Combine(repository.FullName, "AGENTS.md")))
+            repository = repository.Parent;
+        Assert.NotNull(repository);
+        var path = Path.Combine(repository!.FullName, "catalog", "procedures", "procedure",
+            "system", fileName);
+        var authored = ProcedureFile.Parse(await File.ReadAllTextAsync(path), path);
+        var procedures = new ProcedureStore(db);
+        await procedures.WriteAsync(new()
+        {
+            Id = authored.Id,
+            Category = authored.Category,
+            Name = authored.Name,
+            Description = authored.Description,
+            Governs = authored.Governs,
+            Matches = authored.Matches,
+            Instructions = authored.Instructions,
+            Constraints = authored.Constraints,
+            Status = authored.Status,
+            CreatedBy = authored.CreatedBy,
+            ChangeNote = authored.ChangeNote
+        });
+        var sections = new ProcedureManualSectionRetriever(new UnavailableSectionEmbeddings(),
+            new SqliteInteractionDerivedVectorIndex(InteractionDerivedIndexLocation.Create(_derivedRoot)),
+            new InteractionRetrievalRefreshCoordinator());
+        var service = new InteractionManualContextService(procedures,
+            new InteractionFeatureRetriever(new Snapshots()), new FixtureGrants(), new FixtureTargets(),
+            new Changes(App, HashA), ["system"], sectionRetriever: sections);
+
+        var result = await service.DiscoverAsync(Host(), intent);
+
+        Assert.Equal(InteractionInvocationResultTag.Completed, result.Tag);
+        Assert.Contains(authored.Id, result.DataJson!, StringComparison.Ordinal);
+        Assert.Contains(expectedInstruction, result.DataJson!, StringComparison.Ordinal);
+        Assert.InRange(result.DataJson!.Length, 1, 16_000);
+    }
+
     [Fact]
     public async Task Global_categories_filter_before_disclosure_and_preserve_inactive_history()
     {

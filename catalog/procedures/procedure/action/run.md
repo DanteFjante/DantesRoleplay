@@ -13,6 +13,10 @@ The procedure for play itself. An already selected exact mechanic can run in one
 ambiguous request is planned first, reviewed, and only then executed.
 
 ## Matches
+run an exact application action
+commit a selected mechanic
+execute an Atomic action with role bindings
+reconcile an action receipt
 
 ## Instructions
 1. Decide whether the request is exact. Exact means you already have the application id, state-space

@@ -14,6 +14,8 @@ applied inside an uncommitted transaction. It must explicitly allow the proposal
 root world change.
 
 ## Matches
+guard a state change with an event subscription
+register an event guard
 
 ## Instructions
 1. Declare `requirements.event` with `mode: "guard"`, the exact structural event types, and the

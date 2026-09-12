@@ -13,6 +13,10 @@ Wait performs bounded asynchronous readback for one exact retained focused-worke
 
 The response is the actual full invocation envelope returned by durable readback. A timeout returns the latest `pending` result; it does not create completion evidence. Terminal completion, failure, cancellation, revocation, and recovery evidence are returned unchanged.
 
+```json
+{"stateSpaceId":"example-space","taskId":"task.0123456789abcdef0123456789abcdef","commandId":"command.0123456789abcdef0123456789abcdef","waitMilliseconds":25000}
+```
+
 ## Matches
 wait for focused worker
 await delegated task

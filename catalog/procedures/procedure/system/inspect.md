@@ -12,6 +12,10 @@ changeNote: "Re-seeded: the bootstrap file changed."
 How to find out what already exists before you add, change or conclude anything.
 
 ## Matches
+inspect current system state
+diagnose a failed operation
+read entities components relationships or history
+find the exact owner before changing something
 
 ## Instructions
 1. Call `orient()` first. It tells you what this system is, what state it is in, and — importantly

@@ -13,8 +13,35 @@ Reuse review submits one exact retained application candidate to the durable val
 
 A task handle, Pending state, worker judgment, completed result, or cancellation is not candidate validation, publication, or execution authority. The authoring owner independently checks the retained review proof, exact authoring causation, current grants, runtime evidence, and compatible publication case. Foreign handles, changed causation, revoked grants, and unavailable providers remain denied or unavailable as reported.
 
+## Matches
+review whether a candidate reuses existing definitions
+submit application candidate reuse review
+read or cancel candidate review
+
 ## Instructions
+### Input and result
+Review submit takes the exact `applicationId`, `candidateId`, positive candidate `revision`, uppercase
+`contentFingerprint`, `authoringOperationId`, and `authoringCommandId`. Read and cancel take the exact
+durable `taskId` and `commandId` handle returned by submit. Use the live capability schemas for the
+current closed field set.
+
+```json
+{"applicationId":"example","candidateId":"0123456789abcdef0123456789abcdef","revision":1,"contentFingerprint":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","authoringOperationId":"0123456789abcdef0123456789abcdef","authoringCommandId":"authoring-command-1"}
+```
+
+Submit success is `pending` with the retained task/command handle. Read success is `completed` with
+typed review data and completion evidence only after durable execution and accounting reconciliation.
+Cancel may return `cancelled` or the actual latest `pending` state. Preserve the same handle across
+all three operations.
+
+### Operating steps
 1. Preserve the exact candidate ID, revision, content fingerprint, authoring operation ID, causal command ID, task ID, and task command ID. Do not substitute current values.
 2. Use a stable idempotency key for submit and cancel. Poll the returned task handle with review-read; do not retry an uncertain write under a new identity.
 3. Keep principal, application generation, grants, reviewer profile, provider selection, tool policy, and budgets host supplied. Never place them in capability input.
 4. Report Pending, completed, cancelled, denied, and unavailable results distinctly. Continue to candidate validation and activation only through their registered owner capabilities.
+
+## Constraints
+- Live external-provider availability is host configuration, not something caller input can repair.
+- On unavailable provider execution, preserve the candidate and handle. Resume or resubmit only through
+  an explicit owner-supported recovery with a new logical idempotency key.
+- A positive judgment is one retained proof consumed by validation; it does not authorize publication.
