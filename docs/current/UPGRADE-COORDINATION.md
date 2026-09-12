@@ -10,6 +10,7 @@ This is the durable entry point for the current work. The user explicitly reques
 - Rework shared website navigation, design, reusable components, and themes. Show applications with usable published pages; do not show supporting/non-website applications as disabled navigation.
 - Improve DND2024 pages with reusable components, API reads/actions/forms, and local handling of incomplete JSON.
 - Produce an actionable DND2024 upgrade plan with compatible parallel assignments and economical model use.
+- Finish the remaining implementation, load the changes into master and the live database, and start a verified release the user can try (explicitly authorized 2026-09-12).
 
 Display data may contain additional fields. Each component checks the fields it needs and contains its own missing-data failure. Transport provenance, authorization, scope, freshness, and mutation validation remain strict.
 
@@ -34,7 +35,7 @@ Implementation, verification, landing on master, and deployment are separate sta
 
 Final verified pre-deletion backup: `C:/repo/DantesRoleplay/.tmp/branch-cleanup/20260912-113124/local-refs-pre-cleanup.bundle`, SHA256 `4589002B80F55D9E1F7FE8C7BA6D6BF0A50C16AC8749842FF033B837E61ED045`. The adjacent manifest records exact branch tips, worktree commits, remote refs, and stashes; `result.json` records completed cleanup. Every worktree's current HEAD was checked against the refreshed bundle before deletion. Active detached working directories are preserved.
 
-The newer extensive manual and shared/DND website changes are undergoing their own combined acceptance at detached `5c11b4f7` in `C:/repo/DantesRoleplay-platform-manual`. They are not part of the completed platform landing yet. That worker owns its source and build until release; root owns the next master merge. No live database cutover, provider acceptance, deployment, or remote push has occurred.
+The newer extensive manual and shared/DND website changes passed combined acceptance at `0a445b54`: 3,456 full tests passed, eight protocol cases passed with two intentional retired skips, and build/browser/catalog gates passed. They are merged onto actual master at `ef73bab1`; non-documentation files match the accepted implementation. [Local deployment and database activation](upgrade/06-local-deployment.md) is now active under the user's explicit authorization. No live database cutover or release selection for this upgrade has occurred yet.
 
 ## Workstreams and ownership
 
@@ -45,6 +46,7 @@ The newer extensive manual and shared/DND website changes are undergoing their o
 | Shared website navigation, theme, components | [03](upgrade/03-shared-website.md) | task 01a0917b-34d0-7cc1-bbbf-9689abd0b2e9 |
 | DND2024 component and page improvements | [04](upgrade/04-dnd2024-website.md) | root agent workflow_publication_finish |
 | DND2024 upgrade implementation plan | [05](upgrade/05-dnd2024-plan.md) | task 01a09179-4f0e-7c00-9411-cddb4b9ecbba |
+| Local deployment, database synchronization, and usable site | [06](upgrade/06-local-deployment.md) | root agent website_integration; coordinator performs final integration/browser verification |
 
 The coordinator task is 01a09056-6d13-76d0-8706-40e435fb8b03. Agent names and task IDs are recovery hints, not a substitute for files and Git evidence. If an agent is unavailable, a replacement reads its workstream checkpoint and exact implementation owners.
 
