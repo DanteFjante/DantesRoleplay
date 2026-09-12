@@ -760,7 +760,7 @@ public sealed class SystemAdministrationWriteCapabilityHandler : ISystemWriteCap
             _ => throw new ArgumentOutOfRangeException(nameof(id), id, "Unknown system write capability.")
         };
         return new(id, 1, owner, description, SystemCapabilityMode.Write, input, output,
-            ["procedure.system.use"], PrivateOperatorCapability.Modify,
+            ["procedure.system.application-lifecycle"], PrivateOperatorCapability.Modify,
             SystemCapabilitySensitivity.PrivateOperatorMetadata, true, true);
     }
 

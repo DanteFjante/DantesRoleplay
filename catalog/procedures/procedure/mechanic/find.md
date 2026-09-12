@@ -13,6 +13,9 @@ How to discover a reusable mechanic and read the exact version that would be rev
 executed. Search results are summaries; an id lookup returns the stored source and requirements.
 
 ## Matches
+find a mechanic by intent
+inspect a mechanic contract
+read mechanic versions and requirements
 
 ## Instructions
 1. Browse `query(kind: "categories", catalog: "mechanics")` first when you know the part of the

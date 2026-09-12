@@ -138,12 +138,12 @@ public sealed class SystemCapabilityCatalogTests
         Assert.Equal("private-operator-metadata", descriptor.SensitivityName);
         Assert.False(descriptor.RequiresConfirmation);
         Assert.False(descriptor.RequiresIdempotencyKey);
-        Assert.Equal(["procedure.system.inspect"], descriptor.ProcedureIds);
+        Assert.Equal(["procedure.system.application-lifecycle"], descriptor.ProcedureIds);
         Assert.Equal("DCCDBAFDCCC8CAC4F8BC626F3523A3FDBF85BC29024F9443130C1FFD52CAC304",
             descriptor.InputSchemaHash);
         Assert.Equal("7AF9F7DEE4A62D913995933EACA4F6CC8007C6B20EEF4D369B78D10162598BB4",
             descriptor.OutputSchemaHash);
-        Assert.Equal("34CC55EAEAA39DF3E86E581F8C22EF0CF574A269C4B9AF93AFA53975B2CC5A88",
+        Assert.Equal("3919E5A957F1A776A7F2369448146C20B90AEB64C9BAE4C85B4B7EF7ACB89ACD",
             descriptor.Fingerprint);
         Assert.Equal(descriptor.Fingerprint, repeated.Fingerprint);
         Assert.True(result.Ok);

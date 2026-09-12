@@ -13,6 +13,8 @@ List, define, and execute explicit action contracts in a generic information nam
 links rule records to one host-enabled executor; it does not grant access or allow arbitrary code.
 
 ## Matches
+find actions declared by an information source
+inspect an information action contract
 
 ## Instructions
 1. Store rule text as information records in a concrete namespace such as `game.worldname.rules`.

@@ -13,6 +13,10 @@ Read reconnects to one retained focused-worker task for the currently selected a
 
 The response is the full invocation envelope: `tag`, `code`, `message`, nullable `dataJson`, `readEvidence`, `receipt`, `proposal`, `pending`, nullable `completionEvidenceReference`, up to 64 `previousCommits`, and `recoveryIdentity`. Interpret the envelope by `tag` and `code`: `pending` means retain the same handle and read again later; `completed` carries the validated bounded result in `dataJson` and completion evidence; `failed`, `cancelled`, and `unavailable` are distinct terminal or recovery states. Commit and recovery evidence must remain attached to the result that supplied it.
 
+```json
+{"stateSpaceId":"example-space","taskId":"task.0123456789abcdef0123456789abcdef","commandId":"command.0123456789abcdef0123456789abcdef"}
+```
+
 ## Matches
 check focused worker progress
 read a delegated task

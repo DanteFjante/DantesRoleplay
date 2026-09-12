@@ -69,6 +69,7 @@ import { TopBar } from "./TopBar";
 import { WorldView } from "./WorldView";
 import { markActiveViewReady } from "../observability/performance.js";
 import { ViewErrorBoundary } from "./ViewErrorBoundary";
+import { PanelState } from "./PanelState";
 import { RESOURCE_FRESHNESS_MS } from "../data/resource-policy";
 
 const PERSPECTIVE_KEY = "dnd2024-table-mode";
@@ -101,13 +102,8 @@ function characterRequestCancelled() {
 }
 
 function ViewLoading({ label }: { label: string }) {
-  return (
-    <section aria-busy="true" className="view-loading" role="status">
-      <span className="eyebrow">{label}</span>
-      <h1 id="main-view-heading" tabIndex={-1}>Opening {label.toLocaleLowerCase()}</h1>
-      <p>The current authorized view is loading.</p>
-    </section>
-  );
+  return <PanelState state="loading" title={`Opening ${label.toLocaleLowerCase()}`}
+    message="The current authorized view is loading." />;
 }
 
 function loadRequestedPerspective(): Perspective | null {
@@ -1257,18 +1253,15 @@ function DndInformationHubContent({
   }, []);
 
   const deferredNotice = deferredState !== "ready" ? (
-    <section aria-busy={deferredState === "loading" || deferredState === "unloaded"}
-      className="view-loading" role={deferredState === "error" ? "alert" : "status"}>
-      <h1 id="main-view-heading" tabIndex={-1}>
-        {deferredState === "error" ? "View unavailable" : `Opening ${deferredSection}`}
-      </h1>
-      <p>{deferredState === "error" && deferredSection
-        ? deferredErrors[deferredSection]
+    <PanelState state={deferredState === "error" ? "error" : "loading"}
+      title={deferredState === "error" ? "View unavailable" : `Opening ${deferredSection}`}
+      message={deferredState === "error" && deferredSection
+        ? deferredErrors[deferredSection] ?? "The view is unavailable."
           : deferredSection === "locations" ? "Loading the first authorized location level."
-            : "Loading the complete authorized view."}</p>
-      {deferredState === "error" && deferredSection
-        ? <button type="button" onClick={() => void requestDeferred(deferredSection, true)}>Retry view</button> : null}
-    </section>
+            : "Loading the complete authorized view."}
+      onRetry={deferredState === "error" && deferredSection
+        ? () => void requestDeferred(deferredSection, true) : undefined}
+      retryLabel="Retry view" />
   ) : null;
   const deferredPartialFailure = deferredSection && deferredState === "ready" && deferredErrors[deferredSection]
     ? <p className="perspective-notice" role="alert">
@@ -1849,6 +1842,7 @@ function DndInformationHubContent({
             selectedMapFeatureId={selectedMapFeatureId}
             selectedLocation={selectedLocation}
             world={envelope.world}
+            resetKey={`${activeTableScope}:${bootstrapGeneration}`}
           />
         );
     }
@@ -1885,7 +1879,8 @@ function DndInformationHubContent({
           onSelect={selectTab}
         />
         <main className="information-content" id="information-content">
-          <ViewErrorBoundary key={activeTab} viewLabel={activeTab === "current" ? "Current view" : activeTab}>
+          <ViewErrorBoundary key={activeTab} resetKey={`${activeTableScope}:${bootstrapGeneration}:${activeTab}`}
+            viewLabel={activeTab === "current" ? "Current view" : activeTab}>
             <Suspense fallback={<ViewLoading label={activeTab === "current" ? "Current view" : activeTab} />}>
               {renderActiveView()}
             </Suspense>

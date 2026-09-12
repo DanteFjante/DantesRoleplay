@@ -12,6 +12,9 @@ changeNote: "Seeded from bootstrap file."
 Create bounded user-defined information outside game, campaign, world, and ruleset state.
 
 ## Matches
+author structured information
+update an information record
+inspect information schema and history
 
 ## Instructions
 1. Create a source with a stable id, generic scope id, name, optional description, and JSON-object metadata schema.

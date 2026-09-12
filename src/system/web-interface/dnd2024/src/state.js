@@ -710,66 +710,6 @@ function isWorldPersonEntry(value) {
   );
 }
 
-function isWorldFaction(value) {
-  return (
-    value &&
-    typeof value.id === "string" &&
-    typeof value.monogram === "string" &&
-    typeof value.name === "string" &&
-    typeof value.influence === "string" &&
-    typeof value.status === "string" &&
-    typeof value.summary === "string" &&
-    Array.isArray(value.goals) &&
-    value.goals.every((goal) => typeof goal === "string") &&
-    Array.isArray(value.methods) &&
-    value.methods.every((method) => typeof method === "string") &&
-    Array.isArray(value.members) &&
-    value.members.every(isHistoryPersonLink) &&
-    Array.isArray(value.territories) &&
-    value.territories.every(
-      (territory) => isHistoryLocationLink(territory) && typeof territory.region === "string",
-    ) &&
-    Array.isArray(value.relationships) &&
-    value.relationships.every(
-      (relationship) =>
-        isHistoryLocationLink(relationship) && typeof relationship.stance === "string",
-    ) &&
-    (value.dmAgenda === undefined || typeof value.dmAgenda === "string") &&
-    (value.dmSecret === undefined || typeof value.dmSecret === "string") &&
-    (value.unavailableFields === undefined ||
-      (Array.isArray(value.unavailableFields) &&
-        value.unavailableFields.every((field) => typeof field === "string" && field.length > 0 && field.length <= 200)))
-  );
-}
-
-function isWorldLoreEntry(value) {
-  return (
-    value &&
-    typeof value.id === "string" &&
-    typeof value.title === "string" &&
-    typeof value.category === "string" &&
-    typeof value.status === "string" &&
-    typeof value.summary === "string" &&
-    typeof value.body === "string" &&
-    Array.isArray(value.linkedLocations) &&
-    value.linkedLocations.every(isHistoryLocationLink) &&
-    Array.isArray(value.linkedPeople) &&
-    value.linkedPeople.every(isHistoryPersonLink) &&
-    Array.isArray(value.linkedFactions) &&
-    value.linkedFactions.every(isHistoryLocationLink) &&
-    Array.isArray(value.linkedHistory) &&
-    value.linkedHistory.every(
-      (event) =>
-        event &&
-        typeof event.id === "string" &&
-        typeof event.title === "string" &&
-        typeof event.date === "string",
-    ) &&
-    (value.dmTruth === undefined || typeof value.dmTruth === "string") &&
-    (value.dmNote === undefined || typeof value.dmNote === "string")
-  );
-}
-
 function isWorldHistoryEvent(event) {
   return (
     event &&
@@ -1201,9 +1141,13 @@ export function isReadyHubEnvelope(value) {
     Array.isArray(world.people) &&
     world.people.every(isWorldPersonEntry) &&
     Array.isArray(world.factions) &&
-    world.factions.every(isWorldFaction) &&
+    // Faction display rows do not grant authority. Their consuming directory admits the
+    // minimum identity fields and omits malformed rows while preserving usable siblings.
+    world.factions.every((entry) => entry && typeof entry === "object") &&
     Array.isArray(world.lore) &&
-    world.lore.every(isWorldLoreEntry) &&
+    // Lore follows the same field-local display boundary. Unknown fields are inert and
+    // missing display fields cannot suppress the authorized table shell.
+    world.lore.every((entry) => entry && typeof entry === "object") &&
     Array.isArray(world.locations) &&
     world.locations.every(
       (location) =>

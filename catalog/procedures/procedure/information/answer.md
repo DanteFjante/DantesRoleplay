@@ -12,6 +12,9 @@ changeNote: "Seeded from bootstrap file."
 Return a bounded answer using only records selected from one host-authorized generic information scope.
 
 ## Matches
+answer from an information source
+query authored information
+read permissioned reference data
 
 ## Instructions
 1. Supply an authorized concrete scope or terminal `.*` namespace selector and a bounded question.

@@ -5,11 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="A private Dantes dashboard for private notes and the present moment.">
   <title>Dantes · Home</title>
+  <script type="module" src="/components/system-theme.js"></script>
   <style>
-    :root { color-scheme: dark; --ink: #edf7e8; --muted: #a6c3a1; --faint: #71936f; --line: rgba(151,214,137,.2); --leaf: #9fdb8f; --leaf-deep: #3b9b5c; --soil: #08150e; --surface: rgba(12,34,23,.78); --danger: #e9a58b; }
+    :root { --ink: var(--system-color-text, #17212b); --muted: var(--system-color-muted, #5d6874); --faint: var(--system-color-muted, #5d6874); --line: var(--system-color-border, #d4dbe1); --leaf: var(--system-color-accent, #486b7d); --leaf-deep: var(--system-color-accent, #486b7d); --soil: var(--system-color-canvas, #f3f5f7); --surface: var(--system-color-surface, #fff); --danger: var(--system-color-danger, #a13d49); }
     * { box-sizing: border-box; }
-    body { min-height: 100vh; margin: 0; color: var(--ink); background: radial-gradient(circle at 86% -8%, rgba(93,184,94,.22), transparent 31rem), radial-gradient(circle at 6% 84%, rgba(37,115,68,.25), transparent 34rem), var(--soil); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-    body::before, body::after { position: fixed; z-index: -1; width: 32rem; height: 32rem; pointer-events: none; content: ""; opacity: .34; background: radial-gradient(ellipse 10px 20px at 25% 20%, var(--leaf) 0 44%, transparent 47%), radial-gradient(ellipse 9px 19px at 48% 43%, var(--leaf-deep) 0 44%, transparent 47%), radial-gradient(ellipse 11px 21px at 68% 27%, #75c773 0 44%, transparent 47%), radial-gradient(ellipse 8px 17px at 81% 65%, #4ca766 0 44%, transparent 47%), repeating-linear-gradient(112deg, transparent 0 35px, rgba(142,211,119,.55) 36px 38px, transparent 39px 74px); filter: blur(.2px); }
+    body { min-height: 100vh; margin: 0; color: var(--ink); background: radial-gradient(circle at 86% -8%, color-mix(in srgb, var(--leaf) 18%, transparent), transparent 31rem), radial-gradient(circle at 6% 84%, color-mix(in srgb, var(--leaf) 12%, transparent), transparent 34rem), var(--soil); font-family: var(--system-font-sans, Inter, ui-sans-serif, system-ui, sans-serif); }
+    body::before, body::after { position: fixed; z-index: -1; width: 32rem; height: 32rem; pointer-events: none; content: ""; opacity: .18; background: radial-gradient(ellipse 10px 20px at 25% 20%, var(--leaf) 0 44%, transparent 47%), radial-gradient(ellipse 9px 19px at 48% 43%, var(--leaf-deep) 0 44%, transparent 47%), radial-gradient(ellipse 11px 21px at 68% 27%, var(--leaf) 0 44%, transparent 47%), repeating-linear-gradient(112deg, transparent 0 35px, color-mix(in srgb, var(--leaf) 45%, transparent) 36px 38px, transparent 39px 74px); filter: blur(.2px); }
     body::before { top: -13rem; right: -12rem; transform: rotate(18deg); }
     body::after { bottom: -14rem; left: -13rem; transform: rotate(194deg); }
     a, button, select, textarea { font: inherit; }
@@ -18,33 +19,33 @@
     .topbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding-bottom: 30px; }
     .brand { display: flex; align-items: center; gap: 12px; }
     .brand { color: var(--ink); font-weight: 760; letter-spacing: .02em; text-decoration: none; }
-    .mark { display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid var(--line); border-radius: 50% 50% 46% 54%; color: var(--leaf); background: linear-gradient(140deg, rgba(159,219,143,.18), rgba(21,53,37,.78)); box-shadow: inset 0 0 20px rgba(159,219,143,.08); }
+    .mark { display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid var(--line); border-radius: 50% 50% 46% 54%; color: var(--leaf); background: var(--system-color-surface-raised, #f8fafb); }
     .quiet-link { padding: 8px 12px; border: 1px solid transparent; border-radius: 999px; color: var(--muted); font-size: .88rem; text-decoration: none; }
     .quiet-link:hover, .quiet-link:focus-visible { border-color: var(--line); color: var(--ink); outline: none; }
-    .game-link { display: inline-flex; align-items: center; gap: 9px; margin-top: 24px; padding: 12px 16px; border: 1px solid rgba(159,219,143,.56); border-radius: 999px; color: #f1ffe9; background: linear-gradient(135deg, rgba(96,171,82,.45), rgba(24,74,42,.72)); box-shadow: 0 12px 30px rgba(0,0,0,.18); font-weight: 800; text-decoration: none; }
+    .game-link { display: inline-flex; align-items: center; gap: 9px; margin-top: 24px; padding: 12px 16px; border: 1px solid var(--leaf); border-radius: 999px; color: var(--system-color-accent-contrast, #fff); background: var(--leaf); box-shadow: var(--system-shadow-raised, 0 12px 30px rgba(0,0,0,.18)); font-weight: 800; text-decoration: none; }
     .game-link::after { content: "→"; color: var(--leaf); font-size: 1.1rem; }
-    .game-link:hover, .game-link:focus-visible { border-color: var(--leaf); background: linear-gradient(135deg, rgba(112,195,93,.56), rgba(24,74,42,.82)); outline: none; transform: translateY(-1px); }
-    system-navigation { --system-navigation-link-color: var(--muted); --system-navigation-muted-color: var(--faint); --system-navigation-border-color: var(--line); --system-navigation-current-border-color: var(--line); --system-navigation-current-background: rgba(96,171,82,.15); }
+    .game-link:hover, .game-link:focus-visible { outline: 2px solid var(--system-color-focus, var(--leaf)); outline-offset: 2px; transform: translateY(-1px); }
+    system-navigation { --system-navigation-link-color: var(--muted); --system-navigation-muted-color: var(--faint); --system-navigation-border-color: var(--line); --system-navigation-current-border-color: var(--line); --system-navigation-current-background: var(--system-color-surface-raised, #f8fafb); }
     .hero { display: grid; grid-template-columns: minmax(0,1fr) minmax(240px,.46fr); gap: clamp(26px,7vw,92px); align-items: end; padding: 32px 0 46px; }
     .eyebrow { margin: 0 0 15px; color: var(--leaf); font-size: .74rem; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; }
     h1, h2, p { margin-top: 0; }
     h1 { max-width: 760px; margin-bottom: 17px; font-family: Georgia, "Times New Roman", serif; font-size: clamp(3.2rem,7.8vw,6.5rem); font-weight: 500; letter-spacing: -.055em; line-height: .9; }
     h1 em { color: var(--leaf); font-style: normal; }
     .lead { max-width: 620px; margin-bottom: 0; color: var(--muted); font-size: 1.08rem; line-height: 1.65; }
-    .clock { min-height: 178px; padding: 24px; border: 1px solid var(--line); border-radius: 20px; background: linear-gradient(145deg, rgba(48,113,63,.24), var(--surface)); box-shadow: 0 20px 70px rgba(0,0,0,.2); }
+    .clock { min-height: 178px; padding: 24px; border: 1px solid var(--line); border-radius: var(--system-radius-large, 20px); background: var(--surface); box-shadow: var(--system-shadow-raised, 0 20px 70px rgba(0,0,0,.2)); }
     .clock small, .card-kicker { display: block; color: var(--faint); font-size: .7rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
     #local-date-time { display: block; margin-top: 20px; color: var(--leaf); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: clamp(1.3rem,2.4vw,2rem); line-height: 1.3; }
     .dashboard { display: grid; grid-template-columns: minmax(0,1fr); gap: 18px; align-items: start; }
-    .card { overflow: hidden; border: 1px solid var(--line); border-radius: 19px; background: var(--surface); box-shadow: 0 18px 60px rgba(0,0,0,.16); }
-    .card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 25px 26px 20px; border-bottom: 1px solid var(--line); background: linear-gradient(90deg, rgba(84,161,79,.1), transparent 60%); }
+    .card { overflow: hidden; border: 1px solid var(--line); border-radius: var(--system-radius-large, 19px); background: var(--surface); box-shadow: var(--system-shadow-raised, 0 18px 60px rgba(0,0,0,.16)); }
+    .card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 25px 26px 20px; border-bottom: 1px solid var(--line); background: var(--system-color-surface-raised, #f8fafb); }
     h2 { margin-bottom: 7px; font-family: Georgia, "Times New Roman", serif; font-size: 1.65rem; font-weight: 500; }
     .card-head p, .note-copy { margin-bottom: 0; color: var(--muted); font-size: .9rem; line-height: 1.55; }
     label { color: var(--muted); font-size: .76rem; font-weight: 720; }
-    select, textarea { width: 100%; border: 1px solid rgba(159,219,143,.24); border-radius: 11px; background: rgba(4,21,12,.64); outline: none; }
+    select, textarea { width: 100%; border: 1px solid var(--line); border-radius: var(--system-radius-small, 11px); color: var(--ink); background: var(--system-color-surface-raised, #f8fafb); outline: none; }
     select { min-height: 42px; padding: 0 11px; }
-    select:focus, textarea:focus { border-color: var(--leaf); box-shadow: 0 0 0 3px rgba(159,219,143,.11); }
-    button { min-height: 42px; padding: 0 15px; border: 1px solid rgba(159,219,143,.34); border-radius: 11px; background: rgba(96,171,82,.15); cursor: pointer; }
-    button:hover, button:focus-visible { border-color: var(--leaf); background: rgba(121,196,97,.22); outline: none; }
+    select:focus, textarea:focus { border-color: var(--leaf); box-shadow: 0 0 0 3px color-mix(in srgb, var(--leaf) 18%, transparent); }
+    button { min-height: 42px; padding: 0 15px; border: 1px solid var(--line); border-radius: var(--system-radius-small, 11px); color: var(--ink); background: var(--system-color-surface-raised, #f8fafb); cursor: pointer; }
+    button:hover, button:focus-visible { border-color: var(--leaf); outline: 2px solid var(--system-color-focus, var(--leaf)); outline-offset: 2px; }
     button:disabled, select:disabled { cursor: wait; opacity: .55; }
     .notes-body { padding: 19px 22px 22px; }
     #personal-notes { min-height: 318px; padding: 14px; resize: vertical; line-height: 1.55; }

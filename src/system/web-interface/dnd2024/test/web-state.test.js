@@ -978,11 +978,13 @@ test("client envelope validation accepts only the closed ready shape", () => {
   );
   assert.equal(
     isReadyHubEnvelope({ ...ready, world: { ...ready.world, factions: [{ id: "broken" }] } }),
-    false,
+    true,
+    "a malformed display-only Faction row is isolated by its consuming directory",
   );
   assert.equal(
     isReadyHubEnvelope({ ...ready, world: { ...ready.world, lore: [{ id: "broken" }] } }),
-    false,
+    true,
+    "a malformed display-only Lore row is isolated by its consuming directory",
   );
   assert.equal(isReadyHubEnvelope({ ...ready, world: { ...ready.world, maps: [] } }), false);
   assert.equal(isReadyHubEnvelope({ ...ready, world: { ...ready.world, rootMapId: "map.absent" } }), false);

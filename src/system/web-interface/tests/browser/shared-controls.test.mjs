@@ -946,6 +946,49 @@ test('shared navigation links and marks the canonical control center route', asy
   } finally { navigation.remove(); fixture.window.close(); }
 });
 
+test('shared navigation retains page-only applications and never navigates for an empty selector value', async () => {
+  const source = await readFile(new URL('system-workspace.js', root), 'utf8');
+  const fixture = await dom();
+  const page = {entityId: 'page.only', slug: 'only', title: 'Only', navigationLabel: 'Only', url: '/ui/only'};
+  fixture.window.systemWebClient = {discoverAllApplications: async () => ({
+    applications: [
+      {applicationId: 'page-only', displayName: 'Page only', isPublishable: true, indexPage: null, pages: [page]},
+      {applicationId: 'no-pages', displayName: 'No pages', isPublishable: true, indexPage: null, pages: []},
+      {applicationId: 'not-published', displayName: 'Not published', isPublishable: false, indexPage: page, pages: [page]}
+    ],
+    systemPages: [], unavailableFields: [], pageCount: 1, resolutionFingerprints: {}
+  })};
+  fixture.window.validSystemIdentifier = value => typeof value === 'string' && value.length > 0;
+  fixture.window.interruptedRequestStore = {read: () => null, write: () => true, remove: () => {}};
+  fixture.window.eval(source.replace(/^import[^;]+;\s*/gm, '').replace(/import[^;]+;\s*/g, ''));
+  const navigation = fixture.window.document.createElement('system-navigation');
+  let navigations = 0;
+  let readyProgress = null;
+  navigation.addEventListener('system-navigate', () => { navigations++; });
+  navigation.addEventListener('system-progress', event => {
+    if (event.detail.phase === 'ready') readyProgress = event.detail;
+  });
+  fixture.window.document.body.append(navigation);
+  await tick();
+  try {
+    const select = navigation.shadowRoot.querySelector('select[aria-label="Open application"]');
+    assert.deepEqual(Array.from(select.options, option => [option.value, option.textContent]), [
+      ['', 'Choose an application'], ['page-only', 'Page only']
+    ]);
+    assert.equal(readyProgress.applicationCount, 3);
+    assert.equal(readyProgress.navigableApplicationCount, 1);
+    const drawer = navigation.shadowRoot.querySelector('[part="drawer-trigger"]');
+    drawer.click();
+    assert.equal(drawer.getAttribute('aria-expanded'), 'true');
+    drawer.dispatchEvent(new fixture.window.KeyboardEvent('keydown', {key: 'Escape', bubbles: true}));
+    assert.equal(drawer.getAttribute('aria-expanded'), 'false');
+    assert.equal(navigation.shadowRoot.activeElement, drawer);
+    select.value = '';
+    select.dispatchEvent(new fixture.window.Event('change', {bubbles: true}));
+    assert.equal(navigations, 0);
+  } finally { navigation.remove(); fixture.window.close(); }
+});
+
 test('system conversation shell does not render an absent recovery control as undefined text', async () => {
   const source = await readFile(new URL('system-workspace.js', root), 'utf8');
   const fixture = await dom();

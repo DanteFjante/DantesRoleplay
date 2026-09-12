@@ -13,6 +13,10 @@ Cancel requests cancellation of one retained focused-worker task for the current
 
 The response is the full invocation envelope: `tag`, `code`, `message`, `dataJson`, `readEvidence`, `receipt`, `proposal`, `pending`, `completionEvidenceReference`, `previousCommits`, and `recoveryIdentity`. A cancellation request may race with completion, so preserve the returned envelope and reconcile the same handle with `system.inner-worker.read`. Cancellation is not permission to remove retained task history or committed effects.
 
+```json
+{"stateSpaceId":"example-space","taskId":"task.0123456789abcdef0123456789abcdef","commandId":"command.0123456789abcdef0123456789abcdef"}
+```
+
 ## Matches
 cancel a focused inner worker
 stop a delegated task
@@ -26,5 +30,6 @@ cancel background work
 
 ## Constraints
 - Cancellation requires current `CancelTask` authority and never implies `Execute` or `ReadTask` authority.
-- Listing and server-side waiting are unavailable.
+- Listing and bounded server-side waiting remain separate read capabilities and require current
+  `ReadTask` authority.
 - Already completed, foreign, stale, or revoked tasks remain governed by their returned result and retained evidence.

@@ -1,5 +1,10 @@
 import type { CampaignReadModel, WorldLocation, WorldReadModel } from "../data/hub-types";
 import { Icon } from "./Icon";
+import { selectDisplayRows } from "../data/presentation-records";
+
+function displayText(value: unknown, fallback: string) {
+  return typeof value === "string" ? value : fallback;
+}
 
 export function WorldOverview({
   currentLocation,
@@ -12,6 +17,8 @@ export function WorldOverview({
   onBrowseLocations: () => void;
   world: WorldReadModel;
 }) {
+  const facts = selectDisplayRows((world as { facts?: unknown }).facts).records;
+  const regions = selectDisplayRows((world as { regions?: unknown }).regions).records;
   return (
     <div className="world-overview" data-record-id={world.id}>
       <section className="world-hero" aria-labelledby="main-view-heading">
@@ -31,11 +38,11 @@ export function WorldOverview({
       </section>
 
       <section className="world-fact-grid" aria-label="World at a glance">
-        {world.facts.map((fact) => (
-          <article className="world-fact" key={fact.label}>
-            <span>{fact.label}</span>
-            <strong>{fact.value}</strong>
-            <small>{fact.detail}</small>
+        {facts.map((fact, index) => (
+          <article className="world-fact" key={displayText(fact.label, `fact-${index}`)}>
+            <span>{displayText(fact.label, "World fact")}</span>
+            <strong>{displayText(fact.value, "Unavailable")}</strong>
+            <small>{displayText(fact.detail, "Details unavailable")}</small>
           </article>
         ))}
       </section>
@@ -83,16 +90,16 @@ export function WorldOverview({
           </button>
         </div>
         <div className="region-grid">
-          {world.regions.map((region, index) => (
-            <article className="region-card" key={region.name}>
+          {regions.map((region, index) => (
+            <article className="region-card" key={displayText(region.name, `region-${index}`)}>
               <span className="region-card__icon">
                 <Icon name={["Mountain", "Castle", "TreePine"][index]} />
               </span>
               <div>
-                <strong>{region.name}</strong>
-                <p>{region.detail}</p>
+                <strong>{displayText(region.name, "Region")}</strong>
+                <p>{displayText(region.detail, "Details unavailable")}</p>
               </div>
-              <small>{region.count} known places</small>
+              <small>{typeof region.count === "number" ? region.count : "Unknown"} known places</small>
             </article>
           ))}
         </div>

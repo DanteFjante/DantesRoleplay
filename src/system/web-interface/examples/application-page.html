@@ -4,13 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Example application page</title>
+  <script type="module" src="/components/system-theme.js"></script>
   <style>
-    :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #101a14; color: #edf7e8; }
+    :root { font-family: var(--system-font-sans, system-ui, sans-serif); background: var(--system-color-canvas, #f3f5f7); color: var(--system-color-text, #17212b); }
     body { margin: 0 auto; max-width: 64rem; padding: 1.5rem; }
-    system-navigation { --system-navigation-link-color: #b8d8b5; --system-navigation-muted-color: #83a580; --system-navigation-border-color: #476647; --system-navigation-current-background: #25452d; }
-    main { border-top: 1px solid #476647; display: grid; gap: 1rem; margin-top: 1rem; padding-top: 2rem; }
-    section { background: #16251b; border: 1px solid #476647; border-radius: .7rem; padding: 1rem; }
-    outer-ai, inner-ai { --ai-color: #edf7e8; --ai-muted-color: #9eb99c; --ai-border-color: #476647; --ai-error-color: #ffaaa0; }
+    system-navigation { --system-navigation-link-color: var(--system-color-text); --system-navigation-muted-color: var(--system-color-muted); --system-navigation-border-color: var(--system-color-border); --system-navigation-current-background: var(--system-color-surface-raised); }
+    main { border-top: 1px solid var(--system-color-border, #d4dbe1); display: grid; gap: 1rem; margin-top: 1rem; padding-top: 2rem; }
+    section { background: var(--system-color-surface, #fff); border: 1px solid var(--system-color-border, #d4dbe1); border-radius: var(--system-radius-medium, .7rem); padding: 1rem; }
+    outer-ai, inner-ai { --ai-color: var(--system-color-text); --ai-muted-color: var(--system-color-muted); --ai-border-color: var(--system-color-border); --ai-error-color: var(--system-color-danger); }
   </style>
 </head>
 <body>

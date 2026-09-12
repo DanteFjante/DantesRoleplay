@@ -17,6 +17,7 @@ import { WorldPeopleDirectory } from "./WorldPeopleDirectory";
 import { WorldFactions } from "./WorldFactions";
 import { WorldLore } from "./WorldLore";
 import { WorldSectionNavigation } from "./WorldSectionNavigation";
+import { PanelErrorBoundary } from "./PanelState";
 
 const ScopedMapWorkspace = lazy(() => import("./ScopedMapWorkspace")
   .then((module) => ({ default: module.ScopedMapWorkspace })));
@@ -58,6 +59,7 @@ export function WorldView({
   factionDirectoryBusy,
   onLoadMoreFactions,
   onQueryChange,
+  resetKey,
 }: {
   deferredNotice?: ReactNode;
   directoriesDeferred?: boolean;
@@ -95,6 +97,7 @@ export function WorldView({
   factionDirectoryBusy?: boolean;
   onLoadMoreFactions?: () => void;
   onQueryChange: (query: string) => void;
+  resetKey?: string;
 }) {
   return (
     <div className="world-view">
@@ -102,7 +105,9 @@ export function WorldView({
       {section === "overview" && directoriesDeferred ? <p role="status">
         World directories load when opened. Overview counts reflect only information loaded so far.
       </p> : null}
-      {deferredNotice ?? (section === "overview" ? (
+      {deferredNotice ?? <PanelErrorBoundary label={section === "overview" ? "World overview" : section}
+        resetKey={`${resetKey ?? world.id}:${section}`}>
+        {section === "overview" ? (
         <WorldOverview
           campaign={campaign}
           currentLocation={currentLocation}
@@ -209,7 +214,8 @@ export function WorldView({
             />
           </div>
         </div>
-      ))}
+      )}
+      </PanelErrorBoundary>}
     </div>
   );
 }

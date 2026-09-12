@@ -22,18 +22,6 @@ function routePath(path) {
   return value.endsWith('/index.html') ? value.slice(0, -'/index.html'.length) || '/' : value;
 }
 
-function publicationStateMessage(status) {
-  switch (status) {
-    case 'missing-publication': return 'Application unavailable.';
-    case 'missing-index-page': return 'No landing page installed.';
-    case 'index-page-hidden': return 'Landing page hidden.';
-    case 'index-page-disabled': return 'Landing page disabled.';
-    case 'index-content-missing': return 'Referenced content missing.';
-    case 'invalid': return 'Publication configuration invalid.';
-    default: return 'No landing page installed.';
-  }
-}
-
 export class SystemProgress extends HTMLElement {
   static get observedAttributes() { return ['phase', 'message']; }
 
@@ -41,7 +29,7 @@ export class SystemProgress extends HTMLElement {
     super();
     this.attachShadow({mode: 'open'});
     const style = document.createElement('style');
-    style.textContent = `:host{display:block;color:var(--system-muted-color,inherit);font:inherit}
+    style.textContent = `:host{display:block;color:var(--system-muted-color,var(--system-color-muted,inherit));font:inherit}
       [part='progress']{align-items:center;display:flex;gap:.5rem;margin:0}
       [part='indicator']{animation:system-progress-spin .8s linear infinite;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;height:.8rem;width:.8rem}
       :host([phase='ready']) [part='indicator'],:host([phase='idle']) [part='indicator']{display:none}
@@ -81,10 +69,11 @@ export class SystemErrorElement extends HTMLElement {
     super();
     this.attachShadow({mode: 'open'});
     const style = document.createElement('style');
-    style.textContent = `:host{display:block;color:var(--system-error-color,#8a1c1c);font:inherit}
-      [part='error']{border:1px solid currentColor;border-radius:.55rem;padding:.75rem}
+    style.textContent = `:host{display:block;color:var(--system-error-color,var(--system-color-danger,#8a1c1c));font:inherit}
+      [part='error']{background:var(--system-color-surface,transparent);border:1px solid currentColor;border-radius:var(--system-radius-small,.55rem);padding:.75rem}
       p{margin:.2rem 0}[part='code']{font-family:ui-monospace,monospace;font-size:.78em}
-      button{font:inherit;margin-top:.45rem}`;
+      button{background:var(--system-color-surface-raised,transparent);border:1px solid var(--system-color-border,currentColor);border-radius:var(--system-radius-small,.5rem);color:var(--system-color-text,inherit);font:inherit;margin-top:.45rem;padding:.45rem .7rem}
+      button:focus-visible{outline:2px solid var(--system-color-focus,currentColor);outline-offset:2px}`;
     this._box = document.createElement('section');
     this._box.setAttribute('part', 'error');
     this._box.setAttribute('role', 'alert');
@@ -119,8 +108,8 @@ export class SystemEmptyState extends HTMLElement {
     super();
     this.attachShadow({mode: 'open'});
     const style = document.createElement('style');
-    style.textContent = `:host{display:block;color:var(--system-muted-color,inherit);font:inherit}
-      [part='empty']{border:1px dashed currentColor;border-radius:.55rem;padding:1rem}
+    style.textContent = `:host{display:block;color:var(--system-muted-color,var(--system-color-muted,inherit));font:inherit}
+      [part='empty']{background:var(--system-color-surface,transparent);border:1px dashed var(--system-color-border,currentColor);border-radius:var(--system-radius-small,.55rem);padding:1rem}
       h2,p{margin:.2rem 0}[part='code']{font-family:ui-monospace,monospace;font-size:.78em}`;
     this._box = document.createElement('section');
     this._box.setAttribute('part', 'empty');
@@ -156,7 +145,7 @@ export class SystemDataView extends HTMLElement {
     super();
     this.attachShadow({mode: 'open'});
     const style = document.createElement('style');
-    style.textContent = `:host{display:block;font:inherit}pre{background:var(--system-data-background,rgba(127,127,127,.08));border-radius:.45rem;margin:0;max-height:32rem;overflow:auto;padding:.75rem;white-space:pre-wrap;word-break:break-word}`;
+    style.textContent = `:host{display:block;color:var(--system-color-text,inherit);font:inherit}pre{background:var(--system-data-background,var(--system-color-surface-raised,rgba(127,127,127,.08)));border:1px solid var(--system-color-border,transparent);border-radius:var(--system-radius-small,.45rem);margin:0;max-height:32rem;overflow:auto;padding:.75rem;white-space:pre-wrap;word-break:break-word}`;
     this._pre = document.createElement('pre');
     this._pre.setAttribute('part', 'data');
     this.shadowRoot.append(style, this._pre);
@@ -202,35 +191,31 @@ export class ApplicationNavigation extends HTMLElement {
   _render() {
     this._closeMenu();
     this.shadowRoot.replaceChildren();
-    if (!this._application) return;
+    this._item = null;
+    this._trigger = null;
+    this._menu = null;
+    if (!this._application || this._application.isPublishable !== true) return;
     const application = this._application;
+    const primaryPage = application.indexPage ?? application.pages[0] ?? null;
+    if (!primaryPage) return;
+    const menuPages = application.indexPage ? application.pages : application.pages.slice(1);
     const style = document.createElement('style');
-    style.textContent = `:host{display:inline-flex;font:inherit;position:relative}
+    style.textContent = `:host{display:inline-flex;color:var(--system-navigation-color,var(--system-color-text,inherit));font:inherit;position:relative}
       [part='application']{align-items:center;display:inline-flex;gap:.15rem;position:relative}
-      a,button{border:1px solid transparent;border-radius:var(--system-navigation-radius,999px);color:inherit;font:inherit;padding:var(--system-navigation-padding,.5rem .75rem);text-decoration:none}
-      a:hover,a:focus-visible,button:hover:not(:disabled),button:focus-visible{border-color:currentColor;outline:2px solid currentColor;outline-offset:2px}
-      [aria-current='page'],[data-current='true']{background:var(--system-navigation-current-background,rgba(128,170,128,.16));border-color:currentColor}
-      button:disabled{cursor:not-allowed;opacity:.58}[part='menu-trigger']{padding-inline:.55rem}
-      [part='menu']{background:var(--system-navigation-menu-background,Canvas);border:1px solid currentColor;border-radius:.6rem;box-shadow:0 .5rem 1.5rem rgba(0,0,0,.2);display:grid;gap:.15rem;left:0;min-width:12rem;padding:.3rem;position:absolute;top:calc(100% + .25rem);z-index:100}
-      [part='menu'] a{border-radius:.4rem;white-space:nowrap}[part='state'],[part='partial-status']{font-size:.72rem;max-width:12rem}[part='partial-status']{color:var(--system-navigation-muted-color,inherit)}[hidden]{display:none!important}`;
+      a,button{background:transparent;border:1px solid transparent;border-radius:var(--system-navigation-radius,var(--system-radius-small,.5rem));color:inherit;font:inherit;min-height:2.35rem;padding:var(--system-navigation-padding,.48rem .7rem);text-decoration:none}
+      button{cursor:pointer}
+      a:hover,a:focus-visible,button:hover,button:focus-visible{border-color:var(--system-navigation-border-color,var(--system-color-border,currentColor));outline:2px solid var(--system-navigation-focus-color,var(--system-color-focus,currentColor));outline-offset:2px}
+      [aria-current='page'],[data-current='true']{background:var(--system-navigation-current-background,var(--system-color-surface-raised,rgba(127,127,127,.12)));border-color:var(--system-navigation-current-border-color,var(--system-color-border,currentColor))}
+      [part='menu-trigger']{padding-inline:.55rem}
+      [part='menu']{background:var(--system-navigation-menu-background,var(--system-color-surface,Canvas));border:1px solid var(--system-navigation-border-color,var(--system-color-border,currentColor));border-radius:var(--system-radius-small,.6rem);box-shadow:var(--system-shadow-raised,0 .5rem 1.5rem rgba(0,0,0,.2));display:grid;gap:.15rem;left:0;min-width:12rem;padding:.3rem;position:absolute;top:calc(100% + .25rem);z-index:100}
+      [part='menu'] a{border-radius:var(--system-radius-small,.4rem);white-space:nowrap}[hidden]{display:none!important}`;
     const item = document.createElement('span');
     item.setAttribute('part', 'application');
     item.dataset.applicationId = application.applicationId;
-    let primary;
-    if (application.isClickable) {
-      primary = this._link(application.indexPage.url, application.displayName, application.indexPage);
-      primary.setAttribute('part', 'application-link');
-    } else {
-      primary = document.createElement('button');
-      primary.type = 'button';
-      primary.disabled = true;
-      primary.textContent = application.displayName;
-      primary.setAttribute('part', 'application-link');
-      primary.setAttribute('aria-disabled', 'true');
-      primary.title = publicationStateMessage(application.publicationStatus);
-    }
+    const primary = this._link(primaryPage.url, application.displayName, primaryPage);
+    primary.setAttribute('part', 'application-link');
     item.append(primary);
-    if (application.isPublishable && application.pages.length > 0) {
+    if (menuPages.length > 0) {
       const sequence = ++applicationNavigationSequence;
       const trigger = document.createElement('button');
       trigger.type = 'button';
@@ -247,7 +232,7 @@ export class ApplicationNavigation extends HTMLElement {
       menu.setAttribute('role', 'menu');
       menu.setAttribute('aria-labelledby', trigger.id);
       trigger.setAttribute('aria-controls', menu.id);
-      for (const page of application.pages) {
+      for (const page of menuPages) {
         const link = this._link(page.url, page.navigationLabel, page);
         link.setAttribute('part', 'page-link');
         link.setAttribute('role', 'menuitem');
@@ -268,21 +253,6 @@ export class ApplicationNavigation extends HTMLElement {
       this._trigger = trigger;
       this._menu = menu;
       item.append(trigger, menu);
-    }
-    if (application.coverage === 'partial') {
-      const status = document.createElement('span');
-      status.setAttribute('part', 'partial-status');
-      status.setAttribute('role', 'status');
-      status.textContent = application.pageCoverage === 'partial'
-        ? 'Some application pages are unavailable.'
-        : 'Some application publication details are unavailable.';
-      item.append(status);
-    }
-    if (!application.isClickable) {
-      const state = document.createElement('span');
-      state.setAttribute('part', 'state');
-      state.textContent = publicationStateMessage(application.publicationStatus);
-      item.append(state);
     }
     this._item = item;
     this.shadowRoot.append(style, item);

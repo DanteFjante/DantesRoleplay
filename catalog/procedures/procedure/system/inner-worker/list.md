@@ -13,6 +13,10 @@ List returns at most sixteen authorized focused-worker handles and their full cu
 
 The completed list computation carries `items` and nullable `nextCursor` in `dataJson`. Each item contains the exact durable handle and its full nested invocation result, including completion evidence, previous commits, and recovery identity when present. A list computation is not evidence that any listed worker completed.
 
+```json
+{"stateSpaceId":"example-space","pageSize":16,"cursor":null}
+```
+
 ## Matches
 list focused workers
 show delegated task progress

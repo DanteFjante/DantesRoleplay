@@ -25,7 +25,7 @@ public sealed class ApplicationsSystemCapabilityHandler(
         SystemCapabilityMode.Read,
         InputSchema,
         OutputSchema,
-        ["procedure.system.inspect"],
+        ["procedure.system.application-lifecycle"],
         PrivateOperatorCapability.Read,
         SystemCapabilitySensitivity.PrivateOperatorMetadata,
         RequiresConfirmation: false,
