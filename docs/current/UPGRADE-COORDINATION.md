@@ -16,26 +16,27 @@ Display data may contain additional fields. Each component checks the fields it 
 
 ## Current checkpoint
 
-Last coordinator update: 2026-09-12, 09:32 UTC. This is a checkpoint, not a claim that later work has finished.
+Last coordinator update: 2026-09-12, 12:08 UTC. This is a checkpoint, not a claim that later work has finished.
 
 | Boundary | Verified state |
 | --- | --- |
 | Original platform plan | All 30 scoped slices implemented and integrated at 9395cd8e |
 | Final implementation acceptance | Complete at 0a445b54: 3,456/3,456 full tests; protocol 8 passed and 2 intentional retired cases skipped; 618 catalog records valid with seven known warnings |
 | master landing | COMPLETE: base platform at 5795db00, extensive manual and shared/DND website improvements at ef73bab1, preserving previous master changes and the DND upgrade plan |
-| Source verification | Every non-documentation file in the final master merge matches accepted 0a445b54; later coordinator changes are documentation only |
+| Source verification | The final master merge matched accepted 0a445b54; bounded real-data DND header/audience/theme correction landed afterward as b5c0e802 with focused checks passed |
 | Existing guide alignment | 497b212c incorporated in the candidate as e32878d8 |
 | Branch cleanup | COMPLETE: deleted 40 local non-master branches, detached 22 clean worktrees at their exact commits; master is the only local branch; remote refs, both stashes, and all worktree directories preserved |
 | Manual | Merged on master through ef73bab1, including e0c8e95f, 8ee31837, and tested metadata fixture alignment; cold-start and full integrated checks passed |
 | Shared website | Merged on master through ef73bab1; final combined browser checks 99 passed; desktop/mobile and light/dark previews inspected |
 | DND website | Merged on master through ef73bab1; full mounted tests 79/79, typecheck/build passed; root preview recheck shows zero accessibility violations in the controlled inventory fixture in light and dark |
 | DND upgrade plan | Landed on master as 73eaf060 and 53a43029; parallel ownership, shared theme/navigation, existing website work, and durable checkpoints reconciled |
+| Live deployment | Verified backup/export/blob copy and copied-database rehearsal complete; corrected DND bundle is being re-published in rehearsal before live cutover |
 
 Implementation, verification, landing on master, and deployment are separate states. Never call a worktree delivery a master update or a live deployment.
 
 Final verified pre-deletion backup: `C:/repo/DantesRoleplay/.tmp/branch-cleanup/20260912-113124/local-refs-pre-cleanup.bundle`, SHA256 `4589002B80F55D9E1F7FE8C7BA6D6BF0A50C16AC8749842FF033B837E61ED045`. The adjacent manifest records exact branch tips, worktree commits, remote refs, and stashes; `result.json` records completed cleanup. Every worktree's current HEAD was checked against the refreshed bundle before deletion. Active detached working directories are preserved.
 
-The newer extensive manual and shared/DND website changes passed combined acceptance at `0a445b54`: 3,456 full tests passed, eight protocol cases passed with two intentional retired skips, and build/browser/catalog gates passed. They are merged onto actual master at `ef73bab1`; non-documentation files match the accepted implementation. [Local deployment and database activation](upgrade/06-local-deployment.md) is now active under the user's explicit authorization. No live database cutover or release selection for this upgrade has occurred yet.
+The newer extensive manual and shared/DND website changes passed combined acceptance at `0a445b54`: 3,456 full tests passed, eight protocol cases passed with two intentional retired skips, and build/browser/catalog gates passed. They are merged onto actual master at `ef73bab1`. Rehearsal against copied live data exposed a duplicate theme control and obsolete Player filtering in the shared website; the bounded correction landed as `b5c0e802`, with 91 context tests, six mounted header/resilience tests, a targeted faction continuation test, typecheck, and production build passed. [Local deployment and database activation](upgrade/06-local-deployment.md) is active under the user's explicit authorization. No live database cutover or release selection for this upgrade has occurred yet.
 
 ## Workstreams and ownership
 
