@@ -26,6 +26,9 @@ internal static class ApplicationActivationComponentRegistration
         services.AddScoped<IApplicationCandidateReviewClosureReader, ApplicationCandidateProcedureClosureReader>();
         services.AddScoped<ApplicationCandidateReviewedProcedureUpdateReader>();
         services.AddScoped<ApplicationCandidateReviewedProcedureUpdateValidation>();
+        services.AddScoped<ApplicationCandidateWorkflowReviewClosureReader>();
+        services.AddScoped<IApplicationCandidateReviewClosureReader>(provider =>
+            provider.GetRequiredService<ApplicationCandidateWorkflowReviewClosureReader>());
         services.AddScoped<SqliteApplicationAuthoringService>(provider => new(
             provider.GetRequiredService<DataAccess.DantesRoleplayDbContext>(),
             provider.GetRequiredService<Applications.IApplicationRegistry>(),
