@@ -140,7 +140,7 @@ internal sealed class ApplicationCandidateStatefulRuntimeValidator(
         foreach (var sample in samples)
         {
             var state = stateSpaces.Get(sample.StateSpaceId!)!;
-            var stateHost = StateHost(authoringHost, state, selectedGrant.GrantReference);
+            var stateHost = StateHost(authoringHost, state, selectedGrant);
             if (update.PredecessorDefinition is { } predecessor)
             {
                 var resolved = await targets.ResolveAsync(stateHost, predecessor, cancellationToken);
@@ -250,7 +250,7 @@ internal sealed class ApplicationCandidateStatefulRuntimeValidator(
                 && value.ContentFingerprint == report.StateGrantFingerprint);
             if (grant is null || grant.Revoked || grant.ExpiresAtUtc <= DateTime.UtcNow
                 || !report.EffectKinds.All(value => grant.EffectKinds.Contains(value, StringComparer.Ordinal))) return false;
-            var stateHost = StateHost(host, state, grant.GrantReference);
+            var stateHost = StateHost(host, state, grant);
             if (authorityDefinition is { } currentDefinition)
             {
                 var resolved = await targets.ResolveAsync(stateHost, currentDefinition, cancellationToken);
@@ -345,7 +345,7 @@ internal sealed class ApplicationCandidateStatefulRuntimeValidator(
         foreach (var grant in candidates.Candidates.OrderBy(value => value.GrantReference, StringComparer.Ordinal))
         {
             if (grant.Revoked || grant.ExpiresAtUtc <= DateTime.UtcNow) continue;
-            var stateHost = StateHost(host, state, grant.GrantReference);
+            var stateHost = StateHost(host, state, grant);
             if (update.PredecessorDefinition is null)
             {
                 if (grant.Capabilities.Contains(StandingGrantCapability.Read)
@@ -407,9 +407,16 @@ internal sealed class ApplicationCandidateStatefulRuntimeValidator(
     }
 
     private static InteractionInvocationHost StateHost(InteractionInvocationHost source, StateSpaceView state,
-        string grantReference) => new(source.Principal, source.ApplicationRevision, state.StateSpaceId,
-        grantReference, source.CommandId, InteractionStateRevision.From(state),
-        InteractionExecutionProfile.ReadOnly, source.Budget, source.ParentCommandId);
+        StandingGrantRevision grant)
+    {
+        var deadline = source.Budget.DeadlineUtc <= grant.ExpiresAtUtc
+            ? source.Budget.DeadlineUtc : grant.ExpiresAtUtc;
+        var budget = source.Budget.Child(
+            Math.Min(source.Budget.MaximumOperations, grant.MaximumOperations), deadline);
+        return new(source.Principal, source.ApplicationRevision, state.StateSpaceId,
+            grant.GrantReference, source.CommandId, InteractionStateRevision.From(state),
+            InteractionExecutionProfile.ReadOnly, budget, source.ParentCommandId);
+    }
 
     private static bool SameRevision(ApplicationRevision left, ApplicationRevision right) =>
         left.ApplicationId == right.ApplicationId && left.Revision == right.Revision

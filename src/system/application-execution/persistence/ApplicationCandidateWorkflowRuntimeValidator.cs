@@ -144,7 +144,7 @@ internal sealed class ApplicationCandidateWorkflowRuntimeValidator(
                     return Unavailable(request.Candidate, update.Fingerprint, results,
                         "WORKFLOW_RUNTIME_STATE_AUTHORITY_UNAVAILABLE",
                         "Current authority for every declared workflow dependency is unavailable.");
-                var stateHost = StateHost(authoringHost, state, grant.GrantReference);
+                var stateHost = StateHost(authoringHost, state, grant);
                 if (!stateHost.Budget.TryConsumeOperation())
                     return Unavailable(request.Candidate, update.Fingerprint, results,
                         "WORKFLOW_RUNTIME_BUDGET_EXHAUSTED", "The shared validation budget is exhausted.");
@@ -421,7 +421,7 @@ internal sealed class ApplicationCandidateWorkflowRuntimeValidator(
         foreach (var grant in candidates.Candidates.OrderBy(value => value.GrantReference, StringComparer.Ordinal))
         {
             if (grant.Revoked || grant.ExpiresAtUtc <= DateTime.UtcNow) continue;
-            var host = StateHost(authoringHost, state, grant.GrantReference);
+            var host = StateHost(authoringHost, state, grant);
             var valid = true;
             foreach (var requirement in closure.Authority)
             {
@@ -726,10 +726,16 @@ internal sealed class ApplicationCandidateWorkflowRuntimeValidator(
     }
 
     private static InteractionInvocationHost StateHost(InteractionInvocationHost source,
-        StateSpaceView state, string grantReference) => new(source.Principal,
-        source.ApplicationRevision, state.StateSpaceId, grantReference, source.CommandId,
-        InteractionStateRevision.From(state), InteractionExecutionProfile.Workflow,
-        source.Budget, source.ParentCommandId);
+        StateSpaceView state, StandingGrantRevision grant)
+    {
+        var deadline = source.Budget.DeadlineUtc <= grant.ExpiresAtUtc
+            ? source.Budget.DeadlineUtc : grant.ExpiresAtUtc;
+        var budget = source.Budget.Child(
+            Math.Min(source.Budget.MaximumOperations, grant.MaximumOperations), deadline);
+        return new(source.Principal, source.ApplicationRevision, state.StateSpaceId,
+            grant.GrantReference, source.CommandId, InteractionStateRevision.From(state),
+            InteractionExecutionProfile.Workflow, budget, source.ParentCommandId);
+    }
 
     private static bool SameRevision(ApplicationRevision left, ApplicationRevision right) =>
         left.ApplicationId == right.ApplicationId && left.Revision == right.Revision
