@@ -14,7 +14,8 @@ using DantesRoleplay.Sources;
 namespace DantesRoleplay.ApplicationActivation;
 
 /// <summary>
-/// Issues retained review evidence for one existing query whose callable contract is unchanged.
+/// Issues retained review evidence for one existing query whose callable contract is unchanged,
+/// except that a query without public media authority may add one strict route-owner proof.
 /// The query may select another current read-only mechanic, but cannot broaden its inputs or roles.
 /// </summary>
 internal sealed class ApplicationCandidateQueryClosureReader(
@@ -24,7 +25,8 @@ internal sealed class ApplicationCandidateQueryClosureReader(
     IActiveCatalogFeatureSnapshotProvider snapshots,
     IBoundedJsonSchemaValidator schemas) : IApplicationCandidateReviewClosureReader
 {
-    public string Grammar => "existing-query-mechanic-projection-v1";
+    public const string GrammarVersion = "existing-query-mechanic-projection-v2";
+    public string Grammar => GrammarVersion;
 
     public async Task<ApplicationCandidateReviewClosureReadResult> ReadAsync(
         InteractionInvocationHost host, ApplicationCandidateReference candidate,
@@ -66,7 +68,7 @@ internal sealed class ApplicationCandidateQueryClosureReader(
 
             var predecessor = ReadPredecessor(candidate, active.Value.Basis, selected);
             if (predecessor is null || !CompatibleContract(predecessor.Value.Contract, successor,
-                    out var inputSchemaHash))
+                    out var inputSchemaHash, out var addsMediaOwnerReference))
                 return ApplicationCandidateReviewClosureReadResult.Rejected();
 
             var projection = await ReadProjectionAsync(host, candidate.ApplicationId, active.Value.Current,
@@ -77,7 +79,7 @@ internal sealed class ApplicationCandidateQueryClosureReader(
             return ApplicationCandidateReviewClosureReadResult.Available(
                 ApplicationCandidateQueryReviewClosureEvidence.FromVerified(selection, selected,
                     predecessor.Value.Definition, projection.Value.Definition, projection.Value.Documents,
-                    inputSchemaHash));
+                    inputSchemaHash, addsMediaOwnerReference));
         }
         catch (Exception exception) when (exception is ArgumentException or InvalidOperationException
             or JsonException or DecoderFallbackException or InteractionContractException
@@ -134,13 +136,15 @@ internal sealed class ApplicationCandidateQueryClosureReader(
     }
 
     private bool CompatibleContract(ApplicationQueryContract predecessor, ApplicationQueryContract successor,
-        out string? inputSchemaHash)
+        out string? inputSchemaHash, out bool addsMediaOwnerReference)
     {
         inputSchemaHash = null;
+        addsMediaOwnerReference = false;
         if (predecessor.Id != successor.Id || predecessor.Executor != successor.Executor
             || predecessor.Exposure != successor.Exposure || !SameMap(predecessor.Roles, successor.Roles)
             || !SameBindings(predecessor.RoleBindings, successor.RoleBindings)
-            || predecessor.MediaOwnerReference != successor.MediaOwnerReference
+            || !CompatibleMediaOwnerReference(predecessor.MediaOwnerReference,
+                successor.MediaOwnerReference, out addsMediaOwnerReference)
             || predecessor.OutputSchemaHash != successor.OutputSchemaHash)
             return false;
         var priorOutput = schemas.Compile(predecessor.OutputSchemaJson);
@@ -157,6 +161,20 @@ internal sealed class ApplicationCandidateQueryClosureReader(
         if (!priorInput.IsAccepted || !nextInput.IsAccepted || priorInput.SchemaHash != nextInput.SchemaHash
             || priorInput.NormalizedSchema != nextInput.NormalizedSchema) return false;
         inputSchemaHash = nextInput.SchemaHash;
+        return true;
+    }
+
+    private static bool CompatibleMediaOwnerReference(
+        ApplicationQueryMediaOwnerReference? predecessor,
+        ApplicationQueryMediaOwnerReference? successor,
+        out bool addsMediaOwnerReference)
+    {
+        addsMediaOwnerReference = false;
+        if (predecessor == successor) return true;
+        // This one-way opt-in is surfaced in retained v2 review evidence. Once declared,
+        // removal or replacement requires a different publication grammar.
+        if (predecessor is not null || successor is null) return false;
+        addsMediaOwnerReference = true;
         return true;
     }
 
@@ -267,7 +285,7 @@ internal sealed class ApplicationCandidateQueryReviewClosureEvidence : IApplicat
         ApplicationCandidateSelectionEvidence selection, ApplicationCandidateSelectedDocument selected,
         StandingGrantDefinitionReference predecessor, StandingGrantDefinitionReference projection,
         ImmutableArray<ApplicationCandidateReviewClosureDocument> projectionDocuments,
-        string? inputSchemaHash)
+        string? inputSchemaHash, bool addsMediaOwnerReference)
     {
         Candidate = selection.Candidate;
         BaseOrigin = selection.BaseOrigin!;
@@ -276,21 +294,22 @@ internal sealed class ApplicationCandidateQueryReviewClosureEvidence : IApplicat
         Predecessor = predecessor;
         Projection = projection;
         InputSchemaHash = inputSchemaHash;
+        AddsMediaOwnerReference = addsMediaOwnerReference;
         Dependencies = [projection];
         ReviewDocuments = [new(selected.Definition, ApplicationCandidateReviewDocumentRole.Changed,
             selected.Document, selected.RetainedBytes), .. projectionDocuments];
         EvidenceFingerprint = InteractionCanonicalJson.Fingerprint(
-            "dantes-roleplay/application-candidate-query-closure/v1",
+            "dantes-roleplay/application-candidate-query-closure/v2",
             InteractionCanonicalJson.CanonicalizeObject(JsonSerializer.Serialize(new
             {
                 Candidate, BaseOrigin, SelectionEvidenceFingerprint,
-                grammar = "existing-query-mechanic-projection-v1", Successor, Predecessor,
-                Projection, InputSchemaHash,
+                grammar = ApplicationCandidateQueryClosureReader.GrammarVersion, Successor, Predecessor,
+                Projection, InputSchemaHash, AddsMediaOwnerReference,
                 documents = ReviewDocuments.Select(value => new { value.Definition, value.Role, value.Document })
             })));
     }
 
-    public string Grammar => "existing-query-mechanic-projection-v1";
+    public string Grammar => ApplicationCandidateQueryClosureReader.GrammarVersion;
     public ApplicationCandidateReference Candidate { get; }
     public string SelectionEvidenceFingerprint { get; }
     public string EvidenceFingerprint { get; }
@@ -301,11 +320,12 @@ internal sealed class ApplicationCandidateQueryReviewClosureEvidence : IApplicat
     internal StandingGrantDefinitionReference Predecessor { get; }
     internal StandingGrantDefinitionReference Projection { get; }
     internal string? InputSchemaHash { get; }
+    internal bool AddsMediaOwnerReference { get; }
 
     internal static ApplicationCandidateQueryReviewClosureEvidence FromVerified(
         ApplicationCandidateSelectionEvidence selection, ApplicationCandidateSelectedDocument selected,
         StandingGrantDefinitionReference predecessor, StandingGrantDefinitionReference projection,
         ImmutableArray<ApplicationCandidateReviewClosureDocument> projectionDocuments,
-        string? inputSchemaHash) => new(selection, selected, predecessor, projection,
-            projectionDocuments, inputSchemaHash);
+        string? inputSchemaHash, bool addsMediaOwnerReference) => new(selection, selected, predecessor,
+            projection, projectionDocuments, inputSchemaHash, addsMediaOwnerReference);
 }

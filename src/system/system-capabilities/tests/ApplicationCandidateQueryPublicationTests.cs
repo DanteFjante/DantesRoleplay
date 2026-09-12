@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using DantesRoleplay.AI;
 using DantesRoleplay.ApplicationActivation;
 using DantesRoleplay.ApplicationExecution;
@@ -40,7 +41,9 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
     private const string QueryProjectionOne = "demo.runtime.projection.page-summary-one";
     private const string QueryProjectionTwo = "demo.runtime.projection.page-summary-two";
     private const string QueryOutputSchema =
-        "{\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"label\"],\"properties\":{\"label\":{\"type\":\"string\"}}}";
+        "{\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"label\",\"state\",\"subject\"],\"properties\":{\"label\":{\"type\":\"string\"},\"state\":{\"const\":\"ready\"},\"subject\":{\"type\":\"object\",\"additionalProperties\":false,\"required\":[\"id\"],\"properties\":{\"id\":{\"type\":\"string\"}}}}}";
+    private static readonly ApplicationQueryMediaOwnerReference MediaOwnerReference =
+        new("subject", "/subject/id", "/state", "ready");
 
     [Fact]
     public async Task Reviewed_query_publication_refreshes_page_and_incompatible_candidate_preserves_it()
@@ -105,7 +108,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             const string writeKey = "query-publication-write";
             var written = await WriteQueryCandidateAsync(gateway, principal, before,
                 QueryText(QueryProjectionTwo, secondProjection, QueryOutputSchema,
-                    "Reviewed page summary."), writeKey);
+                    "Reviewed page summary.", mediaOwnerReference: MediaOwnerReference), writeKey);
             var candidate = await CandidateAsync(db, written.OperationId!);
             await CompleteQueryReviewAsync(db, setup, gateway, gate, reviews,
                 principal, candidate, writeKey);
@@ -133,6 +136,10 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             Assert.True(activated.Ok, activated.Error?.Code + ": " + activated.Error?.Message);
             var current = setup.Activation.Current(Application)!;
             Assert.Equal(before.ActivationRevision + 1, current.ActivationRevision);
+            Assert.True(catalogs.TryGet(Application, out var activeCatalog));
+            var activeQuery = ApplicationQueryContract.Parse(activeCatalog.Inspect(new(
+                Application, Application.Value, QueryId)).ContentJson, Application);
+            Assert.Equal(MediaOwnerReference, activeQuery.MediaOwnerReference);
             var replayed = await gateway.InvokeAsync(principal, Application,
                 SystemCapabilityIds.ApplicationCandidateActivate, activationArguments,
                 "query-publication-activate", "website");
@@ -159,7 +166,13 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
                 (Name: "role", Text: QueryText(QueryProjectionTwo, secondProjection,
                     QueryOutputSchema, "Incompatible role contract.", additionalRole: true)),
                 (Name: "dependency", Text: QueryText(QueryProjectionTwo, new string('A', 64),
-                    QueryOutputSchema, "Unavailable projection dependency."))
+                    QueryOutputSchema, "Unavailable projection dependency.",
+                    mediaOwnerReference: MediaOwnerReference)),
+                (Name: "media-removal", Text: QueryText(QueryProjectionTwo, secondProjection,
+                    QueryOutputSchema, "Media owner proof removed.")),
+                (Name: "media-replacement", Text: QueryText(QueryProjectionTwo, secondProjection,
+                    QueryOutputSchema, "Media owner proof replaced.", mediaOwnerReference:
+                    MediaOwnerReference with { AvailabilityValue = "withheld" }))
             };
             foreach (var incompatible in incompatibleCandidates)
             {
@@ -275,6 +288,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         var closure = Assert.IsType<ApplicationCandidateQueryReviewClosureEvidence>(
             prepared.ReviewClosure);
         Assert.Equal(QueryProjectionTwo, Assert.Single(closure.Dependencies).DefinitionId);
+        Assert.True(closure.AddsMediaOwnerReference);
         var provider = new RetainedReviewProvider(prepared.ReviewInput!, "extendExisting");
         var invoker = new SystemInnerWorkerValidationInvoker(
             new AiService([provider]), TimeProvider.System);
@@ -335,7 +349,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             ```
             """.Replace("__ID__", id, StringComparison.Ordinal)
                 .Replace("__NAME__", file, StringComparison.Ordinal);
-        var source = $"return {{ data: {{ label: '{label}' }} }};";
+        var source = $"return {{ data: {{ label: '{label}', state: 'ready', subject: {{ id: ctx.roles.subject.id }} }} }};";
         WriteFile(relative, markdown);
         WriteFile(sourceRelative, source);
         var parsed = MechanicFile.Parse(markdown, relative, source);
@@ -353,7 +367,8 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
     }
 
     private static string QueryText(string projectionId, string projectionHash,
-        string outputSchema, string description, bool additionalRole = false)
+        string outputSchema, string description, bool additionalRole = false,
+        ApplicationQueryMediaOwnerReference? mediaOwnerReference = null)
     {
         var schemas = new BoundedJsonSchemaValidator();
         var compiled = schemas.Compile(outputSchema);
@@ -371,7 +386,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             roles["viewer"] = "An additional route entity.";
             roleBindings["viewer"] = new { source = "route-entity" };
         }
-        return JsonSerializer.Serialize(new
+        var content = JsonSerializer.Serialize(new
         {
             id = QueryId,
             category = "runtime.query.page",
@@ -392,6 +407,16 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             exposure = "binding-only",
             status = "active"
         });
+        if (mediaOwnerReference is null) return content;
+        var document = JsonNode.Parse(content)!.AsObject();
+        document["mediaOwnerReference"] = JsonSerializer.SerializeToNode(new
+        {
+            role = mediaOwnerReference.Role,
+            resultPointer = mediaOwnerReference.ResultPointer,
+            availabilityPointer = mediaOwnerReference.AvailabilityPointer,
+            availabilityValue = mediaOwnerReference.AvailabilityValue
+        });
+        return document.ToJsonString();
     }
 
     private static async Task SeedQueryAuthoringGrantAsync(DantesRoleplayDbContext db)
