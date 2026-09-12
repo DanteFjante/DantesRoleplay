@@ -7,8 +7,9 @@ application generation by being present in the catalog.
 `asset-import-manifest.json` is the deployment authority for eleven content-addressed PNG files,
 their map ownership and normalized anchors, six previous active map revisions, fourteen new child
 locations, and the required compare-and-swap operations. `prepared-situation.json` contains future
-play material. Its five clues are unrevealed GM records, its three scenes are unused, and every
-player-orientation candidate requires an explicit knowledge admission to
+play material. It reuses three established clues without writing their records or relationships,
+adds two distinct unrevealed GM clues, keeps its three scenes unused, and requires an explicit
+knowledge admission for every player-orientation candidate to
 `actor.caldris.ganji`. The full situation also has a canonical `game.core.world.secret` payload,
 linked to the campaign, chapter, and world so the authorized knowledge owner can retrieve it.
 `image-prompts.json` records the selected image-generation requests and output identities. The
@@ -36,9 +37,11 @@ with the direct-parent terrain correspondences recorded in the manifest.
    attachment, append the new illustration once by SHA-256, and write with the freshly read
    component revision. A stale CAS must restart the read/merge. These are ordinary prepared
    location illustrations; attaching them records no active scene or played event.
-7. Import the five clue entities under `location.caldris.atlas` / `opening-clues`, their required
-   truth-support links, and the prepared-situation secret under `location.caldris.atlas` /
-   `knowledge` as unrevealed/DM-only knowledge. Use these exact reviewed containment values; the
+7. Verify and reuse the three declared `clue.caldris.q01.*` records and their existing links without
+   writing them. Import only the two distinct clue entities under `location.caldris.atlas` /
+   `opening-clues`; their support links target the canonical
+   `secret.caldris.quest.q01.the-thirteenth-bell`. Import the prepared-situation secret under
+   `location.caldris.atlas` / `knowledge`. Use these exact reviewed containment values; the
    synchronization adapter must not infer a container. Do not admit knowledge, move a character,
    create a session or encounter, resolve a quest, or award a reward.
 8. Read back blobs, entities, components, containments, relationships, map projections, and Player

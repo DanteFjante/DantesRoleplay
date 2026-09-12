@@ -154,11 +154,39 @@ public sealed class CaldrisStartingAreaContentPackageTests
         var root = situation.RootElement;
         Assert.Equal("future-ready-not-played", root.GetProperty("status").GetString());
         Assert.False(root.GetProperty("opening").GetProperty("hasOccurred").GetBoolean());
-        Assert.Equal(3, root.GetProperty("dmTruthReferences").GetArrayLength());
+        var truths = root.GetProperty("dmTruthReferences").EnumerateArray()
+            .Select(value => value.GetString()!).ToArray();
+        Assert.Equal(["secret.caldris.quest.q01.the-thirteenth-bell"], truths);
+
+        var reused = root.GetProperty("reusedClueReferences").EnumerateArray().ToArray();
+        Assert.Equal(3, reused.Length);
+        Assert.Equal(new[]
+        {
+            "clue.caldris.q01.barge-timing",
+            "clue.caldris.q01.dry-flour",
+            "clue.caldris.q01.theatre-fibres"
+        }, reused.Select(value => value.GetProperty("id").GetString()!).Order(StringComparer.Ordinal).ToArray());
+        Assert.All(reused, value =>
+        {
+            Assert.Equal("reuse-existing-record-and-relationships",
+                value.GetProperty("disposition").GetString());
+            Assert.Equal("party-knowledge-dm-page-0.json", value.GetProperty("sourceEvidenceFile").GetString());
+            Assert.Equal("717BE58BCC02FE2A2F2727D3227E43C45086E2AFE93577F4B1A4695F9CB9A45B",
+                value.GetProperty("sourceStateSpaceFingerprint").GetString());
+            Assert.Equal("BC07473896F1395ACD7F9BC2C5B9A5A3E23BB78BE1A90AE359F11D9950E7FAF5",
+                value.GetProperty("projectionDocumentRevision").GetString());
+            Assert.Equal("location.caldris.bramblebridge", value.GetProperty("subjectId").GetString());
+            Assert.False(string.IsNullOrWhiteSpace(value.GetProperty("title").GetString()));
+            Assert.False(string.IsNullOrWhiteSpace(value.GetProperty("summary").GetString()));
+        });
 
         var clues = root.GetProperty("clueCreates").EnumerateArray().ToArray();
-        Assert.Equal(5, clues.Length);
-        Assert.Equal(5, clues.Select(value => value.GetProperty("id").GetString()).Distinct().Count());
+        Assert.Equal(2, clues.Length);
+        Assert.Equal(new[]
+        {
+            "clue.caldris.thirteenth-bell.closed-alley-map",
+            "clue.caldris.thirteenth-bell.different-driver-whistle"
+        }, clues.Select(value => value.GetProperty("id").GetString()!).Order(StringComparer.Ordinal).ToArray());
         foreach (var clue in clues)
         {
             Assert.Equal("location.caldris.atlas", clue.GetProperty("container").GetProperty("id").GetString());
@@ -170,10 +198,25 @@ public sealed class CaldrisStartingAreaContentPackageTests
                 .GetProperty("game.core.world.knowledge.classification").GetProperty("sensitivity").GetString());
         }
 
-        Assert.Equal(23, root.GetProperty("relationshipCreates").GetArrayLength());
-        Assert.All(clues, clue => Assert.Single(root.GetProperty("relationshipCreates").EnumerateArray(),
-            relationship => relationship.GetProperty("from").GetString() == clue.GetProperty("id").GetString()
-                && relationship.GetProperty("kind").GetString() == "game.core.world.clue.supports"));
+        var relationships = root.GetProperty("relationshipCreates").EnumerateArray().ToArray();
+        Assert.Equal(11, relationships.Length);
+        Assert.All(clues, clue =>
+        {
+            var support = Assert.Single(relationships,
+                relationship => relationship.GetProperty("from").GetString() == clue.GetProperty("id").GetString()
+                    && relationship.GetProperty("kind").GetString() == "game.core.world.clue.supports");
+            Assert.Equal("secret.caldris.quest.q01.the-thirteenth-bell",
+                support.GetProperty("to").GetString());
+        });
+        Assert.All(reused, reference => Assert.DoesNotContain(relationships, relationship =>
+            relationship.GetProperty("from").GetString() == reference.GetProperty("id").GetString()
+                || relationship.GetProperty("to").GetString() == reference.GetProperty("id").GetString()));
+        var serialized = root.GetRawText();
+        Assert.DoesNotContain("secret.caldris.mystery-tax-wagon-solution", serialized, StringComparison.Ordinal);
+        Assert.DoesNotContain("secret.caldris.mystery-sealed-alcove-solution", serialized, StringComparison.Ordinal);
+        Assert.DoesNotContain("clue.caldris.thirteenth-bell.dry-flour", serialized, StringComparison.Ordinal);
+        Assert.DoesNotContain("clue.caldris.thirteenth-bell.pulley-fibers", serialized, StringComparison.Ordinal);
+        Assert.DoesNotContain("clue.caldris.thirteenth-bell.barge-signal-timing", serialized, StringComparison.Ordinal);
         Assert.All(root.GetProperty("scenes").EnumerateArray(),
             scene => Assert.Equal("prepared-unused", scene.GetProperty("status").GetString()));
         Assert.All(root.GetProperty("playerOrientationCandidates").EnumerateArray(), candidate =>
@@ -238,7 +281,7 @@ public sealed class CaldrisStartingAreaContentPackageTests
         parents.Add(secretId, secret.GetProperty("container").GetProperty("id").GetString()!);
         newEntityIds.Add(secretId);
 
-        Assert.Equal(20, newEntityIds.Count);
+        Assert.Equal(17, newEntityIds.Count);
         foreach (var entityId in newEntityIds)
         {
             var current = entityId;

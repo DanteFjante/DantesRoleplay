@@ -41,14 +41,44 @@
     }
   ],
   "dmTruthReferences": [
-    "secret.caldris.mystery-tax-wagon-solution",
-    "secret.caldris.mystery-sealed-alcove-solution",
     "secret.caldris.quest.q01.the-thirteenth-bell"
+  ],
+  "reusedClueReferences": [
+    {
+      "id": "clue.caldris.q01.dry-flour",
+      "disposition": "reuse-existing-record-and-relationships",
+      "sourceEvidenceFile": "party-knowledge-dm-page-0.json",
+      "sourceStateSpaceFingerprint": "717BE58BCC02FE2A2F2727D3227E43C45086E2AFE93577F4B1A4695F9CB9A45B",
+      "projectionDocumentRevision": "BC07473896F1395ACD7F9BC2C5B9A5A3E23BB78BE1A90AE359F11D9950E7FAF5",
+      "subjectId": "location.caldris.bramblebridge",
+      "title": "Dry Flour Beneath Wet Canvas",
+      "summary": "The wagon canvas is rain-soaked, but loose flour beneath it is dry. The cargo was placed or rearranged after the cover had already become wet."
+    },
+    {
+      "id": "clue.caldris.q01.theatre-fibres",
+      "disposition": "reuse-existing-record-and-relationships",
+      "sourceEvidenceFile": "party-knowledge-dm-page-0.json",
+      "sourceStateSpaceFingerprint": "717BE58BCC02FE2A2F2727D3227E43C45086E2AFE93577F4B1A4695F9CB9A45B",
+      "projectionDocumentRevision": "BC07473896F1395ACD7F9BC2C5B9A5A3E23BB78BE1A90AE359F11D9950E7FAF5",
+      "subjectId": "location.caldris.bramblebridge",
+      "title": "Treated Red Pulley Fibres",
+      "summary": "Treated red fibres caught at the bell rope match theatre pulley line, including a rehearsal knot designed to keep scenery from falling."
+    },
+    {
+      "id": "clue.caldris.q01.barge-timing",
+      "disposition": "reuse-existing-record-and-relationships",
+      "sourceEvidenceFile": "party-knowledge-dm-page-0.json",
+      "sourceStateSpaceFingerprint": "717BE58BCC02FE2A2F2727D3227E43C45086E2AFE93577F4B1A4695F9CB9A45B",
+      "projectionDocumentRevision": "BC07473896F1395ACD7F9BC2C5B9A5A3E23BB78BE1A90AE359F11D9950E7FAF5",
+      "subjectId": "location.caldris.bramblebridge",
+      "title": "The River's Thirteenth Stroke",
+      "summary": "The first twelve strokes use civic spacing. The final intervals match a quay loading signal: twelve belonged to the town, while one belonged to the river."
+    }
   ],
   "clueCreates": [
     {
-      "id": "clue.caldris.thirteenth-bell.dry-flour",
-      "name": "Dry Flour Under Wet Canvas",
+      "id": "clue.caldris.thirteenth-bell.different-driver-whistle",
+      "name": "The Horse Knows Another Whistle",
       "container": {
         "id": "location.caldris.atlas",
         "slot": "opening-clues"
@@ -56,8 +86,8 @@
       "components": {
         "game.core.world.clue": {
           "status": "unrevealed",
-          "summary": "Dry flour remains trapped beneath the tax wagon’s rain-soaked canvas, showing that the covering and cargo did not share the same journey.",
-          "provenance": "Inspection of the empty tax wagon after the market arrival.",
+          "summary": "The wagon horse follows a different driver's whistle instead of its missing driver's usual call, showing that another handler took control during the diversion.",
+          "provenance": "Prepared animal-handling comparison from the canonical Q01 truth; unrevealed and not yet established in play.",
           "visibility": "gm"
         },
         "game.core.world.knowledge.classification": {
@@ -67,8 +97,8 @@
       }
     },
     {
-      "id": "clue.caldris.thirteenth-bell.pulley-fibers",
-      "name": "Theatre-Pulley Fibers",
+      "id": "clue.caldris.thirteenth-bell.closed-alley-map",
+      "name": "The Closed Alley on the New Map",
       "container": {
         "id": "location.caldris.atlas",
         "slot": "opening-clues"
@@ -76,48 +106,8 @@
       "components": {
         "game.core.world.clue": {
           "status": "unrevealed",
-          "summary": "Short dyed fibers on the bell mechanism match cordage used in compact theatre pulleys rather than ordinary bell rope.",
-          "provenance": "Close inspection of the North Bell Tower mechanism.",
-          "visibility": "gm"
-        },
-        "game.core.world.knowledge.classification": {
-          "subjectKind": "state",
-          "sensitivity": "confidential"
-        }
-      }
-    },
-    {
-      "id": "clue.caldris.thirteenth-bell.changed-whistle",
-      "name": "A Changed Watch Whistle",
-      "container": {
-        "id": "location.caldris.atlas",
-        "slot": "opening-clues"
-      },
-      "components": {
-        "game.core.world.clue": {
-          "status": "unrevealed",
-          "summary": "Tibb’s remembered signal differs by one deliberate note from the whistle heard before the thirteenth stroke.",
-          "provenance": "Careful comparison with Tibb Fallow’s account.",
-          "visibility": "gm"
-        },
-        "game.core.world.knowledge.classification": {
-          "subjectKind": "event",
-          "sensitivity": "confidential"
-        }
-      }
-    },
-    {
-      "id": "clue.caldris.thirteenth-bell.altered-alley-map",
-      "name": "Altered Alley Map",
-      "container": {
-        "id": "location.caldris.atlas",
-        "slot": "opening-clues"
-      },
-      "components": {
-        "game.core.world.clue": {
-          "status": "unrevealed",
-          "summary": "A copied alley map changes one turn in a way that redirects carriers toward a concealed handoff route.",
-          "provenance": "Comparison at Tibb’s Watch Post.",
+          "summary": "Tibb remembers the alley as closed, but the new map shows it open, exposing a route change that supports the coordinated diversion.",
+          "provenance": "Prepared comparison of Tibb Fallow's memory with the new map from the canonical Q01 truth; unrevealed and not yet established in play.",
           "visibility": "gm"
         },
         "game.core.world.knowledge.classification": {
@@ -125,92 +115,36 @@
           "sensitivity": "confidential"
         }
       }
-    },
-    {
-      "id": "clue.caldris.thirteenth-bell.barge-signal-timing",
-      "name": "Barge-Signal Timing",
-      "container": {
-        "id": "location.caldris.atlas",
-        "slot": "opening-clues"
-      },
-      "components": {
-        "game.core.world.clue": {
-          "status": "unrevealed",
-          "summary": "The quay signal occurred early enough to coordinate the wagon’s entrance with the bell, but too early to be a response to it.",
-          "provenance": "Reconstruction of activity at Little Quay.",
-          "visibility": "gm"
-        },
-        "game.core.world.knowledge.classification": {
-          "subjectKind": "event",
-          "sensitivity": "confidential"
-        }
-      }
     }
   ],
   "relationshipCreates": [
     {
-      "from": "clue.caldris.thirteenth-bell.dry-flour",
-      "to": "location.caldris.atlas.weir-bridge",
+      "from": "clue.caldris.thirteenth-bell.different-driver-whistle",
+      "to": "location.caldris.bramblebridge",
       "kind": "game.core.world.knowledge.about",
       "data": {}
     },
     {
-      "from": "clue.caldris.thirteenth-bell.dry-flour",
+      "from": "clue.caldris.thirteenth-bell.different-driver-whistle",
       "to": "world.caldris",
       "kind": "game.core.world.knowledge.in-world",
       "data": {}
     },
     {
-      "from": "clue.caldris.thirteenth-bell.pulley-fibers",
-      "to": "location.caldris.north-bell-tower",
-      "kind": "game.core.world.knowledge.about",
-      "data": {}
-    },
-    {
-      "from": "clue.caldris.thirteenth-bell.pulley-fibers",
-      "to": "world.caldris",
-      "kind": "game.core.world.knowledge.in-world",
-      "data": {}
-    },
-    {
-      "from": "clue.caldris.thirteenth-bell.changed-whistle",
-      "to": "actor.caldris.tibb-fallow",
-      "kind": "game.core.world.knowledge.about",
-      "data": {}
-    },
-    {
-      "from": "clue.caldris.thirteenth-bell.changed-whistle",
-      "to": "world.caldris",
-      "kind": "game.core.world.knowledge.in-world",
-      "data": {}
-    },
-    {
-      "from": "clue.caldris.thirteenth-bell.altered-alley-map",
+      "from": "clue.caldris.thirteenth-bell.closed-alley-map",
       "to": "location.caldris.bramblebridge.tibbs-watch-post",
       "kind": "game.core.world.knowledge.about",
       "data": {}
     },
     {
-      "from": "clue.caldris.thirteenth-bell.altered-alley-map",
-      "to": "world.caldris",
-      "kind": "game.core.world.knowledge.in-world",
-      "data": {}
-    },
-    {
-      "from": "clue.caldris.thirteenth-bell.barge-signal-timing",
-      "to": "location.caldris.bramblebridge.little-quay",
-      "kind": "game.core.world.knowledge.about",
-      "data": {}
-    },
-    {
-      "from": "clue.caldris.thirteenth-bell.barge-signal-timing",
+      "from": "clue.caldris.thirteenth-bell.closed-alley-map",
       "to": "world.caldris",
       "kind": "game.core.world.knowledge.in-world",
       "data": {}
     },
     {
       "from": "campaign.caldris.measure-of-mercy",
-      "to": "clue.caldris.thirteenth-bell.dry-flour",
+      "to": "clue.caldris.thirteenth-bell.different-driver-whistle",
       "kind": "game.core.campaign.references",
       "data": {
         "role": "knowledge",
@@ -219,7 +153,7 @@
     },
     {
       "from": "campaign.caldris.measure-of-mercy",
-      "to": "clue.caldris.thirteenth-bell.pulley-fibers",
+      "to": "clue.caldris.thirteenth-bell.closed-alley-map",
       "kind": "game.core.campaign.references",
       "data": {
         "role": "knowledge",
@@ -227,59 +161,14 @@
       }
     },
     {
-      "from": "campaign.caldris.measure-of-mercy",
-      "to": "clue.caldris.thirteenth-bell.changed-whistle",
-      "kind": "game.core.campaign.references",
-      "data": {
-        "role": "knowledge",
-        "audience": "gm"
-      }
-    },
-    {
-      "from": "campaign.caldris.measure-of-mercy",
-      "to": "clue.caldris.thirteenth-bell.altered-alley-map",
-      "kind": "game.core.campaign.references",
-      "data": {
-        "role": "knowledge",
-        "audience": "gm"
-      }
-    },
-    {
-      "from": "campaign.caldris.measure-of-mercy",
-      "to": "clue.caldris.thirteenth-bell.barge-signal-timing",
-      "kind": "game.core.campaign.references",
-      "data": {
-        "role": "knowledge",
-        "audience": "gm"
-      }
-    },
-    {
-      "from": "clue.caldris.thirteenth-bell.dry-flour",
-      "to": "secret.caldris.mystery-tax-wagon-solution",
+      "from": "clue.caldris.thirteenth-bell.different-driver-whistle",
+      "to": "secret.caldris.quest.q01.the-thirteenth-bell",
       "kind": "game.core.world.clue.supports",
       "data": {}
     },
     {
-      "from": "clue.caldris.thirteenth-bell.pulley-fibers",
-      "to": "secret.caldris.mystery-tax-wagon-solution",
-      "kind": "game.core.world.clue.supports",
-      "data": {}
-    },
-    {
-      "from": "clue.caldris.thirteenth-bell.changed-whistle",
-      "to": "secret.caldris.mystery-tax-wagon-solution",
-      "kind": "game.core.world.clue.supports",
-      "data": {}
-    },
-    {
-      "from": "clue.caldris.thirteenth-bell.altered-alley-map",
-      "to": "secret.caldris.mystery-tax-wagon-solution",
-      "kind": "game.core.world.clue.supports",
-      "data": {}
-    },
-    {
-      "from": "clue.caldris.thirteenth-bell.barge-signal-timing",
-      "to": "secret.caldris.mystery-tax-wagon-solution",
+      "from": "clue.caldris.thirteenth-bell.closed-alley-map",
+      "to": "secret.caldris.quest.q01.the-thirteenth-bell",
       "kind": "game.core.world.clue.supports",
       "data": {}
     },
@@ -394,7 +283,7 @@
       "components": {
         "game.core.world.secret": {
           "status": "active",
-          "summary": "Prepared, unplayed situation. Opening: at the next session Elowen Pike may ask Ganji why the noon bell rang thirteen times as the empty tax wagon entered Bramblebridge market. Goals: Elowen wants lawful humane tolls; Tibb wants a truthful report respected; Merrit wants safe hospitality and the burned-inn letters traced; Odo wants oral memory and hives preserved; Nan wants charters stabilized without exposing private conclusions. Unused scenes: rainy Gilded Kettle, rainy Weir Bridge toll approach, and North Bell Tower before noon. Clues concern dry flour, pulley fibers, a changed whistle, an altered alley map, and barge-signal timing. Success enables a witnessed lawful intervention; premature confrontation advances the carriers but leaves clearer tracks; delay changes the next signal while physical evidence remains. Optional hooks: a Mallow Abbey charter discrepancy and the Gilded Kettle letters remain separate unresolved threads.",
+          "summary": "Prepared, unplayed situation. Opening: Elowen Pike may ask Ganji why the noon bell rang thirteen times as the empty tax wagon entered Bramblebridge market. Elowen wants humane tolls; Tibb wants his truthful report respected; Merrit wants safe hospitality and the burned-inn letters traced; Odo wants oral memory and hives preserved; Nan wants charters stabilized without exposing private conclusions. Unused scenes: Gilded Kettle, rainy Weir Bridge toll approach, and North Bell Tower before noon. Existing clues reused without writes: dry flour, treated theatre-pulley fibres, and barge-signal timing. New unrevealed clues: the horse follows another driver's whistle, and Tibb remembers the alley as closed on the new map. Success enables a witnessed lawful intervention; premature confrontation advances the carriers but leaves tracks; delay changes the next signal while physical evidence remains. The Mallow Abbey charter discrepancy and Gilded Kettle letters remain separate unresolved hooks.",
           "provenance": "Reviewed future-play packet prepared from the retained 2026-09-12 Measure of Mercy campaign export; no described event is recorded as played.",
           "visibility": "gm"
         },

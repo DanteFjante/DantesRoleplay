@@ -16,6 +16,7 @@
     "opening",
     "npcGoals",
     "dmTruthReferences",
+    "reusedClueReferences",
     "clueCreates",
     "relationshipCreates",
     "scenes",
@@ -125,19 +126,72 @@
     "dmTruthReferences": {
       "type": "array",
       "minItems": 1,
-      "maxItems": 16,
+      "maxItems": 1,
       "uniqueItems": true,
       "items": {
-        "type": "string",
-        "minLength": 1,
-        "maxLength": 240,
-        "pattern": "\\S"
+        "const": "secret.caldris.quest.q01.the-thirteenth-bell"
+      }
+    },
+    "reusedClueReferences": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "disposition",
+          "sourceEvidenceFile",
+          "sourceStateSpaceFingerprint",
+          "projectionDocumentRevision",
+          "subjectId",
+          "title",
+          "summary"
+        ],
+        "properties": {
+          "id": {
+            "enum": [
+              "clue.caldris.q01.dry-flour",
+              "clue.caldris.q01.theatre-fibres",
+              "clue.caldris.q01.barge-timing"
+            ]
+          },
+          "disposition": {
+            "const": "reuse-existing-record-and-relationships"
+          },
+          "sourceEvidenceFile": {
+            "const": "party-knowledge-dm-page-0.json"
+          },
+          "sourceStateSpaceFingerprint": {
+            "const": "717BE58BCC02FE2A2F2727D3227E43C45086E2AFE93577F4B1A4695F9CB9A45B"
+          },
+          "projectionDocumentRevision": {
+            "const": "BC07473896F1395ACD7F9BC2C5B9A5A3E23BB78BE1A90AE359F11D9950E7FAF5"
+          },
+          "subjectId": {
+            "const": "location.caldris.bramblebridge"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240,
+            "pattern": "\\S"
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "pattern": "\\S"
+          }
+        }
       }
     },
     "clueCreates": {
       "type": "array",
-      "minItems": 1,
-      "maxItems": 16,
+      "minItems": 2,
+      "maxItems": 2,
       "items": {
         "type": "object",
         "additionalProperties": false,
