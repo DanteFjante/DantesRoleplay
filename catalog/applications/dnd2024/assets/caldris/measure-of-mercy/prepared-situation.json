@@ -143,24 +143,6 @@
       "data": {}
     },
     {
-      "from": "campaign.caldris.measure-of-mercy",
-      "to": "clue.caldris.thirteenth-bell.different-driver-whistle",
-      "kind": "game.core.campaign.references",
-      "data": {
-        "role": "knowledge",
-        "audience": "gm"
-      }
-    },
-    {
-      "from": "campaign.caldris.measure-of-mercy",
-      "to": "clue.caldris.thirteenth-bell.closed-alley-map",
-      "kind": "game.core.campaign.references",
-      "data": {
-        "role": "knowledge",
-        "audience": "gm"
-      }
-    },
-    {
       "from": "clue.caldris.thirteenth-bell.different-driver-whistle",
       "to": "secret.caldris.quest.q01.the-thirteenth-bell",
       "kind": "game.core.world.clue.supports",
@@ -174,7 +156,7 @@
     },
     {
       "from": "secret.caldris.measure-of-mercy.before-the-fourteenth-stroke",
-      "to": "campaign.caldris.measure-of-mercy.chapter.the-thirteenth-bell",
+      "to": "location.caldris.bramblebridge",
       "kind": "game.core.world.knowledge.about",
       "data": {}
     },
@@ -183,15 +165,6 @@
       "to": "world.caldris",
       "kind": "game.core.world.knowledge.in-world",
       "data": {}
-    },
-    {
-      "from": "campaign.caldris.measure-of-mercy",
-      "to": "secret.caldris.measure-of-mercy.before-the-fourteenth-stroke",
-      "kind": "game.core.campaign.references",
-      "data": {
-        "role": "knowledge",
-        "audience": "gm"
-      }
     }
   ],
   "scenes": [
@@ -296,7 +269,7 @@
     "relationshipCreates": [
       {
         "from": "secret.caldris.measure-of-mercy.before-the-fourteenth-stroke",
-        "to": "campaign.caldris.measure-of-mercy.chapter.the-thirteenth-bell",
+        "to": "location.caldris.bramblebridge",
         "kind": "game.core.world.knowledge.about",
         "data": {}
       },
@@ -305,15 +278,6 @@
         "to": "world.caldris",
         "kind": "game.core.world.knowledge.in-world",
         "data": {}
-      },
-      {
-        "from": "campaign.caldris.measure-of-mercy",
-        "to": "secret.caldris.measure-of-mercy.before-the-fourteenth-stroke",
-        "kind": "game.core.campaign.references",
-        "data": {
-          "role": "knowledge",
-          "audience": "gm"
-        }
       }
     ],
     "retrieval": "DM-authorized game.core.world.secret through the configured knowledge-answer/manual context owners"

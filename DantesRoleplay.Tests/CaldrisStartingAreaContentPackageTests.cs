@@ -199,7 +199,12 @@ public sealed class CaldrisStartingAreaContentPackageTests
         }
 
         var relationships = root.GetProperty("relationshipCreates").EnumerateArray().ToArray();
-        Assert.Equal(11, relationships.Length);
+        Assert.Equal(8, relationships.Length);
+        Assert.All(relationships, relationship =>
+        {
+            Assert.DoesNotContain("campaign.caldris.", relationship.GetProperty("from").GetString()!);
+            Assert.DoesNotContain("campaign.caldris.", relationship.GetProperty("to").GetString()!);
+        });
         Assert.All(clues, clue =>
         {
             var support = Assert.Single(relationships,

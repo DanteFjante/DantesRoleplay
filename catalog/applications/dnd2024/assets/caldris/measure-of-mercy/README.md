@@ -11,7 +11,9 @@ play material. It reuses three established clues without writing their records o
 adds two distinct unrevealed GM clues, keeps its three scenes unused, and requires an explicit
 knowledge admission for every player-orientation candidate to
 `actor.caldris.ganji`. The full situation also has a canonical `game.core.world.secret` payload,
-linked to the campaign, chapter, and world so the authorized knowledge owner can retrieve it.
+linked to Bramblebridge and its world so the campaign's authorized knowledge projection can retrieve
+it. The packet identifies the campaign and chapter; it does not create cross-root relationships to
+their separately contained records.
 `image-prompts.json` records the selected image-generation requests and output identities. The
 selected atlas is `caldris-atlas-clean-v2.png`; it revises only the western Eredane landmass
 against the retained Eredane regional reference. The superseded `caldris-atlas-clean-v1.png`
@@ -41,7 +43,8 @@ with the direct-parent terrain correspondences recorded in the manifest.
    writing them. Import only the two distinct clue entities under `location.caldris.atlas` /
    `opening-clues`; their support links target the canonical
    `secret.caldris.quest.q01.the-thirteenth-bell`. Import the prepared-situation secret under
-   `location.caldris.atlas` / `knowledge`. Use these exact reviewed containment values; the
+   `location.caldris.atlas` / `knowledge`, with Bramblebridge as its subject. All eight new
+   relationships stay within the selected world root. Use these exact reviewed containment values; the
    synchronization adapter must not infer a container. Do not admit knowledge, move a character,
    create a session or encounter, resolve a quest, or award a reward.
 8. Read back blobs, entities, components, containments, relationships, map projections, and Player
