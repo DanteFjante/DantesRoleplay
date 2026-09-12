@@ -6,6 +6,7 @@ using DantesRoleplay.Interactions;
 using DantesRoleplay.SystemTasks.Persistence;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Configuration;
 using DantesRoleplay.DataAccess.Composition;
 
 namespace DantesRoleplay.SystemTasks;
@@ -74,6 +75,11 @@ internal static class SystemTaskOrchestrationComponentRegistration
                 provider.GetRequiredService<ISelectedApplicationInnerWorkerOwner>()));
         services.Replace(ServiceDescriptor.Scoped<ISystemInnerWorkerService>(provider =>
             provider.GetRequiredService<SystemInnerWorkerService>()));
+        services.TryAddSingleton(provider => SystemTaskApplicationValidationWorkerOptions.FromConfiguration(
+            provider.GetService<IConfiguration>()));
+        services.TryAddSingleton<SystemTaskApplicationValidationBackgroundWorker>();
+        services.AddHostedService(provider =>
+            provider.GetRequiredService<SystemTaskApplicationValidationBackgroundWorker>());
         services.AddHostedService<SystemTaskWorkflowBackgroundWorker>();
         services.TryAddSingleton<IPrivateOperatorAuthorizationPolicy, PrivateOperatorAuthorizationPolicy>();
         return services;

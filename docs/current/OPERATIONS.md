@@ -172,6 +172,20 @@ session-wide approval or choose its sandbox. If the configured executable is ina
 (including some packaged desktop-app binaries), install an independently accessible CLI or point
 `Codex__ExecutablePath` to one.
 
+Application candidate review submissions remain queued until the host-owned validation worker is
+enabled. It is disabled by default; enable it only in a reviewed release configuration after the
+Codex bridge is ready:
+
+```powershell
+$env:ApplicationValidationWorker__Enabled = 'true'
+$env:ApplicationValidationWorker__Model = 'gpt-5.6-sol'
+```
+
+The worker processes one admitted `review-submit` task at a time with low reasoning, no tools, and
+the retained task deadline and accounting limits. The candidate cannot choose these settings. A
+provider failure is recorded by the durable task lifecycle and is not automatically resubmitted,
+so enabling the worker spends model calls only for explicitly admitted queued reviews.
+
 The separate no-tools remote interaction-planning adapter is disabled by default and never reuses
 the repository-capable Codex bridge. Development verification must enable it explicitly and supply
 its credential through host configuration:

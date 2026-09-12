@@ -16,7 +16,7 @@ namespace DantesRoleplay.SystemTasks.Persistence;
 
 /// <summary>
 /// Internal application validation operations. Current application Read/Validate authority is
-/// independent of state workflow permissions. No transport or production runner is registered here.
+/// independent of state workflow permissions. The opt-in production runner calls only RunNextAsync.
 /// </summary>
 internal sealed class SystemTaskApplicationValidationService(
     DantesRoleplayDbContext db, SystemTaskApplicationValidationGate gate, TimeProvider time)

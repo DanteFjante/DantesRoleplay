@@ -48,6 +48,9 @@ public sealed class InteractionFoundationRegistrationTests
         Assert.IsType<SystemInnerWorkerService>(services.GetRequiredService<ISystemInnerWorkerService>());
         Assert.Contains(app.Services.GetServices<IHostedService>(),
             service => service is SystemTaskWorkflowBackgroundWorker);
+        Assert.Contains(app.Services.GetServices<IHostedService>(),
+            service => service is SystemTaskApplicationValidationBackgroundWorker);
+        Assert.False(app.Services.GetRequiredService<SystemTaskApplicationValidationWorkerOptions>().Enabled);
         var activation = services.GetRequiredService<IApplicationActivationService>();
         Assert.Same(activation, services.GetRequiredService<IActivatedApplicationEvidenceReader>());
         Assert.Same(activation, services.GetRequiredService<IApplicationDefinitionChangeReader>());
