@@ -63,8 +63,32 @@ Use the existing user tasks where possible, with GPT-5.6 Sol for implementation 
 | P3 Campaign maps, illustrations, story | Reviewed clean map family, at least three nearby detailed maps and three scene images, grounded playable starting-area material, asset/coordinate/visibility manifest | P0 exports, P2 geometry contract; art can proceed independently |
 | P4 Conversation memory | Durable ingestion/retrieval, real scoped Codex capture, recovery/deduplication, capture management, evidence-linked dreaming/context integration | P0; independent of website/map edits except shared registration |
 | P5 Integrated verification and delivery | Merge reviewed commits, one combined acceptance run, copied-state rehearsal, guarded live changes, verified DM/Player and map/memory flows | P1–P4 |
+| P6 Optional follow-up: interactive roads | Authored path geometry, authorized route projections and reusable SVG interaction over the painted roads | After P5; deferred under the user's “unless it's too much work” condition |
 
 The website task may coordinate P1 and P2 with separate backend and frontend workers. The content task owns P3. The existing inner-AI task owns P4. Assign exact task IDs and worktree paths in the checkpoint before dispatch. Tasks read this document and only their exact implementation owners, not the entire planning archive.
+
+### Interactive road/path follow-up
+
+The user would like connections to follow painted roads or paths as interactive overlays. This is
+recorded for a later enhancement because current route/adjacency owners store topology and travel
+facts, while map scopes expose point anchors only. No existing owner stores the path's shape.
+Inferring a straight connection or detecting a road from the bitmap would not satisfy the request.
+
+1. Add an application-owned presentation component on a route: exact map owner/frame, a bounded
+   ordered curve in normalized coordinates, and a small road/trail/path style. Keep travel rules
+   and topology in their existing owners.
+2. Extend bounded scope snapshots and catalog JavaScript projections to return eligible routes
+   and authored geometry. Both endpoints must be visible in the current map/audience; verify
+   geometry bounds and endpoint/anchor agreement. Hidden roads must be absent from Player bodies.
+3. Render a reusable SVG layer beneath place markers, with a subtle themed stroke following the
+   painted road, a wider transparent hit area, keyboard focus, accessible labels, hover/focus
+   highlighting, and route-detail selection. Selecting a path must not silently move the party.
+4. Author the first curves against the accepted Bramblebridge artwork, retaining the raster hash.
+   Verify alignment under pan/zoom and across the existing themes, then publish the reviewed
+   component/query/mechanic/data and page changes through the same guarded release process.
+
+This adds no route geometry or frontend changes to P1–P5. No scheduled automation was requested or
+created; P6 remains an explicit optional follow-up in this document.
 
 ## Verification and release gates
 
