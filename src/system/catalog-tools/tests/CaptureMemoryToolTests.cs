@@ -268,6 +268,50 @@ public sealed class CaptureMemoryToolTests
     }
 
     [Fact]
+    public async Task Watch_gap_after_an_empty_baseline_preserves_checkpoint_and_journal()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "capture-memory-watch-gap-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        var database = Path.Combine(root, "capture.db");
+        var checkpoint = Path.Combine(root, "capture.checkpoint.json");
+        const string externalThread = "thread.external.watch-gap";
+        const string gameplaySession = "session.gameplay.watch-gap";
+        try
+        {
+            var options = await CreateDatabaseAsync(database);
+            var common = Options(root, checkpoint, externalThread, gameplaySession);
+            var client = new GapDiscoveryClient(externalThread);
+            var connect = new CaptureMemoryTool(_ => client, () => new StringReader(string.Empty));
+            Assert.Equal(0, await connect.RunAsync(Context(database, common, connect: true), default));
+
+            common["watch"] = "";
+            common["watch-ms"] = "350";
+            common["poll-ms"] = "100";
+            var watch = new CaptureMemoryTool(_ => client,
+                () => throw new InvalidOperationException("Watch must not read hook stdin."));
+            var error = await Assert.ThrowsAsync<CodexBridgeException>(() =>
+                watch.RunAsync(Context(database, common), default));
+
+            Assert.Equal("CODEX_CAPTURE_WATCH_GAP", error.Code);
+            var preserved = await CodexCaptureCheckpointFile.LoadAsync(checkpoint);
+            Assert.True(preserved.WatchInitialized);
+            Assert.Empty(preserved.Pending);
+            Assert.Empty(preserved.CompletedTurnIds);
+            await using var verify = new DantesRoleplayDbContext(options);
+            var journal = await verify.Set<ApplicationConversationMemoryJournalRecord>().SingleAsync();
+            Assert.Equal(ConversationMemoryStatuses.Connected, journal.Status);
+            Assert.Equal(1, journal.Revision);
+            Assert.Empty(await verify.Set<ApplicationConversationMemoryMessageRecord>().ToArrayAsync());
+            Assert.Empty(await verify.Set<ApplicationConversationMemoryDeliveryRecord>().ToArrayAsync());
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Hook_parser_accepts_the_current_Codex_field_and_rejects_a_conflicting_alias()
     {
         var currentJson = JsonSerializer.Serialize(new
@@ -488,11 +532,13 @@ public sealed class CaptureMemoryToolTests
         public Task<IReadOnlyList<string>> ListCompletedTurnIdsAsync(
             string requestedThreadId,
             string? afterTurnId,
+            bool initializeBaseline,
             CancellationToken cancellationToken = default)
         {
             Assert.Equal(threadId, requestedThreadId);
             discoveries++;
             Assert.Equal(discoveries == 1 ? null : discoveries == 2 ? existingTurnId : newTurnId, afterTurnId);
+            Assert.Equal(discoveries == 1, initializeBaseline);
             return Task.FromResult<IReadOnlyList<string>>(discoveries == 1
                 ? [existingTurnId]
                 : discoveries == 2 ? [newTurnId] : []);
@@ -523,6 +569,41 @@ public sealed class CaptureMemoryToolTests
                     }
                 }
             }));
+        }
+    }
+
+    private sealed class GapDiscoveryClient(string threadId) :
+        ICodexThreadReadClient, ICodexThreadTurnDiscoveryClient
+    {
+        private int discoveries;
+
+        public Task<string> GetVersionAsync(CancellationToken cancellationToken = default) =>
+            Task.FromResult(CodexCaptureVersions.SupportedCliVersion);
+
+        public Task<JsonElement> ReadThreadAsync(string requestedThreadId, bool includeTurns,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public Task<JsonElement> ReadTurnAsync(string requestedThreadId, string requestedTurnId,
+            CancellationToken cancellationToken = default) => throw new NotSupportedException();
+
+        public Task<IReadOnlyList<string>> ListCompletedTurnIdsAsync(
+            string requestedThreadId,
+            string? afterTurnId,
+            bool initializeBaseline,
+            CancellationToken cancellationToken = default)
+        {
+            Assert.Equal(threadId, requestedThreadId);
+            discoveries++;
+            if (discoveries == 1)
+            {
+                Assert.True(initializeBaseline);
+                Assert.Null(afterTurnId);
+                return Task.FromResult<IReadOnlyList<string>>([]);
+            }
+            Assert.False(initializeBaseline);
+            Assert.Null(afterTurnId);
+            throw new CodexBridgeException("CODEX_CAPTURE_WATCH_GAP",
+                "Injected bounded history gap.");
         }
     }
 }

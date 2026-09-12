@@ -199,7 +199,7 @@ public sealed class CaptureMemoryTool : ITool
                 var spool = CodexCaptureCorrelationSpool.Restore(checkpoint);
                 var anchor = spool.WatchInitialized ? checkpoint.CompletedTurnIds.LastOrDefault() : null;
                 var completedTurnIds = await discovery.ListCompletedTurnIdsAsync(
-                    thread, anchor, cancellationToken);
+                    thread, anchor, initializeBaseline: !spool.WatchInitialized, cancellationToken);
                 await using var db = context.OpenDatabase();
                 var memory = new ApplicationConversationMemoryStore(db);
                 var journal = memory.GetState(memoryBinding.Scope, includeArchived: true);

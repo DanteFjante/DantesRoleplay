@@ -143,6 +143,7 @@ public sealed class CodexCaptureAppServerClient(CodexCaptureOptions options) :
     public async Task<IReadOnlyList<string>> ListCompletedTurnIdsAsync(
         string threadId,
         string? afterTurnId,
+        bool initializeBaseline,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(threadId) || threadId.Length > 200)
@@ -198,9 +199,9 @@ public sealed class CodexCaptureAppServerClient(CodexCaptureOptions options) :
                         discovered.Add(id);
                 }
                 cursor = NullableString(turns, "nextCursor");
-                if (afterTurnId is null || cursor is null) break;
+                if (initializeBaseline || cursor is null) break;
             }
-            if (afterTurnId is not null)
+            if (!initializeBaseline && (afterTurnId is not null || cursor is not null))
                 throw Failure("CODEX_CAPTURE_WATCH_GAP",
                     "The watch anchor was not found within the bounded Codex turn history.");
             discovered.Reverse();
