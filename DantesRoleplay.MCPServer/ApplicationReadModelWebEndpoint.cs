@@ -87,8 +87,8 @@ public static class ApplicationReadModelWebEndpoint
             var crossEntity = seat.Role == KnowledgeAudienceRole.Actor && seat.ActorId != entityId;
             if (catalogs is null || !catalogs.TryGet(application!, out var catalog))
                 return SafeError("READ_MODEL_UNAVAILABLE");
-            var queryContract = ApplicationQueryContract.Parse(catalog.Inspect(new(application!, application!.Value,
-                qualifiedQueryId)).ContentJson, application!);
+            var queryRecord = catalog.Inspect(new(application!, application!.Value, qualifiedQueryId));
+            var queryContract = ApplicationQueryContract.Parse(queryRecord.ContentJson, application!);
             if (queryContract.CampaignSelection is not null)
                 return SafeError("READ_MODEL_FORBIDDEN");
             if (crossEntity && queryContract.RoleBindings is null)
@@ -153,7 +153,7 @@ public static class ApplicationReadModelWebEndpoint
                 SharedWebsiteContext.IsPlayerWebsite(context) &&
                 media is not null && mediaLinks is not null && knowledgeBindings is not null &&
                 ReadModelMediaWebEndpoint.ProjectionContainsAuthorizedOwnerReference(
-                    data.RootElement, entityId))
+                    data.RootElement, entityId, queryContract.MediaOwnerReference, roleBindings))
             {
                 try
                 {
@@ -191,7 +191,13 @@ public static class ApplicationReadModelWebEndpoint
                                             viewRequest, seat.CampaignId, seat.PrincipalId, entityId,
                                             value.MediaId, ReadModelMediaLinkStore.Fingerprint(
                                                 value, result.SourceRevisionFingerprint,
-                                                binding.BindingRevision)))
+                                                binding.BindingRevision),
+                                            queryContract.MediaOwnerReference is null ? null : new(
+                                                queryRecord.Summary.ContentFingerprint,
+                                                queryContract.MediaOwnerReference.Role,
+                                                queryContract.MediaOwnerReference.ResultPointer,
+                                                queryContract.MediaOwnerReference.AvailabilityPointer,
+                                                queryContract.MediaOwnerReference.AvailabilityValue)))
                                     }).ToArray()
                             };
                         }

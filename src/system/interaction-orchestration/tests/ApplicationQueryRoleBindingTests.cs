@@ -56,6 +56,30 @@ public sealed class ApplicationQueryRoleBindingTests
     }
 
     [Fact]
+    public void Media_owner_reference_round_trips_only_for_a_route_bound_role()
+    {
+        var root = JsonNode.Parse(QueryJson())!.AsObject();
+        root["mediaOwnerReference"] = new JsonObject
+        {
+            ["role"] = "anchor",
+            ["resultPointer"] = "/scope/id",
+            ["availabilityPointer"] = "/state",
+            ["availabilityValue"] = "ready"
+        };
+
+        var parsed = ApplicationQueryContract.Parse(root.ToJsonString(), App);
+        var roundTrip = ApplicationQueryContract.Parse(
+            ApplicationCatalogRecordContent.QueryJson(parsed), App);
+
+        Assert.Equal(new("anchor", "/scope/id", "/state", "ready"),
+            roundTrip.MediaOwnerReference);
+
+        root["mediaOwnerReference"]!["role"] = "selected";
+        Assert.Throws<ArgumentException>(() =>
+            ApplicationQueryContract.Parse(root.ToJsonString(), App));
+    }
+
+    [Fact]
     public void Neutral_selection_round_trips_without_assigning_meaning_to_role_names()
     {
         var root = JsonNode.Parse(QueryJson())!.AsObject();

@@ -111,7 +111,8 @@ public static class ApplicationCatalogRecordContent
         // Preserve legacy fingerprints byte-for-byte while retaining opt-in query metadata in
         // the canonical catalog used by discovery and the web authorization boundary.
         if (query.InputSchemaJson is null && query.CampaignSelection is null
-            && query.RoleBindings is null && query.Selection is null) return content;
+            && query.RoleBindings is null && query.Selection is null
+            && query.MediaOwnerReference is null) return content;
         var document = JsonNode.Parse(content)!.AsObject();
         if (query.InputSchemaJson is not null)
             document["inputSchema"] = JsonNode.Parse(query.InputSchemaJson);
@@ -141,6 +142,14 @@ public static class ApplicationCatalogRecordContent
             }
             document["roleBindings"] = bindings;
         }
+        if (query.MediaOwnerReference is not null)
+            document["mediaOwnerReference"] = JsonSerializer.SerializeToNode(new
+            {
+                role = query.MediaOwnerReference.Role,
+                resultPointer = query.MediaOwnerReference.ResultPointer,
+                availabilityPointer = query.MediaOwnerReference.AvailabilityPointer,
+                availabilityValue = query.MediaOwnerReference.AvailabilityValue
+            });
         return document.ToJsonString();
     }
 

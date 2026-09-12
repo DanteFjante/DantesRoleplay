@@ -208,6 +208,14 @@ are Application-scoped; audience queries separately require exact StateSpace Rea
 must share a principal/application generation and operation/deadline ledger while retaining their
 actual distinct scopes and grants. The website does not construct broader query authority.
 
+Anonymous player media is opt-in per registered query through `mediaOwnerReference`. The query
+names one route-bound role, the exact JSON pointer that must return that role's entity ID, and an
+exact availability pointer/value. The host issues an opaque image link only when the validated
+projection satisfies both declarations, and the link pins the query-contract fingerprint for
+redemption. Echoed input, unrelated named entities, and unavailable sibling results therefore
+cannot authorize media. The generic host assigns no meaning to application role names, result
+field names, or availability values.
+
 `WebPageStandingGrantResourceTargetOwner` implements the fixed `web-page` resource-owner seam.
 It reads the immutable content-page mapping, verifies the actual owning application generation
 and the complete enabled/reviewed namespace registration, and verifies exact retained content and

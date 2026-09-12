@@ -1,4 +1,5 @@
 using System.Text.Json;
+using DantesRoleplay.CatalogNavigation;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Knowledge;
 using DantesRoleplay.Media;
@@ -7,16 +8,11 @@ namespace DantesRoleplay.MCPServer;
 
 public static class ReadModelMediaWebEndpoint
 {
-    private static readonly HashSet<string> UnavailableStates = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "archived", "denied", "forbidden", "hidden", "redacted", "unavailable", "withheld"
-    };
-
     public static async Task<IResult> ReadAsync(string token, HttpContext context,
         ILocalKnowledgeSeatProvider seats, IReadModelMediaLinkStore links,
         IApplicationReadModelService views, IAuthorizedKnowledgeAudiencePolicy audiences,
         IKnowledgeApplicationBindingResolver bindings, IEntityMediaService media,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, IPublicApplicationCatalogProvider? catalogs = null)
     {
         context.Response.Headers.CacheControl = "private, no-store";
         context.Response.Headers.XContentTypeOptions = "nosniff";
@@ -43,7 +39,9 @@ public static class ReadModelMediaWebEndpoint
             using var data = JsonDocument.Parse(view.DataJson);
             var url = ReadModelMediaLinkStore.Url(token);
             var linkedByExactUrl = ProjectionContainsContentUrl(data.RootElement, url);
-            var linkedByOwner = ProjectionContainsAuthorizedOwnerReference(data.RootElement, ticket.OwnerId);
+            var linkedByOwner = ProjectionContainsAuthorizedOwnerReference(
+                data.RootElement, ticket.OwnerId, ticket.OwnerAuthorization, request.RoleBindings) &&
+                CurrentContractMatches(catalogs, request, ticket.OwnerAuthorization);
             if (!linkedByExactUrl && !linkedByOwner) return Unavailable();
 
             var audience = perspective == "dm"
@@ -79,41 +77,64 @@ public static class ReadModelMediaWebEndpoint
         finally { if (opened is not null) await opened.DisposeAsync(); }
     }
 
-    internal static bool ProjectionContainsAuthorizedOwnerReference(JsonElement value, string ownerId) =>
-        Token(ownerId) && ContainsAuthorizedOwnerReference(value, ownerId, ancestorUnavailable: false, depth: 0);
+    internal static bool ProjectionContainsAuthorizedOwnerReference(JsonElement value, string ownerId,
+        ApplicationQueryMediaOwnerReference? reference, IReadOnlyDictionary<string, string> roleBindings) =>
+        reference is not null && Token(ownerId) &&
+        roleBindings.TryGetValue(reference.Role, out var boundOwnerId) && boundOwnerId == ownerId &&
+        ResolvePointer(value, reference.AvailabilityPointer) is { ValueKind: JsonValueKind.String } available &&
+        available.GetString() == reference.AvailabilityValue &&
+        ResolvePointer(value, reference.ResultPointer) is { ValueKind: JsonValueKind.String } projectedOwner &&
+        projectedOwner.GetString() == ownerId;
 
-    private static bool ContainsAuthorizedOwnerReference(JsonElement value, string ownerId,
-        bool ancestorUnavailable, int depth)
+    private static bool ProjectionContainsAuthorizedOwnerReference(JsonElement value, string ownerId,
+        ReadModelMediaOwnerAuthorization? authorization, IReadOnlyDictionary<string, string> roleBindings) =>
+        authorization is not null && Token(ownerId) &&
+        roleBindings.TryGetValue(authorization.Role, out var boundOwnerId) && boundOwnerId == ownerId &&
+        ResolvePointer(value, authorization.AvailabilityPointer) is { ValueKind: JsonValueKind.String } available &&
+        available.GetString() == authorization.AvailabilityValue &&
+        ResolvePointer(value, authorization.ResultPointer) is { ValueKind: JsonValueKind.String } projectedOwner &&
+        projectedOwner.GetString() == ownerId;
+
+    private static bool CurrentContractMatches(IPublicApplicationCatalogProvider? catalogs,
+        ApplicationReadModelRequest request, ReadModelMediaOwnerAuthorization? authorization)
     {
-        if (depth > 64) return false;
-        if (value.ValueKind == JsonValueKind.Array)
-            return value.EnumerateArray().Any(item =>
-                ContainsAuthorizedOwnerReference(item, ownerId, ancestorUnavailable, depth + 1));
-        if (value.ValueKind != JsonValueKind.Object) return false;
-
-        var unavailable = ancestorUnavailable || HasUnavailableState(value);
-        if (!unavailable && HasOwnerId(value, ownerId) &&
-            value.TryGetProperty("name", out var name) &&
-            name.ValueKind == JsonValueKind.String && Token(name.GetString()))
-            return true;
-        return !unavailable && value.EnumerateObject().Any(property =>
-            ContainsAuthorizedOwnerReference(property.Value, ownerId, unavailable, depth + 1));
+        if (authorization is null || catalogs is null ||
+            !catalogs.TryGet(request.ApplicationId, out var catalog)) return false;
+        try
+        {
+            var record = catalog.Inspect(new(request.ApplicationId, request.ApplicationId.Value,
+                request.QualifiedQueryId));
+            var contract = ApplicationQueryContract.Parse(record.ContentJson, request.ApplicationId);
+            return record.Summary.ContentFingerprint == authorization.QueryContractFingerprint &&
+                contract.MediaOwnerReference is { } reference &&
+                reference.Role == authorization.Role &&
+                reference.ResultPointer == authorization.ResultPointer &&
+                reference.AvailabilityPointer == authorization.AvailabilityPointer &&
+                reference.AvailabilityValue == authorization.AvailabilityValue;
+        }
+        catch (ArgumentException) { return false; }
+        catch (KeyNotFoundException) { return false; }
     }
 
-    private static bool HasOwnerId(JsonElement value, string ownerId) =>
-        value.TryGetProperty("id", out var id) &&
-            id.ValueKind == JsonValueKind.String && id.GetString() == ownerId ||
-        value.TryGetProperty("entityId", out var entityId) &&
-            entityId.ValueKind == JsonValueKind.String && entityId.GetString() == ownerId;
-
-    private static bool HasUnavailableState(JsonElement value)
+    private static JsonElement? ResolvePointer(JsonElement root, string pointer)
     {
-        foreach (var propertyName in new[] { "state", "status", "availability" })
-            if (value.TryGetProperty(propertyName, out var state) &&
-                state.ValueKind == JsonValueKind.String &&
-                UnavailableStates.Contains(state.GetString() ?? ""))
-                return true;
-        return false;
+        var current = root;
+        foreach (var encoded in pointer.Split('/').Skip(1))
+        {
+            var segment = encoded.Replace("~1", "/", StringComparison.Ordinal)
+                .Replace("~0", "~", StringComparison.Ordinal);
+            if (current.ValueKind == JsonValueKind.Object)
+            {
+                if (!current.TryGetProperty(segment, out current)) return null;
+                continue;
+            }
+            if (current.ValueKind != JsonValueKind.Array || !int.TryParse(segment,
+                    System.Globalization.NumberStyles.None,
+                    System.Globalization.CultureInfo.InvariantCulture, out var index) ||
+                index < 0 || index >= current.GetArrayLength()) return null;
+            current = current[index];
+        }
+        return current;
     }
 
     private static bool ProjectionContainsContentUrl(JsonElement value, string url) =>

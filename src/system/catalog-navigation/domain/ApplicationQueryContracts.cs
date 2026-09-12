@@ -32,6 +32,16 @@ public sealed record ApplicationQuerySelection(
 public sealed record ApplicationQueryRoleBinding(string Source, string? Pointer = null, string? Key = null);
 
 /// <summary>
+/// A catalog-declared proof that one route-bound role remains positively present in a projection.
+/// The host treats the role name, pointers and availability value as opaque application data.
+/// </summary>
+public sealed record ApplicationQueryMediaOwnerReference(
+    string Role,
+    string ResultPointer,
+    string AvailabilityPointer,
+    string AvailabilityValue);
+
+/// <summary>
 /// Strict application-authored metadata for one host-executed read-only query. The executable
 /// implementation remains an exact registered projection; this record only makes that projection
 /// discoverable and declares whether its complete output is safe to return to a model.
@@ -68,6 +78,7 @@ public sealed record ApplicationQueryContract(
     public string ObjectProfileId { get; init; } = RegisteredApplicationObjectContract.ContractProfileId;
     public IReadOnlyDictionary<string, ApplicationQueryRoleBinding>? RoleBindings { get; init; }
     public ApplicationQuerySelection? Selection { get; init; }
+    public ApplicationQueryMediaOwnerReference? MediaOwnerReference { get; init; }
     public bool IsObjectProjection => Executor == ObjectProjectionExecutor;
     public bool IsFieldBasedObject => IsObjectProjection
         && ObjectProfileId == RegisteredApplicationObjectContract.FieldBasedContractProfileId;
@@ -103,11 +114,14 @@ public sealed record ApplicationQueryContract(
         var hasSelection = root.TryGetProperty("selection", out var selectionElement);
         var hasCollection = root.TryGetProperty("collection", out var collection);
         var hasRoleBindings = root.TryGetProperty("roleBindings", out var roleBindingsElement);
+        var hasMediaOwnerReference = root.TryGetProperty("mediaOwnerReference",
+            out var mediaOwnerReferenceElement);
         Exact(root, [.. fields, .. (hasInput ? new[] { "inputSchema" } : []),
             .. (hasCampaignSelection ? new[] { "campaignSelection" } : []),
             .. (hasSelection ? new[] { "selection" } : []),
             .. (hasCollection ? new[] { "collection" } : []),
-            .. (hasRoleBindings ? new[] { "roleBindings" } : [])]);
+            .. (hasRoleBindings ? new[] { "roleBindings" } : []),
+            .. (hasMediaOwnerReference ? new[] { "mediaOwnerReference" } : [])]);
         if (executor != ObjectProjectionExecutor && hasCollection)
             throw Invalid("Only an object-projection query may declare a collection.");
         if (hasRoleBindings && executor is not (ObjectProjectionExecutor or MechanicProjectionExecutor))
@@ -120,6 +134,8 @@ public sealed record ApplicationQueryContract(
             throw Invalid("A declared selection requires explicit role bindings.");
         if (executor == ObjectProjectionExecutor && hasInput && !hasRoleBindings)
             throw Invalid("An object-projection input schema requires explicit role bindings.");
+        if (hasMediaOwnerReference && !hasRoleBindings)
+            throw Invalid("A media owner reference requires explicit role bindings.");
         if (inputSchema.ValueKind != JsonValueKind.Undefined &&
             (inputSchema.ValueKind != JsonValueKind.Object
              || Encoding.UTF8.GetByteCount(inputSchema.GetRawText()) > 65_536
@@ -208,6 +224,23 @@ public sealed record ApplicationQueryContract(
             declaredSelection = new(selectionQuery, targetRole, resultPointer,
                 new ReadOnlyDictionary<string, string>(parsedSelectionBindings));
         }
+        ApplicationQueryMediaOwnerReference? mediaOwnerReference = null;
+        if (hasMediaOwnerReference)
+        {
+            if (mediaOwnerReferenceElement.ValueKind != JsonValueKind.Object)
+                throw Invalid("A media owner reference must be an object.");
+            Exact(mediaOwnerReferenceElement, "role", "resultPointer", "availabilityPointer",
+                "availabilityValue");
+            var role = String(mediaOwnerReferenceElement, "role", 200);
+            var resultPointer = String(mediaOwnerReferenceElement, "resultPointer", 1_000);
+            var availabilityPointer = String(mediaOwnerReferenceElement, "availabilityPointer", 1_000);
+            var availabilityValue = String(mediaOwnerReferenceElement, "availabilityValue", 100);
+            if (!Pointer(resultPointer) || !Pointer(availabilityPointer) || roleBindings is null
+                || !roleBindings.TryGetValue(role, out var mediaRole)
+                || mediaRole.Source != "route-entity")
+                throw Invalid("A media owner reference must name a route-bound role and valid result pointers.");
+            mediaOwnerReference = new(role, resultPointer, availabilityPointer, availabilityValue);
+        }
         if (!root.TryGetProperty(referenceName, out var projection) || projection.ValueKind != JsonValueKind.Object)
             throw Invalid("A query requires an exact registered reference.");
         Exact(projection, executor == ObjectProjectionExecutor
@@ -253,7 +286,8 @@ public sealed record ApplicationQueryContract(
                 ? RegisteredApplicationObjectContract.FieldBasedContractProfileId
                 : RegisteredApplicationObjectContract.ContractProfileId,
             RoleBindings = roleBindings,
-            Selection = declaredSelection
+            Selection = declaredSelection,
+            MediaOwnerReference = mediaOwnerReference
         };
     }
 

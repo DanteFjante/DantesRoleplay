@@ -140,6 +140,7 @@ internal sealed class ApplicationCandidateQueryClosureReader(
         if (predecessor.Id != successor.Id || predecessor.Executor != successor.Executor
             || predecessor.Exposure != successor.Exposure || !SameMap(predecessor.Roles, successor.Roles)
             || !SameBindings(predecessor.RoleBindings, successor.RoleBindings)
+            || predecessor.MediaOwnerReference != successor.MediaOwnerReference
             || predecessor.OutputSchemaHash != successor.OutputSchemaHash)
             return false;
         var priorOutput = schemas.Compile(predecessor.OutputSchemaJson);

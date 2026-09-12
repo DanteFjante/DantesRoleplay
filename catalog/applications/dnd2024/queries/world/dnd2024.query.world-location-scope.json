@@ -11,6 +11,12 @@
     "scope": "The exact World root or previously authorized location scope."
   },
   "roleBindings": { "scope": { "source": "route-entity" } },
+  "mediaOwnerReference": {
+    "role": "scope",
+    "resultPointer": "/scope/id",
+    "availabilityPointer": "/state",
+    "availabilityValue": "ready"
+  },
   "executor": "mechanic-projection",
   "projection": {
     "qualifiedId": "dnd2024.mechanic.world.location-scope.project",

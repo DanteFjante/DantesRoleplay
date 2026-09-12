@@ -25,7 +25,8 @@ public sealed class PublicReadModelMediaTests
     [Theory]
     [InlineData(ProjectionMode.ReadyOwner, true)]
     [InlineData(ProjectionMode.UnavailableOwner, false)]
-    [InlineData(ProjectionMode.EchoedOwner, false)]
+    [InlineData(ProjectionMode.EchoedOwnerWithName, false)]
+    [InlineData(ProjectionMode.SiblingUnavailableOwner, false)]
     public async Task Public_player_group_issues_media_only_for_an_authorized_owner_reference(
         ProjectionMode mode, bool expectedMedia)
     {
@@ -66,6 +67,14 @@ public sealed class PublicReadModelMediaTests
             await Open(url, seat, views, media, links, binding));
 
         views.Mode = ProjectionMode.UnavailableOwner;
+        Assert.Equal(StatusCodes.Status404NotFound,
+            await Open(url, seat, views, media, links, binding));
+
+        views.Mode = ProjectionMode.EchoedOwnerWithName;
+        Assert.Equal(StatusCodes.Status404NotFound,
+            await Open(url, seat, views, media, links, binding));
+
+        views.Mode = ProjectionMode.SiblingUnavailableOwner;
         Assert.Equal(StatusCodes.Status404NotFound,
             await Open(url, seat, views, media, links, binding));
 
@@ -123,7 +132,7 @@ public sealed class PublicReadModelMediaTests
         var token = url.Split('/')[3];
         var result = await ReadModelMediaWebEndpoint.ReadAsync(
             token, context, new Seats(seat), links, views, new Audience(seat),
-            binding, media, CancellationToken.None);
+            binding, media, CancellationToken.None, new QueryCatalog());
         await result.ExecuteAsync(context);
         return context.Response.StatusCode;
     }
@@ -154,7 +163,8 @@ public sealed class PublicReadModelMediaTests
     {
         ReadyOwner,
         UnavailableOwner,
-        EchoedOwner
+        EchoedOwnerWithName,
+        SiblingUnavailableOwner
     }
 
     private sealed class Views : IApplicationReadModelService
@@ -180,7 +190,19 @@ public sealed class PublicReadModelMediaTests
                     state = "unavailable",
                     target = new { id = Owner, name = "The Seventh Realm" }
                 }),
-                _ => JsonSerializer.Serialize(new { requested = new { id = Owner } })
+                ProjectionMode.EchoedOwnerWithName => JsonSerializer.Serialize(new
+                {
+                    state = "ready",
+                    scope = (object?)null,
+                    requested = new { id = Owner, name = "The Seventh Realm" }
+                }),
+                _ => JsonSerializer.Serialize(new
+                {
+                    state = "ready",
+                    scope = new { id = "some-other-owner", name = "Another realm" },
+                    requested = new { id = Owner, name = "The Seventh Realm" },
+                    result = new { state = "unavailable" }
+                })
             };
             return Task.FromResult(new ApplicationReadModelResult(
                 Application.Value, "dnd2024-main", request.QualifiedQueryId,
@@ -293,6 +315,13 @@ public sealed class PublicReadModelMediaTests
                 roleBindings = new Dictionary<string, object>
                 {
                     ["scope"] = new { source = "route-entity" }
+                },
+                mediaOwnerReference = new
+                {
+                    role = "scope",
+                    resultPointer = "/scope/id",
+                    availabilityPointer = "/state",
+                    availabilityValue = "ready"
                 },
                 executor = "mechanic-projection",
                 projection = new
