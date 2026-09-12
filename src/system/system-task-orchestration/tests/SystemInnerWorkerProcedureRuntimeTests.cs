@@ -75,7 +75,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         {
             Id = procedureFile.Id, Category = procedureFile.Category, Name = procedureFile.Name,
             Description = procedureFile.Description, Governs = procedureFile.Governs,
-            Matches = procedureFile.Matches, Instructions = procedureFile.Instructions,
+            Matches = procedureFile.Matches, Instructions = "obsolete manual instructions",
             Constraints = procedureFile.Constraints, Status = procedureFile.Status,
             CreatedBy = "fixture", ChangeNote = "Focused worker fixture."
         });
@@ -127,7 +127,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
                     SystemCapabilityIds.InnerWorkerCancel, selectedApplicationOwner)
             ]);
         var gateway = new ApplicationCandidateCapabilityGateway(selectedApplicationCatalog);
-        var provider = new SuccessfulProcedureProvider();
+        var provider = new SuccessfulProcedureProvider(procedureFile.Instructions, procedureFile.Constraints);
         var systemAi = new SystemAiAgentService([], new AiService([provider]));
         var invoker = new SystemInnerWorkerProcedureInvoker(systemAi);
         var lifecycleServices = new ServiceCollection()
@@ -419,7 +419,7 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
         await db.SaveChangesAsync();
     }
 
-    private sealed class SuccessfulProcedureProvider : IAiProvider
+    private sealed class SuccessfulProcedureProvider(string activeInstructions, string activeConstraints) : IAiProvider
     {
         internal int Calls { get; private set; }
         public AiProviderInfo Info { get; } = new("codex", "Controlled Codex fixture");
@@ -433,6 +433,11 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             Assert.Empty(request.Tools);
             Assert.Null(request.ToolExecutor);
             Assert.NotEmpty(request.ResponseSchemaJson);
+            var system = Assert.Single(request.Messages, value => value.Role == AiMessageRole.System).Content;
+            Assert.Contains(activeInstructions, system, StringComparison.Ordinal);
+            if (!string.IsNullOrWhiteSpace(activeConstraints))
+                Assert.Contains(activeConstraints, system, StringComparison.Ordinal);
+            Assert.DoesNotContain("obsolete manual instructions", system, StringComparison.Ordinal);
             return Task.FromResult(new AiProviderResponse(true, null, "done",
                 "{\"answer\":\"42\",\"summary\":\"Inspection completed.\"}", [],
                 Usage: new(7, 2, 9, true)));

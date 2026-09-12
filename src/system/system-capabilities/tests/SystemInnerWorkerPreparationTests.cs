@@ -4,6 +4,7 @@ using System.Text.Json;
 using DantesRoleplay.AI;
 using DantesRoleplay.Applications;
 using DantesRoleplay.Authorization;
+using DantesRoleplay.Content;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Procedures;
 using DantesRoleplay.SystemCapabilities;
@@ -174,6 +175,46 @@ public sealed class SystemInnerWorkerPreparationTests
     }
 
     [Fact]
+    public async Task Trusted_active_catalog_procedure_supplies_instructions_without_reading_manual_history()
+    {
+        var host = Host(InteractionExecutionProfile.Workflow, DateTime.UtcNow.AddMinutes(1));
+        var store = new ProcedureStoreStub(Procedure() with
+        {
+            Instructions = "obsolete manual instructions",
+            SourceHash = new string('B', 64)
+        });
+        var materializer = new ContextMaterializerStub(Pack(("scope:one", "one")));
+        var active = TrustedActiveProcedure(host, "active runtime instructions", "active runtime constraints");
+        var input = Input(host) with { TrustedActiveProcedure = active };
+
+        var prepared = await new SystemInnerWorkerPreparation(store, materializer).PrepareAsync(input);
+
+        Assert.Equal("active runtime instructions\n\nactive runtime constraints", prepared.Profile.Instructions);
+        Assert.Equal(0, store.Calls);
+        Assert.Equal(1, materializer.Calls);
+    }
+
+    [Fact]
+    public async Task Mismatched_trusted_active_catalog_evidence_is_rejected_before_context_materialization()
+    {
+        var host = Host(InteractionExecutionProfile.Workflow, DateTime.UtcNow.AddMinutes(1));
+        var store = new ProcedureStoreStub(Procedure());
+        var materializer = new ContextMaterializerStub(Pack(("scope:one", "one")));
+        var active = TrustedActiveProcedure(host, "active runtime instructions", "") with
+        {
+            ResolutionFingerprint = new string('B', 64)
+        };
+
+        var error = await Assert.ThrowsAsync<InteractionContractException>(() =>
+            new SystemInnerWorkerPreparation(store, materializer).PrepareAsync(
+                Input(host) with { TrustedActiveProcedure = active }));
+
+        Assert.Equal("WORKER_PROCEDURE_STALE", error.Code);
+        Assert.Equal(0, store.Calls);
+        Assert.Equal(0, materializer.Calls);
+    }
+
+    [Fact]
     public async Task Cancelled_preparation_does_not_touch_stores()
     {
         var host = Host(InteractionExecutionProfile.Workflow, DateTime.UtcNow.AddMinutes(1));
@@ -262,6 +303,16 @@ public sealed class SystemInnerWorkerPreparationTests
     private static ProcedureDetail Procedure() => new("procedure.fixture", "fixture", "Fixture", "", "", "",
         "procedure instructions", "procedure constraints", ProcedureStatus.Active, 1, 1, "fixture", "", DateTime.UtcNow)
     { SourceHash = Hash };
+
+    private static SystemInnerWorkerTrustedActiveProcedure TrustedActiveProcedure(
+        InteractionInvocationHost host, string instructions, string constraints)
+    {
+        var status = ProcedureStatus.Active;
+        var fingerprint = ContentHash.ForProcedure("fixture", "Fixture", "", "", instructions, constraints, status);
+        return new(new("procedure.fixture", 1, Hash), Hash,
+            Envelope(host).Host.ResolutionFingerprint, TrustedSource: true, status,
+            "fixture", "Fixture", "", "", instructions, constraints, fingerprint);
+    }
 
     private static InteractionTaskContextPack Pack(params (string Reference, string Value)[] items)
     {

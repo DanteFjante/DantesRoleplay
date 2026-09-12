@@ -31,8 +31,7 @@ internal sealed record SystemInnerWorkerApplicationToolSelection(
     CatalogRecordDefinition Record);
 
 internal sealed record SystemInnerWorkerProcedureContract(
-    string Fingerprint,
-    string Governs,
+    SystemInnerWorkerTrustedActiveProcedure ActiveProcedure,
     ActiveCatalogFeatureSnapshot Snapshot);
 
 /// <summary>
@@ -190,7 +189,12 @@ internal sealed class SystemInnerWorkerProcedureResolver(
         var prepared = await preparation.PrepareAsync(new(worker, selection.Profile, selection.Configuration,
             envelope, authorization, context.SourceReferences,
             selection.ToolBindings.Select(value => value.Definition.Name).ToArray(), worker.ResultSchemaJson,
-            procedureContract.Fingerprint), cancellationToken);
+            procedureContract.ActiveProcedure.ContractFingerprint,
+            procedureContract.ActiveProcedure), cancellationToken);
+        var currentProcedureContract = ResolveProcedureContract(worker, envelope);
+        if (currentProcedureContract.ActiveProcedure != procedureContract.ActiveProcedure)
+            throw Failure("INNER_WORKER_PROCEDURE_STALE",
+                "The selected procedure changed while its exact worker request was prepared.");
         if (prepared.ContextFingerprint != context.Fingerprint)
             throw Failure("INNER_WORKER_CONTEXT_CHANGED", "The focused worker context changed while its exact selection was prepared.");
         var profileVersion = new SystemTaskSelectedDefinition(selection.Profile.Id, 1, HashProfile(prepared.Profile));
@@ -228,8 +232,19 @@ internal sealed class SystemInnerWorkerProcedureResolver(
                 _ => throw new JsonException()
             };
             var governs = Required("governs");
-            return new(ContentHash.ForProcedure(Required("category"), Required("name"), Required("description"),
-                governs, Required("instructions"), Required("constraints"), status), governs, snapshot);
+            var category = Required("category");
+            var name = Required("name");
+            var description = Required("description");
+            var instructions = Required("instructions");
+            var constraints = Required("constraints");
+            var contractFingerprint = ContentHash.ForProcedure(category, name, description,
+                governs, instructions, constraints, status);
+            var activeProcedure = new SystemInnerWorkerTrustedActiveProcedure(selected,
+                snapshot.EffectiveSetFingerprint,
+                snapshot.Resolution?.Fingerprint ?? snapshot.Manifest.Fingerprint,
+                TrustedSource: true, status, category, name, description, governs, instructions,
+                constraints, contractFingerprint);
+            return new(activeProcedure, snapshot);
         }
         catch (Exception error) when (error is JsonException or InvalidOperationException)
         {
@@ -240,7 +255,7 @@ internal sealed class SystemInnerWorkerProcedureResolver(
     private static IReadOnlyList<SystemInnerWorkerApplicationToolSelection> ResolveApplicationTools(
         SystemInnerWorkerRequest worker, SystemInnerWorkerProcedureContract procedure)
     {
-        var references = SystemInnerWorkerGovernedReferences.Parse(procedure.Governs);
+        var references = SystemInnerWorkerGovernedReferences.Parse(procedure.ActiveProcedure.Governs);
         var result = new List<SystemInnerWorkerApplicationToolSelection>();
         foreach (var reference in references)
         {

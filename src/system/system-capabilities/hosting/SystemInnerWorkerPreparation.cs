@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using DantesRoleplay.AI;
+using DantesRoleplay.Content;
 using DantesRoleplay.Interactions;
 using DantesRoleplay.Procedures;
 using DantesRoleplay.SystemTasks;
@@ -23,7 +24,27 @@ internal sealed record SystemInnerWorkerPreparationInput(
     IReadOnlyList<string> RequiredContextReferences,
     IReadOnlyList<string> PermittedToolNames,
     string SelectedResultSchemaJson,
-    string? SelectedProcedureContractFingerprint = null);
+    string? SelectedProcedureContractFingerprint = null,
+    SystemInnerWorkerTrustedActiveProcedure? TrustedActiveProcedure = null);
+
+/// <summary>
+/// Host-produced procedure content from the exact trusted active catalog snapshot. This evidence is
+/// never materialized from the worker assignment and is rechecked against the selected definition
+/// and interaction snapshot before it can become provider instructions.
+/// </summary>
+internal sealed record SystemInnerWorkerTrustedActiveProcedure(
+    SystemTaskSelectedDefinition SelectedDefinition,
+    string EffectiveSetFingerprint,
+    string ResolutionFingerprint,
+    bool TrustedSource,
+    ProcedureStatus Status,
+    string Category,
+    string Name,
+    string Description,
+    string Governs,
+    string Instructions,
+    string Constraints,
+    string ContractFingerprint);
 
 /// <summary>Immutable evidence and provider inputs produced without starting a worker.</summary>
 internal sealed record SystemInnerWorkerPreparedRequest(
@@ -66,9 +87,15 @@ internal sealed class SystemInnerWorkerPreparation(
         var selectedProcedure = workflow.ProcedureVersion;
         EnsureViableHost(input.Worker.InvocationHost, input.ContextEnvelope, input.ContextAuthorization);
 
-        var procedure = await procedures.GetAsync(selectedProcedure.ExactDefinitionId,
-            selectedProcedure.Version, cancellationToken);
-        EnsureCurrentProcedure(procedure, selectedProcedure, input.SelectedProcedureContractFingerprint);
+        var trustedProcedure = input.TrustedActiveProcedure;
+        ProcedureDetail? procedure = null;
+        if (trustedProcedure is null)
+        {
+            procedure = await procedures.GetAsync(selectedProcedure.ExactDefinitionId,
+                selectedProcedure.Version, cancellationToken);
+            EnsureCurrentProcedure(procedure, selectedProcedure, input.SelectedProcedureContractFingerprint);
+        }
+        else EnsureTrustedActiveProcedure(trustedProcedure, selectedProcedure, input.ContextEnvelope);
 
         var resultSchema = CanonicalSchema(input.SelectedResultSchemaJson, "WORKER_RESULT_SCHEMA_INVALID");
         if (!StringComparer.Ordinal.Equals(resultSchema, input.Worker.ResultSchemaJson))
@@ -76,11 +103,14 @@ internal sealed class SystemInnerWorkerPreparation(
 
         var pack = await contextMaterializer.MaterializeAsync(input.ContextEnvelope, input.ContextAuthorization, cancellationToken);
         EnsureViableHost(input.Worker.InvocationHost, input.ContextEnvelope, input.ContextAuthorization);
-        var currentProcedure = await procedures.GetAsync(selectedProcedure.ExactDefinitionId,
-            selectedProcedure.Version, cancellationToken);
+        var currentProcedure = trustedProcedure is null
+            ? await procedures.GetAsync(selectedProcedure.ExactDefinitionId, selectedProcedure.Version, cancellationToken)
+            : null;
         cancellationToken.ThrowIfCancellationRequested();
         EnsureViableHost(input.Worker.InvocationHost, input.ContextEnvelope, input.ContextAuthorization);
-        EnsureCurrentProcedure(currentProcedure, selectedProcedure, input.SelectedProcedureContractFingerprint);
+        if (trustedProcedure is null)
+            EnsureCurrentProcedure(currentProcedure, selectedProcedure, input.SelectedProcedureContractFingerprint);
+        else EnsureTrustedActiveProcedure(trustedProcedure, selectedProcedure, input.ContextEnvelope);
         var selected = SelectContext(pack, input.RequiredContextReferences);
         var prompt = BuildPrompt(input.Worker.InputJson, selected);
         var promptBytes = Encoding.UTF8.GetByteCount(prompt);
@@ -89,7 +119,9 @@ internal sealed class SystemInnerWorkerPreparation(
 
         var tools = NormalizeNames(input.PermittedToolNames, "INVALID_WORKER_TOOL_ALLOWLIST");
         var request = BuildRequest(input.HostConfiguration, prompt, resultSchema, tools);
-        var instructions = string.Join("\n\n", new[] { currentProcedure!.Instructions, currentProcedure.Constraints }
+        var instructions = string.Join("\n\n", (trustedProcedure is null
+            ? new[] { currentProcedure!.Instructions, currentProcedure.Constraints }
+            : new[] { trustedProcedure.Instructions, trustedProcedure.Constraints })
             .Where(value => !string.IsNullOrWhiteSpace(value)));
         var profile = input.HostProfile with { Instructions = instructions };
         ValidateProfile(profile);
@@ -132,6 +164,20 @@ internal sealed class SystemInnerWorkerPreparation(
         if (procedure.Id != selected.ExactDefinitionId || procedure.Version != selected.Version
             || procedure.LatestVersion != selected.Version || procedure.SourceHash != contractFingerprint)
             throw Failure("WORKER_PROCEDURE_STALE", "The selected worker procedure is no longer the current exact revision.");
+    }
+
+    private static void EnsureTrustedActiveProcedure(SystemInnerWorkerTrustedActiveProcedure procedure,
+        SystemTaskSelectedDefinition selected, AuthorizedInteractionEnvelope envelope)
+    {
+        var recomputed = ContentHash.ForProcedure(procedure.Category, procedure.Name, procedure.Description,
+            procedure.Governs, procedure.Instructions, procedure.Constraints, procedure.Status);
+        if (!procedure.TrustedSource || procedure.Status != ProcedureStatus.Active
+            || procedure.SelectedDefinition != selected
+            || procedure.EffectiveSetFingerprint != envelope.Host.EffectiveSetFingerprint
+            || procedure.ResolutionFingerprint != envelope.Host.ResolutionFingerprint
+            || procedure.ContractFingerprint != recomputed)
+            throw Failure("WORKER_PROCEDURE_STALE",
+                "The trusted active procedure evidence does not match the selected catalog revision and snapshot.");
     }
 
     private static AiRequest BuildRequest(AiRequest configuration, string prompt, string schema, IReadOnlyList<string> tools)
