@@ -115,7 +115,7 @@ Official [hooks documentation](https://learn.chatgpt.com/docs/hooks) describes p
 
 ## Current checkpoint
 
-Updated 2026-09-13. **P0–P5 are accepted and live on port 6217**, with production source `d0481f48` integrated on master. Application activation 69, state binding 43 and page 81 passed final public/owner browser and MCP checks after the second restart. The release-only grant is revoked and the review queue is empty. The rehearsal server is stopped; post-delivery generated-output compression is the only remaining cleanup work; P6 roads remain an optional follow-up.
+Updated 2026-09-13. **P0–P5 are accepted and live on port 6217**, with production source `d0481f48` integrated on master. Application activation 69, state binding 43 and page 81 passed final public/owner browser and MCP checks after the second restart. The release-only grant is revoked and the review queue is empty. The rehearsal server is stopped and the guarded compression pass is complete; P6 roads remain an optional follow-up.
 
 | Work package | Source status | Remaining acceptance |
 | --- | --- | --- |
@@ -335,3 +335,23 @@ preservation root. Detailed recovery/profile witnesses are in [local deployment]
 Human setup instructions for explicitly linked gameplay capture are in
 [OPERATIONS.md](OPERATIONS.md#link-a-gameplay-task-to-conversation-memory); live capture remains
 unconnected until an actual gameplay task is selected.
+
+### Post-delivery cleanup result
+
+The owned rehearsal process was stopped; live PID 9112 remains the sole listener on 6217, and
+16217 is closed. Only the local `master` branch remains. Automatic approval review rejected
+generated-file deletion with “blocked by policy”; no deletion was retried through another route.
+The safer lossless NTFS compression pass completed across the checked inactive generated outputs,
+excluding the active checkout, toolchain, authored source/assets, databases, live releases and
+recovery evidence. All 444 targets and 52,179 files passed count, logical-size and representative
+hash preservation checks; 437 native compression calls succeeded and seven empty targets required
+none. There were no native or preservation failures, and nothing was deleted, moved or replaced.
+
+The observed drive free-space gain was 3,058,266,112 bytes (2.85 GiB), ending at 36,247,543,808
+bytes (33.76 GiB) free. The summed per-path storage metric fell by 5,570,169,285 bytes (5.19 GiB);
+that is a different measurement, and the report does not establish the cause of the difference.
+Do not describe that summed figure as the observed gain in drive space. Report:
+`.tmp/compress-detached-generated-after-delivery.json`, SHA-256
+`AA95251D4501EBB19FEF104A15EA73A2C5181F2057803C8C3C28E2EECBFBECB3`.
+Reuse the current build graph for further work; avoid retaining a new complete build for each
+diagnostic attempt. Source worktrees and recovery copies remain available.
