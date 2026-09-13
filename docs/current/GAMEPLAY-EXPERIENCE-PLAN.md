@@ -115,7 +115,7 @@ Official [hooks documentation](https://learn.chatgpt.com/docs/hooks) describes p
 
 ## Current checkpoint
 
-Updated 2026-09-13. P0–P4 and publication corrections are integrated on master through `d0481f48`; P5 is running. The copied-state host uses port 16217 for rehearsal. **The live site on port 6217 has not received this feature release yet.** Root owns Git integration and acceptance; `website_integration` is the sole deployment writer, currently authorized for copied-state rehearsal only.
+Updated 2026-09-13. P0–P4 and publication corrections are integrated on master through `d0481f48`; P5 is running. The copied-state host uses port 16217 for rehearsal. **The live site on port 6217 has not received this feature release yet.** Root owns Git integration and acceptance; `website_integration` is the sole deployment writer, authorized for live cutover after the copied acceptance gates passed.
 
 | Work package | Source status | Remaining acceptance |
 | --- | --- | --- |
@@ -278,8 +278,21 @@ services and trigger-scheduling manual revisions/hashes. No live feature write h
 The three successful copied candidates used one paid attempt each: 29,987, 30,902 and 23,116
 tokens. The two earlier unsuccessful paid reviews remain separately accounted for above.
 
-Next: complete final copied public browser checks, then authorize the sole writer to take fresh live preservation and
-publish. Live publication must use fresh live candidates, reviews and version checks, not copied
+Final copied browser gates passed: public Player projection issued two scoped tickets without
+internal asset hashes or DM fields; the Gilded Kettle map ticket redeemed the exact retained PNG
+(`F43C2BC732B3CCE3383FF19327AA54266E9460B41C770AB318D0DBFD75722E5E`, 2,935,466 bytes,
+1447×1087). Forged DM and hidden/raw/direct access were denied; invalid tickets returned 404.
+Owner DM stayed ready for sixty seconds with no stale banner, fatal error or API failure. The
+existing focused revocation-on-change test covers revocation without mutating frozen state.
+Evidence: `.tmp/gameplay-browser/public-security-postactivation.json` and `final-page82-stability.json`.
+
+Root authorized live cutover on 2026-09-13 after those gates. Preflight still showed original
+live PID 25008, application 66, binding 40, page 80 and no standing grants. The sole writer will
+preserve fresh live state and publish into isolated `platform-gameplay-d0481f48-20260913-host`
+and `-source` release paths. No copied database or review receipt may replace live state.
+
+Next: complete guarded live publication and final owner/public acceptance. Live publication must
+use fresh live candidates, reviews and version checks, not copied
 database or review receipts; three additional bounded live reviews are authorized. Verify live
 DM/Player, overlays, galleries, secrets, manual retrieval and restart stability before marking P5
 complete. Human setup instructions for explicitly linked gameplay capture are in
