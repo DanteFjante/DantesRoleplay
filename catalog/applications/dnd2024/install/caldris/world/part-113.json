@@ -397,9 +397,25 @@
       "name": "Lantern Sea",
       "components": [
         {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "summary": "The sea between Eredane and Solasca. Coastal passages and open-water sailings require vessels, working harbours and suitable conditions; the sea is not a road.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 565,
+            "y": 490
+          }
+        },
+        {
           "qualifiedTypeId": "game.core.world.map.visual",
           "value": {
-            "status": "active",
+            "status": "archived",
             "variants": {
               "player": {
                 "sha256": "5ab34bc317c60e811c3af2d72a57efddc5b8bcd82dad90c8f4fd5ea57fffcb48",
@@ -434,15 +450,6 @@
                 }
               }
             }
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "region",
-            "summary": "The sea between Eredane and Solasca. Coastal passages and open-water sailings require vessels, working harbours and suitable conditions; the sea is not a road.",
-            "visibility": "public",
-            "status": "active"
           }
         }
       ],
@@ -465,13 +472,6 @@
           }
         },
         {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 255,
-            "y": 380
-          }
-        },
-        {
           "qualifiedTypeId": "game.core.world.map.visual",
           "value": {
             "status": "active",
@@ -509,6 +509,13 @@
                 }
               }
             }
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 255,
+            "y": 380
           }
         }
       ],
@@ -522,9 +529,25 @@
       "name": "Solasca",
       "components": [
         {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "summary": "The eastern and southeastern continent: deltas, dry plateaus, terraced highlands, island chains, caravan rivers, shaded courts, white-stone ports, and societies shaped by canals, cisterns, sailing seasons, and river law.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 765,
+            "y": 490
+          }
+        },
+        {
           "qualifiedTypeId": "game.core.world.map.visual",
           "value": {
-            "status": "active",
+            "status": "archived",
             "variants": {
               "player": {
                 "sha256": "a45c9fc572c931984745366ded6a022d094836ea3650525b74f4983aaab14a61",
@@ -559,15 +582,6 @@
                 }
               }
             }
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "region",
-            "summary": "The eastern and southeastern continent: deltas, dry plateaus, terraced highlands, island chains, caravan rivers, shaded courts, white-stone ports, and societies shaped by canals, cisterns, sailing seasons, and river law.",
-            "visibility": "public",
-            "status": "active"
           }
         }
       ],

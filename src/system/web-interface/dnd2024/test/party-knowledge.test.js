@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { projectPartyKnowledge, readRegisteredPartyKnowledge } from "../src/server/party-knowledge.js";
+import { projectPartyKnowledge, readRegisteredPartyKnowledge, readRegisteredPartyKnowledgePage } from "../src/server/party-knowledge.js";
 
 const scope = { campaignId: "campaign.fixture", worldId: "world.fixture", perspective: "player" };
 const entry = { knowledgeId: "knowledge.fixture", documentRevision: "revision.1", text: "A disputed fact.",
@@ -14,6 +14,75 @@ const data = (overrides = {}) => {
     coverage: "complete", fieldCoverage: "complete", ...overrides };
   return result;
 };
+
+test("DM browse loads one filtered page with global facets and exact continuation fences", async () => {
+  const request = { ...scope, perspective: "dm", browse: true, category: "event", kind: "fact", query: "abbey",
+    origin: "http://localhost:6219", applicationId: "dnd2024", stateSpaceId: "space.fixture" };
+  const facets = {
+    category: Object.fromEntries(["state", "event", "identity", "relationship", "location", "capability", "rule", "quantity", "intention", "negative"]
+      .map((value) => [value, value === "event" ? 75 : 0])),
+    kind: { fact: 75, rumour: 0, secret: 0, clue: 0 },
+  };
+  const pageEntry = { ...entry, stance: "dm", admissions: [], title: "Abbey history", summary: "An abbey was founded.",
+    knowledgeKind: "fact", subjectKind: "event" };
+  const envelope = { applicationId: request.applicationId, stateSpaceId: request.stateSpaceId,
+    qualifiedQueryId: "dnd2024.query.party-knowledge", outputSchemaHash: "F".repeat(64),
+    stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
+    resultFingerprint: "3".repeat(64), sourceRevisionFingerprint: "4".repeat(64),
+    data: data({ audience: "dm", entries: [pageEntry], nextCursor: "1", coverage: "partial", totalCount: 75,
+      selectionFingerprint: "6".repeat(64), facets }) };
+  const calls = [];
+  const fetchImpl = async (input) => { calls.push(JSON.parse(new URL(input).searchParams.get("input"))); return Response.json(envelope); };
+  const result = await readRegisteredPartyKnowledgePage({ ...request, fetchImpl });
+  assert.deepEqual(calls, [{ browse: true, category: "event", kind: "fact", query: "abbey" }]);
+  assert.equal(result.nextCursor, "1");
+  assert.equal(result.totalCount, 75);
+  assert.deepEqual(result.facets, facets);
+  assert.equal(result.entries[0].title, "Abbey history");
+  assert.equal(result.entries[0].subjectKind, "event");
+  const continuation = { ...request, cursor: "1", expectedSourceRevision: result.sourceRevisionFingerprint,
+    expectedGraphSourceRevision: result.graphSourceRevision, expectedSelectionFingerprint: result.selectionFingerprint };
+  await assert.rejects(readRegisteredPartyKnowledgePage({ ...continuation, fetchImpl: async (input) => {
+    assert.deepEqual(JSON.parse(new URL(input).searchParams.get("input")), { browse: true, category: "event", kind: "fact", query: "abbey",
+      cursor: "1", expectedSourceRevision: "4".repeat(64), expectedGraphSourceRevision: "5".repeat(64), expectedSelectionFingerprint: "6".repeat(64) });
+    return Response.json({ ...envelope, data: { ...envelope.data, nextCursor: "2", selectionFingerprint: "7".repeat(64) } });
+  } }), /source changed/);
+  await assert.rejects(readRegisteredPartyKnowledgePage({ ...request, perspective: "player", fetchImpl }), /selection is invalid/);
+});
+
+test("Player single-page reads retain bounded continuation without exposing forged DM facets or category metadata", async () => {
+  const request = { ...scope, origin: "http://localhost:6219", applicationId: "dnd2024", stateSpaceId: "space.fixture" };
+  let calls = 0;
+  const result = await readRegisteredPartyKnowledgePage({ ...request, fetchImpl: async () => {
+    calls++;
+    return Response.json({ applicationId: request.applicationId, stateSpaceId: request.stateSpaceId,
+      qualifiedQueryId: "dnd2024.query.party-knowledge", outputSchemaHash: "F".repeat(64),
+      stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
+      resultFingerprint: "3".repeat(64), sourceRevisionFingerprint: "4".repeat(64),
+      data: data({ entries: [{ ...entry, knowledgeKind: "secret", subjectKind: "intention" }],
+        nextCursor: "40", coverage: "partial", totalCount: 1237, facets: { secret: 1237 } }) });
+  } });
+  assert.equal(calls, 1);
+  assert.equal(result.nextCursor, "40");
+  assert.equal(result.totalCount, null);
+  assert.equal(result.facets, null);
+  assert.doesNotMatch(JSON.stringify(result), /1237|secret|intention/);
+});
+
+test("single-page denial and stale responses preserve error categories for cache invalidation", async () => {
+  const request = { ...scope, origin: "http://localhost:6219", applicationId: "dnd2024", stateSpaceId: "space.fixture" };
+  for (const [status, category] of [[401, "authorization"], [403, "authorization"], [409, "stale-data"], [412, "stale-data"], [503, "transport"]])
+    await assert.rejects(readRegisteredPartyKnowledgePage({ ...request, fetchImpl: async () => Response.json({}, { status }) }),
+      (error) => error.name === "ViewReadError" && error.category === category);
+  await assert.rejects(readRegisteredPartyKnowledgePage({ ...request, cursor: "40",
+    expectedSourceRevision: "4".repeat(64), expectedGraphSourceRevision: "5".repeat(64),
+    fetchImpl: async () => Response.json({ applicationId: request.applicationId, stateSpaceId: request.stateSpaceId,
+      qualifiedQueryId: "dnd2024.query.party-knowledge", outputSchemaHash: "F".repeat(64),
+      stateSpaceFingerprint: "1".repeat(64), resolutionFingerprint: "2".repeat(64),
+      resultFingerprint: "3".repeat(64), sourceRevisionFingerprint: "4".repeat(64),
+      data: data({ status: "unavailable", reason: "PARTY_KNOWLEDGE_SOURCE_CHANGED", entries: [] }) }) }),
+    (error) => error.name === "ViewReadError" && error.category === "stale-data");
+});
 
 test("shared knowledge preserves a single canonical row and the individual admission states", () => {
   const result = projectPartyKnowledge(data({ extra: { anything: true } }), scope);

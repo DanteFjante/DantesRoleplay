@@ -3,847 +3,182 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
-      "entityId": "location.caldris.wrens-hollow",
-      "name": "Wren's Hollow",
+      "entityId": "location.caldris.bramblebridge.old-weir-mill",
+      "name": "Old Weir Mill",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
-            "kind": "settlement",
-            "summary": "A quarry village beneath singing cliffs, supplying pale building stone and slate while warm air rises from a reopened face that intersects something built rather than natural.",
+            "kind": "site",
+            "summary": "Function and texture: Flour mill, eel wheel, narrow footbridge, flour everywhere. Current pressure: The wheel stops at the same minute each night despite steady water.",
             "visibility": "public",
             "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 635,
+            "y": 200
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.atlas.bramble-country",
+        "containerEntityId": "location.caldris.bramblebridge",
         "slot": "location"
       }
     },
     {
-      "entityId": "actor.caldris.archivist-nan-wimple",
-      "name": "Archivist Nan Wimple",
+      "entityId": "location.caldris.bramblebridge.pike-house",
+      "name": "Pike House",
       "components": [
         {
-          "qualifiedTypeId": "game.core.world.motive",
+          "qualifiedTypeId": "game.core.world.location",
           "value": {
-            "status": "active",
-            "summary": "irritable guardian of local memory. Role: lay archivist at Mallow Abbey, Odo's professional foil. Immediate want: stabilize damaged charters before enthusiastic investigators touch them. Hidden depth: knows the erased name and the abbey's benefit; hides that she forged a copy years ago to protect the original.",
-            "visibility": "party"
+            "kind": "site",
+            "summary": "Function and texture: Magistrate's residence and hearing room, stern frontage, chaotic kitchen garden. Current pressure: Someone uses Magistrate Pike's seal while she is publicly holding it.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 710,
+            "y": 295
           }
         }
       ],
       "containment": {
         "containerEntityId": "location.caldris.bramblebridge",
-        "slot": "people"
+        "slot": "location"
       }
     },
     {
-      "entityId": "actor.caldris.arlen-pott",
-      "name": "Arlen Pott",
+      "entityId": "location.caldris.bramblebridge.the-bent-penny",
+      "name": "The Bent Penny",
       "components": [
         {
-          "qualifiedTypeId": "game.core.world.motive",
+          "qualifiedTypeId": "game.core.world.location",
           "value": {
-            "status": "active",
-            "summary": "rival adventurer and overprepared worrier. Role: captain of the Wayward Company. Immediate want: complete the contract accidentally assigned to both companies. Hidden depth: knows a League courier route; suspects the party resents her; hides that her contract is financially ruinous.",
-            "visibility": "party"
+            "kind": "site",
+            "summary": "Function and texture: Pawnbroker, repair counter, second-hand clothing, discreet messages. Current pressure: A supposedly worthless brooch belongs to three living claimants.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 335,
+            "y": 700
           }
         }
       ],
       "containment": {
         "containerEntityId": "location.caldris.bramblebridge",
-        "slot": "people"
+        "slot": "location"
       }
     },
     {
-      "entityId": "actor.caldris.brother-odo-mallow",
-      "name": "Brother Odo Mallow",
+      "entityId": "location.caldris.bramblebridge.the-crooked-saint",
+      "name": "The Crooked Saint",
       "components": [
         {
-          "qualifiedTypeId": "game.core.world.motive",
+          "qualifiedTypeId": "game.core.world.location",
           "value": {
-            "status": "active",
-            "summary": "An eccentric beekeeper, patient historian, and mediocre singer determined to preserve oral memories beside formal records without sacrificing a living hive for quicker evidence.",
-            "visibility": "public"
+            "kind": "site",
+            "summary": "Function and texture: Tiny bridge shrine repaired so often no original material remains. Current pressure: Travellers leave unfamiliar copper tokens that are legal nowhere nearby.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 715,
+            "y": 565
           }
         }
       ],
       "containment": {
         "containerEntityId": "location.caldris.bramblebridge",
-        "slot": "occupant"
+        "slot": "location"
       }
     },
     {
-      "entityId": "actor.caldris.curdin-curd-bale",
-      "name": "Curdin “Curd” Bale",
+      "entityId": "location.caldris.bramblebridge.tibbs-watch-post",
+      "name": "Tibb's Watch Post",
       "components": [
         {
-          "qualifiedTypeId": "game.core.world.motive",
+          "qualifiedTypeId": "game.core.world.location",
           "value": {
-            "status": "active",
-            "summary": "cheerful cheesemonger and useful coward. Role: market gossip, cart owner, witness who fled at the right time. Immediate want: retrieve a cheese cart seized under impossible poultry regulations. Hidden depth: saw the empty tax wagon arrive; suspects the driver left willingly; hides that he transported one unlisted passenger.",
-            "visibility": "party"
+            "kind": "site",
+            "summary": "Function and texture: One-room civic watch office with maps, rejected poems, spare boots, and labelled string. Current pressure: A map drawn as a romantic gift accurately predicts a smuggler path Tibb has never walked.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 810,
+            "y": 430
           }
         }
       ],
       "containment": {
         "containerEntityId": "location.caldris.bramblebridge",
-        "slot": "people"
+        "slot": "location"
       }
     },
     {
-      "entityId": "actor.caldris.della-crookshaw",
-      "name": "Della Crookshaw",
+      "entityId": "location.caldris.gilded-kettle",
+      "name": "The Gilded Kettle",
       "components": [
         {
-          "qualifiedTypeId": "game.core.world.motive",
+          "qualifiedTypeId": "game.core.world.location",
           "value": {
+            "kind": "site",
             "status": "active",
-            "summary": "A gentle grump and master miller who expresses fear as criticism, forgives debts quietly, and will not risk workers merely to satisfy an adventurer's curiosity.",
-            "visibility": "public"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.bramblebridge",
-        "slot": "occupant"
-      }
-    },
-    {
-      "entityId": "actor.caldris.elowen-pike",
-      "name": "Magistrate Elowen Pike",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.motive",
-          "value": {
-            "status": "active",
-            "summary": "Strict, fair, and privately untidy; she wants to restore lawful toll practice without a riot and prove small-town justice can be both rigorous and humane.",
-            "visibility": "public"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.bramblebridge",
-        "slot": "occupant"
-      }
-    },
-    {
-      "entityId": "actor.caldris.fara-dint",
-      "name": "Fara Dint",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.motive",
-          "value": {
-            "status": "active",
-            "summary": "A strict toll inspector caught inside someone else's design, trying to meet impossible revenue targets, keep her post, and support two dependent siblings without becoming the villain everyone expects.",
-            "visibility": "public"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.bramblebridge",
-        "slot": "occupant"
-      }
-    },
-    {
-      "entityId": "actor.caldris.fenna-dorr",
-      "name": "Fenna Dorr",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.motive",
-          "value": {
-            "status": "active",
-            "summary": "An exacting Honest Weights assessor and enthusiastic puppet-maker seeking a testable explanation for a hollow standard before public accusation harms an innocent trader.",
-            "visibility": "public"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.bramblebridge",
-        "slot": "occupant"
-      }
-    },
-    {
-      "entityId": "actor.caldris.ganji",
-      "name": "Ganji",
-      "components": [
-        {
-          "qualifiedTypeId": "dnd2024.character-creation-record",
-          "value": {
-            "status": "basic-playable",
-            "templateKey": "acolyte-monk-level-1-v1",
-            "selections": {
-              "abilityPolicyDefinitionId": "dnd2024.content.ability-assignment.standard-array.v1",
-              "backgroundDefinitionId": "dnd2024.content.background.acolyte.v1",
-              "classDefinitionId": "dnd2024.content.class.monk.v1",
-              "classLevel": 1,
-              "speciesDefinitionId": "dnd2024.extension.caldris.content.species.half-elf.v1",
-              "size": "medium",
-              "classSkillChoices": [
-                "acrobatics",
-                "athletics"
-              ],
-              "languageChoices": [
-                "common-sign-language",
-                "elvish"
-              ],
-              "classToolChoices": [
-                "woodcarvers-tools"
-              ]
-            },
-            "appliedComponentIds": [
-              "dnd2024.character-creation-record",
-              "dnd2024.character-feature-grants",
-              "dnd2024.character.experience",
-              "dnd2024.conditions",
-              "dnd2024.creature.ability-scores",
-              "dnd2024.creature.body",
-              "dnd2024.creature.defenses",
-              "dnd2024.creature.hit-points",
-              "dnd2024.creature.languages",
-              "dnd2024.creature.movement",
-              "dnd2024.creature.proficiencies",
-              "dnd2024.selected-species"
-            ],
-            "unresolvedEntitlements": [
-              {
-                "ownerDefinitionId": "dnd2024.content.background.acolyte.v1",
-                "entitlementKey": "equipment:starting-package-or-50-gp",
-                "reason": "equipment-deferred"
-              },
-              {
-                "ownerDefinitionId": "dnd2024.content.class.monk.v1",
-                "entitlementKey": "equipment:starting-package",
-                "reason": "equipment-deferred"
-              },
-              {
-                "ownerDefinitionId": "dnd2024.content.class.monk.v1",
-                "entitlementKey": "weapon:restricted-martial-attack-enforcement:light",
-                "reason": "behavior-unimplemented"
-              },
-              {
-                "ownerDefinitionId": "dnd2024.feat.magic-initiate",
-                "entitlementKey": "behavior:configuration:cleric",
-                "reason": "behavior-unimplemented"
-              },
-              {
-                "ownerDefinitionId": "dnd2024.content.feature.monk.martial-arts.v1",
-                "entitlementKey": "behavior",
-                "reason": "behavior-unimplemented"
-              },
-              {
-                "ownerDefinitionId": "dnd2024.content.feature.monk.unarmored-defense.v1",
-                "entitlementKey": "behavior",
-                "reason": "behavior-unimplemented"
-              },
-              {
-                "ownerDefinitionId": "dnd2024.extension.caldris.content.species.half-elf.v1",
-                "entitlementKey": "trait:darkvision",
-                "reason": "application-deferred"
-              },
-              {
-                "ownerDefinitionId": "dnd2024.extension.caldris.content.species.half-elf.v1",
-                "entitlementKey": "trait:fey-ancestry",
-                "reason": "application-deferred"
-              }
-            ],
-            "sourceRefs": [
-              {
-                "sourceId": "dnd2024.source.srd-5.2.1",
-                "locator": "Character Creation > Step 3: Ability Scores > Generate Your Scores > Standard Array, PDF p. 21"
-              },
-              {
-                "sourceId": "dnd2024.source.srd-5.2.1",
-                "locator": "Character Origins > Character Backgrounds > Acolyte, PDF p. 83"
-              },
-              {
-                "sourceId": "dnd2024.source.srd-5.2.1",
-                "locator": "Character Origins > Character Backgrounds > Acolyte, PDF p. 83"
-              },
-              {
-                "sourceId": "dnd2024-extension.caldris-homebrew",
-                "locator": "Caldris Homebrew > Species > Half-Elf (2014 PHB conversion; ability increases omitted per 2024 origin rules)"
-              },
-              {
-                "sourceId": "dnd2024.source.srd-5.2.1",
-                "locator": "Classes > Monk, PDF pages 49–50"
-              },
-              {
-                "sourceId": "dnd2024.source.srd-5.2.1",
-                "locator": "Character Creation > Step 2: Character Origin > Choose Languages"
-              },
-              {
-                "sourceId": "dnd2024.source.srd-5.2.1",
-                "locator": "Character Creation > Step 5: Character Creation Details, PDF page 22"
-              }
-            ]
-          }
-        },
-        {
-          "qualifiedTypeId": "dnd2024.character.feature-entitlements",
-          "value": {
-            "entitlements": [
-              {
-                "featureRef": {
-                  "entityId": "dnd2024.content.feature.monk.martial-arts.v1"
-                },
-                "grantedByRef": {
-                  "entityId": "dnd2024.content.class.monk.v1"
-                },
-                "grantKind": "class-feature",
-                "classLevel": 1,
-                "sourceRef": {
-                  "sourceId": "dnd2024.source.srd-5.2.1",
-                  "locator": "Classes > Monk, PDF pages 49–50"
-                }
-              },
-              {
-                "featureRef": {
-                  "entityId": "dnd2024.content.feature.monk.unarmored-defense.v1"
-                },
-                "grantedByRef": {
-                  "entityId": "dnd2024.content.class.monk.v1"
-                },
-                "grantKind": "class-feature",
-                "classLevel": 1,
-                "sourceRef": {
-                  "sourceId": "dnd2024.source.srd-5.2.1",
-                  "locator": "Classes > Monk, PDF pages 49–50"
-                }
-              },
-              {
-                "featureRef": {
-                  "entityId": "dnd2024.feat.magic-initiate"
-                },
-                "grantedByRef": {
-                  "entityId": "dnd2024.content.background.acolyte.v1"
-                },
-                "grantKind": "origin-feat",
-                "configurationKey": "cleric",
-                "sourceRef": {
-                  "sourceId": "dnd2024.source.srd-5.2.1",
-                  "locator": "Character Origins > Character Backgrounds > Acolyte, PDF p. 83"
-                }
-              }
-            ]
-          }
-        },
-        {
-          "qualifiedTypeId": "dnd2024.character.experience",
-          "value": {
-            "total": 0
-          }
-        },
-        {
-          "qualifiedTypeId": "dnd2024.conditions",
-          "value": {
-            "entries": [],
-            "sourceRef": {
-              "sourceId": "dnd2024.source.srd-5.2.1",
-              "locator": "Rules Glossary"
-            }
-          }
-        },
-        {
-          "qualifiedTypeId": "dnd2024.creature.ability-scores",
-          "value": {
-            "scores": {
-              "dnd2024.vocabulary.ability.strength": 8,
-              "dnd2024.vocabulary.ability.dexterity": 15,
-              "dnd2024.vocabulary.ability.constitution": 13,
-              "dnd2024.vocabulary.ability.intelligence": 13,
-              "dnd2024.vocabulary.ability.wisdom": 16,
-              "dnd2024.vocabulary.ability.charisma": 10
-            }
-          }
-        },
-        {
-          "qualifiedTypeId": "dnd2024.creature.body",
-          "value": {
-            "sizeRef": {
-              "entityId": "dnd2024.vocabulary.size.medium"
-            }
-          }
-        },
-        {
-          "qualifiedTypeId": "dnd2024.creature.defenses",
-          "value": {
-            "armorClassSource": {
-              "entityId": "dnd2024.content.defense.unarmored.v1"
-            },
-            "damageResponses": []
-          }
-        },
-        {
-          "qualifiedTypeId": "dnd2024.creature.hit-points",
-          "value": {
-            "current": 9,
-            "maximum": 9
-          }
-        },
-        {
-          "qualifiedTypeId": "dnd2024.creature.languages",
-          "value": {
-            "languages": {
-              "dnd2024.vocabulary.language.common": {
-                "understands": true,
-                "communicates": true,
-                "reads": true,
-                "writes": true,
-                "sourceRefs": [
-                  {
-                    "entityId": "dnd2024.source.srd-5.2.1"
-                  }
-                ]
-              },
-              "dnd2024.vocabulary.language.elvish": {
-                "understands": true,
-                "communicates": true,
-                "reads": true,
-                "writes": true,
-                "sourceRefs": [
-                  {
-                    "entityId": "dnd2024.source.srd-5.2.1"
-                  }
-                ]
-              },
-              "dnd2024.vocabulary.language.common-sign-language": {
-                "understands": true,
-                "communicates": true,
-                "sourceRefs": [
-                  {
-                    "entityId": "dnd2024.source.srd-5.2.1"
-                  }
-                ]
-              }
-            }
-          }
-        },
-        {
-          "qualifiedTypeId": "dnd2024.creature.movement",
-          "value": {
-            "speeds": {
-              "dnd2024.vocabulary.movement-mode.walk": {
-                "distance": {
-                  "dimension": "distance",
-                  "value": {
-                    "numerator": 11430,
-                    "denominator": 1250
-                  },
-                  "unit": {
-                    "entityId": "dnd2024.vocabulary.distance-unit.meter"
-                  }
-                },
-                "enabled": true,
-                "sourceRefs": [
-                  {
-                    "entityId": "dnd2024.source.srd-5.2.1"
-                  }
-                ]
-              }
-            }
-          }
-        },
-        {
-          "qualifiedTypeId": "dnd2024.creature.proficiencies",
-          "value": {
-            "entries": {
-              "dnd2024.vocabulary.ability.strength": {
-                "rankRef": {
-                  "entityId": "dnd2024.vocabulary.proficiency-rank.proficiency"
-                },
-                "sourceRefs": [
-                  {
-                    "entityId": "dnd2024.content.class.monk.v1"
-                  }
-                ]
-              },
-              "dnd2024.vocabulary.ability.dexterity": {
-                "rankRef": {
-                  "entityId": "dnd2024.vocabulary.proficiency-rank.proficiency"
-                },
-                "sourceRefs": [
-                  {
-                    "entityId": "dnd2024.content.class.monk.v1"
-                  }
-                ]
-              },
-              "dnd2024.equipment.tool.calligraphers-supplies": {
-                "rankRef": {
-                  "entityId": "dnd2024.vocabulary.proficiency-rank.proficiency"
-                },
-                "sourceRefs": [
-                  {
-                    "entityId": "dnd2024.content.background.acolyte.v1"
-                  }
-                ]
-              },
-              "dnd2024.equipment.weapon-category.simple": {
-                "rankRef": {
-                  "entityId": "dnd2024.vocabulary.proficiency-rank.proficiency"
-                },
-                "sourceRefs": [
-                  {
-                    "entityId": "dnd2024.content.class.monk.v1"
-                  }
-                ]
-              },
-              "dnd2024.equipment.weapon-property.light": {
-                "rankRef": {
-                  "entityId": "dnd2024.vocabulary.proficiency-rank.proficiency"
-                },
-                "sourceRefs": [
-                  {
-                    "entityId": "dnd2024.content.class.monk.v1"
-                  }
-                ]
-              },
-              "dnd2024.equipment.tool.woodcarvers-tools": {
-                "rankRef": {
-                  "entityId": "dnd2024.vocabulary.proficiency-rank.proficiency"
-                },
-                "sourceRefs": [
-                  {
-                    "entityId": "dnd2024.content.class.monk.v1"
-                  }
-                ]
-              },
-              "dnd2024.vocabulary.skill.acrobatics": {
-                "rankRef": {
-                  "entityId": "dnd2024.vocabulary.proficiency-rank.proficiency"
-                },
-                "sourceRefs": [
-                  {
-                    "entityId": "dnd2024.source.srd-5.2.1"
-                  }
-                ]
-              },
-              "dnd2024.vocabulary.skill.athletics": {
-                "rankRef": {
-                  "entityId": "dnd2024.vocabulary.proficiency-rank.proficiency"
-                },
-                "sourceRefs": [
-                  {
-                    "entityId": "dnd2024.source.srd-5.2.1"
-                  }
-                ]
-              },
-              "dnd2024.vocabulary.skill.insight": {
-                "rankRef": {
-                  "entityId": "dnd2024.vocabulary.proficiency-rank.proficiency"
-                },
-                "sourceRefs": [
-                  {
-                    "entityId": "dnd2024.source.srd-5.2.1"
-                  }
-                ]
-              },
-              "dnd2024.vocabulary.skill.perception": {
-                "rankRef": {
-                  "entityId": "dnd2024.vocabulary.proficiency-rank.proficiency"
-                },
-                "sourceRefs": [
-                  {
-                    "entityId": "dnd2024.source.srd-5.2.1"
-                  }
-                ]
-              },
-              "dnd2024.vocabulary.skill.performance": {
-                "rankRef": {
-                  "entityId": "dnd2024.vocabulary.proficiency-rank.proficiency"
-                },
-                "sourceRefs": [
-                  {
-                    "entityId": "dnd2024.source.srd-5.2.1"
-                  }
-                ]
-              },
-              "dnd2024.vocabulary.skill.sleight-of-hand": {
-                "rankRef": {
-                  "entityId": "dnd2024.vocabulary.proficiency-rank.proficiency"
-                },
-                "sourceRefs": [
-                  {
-                    "entityId": "dnd2024.source.srd-5.2.1"
-                  }
-                ]
-              }
-            },
-            "recordedFamilies": [
-              "armor-training",
-              "saving-throw",
-              "skill",
-              "tool",
-              "weapon"
-            ]
-          }
-        },
-        {
-          "qualifiedTypeId": "dnd2024.selected-species",
-          "value": {
-            "speciesDefinitionId": "dnd2024.extension.caldris.content.species.half-elf.v1"
-          }
-        },
-        {
-          "qualifiedTypeId": "dnd2024.character.identity",
-          "value": {
-            "pronouns": "he/him",
-            "appearance": "A half-elf, son of a human father and an elven mother he never knew. Ganji mostly looks the part -- until you notice the eyes, faintly catlike and quick to catch light, or the too-smooth, unnervingly graceful way he moves, like a cat crossing a fence rail. It can be a little offputting to people who aren't used to it. He's eighteen, technically grown by most reckonings, though he rarely acts it.",
-            "biography": "Ganji was born in a small rural village and abandoned as an infant -- by his own reckoning, over nothing more than how he looked. Word of the odd, unnervingly graceful baby spread by rumor, and within months travelers came to investigate, convinced he might be something prophesied. The Tensor Sect took him in.\n\nThe Sect believes that mastering combat through perfect perception and prediction is the path to one day \"seeing god,\" and they raised Ganji as a prodigy of natural gifts -- inhumanly nimble, unnervingly perceptive -- while holding him to punishing standards for a devotion he never quite felt. He trained personally under the Sect's Headmaster, its strongest warrior, and made what friends he could. But there were no women among the Sect's ranks, and that was only one of many things that wore at him over the years.\n\nHe was meant to spend his required hours of solitude on religious study, but he often slipped away instead. It was on one of those escapes that he heard an old traveling musician -- forbidden from playing inside the Sect's walls -- practicing just outside them. The two struck a quiet bargain not to tell on each other, became friends over the musician's short stay, and Ganji learned to play the flute from him: his first real taste of something that wasn't devotion, discipline, or god. The Sect, for its part, once gave him a carving knife as a gift, a mark of how important they believed him to be -- an enchanted blade that never dulls and can shave stone like wood, though no one ever explained where its magic came from. Ganji used it to carve himself a quarterstaff, hollowed and fingerholed to double as a flute -- since he was meant to be training combat, not music, a 'weapon' that was secretly an instrument let him practice openly without ever needing to hide it.\n\nTwo weeks ago, tired of chasing a faith that never took root in him, Ganji slipped away from the Sect's halls in the dark of night. He's been on the road since, only now starting to slow down -- half-expecting that if he ever truly tries to leave for good, the Sect will send monks after him.\n\nHe doesn't spend much time wondering why he is the way he is. He'd rather find out who he's going to be. He fights because he's always been good at it and likes winning; he wants adventure, good company, maybe someone to fall for, and above all a reason to care about something the way his sect-brothers cared for their god.",
-            "playerNotes": "Fighting style: prefers fists and feet, but is just as happy with a weapon in hand -- especially the quarterstaff he carved himself, which doubles as a flute -- or whatever else is nearby. When he loses or embarrasses himself, he laughs it off and tries something reckless rather than sulking; laid-back, easygoing, almost Taoist in temperament. Traveling alone. Looking for fun, adventure, friendship, and maybe romance eventually, more than any grand destiny. Player is fine with character death and would enjoy Ganji's story surfacing as lore in a future campaign set in this world."
-          }
-        },
-        {
-          "qualifiedTypeId": "dnd2024.character.origin-selections",
-          "value": {
-            "speciesRef": {
-              "entityId": "dnd2024.extension.caldris.content.species.half-elf.v1"
-            },
-            "backgroundRef": {
-              "entityId": "dnd2024.content.background.acolyte.v1"
-            }
-          }
-        },
-        {
-          "qualifiedTypeId": "dnd2024.character.monk-unarmored-defense",
-          "value": {
-            "active": true,
-            "sourceRef": {
-              "sourceId": "dnd2024.source.srd-5.2.1",
-              "locator": "Classes > Monk > Unarmored Defense (SRD 5.2.1, pages 50-50)"
-            }
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.media.visual",
-          "value": {
-            "status": "active",
-            "attachments": [
-              {
-                "role": "portrait",
-                "visibility": [
-                  "player",
-                  "dm"
-                ],
-                "sha256": "2880566363b037b13650c250a0655adf5698f82bb80d2ab25be4fe0463fd3df2",
-                "mimeType": "image/png",
-                "width": 1024,
-                "height": 1536,
-                "alt": "Ganji, the half-elf monk.",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/visuals/portrait-ganji-v1.png",
-                  "reviewedOn": "2026-09-13",
-                  "version": 1
-                }
-              }
-            ]
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.bramblebridge",
-        "slot": "presence"
-      }
-    },
-    {
-      "entityId": "actor.caldris.jory-fenner",
-      "name": "Jory Fenner",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.motive",
-          "value": {
-            "status": "active",
-            "summary": "warm rogue, tanner, and small-scale smuggler. Role: leatherworker, informal broker, route contact. Immediate want: keep medicine and tools moving around predatory tolls. Hidden depth: knows Rusk's routes; suspects higher patronage; hides his role in one disastrous diversion.",
-            "visibility": "party"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.bramblebridge",
-        "slot": "people"
-      }
-    },
-    {
-      "entityId": "actor.caldris.nessa-quill",
-      "name": "Nessa Quill",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.motive",
-          "value": {
-            "status": "active",
-            "summary": "A laid-back ferrymaster and exact flood observer who wants to protect Candlefen's channels while training successors who are free to choose their own lives.",
-            "visibility": "public"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.candlefen",
-        "slot": "occupant"
-      }
-    },
-    {
-      "entityId": "actor.caldris.nettle",
-      "name": "Nettle",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.motive",
-          "value": {
-            "status": "active",
-            "summary": "A free, sharp-witted stray cat with a will very much her own. She takes an immediate liking to Ganji when their paths cross in Bramblebridge.",
-            "visibility": "party"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.bramblebridge",
-        "slot": "presence"
-      }
-    },
-    {
-      "entityId": "actor.caldris.pella-sorn",
-      "name": "Pella Sorn",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.motive",
-          "value": {
-            "status": "active",
-            "summary": "travelling repairer and quietly intense craftsperson. Role: pot, buckle, hinge, and small clock repairer; item provenance contact. Immediate want: identify the maker of a bellglass compass. Hidden depth: recognizes Concord workmanship; suspects the compass is future-dated; hides that her mentor joined the Seventh Ledger voluntarily.",
-            "visibility": "party"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.bramblebridge",
-        "slot": "people"
-      }
-    },
-    {
-      "entityId": "actor.caldris.rusk-pettifer",
-      "name": "Rusk Pettifer",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.motive",
-          "value": {
-            "status": "active",
-            "summary": "theatrical smuggler and apparent first boss. Role: organizer of toll evasion, coercion, and forged exemptions. Immediate want: make the new toll system unworkable enough that his network becomes essential. Hidden depth: knows Provost Drail sponsors selective chaos; suspects a ministerial network; hides how frightened he is of being made disposable.",
-            "visibility": "party"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.bramblebridge",
-        "slot": "people"
-      }
-    },
-    {
-      "entityId": "actor.caldris.sera-lark",
-      "name": "Sera Lark",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.motive",
-          "value": {
-            "status": "active",
-            "summary": "dramatic theatre director with practical courage. Role: leader of Bramble Theatre Loft, rumour amplifier, disguise source. Immediate want: recover a villain costume containing a real ministerial dispatch. Hidden depth: knows who planted the dispatch; suspects censorship; hides that the costume came from Rusk.",
-            "visibility": "party"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.bramblebridge",
-        "slot": "people"
-      }
-    },
-    {
-      "entityId": "actor.caldris.tibb-fallow",
-      "name": "Tibb Fallow",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.motive",
-          "value": {
-            "status": "active",
-            "summary": "A cringeworthy poet-watchman with an excellent map memory who longs to be respected for more than enthusiasm and refuses to falsify a report even when truth makes him ridiculous.",
+            "summary": "A welcoming Bramblebridge tavern that doesn't care whether its guests are prophesied for anything, so long as they help move benches and eat their dumplings before they cool.",
             "visibility": "public"
           }
         },
-        {
-          "qualifiedTypeId": "game.core.media.visual",
-          "value": {
-            "status": "active",
-            "attachments": [
-              {
-                "role": "portrait",
-                "visibility": [
-                  "player",
-                  "dm"
-                ],
-                "sha256": "3ae0336e89155a4a00fb0d982ae903bf9ed1137cd292b097b252fd38c1501fa3",
-                "mimeType": "image/png",
-                "width": 1024,
-                "height": 1536,
-                "alt": "Tibb Fallow, a freckled junior watchman in a rain-dark green cloak, holding a map case and a handwritten sonnet.",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "Original Caldris storybook artwork generated with OpenAI image generation and reviewed by the project owner.",
-                  "source": "world/caldris/visuals/portrait-tibb-fallow-v1.png",
-                  "reviewedOn": "2026-08-30",
-                  "version": 1
-                }
-              }
-            ]
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.bramblebridge",
-        "slot": "occupant"
-      }
-    },
-    {
-      "entityId": "location.caldris.alderwick.button-hills.merebutton",
-      "name": "Merebutton",
-      "components": [
         {
           "qualifiedTypeId": "game.core.world.map.visual",
           "value": {
             "status": "active",
             "variants": {
               "player": {
-                "sha256": "a9e019c59b05d7451338450993ba75d18d8687deaba46a698e3e09ec9fc0ae59",
+                "sha256": "f43c2bc732b3cce3383ff19327aa54266e9460b41c770ab318d0dbfd75722e5e",
                 "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Merebutton fantasy atlas map",
-                "caption": "Merebutton — illustrated local map.",
+                "width": 1447,
+                "height": 1087,
+                "alt": "The Gilded Kettle ground floor without baked labels or markers.",
+                "caption": "",
                 "order": 0,
                 "provenance": {
                   "kind": "generated",
                   "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/merebutton.png",
-                  "reviewedOn": "2026-09-10",
+                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/gilded-kettle-ground-floor-clean-v1.png",
+                  "reviewedOn": "2026-09-12",
                   "version": 1
                 }
               },
               "dm": {
-                "sha256": "a9e019c59b05d7451338450993ba75d18d8687deaba46a698e3e09ec9fc0ae59",
+                "sha256": "f43c2bc732b3cce3383ff19327aa54266e9460b41c770ab318d0dbfd75722e5e",
                 "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Merebutton fantasy atlas map",
-                "caption": "Merebutton — illustrated local map.",
+                "width": 1447,
+                "height": 1087,
+                "alt": "The Gilded Kettle ground floor without baked labels or markers.",
+                "caption": "",
                 "order": 0,
                 "provenance": {
                   "kind": "generated",
                   "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/merebutton.png",
-                  "reviewedOn": "2026-09-10",
+                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/gilded-kettle-ground-floor-clean-v1.png",
+                  "reviewedOn": "2026-09-12",
                   "version": 1
                 }
               }
@@ -851,76 +186,56 @@
           }
         },
         {
-          "qualifiedTypeId": "game.core.world.location",
+          "qualifiedTypeId": "game.core.media.visual",
           "value": {
-            "kind": "settlement",
-            "summary": "A muddy Button Hills sheep village of low stone cottages, stubborn families, and children who gather old coat buttons after rain. Years ago, rumours about an uncanny infant brought passing Tensor monks to its lanes.",
-            "visibility": "public",
-            "status": "active"
+            "status": "active",
+            "attachments": [
+              {
+                "role": "illustration",
+                "visibility": [
+                  "player",
+                  "dm"
+                ],
+                "sha256": "cbcde4250262c0fac2ec9dc37c29fee36c72ffa7506dbfa3a16ff237bc8db6a1",
+                "mimeType": "image/png",
+                "width": 1536,
+                "height": 1024,
+                "alt": "A rain-darkened common room at the Gilded Kettle, warm and crowded, with wet cloaks and copper pots.",
+                "caption": "Prepared location illustration of the Gilded Kettle common room in rain; no depicted event is recorded as having occurred.",
+                "order": 10,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/gilded-kettle-rainy-common-room-v1.png",
+                  "reviewedOn": "2026-09-12",
+                  "version": 1
+                }
+              }
+            ]
           }
         },
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
             "x": 280,
-            "y": 400
+            "y": 575
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.alderwick.the-button-hills",
+        "containerEntityId": "location.caldris.bramblebridge",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.alderwick.highmead.house-of-the-ninth-angle",
-      "name": "House of the Ninth Angle",
+      "entityId": "location.caldris.lore.ashglass-house",
+      "name": "Ashglass House",
       "components": [
-        {
-          "qualifiedTypeId": "game.core.world.map.visual",
-          "value": {
-            "status": "active",
-            "variants": {
-              "player": {
-                "sha256": "a6e0ad639a9116aef8e4b5e451423a624d89587f7c6a39377e5830c30fad9b34",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "House of the Ninth Angle fantasy atlas map",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/house-of-the-ninth-angle.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 3
-                }
-              },
-              "dm": {
-                "sha256": "a6e0ad639a9116aef8e4b5e451423a624d89587f7c6a39377e5830c30fad9b34",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "House of the Ninth Angle fantasy atlas map",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/house-of-the-ninth-angle.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 3
-                }
-              }
-            }
-          }
-        },
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
-            "kind": "settlement",
-            "summary": "A severe chalk monastery in Highmead's Whitewall district where Tensor monks study breath, balance, gaze, muscle tension, and displaced weight in pursuit of perfect perception. Its hospitality and first-aid teaching are respected; its authority over novices is increasingly disputed.",
+            "kind": "site",
+            "summary": "A glass workshop in Istravel with a small repair room and a collection of clearly labelled failed experiments. Most of its business is ordinary glass. Its modest enchanted vessels require careful handling, compatible materials, and occasional renewal by someone who understands their particular binding.",
             "visibility": "public",
             "status": "active"
           }
@@ -928,151 +243,384 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 290,
-            "y": 205
+            "x": 350,
+            "y": 330
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.alderwick.highmead",
+        "containerEntityId": "location.caldris.lore.istravel",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.cinder-meadow",
+      "name": "Cinder Meadow",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A recovering meadow and nursery margin in Boughmeet's growing country. Later fires and planting changes have altered the ground. A few protected impressions are documented as surviving evidence of the ember herons; visitors can also see casts that are clearly labelled as copies.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 800,
+            "y": 245
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lore.boughmeet",
         "slot": "location"
       }
     }
   ],
   "relationships": [
     {
-      "fromEntityId": "faction.caldris.alderwick-crown-council",
-      "toEntityId": "actor.caldris.elowen-pike",
-      "qualifiedKind": "game.core.world.faction.member",
-      "value": {}
-    },
-    {
-      "fromEntityId": "faction.caldris.bramblebridge-watch",
-      "toEntityId": "actor.caldris.tibb-fallow",
-      "qualifiedKind": "game.core.world.faction.member",
-      "value": {}
-    },
-    {
-      "fromEntityId": "faction.caldris.honest-weights-guild",
-      "toEntityId": "actor.caldris.fenna-dorr",
-      "qualifiedKind": "game.core.world.faction.member",
-      "value": {}
-    },
-    {
-      "fromEntityId": "faction.caldris.tensor-sect",
-      "toEntityId": "location.caldris.alderwick.highmead.house-of-the-ninth-angle",
-      "qualifiedKind": "game.core.world.faction.controls",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.ganji.button-hills-origin",
-      "toEntityId": "location.caldris.alderwick.button-hills.merebutton",
+      "fromEntityId": "secret.caldris.lore.0300-0200-place-ashglass-house.1",
+      "toEntityId": "location.caldris.lore.ashglass-house",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "campaign.caldris.measure-of-mercy.participation.actor.caldris.ganji",
-      "toEntityId": "actor.caldris.ganji",
-      "qualifiedKind": "game.core.campaign.character-participation.for-actor",
+      "fromEntityId": "secret.caldris.lore.0300-0200-place-cinder-meadow.1",
+      "toEntityId": "location.caldris.lore.cinder-meadow",
+      "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "campaign.caldris.measure-of-mercy",
-      "toEntityId": "actor.caldris.ganji",
-      "qualifiedKind": "game.core.campaign.references",
-      "value": {
-        "role": "player-character",
-        "audience": "party"
-      }
+      "fromEntityId": "chronology.caldris.lore.0267-the-birds-in-cinder-meadow",
+      "toEntityId": "location.caldris.lore.cinder-meadow",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
     },
     {
-      "fromEntityId": "location.caldris.alderwick.button-hills.merebutton",
-      "toEntityId": "location.caldris.alderwick.the-white-lamb-downs",
+      "fromEntityId": "chronology.caldris.lore.0275-the-opening-of-ashglass-house",
+      "toEntityId": "location.caldris.lore.ashglass-house",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0267-the-birds-in-cinder-meadow-account.1",
+      "toEntityId": "location.caldris.lore.cinder-meadow",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0275-the-opening-of-ashglass-house-account.1",
+      "toEntityId": "location.caldris.lore.ashglass-house",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0275-the-opening-of-ashglass-house-account.2",
+      "toEntityId": "location.caldris.lore.ashglass-house",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0267-the-birds-in-cinder-meadow-gm-truth.1",
+      "toEntityId": "location.caldris.lore.cinder-meadow",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0267-the-birds-in-cinder-meadow-traces-and-stories.1",
+      "toEntityId": "location.caldris.lore.cinder-meadow",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0275-the-opening-of-ashglass-house-gm-truth.1",
+      "toEntityId": "location.caldris.lore.ashglass-house",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0275-the-opening-of-ashglass-house-traces-and-stories.1",
+      "toEntityId": "location.caldris.lore.ashglass-house",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.atlas.bramble-east-gate",
+      "toEntityId": "location.caldris.bramblebridge.the-crooked-saint",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.bramblebridge",
-      "toEntityId": "location.caldris.wrens-hollow",
+      "fromEntityId": "location.caldris.atlas.bramble-east-gate",
+      "toEntityId": "location.caldris.bramblebridge.tibbs-watch-post",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.eastern-eredane.the-road-that-forgets",
-      "toEntityId": "location.caldris.wrens-hollow",
+      "fromEntityId": "location.caldris.atlas.bramble-market",
+      "toEntityId": "location.caldris.bramblebridge.the-bent-penny",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.66dcc69ccee121e7bcf7",
-      "toEntityId": "location.caldris.alderwick.button-hills.merebutton",
+      "fromEntityId": "location.caldris.atlas.bramble-market",
+      "toEntityId": "location.caldris.gilded-kettle",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.atlas.weir-bridge",
+      "toEntityId": "location.caldris.bramblebridge.the-crooked-saint",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.atlas.weir-bridge",
+      "toEntityId": "location.caldris.bramblebridge.tibbs-watch-post",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.bramblebridge.little-quay",
+      "toEntityId": "location.caldris.bramblebridge.the-bent-penny",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.bramblebridge.old-weir-mill",
+      "toEntityId": "location.caldris.bramblebridge.pike-house",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.bramblebridge.pike-house",
+      "toEntityId": "location.caldris.bramblebridge.tibbs-watch-post",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.1f5825ce8de76186912b",
+      "toEntityId": "location.caldris.gilded-kettle",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.bb80046299442051b354",
-      "toEntityId": "location.caldris.alderwick.button-hills.merebutton",
+      "fromEntityId": "fact.caldris.atlas.connection.45e8894204d8cad6c9d3",
+      "toEntityId": "location.caldris.bramblebridge.pike-house",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.6db45c1021e8a40db9e4",
-      "toEntityId": "location.caldris.wrens-hollow",
+      "fromEntityId": "fact.caldris.atlas.connection.6ac5576aefa1a276c971",
+      "toEntityId": "location.caldris.bramblebridge.the-bent-penny",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.726f997ef357836094a9",
-      "toEntityId": "location.caldris.alderwick.highmead.house-of-the-ninth-angle",
+      "fromEntityId": "fact.caldris.atlas.connection.b3b92d69d9c961638697",
+      "toEntityId": "location.caldris.bramblebridge.the-crooked-saint",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.08748397fd5ac0f84040",
-      "toEntityId": "location.caldris.wrens-hollow",
+      "fromEntityId": "fact.caldris.atlas.connection.c1ccae049f9312049afd",
+      "toEntityId": "location.caldris.bramblebridge.old-weir-mill",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.c4ac8fe0658f3617f180",
+      "toEntityId": "location.caldris.bramblebridge.tibbs-watch-post",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.4721a4b9152e7df7b54a",
+      "toEntityId": "location.caldris.lore.ashglass-house",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.0b65fcf42e785a6491b9",
+      "toEntityId": "location.caldris.bramblebridge.the-crooked-saint",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.862423084c4f31c274a4",
-      "toEntityId": "location.caldris.alderwick.button-hills.merebutton",
+      "fromEntityId": "route.caldris.atlas.1f5825ce8de76186912b",
+      "toEntityId": "location.caldris.gilded-kettle",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.bb80046299442051b354",
-      "toEntityId": "location.caldris.alderwick.button-hills.merebutton",
+      "fromEntityId": "route.caldris.atlas.6ba9fef8c55cd5978c4c",
+      "toEntityId": "location.caldris.gilded-kettle",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.cffe286414b23b815ac8",
-      "toEntityId": "location.caldris.wrens-hollow",
+      "fromEntityId": "route.caldris.atlas.a52d1ec6aaf2969fe55d",
+      "toEntityId": "location.caldris.bramblebridge.the-crooked-saint",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.6db45c1021e8a40db9e4",
-      "toEntityId": "location.caldris.wrens-hollow",
+      "fromEntityId": "route.caldris.atlas.af7bc95522604d65eff4",
+      "toEntityId": "location.caldris.gilded-kettle",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.eaa93a91dd996996b629",
+      "toEntityId": "location.caldris.gilded-kettle",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.cfbb2cde74755cd2bf2c",
-      "toEntityId": "location.caldris.wrens-hollow",
+      "fromEntityId": "route.caldris.atlas.16ff38e32cea78cc0794",
+      "toEntityId": "location.caldris.bramblebridge.the-bent-penny",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.5a2377e9de9ab6187537",
-      "toEntityId": "location.caldris.alderwick.highmead.house-of-the-ninth-angle",
+      "fromEntityId": "route.caldris.atlas.658f0d5efd93ee1d3118",
+      "toEntityId": "location.caldris.bramblebridge.the-bent-penny",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.7c3fc96dae5375473e04",
-      "toEntityId": "location.caldris.alderwick.highmead.house-of-the-ninth-angle",
+      "fromEntityId": "route.caldris.atlas.6ac5576aefa1a276c971",
+      "toEntityId": "location.caldris.bramblebridge.the-bent-penny",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.6c8c697dc5a07b38a178",
+      "toEntityId": "location.caldris.bramblebridge.the-bent-penny",
       "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.b3b92d69d9c961638697",
+      "toEntityId": "location.caldris.bramblebridge.the-crooked-saint",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.b3f53fa90e90db7e6072",
+      "toEntityId": "location.caldris.bramblebridge.the-crooked-saint",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.3a096f003e6d59ae8640",
+      "toEntityId": "location.caldris.bramblebridge.tibbs-watch-post",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.3a096f003e6d59ae8640",
+      "toEntityId": "location.caldris.bramblebridge.pike-house",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.45e8894204d8cad6c9d3",
+      "toEntityId": "location.caldris.bramblebridge.pike-house",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.45e8894204d8cad6c9d3",
+      "toEntityId": "location.caldris.bramblebridge.tibbs-watch-post",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.461488e9105893ef86e6",
+      "toEntityId": "location.caldris.bramblebridge.tibbs-watch-post",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.464ff2cd59dc0c576da2",
+      "toEntityId": "location.caldris.bramblebridge.old-weir-mill",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.86ca7a999a96498cea0a",
+      "toEntityId": "location.caldris.bramblebridge.pike-house",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.86ca7a999a96498cea0a",
+      "toEntityId": "location.caldris.bramblebridge.old-weir-mill",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.bb763bf19f41571c4c67",
+      "toEntityId": "location.caldris.bramblebridge.tibbs-watch-post",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.c1ccae049f9312049afd",
+      "toEntityId": "location.caldris.bramblebridge.old-weir-mill",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.c1ccae049f9312049afd",
+      "toEntityId": "location.caldris.bramblebridge.pike-house",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.c4ac8fe0658f3617f180",
+      "toEntityId": "location.caldris.bramblebridge.tibbs-watch-post",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.d23420892dcbc04e6c73",
+      "toEntityId": "location.caldris.bramblebridge.old-weir-mill",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.e12131ed329b985be6bb",
+      "toEntityId": "location.caldris.bramblebridge.tibbs-watch-post",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.98800f1bba10c3311608",
+      "toEntityId": "location.caldris.lore.cinder-meadow",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.a654ac3518964ffb1d99",
+      "toEntityId": "location.caldris.lore.cinder-meadow",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.4721a4b9152e7df7b54a",
+      "toEntityId": "location.caldris.lore.ashglass-house",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.475bacfdff390e96b7b7",
+      "toEntityId": "location.caldris.lore.ashglass-house",
+      "qualifiedKind": "game.core.world.route.to",
       "value": {}
     }
   ]

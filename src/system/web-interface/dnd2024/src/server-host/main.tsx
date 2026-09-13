@@ -32,6 +32,7 @@ import { markBootstrapResponse } from "../observability/performance.js";
 import type { CurrentDisplay, HubStore } from "../data/hub-store";
 import type { CurrentViewResourceOwner } from "../data/current-resource-owner";
 import type { InstalledContentRequest } from "../server/effective-content";
+import type { LorePageRequest, WorldLorePage } from "../data/world-lore-page";
 import type { ItemDefinitionRequest, ItemRegistryClient, ItemRegistryRequest } from "../server/item-registry";
 import type { RecipeDefinitionRequest, RecipeRegistryClient, RecipeRegistryRequest } from "../server/recipe-registry";
 import {
@@ -324,6 +325,19 @@ async function loadFactionPage(envelope: ReadyHubEnvelope, cursor: string | null
   return tableResources.loadFactionPage({ envelope, cursor }, signal);
 }
 
+async function loadLorePage(envelope: ReadyHubEnvelope, request: LorePageRequest, signal: AbortSignal): Promise<WorldLorePage> {
+  const source = connectedSourceFor(envelope);
+  if (!source || signal.aborted) throw new ViewReadError("authorization", "Refresh the authorized table before browsing lore.");
+  const ticket = connectedSources.begin(connectedSourceScope(source), "lore");
+  const { readWorldLorePage } = await import("../server/world-lore-page");
+  const page = await withinDevelopmentInteraction("lore-page", () => readWorldLorePage({ source, request,
+    origin: window.location.origin,
+    fetchImpl: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, { ...init, signal }),
+  }));
+  connectedSources.current(ticket, signal);
+  return page;
+}
+
 async function readCampaignDetailsObject(
   { envelope }: CampaignDetailsObjectRequest,
   signal: AbortSignal,
@@ -469,15 +483,19 @@ async function loadDeferredSection(
   preferCached = true,
   onProgress?: (update: DeferredHubUpdate) => Promise<void> | void,
 ): Promise<DeferredHubUpdate | CurrentDisplay> {
+  if (section === "locations") {
+    // Retain the root admission for later detail/map scope walks, then project the existing
+    // bounded directory reader into Redux once for flat filtering and local pagination.
+    await worldResources.loadScope({
+      envelope,
+      scopeId: envelope.contextSelection?.selectedWorldId ?? envelope.world.id,
+      cursor: null,
+    }, signal);
+    return readDeferredSectionObject({ envelope }, section, signal);
+  }
   return section === "context"
     ? tableResources.loadCampaignContext({ envelope }, signal)
-    : section === "locations"
-      ? worldResources.loadScope({
-        envelope,
-        scopeId: envelope.contextSelection?.selectedWorldId ?? envelope.world.id,
-        cursor: null,
-      }, signal)
-      : ["people", "history"].includes(section)
+    : ["people", "history"].includes(section)
         ? worldResources.loadInformation({ envelope, section: section as WorldInformationRequest["section"] }, signal)
         : section === "lore"
           ? readDeferredSectionObject({ envelope }, section, signal, onProgress)
@@ -660,6 +678,7 @@ try {
             loadRecipeRegistryPage={loadRecipeRegistryPage}
             loadRecipeDefinition={loadRecipeDefinition}
             loadFactionPage={loadFactionPage}
+            loadLorePage={loadLorePage}
             loadCampaignDetails={loadCampaignDetails}
             loadDeferredSection={loadDeferredSection}
             loadWorldScope={loadWorldScope}

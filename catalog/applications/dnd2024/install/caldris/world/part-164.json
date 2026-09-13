@@ -3,14 +3,100 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
-      "entityId": "location.caldris.lore.the-listening-house",
-      "name": "The Listening House",
+      "entityId": "actor.caldris.merrit-vale",
+      "name": "Merrit Vale",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "The cheerful, meddling keeper of the Gilded Kettle wants to trace letters addressed to a burned inn while ensuring hospitality never becomes a trap for the next generation.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.gilded-kettle",
+        "slot": "occupant"
+      }
+    },
+    {
+      "entityId": "actor.caldris.ordrun-vess",
+      "name": "Master Ordrun Vess",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "Headmaster of the Tensor Sect and the warrior who trained Ganji personally. He genuinely loves Ganji but cannot accept his right to leave, and has sent monks down the Lantern Road to bring him home.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.alderwick.highmead.house-of-the-ninth-angle",
+        "slot": "presence"
+      }
+    },
+    {
+      "entityId": "item.caldris.ganji.carving-knife",
+      "name": "Ganji's Carving Knife",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.core.definition-link",
+          "value": {
+            "definition": {
+              "entityId": "dnd2024.extension.caldris.item.ganjis-carving-knife.v1"
+            },
+            "definitionRevision": 1
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.item.quantity",
+          "value": {
+            "current": 1
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "actor.caldris.ganji",
+        "slot": "carried"
+      }
+    },
+    {
+      "entityId": "item.caldris.ganji.quarterstaff",
+      "name": "Ganji's Quarterstaff",
+      "components": [
+        {
+          "qualifiedTypeId": "dnd2024.core.definition-link",
+          "value": {
+            "definition": {
+              "entityId": "dnd2024.extension.caldris.item.ganjis-quarterstaff.v1"
+            },
+            "definitionRevision": 1
+          }
+        },
+        {
+          "qualifiedTypeId": "dnd2024.item.quantity",
+          "value": {
+            "current": 1
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "actor.caldris.ganji",
+        "slot": "carried"
+      }
+    },
+    {
+      "entityId": "location.caldris.alderwick.highmead.prediction-court",
+      "name": "The Prediction Court",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
-            "kind": "site",
-            "summary": "A much-repaired house used for visiting researchers and musicians. Some notebooks belong to other collections; the local inventory records where known copies went. Its garden contains descendants of propagated plants, subject to documented losses and replacements. Ysra is not assumed to live here in the present.",
+            "kind": "interior",
+            "summary": "An interior court crossed by lines of suspended bronze bells. Tensor students practise moving through it without sound while instructors introduce distractions; the sect preserves the silent path of one escaped novice as a sacred mystery.",
             "visibility": "public",
             "status": "active"
           }
@@ -18,233 +104,259 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 325,
-            "y": 395
+            "x": 500,
+            "y": 475
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.lore.seln",
+        "containerEntityId": "location.caldris.alderwick.highmead.house-of-the-ninth-angle",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.lore.the-names-house",
-      "name": "The Names House",
+      "entityId": "location.caldris.atlas.weir-bridge.east-landing",
+      "name": "East Landing",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "site",
-            "summary": "A small search archive and mediation office in Rookwater. Its records distinguish confirmed outcomes from unanswered inquiries. Later household correspondence supplements the post-war material, and restricted notes have custody rules governing their use.",
-            "visibility": "public",
-            "status": "active"
+            "status": "active",
+            "summary": "The eastern landing where the road leaves the bridge and divides around the bank.",
+            "visibility": "public"
           }
         },
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 360,
-            "y": 425
+            "x": 750,
+            "y": 495
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.lore.rookwater",
+        "containerEntityId": "location.caldris.atlas.weir-bridge",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.lore.the-narrow-bell-foundry",
-      "name": "The Narrow Bell Foundry",
+      "entityId": "location.caldris.atlas.weir-bridge.river-stairs",
+      "name": "River Stairs",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "site",
-            "summary": "A working foundry in Highmead with later furnaces and a retained collection of casting marks, failed pieces, and signal tables. Its reputation rests on inspection and repair as much as new bells. Objects attributed to its founders require assessment rather than automatic acceptance.",
-            "visibility": "public",
-            "status": "active"
+            "status": "active",
+            "summary": "Wet stone steps descending from the bridge approach to the narrow Weir.",
+            "visibility": "public"
           }
         },
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 770,
-            "y": 325
+            "x": 665,
+            "y": 635
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.alderwick.highmead",
+        "containerEntityId": "location.caldris.atlas.weir-bridge",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.lore.the-open-ledger-room",
-      "name": "The Open Ledger Room",
+      "entityId": "location.caldris.atlas.weir-bridge.toll-barrier",
+      "name": "Toll Barrier",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "site",
-            "summary": "A public reading and teaching room in Highmead with comparative seal casts, local measures, and copies of disputed obligations. Original records remain with their custodians unless specifically deposited. Staff distinguish teaching examples, authenticated evidence, and unanswered questions.",
-            "visibility": "public",
-            "status": "active"
+            "status": "active",
+            "summary": "The working barrier where lawful bridge tolls are collected.",
+            "visibility": "public"
           }
         },
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 560,
-            "y": 445
+            "x": 420,
+            "y": 455
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.alderwick.highmead",
+        "containerEntityId": "location.caldris.atlas.weir-bridge",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.lore.the-open-string-hall",
-      "name": "The Open String Hall",
+      "entityId": "location.caldris.atlas.weir-bridge.west-toll-yard",
+      "name": "West Toll Yard",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "site",
-            "summary": "A community teaching and performance hall in Willowrace with repaired instruments, ordinary rehearsal rooms, and a collection of marked teaching scores. Fees, supported places, and instrument loans are recorded separately. Its paired performances remain a living custom rather than a fixed reconstruction of the founders' first concert.",
-            "visibility": "public",
-            "status": "active"
+            "status": "active",
+            "summary": "The cobbled western approach between Bridge House and the bridge.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 430,
+            "y": 500
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.weir-bridge",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.gilded-kettle.cloak-porch",
+      "name": "Cloak Porch",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "The covered entrance where guests shed rainwater and hang wet cloaks.",
+            "visibility": "public"
           }
         },
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
             "x": 455,
-            "y": 630
+            "y": 760
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.lore.willowrace",
+        "containerEntityId": "location.caldris.gilded-kettle",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.lore.the-orchard-of-departures",
-      "name": "The Orchard of Departures",
+      "entityId": "location.caldris.gilded-kettle.common-room",
+      "name": "Common Room",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "site",
-            "summary": "A nursery and memorial plot in Boughmeet with propagated descendants of some older trees and replacements for others. Labels distinguish documented continuity from commemorative replanting. The associated collection keeps forwarding notes and recipes contributed by travelling households.",
-            "visibility": "public",
-            "status": "active"
+            "status": "active",
+            "summary": "The inn’s broad common room, with crowded tables, a hearth, and sightlines to the stair and serving hatch.",
+            "visibility": "public"
           }
         },
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 530,
-            "y": 690
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.lore.boughmeet",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.lore.the-pear-walk",
-      "name": "The Pear Walk",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "A quiet path through a younger orchard beside the library grounds. Aveline's stone was reset after later bank damage; records of that work preserve the connection to the original burial. The pear lineage has survived through grafting, replacement, and at least one disputed identification.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 175,
+            "x": 300,
             "y": 440
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.lore.sallowmere",
+        "containerEntityId": "location.caldris.gilded-kettle",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.lore.the-quiet-archive",
-      "name": "The Quiet Archive",
+      "entityId": "location.caldris.gilded-kettle.kitchen",
+      "name": "Kitchen",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "site",
-            "summary": "A small archive and copying business in Leth Sarai, occupying repaired rooms above an ordinary shop. Its collections have moved within the district several times; custody lists explain the surviving material.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 575,
-            "y": 300
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.lore.leth-sarai",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.lore.the-shared-bank",
-      "name": "The Shared Bank",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "A maintained riverbank work in the Penn's Reach district, repeatedly repaired since the wartime flood. A small marker records the shared labour, while local maintenance documents identify later alterations. Its present condition depends on inspection and repair.",
-            "visibility": "public",
-            "status": "active"
+            "status": "active",
+            "summary": "The working kitchen behind the common room, lined with copper pots and a hot range.",
+            "visibility": "public"
           }
         },
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
             "x": 650,
-            "y": 720
+            "y": 250
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.lore.penns-reach",
+        "containerEntityId": "location.caldris.gilded-kettle",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.lore.the-twelve-windows",
-      "name": "The Twelve Windows",
+      "entityId": "location.caldris.gilded-kettle.pantry",
+      "name": "Pantry",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "site",
-            "summary": "A rebuilt school and communal dining room in Highmead's Dunmere quarter. Successive windows preserve the tradition of mixed donated glass. Its early slates survive mainly as reused fragments and copied exercises.",
+            "status": "active",
+            "summary": "A compact pantry of dry goods, preserves, and shelves beside the kitchen.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 675,
+            "y": 520
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.gilded-kettle",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.gilded-kettle.yard",
+      "name": "Inn Yard",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "The service yard behind the inn, reached from the kitchen and the lane.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 850,
+            "y": 420
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.gilded-kettle",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.the-chalk-stag-chamber",
+      "name": "The Chalk Stag Chamber",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A restricted archaeological chamber beneath the Rusk Hollow storehouse complex. A safe upper approach permits examination of the carving; deeper passages need a separate assessment after each significant collapse.",
             "visibility": "public",
             "status": "active"
           }
@@ -252,394 +364,40 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 295,
-            "y": 615
+            "x": 620,
+            "y": 450
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.alderwick.highmead",
+        "containerEntityId": "location.caldris.lore.rusk-hollow",
         "slot": "location"
       }
     }
   ],
   "relationships": [
     {
-      "fromEntityId": "secret.caldris.lore.place-the-pear-walk.1",
-      "toEntityId": "location.caldris.lore.the-pear-walk",
+      "fromEntityId": "secret.caldris.quest.ganji.the-bell-without-motion",
+      "toEntityId": "location.caldris.alderwick.highmead.prediction-court",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.place-the-listening-house.1",
-      "toEntityId": "location.caldris.lore.the-listening-house",
+      "fromEntityId": "secret.caldris.lore.place-the-chalk-stag-chamber.1",
+      "toEntityId": "location.caldris.lore.the-chalk-stag-chamber",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.place-the-twelve-windows.1",
-      "toEntityId": "location.caldris.lore.the-twelve-windows",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.lore.place-the-quiet-archive.1",
-      "toEntityId": "location.caldris.lore.the-quiet-archive",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.lore.0200-0100-place-the-narrow-bell-foundry.1",
-      "toEntityId": "location.caldris.lore.the-narrow-bell-foundry",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.lore.0200-0100-place-the-orchard-of-departures.1",
-      "toEntityId": "location.caldris.lore.the-orchard-of-departures",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.0183-the-narrow-bells-of-highmead",
-      "toEntityId": "location.caldris.lore.the-narrow-bell-foundry",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.lore.0183-the-narrow-bells-of-highmead-account.1",
-      "toEntityId": "location.caldris.lore.the-narrow-bell-foundry",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.lore.0183-the-narrow-bells-of-highmead-gm-truth.1",
-      "toEntityId": "location.caldris.lore.the-narrow-bell-foundry",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.lore.0183-the-narrow-bells-of-highmead-traces-and-stories.1",
-      "toEntityId": "location.caldris.lore.the-narrow-bell-foundry",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.lore.0100-0050-place-the-names-house.1",
-      "toEntityId": "location.caldris.lore.the-names-house",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.lore.0100-0050-place-the-open-string-hall.1",
-      "toEntityId": "location.caldris.lore.the-open-string-hall",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.lore.0100-0050-place-the-shared-bank.1",
-      "toEntityId": "location.caldris.lore.the-shared-bank",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.lore.0050-0000-place-the-open-ledger-room.1",
-      "toEntityId": "location.caldris.lore.the-open-ledger-room",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.dunmere-steps",
-      "toEntityId": "location.caldris.lore.the-twelve-windows",
+      "fromEntityId": "location.caldris.alderwick.highmead.house-of-the-ninth-angle",
+      "toEntityId": "location.caldris.alderwick.highmead.prediction-court",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.lore.rainbell-orchard",
-      "toEntityId": "location.caldris.lore.the-orchard-of-departures",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.the-hollow-mint",
-      "toEntityId": "location.caldris.lore.the-narrow-bell-foundry",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.the-house-of-paired-seals",
-      "toEntityId": "location.caldris.lore.the-narrow-bell-foundry",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.the-house-of-paired-seals",
-      "toEntityId": "location.caldris.lore.the-open-ledger-room",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.the-open-ledger-room",
-      "toEntityId": "location.caldris.lore.the-twelve-windows",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.mothwatch-kiln",
-      "toEntityId": "location.caldris.lore.the-quiet-archive",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.rookwater",
-      "toEntityId": "location.caldris.lore.the-names-house",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.sallowmere",
-      "toEntityId": "location.caldris.lore.the-pear-walk",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.seln",
-      "toEntityId": "location.caldris.lore.the-listening-house",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.sunborrow-house",
-      "toEntityId": "location.caldris.lore.the-listening-house",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.the-house-of-salt-letters",
-      "toEntityId": "location.caldris.lore.the-quiet-archive",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.the-last-measure-workshop",
-      "toEntityId": "location.caldris.lore.the-open-string-hall",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.the-open-string-hall",
-      "toEntityId": "location.caldris.lore.willowrace",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.fbaefa715b2f6774499b",
-      "toEntityId": "location.caldris.lore.the-twelve-windows",
+      "fromEntityId": "fact.caldris.atlas.closed.91214f312e66bb13f330",
+      "toEntityId": "location.caldris.lore.the-chalk-stag-chamber",
       "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.06653be0490bcacf76f1",
-      "toEntityId": "location.caldris.lore.the-open-ledger-room",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.3add01673ce6c5036862",
-      "toEntityId": "location.caldris.lore.the-orchard-of-departures",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.e532dc1f63ab506b68ac",
-      "toEntityId": "location.caldris.lore.the-open-string-hall",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.eb14b2b9db8066b227fd",
-      "toEntityId": "location.caldris.lore.the-narrow-bell-foundry",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.0e8cf8bef168251e8812",
-      "toEntityId": "location.caldris.lore.the-listening-house",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.40cc9587edaab785ecc5",
-      "toEntityId": "location.caldris.lore.the-quiet-archive",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.06653be0490bcacf76f1",
-      "toEntityId": "location.caldris.lore.the-open-ledger-room",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.1201dba298339fc25e43",
-      "toEntityId": "location.caldris.lore.the-twelve-windows",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.1201dba298339fc25e43",
-      "toEntityId": "location.caldris.lore.the-open-ledger-room",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.1609c2068171e5f8851e",
-      "toEntityId": "location.caldris.lore.the-open-ledger-room",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.596238418848e445c2ca",
-      "toEntityId": "location.caldris.lore.the-twelve-windows",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.5cf13ddbbdd00d2976ae",
-      "toEntityId": "location.caldris.lore.the-narrow-bell-foundry",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.89540e3a121b14eee04c",
-      "toEntityId": "location.caldris.lore.the-twelve-windows",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.bfdaba5b1123558f5e58",
-      "toEntityId": "location.caldris.lore.the-narrow-bell-foundry",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.fbaefa715b2f6774499b",
-      "toEntityId": "location.caldris.lore.the-open-ledger-room",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.fbaefa715b2f6774499b",
-      "toEntityId": "location.caldris.lore.the-twelve-windows",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.3114c53c3cafc6ebc921",
-      "toEntityId": "location.caldris.lore.the-shared-bank",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.37a56dfb9fc7f1a20750",
-      "toEntityId": "location.caldris.lore.the-orchard-of-departures",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.3add01673ce6c5036862",
-      "toEntityId": "location.caldris.lore.the-orchard-of-departures",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.430a39502490a43113a8",
-      "toEntityId": "location.caldris.lore.the-shared-bank",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.a513854338053959bdc3",
-      "toEntityId": "location.caldris.lore.the-orchard-of-departures",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.b101864b8d41da3e7f77",
-      "toEntityId": "location.caldris.lore.the-orchard-of-departures",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.e54ce9498d1a32a28c40",
-      "toEntityId": "location.caldris.lore.the-narrow-bell-foundry",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.eb14b2b9db8066b227fd",
-      "toEntityId": "location.caldris.lore.the-narrow-bell-foundry",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.2b3f8e25e975881e77cf",
-      "toEntityId": "location.caldris.lore.the-open-string-hall",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.b967f8a17a9e98ca5768",
-      "toEntityId": "location.caldris.lore.the-open-string-hall",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.e532dc1f63ab506b68ac",
-      "toEntityId": "location.caldris.lore.the-open-string-hall",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.e99ced9ba78548d3183f",
-      "toEntityId": "location.caldris.lore.the-open-string-hall",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.40cc9587edaab785ecc5",
-      "toEntityId": "location.caldris.lore.the-quiet-archive",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.57b3f1d2b27544c5df5c",
-      "toEntityId": "location.caldris.lore.the-quiet-archive",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.baad2a4f128e946d3db4",
-      "toEntityId": "location.caldris.lore.the-quiet-archive",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.e83220fb494177a6a9c6",
-      "toEntityId": "location.caldris.lore.the-quiet-archive",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.0e8cf8bef168251e8812",
-      "toEntityId": "location.caldris.lore.the-listening-house",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.5e14e0f6dcb13ed244e0",
-      "toEntityId": "location.caldris.lore.the-listening-house",
-      "qualifiedKind": "game.core.world.route.from",
       "value": {}
     }
   ]

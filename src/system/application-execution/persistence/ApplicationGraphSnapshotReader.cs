@@ -272,7 +272,7 @@ public sealed class ApplicationGraphSnapshotReader(
             }
             if (declaration.Page is not null)
             {
-                if (!TryMaterializePage(snapshot, declaration, pageOffset, out var paged, out var pageProblem))
+                if (!TryMaterializePage(snapshot, declaration, mapping, inputJson, pageOffset, out var paged, out var pageProblem))
                 {
                     problems.Add($"GRAPH_PAGE_INPUT_INVALID ({name}): {pageProblem}.");
                     continue;
@@ -400,6 +400,7 @@ public sealed class ApplicationGraphSnapshotReader(
     }
 
     private static bool TryMaterializePage(MechanicGraphSnapshot snapshot, GraphSnapshotRequirement declaration,
+        ApplicationMechanicProjectionMapping mapping, string inputJson,
         int offset, out MechanicGraphSnapshot paged, out string problem)
     {
         var page = declaration.Page!;
@@ -409,14 +410,20 @@ public sealed class ApplicationGraphSnapshotReader(
             problem = "The declared page step is unavailable";
             return false;
         }
-        var ordered = pageStep.Nodes.OrderBy(node => node.Id, StringComparer.Ordinal).ToArray();
+        if (!ApplicationGraphPageSelection.TrySelect(snapshot, page, mapping, inputJson, offset,
+                pageStep.Nodes, out var selection, out problem))
+        {
+            paged = snapshot;
+            return false;
+        }
+        var ordered = selection.Nodes.OrderBy(node => node.Id, StringComparer.Ordinal).ToArray();
         if (offset >= ordered.Length && (ordered.Length != 0 || offset != 0))
         {
             paged = snapshot;
             problem = "The declared graph page cursor is outside the source";
             return false;
         }
-        var selected = ordered.Skip(offset).Take(page.PageSize).Select(node => node.Id).ToHashSet(StringComparer.Ordinal);
+        var selected = ordered.Skip(offset).Take(selection.PageSize).Select(node => node.Id).ToHashSet(StringComparer.Ordinal);
         var retained = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
         var steps = new Dictionary<string, MechanicGraphStepSnapshot>(StringComparer.Ordinal);
         var containment = new List<MechanicGraphContainment>();
@@ -486,8 +493,9 @@ public sealed class ApplicationGraphSnapshotReader(
                 selectedNodes.Length, edges.Count);
         }
         var nextOffset = offset + selected.Count;
-        var pageMetadata = new MechanicGraphPage(offset, ordered.Length, page.PageSize,
-            nextOffset < ordered.Length ? nextOffset.ToString(System.Globalization.CultureInfo.InvariantCulture) : null);
+        var pageMetadata = new MechanicGraphPage(offset, ordered.Length, selection.PageSize,
+            nextOffset < ordered.Length ? nextOffset.ToString(System.Globalization.CultureInfo.InvariantCulture) : null,
+            selection.Fingerprint, selection.Facets);
         paged = snapshot with { Steps = steps, Containment = containment, Page = pageMetadata };
         problem = string.Empty;
         return true;

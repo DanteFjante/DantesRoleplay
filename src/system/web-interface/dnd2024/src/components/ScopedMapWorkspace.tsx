@@ -76,12 +76,17 @@ export function ScopedMapWorkspace({
   const [selectedFactionOverlayId, setSelectedFactionOverlayId] = useState("");
   const [viewMode, setViewMode] = useState<MapViewMode>("map");
   const [mapViews, setMapViews] = useState<Record<string, MapViewportState>>(restoredMapViews);
+  const [parentMapNotice, setParentMapNotice] = useState<{ requestedMapId: string; shownMapId: string } | null>(null);
   const map = resolveMapDocument(world.maps, activeMapId) as MapDocument | null;
 
   useEffect(() => {
+    if (scopeState === "loading") return;
     const target = resolveMapNavigation(world.maps, activeMapId, selectedFeatureId);
-    if (target.mapId !== activeMapId) onNavigateToFeature(target.mapId, target.featureId);
-  }, [world.maps, activeMapId, selectedFeatureId, onNavigateToFeature]);
+    if (target.mapId !== activeMapId) {
+      setParentMapNotice({ requestedMapId: activeMapId, shownMapId: target.mapId });
+      onNavigateToFeature(target.mapId, target.featureId);
+    } else setParentMapNotice((current) => current?.shownMapId === activeMapId ? current : null);
+  }, [world.maps, activeMapId, selectedFeatureId, onNavigateToFeature, scopeState]);
 
   useEffect(() => {
     try { window.sessionStorage.setItem(MAP_VIEW_SESSION_KEY, JSON.stringify(mapViews)); }
@@ -103,6 +108,8 @@ export function ScopedMapWorkspace({
   }
 
   const hiddenLayerIds = new Set(hiddenLayerIdsByMap[map.id] ?? []);
+  const requestedMap = parentMapNotice?.shownMapId === map.id
+    ? resolveMapDocument(world.maps, parentMapNotice.requestedMapId) as MapDocument | null : null;
   const visibleLayerIds = new Set(
     map.layers.filter((layer) => !hiddenLayerIds.has(layer.id)).map((layer) => layer.id),
   );
@@ -118,7 +125,7 @@ export function ScopedMapWorkspace({
     .filter((child) => child.baseState !== "absent");
   const directChildIds = new Set(world.locationScopes.find((scope) => scope.id === map.subject.id)?.childIds ?? []);
   const plottedLocationIds = new Set(map.features.map((entry) => entry.locationId));
-  const unplacedLocations = world.locations.filter((location) =>
+  const unplacedLocations = scopeState === "loading" ? [] : world.locations.filter((location) =>
     (directChildIds.has(location.id) || location.parentId === map.subject.id) && !plottedLocationIds.has(location.id));
   const childMapLocationIds = new Set(childScopes.map((child) =>
     world.maps.find((entry) => entry.id === child.mapId)?.subject.id));
@@ -149,6 +156,7 @@ export function ScopedMapWorkspace({
   };
 
   const selectFeature = (featureId: string) => {
+    setParentMapNotice(null);
     const target = map.features.find((candidate) => candidate.id === featureId);
     if (target && hiddenLayerIds.has(target.layerId)) {
       setHiddenLayerIdsByMap((current) => ({
@@ -158,6 +166,10 @@ export function ScopedMapWorkspace({
     }
     onFeatureSelect(featureId);
   };
+  const changeMap = (mapId: string) => {
+    setParentMapNotice(null);
+    onMapChange(mapId);
+  };
 
   return (
     <div className="world-map-view">
@@ -166,13 +178,17 @@ export function ScopedMapWorkspace({
           <span className="eyebrow">Known geography</span>
           <h1 id="main-view-heading" tabIndex={-1}>{map.subject.name} map</h1>
         </div>
-        <p>
+        {scopeState === "loading" ? <p>Loading map locations…</p> : <p>
           {visibleFeatures.length} of {map.features.length} map {map.features.length === 1 ? "marker" : "markers"} shown
           {unplacedLocations.length ? <> · {unplacedLocations.length} known {unplacedLocations.length === 1 ? "place" : "places"} without map positions</> : null}
-        </p>
+        </p>}
       </header>
 
-      <MapBreadcrumbs onSelect={onMapChange} trail={trail} />
+      <MapBreadcrumbs onSelect={changeMap} trail={trail} />
+      {requestedMap ? <p className="map-scope-status" role="status">
+        Showing {map.subject.name} for {requestedMap.subject.name}. {requestedMap.baseState === "unavailable"
+          ? "Its local map could not be loaded." : "This place has no separate map."}
+      </p> : null}
 
       {scopeState === "loading" ? (
         <section aria-busy="true" className="map-scope-status" role="status">
@@ -190,7 +206,7 @@ export function ScopedMapWorkspace({
 
       <MapAtlasSearch
         activeMapId={map.id}
-        onNavigate={onNavigateToFeature}
+        onNavigate={(mapId, featureId) => { setParentMapNotice(null); onNavigateToFeature(mapId, featureId); }}
         onOpenLocation={onOpenLocation}
         world={world}
       />
@@ -225,14 +241,18 @@ export function ScopedMapWorkspace({
       </div>
 
       <div className="world-map-layout">
-        {viewMode === "map" ? (
+        {scopeState === "loading" && (viewMode === "list" || !map.base) ? (
+          <section className={viewMode === "list" ? "map-feature-list" : "world-map-panel"} aria-busy="true">
+            <p>Loading map locations…</p>
+          </section>
+        ) : viewMode === "map" ? (
           <MapCanvas
             annotatedFeatureIds={annotatedFeatureIds}
             currentLocationId={currentLocationId}
             influencedFeatureIds={influencedFeatureIds}
             map={visibleMap}
             onFeatureSelect={selectFeature}
-            onOpenScope={onMapChange}
+            onOpenScope={changeMap}
             onViewportChange={(viewport) => setMapViews((current) => ({
               ...current,
               [map.id]: viewport,
@@ -249,7 +269,7 @@ export function ScopedMapWorkspace({
             influencedFeatureIds={influencedFeatureIds}
             map={visibleMap}
             onFeatureSelect={selectFeature}
-            onOpenScope={onMapChange}
+            onOpenScope={changeMap}
             scopeLinkFeatureIds={scopeLinkFeatureIds}
             selectedFeatureId={selectedFeatureId}
             unplacedLocations={unplacedLocations}
@@ -267,7 +287,7 @@ export function ScopedMapWorkspace({
             }
             map={map}
             onOpenLocation={onOpenLocation}
-            onOpenScope={onMapChange}
+            onOpenScope={changeMap}
             overlays={
               feature
                 ? (resolveFeatureOverlays(overlays, map.id, feature.id) as CampaignMapOverlay[])
@@ -279,9 +299,9 @@ export function ScopedMapWorkspace({
             onSelectFeature={selectFeature}
             overlays={mapOverlays}
           />
-          <MapScopeLinks childScopes={childScopes} onOpenScope={onMapChange}
+          {scopeState !== "loading" ? <MapScopeLinks childScopes={childScopes} onOpenScope={changeMap}
             unplacedLocations={unplacedLocations.filter((location) => !childMapLocationIds.has(location.id))}
-            onOpenLocation={onOpenLocation} />
+            onOpenLocation={onOpenLocation} /> : null}
         </div>
       </div>
     </div>

@@ -3,6 +3,29 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
+      "entityId": "chronology.caldris.incident.selucia.the-palace-vote",
+      "name": "The Palace Vote",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Palace Vote",
+            "summary": "An unfinished palace became public land after architects failed to agree on a roof. Present consequence: A private ownership suit could unexpectedly change tax obligations across the kingdom.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -250000000,
+            "precision": "era",
+            "dateLabel": "Crownmaking",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.selucia",
+        "slot": "history"
+      }
+    },
+    {
       "entityId": "chronology.caldris.incident.seven-lamps-league.the-fifth-store",
       "name": "The Fifth Store",
       "components": [
@@ -373,27 +396,21 @@
         "containerEntityId": "location.caldris.namarra",
         "slot": "creatures"
       }
-    },
-    {
-      "entityId": "creature.caldris.tradition.mere-drake",
-      "name": "Mere drake",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.motive",
-          "value": {
-            "status": "active",
-            "summary": "Confirmed river predator, not a true dragon. Story use: Ferry hazard, poaching, breeding-season detour.",
-            "visibility": "public"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.alderwick",
-        "slot": "creatures"
-      }
     }
   ],
   "relationships": [
+    {
+      "fromEntityId": "chronology.caldris.incident.selucia.the-palace-vote",
+      "toEntityId": "location.caldris.selucia",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.incident.selucia.the-palace-vote",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
     {
       "fromEntityId": "chronology.caldris.incident.seven-lamps-league.the-fifth-store",
       "toEntityId": "location.caldris.seven-lamps-league",

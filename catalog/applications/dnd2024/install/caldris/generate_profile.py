@@ -1,8 +1,8 @@
 """Build the complete Caldris installation from committed authored sources.
 
 The retained runtime capture supplies authored entities, never SQL/runtime history.
-The later atlas and clean-map packet own geography. Unreviewed old markers on a
-replacement image are omitted; the places remain available in the directory.
+The later atlas owns containment. Reviewed, image-bound anchors cover the clean
+map family; older labeled visuals remain archived and recoverable.
 """
 import argparse
 import copy
@@ -119,8 +119,6 @@ def build():
     packet = read(ROOT / 'catalog/applications/dnd2024/assets/caldris/measure-of-mercy/asset-import-manifest.json')
     new_map_owners = {asset['ownerLocationId'] for asset in packet['assets'] if asset['kind'] == 'map'}
     opening_asset_owners = {asset['ownerLocationId'] for asset in packet['assets']}
-    packet_positions = {asset['ownerLocationId'] for asset in packet['assets'] if asset['mapAnchor'] is not None}
-    packet_positions.update(value['id'] for value in packet['locationCreates'])
     entities = {}
     for row in rows('system_ecs_entity'):
         identity=row[2]
@@ -163,7 +161,6 @@ def build():
         if place.get('x') is not None and place.get('y') is not None:
             replace_component(entity,'game.core.world.map.anchor',{'x':place['x'],'y':place['y']})
 
-    omitted_markers=[]
     for identity,entity in entities.items():
         if entity['containment'] is None:
             if identity.startswith(CAMPAIGN+'.arc.'):
@@ -173,11 +170,31 @@ def build():
             else:
                 raise ValueError('Missing authored containment: '+identity)
         entity['containment']=remap(entity['containment'])
-        if entity['containment']['containerEntityId'] in new_map_owners and identity not in packet_positions:
-            if 'game.core.world.map.anchor' in component_map(entity):
-                omitted_markers.append(identity)
-                entity['components']=[c for c in entity['components'] if c['qualifiedTypeId']!='game.core.world.map.anchor']
         entity['components']=remap(entity['components'])
+
+    # Coordinates belong to the exact reviewed image, never whichever older
+    # background happened to share the owner ID. Every direct child is covered.
+    frames=read(HERE/'map-anchors.json')['frames']
+    assert {frame['ownerLocationId'] for frame in frames} == new_map_owners
+    for frame in frames:
+        owner=frame['ownerLocationId']
+        visual=component_map(entities[owner])['game.core.world.map.visual']
+        assert visual['status']=='active'
+        assert all(v['sha256']==frame['imageSha256'] for v in visual['variants'].values()),owner
+        assert hashlib.sha256((ROOT/frame['imagePath']).read_bytes()).hexdigest()==frame['imageSha256'],owner
+        direct_children={identity for identity,entity in entities.items()
+                         if entity['containment']['containerEntityId']==owner
+                         and 'game.core.world.location' in component_map(entity)}
+        reviewed={anchor['locationId'] for anchor in frame['anchors']}
+        assert len(reviewed)==len(frame['anchors']) and reviewed==direct_children,(owner,reviewed^direct_children)
+        for anchor in frame['anchors']:
+            assert 0<=anchor['x']<=1000 and 0<=anchor['y']<=1000
+            replace_component(entities[anchor['locationId']],'game.core.world.map.anchor',
+                              {'x':anchor['x'],'y':anchor['y']})
+    for identity,entity in entities.items():
+        visual=component_map(entity).get('game.core.world.map.visual')
+        if visual and identity not in new_map_owners:
+            replace_component(entity,'game.core.world.map.visual',{**visual,'status':'archived'})
 
     # Do not resurrect obsolete spell access omitted by the reviewed opening.
     pending={p['qualifiedTypeId'] for p in opening_media.get('pendingCharacterComponents',[])}
@@ -223,7 +240,7 @@ def build():
         content=(ROOT/entry['sourcePath']).read_bytes()
         assert len(content)==entry['byteLength'] and hashlib.sha256(content).hexdigest()==entry['sha256']
     result=ordered(entities)
-    return root,result,relationships,media,omitted_markers
+    return root,result,relationships,media,[]
 
 def main():
     parser=argparse.ArgumentParser()
@@ -233,6 +250,10 @@ def main():
     root,entities,relationships,media,omitted=build()
     parts=packages(entities,relationships)
     for index,part in enumerate(parts):write(HERE/f'world/part-{index+1:03}.json',part)
+    expected_parts={f'part-{index+1:03}.json' for index in range(len(parts))}
+    for path in (HERE/'world').glob('part-*.json'):
+        if path.stem.removeprefix('part-').isdigit() and path.name not in expected_parts:
+            path.unlink()
     template=read(ROOT/'catalog/applications/dnd2024/install/installation.template.json')
     runtime=next(s for s in template['stateSpaces'] if s['scope']=='runtime-state-space')
     runtime['root']={k:v for k,v in root.items() if k!='containment'}
@@ -246,7 +267,7 @@ def main():
     if args.repair_database:
         assert args.repair_output
         prepare_repair(args.repair_database,args.repair_output,root,entities,relationships,media)
-    print(json.dumps({'entities':len(entities),'components':sum(len(e['components']) for e in entities),'relationships':len(relationships),'places':sum('game.core.world.location' in component_map(e) for e in entities),'packages':len(parts),'media':len(media),'unreviewedMarkersOmitted':len(omitted)},indent=2))
+    print(json.dumps({'entities':len(entities),'components':sum(len(e['components']) for e in entities),'relationships':len(relationships),'places':sum('game.core.world.location' in component_map(e) for e in entities),'packages':len(parts),'media':len(media),'cleanMaps':len(read(HERE/'map-anchors.json')['frames'])},indent=2))
 
 def prepare_repair(database,output,root,entities,relationships,media):
     if output.exists() and any(output.iterdir()):

@@ -3,6 +3,32 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
+      "entityId": "fact.caldris.custom.kethria.the-shield-loaf",
+      "name": "The Shield Loaf",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "A household breaks its stamped winter loaf only after confirming neighbors also have bread. Disagreement: Wealthy homes treat it symbolically; mountain villages still conduct the check. Story use: Missing flour becomes a network of mutual aid rather than a solitary theft.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.kethria",
+        "slot": "knowledge"
+      }
+    },
+    {
       "entityId": "fact.caldris.custom.kethria.the-unridden-saddle",
       "name": "The Unridden Saddle",
       "components": [
@@ -495,32 +521,6 @@
         "containerEntityId": "location.caldris.dunmarrow",
         "slot": "knowledge"
       }
-    },
-    {
-      "entityId": "fact.caldris.dossier.kethria",
-      "name": "Polity dossier — Kethria",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.fact",
-          "value": {
-            "status": "active",
-            "summary": "Kethria — terraces above the copper valleys. Land and livelihood: terraced grain and fruit, copper, tin, mountain timber, snowmelt canals, Rule: Queen Arshala, valley councils, mine compacts, and a ritual office that records copper Character: precise hospitality, communal irrigation work, wrestling, carved doors, dry Magic: openly discussed but rarely seen; mountain monasteries keep dangerous texts while Old wound: the Crownmaking dynasty accepted a secret dragon bargain to prevent invasion. Current pressure: the copper tithe has continued for four centuries, but someone recently",
-            "provenance": "Caldris world bible — polity dossiers",
-            "visibility": "public"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.knowledge.classification",
-          "value": {
-            "subjectKind": "state",
-            "sensitivity": "open"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.kethria",
-        "slot": "knowledge"
-      }
     }
   ],
   "relationships": [
@@ -568,6 +568,18 @@
     },
     {
       "fromEntityId": "fact.caldris.custom.veyr-marches.tenth-plate-supper",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.kethria.the-shield-loaf",
+      "toEntityId": "location.caldris.kethria",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.kethria.the-shield-loaf",
       "toEntityId": "world.caldris",
       "qualifiedKind": "game.core.world.knowledge.in-world",
       "value": {}
@@ -748,18 +760,6 @@
     },
     {
       "fromEntityId": "fact.caldris.dossier.dunmarrow",
-      "toEntityId": "world.caldris",
-      "qualifiedKind": "game.core.world.knowledge.in-world",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.dossier.kethria",
-      "toEntityId": "location.caldris.kethria",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.dossier.kethria",
       "toEntityId": "world.caldris",
       "qualifiedKind": "game.core.world.knowledge.in-world",
       "value": {}

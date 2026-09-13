@@ -4,6 +4,7 @@ import Ajv from 'ajv/dist/2020.js';
 import { readFile, access } from 'node:fs/promises';
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), '../../../../..');
 const profile = 'catalog/applications/dnd2024/install/caldris';
@@ -17,6 +18,7 @@ const components = entity => Object.fromEntries(entity.components.map(value => [
 const atlas = await read('docs/world/caldris/maps/lore-atlas/atlas-gm.json');
 const packet = await read('catalog/applications/dnd2024/assets/caldris/measure-of-mercy/asset-import-manifest.json');
 const opening = await read(`${profile}/opening-state.json`);
+const reviewedMaps = await read(`${profile}/map-anchors.json`);
 
 test('Caldris installation includes the complete authored world in ordered bounded packages', () => {
   assert.equal(byId.size, entities.length, 'Each identity is declared once');
@@ -49,21 +51,19 @@ test('Caldris installation includes the complete authored world in ordered bound
   assert.equal(parts.flatMap(part => part.relationships).filter(edge => edge.qualifiedKind === 'game.core.world.faction.in-world').length, 35);
 });
 
-test('Caldris replacement maps and their reviewed markers remain authoritative', () => {
+test('Caldris clean maps cover every direct child with anchors tied to the exact artwork', async () => {
   const mapAssets = packet.assets.filter(asset => asset.kind === 'map');
   const owners = new Set(mapAssets.map(asset => asset.ownerLocationId));
-  const positions = new Set(packet.assets.filter(asset => asset.mapAnchor).map(asset => asset.ownerLocationId));
-  for (const value of packet.locationCreates) positions.add(value.id);
   assert.equal(owners.size, 8);
+  assert.deepEqual(new Set(reviewedMaps.frames.map(frame => frame.ownerLocationId)), owners);
+  assert.equal(reviewedMaps.frames.flatMap(frame => frame.anchors).length, 55);
   for (const asset of mapAssets) {
     const entity = byId.get(asset.ownerLocationId);
     assert.deepEqual(components(entity)[asset.bindingPlan.componentId], asset.bindingPlan.valueTemplate, asset.ownerLocationId);
-    if (asset.mapAnchor) assert.deepEqual(components(entity)['game.core.world.map.anchor'], asset.mapAnchor);
     assert.equal(entity.containment.containerEntityId, asset.parentLocationId ?? state.root.entityId);
   }
   for (const location of packet.locationCreates) {
     const entity = byId.get(location.id);
-    assert.deepEqual(components(entity)['game.core.world.map.anchor'], location.components['game.core.world.map.anchor']);
     assert.equal(entity.containment.containerEntityId, location.container.id);
   }
   for (const asset of packet.assets) {
@@ -71,10 +71,26 @@ test('Caldris replacement maps and their reviewed markers remain authoritative',
     assert.deepEqual(components(byId.get(asset.ownerLocationId))['game.core.world.location'],
       components(original)['game.core.world.location'], 'Opening descriptions remain bound to the new asset packet');
   }
-  for (const entity of entities) {
-    if (owners.has(entity.containment?.containerEntityId) && !positions.has(entity.entityId))
-      assert.equal(components(entity)['game.core.world.map.anchor'], undefined, `${entity.entityId} must not reuse an old-frame marker`);
+  for (const frame of reviewedMaps.frames) {
+    const imageBytes = await readFile(join(repo, frame.imagePath));
+    assert.equal(createHash('sha256').update(imageBytes).digest('hex'), frame.imageSha256);
+    for (const variant of Object.values(components(byId.get(frame.ownerLocationId))['game.core.world.map.visual'].variants))
+      assert.equal(variant.sha256, frame.imageSha256, 'Anchors cannot silently move to a different image frame');
+    const directChildren = entities.filter(entity => entity.containment?.containerEntityId === frame.ownerLocationId
+      && components(entity)['game.core.world.location']).map(entity => entity.entityId);
+    assert.equal(new Set(frame.anchors.map(anchor => anchor.locationId)).size, frame.anchors.length);
+    assert.deepEqual(new Set(frame.anchors.map(anchor => anchor.locationId)), new Set(directChildren));
+    for (const anchor of frame.anchors) {
+      assert.deepEqual(components(byId.get(anchor.locationId))['game.core.world.map.anchor'], { x: anchor.x, y: anchor.y });
+      assert.ok(anchor.basis.length > 0);
+    }
   }
+  const visuals = entities.map(entity => ({ id: entity.entityId, value: components(entity)['game.core.world.map.visual'] })).filter(entry => entry.value);
+  assert.equal(visuals.filter(entry => entry.value.status === 'active').length, 8);
+  assert.equal(visuals.filter(entry => entry.value.status === 'archived').length, 42);
+  for (const entry of visuals.filter(entry => !owners.has(entry.id))) assert.equal(entry.value.status, 'archived', entry.id);
+  assert.equal(components(byId.get('location.caldris.solasca'))['game.core.world.location'].status, 'active');
+  assert.equal(entities.filter(entity => components(entity)['game.core.world.location']?.status === 'active').length, 275);
 });
 
 test('Caldris setup retains every committed authored record and selects its declared homebrew extension', async () => {

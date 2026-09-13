@@ -740,12 +740,15 @@ public sealed record GraphSnapshotPageRequirement
     public string StepId { get; init; } = string.Empty;
     public string CursorInput { get; init; } = string.Empty;
     public int PageSize { get; init; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public GraphPageSelectionRequirement? Selection { get; init; }
 
     internal bool Valid(IReadOnlySet<string> stepIds, IReadOnlyList<GraphSnapshotStepRequirement> steps) =>
         StepId.Length is > 0 and <= 100 && CursorInput.Length is > 0 and <= 100
         && Identifier(StepId) && Identifier(CursorInput)
         && PageSize is >= 1 and <= ProjectionLimits.MaxGraphPageSize
         && stepIds.Contains(StepId)
+        && (Selection is null || Selection.Valid(steps, StepId))
         && steps.FirstOrDefault(step => step.Id.Equals(StepId, StringComparison.Ordinal)) is { Containment: null, Direction: not "either" };
 
     private static bool Identifier(string value) => value.All(character =>
@@ -1025,7 +1028,9 @@ public sealed record MechanicGraphSnapshot(
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] MechanicGraphPage? Page = null);
 
 public sealed record MechanicGraphPage(int Offset, int TotalCount, int PageSize,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? NextCursor);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? NextCursor,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? SelectionFingerprint = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyDictionary<string, IReadOnlyDictionary<string, int>>? Facets = null);
 
 public sealed record MechanicGraphStepSnapshot(
     IReadOnlyList<MechanicGraphNode> Nodes,

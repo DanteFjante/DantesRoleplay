@@ -3,6 +3,58 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
+      "entityId": "location.caldris.dunmarrow.moorwatch",
+      "name": "Moorwatch",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "Moorwatch began as a frontier fort and became a borough of peat cutters, shepherds, horse breeders, and military pensioners. Its straight streets end abruptly in bog.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 760,
+            "y": 330
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.dunmarrow",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.dunmarrow.rook-anvil",
+      "name": "Rook Anvil",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A forge hamlet recycling worn tools and battlefield iron beneath a rook colony that mimics hammer rhythms. Present pressure: Finished blades crack despite good workmanship.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 440,
+            "y": 735
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.dunmarrow",
+        "slot": "location"
+      }
+    },
+    {
       "entityId": "location.caldris.dunmarrow.saint-veys-crutch",
       "name": "Saint Vey's Crutch",
       "components": [
@@ -209,64 +261,30 @@
         "containerEntityId": "location.caldris.kethria",
         "slot": "location"
       }
-    },
-    {
-      "entityId": "location.caldris.kethria.the-door-valley",
-      "name": "The Door Valley",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "terraced villages in Kethria. Every house door carved with a family water history.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 340,
-            "y": 690
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.kethria",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.kethria.the-empty-saddle",
-      "name": "The Empty Saddle",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "Caravanserai at a pass where travelers hang one unused saddle in memory of those lost to winter. Present pressure: Someone removes saddles bearing particular family marks.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 610,
-            "y": 285
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.kethria",
-        "slot": "location"
-      }
     }
   ],
   "relationships": [
     {
+      "fromEntityId": "location.caldris.dunmarrow.blackcap-fell",
+      "toEntityId": "location.caldris.dunmarrow.rook-anvil",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.dunmarrow.greyharrow",
+      "toEntityId": "location.caldris.dunmarrow.moorwatch",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
       "fromEntityId": "location.caldris.dunmarrow.greyharrow",
       "toEntityId": "location.caldris.dunmarrow.stonewake",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.dunmarrow.latchwater",
+      "toEntityId": "location.caldris.dunmarrow.rook-anvil",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
@@ -301,32 +319,26 @@
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.kethria.copper-rain-terrace",
-      "toEntityId": "location.caldris.kethria.the-empty-saddle",
-      "qualifiedKind": "game.core.world.location.connected-to",
+      "fromEntityId": "fact.caldris.atlas.connection.366532aac0ef7cd0910d",
+      "toEntityId": "location.caldris.dunmarrow.rook-anvil",
+      "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.kethria.copperwell",
-      "toEntityId": "location.caldris.kethria.the-door-valley",
-      "qualifiedKind": "game.core.world.location.connected-to",
+      "fromEntityId": "fact.caldris.atlas.connection.6d20534f2e8fca660ee3",
+      "toEntityId": "location.caldris.dunmarrow.rook-anvil",
+      "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.kethria.snowgate",
-      "toEntityId": "location.caldris.kethria.the-empty-saddle",
-      "qualifiedKind": "game.core.world.location.connected-to",
+      "fromEntityId": "fact.caldris.atlas.connection.ac72c081f510cb197f20",
+      "toEntityId": "location.caldris.dunmarrow.moorwatch",
+      "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
       "fromEntityId": "fact.caldris.atlas.connection.e933bacc6abe268a94c5",
       "toEntityId": "location.caldris.dunmarrow.stonewake",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.277ba0928b403b436eb6",
-      "toEntityId": "location.caldris.kethria.the-door-valley",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
@@ -361,14 +373,14 @@
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.cec98ea2c2de4c1b2c63",
-      "toEntityId": "location.caldris.kethria.the-empty-saddle",
+      "fromEntityId": "fact.caldris.atlas.connection.0bb8355644eb8aa13944",
+      "toEntityId": "location.caldris.dunmarrow.stonewake",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.0bb8355644eb8aa13944",
-      "toEntityId": "location.caldris.dunmarrow.stonewake",
+      "fromEntityId": "fact.caldris.atlas.connection.2aa0a1d7bddbd5d40204",
+      "toEntityId": "location.caldris.dunmarrow.moorwatch",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
@@ -403,8 +415,44 @@
       "value": {}
     },
     {
+      "fromEntityId": "route.caldris.atlas.19ca82b36ed4ea4ba19c",
+      "toEntityId": "location.caldris.dunmarrow.rook-anvil",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.1b0b72d372b3f6668df7",
+      "toEntityId": "location.caldris.dunmarrow.rook-anvil",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.366532aac0ef7cd0910d",
+      "toEntityId": "location.caldris.dunmarrow.rook-anvil",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
       "fromEntityId": "route.caldris.atlas.5b75b3adb0dda53f6997",
       "toEntityId": "location.caldris.dunmarrow.saint-veys-crutch",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.5b75b3adb0dda53f6997",
+      "toEntityId": "location.caldris.dunmarrow.moorwatch",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.60fef9637a9af4376cc5",
+      "toEntityId": "location.caldris.dunmarrow.moorwatch",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.ac72c081f510cb197f20",
+      "toEntityId": "location.caldris.dunmarrow.moorwatch",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
@@ -412,6 +460,24 @@
       "fromEntityId": "route.caldris.atlas.ac72c081f510cb197f20",
       "toEntityId": "location.caldris.dunmarrow.saint-veys-crutch",
       "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.d019962b945c327bf90e",
+      "toEntityId": "location.caldris.dunmarrow.moorwatch",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.d75703023949d6c0a886",
+      "toEntityId": "location.caldris.dunmarrow.rook-anvil",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.6d20534f2e8fca660ee3",
+      "toEntityId": "location.caldris.dunmarrow.rook-anvil",
+      "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
@@ -427,6 +493,12 @@
       "value": {}
     },
     {
+      "fromEntityId": "route.caldris.atlas.fee944aba76483f03b79",
+      "toEntityId": "location.caldris.dunmarrow.rook-anvil",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
       "fromEntityId": "route.caldris.atlas.500eee28b10f7eec4f95",
       "toEntityId": "location.caldris.kethria.snowgate",
       "qualifiedKind": "game.core.world.route.from",
@@ -457,12 +529,6 @@
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.277ba0928b403b436eb6",
-      "toEntityId": "location.caldris.kethria.the-door-valley",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
       "fromEntityId": "route.caldris.atlas.3d2f340480be9662f280",
       "toEntityId": "location.caldris.kethria.breadshield-monastery",
       "qualifiedKind": "game.core.world.route.to",
@@ -470,20 +536,8 @@
     },
     {
       "fromEntityId": "route.caldris.atlas.5cc3269462592feb3f75",
-      "toEntityId": "location.caldris.kethria.the-empty-saddle",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.5cc3269462592feb3f75",
       "toEntityId": "location.caldris.kethria.snowgate",
       "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.5e67f887eda38449e0a9",
-      "toEntityId": "location.caldris.kethria.the-door-valley",
-      "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
@@ -496,12 +550,6 @@
       "fromEntityId": "route.caldris.atlas.7fde9d8c4a0d3d973b84",
       "toEntityId": "location.caldris.kethria.copper-rain-terrace",
       "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.7fde9d8c4a0d3d973b84",
-      "toEntityId": "location.caldris.kethria.the-empty-saddle",
-      "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
@@ -529,12 +577,6 @@
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.cec98ea2c2de4c1b2c63",
-      "toEntityId": "location.caldris.kethria.the-empty-saddle",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
       "fromEntityId": "route.caldris.atlas.d03f1f260b9a584e17bb",
       "toEntityId": "location.caldris.kethria.copperwell",
       "qualifiedKind": "game.core.world.route.from",
@@ -547,27 +589,9 @@
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.da13b91d5226a0a719a9",
-      "toEntityId": "location.caldris.kethria.the-door-valley",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.eacca519cce4e79bc437",
-      "toEntityId": "location.caldris.kethria.the-empty-saddle",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
       "fromEntityId": "route.caldris.atlas.eacca519cce4e79bc437",
       "toEntityId": "location.caldris.kethria.copper-rain-terrace",
       "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.febc449aac9e5a11680d",
-      "toEntityId": "location.caldris.kethria.the-door-valley",
-      "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {

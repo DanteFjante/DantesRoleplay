@@ -23,7 +23,7 @@ export function LocationWorkspace({
     <section className="location-workspace location-workspace--empty" aria-labelledby="location-selection-heading">
       <span className="eyebrow">Location details</span>
       <h2 id="location-selection-heading">Choose a location</h2>
-      <p>Select a place from this level to open its details and browse what it contains.</p>
+      <p>Select a place from the directory to open its details and see what it contains.</p>
     </section>
   );
   return (

@@ -224,13 +224,6 @@
           }
         },
         {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 525,
-            "y": 530
-          }
-        },
-        {
           "qualifiedTypeId": "game.core.world.map.visual",
           "value": {
             "status": "active",
@@ -268,6 +261,13 @@
                 }
               }
             }
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 525,
+            "y": 530
           }
         }
       ],

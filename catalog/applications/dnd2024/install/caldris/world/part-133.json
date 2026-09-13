@@ -3,6 +3,32 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
+      "entityId": "location.caldris.carrowmere.the-walking-dunes",
+      "name": "The Walking Dunes",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "coastal sands in Carrowmere. Buried road stones migrate into view after gales.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 150,
+            "y": 770
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.carrowmere",
+        "slot": "location"
+      }
+    },
+    {
       "entityId": "location.caldris.carrowmere.widows-beam",
       "name": "Widow's Beam",
       "components": [
@@ -39,6 +65,13 @@
             "summary": "Concord archive fort in central Eredane. Records burned, glass survived, ink crows nest in the walls.",
             "visibility": "public",
             "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 470,
+            "y": 180
           }
         }
       ],
@@ -150,58 +183,6 @@
         "containerEntityId": "location.caldris.dunmarrow",
         "slot": "location"
       }
-    },
-    {
-      "entityId": "location.caldris.dunmarrow.moorwatch",
-      "name": "Moorwatch",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "settlement",
-            "summary": "Moorwatch began as a frontier fort and became a borough of peat cutters, shepherds, horse breeders, and military pensioners. Its straight streets end abruptly in bog.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 760,
-            "y": 330
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.dunmarrow",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.dunmarrow.rook-anvil",
-      "name": "Rook Anvil",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "A forge hamlet recycling worn tools and battlefield iron beneath a rook colony that mimics hammer rhythms. Present pressure: Finished blades crack despite good workmanship.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 440,
-            "y": 735
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.dunmarrow",
-        "slot": "location"
-      }
     }
   ],
   "relationships": [
@@ -212,8 +193,8 @@
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.dunmarrow.blackcap-fell",
-      "toEntityId": "location.caldris.dunmarrow.rook-anvil",
+      "fromEntityId": "location.caldris.carrowmere.saltmere",
+      "toEntityId": "location.caldris.carrowmere.the-walking-dunes",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
@@ -230,44 +211,14 @@
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.dunmarrow.greyharrow",
-      "toEntityId": "location.caldris.dunmarrow.moorwatch",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.dunmarrow.latchwater",
-      "toEntityId": "location.caldris.dunmarrow.rook-anvil",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
       "fromEntityId": "fact.caldris.atlas.connection.1b0b72d372b3f6668df7",
       "toEntityId": "location.caldris.dunmarrow.latchwater",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.366532aac0ef7cd0910d",
-      "toEntityId": "location.caldris.dunmarrow.rook-anvil",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.6d20534f2e8fca660ee3",
-      "toEntityId": "location.caldris.dunmarrow.rook-anvil",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
       "fromEntityId": "fact.caldris.atlas.connection.818637bdfb5aee6ed2d0",
       "toEntityId": "location.caldris.dunmarrow.greyharrow",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.ac72c081f510cb197f20",
-      "toEntityId": "location.caldris.dunmarrow.moorwatch",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
@@ -290,15 +241,21 @@
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.2aa0a1d7bddbd5d40204",
-      "toEntityId": "location.caldris.dunmarrow.moorwatch",
+      "fromEntityId": "fact.caldris.atlas.connection.d51617c29035ea94aba4",
+      "toEntityId": "location.caldris.central-eredane.mothglass-ruin",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.d51617c29035ea94aba4",
-      "toEntityId": "location.caldris.central-eredane.mothglass-ruin",
-      "qualifiedKind": "game.core.world.knowledge.about",
+      "fromEntityId": "route.caldris.atlas.27e50929c84891846a76",
+      "toEntityId": "location.caldris.carrowmere.the-walking-dunes",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.33f4fd986c20d54ee636",
+      "toEntityId": "location.caldris.carrowmere.the-walking-dunes",
+      "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
@@ -327,12 +284,6 @@
     },
     {
       "fromEntityId": "route.caldris.atlas.19ca82b36ed4ea4ba19c",
-      "toEntityId": "location.caldris.dunmarrow.rook-anvil",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.19ca82b36ed4ea4ba19c",
       "toEntityId": "location.caldris.dunmarrow.latchwater",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
@@ -341,12 +292,6 @@
       "fromEntityId": "route.caldris.atlas.1b0b72d372b3f6668df7",
       "toEntityId": "location.caldris.dunmarrow.latchwater",
       "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.1b0b72d372b3f6668df7",
-      "toEntityId": "location.caldris.dunmarrow.rook-anvil",
-      "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
@@ -368,12 +313,6 @@
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.366532aac0ef7cd0910d",
-      "toEntityId": "location.caldris.dunmarrow.rook-anvil",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
       "fromEntityId": "route.caldris.atlas.5aa8fd68bb91cc984dc5",
       "toEntityId": "location.caldris.dunmarrow.greyharrow",
       "qualifiedKind": "game.core.world.route.from",
@@ -383,18 +322,6 @@
       "fromEntityId": "route.caldris.atlas.5aa8fd68bb91cc984dc5",
       "toEntityId": "location.caldris.dunmarrow.cold-barrow",
       "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.5b75b3adb0dda53f6997",
-      "toEntityId": "location.caldris.dunmarrow.moorwatch",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.60fef9637a9af4376cc5",
-      "toEntityId": "location.caldris.dunmarrow.moorwatch",
-      "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
@@ -416,26 +343,8 @@
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.ac72c081f510cb197f20",
-      "toEntityId": "location.caldris.dunmarrow.moorwatch",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
       "fromEntityId": "route.caldris.atlas.d019962b945c327bf90e",
       "toEntityId": "location.caldris.dunmarrow.greyharrow",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.d019962b945c327bf90e",
-      "toEntityId": "location.caldris.dunmarrow.moorwatch",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.d75703023949d6c0a886",
-      "toEntityId": "location.caldris.dunmarrow.rook-anvil",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
@@ -454,18 +363,6 @@
     {
       "fromEntityId": "route.caldris.atlas.e71a1cbc7d72e5c02dc5",
       "toEntityId": "location.caldris.dunmarrow.latchwater",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.6d20534f2e8fca660ee3",
-      "toEntityId": "location.caldris.dunmarrow.rook-anvil",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.fee944aba76483f03b79",
-      "toEntityId": "location.caldris.dunmarrow.rook-anvil",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     }

@@ -1,4 +1,5 @@
 import { readModelResponse } from "./read-model-response.js";
+import { ViewReadError } from "../data/view-read-client.ts";
 
 const query = { id: "dnd2024.query.party-knowledge" };
 const contentStances = new Set(["known", "suspected", "believed", "doubted", "disbelieved"]);
@@ -11,6 +12,8 @@ const maximumPages = 256;
 // measured byte count. Charging every page at the full cap makes this a conservative 16 MiB
 // cumulative transport bound (256 * 65,536) even when Content-Length is absent or dishonest.
 const maximumCumulativeBodyBytes = 16 * 1024 * 1024;
+const subjectKinds = new Set(["state", "event", "identity", "relationship", "location", "capability", "rule", "quantity", "intention", "negative"]);
+const knowledgeKinds = new Set(["fact", "rumour", "secret", "clue"]);
 const object = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
 const own = (value, field) => object(value) && Object.hasOwn(value, field) ? value[field] : undefined;
 const token = (value) => typeof value === "string" && value.length > 0 && value.length <= 200 &&
@@ -70,7 +73,13 @@ export function projectPartyKnowledge(value, { campaignId, worldId, perspective 
         ...(familiar ? { recognitionKey: identity } : { knowledgeId: identity }),
         ...(documentRevision ? { documentRevision } : {}),
         ...(subjectId && subjectName ? { subject: { id: subjectId, name: subjectName } } : {}),
-        ...(mediaOwnerId ? { mediaOwnerId } : {}) }];
+        ...(mediaOwnerId ? { mediaOwnerId } : {}),
+        ...(!familiar && text(own(entry, "title"), 400) ? { title: entry.title } : {}),
+        ...(!familiar && text(own(entry, "summary"), 1000) ? { summary: entry.summary } : {}),
+        ...(!familiar && audience === "dm" && subjectKinds.has(own(entry, "subjectKind"))
+          ? { subjectKind: entry.subjectKind } : {}),
+        ...(!familiar && audience === "dm" && knowledgeKinds.has(own(entry, "knowledgeKind"))
+          ? { knowledgeKind: entry.knowledgeKind } : {}) }];
     });
     const counts = new Map();
     for (const entry of projected) {
@@ -91,6 +100,97 @@ export function projectPartyKnowledge(value, { campaignId, worldId, perspective 
   });
   return { status: value.status, audience, entries: projectedEntries, locations,
     coverage: partial ? "partial" : "complete" };
+}
+
+/** @typedef {import("../data/hub-types").ConnectedKnowledgeEntry & {
+ * title?: string, summary?: string, knowledgeKind?: string, subjectKind?: string, mediaOwnerId?: string
+ * }} KnowledgePageEntry */
+/** @typedef {{status: "ready"|"empty", audience: "dm"|"party", entries: KnowledgePageEntry[],
+ * locations: Array<{name: string, entries: KnowledgePageEntry[]}>, coverage: "complete"|"partial",
+ * nextCursor: string|null, graphSourceRevision: string, totalCount: number|null,
+ * facets: {category: Record<string, number>, kind: Record<string, number>}|null,
+ * selectionFingerprint: string|null, sourceRevisionFingerprint: string,
+ * projection: import("./read-model-response.js").ReadModelEvidence}} RegisteredKnowledgePage */
+
+/**
+ * Reads exactly one source-fenced page. DM browse filters and facets remain server-owned.
+ * @param {{fetchImpl?: typeof fetch, origin: string, applicationId: string, stateSpaceId: string,
+ * campaignId: string, worldId: string, perspective: string, browse?: boolean, category?: string,
+ * kind?: string, query?: string, cursor?: string|null, expectedSourceRevision?: string|null,
+ * expectedGraphSourceRevision?: string|null, expectedSelectionFingerprint?: string|null}} options
+ * @returns {Promise<RegisteredKnowledgePage>}
+ */
+export async function readRegisteredPartyKnowledgePage({
+  fetchImpl = fetch, origin, applicationId, stateSpaceId, campaignId, worldId, perspective,
+  browse = false, category = "", kind = "", query: search = "", cursor = null,
+  expectedSourceRevision = null, expectedGraphSourceRevision = null, expectedSelectionFingerprint = null,
+}) {
+  const fingerprint = (value) => typeof value === "string" && /^[0-9A-F]{64}$/u.test(value);
+  const continuation = cursor !== null;
+  if ((browse && perspective !== "dm") || (!browse && (category || kind || search)) ||
+      (category !== "" && !subjectKinds.has(category)) || (kind !== "" && !knowledgeKinds.has(kind)) ||
+      typeof search !== "string" || search.length > 200 ||
+      (continuation && (!/^[1-9][0-9]{0,3}$/u.test(cursor) || Number(cursor) > maximumSourceEntries ||
+        !fingerprint(expectedSourceRevision) || !fingerprint(expectedGraphSourceRevision) ||
+        (browse && !fingerprint(expectedSelectionFingerprint)))))
+    throw new ViewReadError("incompatible-data", "The knowledge page selection is invalid.");
+  const input = {
+    ...(browse ? { browse: true, category, kind, query: search } : {}),
+    ...(continuation ? { cursor, expectedSourceRevision, expectedGraphSourceRevision,
+      ...(browse ? { expectedSelectionFingerprint } : {}) } : {}),
+  };
+  const parameters = new URLSearchParams({ perspective, input: JSON.stringify(input) });
+  const root = `/api/applications/${encodeURIComponent(applicationId)}/state-spaces/${encodeURIComponent(stateSpaceId)}`;
+  const pageSize = browse ? 25 : 40;
+  const offset = continuation ? Number(cursor) : 0;
+  let selectionChanged = false;
+  const result = await readModelResponse({ fetchImpl,
+    resource: new URL(`${root}/entities/${encodeURIComponent(campaignId)}/read-models/${query.id}?${parameters}`, `${origin}/`).toString(),
+    init: { headers: { Accept: "application/json" }, cache: "no-store" },
+    applicationId, stateSpaceId, query, maximumBodyBytes: maximumPageBodyBytes, maximumDataBytes,
+    statusPolicy: { ready: [200], forbidden: [401, 403], stale: [409, 412], unavailable: "remaining" },
+    expectedSourceRevision: continuation ? expectedSourceRevision : null,
+    consume: (value) => {
+      if (continuation && ["PARTY_KNOWLEDGE_SOURCE_CHANGED", "PARTY_KNOWLEDGE_SELECTION_INVALID"].includes(own(value, "reason"))) {
+        selectionChanged = true;
+        return null;
+      }
+      const nextCursor = own(value, "nextCursor");
+      const sourceRevision = own(value, "sourceRevision");
+      const projected = projectPartyKnowledge(value, { campaignId, worldId, perspective }, { ignorePagingCoverage: true });
+      if (!projected || !fingerprint(sourceRevision) || !Array.isArray(value.entries) || value.entries.length > pageSize ||
+          !["complete", "partial"].includes(value.fieldCoverage) ||
+          (nextCursor !== undefined ? value.coverage !== "partial" : value.coverage !== value.fieldCoverage) ||
+          (nextCursor !== undefined && (typeof nextCursor !== "string" || !/^[1-9][0-9]{0,3}$/u.test(nextCursor) ||
+            Number(nextCursor) <= offset || Number(nextCursor) > offset + pageSize || Number(nextCursor) > maximumSourceEntries))) return null;
+      let totalCount = null, facets = null, selectionFingerprint = null;
+      if (browse) {
+        totalCount = own(value, "totalCount");
+        selectionFingerprint = own(value, "selectionFingerprint");
+        selectionChanged = continuation && fingerprint(selectionFingerprint) && selectionFingerprint !== expectedSelectionFingerprint;
+        if (!Number.isInteger(totalCount) || totalCount < offset + value.entries.length || totalCount > maximumSourceEntries ||
+            !fingerprint(selectionFingerprint) || (continuation && selectionFingerprint !== expectedSelectionFingerprint) ||
+            !object(value.facets) || (nextCursor !== undefined && Number(nextCursor) >= totalCount) ||
+            (nextCursor === undefined && value.fieldCoverage === "complete" && offset + value.entries.length !== totalCount)) return null;
+        facets = {};
+        for (const [name, allowed] of [["category", subjectKinds], ["kind", knowledgeKinds]]) {
+          const values = own(value.facets, name);
+          if (!object(values) || Object.keys(values).length !== allowed.size ||
+              [...allowed].some((key) => !Number.isInteger(own(values, key)) || values[key] < 0 || values[key] > maximumSourceEntries)) return null;
+          facets[name] = Object.fromEntries([...allowed].map((key) => [key, values[key]]));
+        }
+      }
+      return { ...projected, coverage: value.fieldCoverage === "partial" || projected.coverage === "partial" ? "partial" : "complete",
+        nextCursor: nextCursor ?? null, graphSourceRevision: sourceRevision, totalCount, facets, selectionFingerprint };
+    },
+  });
+  if (result.status === "forbidden") throw new ViewReadError("authorization", "The knowledge page is unavailable to this audience.");
+  if (result.status === "stale" || selectionChanged ||
+      (result.status === "ready" && continuation && result.data.graphSourceRevision !== expectedGraphSourceRevision))
+    throw new ViewReadError("stale-data", "The knowledge page source changed.");
+  if (result.status !== "ready")
+    throw new ViewReadError(result.status === "unavailable" ? "transport" : "incompatible-data", "The knowledge page is unavailable.");
+  return { ...result.data, sourceRevisionFingerprint: result.evidence.sourceRevisionFingerprint, projection: result.evidence };
 }
 
 /** The HTTP route is generic; registration and catalog JavaScript own party and secrecy rules. */

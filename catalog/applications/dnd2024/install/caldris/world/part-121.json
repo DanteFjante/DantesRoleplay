@@ -7,46 +7,6 @@
       "name": "Morrow Strait",
       "components": [
         {
-          "qualifiedTypeId": "game.core.world.map.visual",
-          "value": {
-            "status": "active",
-            "variants": {
-              "player": {
-                "sha256": "f502d295f1ea25fd8c54a7697a6916228d40623a2ad39294f50c0a4bbc282dc3",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Morrow Strait fantasy atlas map",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/morrow-strait.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 3
-                }
-              },
-              "dm": {
-                "sha256": "f502d295f1ea25fd8c54a7697a6916228d40623a2ad39294f50c0a4bbc282dc3",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Morrow Strait fantasy atlas map",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/morrow-strait.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 3
-                }
-              }
-            }
-          }
-        },
-        {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "region",
@@ -61,6 +21,46 @@
             "x": 510,
             "y": 330
           }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "archived",
+            "variants": {
+              "player": {
+                "sha256": "f502d295f1ea25fd8c54a7697a6916228d40623a2ad39294f50c0a4bbc282dc3",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Morrow Strait fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/morrow-strait.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              },
+              "dm": {
+                "sha256": "f502d295f1ea25fd8c54a7697a6916228d40623a2ad39294f50c0a4bbc282dc3",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Morrow Strait fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/morrow-strait.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              }
+            }
+          }
         }
       ],
       "containment": {
@@ -73,9 +73,25 @@
       "name": "Bellafont",
       "components": [
         {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "summary": "Bellafont is a kingdom of Eredane. Its present pressure: An orchard blight and rival claims over irrigation monasteries strain a famously charming court.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 525,
+            "y": 790
+          }
+        },
+        {
           "qualifiedTypeId": "game.core.world.map.visual",
           "value": {
-            "status": "active",
+            "status": "archived",
             "variants": {
               "player": {
                 "sha256": "a9eb53703fe87fe6dc37f18c9ed411b31049cf168f071229652c162c2e3ce209",
@@ -110,15 +126,6 @@
                 }
               }
             }
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "region",
-            "summary": "Bellafont is a kingdom of Eredane. Its present pressure: An orchard blight and rival claims over irrigation monasteries strain a famously charming court.",
-            "visibility": "public",
-            "status": "active"
           }
         }
       ],
@@ -132,9 +139,25 @@
       "name": "Carrowmere",
       "components": [
         {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "summary": "Carrowmere is a kingdom of Eredane. Its present pressure: Shipwright labour disputes threaten the grain fleet before a dangerous sailing season.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 235,
+            "y": 640
+          }
+        },
+        {
           "qualifiedTypeId": "game.core.world.map.visual",
           "value": {
-            "status": "active",
+            "status": "archived",
             "variants": {
               "player": {
                 "sha256": "687ba6d45bb38a5966a3efc304ba9dee095f9190a9f3a19a390c49d4801053b9",
@@ -169,15 +192,6 @@
                 }
               }
             }
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "region",
-            "summary": "Carrowmere is a kingdom of Eredane. Its present pressure: Shipwright labour disputes threaten the grain fleet before a dangerous sailing season.",
-            "visibility": "public",
-            "status": "active"
           }
         }
       ],
@@ -191,9 +205,25 @@
       "name": "Dunmarrow",
       "components": [
         {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "summary": "Dunmarrow is a kingdom of Eredane. Its present pressure: Iron wealth declines while border forts and old military families demand more funding.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 270,
+            "y": 235
+          }
+        },
+        {
           "qualifiedTypeId": "game.core.world.map.visual",
           "value": {
-            "status": "active",
+            "status": "archived",
             "variants": {
               "player": {
                 "sha256": "fb2839a2e9328f730e6f2c11fc656090586adfb0aea999c7445b03248f813a03",
@@ -228,15 +258,6 @@
                 }
               }
             }
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "region",
-            "summary": "Dunmarrow is a kingdom of Eredane. Its present pressure: Iron wealth declines while border forts and old military families demand more funding.",
-            "visibility": "public",
-            "status": "active"
           }
         }
       ],
@@ -249,46 +270,6 @@
       "entityId": "location.caldris.kethria",
       "name": "Kethria",
       "components": [
-        {
-          "qualifiedTypeId": "game.core.world.map.visual",
-          "value": {
-            "status": "active",
-            "variants": {
-              "player": {
-                "sha256": "d080cd4170ae2a17b0a092ebaa64d77539d001f525100641781714f2372d2eec",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Kethria fantasy atlas map",
-                "caption": "Kethria",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/kethria.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 4
-                }
-              },
-              "dm": {
-                "sha256": "d080cd4170ae2a17b0a092ebaa64d77539d001f525100641781714f2372d2eec",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Kethria fantasy atlas map",
-                "caption": "Kethria",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/kethria.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 4
-                }
-              }
-            }
-          }
-        },
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
@@ -304,6 +285,46 @@
             "x": 680,
             "y": 245
           }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "archived",
+            "variants": {
+              "player": {
+                "sha256": "d080cd4170ae2a17b0a092ebaa64d77539d001f525100641781714f2372d2eec",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Kethria fantasy atlas map",
+                "caption": "Kethria",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/kethria.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 4
+                }
+              },
+              "dm": {
+                "sha256": "d080cd4170ae2a17b0a092ebaa64d77539d001f525100641781714f2372d2eec",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Kethria fantasy atlas map",
+                "caption": "Kethria",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/kethria.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 4
+                }
+              }
+            }
+          }
         }
       ],
       "containment": {
@@ -316,9 +337,25 @@
       "name": "Lornesse",
       "components": [
         {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "summary": "Lornesse is a kingdom of Eredane. Its present pressure: Mine closures expose older tunnels, unpaid obligations, and possible dragon signs.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 735,
+            "y": 310
+          }
+        },
+        {
           "qualifiedTypeId": "game.core.world.map.visual",
           "value": {
-            "status": "active",
+            "status": "archived",
             "variants": {
               "player": {
                 "sha256": "693a2e4e7f584171993c355e34b4c882dc59fe8dbaf83ff55268a46ab6743e99",
@@ -353,15 +390,6 @@
                 }
               }
             }
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "region",
-            "summary": "Lornesse is a kingdom of Eredane. Its present pressure: Mine closures expose older tunnels, unpaid obligations, and possible dragon signs.",
-            "visibility": "public",
-            "status": "active"
           }
         }
       ],
@@ -374,46 +402,6 @@
       "entityId": "location.caldris.namarra",
       "name": "Namarra",
       "components": [
-        {
-          "qualifiedTypeId": "game.core.world.map.visual",
-          "value": {
-            "status": "active",
-            "variants": {
-              "player": {
-                "sha256": "462b27493ef6fa48d2343ea13626577ba0ac54d400f6d196d5229f4635e231c6",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Namarra fantasy atlas map",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/namarra.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 3
-                }
-              },
-              "dm": {
-                "sha256": "462b27493ef6fa48d2343ea13626577ba0ac54d400f6d196d5229f4635e231c6",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Namarra fantasy atlas map",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/namarra.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 3
-                }
-              }
-            }
-          }
-        },
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
@@ -429,6 +417,46 @@
             "x": 555,
             "y": 755
           }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "archived",
+            "variants": {
+              "player": {
+                "sha256": "462b27493ef6fa48d2343ea13626577ba0ac54d400f6d196d5229f4635e231c6",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Namarra fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/namarra.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              },
+              "dm": {
+                "sha256": "462b27493ef6fa48d2343ea13626577ba0ac54d400f6d196d5229f4635e231c6",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Namarra fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/namarra.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              }
+            }
+          }
         }
       ],
       "containment": {
@@ -440,46 +468,6 @@
       "entityId": "location.caldris.ordelain",
       "name": "Ordelain",
       "components": [
-        {
-          "qualifiedTypeId": "game.core.world.map.visual",
-          "value": {
-            "status": "active",
-            "variants": {
-              "player": {
-                "sha256": "3880428e1ff4329a75cb3ef094676137ebbadfd8dfe6b58d6001461d4fa2d0e5",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Ordelain fantasy atlas map",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/ordelain.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 3
-                }
-              },
-              "dm": {
-                "sha256": "3880428e1ff4329a75cb3ef094676137ebbadfd8dfe6b58d6001461d4fa2d0e5",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Ordelain fantasy atlas map",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/ordelain.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 3
-                }
-              }
-            }
-          }
-        },
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
@@ -495,6 +483,46 @@
             "x": 560,
             "y": 500
           }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "archived",
+            "variants": {
+              "player": {
+                "sha256": "3880428e1ff4329a75cb3ef094676137ebbadfd8dfe6b58d6001461d4fa2d0e5",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Ordelain fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/ordelain.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              },
+              "dm": {
+                "sha256": "3880428e1ff4329a75cb3ef094676137ebbadfd8dfe6b58d6001461d4fa2d0e5",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Ordelain fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/ordelain.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              }
+            }
+          }
         }
       ],
       "containment": {
@@ -506,46 +534,6 @@
       "entityId": "location.caldris.selucia",
       "name": "Selucia",
       "components": [
-        {
-          "qualifiedTypeId": "game.core.world.map.visual",
-          "value": {
-            "status": "active",
-            "variants": {
-              "player": {
-                "sha256": "acadce8b578aea4a56241aabb3bfab8814f8228baa32fe8fbc420404b4424743",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Selucia fantasy atlas map",
-                "caption": "Selucia",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/selucia.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 4
-                }
-              },
-              "dm": {
-                "sha256": "acadce8b578aea4a56241aabb3bfab8814f8228baa32fe8fbc420404b4424743",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Selucia fantasy atlas map",
-                "caption": "Selucia",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/selucia.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 4
-                }
-              }
-            }
-          }
-        },
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
@@ -561,6 +549,46 @@
             "x": 235,
             "y": 775
           }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "archived",
+            "variants": {
+              "player": {
+                "sha256": "acadce8b578aea4a56241aabb3bfab8814f8228baa32fe8fbc420404b4424743",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Selucia fantasy atlas map",
+                "caption": "Selucia",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/selucia.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 4
+                }
+              },
+              "dm": {
+                "sha256": "acadce8b578aea4a56241aabb3bfab8814f8228baa32fe8fbc420404b4424743",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Selucia fantasy atlas map",
+                "caption": "Selucia",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/selucia.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 4
+                }
+              }
+            }
+          }
         }
       ],
       "containment": {
@@ -572,46 +600,6 @@
       "entityId": "location.caldris.seven-lamps-league",
       "name": "Seven Lamps League",
       "components": [
-        {
-          "qualifiedTypeId": "game.core.world.map.visual",
-          "value": {
-            "status": "active",
-            "variants": {
-              "player": {
-                "sha256": "65694c7fed182f3c5042fa41eb1f90208e3172d32e04ba3007fb4b93f1b21cc7",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Seven Lamps League fantasy atlas map",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/seven-lamps-league.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 3
-                }
-              },
-              "dm": {
-                "sha256": "65694c7fed182f3c5042fa41eb1f90208e3172d32e04ba3007fb4b93f1b21cc7",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Seven Lamps League fantasy atlas map",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/seven-lamps-league.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 3
-                }
-              }
-            }
-          }
-        },
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
@@ -627,6 +615,46 @@
             "x": 245,
             "y": 390
           }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "archived",
+            "variants": {
+              "player": {
+                "sha256": "65694c7fed182f3c5042fa41eb1f90208e3172d32e04ba3007fb4b93f1b21cc7",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Seven Lamps League fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/seven-lamps-league.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              },
+              "dm": {
+                "sha256": "65694c7fed182f3c5042fa41eb1f90208e3172d32e04ba3007fb4b93f1b21cc7",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Seven Lamps League fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/seven-lamps-league.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              }
+            }
+          }
         }
       ],
       "containment": {
@@ -638,46 +666,6 @@
       "entityId": "location.caldris.tessarane",
       "name": "Tessarane",
       "components": [
-        {
-          "qualifiedTypeId": "game.core.world.map.visual",
-          "value": {
-            "status": "active",
-            "variants": {
-              "player": {
-                "sha256": "8df1250adc70e1f36e7022f99b0ada186b961d9301ef2914697f26a8bb72293d",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Tessarane fantasy atlas map",
-                "caption": "Tessarane",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/tessarane.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 4
-                }
-              },
-              "dm": {
-                "sha256": "8df1250adc70e1f36e7022f99b0ada186b961d9301ef2914697f26a8bb72293d",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Tessarane fantasy atlas map",
-                "caption": "Tessarane",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/tessarane.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 4
-                }
-              }
-            }
-          }
-        },
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
@@ -693,6 +681,46 @@
             "x": 770,
             "y": 440
           }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "archived",
+            "variants": {
+              "player": {
+                "sha256": "8df1250adc70e1f36e7022f99b0ada186b961d9301ef2914697f26a8bb72293d",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Tessarane fantasy atlas map",
+                "caption": "Tessarane",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/tessarane.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 4
+                }
+              },
+              "dm": {
+                "sha256": "8df1250adc70e1f36e7022f99b0ada186b961d9301ef2914697f26a8bb72293d",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Tessarane fantasy atlas map",
+                "caption": "Tessarane",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/tessarane.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 4
+                }
+              }
+            }
+          }
         }
       ],
       "containment": {
@@ -705,9 +733,25 @@
       "name": "Veyr Marches",
       "components": [
         {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "summary": "Veyr Marches is a elective march confederacy of Eredane. Its present pressure: The High Warden is dying and the marches disagree whether one successor should command them all.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 500,
+            "y": 255
+          }
+        },
+        {
           "qualifiedTypeId": "game.core.world.map.visual",
           "value": {
-            "status": "active",
+            "status": "archived",
             "variants": {
               "player": {
                 "sha256": "2ec120a96963518a963f0ae5e4d5574bf91cceb9c37b2360610a1469822b46a7",
@@ -742,15 +786,6 @@
                 }
               }
             }
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "region",
-            "summary": "Veyr Marches is a elective march confederacy of Eredane. Its present pressure: The High Warden is dying and the marches disagree whether one successor should command them all.",
-            "visibility": "public",
-            "status": "active"
           }
         }
       ],

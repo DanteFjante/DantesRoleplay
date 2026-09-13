@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { JSDOM } from "jsdom";
-import React, { act, type ReactNode } from "react";
+import React, { act, type ReactNode, useState } from "react";
 
 import { DndInformationHub } from "../../src/components/DndInformationHub";
 import { ScopedMapWorkspace } from "../../src/components/ScopedMapWorkspace";
@@ -407,45 +407,126 @@ test("opening a marker-only location redirects to its parent and selects its exi
   } finally { await mounted.cleanup(); }
 });
 
+test("map loading waits for reviewed positions before claiming places are unplaced", async () => {
+  const initial = initialEnvelope();
+  const atlas = initial.world.locations[0]!;
+  const children = Array.from({ length: 4 }, (_, index) => ({
+    ...location(atlas, `place.${index}`, `Place ${index}`, atlas.name, "site"), parentId: atlas.id,
+  }));
+  const map: MapDocument = { ...initial.world.maps[0]!, id: "map.atlas", parentMapId: null,
+    subject: { kind: "region", id: atlas.id, name: atlas.name }, baseState: "ready",
+    base: { imageUrl: "/reviewed-atlas.png", alt: "Reviewed atlas" },
+    layers: [{ id: "places", label: "Places", kind: "markers", order: 1 }], features: [], scopeLinks: [],
+  };
+  function Harness() {
+    const [ready, setReady] = useState(false);
+    const resolvedMap: MapDocument = ready ? { ...map, features: children.map((child, index) => ({
+      id: `feature.${index}`, kind: "point", layerId: "places", coordinateSpaceId: map.coordinateSpace.id,
+      geometry: { x: 100 + index * 100, y: 200 }, locationId: child.id, name: child.name, detail: child.summary,
+    })) } : map;
+    return <><button type="button" onClick={() => setReady(true)}>Finish map read</button>
+      <ScopedMapWorkspace world={{ ...initial.world, maps: [resolvedMap], locations: [atlas, ...children] }}
+        activeMapId={map.id} selectedFeatureId="" currentLocationId="" campaignTitle="Test" overlays={[]}
+        scopeState={ready ? "ready" : "loading"} scopeError="" onMapChange={() => {}} onNavigateToFeature={() => {}}
+        onFeatureSelect={() => {}} onOpenLocation={() => {}} onRetryScope={() => {}} /></>;
+  }
+  const mounted = await mount("", <Harness />);
+  try {
+    assert.match(mounted.container.querySelector(".world-map-heading")!.textContent!, /Loading map locations/);
+    assert.doesNotMatch(mounted.container.textContent!, /0 of 0|without map positions|no map position|No closer area/);
+    assert.equal(mounted.container.querySelector('[aria-label="Closer areas"]'), null);
+    await click([...mounted.container.querySelectorAll<HTMLButtonElement>(".map-view-mode button")].find((entry) => entry.textContent?.includes("List"))!);
+    assert.match(mounted.container.querySelector(".map-feature-list")!.textContent!, /Loading map locations/);
+    assert.doesNotMatch(mounted.container.textContent!, /No map markers|without map positions|no map position/);
+    await click([...mounted.container.querySelectorAll<HTMLButtonElement>("button")].find((entry) => entry.textContent === "Finish map read")!);
+    assert.match(mounted.container.querySelector(".world-map-heading")!.textContent!, /4 of 4 map markers shown/);
+    assert.equal(mounted.container.querySelectorAll(".map-feature-list__select").length, 4);
+    assert.equal(mounted.container.querySelector('[aria-label="Places without map positions"]'), null);
+  } finally { await mounted.cleanup(); }
+});
+
+test("a clean parent map explains the selected deeper place without moving its local coordinates", async () => {
+  const initial = initialEnvelope();
+  const template = initial.world.maps[0]!;
+  const parent: MapDocument = {
+    ...template, id: "map.parent", parentMapId: null,
+    subject: { kind: "region", id: "region.parent", name: "Parent Vale" },
+    coordinateSpace: { ...template.coordinateSpace, id: "space.parent", width: 1000, height: 1000 },
+    baseState: "ready", base: { imageUrl: "/clean-parent.png", alt: "Clean parent map" },
+    features: [{ id: "feature.village", kind: "point", layerId: "places",
+      coordinateSpaceId: "space.parent", geometry: { x: 440, y: 295 },
+      name: "Goat Village", detail: "A high pasture village.", locationId: "location.village" }],
+    layers: [{ id: "places", label: "Places", kind: "markers", order: 0 }], scopeLinks: [],
+  };
+  const village: MapDocument = { ...parent, id: "map.village", parentMapId: parent.id,
+    subject: { kind: "location", id: "location.village", name: "Goat Village" },
+    baseState: "absent", base: null, features: [{ ...parent.features[0]!, id: "feature.local",
+      name: "Old local marker", locationId: "site.local", geometry: { x: 900, y: 800 } }] };
+  const local: MapDocument = { ...village, id: "map.local", parentMapId: village.id,
+    subject: { kind: "location", id: "site.local", name: "Goat Hall" },
+    baseState: "unavailable", features: [] };
+  const world = { ...initial.world, maps: [parent, village, local] };
+  function Harness() {
+    const [selection, setSelection] = useState({ mapId: local.id, featureId: "" });
+    return <ScopedMapWorkspace world={world} activeMapId={selection.mapId}
+      selectedFeatureId={selection.featureId} currentLocationId="" campaignTitle="Test"
+      overlays={[]} scopeState="ready" scopeError="" onMapChange={(mapId) => setSelection({ mapId, featureId: "" })}
+      onNavigateToFeature={(mapId, featureId) => setSelection({ mapId, featureId })}
+      onFeatureSelect={(featureId) => setSelection((current) => ({ ...current, featureId }))}
+      onOpenLocation={() => {}} onRetryScope={() => {}} />;
+  }
+  const mounted = await mount("", <Harness />);
+  try {
+    assert.match(mounted.container.querySelector(".map-scope-status")!.textContent!, /Showing Parent Vale for Goat Hall\. Its local map could not be loaded\./);
+    const mapImage = mounted.container.querySelector<HTMLImageElement>(".world-map-stage > img")!;
+    assert.equal(mapImage.getAttribute("src"), "/clean-parent.png");
+    await act(async () => { mapImage.dispatchEvent(new window.Event("load")); await tick(); });
+    const marker = mounted.container.querySelector<HTMLButtonElement>(".world-map-marker")!;
+    assert.equal(marker.getAttribute("aria-pressed"), "true");
+    assert.equal(marker.style.left, "44%");
+    assert.equal(marker.style.top, "29.5%");
+    assert.equal(mounted.container.querySelectorAll(".world-map-marker").length, 1);
+    assert.doesNotMatch(mounted.container.textContent!, /Old local marker/);
+    await click(marker);
+    assert.equal(mounted.container.querySelector(".map-scope-status"), null);
+  } finally { await mounted.cleanup(); }
+});
+
 async function click(control: HTMLButtonElement) {
   await act(async () => { control.click(); await tick(); });
 }
 
-test("Locations reaches atlas, both regions, and a deeper no-media place with parent navigation", async () => {
+test("flat Locations selects a deeper no-media place while retaining its siblings in the directory", async () => {
   const initial = initialEnvelope();
   const atlas = initial.world.locations[0]!;
-  const eredane = location(atlas, "region.eredane", "Eredane", "Eredane", "region");
-  const solasca = location(atlas, "region.solasca", "Solasca", "Solasca", "region");
-  const keep = location(atlas, "site.eredane.lower-keep", "Lower Keep", "Eredane", "site");
-  const calls: Array<[string, string | null]> = [];
-  const loader = async (source: ReadyHubEnvelope, scopeId: string, cursor: string | null) => {
-    calls.push([scopeId, cursor]);
-    if (scopeId === atlas.id) return locationUpdate(source, [atlas, eredane, solasca], [
-      source.world.locationScopes[0]!, scope(atlas.id, atlas.name, "world.caldris", [eredane.id, solasca.id]),
-    ]);
-    assert.equal(scopeId, eredane.id);
-    return locationUpdate(source, [...source.world.locations, keep], [
-      ...source.world.locationScopes, scope(eredane.id, eredane.name, atlas.id, [keep.id]),
-    ]);
-  };
+  atlas.parentId = initial.world.id;
+  const eredane = { ...location(atlas, "region.eredane", "Eredane", "Eredane", "region"), parentId: atlas.id };
+  const solasca = { ...location(atlas, "region.solasca", "Solasca", "Solasca", "region"), parentId: atlas.id };
+  const keep = { ...location(atlas, "site.eredane.lower-keep", "Lower Keep", "Eredane", "site"), parentId: eredane.id };
+  initial.world.locations = [atlas, eredane, solasca, keep];
+  const calls: string[] = [];
+  const expected = [atlas, eredane, keep];
   const mounted = await mount(hubRouteHash("world", "overview", { worldSection: "locations" }),
-    <DndInformationHub initialEnvelope={initial} loadWorldScope={loader} />);
+    <DndInformationHub initialEnvelope={initial} loadWorldScope={async (source, scopeId) => {
+      assert.equal(scopeId, expected[calls.length]?.id);
+      calls.push(scopeId);
+      const owner = expected.find((entry) => entry.id === scopeId)!;
+      const direct = scopeId === atlas.id ? [eredane, solasca] : scopeId === eredane.id ? [keep] : [];
+      return locationUpdate(source, source.world.locations, [...source.world.locationScopes.filter((entry) => entry.id !== scopeId),
+        scope(scopeId, owner.name, owner.parentId ?? null, direct.map((entry) => entry.id))]);
+    }} />);
   try {
-    assert.equal(mounted.container.querySelector(".location-row__action em"), null,
-      "an unloaded current location must not make a fallback row current");
-    const atlasButton = byLabel(mounted.container, `Open ${atlas.name} and browse its locations`);
-    assert.equal(atlasButton.tagName, "BUTTON");
-    atlasButton.focus();
-    assert.equal(document.activeElement, atlasButton, "location disclosure remains keyboard focusable");
-    await click(atlasButton);
-    assert.match(mounted.container.textContent!, /Eredane/);
-    assert.match(mounted.container.textContent!, /Solasca/);
-    await click(byLabel(mounted.container, "Open Eredane and browse its locations"));
-    assert.match(mounted.container.textContent!, /Lower Keep/);
-    assert.deepEqual(calls, [[atlas.id, null], [eredane.id, null]]);
-    await click([...mounted.container.querySelectorAll<HTMLButtonElement>("button")]
-      .find((button) => button.textContent?.includes("Parent location"))!);
-    assert.match(mounted.container.textContent!, /Solasca/);
+    assert.equal(mounted.container.querySelector(".location-row__action em"), null);
+    const keepButton = byLabel(mounted.container, "View details for Lower Keep");
+    keepButton.focus();
+    assert.equal(document.activeElement, keepButton, "flat location details remain keyboard focusable");
+    await click(keepButton);
+    await act(async () => { for (let index = 0; index < 4; index++) await tick(); });
+    assert.deepEqual(calls, expected.map((entry) => entry.id));
+    assert.match(mounted.container.querySelector(".location-workspace")!.textContent!, /Lower Keep details/);
+    assert.ok(byLabel(mounted.container, "View details for Eredane"));
+    assert.ok(byLabel(mounted.container, "View details for Solasca"));
+    assert.equal(mounted.container.querySelector(".location-row__browse"), null);
     assert.match(window.location.hash, /scope=atlas\.renamed/u);
   } finally { await mounted.cleanup(); }
 });
@@ -484,7 +565,7 @@ test("a People location link walks unopened parents before reading Bramblebridge
     await act(async () => { for (let index = 0; index < 6; index++) await tick(); });
     assert.deepEqual(calls, expected.map((entry) => entry.id));
     assert.equal(mounted.container.querySelector(".location-browser__error"), null);
-    assert.match(mounted.container.querySelector(".location-browser__heading")!.textContent!, /Bramblebridge15 of 15/);
+    assert.match(mounted.container.querySelector(".location-browser__heading")!.textContent!, /All locations19/);
     assert.match(mounted.container.textContent!, /Bramblebridge Place 14/);
     assert.equal(mounted.container.querySelector('.location-people-grid [data-record-id="person.tibb"] h3')?.textContent, "Tibb");
     assert.doesNotMatch(mounted.container.querySelector(".location-people")!.textContent!, /No one is currently listed/);
@@ -492,7 +573,7 @@ test("a People location link walks unopened parents before reading Bramblebridge
   } finally { await mounted.cleanup(); }
 });
 
-test("deep links authorize each scope in order and page 101 siblings without a false world-wide search", async () => {
+test("detail scope pages preserve the complete flat directory while authorizing deep links in order", async () => {
   const initial = initialEnvelope();
   const atlas = initial.world.locations[0]!;
   const eredane = location(atlas, "region.eredane", "Eredane", "Eredane", "region");
@@ -500,6 +581,11 @@ test("deep links authorize each scope in order and page 101 siblings without a f
   const places = Array.from({ length: 101 }, (_, index) => location(atlas,
     `site.solasca.${String(index).padStart(3, "0")}`, `Solasca Place ${String(index).padStart(3, "0")}`,
     "Solasca", "site"));
+  initial.world.locations = [atlas, eredane, solasca, ...places];
+  initial.world.locationScopes = [...initial.world.locationScopes,
+    scope(atlas.id, atlas.name, initial.world.id, [eredane.id, solasca.id]),
+    scope(solasca.id, solasca.name, atlas.id, places.map((entry) => entry.id)),
+  ];
   const calls: Array<[string, string | null]> = [];
   const loader = async (source: ReadyHubEnvelope, scopeId: string, cursor: string | null) => {
     calls.push([scopeId, cursor]);
@@ -527,55 +613,39 @@ test("deep links authorize each scope in order and page 101 siblings without a f
   try {
     await act(async () => { await tick(); await tick(); await tick(); });
     assert.deepEqual(calls.slice(0, 2), [[atlas.id, null], [solasca.id, null]]);
-    assert.match(mounted.container.textContent!, /100 of 101/);
-    const more = [...mounted.container.querySelectorAll<HTMLButtonElement>("button")]
-      .find((button) => button.textContent?.includes("Load more locations"));
-    assert.ok(more);
-    await click(more);
-    assert.deepEqual(calls.at(-1), [solasca.id, "100"]);
+    assert.match(mounted.container.querySelector(".location-browser__heading")!.textContent!, /All locations104/);
+    const next = [...mounted.container.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent === "Next")!;
+    for (let index = 0; index < 4; index++) await click(next);
     assert.match(mounted.container.textContent!, /Solasca Place 100/);
-    assert.match(mounted.container.textContent!, /101 of 101/);
-    assert.match(mounted.container.textContent!, /Only the direct locations inside this area are shown/);
+    assert.deepEqual(calls, [[atlas.id, null], [solasca.id, null]], "flat pagination does not issue scope continuation reads");
   } finally { await mounted.cleanup(); }
 });
 
-test("Locations opens one root page, presents hierarchy truthfully, and keeps its continuation reachable", async () => {
+test("Locations loads the complete directory once and paginates locally", async () => {
   const initial = initialEnvelope();
   const template = initial.world.locations[0]!;
   const places = Array.from({ length: 101 }, (_, index) => location(template,
     `site.root.${String(index).padStart(3, "0")}`, `Root Place ${String(index).padStart(3, "0")}`,
     "Caldris", "site"));
   initial.world = { ...initial.world, locations: [], locationScopes: [] };
-  let rootReads = 0;
-  const continuations: Array<[string, string | null]> = [];
-  const page = (shown: WorldLocation[], cursor: string | null): Extract<DeferredHubUpdate, { section: "locations" }> => ({
-    ...locationUpdate(initial, shown, [scope("world.caldris", "Caldris", null,
-      shown.map((entry) => entry.id), cursor)]),
-    scopePage: { id: "world.caldris" },
-  });
+  let directoryReads = 0;
   const mounted = await mount(hubRouteHash("world", "overview", { worldSection: "locations" }),
     <DndInformationHub initialEnvelope={initial}
       loadDeferredSection={async (_source, section) => {
         assert.equal(section, "locations");
-        rootReads += 1;
-        return page(places.slice(0, 100), "100");
+        directoryReads += 1;
+        return locationUpdate(initial, places, [scope(initial.world.id, initial.world.name, null, places.map((entry) => entry.id))]);
       }}
-      loadWorldScope={async (_source, scopeId, cursor) => {
-        continuations.push([scopeId, cursor]);
-        return page(places, null);
-      }} />);
+      loadWorldScope={async () => { throw new Error("Local list pagination must not load a scope"); }} />);
   try {
     await act(async () => { await tick(); await tick(); });
-    assert.equal(rootReads, 1, "opening Locations reads only the first root page");
-    assert.match(mounted.container.textContent!, /This location level/);
-    assert.match(mounted.container.textContent!, /100 of 101/);
-    assert.doesNotMatch(mounted.container.textContent!, /Complete directory|All places|All known locations/);
-    const more = [...mounted.container.querySelectorAll<HTMLButtonElement>("button")]
-      .find((button) => button.textContent?.includes("Load more locations"));
-    assert.ok(more);
-    await click(more);
-    assert.deepEqual(continuations, [["world.caldris", "100"]]);
+    assert.equal(directoryReads, 1);
+    assert.match(mounted.container.querySelector(".location-browser__heading")!.textContent!, /All locations101/);
+    assert.equal(mounted.container.querySelectorAll(".location-row").length, 25);
+    const next = [...mounted.container.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent === "Next")!;
+    for (let index = 0; index < 4; index++) await click(next);
     assert.match(mounted.container.textContent!, /Root Place 100/);
-    assert.match(mounted.container.textContent!, /101 of 101/);
+    assert.equal(mounted.container.querySelector('[aria-label="Location pages"] [role="status"]')?.textContent, "101\u2013101 of 101");
+    assert.equal(directoryReads, 1);
   } finally { await mounted.cleanup(); }
 });

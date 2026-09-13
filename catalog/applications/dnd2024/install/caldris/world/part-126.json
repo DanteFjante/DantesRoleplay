@@ -3,6 +3,24 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
+      "entityId": "actor.caldris.yara-pom",
+      "name": "Yara Pom",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "Cheerful petition writer at Pomegranate Court who celebrates correctly completed forms with tiny fanfares. Wants copper contamination addressed before officials minimize it; reads bureaucracy and public mood; risks losing her license for helping illiterate clients. Sends legal jokes to Elowen Pike. She becomes a public organizer if protected from retaliatory paperwork.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "people"
+      }
+    },
+    {
       "entityId": "actor.caldris.ylsa-kern",
       "name": "Ylsa Kern",
       "components": [
@@ -428,29 +446,6 @@
         "containerEntityId": "location.caldris.selucia",
         "slot": "history"
       }
-    },
-    {
-      "entityId": "chronology.caldris.incident.selucia.the-palace-vote",
-      "name": "The Palace Vote",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.chronology",
-          "value": {
-            "status": "active",
-            "title": "The Palace Vote",
-            "summary": "An unfinished palace became public land after architects failed to agree on a roof. Present consequence: A private ownership suit could unexpectedly change tax obligations across the kingdom.",
-            "calendarId": "caldris-common-era",
-            "occurredAtMinute": -250000000,
-            "precision": "era",
-            "dateLabel": "Crownmaking",
-            "visibility": "public"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.selucia",
-        "slot": "history"
-      }
     }
   ],
   "relationships": [
@@ -654,18 +649,6 @@
     },
     {
       "fromEntityId": "chronology.caldris.incident.selucia.the-first-borrowed-bell",
-      "toEntityId": "world.caldris",
-      "qualifiedKind": "game.core.world.chronology.in-world",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.incident.selucia.the-palace-vote",
-      "toEntityId": "location.caldris.selucia",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.incident.selucia.the-palace-vote",
       "toEntityId": "world.caldris",
       "qualifiedKind": "game.core.world.chronology.in-world",
       "value": {}

@@ -3,6 +3,58 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
+      "entityId": "location.caldris.kethria.the-door-valley",
+      "name": "The Door Valley",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "terraced villages in Kethria. Every house door carved with a family water history.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 340,
+            "y": 690
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.kethria",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.kethria.the-empty-saddle",
+      "name": "The Empty Saddle",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Caravanserai at a pass where travelers hang one unused saddle in memory of those lost to winter. Present pressure: Someone removes saddles bearing particular family marks.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 610,
+            "y": 285
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.kethria",
+        "slot": "location"
+      }
+    },
+    {
       "entityId": "location.caldris.kethria.var-keth",
       "name": "Var Keth",
       "components": [
@@ -163,61 +215,6 @@
         "containerEntityId": "location.caldris.carrowmere",
         "slot": "location"
       }
-    },
-    {
-      "entityId": "location.caldris.landmark.orchardback",
-      "name": "The Orchardback",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.media.visual",
-          "value": {
-            "status": "active",
-            "attachments": [
-              {
-                "sha256": "d036a3321ec18899eba2ef19be7a289bf09d3805e366097b3668b7afc4411085",
-                "mimeType": "image/png",
-                "width": 1536,
-                "height": 1024,
-                "alt": "An island-sized sea tortoise rests in a warm Selucian bay with a small terraced orchard growing in the weathered hollows of its shell. A caretaker shelter, light retaining walls and a rope pontoon serve a few workers and visitors. Its head and flippers remain clear of moorings. The atlas marks its presently observed resting bay, not a permanent island or a schedule of future movement.",
-                "caption": "The Orchardback",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "Generated with OpenAI image generation; visually reviewed for Caldris.",
-                  "source": "docs/world/caldris/landmarks/images/orchardback.png",
-                  "reviewedOn": "2026-09-05",
-                  "version": 1
-                },
-                "role": "setting",
-                "visibility": [
-                  "player",
-                  "dm"
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "An island-sized sea tortoise rests in a warm Selucian bay with a small terraced orchard growing in the weathered hollows of its shell. A caretaker shelter, light retaining walls and a rope pontoon serve a few workers and visitors. Its head and flippers remain clear of moorings. The atlas marks its presently observed resting bay, not a permanent island or a schedule of future movement.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 490,
-            "y": 865
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.selucia",
-        "slot": "location"
-      }
     }
   ],
   "relationships": [
@@ -228,8 +225,26 @@
       "value": {}
     },
     {
+      "fromEntityId": "location.caldris.kethria.copper-rain-terrace",
+      "toEntityId": "location.caldris.kethria.the-empty-saddle",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.kethria.copperwell",
+      "toEntityId": "location.caldris.kethria.the-door-valley",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
       "fromEntityId": "location.caldris.kethria.copperwell",
       "toEntityId": "location.caldris.kethria.whisper-kiln",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.kethria.snowgate",
+      "toEntityId": "location.caldris.kethria.the-empty-saddle",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
@@ -240,9 +255,27 @@
       "value": {}
     },
     {
+      "fromEntityId": "fact.caldris.atlas.connection.277ba0928b403b436eb6",
+      "toEntityId": "location.caldris.kethria.the-door-valley",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.cec98ea2c2de4c1b2c63",
+      "toEntityId": "location.caldris.kethria.the-empty-saddle",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
       "fromEntityId": "fact.caldris.atlas.connection.febc449aac9e5a11680d",
       "toEntityId": "location.caldris.kethria.var-keth",
       "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.277ba0928b403b436eb6",
+      "toEntityId": "location.caldris.kethria.the-door-valley",
+      "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
@@ -252,14 +285,56 @@
       "value": {}
     },
     {
+      "fromEntityId": "route.caldris.atlas.5cc3269462592feb3f75",
+      "toEntityId": "location.caldris.kethria.the-empty-saddle",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.5e67f887eda38449e0a9",
+      "toEntityId": "location.caldris.kethria.the-door-valley",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.7fde9d8c4a0d3d973b84",
+      "toEntityId": "location.caldris.kethria.the-empty-saddle",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
       "fromEntityId": "route.caldris.atlas.a3fef9b212f673c7f80e",
       "toEntityId": "location.caldris.kethria.var-keth",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
+      "fromEntityId": "route.caldris.atlas.cec98ea2c2de4c1b2c63",
+      "toEntityId": "location.caldris.kethria.the-empty-saddle",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
       "fromEntityId": "route.caldris.atlas.da13b91d5226a0a719a9",
       "toEntityId": "location.caldris.kethria.var-keth",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.da13b91d5226a0a719a9",
+      "toEntityId": "location.caldris.kethria.the-door-valley",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.eacca519cce4e79bc437",
+      "toEntityId": "location.caldris.kethria.the-empty-saddle",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.febc449aac9e5a11680d",
+      "toEntityId": "location.caldris.kethria.the-door-valley",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
@@ -372,42 +447,6 @@
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.landmark.orchardback.access.2724281d1f",
-      "toEntityId": "location.caldris.landmark.orchardback",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.landmark.orchardback.custom",
-      "toEntityId": "location.caldris.landmark.orchardback",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.landmark.orchardback.gmtruth",
-      "toEntityId": "location.caldris.landmark.orchardback",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.landmark.orchardback.hooks",
-      "toEntityId": "location.caldris.landmark.orchardback",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.landmark.orchardback.lore",
-      "toEntityId": "location.caldris.landmark.orchardback",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.landmark.orchardback.access.0d8ecb0ed6",
-      "toEntityId": "location.caldris.landmark.orchardback",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
       "fromEntityId": "chronology.caldris.landmark.hanging-harbour.117",
       "toEntityId": "location.caldris.landmark.hanging-harbour",
       "qualifiedKind": "game.core.world.chronology.about",
@@ -462,24 +501,6 @@
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.landmark.orchardback.212",
-      "toEntityId": "location.caldris.landmark.orchardback",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.orchardback.6",
-      "toEntityId": "location.caldris.landmark.orchardback",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.orchardback.605",
-      "toEntityId": "location.caldris.landmark.orchardback",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
       "fromEntityId": "route.caldris.landmark.3b4bd62f3138222703fc",
       "toEntityId": "location.caldris.kethria.var-keth",
       "qualifiedKind": "game.core.world.route.from",
@@ -530,18 +551,6 @@
     {
       "fromEntityId": "fact.caldris.landmark.hanging-harbour.approach.4f18aae983",
       "toEntityId": "location.caldris.landmark.hanging-harbour",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.landmark.orchardback.approach.0d8ecb0ed6",
-      "toEntityId": "location.caldris.landmark.orchardback",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.landmark.orchardback.approach.2724281d1f",
-      "toEntityId": "location.caldris.landmark.orchardback",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     }

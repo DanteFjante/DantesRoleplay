@@ -3,6 +3,24 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
+      "entityId": "actor.caldris.prior-garran",
+      "name": "Prior Garran",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "fussy bell scholar. Immediate want: retain family pattern rights. Hidden depth: altered an alarm to hide a mine collapse years ago.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lornesse",
+        "slot": "people"
+      }
+    },
+    {
       "entityId": "actor.caldris.provost-halwen-drail",
       "name": "Provost Halwen Drail",
       "components": [
@@ -341,24 +359,6 @@
       ],
       "containment": {
         "containerEntityId": "location.caldris.seven-lamps-league",
-        "slot": "people"
-      }
-    },
-    {
-      "entityId": "actor.caldris.yara-pom",
-      "name": "Yara Pom",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.motive",
-          "value": {
-            "status": "active",
-            "summary": "Cheerful petition writer at Pomegranate Court who celebrates correctly completed forms with tiny fanfares. Wants copper contamination addressed before officials minimize it; reads bureaucracy and public mood; risks losing her license for helping illiterate clients. Sends legal jokes to Elowen Pike. She becomes a public organizer if protected from retaliatory paperwork.",
-            "visibility": "party"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.ordelain",
         "slot": "people"
       }
     }

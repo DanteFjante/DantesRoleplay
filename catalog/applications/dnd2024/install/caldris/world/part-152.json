@@ -3,80 +3,106 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
-      "entityId": "location.caldris.lore.istravel",
-      "name": "Istravel",
+      "entityId": "location.caldris.lore.orrel-wood",
+      "name": "Orrel Wood",
       "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Location: North of the Alderwake road. Livelihood: Managed coppice, charcoal, mushrooms, and limited timber cutting. The wood has been felled and regrown in sections many times. Hart's Mouth remains an identifiable limestone sink, surrounded by younger trees. A modest shrine commemorates Branna and, in newer inscriptions, her companions. Forest workers know reliable paths that romantic visitor maps omit.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 795,
+            "y": 230
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.orchard-march",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.penns-reach",
+      "name": "Penn's Reach",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "An inhabited waterside district with inspection paths, channels, farms, and several later sluices replacing earlier arrangements. Only part of the old scheme remains functional. Some land deliberately left open for water has acquired other uses through later decisions.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 475,
+            "y": 290
+          }
+        },
         {
           "qualifiedTypeId": "game.core.world.map.visual",
           "value": {
-            "status": "active",
+            "status": "archived",
             "variants": {
               "player": {
-                "sha256": "1c0873dc9e20c50a27b86bbf96ffa540d0c12d936a88ef5850e731e330161b07",
+                "sha256": "52227d299f955dba1d7ca4175660b626ff8888e21eca07adb6877ea56a373b80",
                 "mimeType": "image/png",
                 "width": 1448,
                 "height": 1086,
-                "alt": "Istravel fantasy atlas map",
+                "alt": "Penn's Reach fantasy atlas map",
                 "caption": "",
                 "order": 0,
                 "provenance": {
                   "kind": "generated",
                   "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/istravel.png",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/penn-s-reach.png",
                   "reviewedOn": "2026-09-10",
                   "version": 3
                 }
               },
               "dm": {
-                "sha256": "1c0873dc9e20c50a27b86bbf96ffa540d0c12d936a88ef5850e731e330161b07",
+                "sha256": "52227d299f955dba1d7ca4175660b626ff8888e21eca07adb6877ea56a373b80",
                 "mimeType": "image/png",
                 "width": 1448,
                 "height": 1086,
-                "alt": "Istravel fantasy atlas map",
+                "alt": "Penn's Reach fantasy atlas map",
                 "caption": "",
                 "order": 0,
                 "provenance": {
                   "kind": "generated",
                   "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/istravel.png",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/penn-s-reach.png",
                   "reviewedOn": "2026-09-10",
                   "version": 3
                 }
               }
             }
           }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "settlement",
-            "summary": "Active glassworkers occupy the upper terraces. Lower kilns have become gardens and storage. Part of the Night Garden lies beneath a later courtyard occupied by several households. Its pools retain only fragments of original lining, and its old sight lines are obstructed by new roofs.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 630,
-            "y": 350
-          }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.lore.serevan",
+        "containerEntityId": "location.caldris.lore.vey-lowlands",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.lore.juniper-gate",
-      "name": "Juniper Gate",
+      "entityId": "location.caldris.lore.redbank-reach",
+      "name": "Redbank Reach",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "site",
-            "summary": "A guarded pass serving several jurisdictions. Parts of the old gate are incorporated into a shelter and customs yard. The displayed rebellion chain has replacement links from later repairs. Cliff paths lead to abandoned observation posts and nesting ledges.",
+            "summary": "Location: On the main river downstream of the Bramblebridge area and upstream of Reedminster. Livelihood: Barges, mills, pasture, and a working ferry near later bridges. Redbank's unfinished piers remain as heavily eroded stone islands, altered by salvage and repair. King's Span was replaced more than once and is now represented by abutments near a newer crossing. The shared district outlived the original peace only through later arrangements, some of which still influence local identity.",
             "visibility": "public",
             "status": "active"
           }
@@ -84,8 +110,60 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 400,
-            "y": 185
+            "x": 340,
+            "y": 175
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lore.vey-lowlands",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.reedminster",
+      "name": "Reedminster",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "Location: A low island in the lower Vey river system, upstream of the tidal ports. Livelihood: Reed work, gardens, ferry service, and donations for hospitality. Its buildings have been repeatedly raised above flood level. A landing shelter stands outside the devotional precinct, preserving the distinction between accepting hospitality and joining worship. Old guest rules survive through generations of commentary, including disagreements written neatly in the margins.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 575,
+            "y": 580
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lore.vey-lowlands",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.reth-gate",
+      "name": "Reth Gate",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "A local administrative and lodging cluster in the former Reth jurisdiction. Its current rulers and borders remain for later history to establish. The old tollhouse is partly a shelter, with marks where removable sleeping platforms once fitted.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 470,
+            "y": 665
           }
         }
       ],
@@ -95,14 +173,14 @@
       }
     },
     {
-      "entityId": "location.caldris.lore.lanterns-end",
-      "name": "Lanterns' End",
+      "entityId": "location.caldris.lore.ribbon-bridge",
+      "name": "Ribbon Bridge",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "site",
-            "summary": "Location: On the coast beyond Veymouth's river mouth, overlooking the approaches from Morrow Strait. Livelihood: Pilotage, sheep grazing, and maintenance of a coastal light. Successive towers stand on and beside the low observatory's foundations. Some carved sight lines still point usefully across the water; others refer to vanished sandbanks. The sea has eaten part of the old keeper's garden.",
+            "summary": "Several replacement bridges have occupied the crossing. Ribbons are now tied to a separate frame so they do not obstruct inspections. Households remove them after a return, a confirmed death, or a decision to stop waiting; the meanings differ and are not publicly policed.",
             "visibility": "public",
             "status": "active"
           }
@@ -110,492 +188,358 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 320,
-            "y": 780
+            "x": 640,
+            "y": 455
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.lore.vey-lowlands",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.lore.leth-sarai",
-      "name": "Leth Sarai",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.map.visual",
-          "value": {
-            "status": "active",
-            "variants": {
-              "player": {
-                "sha256": "643314e6c07d09a2e27d061c07d6b10566bd9a4c591316a8eaaa61721f074344",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Leth Sarai fantasy atlas map",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/leth-sarai.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 3
-                }
-              },
-              "dm": {
-                "sha256": "643314e6c07d09a2e27d061c07d6b10566bd9a4c591316a8eaaa61721f074344",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Leth Sarai fantasy atlas map",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/leth-sarai.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 3
-                }
-              }
-            }
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "settlement",
-            "summary": "A densely inhabited old quarter behind a rebuilt waterfront. Courtyards hold workshops, kitchens, and shared wells. Buildings have changed occupants and functions many times; old signs survive beneath paint or in reused lintels. The town trades in ordinary necessities as well as fine goods.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 160,
-            "y": 585
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.lore.serevan",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.lore.low-fen-redoubt",
-      "name": "Low Fen Redoubt",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "Overgrown wartime earthworks in the Vey Lowlands around the foundations of a former depot. Later drainage has altered parts of the site. Local households use nearby grazing while keeping known unstable pits marked; small finds are recorded inconsistently.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 290,
-            "y": 565
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.lore.vey-lowlands",
+        "containerEntityId": "location.caldris.atlas.orchard-march",
         "slot": "location"
       }
     }
   ],
   "relationships": [
     {
-      "fromEntityId": "secret.caldris.lore.place-istravel.1",
-      "toEntityId": "location.caldris.lore.istravel",
+      "fromEntityId": "secret.caldris.lore.place-orrel-wood.1",
+      "toEntityId": "location.caldris.lore.orrel-wood",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.place-juniper-gate.1",
-      "toEntityId": "location.caldris.lore.juniper-gate",
+      "fromEntityId": "secret.caldris.lore.place-redbank-reach.1",
+      "toEntityId": "location.caldris.lore.redbank-reach",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.place-lanterns-end.1",
-      "toEntityId": "location.caldris.lore.lanterns-end",
+      "fromEntityId": "secret.caldris.lore.place-reedminster.1",
+      "toEntityId": "location.caldris.lore.reedminster",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.place-leth-sarai.1",
-      "toEntityId": "location.caldris.lore.leth-sarai",
+      "fromEntityId": "secret.caldris.lore.place-penns-reach.1",
+      "toEntityId": "location.caldris.lore.penns-reach",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.1787-the-blackglass-pilot",
-      "toEntityId": "location.caldris.lore.lanterns-end",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.1583-the-blackglass-garden",
-      "toEntityId": "location.caldris.lore.istravel",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.1599-the-address-beneath-the-blue-paint",
-      "toEntityId": "location.caldris.lore.istravel",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.1599-the-address-beneath-the-blue-paint",
-      "toEntityId": "location.caldris.lore.leth-sarai",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.1383-the-open-gate-rebellion",
-      "toEntityId": "location.caldris.lore.juniper-gate",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.1399-the-mapmakers-daughter",
-      "toEntityId": "location.caldris.lore.leth-sarai",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.1415-avelines-last-winter",
-      "toEntityId": "location.caldris.lore.istravel",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.1215-the-book-of-roads-left-open",
-      "toEntityId": "location.caldris.lore.istravel",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.1174-the-road-of-bitter-leaves",
-      "toEntityId": "location.caldris.lore.istravel",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.1187-the-lantern-at-the-end-of-the-pier",
-      "toEntityId": "location.caldris.lore.leth-sarai",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.0987-the-dowry-of-maps",
-      "toEntityId": "location.caldris.lore.istravel",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.0835-the-parcel-that-had-arrived-somewhere-else",
-      "toEntityId": "location.caldris.lore.istravel",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.0687-the-glassmakers-daughter-and-the-false-relics",
-      "toEntityId": "location.caldris.lore.istravel",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.0551-the-quiet-archive-of-serevan",
-      "toEntityId": "location.caldris.lore.leth-sarai",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.0527-the-gardens-of-the-farther-window",
-      "toEntityId": "location.caldris.lore.istravel",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.lore.0100-0050-place-low-fen-redoubt.1",
-      "toEntityId": "location.caldris.lore.low-fen-redoubt",
+      "fromEntityId": "secret.caldris.lore.place-reth-gate.1",
+      "toEntityId": "location.caldris.lore.reth-gate",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.0089-the-grain-convoys-under-three-banners",
-      "toEntityId": "location.caldris.lore.low-fen-redoubt",
+      "fromEntityId": "secret.caldris.lore.place-ribbon-bridge.1",
+      "toEntityId": "location.caldris.lore.ribbon-bridge",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1848-the-white-hart-of-orrel-wood",
+      "toEntityId": "location.caldris.lore.orrel-wood",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.lore.0089-the-grain-convoys-under-three-banners-account.1",
-      "toEntityId": "location.caldris.lore.low-fen-redoubt",
-      "qualifiedKind": "game.core.world.knowledge.about",
+      "fromEntityId": "chronology.caldris.lore.1774-the-dispute-of-open-doors",
+      "toEntityId": "location.caldris.lore.reedminster",
+      "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.0089-the-grain-convoys-under-three-banners-gm-truth.1",
-      "toEntityId": "location.caldris.lore.low-fen-redoubt",
-      "qualifiedKind": "game.core.world.knowledge.about",
+      "fromEntityId": "chronology.caldris.lore.1483-the-river-without-a-king",
+      "toEntityId": "location.caldris.lore.reedminster",
+      "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.0089-the-grain-convoys-under-three-banners-traces-and-stories.1",
-      "toEntityId": "location.caldris.lore.low-fen-redoubt",
-      "qualifiedKind": "game.core.world.knowledge.about",
+      "fromEntityId": "chronology.caldris.lore.1074-the-bridge-of-untied-ribbons",
+      "toEntityId": "location.caldris.lore.ribbon-bridge",
+      "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.lore.hearthscar-shelter",
-      "toEntityId": "location.caldris.lore.juniper-gate",
+      "fromEntityId": "location.caldris.lore.alderwake",
+      "toEntityId": "location.caldris.lore.orrel-wood",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.lore.istravel",
-      "toEntityId": "location.caldris.lore.leth-sarai",
+      "fromEntityId": "location.caldris.lore.alderwake",
+      "toEntityId": "location.caldris.lore.ribbon-bridge",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.lore.juniper-gate",
-      "toEntityId": "location.caldris.lore.whitewindow",
+      "fromEntityId": "location.caldris.lore.darnel-field",
+      "toEntityId": "location.caldris.lore.reedminster",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.lantern-sea.the-halfway-light",
-      "toEntityId": "location.caldris.lore.leth-sarai",
+      "fromEntityId": "location.caldris.lore.harth-orchard",
+      "toEntityId": "location.caldris.lore.ribbon-bridge",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.lore.leth-sarai",
-      "toEntityId": "location.caldris.seven-lamps-league.aster-quay",
+      "fromEntityId": "location.caldris.lore.penns-reach",
+      "toEntityId": "location.caldris.lore.redbank-reach",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.lore.leth-sarai",
-      "toEntityId": "location.caldris.seven-lamps-league.low-lantern",
+      "fromEntityId": "location.caldris.atlas.reth-road-fork",
+      "toEntityId": "location.caldris.lore.reth-gate",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.9d6566363cda9a8296be",
-      "toEntityId": "location.caldris.lore.lanterns-end",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.36044240e05b88643352",
-      "toEntityId": "location.caldris.lore.leth-sarai",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.8648f53bae02545eb614",
-      "toEntityId": "location.caldris.lore.leth-sarai",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.aa562ab7517c2759cb3f",
-      "toEntityId": "location.caldris.lore.juniper-gate",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.5b408d28f160d82fe18f",
-      "toEntityId": "location.caldris.lore.istravel",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.0f2ab73979c4dcfe1c5c",
-      "toEntityId": "location.caldris.lore.leth-sarai",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.closed.5551409834dcf7b6a7f3",
-      "toEntityId": "location.caldris.lore.juniper-gate",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.28188f2d28d056bd1101",
-      "toEntityId": "location.caldris.lore.istravel",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.f0d21883ee6a53663216",
-      "toEntityId": "location.caldris.lore.leth-sarai",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.a5318d0b60805c652ea7",
-      "toEntityId": "location.caldris.lore.low-fen-redoubt",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.ac35eea22ad8068292bc",
-      "toEntityId": "location.caldris.lore.low-fen-redoubt",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.6262a34380f99ac84e7b",
-      "toEntityId": "location.caldris.lore.lanterns-end",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.790a9b1a1581701d34a2",
-      "toEntityId": "location.caldris.lore.lanterns-end",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.9d6566363cda9a8296be",
-      "toEntityId": "location.caldris.lore.lanterns-end",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.a44655626a9b7859b6f7",
-      "toEntityId": "location.caldris.lore.lanterns-end",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.b093b3b2b986dabfc9c5",
-      "toEntityId": "location.caldris.lore.juniper-gate",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.dbda2166dece1734246d",
-      "toEntityId": "location.caldris.lore.juniper-gate",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.20b47a4b6a38df7d9c59",
-      "toEntityId": "location.caldris.lore.leth-sarai",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.20b47a4b6a38df7d9c59",
-      "toEntityId": "location.caldris.lore.istravel",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.36044240e05b88643352",
-      "toEntityId": "location.caldris.lore.istravel",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.36044240e05b88643352",
-      "toEntityId": "location.caldris.lore.leth-sarai",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.8648f53bae02545eb614",
-      "toEntityId": "location.caldris.lore.leth-sarai",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.f3c44f99e90d00fab13c",
-      "toEntityId": "location.caldris.lore.leth-sarai",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.landmark.glass-tide-palace",
-      "toEntityId": "location.caldris.lore.leth-sarai",
+      "fromEntityId": "location.caldris.lore.greyfold-ridge",
+      "toEntityId": "location.caldris.lore.reth-gate",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.landmark.glass-tide-palace.access.97942221d0",
-      "toEntityId": "location.caldris.lore.leth-sarai",
+      "fromEntityId": "location.caldris.alderwick.merecross",
+      "toEntityId": "location.caldris.lore.redbank-reach",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.7805e7f75bdc481746dd",
+      "toEntityId": "location.caldris.lore.redbank-reach",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.1286",
-      "toEntityId": "location.caldris.lore.juniper-gate",
+      "fromEntityId": "fact.caldris.atlas.connection.ae266d23da2c568920b8",
+      "toEntityId": "location.caldris.lore.ribbon-bridge",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.fc11cd6ddc8af445b3a0",
+      "toEntityId": "location.caldris.lore.penns-reach",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.1b8231ab9d9ec101dde0",
+      "toEntityId": "location.caldris.lore.reedminster",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.385294b83e1079b28965",
+      "toEntityId": "location.caldris.lore.penns-reach",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.df3bbbbf346d77fa0329",
+      "toEntityId": "location.caldris.lore.reedminster",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.cfac9627ab2632a7e452",
+      "toEntityId": "location.caldris.lore.reth-gate",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.2671a20a2d1c08a87f12",
+      "toEntityId": "location.caldris.lore.reth-gate",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.f5cfcda5f75e50261184",
+      "toEntityId": "location.caldris.lore.penns-reach",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.14190073001bed190dae",
+      "toEntityId": "location.caldris.lore.ribbon-bridge",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.840e3615785c79a6fa35",
+      "toEntityId": "location.caldris.lore.ribbon-bridge",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.0676ac60ddb339ccb0d3",
+      "toEntityId": "location.caldris.lore.orrel-wood",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.4a18347503ae02483ca8",
+      "toEntityId": "location.caldris.lore.ribbon-bridge",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.979765288b2b73af8de7",
+      "toEntityId": "location.caldris.lore.orrel-wood",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.ae266d23da2c568920b8",
+      "toEntityId": "location.caldris.lore.ribbon-bridge",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.151d9d212058ccdb762d",
+      "toEntityId": "location.caldris.lore.redbank-reach",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.151d9d212058ccdb762d",
+      "toEntityId": "location.caldris.lore.penns-reach",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.385294b83e1079b28965",
+      "toEntityId": "location.caldris.lore.penns-reach",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.7805e7f75bdc481746dd",
+      "toEntityId": "location.caldris.lore.penns-reach",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.7805e7f75bdc481746dd",
+      "toEntityId": "location.caldris.lore.redbank-reach",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.cec04378a2d78da9e5fe",
+      "toEntityId": "location.caldris.lore.penns-reach",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.f3648556fcfec6ec3153",
+      "toEntityId": "location.caldris.lore.penns-reach",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.fc11cd6ddc8af445b3a0",
+      "toEntityId": "location.caldris.lore.penns-reach",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.be8a297ac7986175a5d9",
+      "toEntityId": "location.caldris.lore.reth-gate",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.d2a2f814f1043e883eda",
+      "toEntityId": "location.caldris.lore.reth-gate",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.ccc4370e4d128f836094",
+      "toEntityId": "location.caldris.lore.reth-gate",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.cfac9627ab2632a7e452",
+      "toEntityId": "location.caldris.lore.reth-gate",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.2671a20a2d1c08a87f12",
+      "toEntityId": "location.caldris.lore.reth-gate",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.9fd2b89f232c148fdc62",
+      "toEntityId": "location.caldris.lore.reth-gate",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.landmark.upward-fall",
+      "toEntityId": "location.caldris.lore.redbank-reach",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.upward-fall.access.ca44c4571a",
+      "toEntityId": "location.caldris.lore.redbank-reach",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.upward-fall.19",
+      "toEntityId": "location.caldris.lore.penns-reach",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.1258",
-      "toEntityId": "location.caldris.lore.juniper-gate",
+      "fromEntityId": "chronology.caldris.landmark.upward-fall.19",
+      "toEntityId": "location.caldris.lore.redbank-reach",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.287",
-      "toEntityId": "location.caldris.lore.juniper-gate",
+      "fromEntityId": "chronology.caldris.landmark.upward-fall.421",
+      "toEntityId": "location.caldris.lore.penns-reach",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.landmark.glass-tide-palace.1256",
-      "toEntityId": "location.caldris.lore.istravel",
+      "fromEntityId": "chronology.caldris.landmark.upward-fall.421",
+      "toEntityId": "location.caldris.lore.redbank-reach",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.landmark.glass-tide-palace.1256",
-      "toEntityId": "location.caldris.lore.leth-sarai",
+      "fromEntityId": "chronology.caldris.landmark.upward-fall.778",
+      "toEntityId": "location.caldris.lore.penns-reach",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.landmark.glass-tide-palace.31",
-      "toEntityId": "location.caldris.lore.istravel",
+      "fromEntityId": "chronology.caldris.landmark.upward-fall.778",
+      "toEntityId": "location.caldris.lore.redbank-reach",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.landmark.glass-tide-palace.31",
-      "toEntityId": "location.caldris.lore.leth-sarai",
-      "qualifiedKind": "game.core.world.chronology.about",
+      "fromEntityId": "route.caldris.landmark.264e39598ede53f5cd25",
+      "toEntityId": "location.caldris.lore.redbank-reach",
+      "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.landmark.glass-tide-palace.534",
-      "toEntityId": "location.caldris.lore.istravel",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.glass-tide-palace.534",
-      "toEntityId": "location.caldris.lore.leth-sarai",
-      "qualifiedKind": "game.core.world.chronology.about",
+      "fromEntityId": "route.caldris.landmark.c3ada5ae2911a8f31297",
+      "toEntityId": "location.caldris.lore.redbank-reach",
+      "qualifiedKind": "game.core.world.route.from",
       "value": {}
     }
   ]

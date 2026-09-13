@@ -20,14 +20,14 @@
   "projection": {
     "qualifiedId": "dnd2024.mechanic.party-knowledge.project",
     "version": 1,
-    "contentHash": "E6D448528C72052982A55C52C5B5E876E7F755AED14E1D9C2D2B2DB001351646",
-    "outputSchemaHash": "F07B849ADA93B0CFF088DC87C86E178A6D23E61AB085DB841B84E93AC2559172"
+    "contentHash": "35C064B5799B5469A2BD11FFC9FB50CE0AA5CF2E9333DF1B3FB8D44FB5A657E7",
+    "outputSchemaHash": "6A4332C067CB93F2ACE61B750202270F59766C5E62F6AE3F1C31CDBC1561A7F7"
   },
   "inputSchema": {
     "type": "object",
     "additionalProperties": false,
     "minProperties": 0,
-    "maxProperties": 3,
+    "maxProperties": 8,
     "properties": {
       "cursor": {
         "type": "string",
@@ -38,6 +38,41 @@
         "pattern": "^[0-9A-F]{64}$"
       },
       "expectedGraphSourceRevision": {
+        "type": "string",
+        "pattern": "^[0-9A-F]{64}$"
+      },
+      "browse": {
+        "const": true
+      },
+      "query": {
+        "type": "string",
+        "maxLength": 200
+      },
+      "category": {
+        "enum": [
+          "",
+          "state",
+          "event",
+          "identity",
+          "relationship",
+          "location",
+          "capability",
+          "rule",
+          "quantity",
+          "intention",
+          "negative"
+        ]
+      },
+      "kind": {
+        "enum": [
+          "",
+          "fact",
+          "rumour",
+          "secret",
+          "clue"
+        ]
+      },
+      "expectedSelectionFingerprint": {
         "type": "string",
         "pattern": "^[0-9A-F]{64}$"
       }
@@ -60,12 +95,18 @@
     ],
     "properties": {
       "status": {
-        "enum": ["ready", "empty", "unavailable"]
+        "enum": [
+          "ready",
+          "empty",
+          "unavailable"
+        ]
       },
       "entries": {
         "type": "array",
         "maxItems": 40,
-        "items": { "$ref": "#/$defs/entry" }
+        "items": {
+          "$ref": "#/$defs/entry"
+        }
       },
       "locations": {
         "type": "array",
@@ -73,49 +114,254 @@
         "items": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["name", "entries"],
+          "required": [
+            "name",
+            "entries"
+          ],
           "properties": {
-            "name": { "type": "string", "minLength": 1, "maxLength": 400 },
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 400
+            },
             "entries": {
               "type": "array",
               "maxItems": 40,
-              "items": { "$ref": "#/$defs/entry" }
+              "items": {
+                "$ref": "#/$defs/entry"
+              }
             }
           }
         }
       },
-      "audience": { "enum": ["party", "dm"] },
-      "campaignId": { "type": "string", "minLength": 1, "maxLength": 200 },
-      "worldId": { "type": "string", "minLength": 1, "maxLength": 200 },
-      "sourceRevision": { "type": "string", "minLength": 1, "maxLength": 128 },
-      "coverage": { "enum": ["complete", "partial"] },
-      "fieldCoverage": { "enum": ["complete", "partial"] },
-      "reason": { "type": "string", "minLength": 1, "maxLength": 100 },
-      "nextCursor": { "type": "string", "pattern": "^[1-9][0-9]{0,3}$" }
+      "audience": {
+        "enum": [
+          "party",
+          "dm"
+        ]
+      },
+      "campaignId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200
+      },
+      "worldId": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200
+      },
+      "sourceRevision": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128
+      },
+      "coverage": {
+        "enum": [
+          "complete",
+          "partial"
+        ]
+      },
+      "fieldCoverage": {
+        "enum": [
+          "complete",
+          "partial"
+        ]
+      },
+      "reason": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 100
+      },
+      "nextCursor": {
+        "type": "string",
+        "pattern": "^[1-9][0-9]{0,3}$"
+      },
+      "totalCount": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 2048
+      },
+      "selectionFingerprint": {
+        "type": "string",
+        "pattern": "^[0-9A-F]{64}$"
+      },
+      "facets": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "category",
+          "kind"
+        ],
+        "properties": {
+          "category": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "state",
+              "event",
+              "identity",
+              "relationship",
+              "location",
+              "capability",
+              "rule",
+              "quantity",
+              "intention",
+              "negative"
+            ],
+            "properties": {
+              "state": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2048
+              },
+              "event": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2048
+              },
+              "identity": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2048
+              },
+              "relationship": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2048
+              },
+              "location": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2048
+              },
+              "capability": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2048
+              },
+              "rule": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2048
+              },
+              "quantity": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2048
+              },
+              "intention": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2048
+              },
+              "negative": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2048
+              }
+            }
+          },
+          "kind": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "fact",
+              "rumour",
+              "secret",
+              "clue"
+            ],
+            "properties": {
+              "fact": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2048
+              },
+              "rumour": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2048
+              },
+              "secret": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2048
+              },
+              "clue": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2048
+              }
+            }
+          }
+        }
+      }
     },
     "$defs": {
       "subject": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "name"],
+        "required": [
+          "id",
+          "name"
+        ],
         "properties": {
-          "id": { "type": "string", "minLength": 1, "maxLength": 200 },
-          "name": { "type": "string", "minLength": 1, "maxLength": 400 }
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400
+          }
         }
       },
       "admission": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["actorId", "actorName", "stance", "source"],
+        "required": [
+          "actorId",
+          "actorName",
+          "stance",
+          "source"
+        ],
         "properties": {
-          "actorId": { "type": "string", "minLength": 1, "maxLength": 200 },
-          "actorName": { "type": "string", "minLength": 1, "maxLength": 400 },
-          "stance": {
-            "enum": ["known", "suspected", "believed", "doubted", "disbelieved", "familiar", "unknown"]
+          "actorId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
           },
-          "source": { "enum": ["explicit", "baseline"] },
-          "scopeId": { "type": "string", "minLength": 1, "maxLength": 200 },
-          "admits": { "const": false }
+          "actorName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400
+          },
+          "stance": {
+            "enum": [
+              "known",
+              "suspected",
+              "believed",
+              "doubted",
+              "disbelieved",
+              "familiar",
+              "unknown"
+            ]
+          },
+          "source": {
+            "enum": [
+              "explicit",
+              "baseline"
+            ]
+          },
+          "scopeId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "admits": {
+            "const": false
+          }
         }
       },
       "contentEntry": {
@@ -131,41 +377,130 @@
           "admissions"
         ],
         "properties": {
-          "knowledgeId": { "type": "string", "minLength": 1, "maxLength": 200 },
-          "documentRevision": { "type": "string", "pattern": "^[0-9A-F]{64}$" },
-          "text": { "type": "string", "minLength": 1, "maxLength": 1500 },
-          "stance": { "enum": ["known", "suspected", "believed", "doubted", "disbelieved", "mixed", "dm"] },
-          "presentationKind": { "enum": ["statement", "rumour", "evidence"] },
-          "subject": { "$ref": "#/$defs/subject" },
-          "mediaOwnerId": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "knowledgeId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "documentRevision": {
+            "type": "string",
+            "pattern": "^[0-9A-F]{64}$"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1500
+          },
+          "stance": {
+            "enum": [
+              "known",
+              "suspected",
+              "believed",
+              "doubted",
+              "disbelieved",
+              "mixed",
+              "dm"
+            ]
+          },
+          "presentationKind": {
+            "enum": [
+              "statement",
+              "rumour",
+              "evidence"
+            ]
+          },
+          "subject": {
+            "$ref": "#/$defs/subject"
+          },
+          "mediaOwnerId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
           "admissions": {
             "type": "array",
             "maxItems": 20,
-            "items": { "$ref": "#/$defs/admission" }
+            "items": {
+              "$ref": "#/$defs/admission"
+            }
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "knowledgeKind": {
+            "enum": [
+              "fact",
+              "rumour",
+              "secret",
+              "clue"
+            ]
+          },
+          "subjectKind": {
+            "enum": [
+              "state",
+              "event",
+              "identity",
+              "relationship",
+              "location",
+              "capability",
+              "rule",
+              "quantity",
+              "intention",
+              "negative"
+            ]
           }
         }
       },
       "recognitionEntry": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["recognitionKey", "text", "stance", "presentationKind", "admissions"],
+        "required": [
+          "recognitionKey",
+          "text",
+          "stance",
+          "presentationKind",
+          "admissions"
+        ],
         "properties": {
-          "recognitionKey": { "type": "string", "minLength": 3, "maxLength": 140 },
-          "text": { "const": "You recognize this as a familiar topic, but do not remember details." },
-          "stance": { "const": "familiar" },
-          "presentationKind": { "const": "recognition" },
+          "recognitionKey": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 140
+          },
+          "text": {
+            "const": "You recognize this as a familiar topic, but do not remember details."
+          },
+          "stance": {
+            "const": "familiar"
+          },
+          "presentationKind": {
+            "const": "recognition"
+          },
           "admissions": {
             "type": "array",
             "minItems": 1,
             "maxItems": 20,
-            "items": { "$ref": "#/$defs/admission" }
+            "items": {
+              "$ref": "#/$defs/admission"
+            }
           }
         }
       },
       "entry": {
         "oneOf": [
-          { "$ref": "#/$defs/contentEntry" },
-          { "$ref": "#/$defs/recognitionEntry" }
+          {
+            "$ref": "#/$defs/contentEntry"
+          },
+          {
+            "$ref": "#/$defs/recognitionEntry"
+          }
         ]
       }
     }

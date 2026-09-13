@@ -1,0 +1,13 @@
+.location-directory .world-directory-controls {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+.location-directory .world-directory-search {
+  grid-column: 1 / -1;
+}
+.location-directory__pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}

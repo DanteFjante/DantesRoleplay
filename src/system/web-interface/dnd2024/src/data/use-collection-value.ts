@@ -44,8 +44,14 @@ export function useCollectionValue<T>(key: string, initial: T, maximumAgeMs = 60
     if (store) store.dispatch(collectionActions.denied({ scope, generation }));
     else setLocal(empty);
   }, [empty, generation, scope, store]);
+  const invalidate = useCallback(() => {
+    if (!store) { setLocal(empty); return; }
+    const current = store.getState().collections;
+    if (current.scope === scope && current.generation === generation && !current.denied)
+      store.dispatch(collectionActions.scopeReplaced({ scope, generation: generation + 1 }));
+  }, [empty, generation, scope, store]);
   return [store ? value ?? empty : local, setValue, epoch,
     Boolean(entry && Date.now() - entry.confirmedAt < maximumAgeMs),
     !store || scope !== null && !store.getState().collections.denied, deny, evicted,
-    Boolean(store?.getState().collections.denied)] as const;
+    Boolean(store?.getState().collections.denied), invalidate] as const;
 }

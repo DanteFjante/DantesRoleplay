@@ -22,6 +22,12 @@ function applyWorldScopePage(current: ReadyHubEnvelope, update: LocationUpdate):
   if (!scopeId || !incomingScope) return current;
 
   const scopeById = new Map(current.world.locationScopes.map((scope) => [scope.id, scope]));
+  const previousScope = scopeById.get(scopeId);
+  const retainedCompleteScope = !incomingScope.complete && previousScope?.complete &&
+    previousScope.sourceRevisionFingerprint !== null &&
+    previousScope.sourceRevisionFingerprint === incomingScope.sourceRevisionFingerprint &&
+    previousScope.totalCount === incomingScope.totalCount &&
+    incomingScope.childIds.every((id) => previousScope.childIds.includes(id));
   const admittedHere = new Set(incomingScope.childIds);
   for (const [id, scope] of scopeById) {
     if (id === scopeId || !scope.childIds.some((childId) => admittedHere.has(childId))) continue;
@@ -32,7 +38,11 @@ function applyWorldScopePage(current: ReadyHubEnvelope, update: LocationUpdate):
       totalCount: Math.max(childIds.length, scope.totalCount - (scope.childIds.length - childIds.length)),
     });
   }
-  scopeById.set(scopeId, incomingScope);
+  // A detail page cannot erase the rest of an already-complete directory at the same
+  // source revision. A different revision must establish its own membership normally.
+  scopeById.set(scopeId, retainedCompleteScope ? { ...incomingScope,
+    childIds: previousScope.childIds, complete: true, nextCursor: null,
+  } : incomingScope);
 
   const rootId = current.contextSelection?.selectedWorldId ?? current.world.id;
   const reachable = new Set<string>();

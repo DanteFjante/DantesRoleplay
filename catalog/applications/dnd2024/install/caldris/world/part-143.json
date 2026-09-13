@@ -3,6 +3,58 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
+      "entityId": "location.caldris.veyr-marches.ninepost-field",
+      "name": "Ninepost Field",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Neutral meadow where nine carved posts mark grazing, court, market, and muster rights for different marches. Present pressure: A tenth post appears overnight with convincing weathering.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 420,
+            "y": 280
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.veyr-marches",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.veyr-marches.oakshield",
+      "name": "Oakshield",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "Oakshield guards forest passes with layered timber walls designed to be repaired, not admired. It exports horses, charcoal, leather, and excellent preserved mushrooms.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 725,
+            "y": 635
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.veyr-marches",
+        "slot": "location"
+      }
+    },
+    {
       "entityId": "location.caldris.veyr-marches.redgate",
       "name": "Redgate",
       "components": [
@@ -27,12 +79,316 @@
         "containerEntityId": "location.caldris.veyr-marches",
         "slot": "location"
       }
+    },
+    {
+      "entityId": "location.caldris.veyr-marches.the-courteous-ruin",
+      "name": "The Courteous Ruin",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Roofless border manor where travelers still follow elaborate guest customs preserved by its caretaker family. Present pressure: Armed claimants demand the keys to a house with no doors.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 815,
+            "y": 430
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.veyr-marches",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.veyr-marches.vanners-rest",
+      "name": "Vanner's Rest",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "Vanner's Rest grew around caravan fields and is famous for wheelwrights, horse doctors, roadside theatre, and the loudest inn signs in Eredane.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 230,
+            "y": 655
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.veyr-marches",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.veyr-marches.wheelwife-hollow",
+      "name": "Wheelwife Hollow",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Wagon-repair settlement built around a spring and a circular common where axle-makers test their work. Present pressure: Travelers arrive with wheels failing in the same peculiar way.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 350,
+            "y": 770
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.veyr-marches",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.veyr.shepherds-refusal",
+      "name": "Shepherd's Refusal",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "hill and shrine in Veyr. Memorial to a commoner who declined three crowns and one very fine horse.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 170,
+            "y": 450
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.veyr-marches",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.veyr.the-nine-mile-inn",
+      "name": "The Nine-Mile Inn",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "road complex in Veyr. Famous for being a different distance from every map origin.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 485,
+            "y": 645
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.veyr-marches",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "secret.caldris.history.alderwick.the-three-day-queen",
+      "name": "The Three-Day Queen — concealed layer",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Her abdication may have been conditional on permanent village appeal rights omitted from court copies.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.alderwick",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "secret.caldris.history.alderwick.the-winter-sharing",
+      "name": "The Winter Sharing — concealed layer",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Later royal histories call one camp ancestral rulers, though burial goods suggest equal partners.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.alderwick",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "secret.caldris.history.bellafont.seeds-beneath-ash",
+      "name": "Seeds Beneath Ash — concealed layer",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The seeds came from several distant valleys, evidence of wider migration than court genealogies admit.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "knowledge"
+      }
     }
   ],
   "relationships": [
     {
+      "fromEntityId": "secret.caldris.history.alderwick.the-three-day-queen",
+      "toEntityId": "location.caldris.alderwick",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.history.alderwick.the-three-day-queen",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.history.alderwick.the-winter-sharing",
+      "toEntityId": "location.caldris.alderwick",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.history.alderwick.the-winter-sharing",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.history.bellafont.seeds-beneath-ash",
+      "toEntityId": "location.caldris.bellafont",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.history.bellafont.seeds-beneath-ash",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.the-lantern-hospice",
+      "toEntityId": "location.caldris.veyr-marches.oakshield",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.veyr-marches.foxglove-relay",
+      "toEntityId": "location.caldris.veyr-marches.ninepost-field",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.veyr-marches.foxglove-relay",
+      "toEntityId": "location.caldris.veyr-marches.the-courteous-ruin",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
       "fromEntityId": "location.caldris.veyr-marches.ninepost-field",
       "toEntityId": "location.caldris.veyr-marches.redgate",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.veyr-marches.oakshield",
+      "toEntityId": "location.caldris.veyr.the-nine-mile-inn",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.veyr-marches.redgate",
+      "toEntityId": "location.caldris.veyr.the-nine-mile-inn",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.veyr-marches.vanners-rest",
+      "toEntityId": "location.caldris.veyr-marches.wheelwife-hollow",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.veyr-marches.vanners-rest",
+      "toEntityId": "location.caldris.veyr.shepherds-refusal",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.veyr-marches.vanners-rest",
+      "toEntityId": "location.caldris.veyr.the-nine-mile-inn",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.veyr-marches.wheelwife-hollow",
+      "toEntityId": "location.caldris.veyr.the-nine-mile-inn",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.alderwick.dunwarren",
+      "toEntityId": "location.caldris.veyr-marches.oakshield",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
@@ -49,8 +405,62 @@
       "value": {}
     },
     {
+      "fromEntityId": "fact.caldris.atlas.connection.9dac03f01d99b5f49150",
+      "toEntityId": "location.caldris.veyr.the-nine-mile-inn",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.ea60ca443d7c2e25efd4",
+      "toEntityId": "location.caldris.veyr-marches.vanners-rest",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.00a86a2d41da59aeb165",
+      "toEntityId": "location.caldris.veyr.the-nine-mile-inn",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.290e02b245721468c050",
+      "toEntityId": "location.caldris.veyr-marches.oakshield",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
       "fromEntityId": "fact.caldris.atlas.connection.5bcbba549022350e4489",
       "toEntityId": "location.caldris.veyr-marches.redgate",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.67d55dd3b3add8a10942",
+      "toEntityId": "location.caldris.veyr-marches.vanners-rest",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.b6b4d5434686c3aa69e8",
+      "toEntityId": "location.caldris.veyr-marches.ninepost-field",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.cb93e46c48ed79a927a0",
+      "toEntityId": "location.caldris.veyr-marches.wheelwife-hollow",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.e8c45ff1c3134f7509db",
+      "toEntityId": "location.caldris.veyr-marches.vanners-rest",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.8782c2d38030896bfbe2",
+      "toEntityId": "location.caldris.veyr-marches.oakshield",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
@@ -61,8 +471,44 @@
       "value": {}
     },
     {
+      "fromEntityId": "route.caldris.atlas.385e776073a462ce21a3",
+      "toEntityId": "location.caldris.veyr-marches.ninepost-field",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.54f162b08f383f83f9bb",
+      "toEntityId": "location.caldris.veyr-marches.ninepost-field",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.5bcbba549022350e4489",
+      "toEntityId": "location.caldris.veyr-marches.ninepost-field",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
       "fromEntityId": "route.caldris.atlas.5bcbba549022350e4489",
       "toEntityId": "location.caldris.veyr-marches.redgate",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.834d095935d4fefaaae3",
+      "toEntityId": "location.caldris.veyr-marches.the-courteous-ruin",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.9b1a37b6267df39225e4",
+      "toEntityId": "location.caldris.veyr.the-nine-mile-inn",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.9b1a37b6267df39225e4",
+      "toEntityId": "location.caldris.veyr-marches.vanners-rest",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
@@ -73,8 +519,152 @@
       "value": {}
     },
     {
+      "fromEntityId": "route.caldris.atlas.9dac03f01d99b5f49150",
+      "toEntityId": "location.caldris.veyr.the-nine-mile-inn",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.b6b4d5434686c3aa69e8",
+      "toEntityId": "location.caldris.veyr-marches.ninepost-field",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.d65f7f68132f3e3b1c60",
+      "toEntityId": "location.caldris.veyr-marches.the-courteous-ruin",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.e02ba92e84bc2047ac0e",
+      "toEntityId": "location.caldris.veyr.the-nine-mile-inn",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
       "fromEntityId": "route.caldris.atlas.e02ba92e84bc2047ac0e",
       "toEntityId": "location.caldris.veyr-marches.redgate",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.ea60ca443d7c2e25efd4",
+      "toEntityId": "location.caldris.veyr-marches.vanners-rest",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.ea60ca443d7c2e25efd4",
+      "toEntityId": "location.caldris.veyr.the-nine-mile-inn",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.00a86a2d41da59aeb165",
+      "toEntityId": "location.caldris.veyr-marches.oakshield",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.00a86a2d41da59aeb165",
+      "toEntityId": "location.caldris.veyr.the-nine-mile-inn",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.290e02b245721468c050",
+      "toEntityId": "location.caldris.veyr-marches.oakshield",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.4af531c989d75bfe8f41",
+      "toEntityId": "location.caldris.veyr.shepherds-refusal",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.4af531c989d75bfe8f41",
+      "toEntityId": "location.caldris.veyr-marches.vanners-rest",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.60740e239e721d9df1cc",
+      "toEntityId": "location.caldris.veyr-marches.oakshield",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.67d55dd3b3add8a10942",
+      "toEntityId": "location.caldris.veyr-marches.vanners-rest",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.67d55dd3b3add8a10942",
+      "toEntityId": "location.caldris.veyr-marches.wheelwife-hollow",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.6dc70c6df9e5a7743fea",
+      "toEntityId": "location.caldris.veyr.the-nine-mile-inn",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.6dc70c6df9e5a7743fea",
+      "toEntityId": "location.caldris.veyr-marches.oakshield",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.8b531dcd66353e8e26ec",
+      "toEntityId": "location.caldris.veyr-marches.wheelwife-hollow",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.8b531dcd66353e8e26ec",
+      "toEntityId": "location.caldris.veyr-marches.vanners-rest",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.cb93e46c48ed79a927a0",
+      "toEntityId": "location.caldris.veyr-marches.wheelwife-hollow",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.cb93e46c48ed79a927a0",
+      "toEntityId": "location.caldris.veyr.the-nine-mile-inn",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.e8c45ff1c3134f7509db",
+      "toEntityId": "location.caldris.veyr-marches.vanners-rest",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.e8c45ff1c3134f7509db",
+      "toEntityId": "location.caldris.veyr.shepherds-refusal",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.f67d2349ba82acbbff60",
+      "toEntityId": "location.caldris.veyr.the-nine-mile-inn",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.f67d2349ba82acbbff60",
+      "toEntityId": "location.caldris.veyr-marches.wheelwife-hollow",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     }

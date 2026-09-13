@@ -1,0 +1,401 @@
+{
+  "coordinateContract": {
+    "unit": "normalized",
+    "width": 1000,
+    "height": 1000,
+    "origin": "top-left",
+    "positiveX": "east/right",
+    "positiveY": "south/down",
+    "orientation": "north-up",
+    "rule": "Each owner has its own frame; a child anchor is expressed only in its direct parent map frame."
+  },
+  "mapSelection": "Only these clean image frames are active. Other retained map visuals are archived; their locations and local coordinates remain available for the directory and nearest clean ancestor view.",
+  "frames": [
+    {
+      "ownerLocationId": "location.caldris.atlas",
+      "imagePath": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/caldris-atlas-clean-v2.png",
+      "imageSha256": "142d6050d58e17590d986f7f2cde1a4d83fad0e89e6c1b795cad5d87f9220be4",
+      "anchors": [
+        {
+          "locationId": "location.caldris.atlas.lantern-sea",
+          "x": 565,
+          "y": 490,
+          "basis": "Open water in the channel between Eredane and Solasca; the older world coordinate falls on Eredane in this revised atlas."
+        },
+        {
+          "locationId": "location.caldris.eredane",
+          "x": 255,
+          "y": 380,
+          "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        },
+        {
+          "locationId": "location.caldris.solasca",
+          "x": 765,
+          "y": 490,
+          "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        }
+      ]
+    },
+    {
+      "ownerLocationId": "location.caldris.eredane",
+      "imagePath": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/eredane-clean-v1.png",
+      "imageSha256": "1435526aae8c1cdbacd58ad82c361c0a3acad8bae7bcdc85247155e99934db59",
+      "anchors": [
+        {
+          "locationId": "location.caldris.alderwick",
+          "x": 525,
+          "y": 530,
+          "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        },
+        {
+          "locationId": "location.caldris.bellafont",
+          "x": 525,
+          "y": 790,
+          "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        },
+        {
+          "locationId": "location.caldris.carrowmere",
+          "x": 235,
+          "y": 640,
+          "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        },
+        {
+          "locationId": "location.caldris.dunmarrow",
+          "x": 270,
+          "y": 235,
+          "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        },
+        {
+          "locationId": "location.caldris.lornesse",
+          "x": 735,
+          "y": 310,
+          "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        },
+        {
+          "locationId": "location.caldris.veyr-marches",
+          "x": 500,
+          "y": 255,
+          "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        }
+      ]
+    },
+    {
+      "ownerLocationId": "location.caldris.alderwick",
+      "imagePath": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/alderwick-clean-v1.png",
+      "imageSha256": "f1a67e8f1b362fa0f872b86bc0007abf0f2d512833bc907502a3f7a3f11e11c7",
+      "anchors": [
+        {
+          "locationId": "location.caldris.alderwick.dunwarren",
+          "x": 780,
+          "y": 255,
+          "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        },
+        {
+          "locationId": "location.caldris.alderwick.kings-patience-wood",
+          "x": 815,
+          "y": 445,
+          "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        },
+        {
+          "locationId": "location.caldris.alderwick.merecross",
+          "x": 620,
+          "y": 570,
+          "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        },
+        {
+          "locationId": "location.caldris.atlas.bramble-country",
+          "x": 510,
+          "y": 400,
+          "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        },
+        {
+          "locationId": "location.caldris.atlas.chalklands",
+          "x": 265,
+          "y": 250,
+          "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        },
+        {
+          "locationId": "location.caldris.atlas.orchard-march",
+          "x": 260,
+          "y": 650,
+          "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        },
+        {
+          "locationId": "location.caldris.central-eredane.mothglass-ruin",
+          "x": 470,
+          "y": 180,
+          "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        },
+        {
+          "locationId": "location.caldris.lore.vey-lowlands",
+          "x": 760,
+          "y": 785,
+          "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        }
+      ]
+    },
+    {
+      "ownerLocationId": "location.caldris.atlas.bramble-country",
+      "imagePath": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/bramble-country-clean-v1.png",
+      "imageSha256": "c4fc7b846d578a29841df334a1293ea8a6ddc103521c9621c04c56a321a060dc",
+      "anchors": [
+        {
+          "locationId": "location.caldris.alderwick.mallow-quay",
+          "x": 570,
+          "y": 755,
+          "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        },
+        {
+          "locationId": "location.caldris.alderwick.sourapple-ford",
+          "x": 545,
+          "y": 595,
+          "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        },
+        {
+          "locationId": "location.caldris.alderwick.the-drowned-groves",
+          "x": 830,
+          "y": 800,
+          "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        },
+        {
+          "locationId": "location.caldris.bramblebridge",
+          "x": 451,
+          "y": 416,
+          "basis": "Visible stone bridge at the centre of the town on the Weir."
+        },
+        {
+          "locationId": "location.caldris.bramblebridge.mallow-abbey",
+          "x": 220,
+          "y": 300,
+          "basis": "Retained west-bank abbey building group and orchard at the authored Mallow Abbey site."
+        },
+        {
+          "locationId": "location.caldris.candlefen",
+          "x": 685,
+          "y": 690,
+          "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        },
+        {
+          "locationId": "location.caldris.eastern-eredane.the-road-that-forgets",
+          "x": 865,
+          "y": 420,
+          "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        },
+        {
+          "locationId": "location.caldris.lore.old-merecross",
+          "x": 650,
+          "y": 540,
+          "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        },
+        {
+          "locationId": "location.caldris.wrens-hollow",
+          "x": 785,
+          "y": 245,
+          "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        }
+      ]
+    },
+    {
+      "ownerLocationId": "location.caldris.bramblebridge",
+      "imagePath": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/bramblebridge-clean-v1.png",
+      "imageSha256": "0edb6b93e6c26fa4de8973cb1753bd72b165cab3a18092317170f6a16f058f57",
+      "anchors": [
+        {
+          "locationId": "location.caldris.atlas.bramble-east-gate",
+          "x": 870,
+          "y": 565,
+          "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        },
+        {
+          "locationId": "location.caldris.atlas.bramble-market",
+          "x": 435,
+          "y": 520,
+          "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        },
+        {
+          "locationId": "location.caldris.atlas.weir-bridge",
+          "x": 655,
+          "y": 505,
+          "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        },
+        {
+          "locationId": "location.caldris.bramblebridge.bramble-theatre-loft",
+          "x": 235,
+          "y": 380,
+          "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        },
+        {
+          "locationId": "location.caldris.bramblebridge.bridge-house",
+          "x": 565,
+          "y": 490,
+          "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        },
+        {
+          "locationId": "location.caldris.bramblebridge.honest-weights-hall",
+          "x": 380,
+          "y": 400,
+          "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        },
+        {
+          "locationId": "location.caldris.bramblebridge.little-quay",
+          "x": 600,
+          "y": 755,
+          "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        },
+        {
+          "locationId": "location.caldris.bramblebridge.old-weir-mill",
+          "x": 635,
+          "y": 200,
+          "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        },
+        {
+          "locationId": "location.caldris.bramblebridge.pike-house",
+          "x": 710,
+          "y": 295,
+          "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        },
+        {
+          "locationId": "location.caldris.bramblebridge.the-bent-penny",
+          "x": 335,
+          "y": 700,
+          "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        },
+        {
+          "locationId": "location.caldris.bramblebridge.the-crooked-saint",
+          "x": 715,
+          "y": 565,
+          "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        },
+        {
+          "locationId": "location.caldris.bramblebridge.tibbs-watch-post",
+          "x": 810,
+          "y": 430,
+          "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        },
+        {
+          "locationId": "location.caldris.gilded-kettle",
+          "x": 280,
+          "y": 575,
+          "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        },
+        {
+          "locationId": "location.caldris.lore.the-last-mile-porch",
+          "x": 135,
+          "y": 550,
+          "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        },
+        {
+          "locationId": "location.caldris.north-bell-tower",
+          "x": 455,
+          "y": 220,
+          "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        }
+      ]
+    },
+    {
+      "ownerLocationId": "location.caldris.gilded-kettle",
+      "imagePath": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/gilded-kettle-ground-floor-clean-v1.png",
+      "imageSha256": "f43c2bc732b3cce3383ff19327aa54266e9460b41c770ab318d0dbfd75722e5e",
+      "anchors": [
+        {
+          "locationId": "location.caldris.gilded-kettle.cloak-porch",
+          "x": 455,
+          "y": 760,
+          "basis": "Opening site coordinate retained after checking its room or grounds against the clean artwork."
+        },
+        {
+          "locationId": "location.caldris.gilded-kettle.common-room",
+          "x": 300,
+          "y": 440,
+          "basis": "Opening site coordinate retained after checking its room or grounds against the clean artwork."
+        },
+        {
+          "locationId": "location.caldris.gilded-kettle.kitchen",
+          "x": 650,
+          "y": 250,
+          "basis": "Opening site coordinate retained after checking its room or grounds against the clean artwork."
+        },
+        {
+          "locationId": "location.caldris.gilded-kettle.pantry",
+          "x": 675,
+          "y": 520,
+          "basis": "Opening site coordinate retained after checking its room or grounds against the clean artwork."
+        },
+        {
+          "locationId": "location.caldris.gilded-kettle.yard",
+          "x": 850,
+          "y": 420,
+          "basis": "Opening site coordinate retained after checking its room or grounds against the clean artwork."
+        }
+      ]
+    },
+    {
+      "ownerLocationId": "location.caldris.atlas.weir-bridge",
+      "imagePath": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/weir-bridge-bridge-house-map-v1.png",
+      "imageSha256": "a9de90d48d70135c65c166c6ef9b66f5fcdbd806344c8eda03e01329b187cd95",
+      "anchors": [
+        {
+          "locationId": "location.caldris.atlas.weir-bridge.east-landing",
+          "x": 750,
+          "y": 495,
+          "basis": "Eastern bridge approach where the north and south bank roads meet."
+        },
+        {
+          "locationId": "location.caldris.atlas.weir-bridge.river-stairs",
+          "x": 665,
+          "y": 635,
+          "basis": "Visible stone stairs descending from the south side of the eastern bridge approach."
+        },
+        {
+          "locationId": "location.caldris.atlas.weir-bridge.toll-barrier",
+          "x": 420,
+          "y": 455,
+          "basis": "Opening site coordinate retained after checking its room or grounds against the clean artwork."
+        },
+        {
+          "locationId": "location.caldris.atlas.weir-bridge.west-toll-yard",
+          "x": 430,
+          "y": 500,
+          "basis": "Cobbled western approach between Bridge House and the bridge, beside the toll barrier."
+        }
+      ]
+    },
+    {
+      "ownerLocationId": "location.caldris.bramblebridge.mallow-abbey",
+      "imagePath": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/mallow-abbey-map-v1.png",
+      "imageSha256": "620f090645e427ac80f01e228cbdd93a4c40d06567f845d468a1a6b8d397c327",
+      "anchors": [
+        {
+          "locationId": "location.caldris.bramblebridge.mallow-abbey.apiary",
+          "x": 315,
+          "y": 265,
+          "basis": "Opening site coordinate retained after checking its room or grounds against the clean artwork."
+        },
+        {
+          "locationId": "location.caldris.bramblebridge.mallow-abbey.archive-room",
+          "x": 580,
+          "y": 315,
+          "basis": "Archive room is placed in the existing connecting stone wing between chapel and hospice, not in the outdoor courtyard."
+        },
+        {
+          "locationId": "location.caldris.bramblebridge.mallow-abbey.chapel",
+          "x": 485,
+          "y": 320,
+          "basis": "Main chapel nave roof, west of the connecting stone wing."
+        },
+        {
+          "locationId": "location.caldris.bramblebridge.mallow-abbey.hospice-wing",
+          "x": 640,
+          "y": 360,
+          "basis": "Long eastern stone wing, centred on its roof rather than the courtyard."
+        },
+        {
+          "locationId": "location.caldris.bramblebridge.mallow-abbey.orchard",
+          "x": 255,
+          "y": 560,
+          "basis": "Opening site coordinate retained after checking its room or grounds against the clean artwork."
+        }
+      ]
+    }
+  ]
+}

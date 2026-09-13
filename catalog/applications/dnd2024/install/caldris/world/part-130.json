@@ -3,6 +3,32 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
+      "entityId": "fact.caldris.dossier.kethria",
+      "name": "Polity dossier — Kethria",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Kethria — terraces above the copper valleys. Land and livelihood: terraced grain and fruit, copper, tin, mountain timber, snowmelt canals, Rule: Queen Arshala, valley councils, mine compacts, and a ritual office that records copper Character: precise hospitality, communal irrigation work, wrestling, carved doors, dry Magic: openly discussed but rarely seen; mountain monasteries keep dangerous texts while Old wound: the Crownmaking dynasty accepted a secret dragon bargain to prevent invasion. Current pressure: the copper tithe has continued for four centuries, but someone recently",
+            "provenance": "Caldris world bible — polity dossiers",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "state",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.kethria",
+        "slot": "knowledge"
+      }
+    },
+    {
       "entityId": "fact.caldris.dossier.lornesse",
       "name": "Polity dossier — Lornesse",
       "components": [
@@ -196,6 +222,13 @@
             "visibility": "public",
             "status": "active"
           }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 780,
+            "y": 255
+          }
         }
       ],
       "containment": {
@@ -215,24 +248,12 @@
             "visibility": "public",
             "status": "active"
           }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.alderwick",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.alderwick.merecross",
-      "name": "Merecross",
-      "components": [
+        },
         {
-          "qualifiedTypeId": "game.core.world.location",
+          "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "kind": "settlement",
-            "summary": "Merecross grew where the Mere meets the Lark and Weir rivers. Barges, paper, apples, wool, court business, and bridge tolls feed a city of stone quays and timber upper stories. Its seven public bridges are maintained by different institutions, producing beautiful views and spectacularly petty jurisdiction disputes.",
-            "visibility": "public",
-            "status": "active"
+            "x": 815,
+            "y": 445
           }
         }
       ],
@@ -243,6 +264,18 @@
     }
   ],
   "relationships": [
+    {
+      "fromEntityId": "fact.caldris.dossier.kethria",
+      "toEntityId": "location.caldris.kethria",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.dossier.kethria",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
     {
       "fromEntityId": "fact.caldris.dossier.lornesse",
       "toEntityId": "location.caldris.lornesse",
@@ -329,12 +362,6 @@
     },
     {
       "fromEntityId": "location.caldris.alderwick.dunwarren",
-      "toEntityId": "location.caldris.alderwick.merecross",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.alderwick.dunwarren",
       "toEntityId": "location.caldris.alderwick.kings-patience-wood",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
@@ -342,18 +369,6 @@
     {
       "fromEntityId": "fact.caldris.atlas.connection.7dccbdc09d4fc0bf5e6a",
       "toEntityId": "location.caldris.alderwick.dunwarren",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.daff088b43ea2f1a2fd4",
-      "toEntityId": "location.caldris.alderwick.merecross",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.4187b6a47330c9b2303e",
-      "toEntityId": "location.caldris.alderwick.merecross",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
@@ -366,18 +381,6 @@
     {
       "fromEntityId": "route.caldris.atlas.7dccbdc09d4fc0bf5e6a",
       "toEntityId": "location.caldris.alderwick.dunwarren",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.7dccbdc09d4fc0bf5e6a",
-      "toEntityId": "location.caldris.alderwick.merecross",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.bc82303c2ab147a4dfb0",
-      "toEntityId": "location.caldris.alderwick.merecross",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },

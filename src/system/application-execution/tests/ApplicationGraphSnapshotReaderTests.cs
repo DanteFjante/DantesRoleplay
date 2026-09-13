@@ -316,6 +316,116 @@ public sealed class ApplicationGraphSnapshotReaderTests : IDisposable
             .GetProperty("value").GetInt32());
     }
 
+    [Fact]
+    public async Task Declared_selection_filters_before_paging_counts_facets_and_binds_continuations()
+    {
+        await using var db = fixture.CreateContext();
+        var setup = await SeedPagingAsync(db);
+        var reader = new ApplicationGraphSnapshotReader(db, setup.Spaces);
+        var requirements = PagingRequirements();
+        var declaration = requirements.GraphSnapshots["paged"];
+        var selection = new GraphPageSelectionRequirement
+        {
+            EnabledInput = "browse", ExpectedFingerprintInput = "expectedSelection", SearchInput = "query", PageSize = 1,
+            Fields = new Dictionary<string, GraphPageFieldRequirement>
+            {
+                ["label"] = new() { Sources = [new() { EntityField = "name" }], Required = true,
+                    AllowedValues = ["Alpha", "Child", "Omega"], FilterInput = "label", Facet = true, Search = true },
+                ["kind"] = new() { Sources = [new() { ComponentId = "marker", Constant = "marked" }],
+                    Required = true, AllowedValues = ["marked"], Facet = true, FilterInput = "kind" }
+            }
+        };
+        requirements.GraphSnapshots["paged"] = declaration with { Page = declaration.Page! with { Selection = selection } };
+        Assert.True(requirements.GraphSnapshots["paged"].Valid());
+        var roles = new Dictionary<string, string> { ["selection"] = "selection" };
+        async Task<MechanicGraphSnapshot> Read(string input)
+        {
+            var result = await reader.ReadAsync("space", setup.Application, requirements, setup.Mapping, roles, input);
+            Assert.True(result.Ok, string.Join("; ", result.Problems));
+            return result.Snapshots["paged"];
+        }
+
+        var first = await Read("{\"browse\":true}");
+        Assert.Equal(3, first.Page!.TotalCount);
+        Assert.Equal(3, first.Page.Facets!["kind"]["marked"]);
+        Assert.Equal(1, first.Page.Facets["label"]["Omega"]);
+        var second = await Read(JsonSerializer.Serialize(new { browse = true, cursor = "1",
+            expectedSelection = first.Page.SelectionFingerprint }));
+        Assert.Equal("child", Assert.Single(second.Steps["items"].Nodes).Id);
+        var filtered = await Read("{\"browse\":true,\"label\":\"Omega\"}");
+        Assert.Equal(1, filtered.Page!.TotalCount);
+        Assert.Equal("omega", Assert.Single(filtered.Steps["items"].Nodes).Id);
+        Assert.Equal("omega-detail", Assert.Single(filtered.Steps["details"].Nodes).Id);
+        Assert.Equal(1, filtered.Page.Facets!["label"]["Alpha"]);
+        Assert.Equal(1, filtered.Page.Facets["kind"]["marked"]);
+        var searched = await Read("{\"browse\":true,\"query\":\"mEg\"}");
+        Assert.Equal("omega", Assert.Single(searched.Steps["items"].Nodes).Id);
+        Assert.Equal(1, searched.Page!.TotalCount);
+        var empty = await Read("{\"browse\":true,\"query\":\"no match\"}");
+        Assert.Empty(empty.Steps["items"].Nodes);
+        Assert.Equal(0, empty.Page!.TotalCount);
+        Assert.Null(empty.Page.NextCursor);
+        var changed = await reader.ReadAsync("space", setup.Application, requirements, setup.Mapping, roles,
+            JsonSerializer.Serialize(new { browse = true, cursor = "1", query = "Omega",
+                expectedSelection = first.Page.SelectionFingerprint }));
+        Assert.False(changed.Ok);
+        Assert.Contains("selection changed", string.Join("; ", changed.Problems));
+        var legacy = await Read("{}");
+        Assert.Null(legacy.Page!.Facets);
+        Assert.Null(legacy.Page.SelectionFingerprint);
+        Assert.Equal(3, legacy.Page.TotalCount);
+
+        requirements.GraphSnapshots["paged"] = declaration with { Page = declaration.Page! with
+        { Selection = selection with { Fields = new Dictionary<string, GraphPageFieldRequirement>
+            { ["missing"] = new() { Required = true, Sources = [new() { ComponentId = "marker", Path = "/missing" }],
+                AllowedValues = ["allowed"], Facet = true } } } } };
+        var invalidCandidates = await Read("{\"browse\":true}");
+        Assert.Equal(0, invalidCandidates.Page!.TotalCount);
+        Assert.Equal(0, invalidCandidates.Page.Facets!["missing"]["allowed"]);
+
+        await new SqliteStateSpaceEdgeStore(db, setup.Spaces).SetRelationshipAsync(
+            "space", "selection", "alpha", "fixture-graph.detail", "{}", 0);
+        var comparison = new GraphPageComparisonRequirement
+        {
+            Left = new() { ComponentId = "marker", Path = "/value" },
+            Right = new() { ComponentId = "marker", Path = "/value", StepId = "threshold" },
+            Operator = "less-than-or-equal"
+        };
+        var compared = declaration with
+        {
+            Steps = declaration.Steps.Concat([new GraphSnapshotStepRequirement
+            { Id = "threshold", From = "root", RelationshipKinds = ["detail"], ComponentIds = ["marker"] }]).ToArray(),
+            Page = declaration.Page! with { Selection = selection with { Comparisons = [comparison] } }
+        };
+        Assert.True(compared.Valid());
+        requirements.GraphSnapshots["paged"] = compared;
+        var earlier = await Read("{\"browse\":true}");
+        Assert.Equal(2, earlier.Page!.TotalCount);
+        Assert.Equal(0, earlier.Page.Facets!["label"]["Omega"]);
+        requirements.GraphSnapshots["paged"] = compared with { Page = compared.Page! with
+        { Selection = selection with { Comparisons = [comparison with { Operator = "greater-than" }] } } };
+        var later = await Read("{\"browse\":true}");
+        Assert.Equal(1, later.Page!.TotalCount);
+        Assert.Equal("omega", Assert.Single(later.Steps["items"].Nodes).Id);
+        foreach (var allowMissing in new[] { true, false })
+        {
+            requirements.GraphSnapshots["paged"] = compared with { Page = compared.Page! with
+            { Selection = selection with { Comparisons = [comparison with
+            { Left = new() { ComponentId = "marker", Path = "/missing" }, AllowMissingLeft = allowMissing }] } } };
+            Assert.Equal(allowMissing ? 3 : 0, (await Read("{\"browse\":true}")).Page!.TotalCount);
+        }
+        Assert.False((declaration with { Page = declaration.Page! with
+        { Selection = selection with { SearchInput = "browse" } } }).Valid());
+        Assert.False((declaration with { Page = declaration.Page! with
+        { Selection = selection with { PageSize = 0 } } }).Valid());
+        Assert.False((declaration with { Page = declaration.Page! with
+        { Selection = selection with { Fields = new Dictionary<string, GraphPageFieldRequirement>
+        { ["bad"] = new() { Sources = [new() { ComponentId = "undeclared", Path = "/value" }] } } } } }).Valid());
+        Assert.False((declaration with { Page = declaration.Page! with
+        { Selection = selection with { Fields = new Dictionary<string, GraphPageFieldRequirement>
+        { ["bad"] = new() { Sources = [new() { EntityField = "name" }], Facet = true } } } } }).Valid());
+    }
+
     [Theory]
     [InlineData("[]")]
     [InlineData("null")]

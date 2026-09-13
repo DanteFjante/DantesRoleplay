@@ -3,6 +3,32 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
+      "entityId": "location.caldris.bellafont.vintners-reach",
+      "name": "Vintner's Reach",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "Vintner's Reach controls southern wine roads, barrel making, river barges, and hillside reservoirs. Its guild feasts are legendary and its hangovers legally irrelevant.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 370,
+            "y": 790
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "location"
+      }
+    },
+    {
       "entityId": "location.caldris.carrowmere.brinewifes-steps",
       "name": "Brinewife's Steps",
       "components": [
@@ -59,9 +85,25 @@
       "name": "Gullstrand",
       "components": [
         {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "Gullstrand's vast yards build and repair deep-water ships. The city smells of oak, tar, hot metal, salt, and communal kitchens run by craft fraternities.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 180,
+            "y": 760
+          }
+        },
+        {
           "qualifiedTypeId": "game.core.world.map.visual",
           "value": {
-            "status": "active",
+            "status": "archived",
             "variants": {
               "player": {
                 "sha256": "b40656023c78e462808c9e8ebe4be147289a2a622a413b2cc964beb047de5567",
@@ -96,22 +138,6 @@
                 }
               }
             }
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "settlement",
-            "summary": "Gullstrand's vast yards build and repair deep-water ships. The city smells of oak, tar, hot metal, salt, and communal kitchens run by craft fraternities.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 180,
-            "y": 760
           }
         }
       ],
@@ -223,35 +249,15 @@
         "containerEntityId": "location.caldris.carrowmere",
         "slot": "location"
       }
-    },
-    {
-      "entityId": "location.caldris.carrowmere.the-walking-dunes",
-      "name": "The Walking Dunes",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "coastal sands in Carrowmere. Buried road stones migrate into view after gales.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 150,
-            "y": 770
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.carrowmere",
-        "slot": "location"
-      }
     }
   ],
   "relationships": [
+    {
+      "fromEntityId": "location.caldris.bellafont.the-honey-parliament",
+      "toEntityId": "location.caldris.bellafont.vintners-reach",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
     {
       "fromEntityId": "location.caldris.carrowmere.brinewifes-steps",
       "toEntityId": "location.caldris.carrowmere.saltmere",
@@ -285,12 +291,6 @@
     {
       "fromEntityId": "location.caldris.carrowmere.mackerel-crown",
       "toEntityId": "location.caldris.carrowmere.the-dry-admiral",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.carrowmere.saltmere",
-      "toEntityId": "location.caldris.carrowmere.the-walking-dunes",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
@@ -397,6 +397,12 @@
       "value": {}
     },
     {
+      "fromEntityId": "route.caldris.atlas.3c4efd0eda8264a1d6ea",
+      "toEntityId": "location.caldris.bellafont.vintners-reach",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
       "fromEntityId": "route.caldris.atlas.473a127fa0b8481ec755",
       "toEntityId": "location.caldris.carrowmere.brinewifes-steps",
       "qualifiedKind": "game.core.world.route.from",
@@ -430,6 +436,12 @@
       "fromEntityId": "route.caldris.atlas.545b8c403216267345f5",
       "toEntityId": "location.caldris.carrowmere.penross",
       "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.673d4b4c9a541a4da4f2",
+      "toEntityId": "location.caldris.bellafont.vintners-reach",
+      "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
@@ -482,12 +494,6 @@
     },
     {
       "fromEntityId": "route.caldris.atlas.27e50929c84891846a76",
-      "toEntityId": "location.caldris.carrowmere.the-walking-dunes",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.27e50929c84891846a76",
       "toEntityId": "location.caldris.carrowmere.saltmere",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
@@ -508,12 +514,6 @@
       "fromEntityId": "route.caldris.atlas.33f4fd986c20d54ee636",
       "toEntityId": "location.caldris.carrowmere.saltmere",
       "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.33f4fd986c20d54ee636",
-      "toEntityId": "location.caldris.carrowmere.the-walking-dunes",
-      "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {

@@ -9,7 +9,7 @@ import type {
   WorldReadModel,
   WorldSectionId,
 } from "../data/hub-types";
-import { LocationBrowser } from "./LocationBrowser";
+import { LocationDirectory } from "./LocationDirectory";
 import { LocationWorkspace } from "./LocationWorkspace";
 import { WorldOverview } from "./WorldOverview";
 import { WorldHistory } from "./WorldHistory";
@@ -18,6 +18,7 @@ import { WorldFactions } from "./WorldFactions";
 import { WorldLore } from "./WorldLore";
 import { WorldSectionNavigation } from "./WorldSectionNavigation";
 import { PanelErrorBoundary } from "./PanelState";
+import type { LorePageLoader } from "../data/world-lore-page";
 
 const ScopedMapWorkspace = lazy(() => import("./ScopedMapWorkspace")
   .then((module) => ({ default: module.ScopedMapWorkspace })));
@@ -26,6 +27,8 @@ export function WorldView({
   deferredNotice,
   directoriesDeferred,
   loreLoading,
+  loadLorePage,
+  lorePageScope,
   section,
   activeMapId,
   selectedMapFeatureId,
@@ -33,9 +36,6 @@ export function WorldView({
   world,
   currentLocation,
   selectedLocation,
-  filteredLocations,
-  locationScope,
-  locationScopeBusy,
   locationScopeError,
   mapScopeState,
   mapScopeError,
@@ -43,15 +43,11 @@ export function WorldView({
   perspective,
   selectedFactionId,
   selectedPersonId,
-  query,
   onSectionChange,
   onMapChange,
   onMapNavigateToFeature,
   onMapFeatureSelect,
   onLocationSelect,
-  onLocationBrowse,
-  onLocationScopeBack,
-  onLoadMoreLocations,
   onRetryLocationScope,
   onRetryMapScope,
   onLocationSectionChange,
@@ -59,12 +55,13 @@ export function WorldView({
   onPersonSelect,
   factionDirectoryBusy,
   onLoadMoreFactions,
-  onQueryChange,
   resetKey,
 }: {
   deferredNotice?: ReactNode;
   directoriesDeferred?: boolean;
   loreLoading?: boolean;
+  loadLorePage?: LorePageLoader;
+  lorePageScope?: string;
   section: WorldSectionId;
   activeMapId: string;
   selectedMapFeatureId: string;
@@ -180,6 +177,8 @@ export function WorldView({
       ) : section === "lore" ? (
         <WorldLore
           loading={loreLoading}
+          loadPage={loadLorePage}
+          pageScope={lorePageScope}
           onOpenFaction={(factionId) => {
             onFactionSelect(factionId);
             onSectionChange("factions");
@@ -196,28 +195,19 @@ export function WorldView({
           <header className="atlas-heading">
             <div>
               <span className="eyebrow">Browse the world</span>
-              <h1 id="main-view-heading" tabIndex={-1}>Location atlas</h1>
+              <h1 id="main-view-heading" tabIndex={-1}>Locations</h1>
             </div>
             <p>Select a place to see what is known about it.</p>
           </header>
           <div className="atlas-grid">
-            <LocationBrowser
-              allLocations={world.locations}
-              busy={locationScopeBusy}
+            <LocationDirectory
+              locations={world.locations}
               currentLocationId={world.currentLocationId}
-              error={locationScopeError}
-              locationScope={locationScope}
-              locationScopes={world.locationScopes}
-              locations={filteredLocations}
-              onBack={onLocationScopeBack}
-              onLoadMore={onLoadMoreLocations}
-              onQueryChange={onQueryChange}
-              onRetry={onRetryLocationScope}
               onSelect={onLocationSelect}
-              onBrowse={onLocationBrowse}
-              query={query}
               selectedLocationId={selectedLocation?.id ?? ""}
             />
+            {locationScopeError ? <section role="alert"><p>{locationScopeError}</p>
+              <button type="button" onClick={onRetryLocationScope}>Retry location details</button></section> : null}
             <LocationWorkspace
               location={locationWithPeople}
               onSectionChange={onLocationSectionChange}

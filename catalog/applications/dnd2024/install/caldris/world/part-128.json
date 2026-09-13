@@ -3,6 +3,24 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
+      "entityId": "creature.caldris.tradition.mere-drake",
+      "name": "Mere drake",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "Confirmed river predator, not a true dragon. Story use: Ferry hazard, poaching, breeding-season detour.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.alderwick",
+        "slot": "creatures"
+      }
+    },
+    {
       "entityId": "creature.caldris.tradition.mirror-eel",
       "name": "Mirror eel",
       "components": [
@@ -353,32 +371,6 @@
         "containerEntityId": "location.caldris.dunmarrow",
         "slot": "knowledge"
       }
-    },
-    {
-      "entityId": "fact.caldris.custom.kethria.the-shield-loaf",
-      "name": "The Shield Loaf",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.fact",
-          "value": {
-            "status": "active",
-            "summary": "A household breaks its stamped winter loaf only after confirming neighbors also have bread. Disagreement: Wealthy homes treat it symbolically; mountain villages still conduct the check. Story use: Missing flour becomes a network of mutual aid rather than a solitary theft.",
-            "provenance": "Caldris history and lore atlas",
-            "visibility": "public"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.knowledge.classification",
-          "value": {
-            "subjectKind": "event",
-            "sensitivity": "open"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.kethria",
-        "slot": "knowledge"
-      }
     }
   ],
   "relationships": [
@@ -474,18 +466,6 @@
     },
     {
       "fromEntityId": "fact.caldris.custom.dunmarrow.crutch-courtesy",
-      "toEntityId": "world.caldris",
-      "qualifiedKind": "game.core.world.knowledge.in-world",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.custom.kethria.the-shield-loaf",
-      "toEntityId": "location.caldris.kethria",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.custom.kethria.the-shield-loaf",
       "toEntityId": "world.caldris",
       "qualifiedKind": "game.core.world.knowledge.in-world",
       "value": {}

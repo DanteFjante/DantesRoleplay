@@ -3,13 +3,81 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
+      "entityId": "location.caldris.lore.swallowwatch-orchard",
+      "name": "Swallowwatch Orchard",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A working orchard and observation plot in Bellafont. Its notebooks compare weather, flowering, insect activity, birds, and yields across several decades. Trees and keepers have changed; corrections and gaps remain visible. Its observations address particular places and do not automatically explain every regional blight or failed migration.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 830,
+            "y": 785
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.the-lantern-hospice",
+      "name": "The Lantern Hospice",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A roadside hospitality house in the Veyr Marches offering paid lodging and a limited number of supported places. Its rooms and stores have been rebuilt repeatedly. Conduct rules apply to patrons as well as guests, and its founders' refusal of exclusive sponsorship remains a debated tradition.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 695,
+            "y": 825
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.veyr-marches",
+        "slot": "location"
+      }
+    },
+    {
       "entityId": "location.caldris.lore.vey-lowlands",
       "name": "Vey Lowlands",
       "components": [
         {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "summary": "River and coastal country downstream of the Chalklands: Veymouth, Nacre Quay and Reedbank communities preserve the layered legacy of Low Vey and later local governments.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 760,
+            "y": 785
+          }
+        },
+        {
           "qualifiedTypeId": "game.core.world.map.visual",
           "value": {
-            "status": "active",
+            "status": "archived",
             "variants": {
               "player": {
                 "sha256": "6a0511780f819293446fa6069e76bd141e0213cee13c30d765c82c1dd97aea58",
@@ -44,15 +112,6 @@
                 }
               }
             }
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "region",
-            "summary": "River and coastal country downstream of the Chalklands: Veymouth, Nacre Quay and Reedbank communities preserve the layered legacy of Low Vey and later local governments.",
-            "visibility": "public",
-            "status": "active"
           }
         }
       ],
@@ -65,46 +124,6 @@
       "entityId": "location.caldris.lore.whitewindow",
       "name": "Whitewindow",
       "components": [
-        {
-          "qualifiedTypeId": "game.core.world.map.visual",
-          "value": {
-            "status": "active",
-            "variants": {
-              "player": {
-                "sha256": "5c5f64f420523eb5565b791af9fb2582417ea8d2b6f3d84fccc3648071b5a7b1",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Whitewindow fantasy atlas map",
-                "caption": "Whitewindow — illustrated local map.",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/whitewindow.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 1
-                }
-              },
-              "dm": {
-                "sha256": "5c5f64f420523eb5565b791af9fb2582417ea8d2b6f3d84fccc3648071b5a7b1",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Whitewindow fantasy atlas map",
-                "caption": "Whitewindow — illustrated local map.",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/whitewindow.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 1
-                }
-              }
-            }
-          }
-        },
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
@@ -120,6 +139,46 @@
             "x": 280,
             "y": 275
           }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "archived",
+            "variants": {
+              "player": {
+                "sha256": "5c5f64f420523eb5565b791af9fb2582417ea8d2b6f3d84fccc3648071b5a7b1",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Whitewindow fantasy atlas map",
+                "caption": "Whitewindow — illustrated local map.",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/whitewindow.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 1
+                }
+              },
+              "dm": {
+                "sha256": "5c5f64f420523eb5565b791af9fb2582417ea8d2b6f3d84fccc3648071b5a7b1",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Whitewindow fantasy atlas map",
+                "caption": "Whitewindow — illustrated local map.",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/whitewindow.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 1
+                }
+              }
+            }
+          }
         }
       ],
       "containment": {
@@ -131,46 +190,6 @@
       "entityId": "location.caldris.lornesse.copperdeep",
       "name": "Copperdeep",
       "components": [
-        {
-          "qualifiedTypeId": "game.core.world.map.visual",
-          "value": {
-            "status": "active",
-            "variants": {
-              "player": {
-                "sha256": "734f3b861c2164831efdf8df3c070dc097ef3bc82e289b5e176be7842f86d10b",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Copperdeep fantasy atlas map",
-                "caption": "Copperdeep — illustrated local map.",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/copperdeep.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 1
-                }
-              },
-              "dm": {
-                "sha256": "734f3b861c2164831efdf8df3c070dc097ef3bc82e289b5e176be7842f86d10b",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Copperdeep fantasy atlas map",
-                "caption": "Copperdeep — illustrated local map.",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/copperdeep.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 1
-                }
-              }
-            }
-          }
-        },
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
@@ -186,6 +205,46 @@
             "x": 450,
             "y": 535
           }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "archived",
+            "variants": {
+              "player": {
+                "sha256": "734f3b861c2164831efdf8df3c070dc097ef3bc82e289b5e176be7842f86d10b",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Copperdeep fantasy atlas map",
+                "caption": "Copperdeep — illustrated local map.",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/copperdeep.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 1
+                }
+              },
+              "dm": {
+                "sha256": "734f3b861c2164831efdf8df3c070dc097ef3bc82e289b5e176be7842f86d10b",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Copperdeep fantasy atlas map",
+                "caption": "Copperdeep — illustrated local map.",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/copperdeep.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 1
+                }
+              }
+            }
+          }
         }
       ],
       "containment": {
@@ -198,9 +257,25 @@
       "name": "Goatminster",
       "components": [
         {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "High pasture village whose elected goat judge settles grazing disputes beneath a painted canopy. Present pressure: Prize animals vanish and return wearing unfamiliar bells.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 440,
+            "y": 295
+          }
+        },
+        {
           "qualifiedTypeId": "game.core.world.map.visual",
           "value": {
-            "status": "active",
+            "status": "archived",
             "variants": {
               "player": {
                 "sha256": "8f3fbf798d3849bf6032be4557cf9186cb30b8d5a0dae234b3f4af45b76e7fc8",
@@ -235,22 +310,6 @@
                 }
               }
             }
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "High pasture village whose elected goat judge settles grazing disputes beneath a painted canopy. Present pressure: Prize animals vanish and return wearing unfamiliar bells.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 440,
-            "y": 295
           }
         }
       ],
@@ -290,9 +349,25 @@
       "name": "Kestrelwatch",
       "components": [
         {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "This pass city controls caravans, mountain rescue, and the safest eastern crossing. Houses cluster behind snow walls and connect through covered lanes.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 820,
+            "y": 580
+          }
+        },
+        {
           "qualifiedTypeId": "game.core.world.map.visual",
           "value": {
-            "status": "active",
+            "status": "archived",
             "variants": {
               "player": {
                 "sha256": "a1e9e19cb7fbcb7fc2e3a3f67177d1a6d8f68ae9b7559097b53f73e94f134e6e",
@@ -327,22 +402,6 @@
                 }
               }
             }
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "settlement",
-            "summary": "This pass city controls caravans, mountain rescue, and the safest eastern crossing. Houses cluster behind snow walls and connect through covered lanes.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 820,
-            "y": 580
           }
         }
       ],
@@ -426,6 +485,48 @@
       "value": {}
     },
     {
+      "fromEntityId": "secret.caldris.lore.0200-0100-place-the-lantern-hospice.1",
+      "toEntityId": "location.caldris.lore.the-lantern-hospice",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0050-0000-place-swallowwatch-orchard.1",
+      "toEntityId": "location.caldris.lore.swallowwatch-orchard",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0029-the-orchard-that-counted-birds",
+      "toEntityId": "location.caldris.lore.swallowwatch-orchard",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0029-the-orchard-that-counted-birds-account.1",
+      "toEntityId": "location.caldris.lore.swallowwatch-orchard",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0029-the-orchard-that-counted-birds-gm-truth.1",
+      "toEntityId": "location.caldris.lore.swallowwatch-orchard",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0029-the-orchard-that-counted-birds-traces-and-stories.1",
+      "toEntityId": "location.caldris.lore.swallowwatch-orchard",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.bellafont.cresset",
+      "toEntityId": "location.caldris.lore.swallowwatch-orchard",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
       "fromEntityId": "location.caldris.lore.cairn-moss",
       "toEntityId": "location.caldris.lore.whitewindow",
       "qualifiedKind": "game.core.world.location.connected-to",
@@ -495,6 +596,30 @@
       "fromEntityId": "fact.caldris.atlas.connection.cf1f433afa9ef629f111",
       "toEntityId": "location.caldris.lornesse.kestrelwatch",
       "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.ec3dd50c8d34a4132ae3",
+      "toEntityId": "location.caldris.lore.swallowwatch-orchard",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.fff27e61d091e9e4f311",
+      "toEntityId": "location.caldris.lore.swallowwatch-orchard",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.290e02b245721468c050",
+      "toEntityId": "location.caldris.lore.the-lantern-hospice",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.60740e239e721d9df1cc",
+      "toEntityId": "location.caldris.lore.the-lantern-hospice",
+      "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {

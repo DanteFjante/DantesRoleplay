@@ -3,6 +3,24 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
+      "entityId": "actor.caldris.king-torren-iv",
+      "name": "King Torren IV",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "stern, attentive, exhausted monarch. Immediate want: fund forts without starving boroughs. Hidden depth: knows the mine decline is worse than published.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.dunmarrow",
+        "slot": "people"
+      }
+    },
+    {
       "entityId": "actor.caldris.laleh-noon",
       "name": "Laleh Noon",
       "components": [
@@ -341,24 +359,6 @@
       ],
       "containment": {
         "containerEntityId": "location.caldris.selucia",
-        "slot": "people"
-      }
-    },
-    {
-      "entityId": "actor.caldris.prior-garran",
-      "name": "Prior Garran",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.motive",
-          "value": {
-            "status": "active",
-            "summary": "fussy bell scholar. Immediate want: retain family pattern rights. Hidden depth: altered an alarm to hide a mine collapse years ago.",
-            "visibility": "party"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.lornesse",
         "slot": "people"
       }
     }

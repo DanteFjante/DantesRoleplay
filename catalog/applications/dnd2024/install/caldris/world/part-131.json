@@ -3,6 +3,32 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
+      "entityId": "location.caldris.alderwick.merecross",
+      "name": "Merecross",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "Merecross grew where the Mere meets the Lark and Weir rivers. Barges, paper, apples, wool, court business, and bridge tolls feed a city of stone quays and timber upper stories. Its seven public bridges are maintained by different institutions, producing beautiful views and spectacularly petty jurisdiction disputes.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 620,
+            "y": 570
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.alderwick",
+        "slot": "location"
+      }
+    },
+    {
       "entityId": "location.caldris.atlas.bramble-country",
       "name": "Bramble Country",
       "components": [
@@ -16,13 +42,6 @@
           }
         },
         {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 510,
-            "y": 400
-          }
-        },
-        {
           "qualifiedTypeId": "game.core.world.map.visual",
           "value": {
             "status": "active",
@@ -60,6 +79,13 @@
                 }
               }
             }
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 510,
+            "y": 400
           }
         }
       ],
@@ -73,9 +99,25 @@
       "name": "Chalklands",
       "components": [
         {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "summary": "The chalk uplands around Highmead and the Button Hills. Sheep tracks descend to the Lantern Road; older storehouses and commons survive beside working farms.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 265,
+            "y": 250
+          }
+        },
+        {
           "qualifiedTypeId": "game.core.world.map.visual",
           "value": {
-            "status": "active",
+            "status": "archived",
             "variants": {
               "player": {
                 "sha256": "a21458ffa9630bcf0c118c82876706081f4b42ed0f26f00b2d48ac5b01b8e3d4",
@@ -110,15 +152,6 @@
                 }
               }
             }
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "region",
-            "summary": "The chalk uplands around Highmead and the Button Hills. Sheep tracks descend to the Lantern Road; older storehouses and commons survive beside working farms.",
-            "visibility": "public",
-            "status": "active"
           }
         }
       ],
@@ -132,9 +165,25 @@
       "name": "Orchard March",
       "components": [
         {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "summary": "The southern orchard country of Harth, Boughmeet and Sallowmere. Grafting nurseries, lake fisheries and old hospitality houses connect by local cart roads.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 260,
+            "y": 650
+          }
+        },
+        {
           "qualifiedTypeId": "game.core.world.map.visual",
           "value": {
-            "status": "active",
+            "status": "archived",
             "variants": {
               "player": {
                 "sha256": "61a7b9b14e575c3b568678d6866d7627a331744f04268487c23237bd35d10b56",
@@ -169,15 +218,6 @@
                 }
               }
             }
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "region",
-            "summary": "The southern orchard country of Harth, Boughmeet and Sallowmere. Grafting nurseries, lake fisheries and old hospitality houses connect by local cart roads.",
-            "visibility": "public",
-            "status": "active"
           }
         }
       ],
@@ -190,46 +230,6 @@
       "entityId": "location.caldris.atlas.roven-approaches",
       "name": "Roven Approaches",
       "components": [
-        {
-          "qualifiedTypeId": "game.core.world.map.visual",
-          "value": {
-            "status": "active",
-            "variants": {
-              "player": {
-                "sha256": "83cc1a3aa222032875ef1ee68cac269b5750ac1d8d1352ae02557565168a1c14",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Roven Approaches fantasy atlas map",
-                "caption": "Roven Approaches",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/roven-approaches.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 4
-                }
-              },
-              "dm": {
-                "sha256": "83cc1a3aa222032875ef1ee68cac269b5750ac1d8d1352ae02557565168a1c14",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Roven Approaches fantasy atlas map",
-                "caption": "Roven Approaches",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/roven-approaches.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 4
-                }
-              }
-            }
-          }
-        },
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
@@ -244,6 +244,46 @@
           "value": {
             "x": 480,
             "y": 150
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "archived",
+            "variants": {
+              "player": {
+                "sha256": "83cc1a3aa222032875ef1ee68cac269b5750ac1d8d1352ae02557565168a1c14",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Roven Approaches fantasy atlas map",
+                "caption": "Roven Approaches",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/roven-approaches.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 4
+                }
+              },
+              "dm": {
+                "sha256": "83cc1a3aa222032875ef1ee68cac269b5750ac1d8d1352ae02557565168a1c14",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Roven Approaches fantasy atlas map",
+                "caption": "Roven Approaches",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/roven-approaches.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 4
+                }
+              }
+            }
           }
         }
       ],
@@ -459,32 +499,6 @@
         "containerEntityId": "location.caldris.bellafont",
         "slot": "location"
       }
-    },
-    {
-      "entityId": "location.caldris.bellafont.vintners-reach",
-      "name": "Vintner's Reach",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "settlement",
-            "summary": "Vintner's Reach controls southern wine roads, barrel making, river barges, and hillside reservoirs. Its guild feasts are legendary and its hangovers legally irrelevant.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 370,
-            "y": 790
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.bellafont",
-        "slot": "location"
-      }
     }
   ],
   "relationships": [
@@ -531,8 +545,8 @@
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.bellafont.the-honey-parliament",
-      "toEntityId": "location.caldris.bellafont.vintners-reach",
+      "fromEntityId": "location.caldris.alderwick.dunwarren",
+      "toEntityId": "location.caldris.alderwick.merecross",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
@@ -593,6 +607,18 @@
     {
       "fromEntityId": "fact.caldris.atlas.connection.fff27e61d091e9e4f311",
       "toEntityId": "location.caldris.bellafont.cresset",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.daff088b43ea2f1a2fd4",
+      "toEntityId": "location.caldris.alderwick.merecross",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.4187b6a47330c9b2303e",
+      "toEntityId": "location.caldris.alderwick.merecross",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
@@ -753,18 +779,6 @@
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.3c4efd0eda8264a1d6ea",
-      "toEntityId": "location.caldris.bellafont.vintners-reach",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.673d4b4c9a541a4da4f2",
-      "toEntityId": "location.caldris.bellafont.vintners-reach",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
       "fromEntityId": "route.caldris.atlas.673d4b4c9a541a4da4f2",
       "toEntityId": "location.caldris.bellafont.the-honey-parliament",
       "qualifiedKind": "game.core.world.route.to",
@@ -804,6 +818,18 @@
       "fromEntityId": "route.caldris.atlas.ef007ec40e30bc125fb6",
       "toEntityId": "location.caldris.bellafont.greywife-orchard",
       "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.7dccbdc09d4fc0bf5e6a",
+      "toEntityId": "location.caldris.alderwick.merecross",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.bc82303c2ab147a4dfb0",
+      "toEntityId": "location.caldris.alderwick.merecross",
+      "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {

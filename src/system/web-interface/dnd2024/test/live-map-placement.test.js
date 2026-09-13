@@ -126,15 +126,49 @@ test("a marker-only village opens its actual parent map and exact existing marke
   assert.equal(JSON.stringify(envelope.world.maps), before);
 });
 
-test("failed media lookup retains its scope, and absent unanchored places never borrow coordinates", () => {
+test("unavailable and absent local maps use ready parents without borrowing coordinates", () => {
   const envelope = connectedCampaignToHubEnvelope(connected("dm"));
   const parent = mapFor(envelope, "location.thalorien.valeros");
   const village = mapFor(envelope, "location.thalorien.brackenford");
   village.baseState = "unavailable";
-  assert.deepEqual(resolveMapNavigation(envelope.world.maps, village.id), { mapId: village.id, featureId: "" });
+  assert.deepEqual(resolveMapNavigation(envelope.world.maps, village.id), {
+    mapId: parent.id, featureId: featureFor(parent, village.subject.id).id,
+  });
   village.baseState = "absent";
   parent.features = [];
   assert.deepEqual(resolveMapNavigation(envelope.world.maps, village.id), { mapId: parent.id, featureId: "" });
+});
+
+test("a deeper place uses only the enclosing ancestor pin and preserves every original frame", () => {
+  const envelope = connectedCampaignToHubEnvelope(connected("dm"));
+  const root = mapFor(envelope, "location.thalorien.thalos");
+  const parent = mapFor(envelope, "location.thalorien.valeros");
+  const village = mapFor(envelope, "location.thalorien.brackenford");
+  parent.baseState = "absent";
+  parent.base = null;
+  const before = JSON.stringify(envelope.world.maps);
+  const enclosingPin = featureFor(root, parent.subject.id);
+  assert.deepEqual(resolveMapNavigation(envelope.world.maps, village.id, "not-a-parent-pin"), {
+    mapId: root.id, featureId: enclosingPin.id,
+  });
+  assert.deepEqual(enclosingPin.geometry, { x: 700, y: 667 });
+  assert.equal(featureFor(root, village.subject.id), null);
+  assert.equal(JSON.stringify(envelope.world.maps), before);
+  assert.deepEqual(resolveMapNavigation(envelope.world.maps, root.id, enclosingPin.id), {
+    mapId: root.id, featureId: enclosingPin.id,
+  });
+});
+
+test("missing or cyclic ancestry without a ready image stays on the requested place", () => {
+  const envelope = connectedCampaignToHubEnvelope(connected("dm"));
+  const parent = mapFor(envelope, "location.thalorien.valeros");
+  const village = mapFor(envelope, "location.thalorien.brackenford");
+  parent.baseState = "unavailable";
+  parent.base = null;
+  parent.parentMapId = village.id;
+  assert.deepEqual(resolveMapNavigation([parent, village], village.id), { mapId: village.id, featureId: "" });
+  parent.parentMapId = "unknown-parent";
+  assert.deepEqual(resolveMapNavigation([parent, village], village.id), { mapId: village.id, featureId: "" });
 });
 
 test("live anchors keep the same location stable between DM and Player projections", () => {

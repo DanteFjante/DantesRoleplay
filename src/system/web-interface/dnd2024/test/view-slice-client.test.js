@@ -51,12 +51,14 @@ test("inactive high-cost views are lazy module boundaries", () => {
   assert.match(world, /lazy\(\(\) => import\("\.\/ScopedMapWorkspace"\)/u);
 });
 
-test("the World Locations entry reads one bounded scope instead of assembling the complete directory", () => {
+test("the World Locations entry retains scope admission and delegates flat-directory reads to the existing bounded owner", () => {
   const main = source("../src/server-host/main.tsx");
 
   assert.doesNotMatch(main, /readWorldLocationDirectory/u);
   assert.doesNotMatch(main, /completeDirectory/u);
   assert.match(main, /connectedCampaignToWorldScopeUpdate/u);
+  const locations = main.slice(main.indexOf('if (section === "locations")'), main.indexOf('return section === "context"'));
+  assert.ok(locations.indexOf("await worldResources.loadScope") < locations.indexOf("return readDeferredSectionObject"));
 });
 
 test("rapid scope changes do not serialize behind the prior busy flag", () => {

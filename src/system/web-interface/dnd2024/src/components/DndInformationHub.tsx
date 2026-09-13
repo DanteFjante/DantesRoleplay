@@ -15,6 +15,7 @@ import { resolveCampaignWorldTarget } from "../data/campaign-navigation";
 import { HUB_ROUTE_EVENT, navigateHubRoute, parseHubRoute } from "../data/hub-route";
 import { ITEM_ROUTE_EVENT, navigateItemRoute, parseItemRoute, readInventoryReturn } from "../data/item-view-route";
 import { ViewReadError } from "../data/view-read-client";
+import type { LorePageLoader, LorePageRequest, WorldLorePage } from "../data/world-lore-page";
 import { allocateCharacterRequestToken, allocateCurrentRequestToken, allocateTableRequestToken, characterScope,
   commitCampaignDetails, commitCharacterFacet, commitCurrentBootstrap, commitDeferredTable, commitDeferredTableProgress, commitFactionPage,
   commitInventory, currentActions, hubActions, itemActions, itemScope, selectCharacterGeneration,
@@ -184,6 +185,7 @@ type DndInformationHubProps = {
   loadRecipeDefinition?: RecipeDefinitionLoader;
   loadFactionPage?: FactionPageLoader;
   loadCampaignDetails?: CampaignDetailsLoader;
+  loadLorePage?: (envelope: ReadyHubEnvelope, request: LorePageRequest, signal: AbortSignal, preferCached?: boolean) => Promise<WorldLorePage>;
   loadDeferredSection?: (envelope: ReadyHubEnvelope, section: DeferredHubSection, signal: AbortSignal,
     preferCached?: boolean, onProgress?: (update: DeferredHubUpdate) => Promise<void> | void) => Promise<DeferredHubUpdate | CurrentDisplay>;
   loadWorldScope?: (envelope: ReadyHubEnvelope, scopeId: string, cursor: string | null, signal: AbortSignal) => Promise<Extract<DeferredHubUpdate, { section: "locations" }>>;
@@ -220,6 +222,7 @@ function DndInformationHubContent({
   loadRecipeDefinition,
   loadFactionPage,
   loadCampaignDetails,
+  loadLorePage,
   loadDeferredSection,
   loadWorldScope,
   writeCampaignPremise,
@@ -235,6 +238,10 @@ function DndInformationHubContent({
   const envelopeRef = useRef(envelope);
   envelopeRef.current = envelope;
   const activeTableScope = tableScope(envelope);
+  const scopedLoreLoader = useCallback<LorePageLoader>((request, signal, preferCached) => {
+    if (!loadLorePage) return Promise.reject(new Error("Lore paging is unavailable."));
+    return loadLorePage(envelopeRef.current, request, signal, preferCached);
+  }, [loadLorePage]);
   const loreLoading = useHubSelector((state) => state.table.scope === activeTableScope &&
     state.table.requests["deferred:lore"]?.generation === state.table.generation);
   const campaignDetailsLoaded = useHubSelector((state) => state.table.campaignDetailsLoaded);
@@ -1210,6 +1217,7 @@ function DndInformationHubContent({
   }
 
   const deferredSection: DeferredHubSection | null = activeTab === "current" ? "current"
+    : activeTab === "world" && worldSection === "lore" && loadLorePage ? null
     : activeTab === "campaign" && campaignSection === "clues" ? "lore"
     : activeTab === "world" && worldSection === "factions" && perspective !== "dm" ? "lore"
     : activeTab === "world" && ["locations", "history", "lore", "people"].includes(worldSection)
@@ -1241,13 +1249,13 @@ function DndInformationHubContent({
   }, [activeTab, worldSection, deferredState, activeMapScopeId, mapScopeState, bootstrapGeneration]);
   useEffect(() => {
     if (activeTab !== "world" || worldSection !== "locations" || deferredState !== "ready" ||
-        locationScopePath.length === 0) return;
+        locationScopePath.length === 0 || locationScopeBusy) return;
     const nextScopeId = locationScopePath.find((scopeId) => !loadedWorldScopes.current.has(scopeId));
-    if (nextScopeId) void requestWorldScope(nextScopeId);
+    if (nextScopeId && !failedWorldScopes.current.has(nextScopeId)) void requestWorldScope(nextScopeId);
     // The route path is an ordered authorization walk. Each loaded parent admits only its
     // projected child, so a deep link cannot turn an arbitrary entity id into authority.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, worldSection, deferredState, locationScopePath.join("/"), bootstrapGeneration,
+  }, [activeTab, worldSection, deferredState, locationScopePath.join("/"), bootstrapGeneration, locationScopeBusy,
     envelope.world.locationScopes.map((scope) => `${scope.id}:${scope.sourceRevisionFingerprint ?? ""}`).join("|")]);
   useEffect(() => () => {
     sectionAbort.current?.abort(); campaignDetailsAbort.current?.abort(); deferredAbort.current?.abort(); contextAbort.current?.abort();
@@ -1259,7 +1267,7 @@ function DndInformationHubContent({
       title={deferredState === "error" ? "View unavailable" : `Opening ${deferredSection}`}
       message={deferredState === "error" && deferredSection
         ? deferredErrors[deferredSection] ?? "The view is unavailable."
-          : deferredSection === "locations" ? "Loading the first authorized location level."
+          : deferredSection === "locations" ? "Loading the complete location directory."
             : "Loading the complete authorized view."}
       onRetry={deferredState === "error" && deferredSection
         ? () => void requestDeferred(deferredSection, true) : undefined}
@@ -1766,6 +1774,8 @@ function DndInformationHubContent({
           <WorldView
             directoriesDeferred={Boolean(loadDeferredSection)}
             loreLoading={loreLoading}
+            loadLorePage={loadLorePage ? scopedLoreLoader : undefined}
+            lorePageScope={activeTableScope}
             deferredNotice={deferredNotice}
             campaign={envelope.campaign}
             currentLocation={currentLocation}

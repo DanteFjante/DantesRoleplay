@@ -3,6 +3,24 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
+      "entityId": "actor.caldris.dom-peri",
+      "name": "Dom Peri",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "eccentric beekeeper-diplomat. Immediate want: save Honey Parliament hives. Hidden depth: met Ilyr Vaust and thought it a talkative noble.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "people"
+      }
+    },
+    {
       "entityId": "actor.caldris.edrin-mott",
       "name": "Edrin Mott",
       "components": [
@@ -341,24 +359,6 @@
       ],
       "containment": {
         "containerEntityId": "location.caldris.lornesse",
-        "slot": "people"
-      }
-    },
-    {
-      "entityId": "actor.caldris.king-torren-iv",
-      "name": "King Torren IV",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.motive",
-          "value": {
-            "status": "active",
-            "summary": "stern, attentive, exhausted monarch. Immediate want: fund forts without starving boroughs. Hidden depth: knows the mine decline is worse than published.",
-            "visibility": "party"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.dunmarrow",
         "slot": "people"
       }
     }

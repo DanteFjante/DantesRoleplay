@@ -3,14 +3,14 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
-      "entityId": "location.caldris.lore.celandine-house",
-      "name": "Celandine House",
+      "entityId": "location.caldris.lore.hearthscar-shelter",
+      "name": "Hearthscar Shelter",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "site",
-            "summary": "A modest local institution with rebuilt accommodation, gardens, and a small archive. It has changed governance and function more than once. Some early records survive as copied extracts in other collections, with private details separated from public registers.",
+            "summary": "A maintained northern shelter on the lower alternative to a difficult pass. Human and animal accommodation are separate. Stores depend on deliveries and honest use. Older braces and wall scars remain visible among later work.",
             "visibility": "public",
             "status": "active"
           }
@@ -18,34 +18,8 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 885,
-            "y": 435
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.lore.vey-lowlands",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.lore.crowstep-shelter",
-      "name": "Crowstep Shelter",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "A maintained refuge on a local northern branch near the Roven approaches. It serves fewer carriers than Hearthscar and depends on seasonal deliveries. The winter descent has changed after later rockfalls.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 705,
-            "y": 395
+            "x": 315,
+            "y": 370
           }
         }
       ],
@@ -55,14 +29,14 @@
       }
     },
     {
-      "entityId": "location.caldris.lore.darnel-field",
-      "name": "Darnel Field",
+      "entityId": "location.caldris.lore.istravel",
+      "name": "Istravel",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
-            "kind": "site",
-            "summary": "A working orchard beside a protected burial area. The memorial has been repaired and partially recopied; original fragments are stored locally. Later ownership changes explain why some graves lie beyond the oldest recorded boundary.",
+            "kind": "settlement",
+            "summary": "Active glassworkers occupy the upper terraces. Lower kilns have become gardens and storage. Part of the Night Garden lies beneath a later courtyard occupied by several households. Its pools retain only fragments of original lining, and its old sight lines are obstructed by new roofs.",
             "visibility": "public",
             "status": "active"
           }
@@ -70,8 +44,100 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 700,
-            "y": 635
+            "x": 630,
+            "y": 350
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "archived",
+            "variants": {
+              "player": {
+                "sha256": "1c0873dc9e20c50a27b86bbf96ffa540d0c12d936a88ef5850e731e330161b07",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Istravel fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/istravel.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              },
+              "dm": {
+                "sha256": "1c0873dc9e20c50a27b86bbf96ffa540d0c12d936a88ef5850e731e330161b07",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Istravel fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/istravel.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              }
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lore.serevan",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.juniper-gate",
+      "name": "Juniper Gate",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A guarded pass serving several jurisdictions. Parts of the old gate are incorporated into a shelter and customs yard. The displayed rebellion chain has replacement links from later repairs. Cliff paths lead to abandoned observation posts and nesting ledges.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 400,
+            "y": 185
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.roven-approaches",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.lanterns-end",
+      "name": "Lanterns' End",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Location: On the coast beyond Veymouth's river mouth, overlooking the approaches from Morrow Strait. Livelihood: Pilotage, sheep grazing, and maintenance of a coastal light. Successive towers stand on and beside the low observatory's foundations. Some carved sight lines still point usefully across the water; others refer to vanished sandbanks. The sea has eaten part of the old keeper's garden.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 320,
+            "y": 780
           }
         }
       ],
@@ -83,128 +149,296 @@
   ],
   "relationships": [
     {
-      "fromEntityId": "secret.caldris.lore.place-celandine-house.1",
-      "toEntityId": "location.caldris.lore.celandine-house",
+      "fromEntityId": "secret.caldris.lore.place-istravel.1",
+      "toEntityId": "location.caldris.lore.istravel",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.place-darnel-field.1",
-      "toEntityId": "location.caldris.lore.darnel-field",
+      "fromEntityId": "secret.caldris.lore.place-juniper-gate.1",
+      "toEntityId": "location.caldris.lore.juniper-gate",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.place-crowstep-shelter.1",
-      "toEntityId": "location.caldris.lore.crowstep-shelter",
+      "fromEntityId": "secret.caldris.lore.place-lanterns-end.1",
+      "toEntityId": "location.caldris.lore.lanterns-end",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.1022-the-children-of-the-guest-rooms",
-      "toEntityId": "location.caldris.lore.celandine-house",
+      "fromEntityId": "secret.caldris.lore.place-hearthscar-shelter.1",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1787-the-blackglass-pilot",
+      "toEntityId": "location.caldris.lore.lanterns-end",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.1061-the-seven-month-war",
-      "toEntityId": "location.caldris.lore.darnel-field",
+      "fromEntityId": "chronology.caldris.lore.1583-the-blackglass-garden",
+      "toEntityId": "location.caldris.lore.istravel",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.0922-the-rain-at-darnel-field",
-      "toEntityId": "location.caldris.lore.celandine-house",
+      "fromEntityId": "chronology.caldris.lore.1599-the-address-beneath-the-blue-paint",
+      "toEntityId": "location.caldris.lore.istravel",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.0922-the-rain-at-darnel-field",
-      "toEntityId": "location.caldris.lore.darnel-field",
+      "fromEntityId": "chronology.caldris.lore.1383-the-open-gate-rebellion",
+      "toEntityId": "location.caldris.lore.juniper-gate",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.0567-the-winter-at-crowstep",
-      "toEntityId": "location.caldris.lore.crowstep-shelter",
+      "fromEntityId": "chronology.caldris.lore.1415-avelines-last-winter",
+      "toEntityId": "location.caldris.lore.istravel",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.0511-the-feast-of-names-added-later",
-      "toEntityId": "location.caldris.lore.darnel-field",
+      "fromEntityId": "chronology.caldris.lore.1215-the-book-of-roads-left-open",
+      "toEntityId": "location.caldris.lore.istravel",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.lore.ash-salt",
-      "toEntityId": "location.caldris.lore.darnel-field",
-      "qualifiedKind": "game.core.world.location.connected-to",
+      "fromEntityId": "chronology.caldris.lore.1174-the-road-of-bitter-leaves",
+      "toEntityId": "location.caldris.lore.istravel",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0987-the-dowry-of-maps",
+      "toEntityId": "location.caldris.lore.istravel",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0835-the-parcel-that-had-arrived-somewhere-else",
+      "toEntityId": "location.caldris.lore.istravel",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0687-the-glassmakers-daughter-and-the-false-relics",
+      "toEntityId": "location.caldris.lore.istravel",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0527-the-gardens-of-the-farther-window",
+      "toEntityId": "location.caldris.lore.istravel",
+      "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
       "fromEntityId": "location.caldris.atlas.reth-road-fork",
-      "toEntityId": "location.caldris.lore.crowstep-shelter",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.5a2113d51ddfb4148ea2",
-      "toEntityId": "location.caldris.lore.darnel-field",
+      "fromEntityId": "location.caldris.lore.hearthscar-shelter",
+      "toEntityId": "location.caldris.lore.juniper-gate",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.juniper-gate",
+      "toEntityId": "location.caldris.lore.whitewindow",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.9d6566363cda9a8296be",
+      "toEntityId": "location.caldris.lore.lanterns-end",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.887c41f3674887aad3c4",
-      "toEntityId": "location.caldris.lore.crowstep-shelter",
+      "fromEntityId": "fact.caldris.atlas.connection.dbda2166dece1734246d",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.2b633bd8c87b36318310",
-      "toEntityId": "location.caldris.lore.celandine-house",
+      "fromEntityId": "fact.caldris.atlas.connection.aa562ab7517c2759cb3f",
+      "toEntityId": "location.caldris.lore.juniper-gate",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.5b408d28f160d82fe18f",
+      "toEntityId": "location.caldris.lore.istravel",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.closed.5551409834dcf7b6a7f3",
+      "toEntityId": "location.caldris.lore.juniper-gate",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.28188f2d28d056bd1101",
+      "toEntityId": "location.caldris.lore.istravel",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.6262a34380f99ac84e7b",
+      "toEntityId": "location.caldris.lore.lanterns-end",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.790a9b1a1581701d34a2",
+      "toEntityId": "location.caldris.lore.lanterns-end",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.9d6566363cda9a8296be",
+      "toEntityId": "location.caldris.lore.lanterns-end",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.a272a2ec930bdc9f33c0",
-      "toEntityId": "location.caldris.lore.celandine-house",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.5a2113d51ddfb4148ea2",
-      "toEntityId": "location.caldris.lore.darnel-field",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.719b5648bc3011f68877",
-      "toEntityId": "location.caldris.lore.darnel-field",
+      "fromEntityId": "route.caldris.atlas.a44655626a9b7859b6f7",
+      "toEntityId": "location.caldris.lore.lanterns-end",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.86dccd5cca0b297c999e",
-      "toEntityId": "location.caldris.lore.crowstep-shelter",
+      "fromEntityId": "route.caldris.atlas.a65deea4688e362b5bc6",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.887c41f3674887aad3c4",
-      "toEntityId": "location.caldris.lore.crowstep-shelter",
+      "fromEntityId": "route.caldris.atlas.b093b3b2b986dabfc9c5",
+      "toEntityId": "location.caldris.lore.juniper-gate",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.b63038162af22fb208ef",
-      "toEntityId": "location.caldris.lore.crowstep-shelter",
+      "fromEntityId": "route.caldris.atlas.b093b3b2b986dabfc9c5",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.c5f08209c76df14da66a",
-      "toEntityId": "location.caldris.lore.crowstep-shelter",
+      "fromEntityId": "route.caldris.atlas.b654a22621670954ae2a",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.dbda2166dece1734246d",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.dbda2166dece1734246d",
+      "toEntityId": "location.caldris.lore.juniper-gate",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.20b47a4b6a38df7d9c59",
+      "toEntityId": "location.caldris.lore.istravel",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.36044240e05b88643352",
+      "toEntityId": "location.caldris.lore.istravel",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.landmark.skyharp-of-roven",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.skyharp-of-roven.access.8106e482f5",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.1286",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.1286",
+      "toEntityId": "location.caldris.lore.juniper-gate",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.1258",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.1258",
+      "toEntityId": "location.caldris.lore.juniper-gate",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.287",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.287",
+      "toEntityId": "location.caldris.lore.juniper-gate",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.glass-tide-palace.1256",
+      "toEntityId": "location.caldris.lore.istravel",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.glass-tide-palace.31",
+      "toEntityId": "location.caldris.lore.istravel",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.glass-tide-palace.534",
+      "toEntityId": "location.caldris.lore.istravel",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.35596ebc6a54b5f4d31d",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.56d7728699f796b122cb",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     }

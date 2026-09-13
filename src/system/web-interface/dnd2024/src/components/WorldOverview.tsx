@@ -72,7 +72,7 @@ export function WorldOverview({
               <p>{currentLocation?.region ?? "The exact location is preserved while its details load."}</p>
             </div>
           </div>
-          <p>{currentLocation?.summary ?? "Open Locations to browse the recorded world hierarchy."}</p>
+          <p>{currentLocation?.summary ?? "Open Locations to browse the recorded world directory."}</p>
           <button className="text-action" onClick={onBrowseLocations} type="button">
             Open location <Icon name="ArrowRight" size={16} />
           </button>

@@ -3,6 +3,84 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
+      "entityId": "location.caldris.ordelain.the-bent-mile",
+      "name": "The Bent Mile",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Riverbank farming strip where every boundary curves around a channel that no longer exists. Present pressure: Surveyors arrive to straighten titles and displace tenant families.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 325,
+            "y": 720
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.ordelain.the-court-of-wet-feet",
+      "name": "The Court of Wet Feet",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "seasonal tribunal in Ordelain. Judges hear flood claims standing ankle-deep to discourage abstraction.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 735,
+            "y": 790
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.ordelain.vessa",
+      "name": "Vessa",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "Vessa makes paper from river reeds and houses private, royal, temple, and commercial archives. Its streets are shaded by cloth awnings and patrolled aggressively for fire.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 545,
+            "y": 755
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "location"
+      }
+    },
+    {
       "entityId": "location.caldris.selucia.borrowed-bell-isle",
       "name": "Borrowed Bell Isle",
       "components": [
@@ -241,9 +319,25 @@
       "name": "Aster Quay",
       "components": [
         {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "Aster Quay is the League's diplomatic and financial centre, built around seven harbour basins and the sealed hall where the Lantern Concord ended. Printing houses, embassies, insurers, warehouses, and cafes fill narrow streets.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 165,
+            "y": 310
+          }
+        },
+        {
           "qualifiedTypeId": "game.core.world.map.visual",
           "value": {
-            "status": "active",
+            "status": "archived",
             "variants": {
               "player": {
                 "sha256": "8f3844babf2ce1ee5f519072da30f398ae4efff69b82c530c718ed01d75c3764",
@@ -279,74 +373,6 @@
               }
             }
           }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "settlement",
-            "summary": "Aster Quay is the League's diplomatic and financial centre, built around seven harbour basins and the sealed hall where the Lantern Concord ended. Printing houses, embassies, insurers, warehouses, and cafes fill narrow streets.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 165,
-            "y": 310
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.seven-lamps-league",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.seven-lamps-league.chairmans-nap",
-      "name": "Chairman's Nap",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "Roadside inn founded where a League chair once slept through a vote; meetings there cannot exceed one hour. Present pressure: Delegates exploit the rule to prevent testimony from remote villages.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 575,
-            "y": 260
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.seven-lamps-league",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.seven-lamps-league.glassharbor",
-      "name": "Glassharbor",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "settlement",
-            "summary": "Glassharbor produces windows, mirrors, lenses, beads, bottles, and elaborate navigational lights. Its furnaces glow along a sheltered bay.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 165,
-            "y": 585
-          }
         }
       ],
       "containment": {
@@ -357,14 +383,26 @@
   ],
   "relationships": [
     {
-      "fromEntityId": "location.caldris.league.brokers-orchard",
-      "toEntityId": "location.caldris.seven-lamps-league.chairmans-nap",
+      "fromEntityId": "location.caldris.ordelain.inkfish-wharf",
+      "toEntityId": "location.caldris.ordelain.the-bent-mile",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.seven-lamps-league.aster-quay",
-      "toEntityId": "location.caldris.seven-lamps-league.chairmans-nap",
+      "fromEntityId": "location.caldris.ordelain.inkfish-wharf",
+      "toEntityId": "location.caldris.ordelain.vessa",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.ordelain.pomegranate-court",
+      "toEntityId": "location.caldris.ordelain.vessa",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.ordelain.the-court-of-wet-feet",
+      "toEntityId": "location.caldris.ordelain.vessa",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
@@ -423,15 +461,15 @@
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.namarra.saffron-quay",
-      "toEntityId": "location.caldris.selucia.orangewake",
+      "fromEntityId": "location.caldris.namarra.reedcrown",
+      "toEntityId": "location.caldris.ordelain.vessa",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.0d81fde3316fe979d5f4",
-      "toEntityId": "location.caldris.seven-lamps-league.chairmans-nap",
-      "qualifiedKind": "game.core.world.knowledge.about",
+      "fromEntityId": "location.caldris.namarra.saffron-quay",
+      "toEntityId": "location.caldris.selucia.orangewake",
+      "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
@@ -441,8 +479,8 @@
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.29e94d68589cee989f16",
-      "toEntityId": "location.caldris.seven-lamps-league.chairmans-nap",
+      "fromEntityId": "fact.caldris.atlas.connection.ccf7288f49fedcc103ef",
+      "toEntityId": "location.caldris.ordelain.vessa",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
@@ -501,6 +539,12 @@
       "value": {}
     },
     {
+      "fromEntityId": "fact.caldris.atlas.connection.d80c39e84e993188a24e",
+      "toEntityId": "location.caldris.ordelain.vessa",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
       "fromEntityId": "fact.caldris.atlas.connection.3e354f3064b421026c2f",
       "toEntityId": "location.caldris.seven-lamps-league.aster-quay",
       "qualifiedKind": "game.core.world.knowledge.about",
@@ -508,20 +552,8 @@
     },
     {
       "fromEntityId": "route.caldris.atlas.0799f6fd0114bf1cb913",
-      "toEntityId": "location.caldris.seven-lamps-league.chairmans-nap",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.0799f6fd0114bf1cb913",
       "toEntityId": "location.caldris.seven-lamps-league.aster-quay",
       "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.0d81fde3316fe979d5f4",
-      "toEntityId": "location.caldris.seven-lamps-league.chairmans-nap",
-      "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
@@ -531,38 +563,62 @@
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.231e99aa4729eb614d32",
-      "toEntityId": "location.caldris.seven-lamps-league.chairmans-nap",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.afd2be74d01efe8e7336",
-      "toEntityId": "location.caldris.seven-lamps-league.chairmans-nap",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.29e94d68589cee989f16",
-      "toEntityId": "location.caldris.seven-lamps-league.chairmans-nap",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.8414806005e1f5c701e5",
-      "toEntityId": "location.caldris.seven-lamps-league.chairmans-nap",
+      "fromEntityId": "route.caldris.atlas.26e691eaaf441b0e2460",
+      "toEntityId": "location.caldris.ordelain.vessa",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.93cc64bc8b9facbbbaf8",
-      "toEntityId": "location.caldris.seven-lamps-league.glassharbor",
+      "fromEntityId": "route.caldris.atlas.26e691eaaf441b0e2460",
+      "toEntityId": "location.caldris.ordelain.the-court-of-wet-feet",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.57f636de249274eb545e",
+      "toEntityId": "location.caldris.ordelain.vessa",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.ccf7288f49fedcc103ef",
+      "toEntityId": "location.caldris.ordelain.the-court-of-wet-feet",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.d54ecb57cf9632e8e539",
-      "toEntityId": "location.caldris.seven-lamps-league.glassharbor",
+      "fromEntityId": "route.caldris.atlas.ccf7288f49fedcc103ef",
+      "toEntityId": "location.caldris.ordelain.vessa",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.db7a3ef4b7709964a2e4",
+      "toEntityId": "location.caldris.ordelain.vessa",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.1b677665479af7a2791b",
+      "toEntityId": "location.caldris.ordelain.the-bent-mile",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.3b35c2df06f981e45055",
+      "toEntityId": "location.caldris.ordelain.vessa",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.4ecce1e93c2ac1ca782f",
+      "toEntityId": "location.caldris.ordelain.vessa",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.786640fd0ca259632e29",
+      "toEntityId": "location.caldris.ordelain.the-bent-mile",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },

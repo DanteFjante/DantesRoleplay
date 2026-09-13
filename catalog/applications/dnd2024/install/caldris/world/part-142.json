@@ -3,6 +3,32 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
+      "entityId": "location.caldris.tessarane.mares-table",
+      "name": "Mare's Table",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "caravan well in Tessarane. Neutral negotiation site where weapons are stored in flour bins.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 670,
+            "y": 780
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.tessarane",
+        "slot": "location"
+      }
+    },
+    {
       "entityId": "location.caldris.tessarane.orovant",
       "name": "Orovant",
       "components": [
@@ -157,79 +183,9 @@
         "containerEntityId": "location.caldris.veyr-marches",
         "slot": "location"
       }
-    },
-    {
-      "entityId": "location.caldris.veyr-marches.ninepost-field",
-      "name": "Ninepost Field",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "Neutral meadow where nine carved posts mark grazing, court, market, and muster rights for different marches. Present pressure: A tenth post appears overnight with convincing weathering.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 420,
-            "y": 280
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.veyr-marches",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.veyr-marches.oakshield",
-      "name": "Oakshield",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "settlement",
-            "summary": "Oakshield guards forest passes with layered timber walls designed to be repaired, not admired. It exports horses, charcoal, leather, and excellent preserved mushrooms.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 725,
-            "y": 635
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.veyr-marches",
-        "slot": "location"
-      }
     }
   ],
   "relationships": [
-    {
-      "fromEntityId": "location.caldris.lore.the-lantern-hospice",
-      "toEntityId": "location.caldris.veyr-marches.oakshield",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.veyr-marches.foxglove-relay",
-      "toEntityId": "location.caldris.veyr-marches.ninepost-field",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.alderwick.dunwarren",
-      "toEntityId": "location.caldris.veyr-marches.oakshield",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
     {
       "fromEntityId": "location.caldris.tessarane.blue-step",
       "toEntityId": "location.caldris.tessarane.orovant",
@@ -285,20 +241,8 @@
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.290e02b245721468c050",
-      "toEntityId": "location.caldris.veyr-marches.oakshield",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
       "fromEntityId": "fact.caldris.atlas.connection.834d095935d4fefaaae3",
       "toEntityId": "location.caldris.veyr-marches.foxglove-relay",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.b6b4d5434686c3aa69e8",
-      "toEntityId": "location.caldris.veyr-marches.ninepost-field",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
@@ -327,39 +271,21 @@
       "value": {}
     },
     {
+      "fromEntityId": "fact.caldris.atlas.connection.4eabf183fe8eac1fe00a",
+      "toEntityId": "location.caldris.tessarane.mares-table",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
       "fromEntityId": "fact.caldris.atlas.connection.de1b9e33294f4f2eb305",
       "toEntityId": "location.caldris.tessarane.tessa",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.8782c2d38030896bfbe2",
-      "toEntityId": "location.caldris.veyr-marches.oakshield",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.385e776073a462ce21a3",
-      "toEntityId": "location.caldris.veyr-marches.ninepost-field",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.54f162b08f383f83f9bb",
-      "toEntityId": "location.caldris.veyr-marches.ninepost-field",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
       "fromEntityId": "route.caldris.atlas.54f162b08f383f83f9bb",
       "toEntityId": "location.caldris.veyr-marches.foxglove-relay",
       "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.5bcbba549022350e4489",
-      "toEntityId": "location.caldris.veyr-marches.ninepost-field",
-      "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
@@ -375,39 +301,15 @@
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.b6b4d5434686c3aa69e8",
-      "toEntityId": "location.caldris.veyr-marches.ninepost-field",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
       "fromEntityId": "route.caldris.atlas.d65f7f68132f3e3b1c60",
       "toEntityId": "location.caldris.veyr-marches.foxglove-relay",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.00a86a2d41da59aeb165",
-      "toEntityId": "location.caldris.veyr-marches.oakshield",
+      "fromEntityId": "route.caldris.atlas.1bbc5c753be41339f5f1",
+      "toEntityId": "location.caldris.tessarane.mares-table",
       "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.290e02b245721468c050",
-      "toEntityId": "location.caldris.veyr-marches.oakshield",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.60740e239e721d9df1cc",
-      "toEntityId": "location.caldris.veyr-marches.oakshield",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.6dc70c6df9e5a7743fea",
-      "toEntityId": "location.caldris.veyr-marches.oakshield",
-      "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
@@ -435,8 +337,20 @@
       "value": {}
     },
     {
+      "fromEntityId": "route.caldris.atlas.48e4f13b5bd2a965b70b",
+      "toEntityId": "location.caldris.tessarane.mares-table",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
       "fromEntityId": "route.caldris.atlas.4b4c5add87eace9d01cf",
       "toEntityId": "location.caldris.tessarane.orovant",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.4eabf183fe8eac1fe00a",
+      "toEntityId": "location.caldris.tessarane.mares-table",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
@@ -480,6 +394,12 @@
       "fromEntityId": "route.caldris.atlas.e531c67e92debd92c936",
       "toEntityId": "location.caldris.tessarane.red-cup-spring",
       "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.e531c67e92debd92c936",
+      "toEntityId": "location.caldris.tessarane.mares-table",
+      "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {

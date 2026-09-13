@@ -3,6 +3,61 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
+      "entityId": "location.caldris.landmark.orchardback",
+      "name": "The Orchardback",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.media.visual",
+          "value": {
+            "status": "active",
+            "attachments": [
+              {
+                "sha256": "d036a3321ec18899eba2ef19be7a289bf09d3805e366097b3668b7afc4411085",
+                "mimeType": "image/png",
+                "width": 1536,
+                "height": 1024,
+                "alt": "An island-sized sea tortoise rests in a warm Selucian bay with a small terraced orchard growing in the weathered hollows of its shell. A caretaker shelter, light retaining walls and a rope pontoon serve a few workers and visitors. Its head and flippers remain clear of moorings. The atlas marks its presently observed resting bay, not a permanent island or a schedule of future movement.",
+                "caption": "The Orchardback",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "Generated with OpenAI image generation; visually reviewed for Caldris.",
+                  "source": "docs/world/caldris/landmarks/images/orchardback.png",
+                  "reviewedOn": "2026-09-05",
+                  "version": 1
+                },
+                "role": "setting",
+                "visibility": [
+                  "player",
+                  "dm"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "An island-sized sea tortoise rests in a warm Selucian bay with a small terraced orchard growing in the weathered hollows of its shell. A caretaker shelter, light retaining walls and a rope pontoon serve a few workers and visitors. Its head and flippers remain clear of moorings. The atlas marks its presently observed resting bay, not a permanent island or a schedule of future movement.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 490,
+            "y": 865
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.selucia",
+        "slot": "location"
+      }
+    },
+    {
       "entityId": "location.caldris.landmark.rain-crown-of-orovant",
       "name": "Rain Crown of Orovant",
       "components": [
@@ -166,9 +221,25 @@
       "name": "Aunholt",
       "components": [
         {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "summary": "Hamlets, orchards, pasture, and irrigation channels occupy several sheltered terraces. The communal assembly roof has been rebuilt more than once, incorporating older supports where sound. Local maps record grazing turns, water rights, and winter shelters more thoroughly than distant commercial maps.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 245,
+            "y": 730
+          }
+        },
+        {
           "qualifiedTypeId": "game.core.world.map.visual",
           "value": {
-            "status": "active",
+            "status": "archived",
             "variants": {
               "player": {
                 "sha256": "713940c3848c16440298cd4035cb8250bca61f42bd77ec077ae6b822d7f677d7",
@@ -203,22 +274,6 @@
                 }
               }
             }
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "region",
-            "summary": "Hamlets, orchards, pasture, and irrigation channels occupy several sheltered terraces. The communal assembly roof has been rebuilt more than once, incorporating older supports where sound. Local maps record grazing turns, water rights, and winter shelters more thoroughly than distant commercial maps.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 245,
-            "y": 730
           }
         }
       ],
@@ -310,46 +365,6 @@
       "name": "Selvar",
       "components": [
         {
-          "qualifiedTypeId": "game.core.world.map.visual",
-          "value": {
-            "status": "active",
-            "variants": {
-              "player": {
-                "sha256": "ff8e4b14de7f10f7ed094384124c931ece2977baae872a8cd9fe87618ea9a2f4",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Selvar fantasy atlas map",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/selvar.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 3
-                }
-              },
-              "dm": {
-                "sha256": "ff8e4b14de7f10f7ed094384124c931ece2977baae872a8cd9fe87618ea9a2f4",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Selvar fantasy atlas map",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/selvar.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 3
-                }
-              }
-            }
-          }
-        },
-        {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "region",
@@ -364,6 +379,46 @@
             "x": 205,
             "y": 350
           }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "archived",
+            "variants": {
+              "player": {
+                "sha256": "ff8e4b14de7f10f7ed094384124c931ece2977baae872a8cd9fe87618ea9a2f4",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Selvar fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/selvar.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              },
+              "dm": {
+                "sha256": "ff8e4b14de7f10f7ed094384124c931ece2977baae872a8cd9fe87618ea9a2f4",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Selvar fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/selvar.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              }
+            }
+          }
         }
       ],
       "containment": {
@@ -375,46 +430,6 @@
       "entityId": "location.caldris.lore.serevan",
       "name": "Serevan",
       "components": [
-        {
-          "qualifiedTypeId": "game.core.world.map.visual",
-          "value": {
-            "status": "active",
-            "variants": {
-              "player": {
-                "sha256": "c200e57f828e6583a61a61d90589c8ef6f093784a4563e742b26bf80a0cca990",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Serevan fantasy atlas map",
-                "caption": "Serevan",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/serevan.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 4
-                }
-              },
-              "dm": {
-                "sha256": "c200e57f828e6583a61a61d90589c8ef6f093784a4563e742b26bf80a0cca990",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Serevan fantasy atlas map",
-                "caption": "Serevan",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/serevan.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 4
-                }
-              }
-            }
-          }
-        },
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
@@ -430,62 +445,50 @@
             "x": 205,
             "y": 870
           }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "archived",
+            "variants": {
+              "player": {
+                "sha256": "c200e57f828e6583a61a61d90589c8ef6f093784a4563e742b26bf80a0cca990",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Serevan fantasy atlas map",
+                "caption": "Serevan",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/serevan.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 4
+                }
+              },
+              "dm": {
+                "sha256": "c200e57f828e6583a61a61d90589c8ef6f093784a4563e742b26bf80a0cca990",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Serevan fantasy atlas map",
+                "caption": "Serevan",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/serevan.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 4
+                }
+              }
+            }
+          }
         }
       ],
       "containment": {
         "containerEntityId": "location.caldris.seven-lamps-league",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.lore.swallowwatch-orchard",
-      "name": "Swallowwatch Orchard",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "A working orchard and observation plot in Bellafont. Its notebooks compare weather, flowering, insect activity, birds, and yields across several decades. Trees and keepers have changed; corrections and gaps remain visible. Its observations address particular places and do not automatically explain every regional blight or failed migration.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 830,
-            "y": 785
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.bellafont",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.lore.the-lantern-hospice",
-      "name": "The Lantern Hospice",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "A roadside hospitality house in the Veyr Marches offering paid lodging and a limited number of supported places. Its rooms and stores have been rebuilt repeatedly. Conduct rules apply to patrons as well as guests, and its founders' refusal of exclusive sponsorship remains a debated tradition.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 695,
-            "y": 825
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.veyr-marches",
         "slot": "location"
       }
     }
@@ -576,27 +579,9 @@
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.0200-0100-place-the-lantern-hospice.1",
-      "toEntityId": "location.caldris.lore.the-lantern-hospice",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
       "fromEntityId": "secret.caldris.lore.0050-0000-place-reedname-landing.1",
       "toEntityId": "location.caldris.lore.reedname-landing",
       "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.lore.0050-0000-place-swallowwatch-orchard.1",
-      "toEntityId": "location.caldris.lore.swallowwatch-orchard",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.0029-the-orchard-that-counted-birds",
-      "toEntityId": "location.caldris.lore.swallowwatch-orchard",
-      "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
@@ -606,26 +591,8 @@
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.lore.0029-the-orchard-that-counted-birds-account.1",
-      "toEntityId": "location.caldris.lore.swallowwatch-orchard",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
       "fromEntityId": "fact.caldris.lore.0041-the-lists-carried-by-water-account.1",
       "toEntityId": "location.caldris.lore.reedname-landing",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.lore.0029-the-orchard-that-counted-birds-gm-truth.1",
-      "toEntityId": "location.caldris.lore.swallowwatch-orchard",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.lore.0029-the-orchard-that-counted-birds-traces-and-stories.1",
-      "toEntityId": "location.caldris.lore.swallowwatch-orchard",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
@@ -639,12 +606,6 @@
       "fromEntityId": "secret.caldris.lore.0041-the-lists-carried-by-water-traces-and-stories.1",
       "toEntityId": "location.caldris.lore.reedname-landing",
       "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.bellafont.cresset",
-      "toEntityId": "location.caldris.lore.swallowwatch-orchard",
-      "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
@@ -681,30 +642,6 @@
       "fromEntityId": "fact.caldris.atlas.closed.9e829fdbb3eb29859179",
       "toEntityId": "location.caldris.lantern-sea.ilyrs-listening-caves",
       "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.ec3dd50c8d34a4132ae3",
-      "toEntityId": "location.caldris.lore.swallowwatch-orchard",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.fff27e61d091e9e4f311",
-      "toEntityId": "location.caldris.lore.swallowwatch-orchard",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.290e02b245721468c050",
-      "toEntityId": "location.caldris.lore.the-lantern-hospice",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.60740e239e721d9df1cc",
-      "toEntityId": "location.caldris.lore.the-lantern-hospice",
-      "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
@@ -762,6 +699,36 @@
       "value": {}
     },
     {
+      "fromEntityId": "fact.caldris.landmark.orchardback.access.2724281d1f",
+      "toEntityId": "location.caldris.landmark.orchardback",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.orchardback.custom",
+      "toEntityId": "location.caldris.landmark.orchardback",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.orchardback.gmtruth",
+      "toEntityId": "location.caldris.landmark.orchardback",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.orchardback.hooks",
+      "toEntityId": "location.caldris.landmark.orchardback",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.orchardback.lore",
+      "toEntityId": "location.caldris.landmark.orchardback",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
       "fromEntityId": "fact.caldris.landmark.rain-crown-of-orovant.access.c8bb5b07e6",
       "toEntityId": "location.caldris.landmark.rain-crown-of-orovant",
       "qualifiedKind": "game.core.world.knowledge.about",
@@ -770,6 +737,12 @@
     {
       "fromEntityId": "fact.caldris.landmark.rain-crown-of-orovant.gmtruth",
       "toEntityId": "location.caldris.landmark.rain-crown-of-orovant",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.orchardback.access.0d8ecb0ed6",
+      "toEntityId": "location.caldris.landmark.orchardback",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
@@ -810,6 +783,24 @@
       "value": {}
     },
     {
+      "fromEntityId": "chronology.caldris.landmark.orchardback.212",
+      "toEntityId": "location.caldris.landmark.orchardback",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.orchardback.6",
+      "toEntityId": "location.caldris.landmark.orchardback",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.orchardback.605",
+      "toEntityId": "location.caldris.landmark.orchardback",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
       "fromEntityId": "route.caldris.landmark.622d0ef64eba8e69aa1b",
       "toEntityId": "location.caldris.landmark.rain-crown-of-orovant",
       "qualifiedKind": "game.core.world.route.from",
@@ -819,6 +810,18 @@
       "fromEntityId": "route.caldris.landmark.f0a70a55b5aa46f1e747",
       "toEntityId": "location.caldris.landmark.rain-crown-of-orovant",
       "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.orchardback.approach.0d8ecb0ed6",
+      "toEntityId": "location.caldris.landmark.orchardback",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.orchardback.approach.2724281d1f",
+      "toEntityId": "location.caldris.landmark.orchardback",
+      "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {

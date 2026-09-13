@@ -127,6 +127,26 @@ test("location scope pages merge by identity without replacing other loaded bran
     "a location page cannot erase independently loaded Lore overlays");
 });
 
+test("a partial detail page retains complete directory membership only at its exact source revision", () => {
+  const places = Array.from({ length: 101 }, (_, index) => ({ id: `place.${index}`, name: `Place ${index}`, people: [], routes: [] }));
+  const completeScope = { id: "world.one", name: "World", parentId: null, childIds: places.map((place) => place.id),
+    totalCount: 101, complete: true, nextCursor: null, sourceRevisionFingerprint: "A".repeat(64) };
+  const current = { ...envelope([]), contextSelection: { selectedWorldId: "world.one" },
+    world: { id: "world.one", currentLocationId: "", map: { imageUrl: "", alt: "World" }, mapOwnerId: null,
+      rootMapId: "map.world", maps: [{ id: "map.world", subject: { id: "world.one" } }],
+      locations: places, locationScopes: [completeScope] }, campaign: { mapOverlays: [] } };
+  for (const revision of ["A", "B"]) {
+    const updated = applyDeferredHubUpdate(current, { section: "locations", scopePage: { id: "world.one" },
+      world: { ...current.world, locations: places.slice(0, 100), locationScopes: [{ ...completeScope,
+        childIds: places.slice(0, 100).map((place) => place.id), complete: false, nextCursor: "100",
+        sourceRevisionFingerprint: revision.repeat(64) }] }, campaign: { mapOverlays: [] } });
+    assert.equal(updated.world.locations.length, revision === "A" ? 101 : 100);
+    assert.equal(updated.world.locationScopes[0].complete, revision === "A");
+    assert.equal(updated.world.locations.some((place) => place.id === "place.100"), revision === "A");
+  }
+  assert.equal(current.world.locations.length, 101);
+});
+
 test("a root scope page replaces the synthetic world map with the discovered atlas", () => {
   const current = {
     ...envelope([]),

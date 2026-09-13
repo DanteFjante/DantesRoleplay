@@ -190,6 +190,25 @@ the current lane.
 
 ### Catalog and runtime ownership
 
+Lore uses the existing `dnd2024.query.party-knowledge` owner. DM website requests opt into
+`browse: true`, with `category` from canonical knowledge `subjectKind`, `kind` from the primary
+fact/rumour/secret/clue component, and `query` searching the recorded title and summary. The
+generic graph `page.selection` declaration filters the bounded source before taking at most
+25 records and computing DM-only counts and facets. A continuation preserves both source
+revisions and `expectedSelectionFingerprint`; changing a filter starts from the first page.
+Player requests retain the original authorized source paging without filters, classifications,
+or global counts. The website requests one page per navigation and does not drain continuations.
+Source record validation and classification remain catalog declarations and JavaScript behavior;
+the host selector only reads declared fields, compares values, counts, and rebuilds page closure.
+
+Locations presents the complete authorized directory as a flat, searchable list with 25 rows per
+page. Containment still governs detail and map reads. Caldris installation map anchors are bound
+to the eight clean image hashes in `install/caldris/map-anchors.json`; older labeled map bindings
+are archived. A place without a ready local map opens its nearest ready ancestor and uses only
+an existing pin in that ancestor's coordinate frame. Never transplant child-map coordinates.
+Lore pages share the bounded table cache, expire after 60 seconds, and are retired on table or
+audience replacement, invalidation, or detected source drift; authorization loss clears them.
+
 Canonical D&D definitions remain under `catalog/applications/dnd2024`. Generic persistence and
 navigation remain under `src/system/catalog/persistence` and `src/system/catalog-navigation`.
 Application registration and activation remain under `src/system/application-registry` and

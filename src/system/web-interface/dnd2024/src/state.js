@@ -370,22 +370,26 @@ export function normalizeMapId(maps, value, rootMapId) {
   return resolveMapDocument(maps, value) ? value : resolveRootMapId(maps, rootMapId);
 }
 
-/** A location with no image is a place on its nearest mapped ancestor. Never move coordinates
- * between scopes, or mistake a failed media lookup for a confirmed absence. */
+/** Reuse the nearest ready ancestor image and an existing pin in that ancestor's frame.
+ * Missing and unavailable local images remain distinct in the presentation notice. */
 export function resolveMapNavigation(maps, mapId, featureId = "") {
   const requested = resolveMapDocument(maps, mapId);
   if (!requested) return { mapId, featureId: "" };
+  if (requested.baseState === "ready" && requested.base) return { mapId, featureId };
   let current = requested;
   const seen = new Set();
-  let selected = featureId;
-  while (current.baseState === "absent" && current.parentMapId && !seen.has(current.id)) {
+  while (current.parentMapId && !seen.has(current.id)) {
     seen.add(current.id);
     const parent = resolveMapDocument(maps, current.parentMapId);
     if (!parent || seen.has(parent.id)) break;
-    selected = parent.features.find((feature) => feature.locationId === current.subject.id)?.id ?? "";
+    if (parent.baseState === "ready" && parent.base) return {
+      mapId: parent.id,
+      featureId: (parent.features.find((feature) => feature.locationId === requested.subject.id) ??
+        parent.features.find((feature) => feature.locationId === current.subject.id))?.id ?? "",
+    };
     current = parent;
   }
-  return { mapId: current.id, featureId: selected };
+  return { mapId, featureId: "" };
 }
 
 /**

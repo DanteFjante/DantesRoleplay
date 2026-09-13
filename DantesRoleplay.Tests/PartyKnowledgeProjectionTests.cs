@@ -134,6 +134,49 @@ public sealed class PartyKnowledgeProjectionTests
     }
 
     [Fact]
+    public async Task Dm_browse_exposes_canonical_categories_and_counts_while_player_browse_fails_closed()
+    {
+        var documents = Enumerable.Range(0, 25).Select(index =>
+            Document($"knowledge.{index:D3}", $"Summary {index}", "subject.one")).ToArray();
+        var projection = Projection(RevisionA, documents, [], [], sourceTotal: 75, nextCursor: "25");
+        var graph = projection.GraphSnapshots["partyKnowledge"];
+        IReadOnlyDictionary<string, IReadOnlyDictionary<string, int>> facets = new Dictionary<string, IReadOnlyDictionary<string, int>>
+        {
+            ["category"] = new[] { "state", "event", "identity", "relationship", "location", "capability", "rule", "quantity", "intention", "negative" }
+                .ToDictionary(value => value, value => value == "state" ? 75 : 0),
+            ["kind"] = new[] { "fact", "rumour", "secret", "clue" }.ToDictionary(value => value, value => value == "fact" ? 75 : 0)
+        };
+        projection = projection with { Input = "{\"browse\":true}", Audience = MechanicAudienceContext.GameMaster,
+            GraphSnapshots = new Dictionary<string, MechanicGraphSnapshot>
+            { ["partyKnowledge"] = graph with { Page = new(0, 75, 25, "25", RevisionA, facets) } } };
+        using var dm = await Run(projection);
+        Assert.Equal(25, dm.RootElement.GetProperty("entries").GetArrayLength());
+        Assert.Equal(75, dm.RootElement.GetProperty("totalCount").GetInt32());
+        Assert.Equal(75, dm.RootElement.GetProperty("facets").GetProperty("category").GetProperty("state").GetInt32());
+        Assert.Equal(RevisionA, dm.RootElement.GetProperty("selectionFingerprint").GetString());
+        var first = dm.RootElement.GetProperty("entries")[0];
+        Assert.Equal("knowledge.000 title", first.GetProperty("title").GetString());
+        Assert.Equal("Summary 0", first.GetProperty("summary").GetString());
+        Assert.Equal("state", first.GetProperty("subjectKind").GetString());
+        Assert.Equal("fact", first.GetProperty("knowledgeKind").GetString());
+        var schema = new BoundedJsonSchemaValidator().Compile(JsonDocument.Parse(File.ReadAllText(QueryPath()))
+            .RootElement.GetProperty("outputSchema").GetRawText());
+        Assert.True(schema.IsAccepted);
+
+        using var player = await Run(projection with { Audience = MechanicAudienceContext.Player });
+        Assert.Equal("unavailable", player.RootElement.GetProperty("status").GetString());
+        Assert.False(player.RootElement.TryGetProperty("totalCount", out _));
+        Assert.False(player.RootElement.TryGetProperty("facets", out _));
+        Assert.DoesNotContain("Summary 0", player.RootElement.GetRawText());
+
+        using var stale = await Run(projection with { Input = JsonSerializer.Serialize(new { browse = true, cursor = "25",
+            expectedSourceRevision = RevisionA, expectedGraphSourceRevision = RevisionA, expectedSelectionFingerprint = RevisionB }),
+            GraphSnapshots = new Dictionary<string, MechanicGraphSnapshot>
+            { ["partyKnowledge"] = graph with { Page = new(25, 75, 25, "50", RevisionA, facets) } } });
+        Assert.Equal("unavailable", stale.RootElement.GetProperty("status").GetString());
+    }
+
+    [Fact]
     public async Task Incomplete_wrong_world_and_duplicate_graphs_fail_the_whole_projection()
     {
         var original = Projection(RevisionA, [Document("knowledge.one", "Known", "subject.one")],

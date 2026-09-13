@@ -3,214 +3,6 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
-      "entityId": "location.caldris.veyr-marches.the-courteous-ruin",
-      "name": "The Courteous Ruin",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "Roofless border manor where travelers still follow elaborate guest customs preserved by its caretaker family. Present pressure: Armed claimants demand the keys to a house with no doors.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 815,
-            "y": 430
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.veyr-marches",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.veyr-marches.vanners-rest",
-      "name": "Vanner's Rest",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "settlement",
-            "summary": "Vanner's Rest grew around caravan fields and is famous for wheelwrights, horse doctors, roadside theatre, and the loudest inn signs in Eredane.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 230,
-            "y": 655
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.veyr-marches",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.veyr-marches.wheelwife-hollow",
-      "name": "Wheelwife Hollow",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "Wagon-repair settlement built around a spring and a circular common where axle-makers test their work. Present pressure: Travelers arrive with wheels failing in the same peculiar way.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 350,
-            "y": 770
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.veyr-marches",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.veyr.shepherds-refusal",
-      "name": "Shepherd's Refusal",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "hill and shrine in Veyr. Memorial to a commoner who declined three crowns and one very fine horse.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 170,
-            "y": 450
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.veyr-marches",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.veyr.the-nine-mile-inn",
-      "name": "The Nine-Mile Inn",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "road complex in Veyr. Famous for being a different distance from every map origin.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 485,
-            "y": 645
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.veyr-marches",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "secret.caldris.history.alderwick.the-three-day-queen",
-      "name": "The Three-Day Queen — concealed layer",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.knowledge.classification",
-          "value": {
-            "subjectKind": "event",
-            "sensitivity": "secret"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.secret",
-          "value": {
-            "status": "active",
-            "summary": "Her abdication may have been conditional on permanent village appeal rights omitted from court copies.",
-            "provenance": "Caldris history and lore atlas",
-            "visibility": "gm"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.alderwick",
-        "slot": "knowledge"
-      }
-    },
-    {
-      "entityId": "secret.caldris.history.alderwick.the-winter-sharing",
-      "name": "The Winter Sharing — concealed layer",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.knowledge.classification",
-          "value": {
-            "subjectKind": "event",
-            "sensitivity": "secret"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.secret",
-          "value": {
-            "status": "active",
-            "summary": "Later royal histories call one camp ancestral rulers, though burial goods suggest equal partners.",
-            "provenance": "Caldris history and lore atlas",
-            "visibility": "gm"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.alderwick",
-        "slot": "knowledge"
-      }
-    },
-    {
-      "entityId": "secret.caldris.history.bellafont.seeds-beneath-ash",
-      "name": "Seeds Beneath Ash — concealed layer",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.knowledge.classification",
-          "value": {
-            "subjectKind": "event",
-            "sensitivity": "secret"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.secret",
-          "value": {
-            "status": "active",
-            "summary": "The seeds came from several distant valleys, evidence of wider migration than court genealogies admit.",
-            "provenance": "Caldris history and lore atlas",
-            "visibility": "gm"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.bellafont",
-        "slot": "knowledge"
-      }
-    },
-    {
       "entityId": "secret.caldris.history.bellafont.the-feast-without-knives",
       "name": "The Feast Without Knives — concealed layer",
       "components": [
@@ -443,46 +235,270 @@
         "containerEntityId": "location.caldris.lornesse",
         "slot": "knowledge"
       }
+    },
+    {
+      "entityId": "secret.caldris.history.namarra.the-door-above-water",
+      "name": "The Door Above Water — concealed layer",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Seed jars may contain crops from a cooler climate and evidence that the “first” delta settlers arrived later.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.namarra",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "secret.caldris.history.namarra.the-villages-that-declined-counting",
+      "name": "The Villages That Declined Counting — concealed layer",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Water captains hid them with quiet royal consent so emergency grain would not be seized for debt.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.namarra",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "secret.caldris.history.ordelain.the-blank-decree",
+      "name": "The Blank Decree — concealed layer",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Reactive ink may have deliberately vanished after signatories fulfilled a temporary arrangement.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "secret.caldris.history.ordelain.the-floating-court",
+      "name": "The Floating Court — concealed layer",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "The platform was also designed to escape rulers who tried to seize the court.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "secret.caldris.history.selucia.the-first-borrowed-bell",
+      "name": "The First Borrowed Bell — concealed layer",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "They rescued its crew and received the bell freely, while the mainland record calls it salvage theft.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.selucia",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "secret.caldris.history.selucia.the-palace-vote",
+      "name": "The Palace Vote — concealed layer",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Measurements in its one completed room encode how island levies were meant to rotate.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.selucia",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "secret.caldris.history.seven-lamps-league.the-fifth-store",
+      "name": "The Fifth Store — concealed layer",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Merchants later preserved its exemption for private profit long after the emergency.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.seven-lamps-league",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "secret.caldris.history.seven-lamps-league.the-meal-between-minutes",
+      "name": "The Meal Between Minutes — concealed layer",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Later chairmen removed the meal-pause clause to shorten testimony from distant communities.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.seven-lamps-league",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "secret.caldris.history.tessarane.the-other-horizon",
+      "name": "The Other Horizon — concealed layer",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Its original horizon markers point toward a mountain now absent from maps and perhaps removed by ancient collapse.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.tessarane",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "secret.caldris.history.tessarane.the-patient-stair-compact",
+      "name": "The Patient Stair Compact — concealed layer",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Shepherd clans supplied most labour in exchange for toll exemptions later narrowed by scribes.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.tessarane",
+        "slot": "knowledge"
+      }
     }
   ],
   "relationships": [
     {
-      "fromEntityId": "secret.caldris.history.alderwick.the-three-day-queen",
-      "toEntityId": "location.caldris.alderwick",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.history.alderwick.the-three-day-queen",
-      "toEntityId": "world.caldris",
-      "qualifiedKind": "game.core.world.knowledge.in-world",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.history.alderwick.the-winter-sharing",
-      "toEntityId": "location.caldris.alderwick",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.history.alderwick.the-winter-sharing",
-      "toEntityId": "world.caldris",
-      "qualifiedKind": "game.core.world.knowledge.in-world",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.history.bellafont.seeds-beneath-ash",
-      "toEntityId": "location.caldris.bellafont",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.history.bellafont.seeds-beneath-ash",
-      "toEntityId": "world.caldris",
-      "qualifiedKind": "game.core.world.knowledge.in-world",
-      "value": {}
-    },
-    {
       "fromEntityId": "secret.caldris.history.bellafont.the-feast-without-knives",
       "toEntityId": "location.caldris.bellafont",
       "qualifiedKind": "game.core.world.knowledge.about",
@@ -591,213 +607,123 @@
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.veyr-marches.foxglove-relay",
-      "toEntityId": "location.caldris.veyr-marches.the-courteous-ruin",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.veyr-marches.oakshield",
-      "toEntityId": "location.caldris.veyr.the-nine-mile-inn",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.veyr-marches.redgate",
-      "toEntityId": "location.caldris.veyr.the-nine-mile-inn",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.veyr-marches.vanners-rest",
-      "toEntityId": "location.caldris.veyr-marches.wheelwife-hollow",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.veyr-marches.vanners-rest",
-      "toEntityId": "location.caldris.veyr.shepherds-refusal",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.veyr-marches.vanners-rest",
-      "toEntityId": "location.caldris.veyr.the-nine-mile-inn",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.veyr-marches.wheelwife-hollow",
-      "toEntityId": "location.caldris.veyr.the-nine-mile-inn",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.9dac03f01d99b5f49150",
-      "toEntityId": "location.caldris.veyr.the-nine-mile-inn",
+      "fromEntityId": "secret.caldris.history.namarra.the-door-above-water",
+      "toEntityId": "location.caldris.namarra",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.ea60ca443d7c2e25efd4",
-      "toEntityId": "location.caldris.veyr-marches.vanners-rest",
+      "fromEntityId": "secret.caldris.history.namarra.the-door-above-water",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.history.namarra.the-villages-that-declined-counting",
+      "toEntityId": "location.caldris.namarra",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.00a86a2d41da59aeb165",
-      "toEntityId": "location.caldris.veyr.the-nine-mile-inn",
+      "fromEntityId": "secret.caldris.history.namarra.the-villages-that-declined-counting",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.history.ordelain.the-blank-decree",
+      "toEntityId": "location.caldris.ordelain",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.67d55dd3b3add8a10942",
-      "toEntityId": "location.caldris.veyr-marches.vanners-rest",
+      "fromEntityId": "secret.caldris.history.ordelain.the-blank-decree",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.history.ordelain.the-floating-court",
+      "toEntityId": "location.caldris.ordelain",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.cb93e46c48ed79a927a0",
-      "toEntityId": "location.caldris.veyr-marches.wheelwife-hollow",
+      "fromEntityId": "secret.caldris.history.ordelain.the-floating-court",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.history.selucia.the-first-borrowed-bell",
+      "toEntityId": "location.caldris.selucia",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.e8c45ff1c3134f7509db",
-      "toEntityId": "location.caldris.veyr-marches.vanners-rest",
+      "fromEntityId": "secret.caldris.history.selucia.the-first-borrowed-bell",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.history.selucia.the-palace-vote",
+      "toEntityId": "location.caldris.selucia",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.834d095935d4fefaaae3",
-      "toEntityId": "location.caldris.veyr-marches.the-courteous-ruin",
-      "qualifiedKind": "game.core.world.route.to",
+      "fromEntityId": "secret.caldris.history.selucia.the-palace-vote",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.9b1a37b6267df39225e4",
-      "toEntityId": "location.caldris.veyr.the-nine-mile-inn",
-      "qualifiedKind": "game.core.world.route.from",
+      "fromEntityId": "secret.caldris.history.seven-lamps-league.the-fifth-store",
+      "toEntityId": "location.caldris.seven-lamps-league",
+      "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.9b1a37b6267df39225e4",
-      "toEntityId": "location.caldris.veyr-marches.vanners-rest",
-      "qualifiedKind": "game.core.world.route.to",
+      "fromEntityId": "secret.caldris.history.seven-lamps-league.the-fifth-store",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.9dac03f01d99b5f49150",
-      "toEntityId": "location.caldris.veyr.the-nine-mile-inn",
-      "qualifiedKind": "game.core.world.route.to",
+      "fromEntityId": "secret.caldris.history.seven-lamps-league.the-meal-between-minutes",
+      "toEntityId": "location.caldris.seven-lamps-league",
+      "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.d65f7f68132f3e3b1c60",
-      "toEntityId": "location.caldris.veyr-marches.the-courteous-ruin",
-      "qualifiedKind": "game.core.world.route.from",
+      "fromEntityId": "secret.caldris.history.seven-lamps-league.the-meal-between-minutes",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.e02ba92e84bc2047ac0e",
-      "toEntityId": "location.caldris.veyr.the-nine-mile-inn",
-      "qualifiedKind": "game.core.world.route.from",
+      "fromEntityId": "secret.caldris.history.tessarane.the-other-horizon",
+      "toEntityId": "location.caldris.tessarane",
+      "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.ea60ca443d7c2e25efd4",
-      "toEntityId": "location.caldris.veyr-marches.vanners-rest",
-      "qualifiedKind": "game.core.world.route.from",
+      "fromEntityId": "secret.caldris.history.tessarane.the-other-horizon",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.ea60ca443d7c2e25efd4",
-      "toEntityId": "location.caldris.veyr.the-nine-mile-inn",
-      "qualifiedKind": "game.core.world.route.to",
+      "fromEntityId": "secret.caldris.history.tessarane.the-patient-stair-compact",
+      "toEntityId": "location.caldris.tessarane",
+      "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.00a86a2d41da59aeb165",
-      "toEntityId": "location.caldris.veyr.the-nine-mile-inn",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.4af531c989d75bfe8f41",
-      "toEntityId": "location.caldris.veyr.shepherds-refusal",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.4af531c989d75bfe8f41",
-      "toEntityId": "location.caldris.veyr-marches.vanners-rest",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.67d55dd3b3add8a10942",
-      "toEntityId": "location.caldris.veyr-marches.vanners-rest",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.67d55dd3b3add8a10942",
-      "toEntityId": "location.caldris.veyr-marches.wheelwife-hollow",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.6dc70c6df9e5a7743fea",
-      "toEntityId": "location.caldris.veyr.the-nine-mile-inn",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.8b531dcd66353e8e26ec",
-      "toEntityId": "location.caldris.veyr-marches.wheelwife-hollow",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.8b531dcd66353e8e26ec",
-      "toEntityId": "location.caldris.veyr-marches.vanners-rest",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.cb93e46c48ed79a927a0",
-      "toEntityId": "location.caldris.veyr-marches.wheelwife-hollow",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.cb93e46c48ed79a927a0",
-      "toEntityId": "location.caldris.veyr.the-nine-mile-inn",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.e8c45ff1c3134f7509db",
-      "toEntityId": "location.caldris.veyr-marches.vanners-rest",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.e8c45ff1c3134f7509db",
-      "toEntityId": "location.caldris.veyr.shepherds-refusal",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.f67d2349ba82acbbff60",
-      "toEntityId": "location.caldris.veyr.the-nine-mile-inn",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.f67d2349ba82acbbff60",
-      "toEntityId": "location.caldris.veyr-marches.wheelwife-hollow",
-      "qualifiedKind": "game.core.world.route.to",
+      "fromEntityId": "secret.caldris.history.tessarane.the-patient-stair-compact",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
       "value": {}
     }
   ]
