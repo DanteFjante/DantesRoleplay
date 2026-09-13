@@ -115,7 +115,7 @@ Official [hooks documentation](https://learn.chatgpt.com/docs/hooks) describes p
 
 ## Current checkpoint
 
-Updated 2026-09-13. P0–P4 and publication corrections are integrated on master through `b3a141ab`; P5 is running. The copied-state host uses port 16217 for rehearsal. **The live site on port 6217 has not received this feature release yet.** Root owns Git integration and acceptance; `website_integration` is the sole deployment writer, currently authorized for copied-state rehearsal only.
+Updated 2026-09-13. P0–P4 and publication corrections are integrated on master through `c9005393`; P5 is running. The copied-state host uses port 16217 for rehearsal. **The live site on port 6217 has not received this feature release yet.** Root owns Git integration and acceptance; `website_integration` is the sole deployment writer, currently authorized for copied-state rehearsal only.
 
 | Work package | Source status | Remaining acceptance |
 | --- | --- | --- |
@@ -172,7 +172,7 @@ Root task: `01a09056-6d13-76d0-8706-40e435fb8b03`. Tasks return commits and conc
 
 ### Final copied release checkpoint
 
-- Current production source: `b3a141ab`. The capture client checks the returned task's repository as well as its ID. The manual lists all six host binding fields, requires a durable initialized watcher before gameplay, and documents the initial history baseline. Bounded pagination fails explicitly on missing anchors or excessive history, including an initially empty task.
+- Current production source: `c9005393`. The capture client checks the returned task's repository as well as its ID. The manual lists all six host binding fields, requires a durable initialized watcher before gameplay, and documents the initial history baseline. Bounded pagination fails explicitly on missing anchors or excessive history, including an initially empty task.
 - Root final affected checks: 37 passed and two deliberately retired protocol skips. After the last capture-only correction, 18 capture checks passed and disposable catalog validation passed 620 records with seven existing warnings. A transient test-compiler access violation cleared on one retry; no test failure remains. The full-suite evidence above remains the broad regression run.
 - Corrected copied page 82: 63-entry bundle SHA-256 `976503EF5D05B0FE09E35FC724A25453FA47A47B4CCEF75AE9A726A638D9ECF`; all 62 stored assets verified against the archive. Typecheck and production build passed with the pinned TypeScript toolchain.
 - Copied browser checks passed all eight real maps, with marker counts 3/6/8/9/15/5/4/5; three 1536×1024 galleries; the same map canvas under zoom and keyboard pan; Player scope/gallery reset; and absence of DM blocks in Player. Stable fresh loads showed no stale-view banner or API/page errors. Fourteen added child locations and exact query-to-overlay IDs, labels and anchors demonstrate data-backed overlays. The existing mutation owner rejected the proposed rename in dry-run with `ENTITY_RENAME_UNSUPPORTED`; no mutation or bypass followed, and a new rename API is excluded from this release.
@@ -214,6 +214,32 @@ The matching Release build passed with zero warnings/errors. Final assembly hash
 `33F761E0053EA03EABF041C1C6E35BE3C6B0C107F66D201E9632228F38C653CB`.
 Build log: `.tmp/gameplay-dataaccess-release-budget.log`. The sole writer is authorized to resume
 the copied activation sequence with that matching graph; live writes remain gated by acceptance.
+
+The resumed full HTTP Validate still returned unavailable (operation
+`1cdbde93702696c959d7d5740db54039`, 16.411 seconds). A second exact read-only reproduction found
+the missing production condition: empty-sample validation has two operations, uses one itself,
+then tries procedure review before query review. Both readers reconstructed the manual before
+checking their grammar. With one operation left, the inapplicable procedure reader consumed it;
+the query reader then failed. Query-only reconstruction with the same two-operation budget
+recovers `8AFE623F…`. `c9005393` fixes the common receipt reader to check its owner-verified captured
+grammar before binding manual context. Both readers together now recover the same review within
+the unchanged two-operation budget. Cold full gateway query and procedure checks passed 3/3 in
+fourteen seconds. No operation limit or paid review changed. Evidence:
+`.tmp/receipt-diagnostic/artifact-check/budget-order.log` and `budget-order-fixed.log`.
+
+Matching `c9005393` Release build passed in 22.82 seconds, zero warnings/errors. Final graph hashes:
+DataAccess `CD43AF94D9C37B208D1DADC39463F9A5B775906FE87414AD99C1916AB24F8549`, domain
+`D76555D50E0BADC31955D1271A7B71181E193ED410F8F14ED51B289955BB1C7F`, LocalAI
+`8B0CF3BB5F8401BB757766A857837B6D2E7BA74B4D4F198FB6FAD58C9385B0D6`.
+The sole writer is updating the existing copied graph and resuming sequential activation; inspect
+the valid outcome before activation. Build log: `.tmp/gameplay-dataaccess-release-grammar.log`.
+
+Cleanup inventory measured 22.90 GiB of generated build/dependency outputs across 34 worktrees;
+12.45 GiB is in clean detached worktrees, with at least another 5.6 GiB in old main-checkout
+rollout build folders. These are current logical sizes, not an exact historical growth measurement.
+Automatic approval review blocked the attempted cleanup before enumeration/removal; nothing was
+deleted. The checked inventory/removal helper is `.tmp/clean-detached-generated-after-delivery.ps1`
+(inventory-only by default). Keep cleanup pending and report its real outcome after delivery.
 
 Next: recover the valid first copied review, complete the two remaining copied reviews/activations
 and final public checks, then authorize the sole writer to take fresh live preservation and
