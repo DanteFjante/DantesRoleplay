@@ -6,6 +6,15 @@ The user requested this durable plan on 2026-09-12 and explicitly authorized imm
 
 Preserve the existing campaign, character state, authored facts, secrets, history, and retained assets. Export live records before editing corresponding files. Use supported stores, typed operations, and version-checked publication. Keep recovery copies and the previous release. No unrelated branch deletion, remote publication, database reset, global conversation scraping, or unrestricted secret exposure is authorized.
 
+On 2026-09-13 the user resumed delivery and explicitly requested cleanup afterward. Inventory the
+generated build/runtime/dependency copies in this checkout and its retained worktrees; remove
+verified disposable outputs after acceptance. Preserve authored or uncommitted work, databases,
+blobs, selected artwork, necessary recovery evidence, the live release and its usable predecessor.
+Reuse one build graph while finishing; report measured generated-space totals and actual recovery.
+The disk-full interruption has cleared (33.7 GB free at resumption). Master `b3a141ab` contains the
+pending bounded Validate/Activate correction; its final focused checks and copied/live delivery
+still need to finish.
+
 Baseline: master `ddcd5eed`; live DND page 80, application activation 66, state-space binding 40, Green & Wood theme. Confirm actual state before operations; these are baseline values, not future expected values.
 
 ## Product decisions
@@ -106,7 +115,7 @@ Official [hooks documentation](https://learn.chatgpt.com/docs/hooks) describes p
 
 ## Current checkpoint
 
-Updated 2026-09-12. P0–P4 and publication corrections are integrated on master through `676182b7`; P5 is running. The copied-state host is available on port 16217 for rehearsal. **The live site on port 6217 has not received this feature release yet.** Root owns Git integration and acceptance; `website_integration` is the sole deployment writer, currently authorized for copied-state rehearsal only.
+Updated 2026-09-13. P0–P4 and publication corrections are integrated on master through `b3a141ab`; P5 is running. The copied-state host uses port 16217 for rehearsal. **The live site on port 6217 has not received this feature release yet.** Root owns Git integration and acceptance; `website_integration` is the sole deployment writer, currently authorized for copied-state rehearsal only.
 
 | Work package | Source status | Remaining acceptance |
 | --- | --- | --- |
@@ -163,7 +172,7 @@ Root task: `01a09056-6d13-76d0-8706-40e435fb8b03`. Tasks return commits and conc
 
 ### Final copied release checkpoint
 
-- Current production source: `575c97e8`. The capture client checks the returned task's repository as well as its ID. The manual lists all six host binding fields, requires a durable initialized watcher before gameplay, and documents the initial history baseline. Bounded pagination fails explicitly on missing anchors or excessive history, including an initially empty task.
+- Current production source: `b3a141ab`. The capture client checks the returned task's repository as well as its ID. The manual lists all six host binding fields, requires a durable initialized watcher before gameplay, and documents the initial history baseline. Bounded pagination fails explicitly on missing anchors or excessive history, including an initially empty task.
 - Root final affected checks: 37 passed and two deliberately retired protocol skips. After the last capture-only correction, 18 capture checks passed and disposable catalog validation passed 620 records with seven existing warnings. A transient test-compiler access violation cleared on one retry; no test failure remains. The full-suite evidence above remains the broad regression run.
 - Corrected copied page 82: 63-entry bundle SHA-256 `976503EF5D05B0FE09E35FC724A25453FA47A47B4CCEF75AE9A726A638D9ECF`; all 62 stored assets verified against the archive. Typecheck and production build passed with the pinned TypeScript toolchain.
 - Copied browser checks passed all eight real maps, with marker counts 3/6/8/9/15/5/4/5; three 1536×1024 galleries; the same map canvas under zoom and keyboard pan; Player scope/gallery reset; and absence of DM blocks in Player. Stable fresh loads showed no stale-view banner or API/page errors. Fourteen added child locations and exact query-to-overlay IDs, labels and anchors demonstrate data-backed overlays. The existing mutation owner rejected the proposed rename in dry-run with `ENTITY_RENAME_UNSUPPORTED`; no mutation or bypass followed, and a new rename API is excluded from this release.
@@ -189,12 +198,22 @@ host now runs the verified framework-dependent artifact-bin graph, but fresh Val
 `0369f43b7be6a483e0fb363c1bf49eb2` still persisted `unavailable` with dependency, reuse-review and
 pure-closure unavailable diagnostics. The exact read-only comparator ruled out stale assemblies,
 DI and receipt pins: the same proof resolves with adequate time, but cold reconstruction takes
-11.923 seconds and exceeds the capability's ten-second deadline. Correct only synchronous
-Validate/Activate to a host-owned sixty-second maximum, still clipped to permission expiry.
-Keep queued review submission, worker leases, AI budgets and receipt checks unchanged. Candidate,
+11.923 seconds and exceeds the capability's ten-second deadline. `b3a141ab` gives only synchronous
+Validate/Activate a host-owned sixty-second maximum, still clipped to permission expiry.
+Queued review submission, worker leases, AI budgets and receipt checks are unchanged. Candidate,
 successful review, copied activation 66/page 82 and live state remain unchanged. No additional
 provider call was made.
 Evidence: preservation root `p5-evidence/candidate-scope-validation-after-cold-fix.json`.
+
+The final deadline/grant gateway checks passed 3/3; query/procedure publication checks passed 8/8
+in fifteen seconds. The exact read-only copied comparator recovered review evidence `8AFE623F…`
+in 20.673 seconds with the sixty-second allowance. No provider call or database write was needed.
+The matching Release build passed with zero warnings/errors. Final assembly hashes: DataAccess
+`27250720DB64C906E2A087F826FA59B70F6342B0B999ED569206DDF90F412887`, domain
+`D9BD349BC7F8B394499E489ECEA7BEBCF99A445E73943173CD765959943592BC`, LocalAI
+`33F761E0053EA03EABF041C1C6E35BE3C6B0C107F66D201E9632228F38C653CB`.
+Build log: `.tmp/gameplay-dataaccess-release-budget.log`. The sole writer is authorized to resume
+the copied activation sequence with that matching graph; live writes remain gated by acceptance.
 
 Next: recover the valid first copied review, complete the two remaining copied reviews/activations
 and final public checks, then authorize the sole writer to take fresh live preservation and
