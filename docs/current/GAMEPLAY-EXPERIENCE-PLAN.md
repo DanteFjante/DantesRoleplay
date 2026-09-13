@@ -266,13 +266,19 @@ inspected valid with no generic runtime report; activation `f23f7d020e4bf5b02fe6
 and its replay matched exactly. Paginated scope received `extendExisting` from one real Sol
 attempt (`task.3ae37426781f4097ce5c3cf20756cb80`), validated as
 `51659bcb92fb7b1d748e9303025855b4`, and activated as `de19edf5f13091024e79d2b287fdf17c`.
-Copied application activation is 68, fingerprint
-`65ABC34D2FCD13C2331DCCEC529F92E9A8CDE289BD8C5D8A17034B4EAA732D9A`.
-Dream candidate `9c295fe16fbb71c233c4a0e6de5feb0c` revision 1 has been submitted through normal
-review admission as `task.f7ed8baaadc625cf7d1167a5f4ff0a10`; no live write has occurred.
+Dream candidate `9c295fe16fbb71c233c4a0e6de5feb0c` revision 1 received `justifiedNew` from normal
+review task `task.f7ed8baaadc625cf7d1167a5f4ff0a10`. Validation
+`009e326feaf4b0a46da4bf3e2d1fb465` inspected valid; activation
+`523701825cda851a0139a6dfdc6249e9` committed. Copied application activation is now 69, fingerprint
+`2E250D74C07A708B6EA9A5037C3818A64BA6F94ADF350C8A06923F33F5604EB2`. Compatible state binding
+automatically advanced to 43, fingerprint
+`820EE6F7A56D0E3FA7B6C3E6ACA50C6A9174E44089C06FCDCDFEA39885AA9831`, and pins activation 69.
+Page 82 is active/latest. The owned second restart preserved the use, web-composition, runtime
+services and trigger-scheduling manual revisions/hashes. No live feature write has occurred.
+The three successful copied candidates used one paid attempt each: 29,987, 30,902 and 23,116
+tokens. The two earlier unsuccessful paid reviews remain separately accounted for above.
 
-Next: complete the copied dream review/activation, compatible state rebind and final public
-checks, then authorize the sole writer to take fresh live preservation and
+Next: complete final copied public browser checks, then authorize the sole writer to take fresh live preservation and
 publish. Live publication must use fresh live candidates, reviews and version checks, not copied
 database or review receipts; three additional bounded live reviews are authorized. Verify live
 DM/Player, overlays, galleries, secrets, manual retrieval and restart stability before marking P5
