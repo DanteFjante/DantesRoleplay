@@ -301,7 +301,17 @@ checkpoint. Owner loopback resolves DM; actual public Host/Origin resolves Playe
 Namespace synchronization changed only `dnd2024.query`; the narrow catalog workset updated
 map anchor/visual contracts and left 277 records unchanged. Immutable map schema v2 was registered
 with the old v1 hash preserved. Same-ID component migration and live content/candidate/page
-publication are still pending. Evidence stays under the existing preservation root `p5-evidence`.
+publication were pending at the host-switch checkpoint. Evidence stays under the existing
+preservation root `p5-evidence`.
+
+The live same-ID migration subsequently passed: all sixty map component data-byte hashes stayed
+identical and revisions advanced exactly once. The world/media packet applied eleven assets,
+seventeen entities and eight relationships. A fresh release-only grant was issued with bounded
+expiry, and the first live map-query candidate received `extendExisting` in one real Sol attempt,
+validated and activated with an exact retry. Two sequential live candidates remain at this checkpoint.
+Additional focused regression coverage for the shared receipt reader passed 2/2 on the existing
+Debug graph: workflow publication/replay and stateful publication/execution/replay. No additional
+build or provider call was used for those checks.
 
 Next: complete guarded live publication and final owner/public acceptance. Live publication must
 use fresh live candidates, reviews and version checks, not copied
