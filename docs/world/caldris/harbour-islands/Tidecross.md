@@ -103,4 +103,3 @@ Dedicated north and south ferry stairs separated passenger boats from the busies
 ## Map asset
 
 Built-in image generation was used for [the harbour map](tidecross-harbour.png). The [final generation prompt](tidecross-map-prompt.txt) is saved alongside this guide.
-
