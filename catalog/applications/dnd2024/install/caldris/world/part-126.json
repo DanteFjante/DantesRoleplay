@@ -3,14 +3,14 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
-      "entityId": "actor.caldris.yara-pom",
-      "name": "Yara Pom",
+      "entityId": "actor.caldris.mira-vey",
+      "name": "Mira Vey",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.motive",
           "value": {
             "status": "active",
-            "summary": "Cheerful petition writer at Pomegranate Court who celebrates correctly completed forms with tiny fanfares. Wants copper contamination addressed before officials minimize it; reads bureaucracy and public mood; risks losing her license for helping illiterate clients. Sends legal jokes to Elowen Pike. She becomes a public organizer if protected from retaliatory paperwork.",
+            "summary": "socially awkward brilliant forger. Immediate want: clear her name. Hidden depth: admires the counterfeit seal and knows its maker trained in Aster Quay.",
             "visibility": "party"
           }
         }
@@ -21,637 +21,347 @@
       }
     },
     {
-      "entityId": "actor.caldris.ylsa-kern",
-      "name": "Ylsa Kern",
+      "entityId": "actor.caldris.nemi-oru",
+      "name": "Nemi Oru",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.motive",
           "value": {
             "status": "active",
-            "summary": "Quietly intense smith and keeper of Rook Anvil, speaking mostly in questions about workmanship. Wants to identify the brittle scrap before someone dies; reads fracture patterns expertly; fears a recall will bankrupt neighboring families. Buys tools from Pella Sorn and distrusts mine owners. She supports public disclosure once a repair fund exists.",
+            "summary": "Quietly intense orchard diver who communicates care by sharpening other people's tools. Wants treasure seekers away from Drowned Door levees; can hold breath, read submerged masonry, and graft fruit trees; distrusts scholars after a theft. Has exchanged seeds with Cloud Apricot Farm. Returning credit and control over finds earns her expertise.",
             "visibility": "party"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.dunmarrow",
-        "slot": "people"
-      }
-    },
-    {
-      "entityId": "actor.caldris.yselle-marr",
-      "name": "Yselle Marr",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.motive",
-          "value": {
-            "status": "active",
-            "summary": "severe irrigation judge. Immediate want: ration water lawfully. Hidden depth: anonymous patron of radical archive copies.",
-            "visibility": "party"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.bellafont",
-        "slot": "people"
-      }
-    },
-    {
-      "entityId": "chronology.caldris.incident.alderwick.the-three-day-queen",
-      "name": "The Three-Day Queen",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.chronology",
-          "value": {
-            "status": "active",
-            "title": "The Three-Day Queen",
-            "summary": "Mara Vale ruled for three days, signed emergency flood orders, then yielded to her elder cousin. Present consequence: River communities invoke “Mara's hearing” against modern toll reforms.",
-            "calendarId": "caldris-common-era",
-            "occurredAtMinute": -250000000,
-            "precision": "era",
-            "dateLabel": "Crownmaking",
-            "visibility": "public"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.alderwick",
-        "slot": "history"
-      }
-    },
-    {
-      "entityId": "chronology.caldris.incident.alderwick.the-winter-sharing",
-      "name": "The Winter Sharing",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.chronology",
-          "value": {
-            "status": "active",
-            "title": "The Winter Sharing",
-            "summary": "Camps along the Mere exchanged smoked fish, flint, and shelter during a severe winter. Present consequence: Competing museums claim the Button Hills storehouses; descendants want a shared memorial instead.",
-            "calendarId": "caldris-common-era",
-            "occurredAtMinute": -1000000000,
-            "precision": "era",
-            "dateLabel": "First Footprints",
-            "visibility": "public"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.alderwick",
-        "slot": "history"
-      }
-    },
-    {
-      "entityId": "chronology.caldris.incident.bellafont.seeds-beneath-ash",
-      "name": "Seeds Beneath Ash",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.chronology",
-          "value": {
-            "status": "active",
-            "title": "Seeds Beneath Ash",
-            "summary": "Charred pear and quince seeds show people replanted orchards after a volcanic haze darkened summers. Present consequence: Orchard blight revives debate over sharing protected old rootstock.",
-            "calendarId": "caldris-common-era",
-            "occurredAtMinute": -1000000000,
-            "precision": "era",
-            "dateLabel": "First Footprints",
-            "visibility": "public"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.bellafont",
-        "slot": "history"
-      }
-    },
-    {
-      "entityId": "chronology.caldris.incident.bellafont.the-feast-without-knives",
-      "name": "The Feast Without Knives",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.chronology",
-          "value": {
-            "status": "active",
-            "title": "The Feast Without Knives",
-            "summary": "Rival orchard lords negotiated irrigation rights at a feast where all knives were locked away. Present consequence: Their descendants possess an overlooked right to witness water treaties.",
-            "calendarId": "caldris-common-era",
-            "occurredAtMinute": -700000000,
-            "precision": "era",
-            "dateLabel": "Lantern Concord",
-            "visibility": "public"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.bellafont",
-        "slot": "history"
-      }
-    },
-    {
-      "entityId": "chronology.caldris.incident.carrowmere.the-forty-oars",
-      "name": "The Forty Oars",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.chronology",
-          "value": {
-            "status": "active",
-            "title": "The Forty Oars",
-            "summary": "Forty crews rescued a coastal settlement after an earthquake-driven wave. Present consequence: Brinewife's Steps reveals the shared compact and possible mutual harbour rights.",
-            "calendarId": "caldris-common-era",
-            "occurredAtMinute": -850000000,
-            "precision": "era",
-            "dateLabel": "River Thrones",
-            "visibility": "public"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.carrowmere",
-        "slot": "history"
-      }
-    },
-    {
-      "entityId": "chronology.caldris.incident.carrowmere.the-grain-fleet-refusal",
-      "name": "The Grain Fleet Refusal",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.chronology",
-          "value": {
-            "status": "active",
-            "title": "The Grain Fleet Refusal",
-            "summary": "Shipwrights refused to launch unsafe grain vessels despite royal pressure during famine. Present consequence: Current labour leaders seek the clerk's descendants while officials fear precedent.",
-            "calendarId": "caldris-common-era",
-            "occurredAtMinute": -20000000,
-            "precision": "era",
-            "dateLabel": "Long Reprieve",
-            "visibility": "public"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.carrowmere",
-        "slot": "history"
-      }
-    },
-    {
-      "entityId": "chronology.caldris.incident.dunmarrow.the-lanternless-watch",
-      "name": "The Lanternless Watch",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.chronology",
-          "value": {
-            "status": "active",
-            "title": "The Lanternless Watch",
-            "summary": "Greyharrow held its walls for eleven nights after its signal oil ran out. Present consequence: Veterans and villagers argue over names on a new monument.",
-            "calendarId": "caldris-common-era",
-            "occurredAtMinute": -400000000,
-            "precision": "era",
-            "dateLabel": "Sundering",
-            "visibility": "public"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.dunmarrow",
-        "slot": "history"
-      }
-    },
-    {
-      "entityId": "chronology.caldris.incident.dunmarrow.the-road-away",
-      "name": "The Road Away",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.chronology",
-          "value": {
-            "status": "active",
-            "title": "The Road Away",
-            "summary": "Highland communities built a stone route leading south from defensive ridges. Present consequence: Peat fire at Blackcap Fell exposes markers pointing toward sealed mines.",
-            "calendarId": "caldris-common-era",
-            "occurredAtMinute": -950000000,
-            "precision": "era",
-            "dateLabel": "Hearths and Standing Stones",
-            "visibility": "public"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.dunmarrow",
-        "slot": "history"
-      }
-    },
-    {
-      "entityId": "chronology.caldris.incident.kethria.the-empty-saddles",
-      "name": "The Empty Saddles",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.chronology",
-          "value": {
-            "status": "active",
-            "title": "The Empty Saddles",
-            "summary": "A winter ambush killed an entire caravan, memorialized by saddles at the pass. Present consequence: Returning saddles may expose families whose peace depends on an honorable lie.",
-            "calendarId": "caldris-common-era",
-            "occurredAtMinute": -45000000,
-            "precision": "era",
-            "dateLabel": "Three Banner War",
-            "visibility": "public"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.kethria",
-        "slot": "history"
-      }
-    },
-    {
-      "entityId": "chronology.caldris.incident.kethria.the-mountain-portion",
-      "name": "The Mountain Portion",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.chronology",
-          "value": {
-            "status": "active",
-            "title": "The Mountain Portion",
-            "summary": "Copper, bread, and woven cloth were carried to a high cleft each winter. Present consequence: Modern tithe advocates and skeptics possess only half the moral history.",
-            "calendarId": "caldris-common-era",
-            "occurredAtMinute": -950000000,
-            "precision": "era",
-            "dateLabel": "Hearths and Standing Stones",
-            "visibility": "public"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.kethria",
-        "slot": "history"
-      }
-    },
-    {
-      "entityId": "chronology.caldris.incident.lornesse.the-widows-descent",
-      "name": "The Widows' Descent",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.chronology",
-          "value": {
-            "status": "active",
-            "title": "The Widows' Descent",
-            "summary": "Miners' families used freight sledges to evacuate Copperdeep during a tunnel fire. Present consequence: The cooperative now challenges royal control of the Widow's Incline.",
-            "calendarId": "caldris-common-era",
-            "occurredAtMinute": -250000000,
-            "precision": "era",
-            "dateLabel": "Crownmaking",
-            "visibility": "public"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.lornesse",
-        "slot": "history"
-      }
-    },
-    {
-      "entityId": "chronology.caldris.incident.lornesse.the-woven-silence",
-      "name": "The Woven Silence",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.chronology",
-          "value": {
-            "status": "active",
-            "title": "The Woven Silence",
-            "summary": "Copper curtains were hung in mountain chambers for unknown ceremonies. Present consequence: Seven Echo Quarry has reopened one such chamber, challenging sacred and industrial claims.",
-            "calendarId": "caldris-common-era",
-            "occurredAtMinute": -950000000,
-            "precision": "era",
-            "dateLabel": "Hearths and Standing Stones",
-            "visibility": "public"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.lornesse",
-        "slot": "history"
-      }
-    },
-    {
-      "entityId": "chronology.caldris.incident.namarra.the-door-above-water",
-      "name": "The Door Above Water",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.chronology",
-          "value": {
-            "status": "active",
-            "title": "The Door Above Water",
-            "summary": "A stone granary was built on high ground before the delta took its present shape. Present consequence: Drowned Door Orchard becomes important to both food security and identity.",
-            "calendarId": "caldris-common-era",
-            "occurredAtMinute": -1000000000,
-            "precision": "era",
-            "dateLabel": "First Footprints",
-            "visibility": "public"
           }
         }
       ],
       "containment": {
         "containerEntityId": "location.caldris.namarra",
-        "slot": "history"
+        "slot": "people"
       }
     },
     {
-      "entityId": "chronology.caldris.incident.namarra.the-villages-that-declined-counting",
-      "name": "The Villages That Declined Counting",
+      "entityId": "actor.caldris.old-caro-redcup",
+      "name": "Old Caro Redcup",
       "components": [
         {
-          "qualifiedTypeId": "game.core.world.chronology",
+          "qualifiedTypeId": "game.core.world.motive",
           "value": {
             "status": "active",
-            "title": "The Villages That Declined Counting",
-            "summary": "Several delta villages stopped appearing in tax rolls after a disastrous census. Present consequence: Their descendants face legal nonexistence when seeking aid or land protection.",
-            "calendarId": "caldris-common-era",
-            "occurredAtMinute": -20000000,
-            "precision": "era",
-            "dateLabel": "Long Reprieve",
-            "visibility": "public"
+            "summary": "Laid-back spring keeper who never hurries and somehow has water ready before anyone asks. Wants caravans to share diminishing water; knows hidden cisterns and burial etiquette; is physically unable to inspect the steep site alone. Once guided Karsh Veyru's copper agents without knowing it. He speaks only when offered practical aid, not interrogation.",
+            "visibility": "party"
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.namarra",
-        "slot": "history"
+        "containerEntityId": "location.caldris.tessarane",
+        "slot": "people"
       }
     },
     {
-      "entityId": "chronology.caldris.incident.ordelain.the-blank-decree",
-      "name": "The Blank Decree",
+      "entityId": "actor.caldris.old-rami",
+      "name": "Old Rami",
       "components": [
         {
-          "qualifiedTypeId": "game.core.world.chronology",
+          "qualifiedTypeId": "game.core.world.motive",
           "value": {
             "status": "active",
-            "title": "The Blank Decree",
-            "summary": "A peace decree survives only as seals around a blank centre. Present consequence: Modern factions invent convenient wording while Inkfish Wharf offers a way to recover impressions.",
-            "calendarId": "caldris-common-era",
-            "occurredAtMinute": -400000000,
-            "precision": "era",
-            "dateLabel": "Sundering",
-            "visibility": "public"
+            "summary": "laid-back ferryman-storyteller. Immediate want: keep Old Aur Island public. Hidden depth: remembers a foundation exposed in childhood.",
+            "visibility": "party"
           }
         }
       ],
       "containment": {
         "containerEntityId": "location.caldris.ordelain",
-        "slot": "history"
+        "slot": "people"
       }
     },
     {
-      "entityId": "chronology.caldris.incident.ordelain.the-floating-court",
-      "name": "The Floating Court",
+      "entityId": "actor.caldris.osric-pell",
+      "name": "Osric Pell",
       "components": [
         {
-          "qualifiedTypeId": "game.core.world.chronology",
+          "qualifiedTypeId": "game.core.world.motive",
           "value": {
             "status": "active",
-            "title": "The Floating Court",
-            "summary": "Judges heard river disputes from a movable platform so no bank controlled proceedings. Present consequence: Reed Judge's Rest drifting downstream creates a serious constitutional absurdity.",
-            "calendarId": "caldris-common-era",
-            "occurredAtMinute": -850000000,
-            "precision": "era",
-            "dateLabel": "River Thrones",
-            "visibility": "public"
+            "summary": "Strict royal forester with immaculate boots, severe eyebrows, and a private collection of badly carved wooden ducks. Wants storm timber recorded before anyone cuts it; knows oak age, charcoal fraud, and woodland law; cannot admit his deputy has been covering his mistakes. Owes Elowen Pike a fair hearing. Evidence that villagers protected saplings during hardship turns his suspicion into advocacy.",
+            "visibility": "party"
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.ordelain",
-        "slot": "history"
+        "containerEntityId": "location.caldris.alderwick",
+        "slot": "people"
       }
     },
     {
-      "entityId": "chronology.caldris.incident.selucia.the-first-borrowed-bell",
-      "name": "The First Borrowed Bell",
+      "entityId": "actor.caldris.palen-sero",
+      "name": "Palen Sero",
       "components": [
         {
-          "qualifiedTypeId": "game.core.world.chronology",
+          "qualifiedTypeId": "game.core.world.motive",
           "value": {
             "status": "active",
-            "title": "The First Borrowed Bell",
-            "summary": "Islanders raised a wrecked foreign bell as a storm warning. Present consequence: A return order at Borrowed Bell Isle threatens to reopen the story.",
-            "calendarId": "caldris-common-era",
-            "occurredAtMinute": -850000000,
-            "precision": "era",
-            "dateLabel": "River Thrones",
-            "visibility": "public"
+            "summary": "Overprepared road keeper whose emergency list includes spare jokes sorted by audience. Wants the Patient Stair made safe; reads wear, crowds, and mountain risk; sympathizes with the saboteur more than he admits. His dismissed colleague moved the markers. He opposes punishment if officials accept an enforceable maintenance plan.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.tessarane",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.pell-gull",
+      "name": "Pell Gull",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "laid-back salvage diver. Immediate want: identify warm water source. Hidden depth: found Concord stone under the breakwater.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.carrowmere",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.perrin-gull",
+      "name": "Perrin Gull",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "Laid-back Gannet Mercy rescuer whose calm ends abruptly when anyone neglects rope care. Wants the unidentified survivor protected; reads currents and shock responses; privately dreads returning to the water after a failed rescue. Exchanges rescue reports with the Houses of Rescue. A companion admitting fear without shame helps him sail again.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.carrowmere",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.princess-elia",
+      "name": "Princess Elia",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "strict naval legalist and bride. Immediate want: make marriage treaty explicit. Hidden depth: plans to publish side agreements both courts prefer hidden.",
+            "visibility": "party"
           }
         }
       ],
       "containment": {
         "containerEntityId": "location.caldris.selucia",
-        "slot": "history"
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.prior-garran",
+      "name": "Prior Garran",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "fussy bell scholar. Immediate want: retain family pattern rights. Hidden depth: altered an alarm to hide a mine collapse years ago.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lornesse",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.provost-halwen-drail",
+      "name": "Provost Halwen Drail",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "the superior who calls exploitation reform. Regional revenue provost, severe, controlled, and convinced that predictable extraction is kinder than arbitrary local privilege. Drail sponsors selective toll chaos so favored carriers and new central offices appear necessary. Rusk believes Drail is the top of the network. Drail actually receives policy packages from Chancellor Sera Vane's office and resents the implied supervision. Defeating Drail may mean public proof, removal, forced testimony, loss of patronage, or a negotiated reform. Drail's fall exposes higher authority but still matters: regional coercion decreases and several honest officials are freed to act.",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.alderwick",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.pru-damas",
+      "name": "Pru Damas",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "Earnest eccentric preserve-maker who catalogs anonymous Rain Letters by emotional weather. Wants threatening messages stopped without ending the custom; notices handwriting, fruit seasons, and reused jars; overshares other people's harmless sentiments. Sends preserves to Merrit Vale. She learns discretion when one confidence protects a vulnerable child.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.queen-arshala",
+      "name": "Queen Arshala",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "precise, warm, burdened ruler. Immediate want: find who doubled tithe. Hidden depth: dynasty's dragon pact is real and morally ambiguous.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.kethria",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.queen-ione",
+      "name": "Queen Ione",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "direct, amused, politically agile ruler. Immediate want: stop comet factions harming observers. Hidden depth: secretly loves prophecies as literature.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.tessarane",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.queen-mother-eda",
+      "name": "Queen-Mother Eda",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "strict regent with dry humour. Immediate want: protect young king from debt claims. Hidden depth: once belonged to Open Archive League.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lornesse",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.queen-samira-iii",
+      "name": "Queen Samira III",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "composed, intellectually playful ruler. Immediate want: resolve river claims credibly. Hidden depth: correspondence with Queen Adela about heir law.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.queen-ysabet",
+      "name": "Queen Ysabet",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "dry, legally formidable ruler. Immediate want: sail grain fleet safely. Hidden depth: personally supports strikers but fears famine.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.carrowmere",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.rhea-axlebright",
+      "name": "Rhea Axlebright",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "Laid-back wheelwright who whistles during emergencies and becomes ferociously concise when safety fails. Wants proof of road sabotage; can diagnose a wheel from its sound; hates formal testimony after being mocked for her accent. Cousin to a Free Axle captain implicated in the scheme. Respectful preparation helps her testify anyway.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.veyr-marches",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.sabine-thatch",
+      "name": "Sabine Thatch",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "Dramatic romantic and Quince Ladder mule driver who narrates deliveries as doomed expeditions. Wants the stair-road kept public; can load animals and read orchard weather flawlessly; avoids discussing a sibling who left for court. Delivers Mothglass sand and Rain Parlour preserves. A letter proving her sibling tried to return softens her theatrical resentment.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.sella-knot",
+      "name": "Sella Knot",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "laid-back rescue master. Immediate want: stop counterfeit oath ropes. Hidden depth: her missing sister works in Kethria.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lornesse",
+        "slot": "people"
       }
     }
   ],
-  "relationships": [
-    {
-      "fromEntityId": "chronology.caldris.incident.alderwick.the-three-day-queen",
-      "toEntityId": "location.caldris.alderwick",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.incident.alderwick.the-three-day-queen",
-      "toEntityId": "world.caldris",
-      "qualifiedKind": "game.core.world.chronology.in-world",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.incident.alderwick.the-winter-sharing",
-      "toEntityId": "location.caldris.alderwick",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.incident.alderwick.the-winter-sharing",
-      "toEntityId": "world.caldris",
-      "qualifiedKind": "game.core.world.chronology.in-world",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.incident.bellafont.seeds-beneath-ash",
-      "toEntityId": "location.caldris.bellafont",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.incident.bellafont.seeds-beneath-ash",
-      "toEntityId": "world.caldris",
-      "qualifiedKind": "game.core.world.chronology.in-world",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.incident.bellafont.the-feast-without-knives",
-      "toEntityId": "location.caldris.bellafont",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.incident.bellafont.the-feast-without-knives",
-      "toEntityId": "world.caldris",
-      "qualifiedKind": "game.core.world.chronology.in-world",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.incident.carrowmere.the-forty-oars",
-      "toEntityId": "location.caldris.carrowmere",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.incident.carrowmere.the-forty-oars",
-      "toEntityId": "world.caldris",
-      "qualifiedKind": "game.core.world.chronology.in-world",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.incident.carrowmere.the-grain-fleet-refusal",
-      "toEntityId": "location.caldris.carrowmere",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.incident.carrowmere.the-grain-fleet-refusal",
-      "toEntityId": "world.caldris",
-      "qualifiedKind": "game.core.world.chronology.in-world",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.incident.dunmarrow.the-lanternless-watch",
-      "toEntityId": "location.caldris.dunmarrow",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.incident.dunmarrow.the-lanternless-watch",
-      "toEntityId": "world.caldris",
-      "qualifiedKind": "game.core.world.chronology.in-world",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.incident.dunmarrow.the-road-away",
-      "toEntityId": "location.caldris.dunmarrow",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.incident.dunmarrow.the-road-away",
-      "toEntityId": "world.caldris",
-      "qualifiedKind": "game.core.world.chronology.in-world",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.incident.kethria.the-empty-saddles",
-      "toEntityId": "location.caldris.kethria",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.incident.kethria.the-empty-saddles",
-      "toEntityId": "world.caldris",
-      "qualifiedKind": "game.core.world.chronology.in-world",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.incident.kethria.the-mountain-portion",
-      "toEntityId": "location.caldris.kethria",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.incident.kethria.the-mountain-portion",
-      "toEntityId": "world.caldris",
-      "qualifiedKind": "game.core.world.chronology.in-world",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.incident.lornesse.the-widows-descent",
-      "toEntityId": "location.caldris.lornesse",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.incident.lornesse.the-widows-descent",
-      "toEntityId": "world.caldris",
-      "qualifiedKind": "game.core.world.chronology.in-world",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.incident.lornesse.the-woven-silence",
-      "toEntityId": "location.caldris.lornesse",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.incident.lornesse.the-woven-silence",
-      "toEntityId": "world.caldris",
-      "qualifiedKind": "game.core.world.chronology.in-world",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.incident.namarra.the-door-above-water",
-      "toEntityId": "location.caldris.namarra",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.incident.namarra.the-door-above-water",
-      "toEntityId": "world.caldris",
-      "qualifiedKind": "game.core.world.chronology.in-world",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.incident.namarra.the-villages-that-declined-counting",
-      "toEntityId": "location.caldris.namarra",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.incident.namarra.the-villages-that-declined-counting",
-      "toEntityId": "world.caldris",
-      "qualifiedKind": "game.core.world.chronology.in-world",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.incident.ordelain.the-blank-decree",
-      "toEntityId": "location.caldris.ordelain",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.incident.ordelain.the-blank-decree",
-      "toEntityId": "world.caldris",
-      "qualifiedKind": "game.core.world.chronology.in-world",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.incident.ordelain.the-floating-court",
-      "toEntityId": "location.caldris.ordelain",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.incident.ordelain.the-floating-court",
-      "toEntityId": "world.caldris",
-      "qualifiedKind": "game.core.world.chronology.in-world",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.incident.selucia.the-first-borrowed-bell",
-      "toEntityId": "location.caldris.selucia",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.incident.selucia.the-first-borrowed-bell",
-      "toEntityId": "world.caldris",
-      "qualifiedKind": "game.core.world.chronology.in-world",
-      "value": {}
-    }
-  ]
+  "relationships": []
 }

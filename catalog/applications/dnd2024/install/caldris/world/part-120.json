@@ -3,6 +3,32 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
+      "entityId": "secret.caldris.quest.q43.the-ox-chooses-a-corpse",
+      "name": "Q43 — The Ox Chooses a Corpse",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Thread: Independent social mystery. Hook: At the Saffron Ox market, a valuable breeding animal kneels before three bidders in turn; each receives an anonymous note predicting death before sunset. Layers: animal prophecy → scent-triggered trained response → poisoned account tablets share the same resin and would harm whoever moistens a stylus to calculate bids. Objectives: 1. Keep the named bidders and crowded market safe without causing a stampede. 2. Determine what controls the ox's behavior and how the poison would be delivered. 3. Identify the intended victim and motive before contracts make the scheme irreversible. Approaches and clues: Animal handling, scent comparison, market accounts, tablet makers, false bidding, protective isolation, public announcement, or following the note carrier can work. The ox also kneels at a resin-painted gate, proving behavior rather than foresight. Failure forward: A bidder falls ill but survives with rapid mundane care; their…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    },
+    {
       "entityId": "secret.caldris.quest.q44.knots-that-cross-the-sky",
       "name": "Q44 — Knots That Cross the Sky",
       "components": [
@@ -211,83 +237,40 @@
       }
     },
     {
-      "entityId": "location.caldris.alderwick",
-      "name": "Alderwick",
+      "entityId": "chronology.caldris.tidecross.common-quay",
+      "name": "The Common Quay Charter",
       "components": [
         {
-          "qualifiedTypeId": "game.core.world.location",
+          "qualifiedTypeId": "game.core.world.chronology",
           "value": {
-            "kind": "region",
             "status": "active",
-            "summary": "Alderwick regional terrain without baked labels or markers.",
+            "title": "The Common Quay Charter",
+            "summary": "Growing traffic brought rival toll demands and seizures that threatened the island's livelihood. Harbour households and traders agreed a published common tariff and a local hearing for crews from either shore. New stone quays and bonded stores followed, establishing Tidecross as a regular stop rather than merely a refuge in bad weather.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -63000000,
+            "precision": "era",
+            "dateLabel": "The great quay-building era",
             "visibility": "public"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.visual",
-          "value": {
-            "status": "active",
-            "variants": {
-              "player": {
-                "sha256": "f1a67e8f1b362fa0f872b86bc0007abf0f2d512833bc907502a3f7a3f11e11c7",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Alderwick regional terrain without baked labels or markers.",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/alderwick-clean-v1.png",
-                  "reviewedOn": "2026-09-12",
-                  "version": 1
-                }
-              },
-              "dm": {
-                "sha256": "f1a67e8f1b362fa0f872b86bc0007abf0f2d512833bc907502a3f7a3f11e11c7",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Alderwick regional terrain without baked labels or markers.",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/alderwick-clean-v1.png",
-                  "reviewedOn": "2026-09-12",
-                  "version": 1
-                }
-              }
-            }
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 525,
-            "y": 530
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.eredane",
-        "slot": "location"
+        "containerEntityId": "location.caldris.tidecross",
+        "slot": "history"
       }
     }
   ],
   "relationships": [
     {
-      "fromEntityId": "faction.caldris.company-of-weirs",
-      "toEntityId": "location.caldris.alderwick",
-      "qualifiedKind": "game.core.world.faction.territory-controls",
+      "fromEntityId": "secret.caldris.quest.q43.the-ox-chooses-a-corpse",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "faction.caldris.quiet-bell-chapter",
-      "toEntityId": "location.caldris.alderwick",
-      "qualifiedKind": "game.core.world.faction.territory-controls",
+      "fromEntityId": "secret.caldris.quest.q43.the-ox-chooses-a-corpse",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
       "value": {}
     },
     {
@@ -366,6 +349,18 @@
       "fromEntityId": "secret.caldris.session.s03.six-quiet-minutes",
       "toEntityId": "world.caldris",
       "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.tidecross.common-quay",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.tidecross.common-quay",
+      "toEntityId": "location.caldris.tidecross",
+      "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     }
   ]

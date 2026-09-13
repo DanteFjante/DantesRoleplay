@@ -3,6 +3,32 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
+      "entityId": "secret.caldris.campaign.bridge.the-ship-that-must-sail",
+      "name": "Adventure bridge — The Ship That Must Sail",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "intention",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "A safely launched vessel carries a Selucian wedding delegation and an argument over seating.",
+            "provenance": "Caldris campaign tapestry — independent adventure bridges",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge"
+      }
+    },
+    {
       "entityId": "secret.caldris.campaign.bridge.the-thirteenth-bell",
       "name": "Adventure bridge — The Thirteenth Bell",
       "components": [
@@ -495,32 +521,6 @@
         "containerEntityId": "location.caldris.atlas",
         "slot": "knowledge"
       }
-    },
-    {
-      "entityId": "secret.caldris.campaign.cozy.worker-breakfasts-in-copperdeep-or-gullstrand",
-      "name": "Cozy return",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.knowledge.classification",
-          "value": {
-            "subjectKind": "intention",
-            "sensitivity": "secret"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.secret",
-          "value": {
-            "status": "active",
-            "summary": "worker breakfasts in Copperdeep or Gullstrand;",
-            "provenance": "Caldris campaign tapestry — cozy",
-            "visibility": "gm"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.atlas",
-        "slot": "knowledge"
-      }
     }
   ],
   "relationships": [
@@ -549,6 +549,18 @@
       "value": {}
     },
     {
+      "fromEntityId": "secret.caldris.campaign.bridge.the-ship-that-must-sail",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.bridge.the-ship-that-must-sail",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
       "fromEntityId": "secret.caldris.campaign.bridge.the-wrong-rescue-contract",
       "toEntityId": "location.caldris.atlas",
       "qualifiedKind": "game.core.world.knowledge.about",
@@ -748,18 +760,6 @@
     },
     {
       "fromEntityId": "secret.caldris.campaign.cozy.supper-and-changed-gossip-at-the-gilded-kettle",
-      "toEntityId": "world.caldris",
-      "qualifiedKind": "game.core.world.knowledge.in-world",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.campaign.cozy.worker-breakfasts-in-copperdeep-or-gullstrand",
-      "toEntityId": "location.caldris.atlas",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.campaign.cozy.worker-breakfasts-in-copperdeep-or-gullstrand",
       "toEntityId": "world.caldris",
       "qualifiedKind": "game.core.world.knowledge.in-world",
       "value": {}

@@ -3,14 +3,43 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
-      "entityId": "location.caldris.lore.swallowwatch-orchard",
-      "name": "Swallowwatch Orchard",
+      "entityId": "location.caldris.landmark.hanging-harbour",
+      "name": "The Hanging Harbour",
       "components": [
+        {
+          "qualifiedTypeId": "game.core.media.visual",
+          "value": {
+            "status": "active",
+            "attachments": [
+              {
+                "sha256": "5b59844ad1f934d54089282a15078a069854805c68e7ffffd48811dca361b222",
+                "mimeType": "image/png",
+                "width": 1536,
+                "height": 1024,
+                "alt": "Three retired ship hulls rest in immense chained cradles against a sea cliff, forming a stepped cooperative repair yard above a small landing. Patched sails shade benches; washing hangs beside drying rope. The landward path reaches only the inspected upper workshops. Working boats use the lower landing when conditions permit. The chains, masonry and hulls carry real loads and require constant care.",
+                "caption": "The Hanging Harbour",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "Generated with OpenAI image generation; visually reviewed for Caldris.",
+                  "source": "docs/world/caldris/landmarks/images/hanging-harbour.png",
+                  "reviewedOn": "2026-09-05",
+                  "version": 1
+                },
+                "role": "setting",
+                "visibility": [
+                  "player",
+                  "dm"
+                ]
+              }
+            ]
+          }
+        },
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "site",
-            "summary": "A working orchard and observation plot in Bellafont. Its notebooks compare weather, flowering, insect activity, birds, and yields across several decades. Trees and keepers have changed; corrections and gaps remain visible. Its observations address particular places and do not automatically explain every regional blight or failed migration.",
+            "summary": "Three retired ship hulls rest in immense chained cradles against a sea cliff, forming a stepped cooperative repair yard above a small landing. Patched sails shade benches; washing hangs beside drying rope. The landward path reaches only the inspected upper workshops. Working boats use the lower landing when conditions permit. The chains, masonry and hulls carry real loads and require constant care.",
             "visibility": "public",
             "status": "active"
           }
@@ -18,25 +47,54 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 830,
-            "y": 785
+            "x": 285,
+            "y": 880
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.bellafont",
+        "containerEntityId": "location.caldris.carrowmere",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.lore.the-lantern-hospice",
-      "name": "The Lantern Hospice",
+      "entityId": "location.caldris.landmark.orchardback",
+      "name": "The Orchardback",
       "components": [
+        {
+          "qualifiedTypeId": "game.core.media.visual",
+          "value": {
+            "status": "active",
+            "attachments": [
+              {
+                "sha256": "d036a3321ec18899eba2ef19be7a289bf09d3805e366097b3668b7afc4411085",
+                "mimeType": "image/png",
+                "width": 1536,
+                "height": 1024,
+                "alt": "An island-sized sea tortoise rests in a warm Selucian bay with a small terraced orchard growing in the weathered hollows of its shell. A caretaker shelter, light retaining walls and a rope pontoon serve a few workers and visitors. Its head and flippers remain clear of moorings. The atlas marks its presently observed resting bay, not a permanent island or a schedule of future movement.",
+                "caption": "The Orchardback",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "Generated with OpenAI image generation; visually reviewed for Caldris.",
+                  "source": "docs/world/caldris/landmarks/images/orchardback.png",
+                  "reviewedOn": "2026-09-05",
+                  "version": 1
+                },
+                "role": "setting",
+                "visibility": [
+                  "player",
+                  "dm"
+                ]
+              }
+            ]
+          }
+        },
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "site",
-            "summary": "A roadside hospitality house in the Veyr Marches offering paid lodging and a limited number of supported places. Its rooms and stores have been rebuilt repeatedly. Conduct rules apply to patrons as well as guests, and its founders' refusal of exclusive sponsorship remains a debated tradition.",
+            "summary": "An island-sized sea tortoise rests in a warm Selucian bay with a small terraced orchard growing in the weathered hollows of its shell. A caretaker shelter, light retaining walls and a rope pontoon serve a few workers and visitors. Its head and flippers remain clear of moorings. The atlas marks its presently observed resting bay, not a permanent island or a schedule of future movement.",
             "visibility": "public",
             "status": "active"
           }
@@ -44,25 +102,224 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 695,
-            "y": 825
+            "x": 490,
+            "y": 865
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.veyr-marches",
+        "containerEntityId": "location.caldris.selucia",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.lore.vey-lowlands",
-      "name": "Vey Lowlands",
+      "entityId": "location.caldris.landmark.rain-crown-of-orovant",
+      "name": "Rain Crown of Orovant",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.media.visual",
+          "value": {
+            "status": "active",
+            "attachments": [
+              {
+                "sha256": "401cced7107e4e2000e21d239a940714b526ed23230bba22315f064faff76d65",
+                "mimeType": "image/png",
+                "width": 1536,
+                "height": 1024,
+                "alt": "Seven enormous basalt fragments hover in a broken circle above an old cistern tower. Repaired copper-mesh veils gather dawn mist; fine threads of water fall into the public basin. The ancient hovering work gives the landmark its shape, while fog, mesh, cleaning and storage determine its modest water yield. A hillside path reaches the cistern, with no registered ascent to the suspended stones.",
+                "caption": "Rain Crown of Orovant",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "Generated with OpenAI image generation; visually reviewed for Caldris.",
+                  "source": "docs/world/caldris/landmarks/images/rain-crown-of-orovant.png",
+                  "reviewedOn": "2026-09-05",
+                  "version": 1
+                },
+                "role": "setting",
+                "visibility": [
+                  "player",
+                  "dm"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Seven enormous basalt fragments hover in a broken circle above an old cistern tower. Repaired copper-mesh veils gather dawn mist; fine threads of water fall into the public basin. The ancient hovering work gives the landmark its shape, while fog, mesh, cleaning and storage determine its modest water yield. A hillside path reaches the cistern, with no registered ascent to the suspended stones.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 170,
+            "y": 815
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.tessarane",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lantern-sea.ilyrs-listening-caves",
+      "name": "Ilyr's Listening Caves",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "salt caverns in Lantern Sea. Dragon archive, echo riddles, shipwreck access, location uncertain.",
+            "visibility": "gm",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 795,
+            "y": 735
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.morrow-strait",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lantern-sea.the-halfway-light",
+      "name": "The Halfway Light",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 470,
+            "y": 470
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "A lighthouse island in the Lantern Sea, maintained jointly by four states that agree it belongs to none of them. The Halfway Light guides ships through Morrow Strait and shelters people brought ashore by its rescue crews. Four keeper households share watches, stores and a common ledger; no state may close the landing to another's mariners. A supply cutter brings lamp oil, provisions and replacement hands when weather permits. Stone paths connect the beacon, keeper court, fog bell and lifeboat ramp. Unlike the busy port of Tidecross, this small station exists to keep the passage visible and bring people home.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "026c25aa78463710b362be65ac4510b03166f9503b24095ef59ab21d6899e1fd",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "The Halfway Light: rocky lighthouse island with keeper court, supply jetty, lifeboat ramp, fog bell, refuge and gardens.",
+                "caption": "A jointly maintained beacon and rescue station in Morrow Strait.",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "halfway-light.png; Halfway Light map and location expansion",
+                  "reviewedOn": "2026-09-13",
+                  "version": 1
+                }
+              },
+              "dm": {
+                "sha256": "026c25aa78463710b362be65ac4510b03166f9503b24095ef59ab21d6899e1fd",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "The Halfway Light: rocky lighthouse island with keeper court, supply jetty, lifeboat ramp, fog bell, refuge and gardens.",
+                "caption": "A jointly maintained beacon and rescue station in Morrow Strait.",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "halfway-light.png; Halfway Light map and location expansion",
+                  "reviewedOn": "2026-09-13",
+                  "version": 1
+                }
+              }
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.morrow-strait",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.league.brokers-orchard",
+      "name": "Brokers' Orchard",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "memorial garden in League. Trees planted for failed treaties; some bear unexpectedly sweet fruit.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 720,
+            "y": 155
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.seven-lamps-league",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.league.the-sealed-hall",
+      "name": "The Sealed Hall",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Concord ruin in League. Publicly empty since Year 1 AS; private maintenance invoices continue.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 785,
+            "y": 370
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.seven-lamps-league",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.aunholt",
+      "name": "Aunholt",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "region",
-            "summary": "River and coastal country downstream of the Chalklands: Veymouth, Nacre Quay and Reedbank communities preserve the layered legacy of Low Vey and later local governments.",
+            "summary": "Hamlets, orchards, pasture, and irrigation channels occupy several sheltered terraces. The communal assembly roof has been rebuilt more than once, incorporating older supports where sound. Local maps record grazing turns, water rights, and winter shelters more thoroughly than distant commercial maps.",
             "visibility": "public",
             "status": "active"
           }
@@ -70,8 +327,8 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 760,
-            "y": 785
+            "x": 245,
+            "y": 730
           }
         },
         {
@@ -80,101 +337,35 @@
             "status": "archived",
             "variants": {
               "player": {
-                "sha256": "6a0511780f819293446fa6069e76bd141e0213cee13c30d765c82c1dd97aea58",
+                "sha256": "713940c3848c16440298cd4035cb8250bca61f42bd77ec077ae6b822d7f677d7",
                 "mimeType": "image/png",
                 "width": 1448,
                 "height": 1086,
-                "alt": "Vey Lowlands fantasy atlas map",
-                "caption": "Vey Lowlands",
+                "alt": "Aunholt fantasy atlas map",
+                "caption": "",
                 "order": 0,
                 "provenance": {
                   "kind": "generated",
                   "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/vey-lowlands.png",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/aunholt.png",
                   "reviewedOn": "2026-09-10",
-                  "version": 4
+                  "version": 3
                 }
               },
               "dm": {
-                "sha256": "6a0511780f819293446fa6069e76bd141e0213cee13c30d765c82c1dd97aea58",
+                "sha256": "713940c3848c16440298cd4035cb8250bca61f42bd77ec077ae6b822d7f677d7",
                 "mimeType": "image/png",
                 "width": 1448,
                 "height": 1086,
-                "alt": "Vey Lowlands fantasy atlas map",
-                "caption": "Vey Lowlands",
+                "alt": "Aunholt fantasy atlas map",
+                "caption": "",
                 "order": 0,
                 "provenance": {
                   "kind": "generated",
                   "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/vey-lowlands.png",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/aunholt.png",
                   "reviewedOn": "2026-09-10",
-                  "version": 4
-                }
-              }
-            }
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.alderwick",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.lore.whitewindow",
-      "name": "Whitewindow",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "settlement",
-            "summary": "Location: Northern stone hills reached by a branch road from the Chalklands. Livelihood: Metal fittings, stonework, repair contracts, and upland husbandry. Pale mineral seams give the outer cliff the appearance of narrow lit windows. Most trade takes place in a rebuilt guest hall with a very old floor. Interior neighbourhoods are homes, not an invitation to explore ancestral rooms. The hold imports food in good years as well as bad and regards reliable contracts as part of its winter defences.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 280,
-            "y": 275
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.visual",
-          "value": {
-            "status": "archived",
-            "variants": {
-              "player": {
-                "sha256": "5c5f64f420523eb5565b791af9fb2582417ea8d2b6f3d84fccc3648071b5a7b1",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Whitewindow fantasy atlas map",
-                "caption": "Whitewindow — illustrated local map.",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/whitewindow.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 1
-                }
-              },
-              "dm": {
-                "sha256": "5c5f64f420523eb5565b791af9fb2582417ea8d2b6f3d84fccc3648071b5a7b1",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Whitewindow fantasy atlas map",
-                "caption": "Whitewindow — illustrated local map.",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/whitewindow.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 1
+                  "version": 3
                 }
               }
             }
@@ -187,80 +378,14 @@
       }
     },
     {
-      "entityId": "location.caldris.lornesse.copperdeep",
-      "name": "Copperdeep",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "settlement",
-            "summary": "Copperdeep descends through terraces around ancient mine mouths, smelters, baths, chapels, and workers' halls. Upper galleries are active; lower levels have been sealed for generations.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 450,
-            "y": 535
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.visual",
-          "value": {
-            "status": "archived",
-            "variants": {
-              "player": {
-                "sha256": "734f3b861c2164831efdf8df3c070dc097ef3bc82e289b5e176be7842f86d10b",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Copperdeep fantasy atlas map",
-                "caption": "Copperdeep — illustrated local map.",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/copperdeep.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 1
-                }
-              },
-              "dm": {
-                "sha256": "734f3b861c2164831efdf8df3c070dc097ef3bc82e289b5e176be7842f86d10b",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Copperdeep fantasy atlas map",
-                "caption": "Copperdeep — illustrated local map.",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/copperdeep.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 1
-                }
-              }
-            }
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.lornesse",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.lornesse.goatminster",
-      "name": "Goatminster",
+      "entityId": "location.caldris.lore.cairn-moss",
+      "name": "Cairn Moss",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "site",
-            "summary": "High pasture village whose elected goat judge settles grazing disputes beneath a painted canopy. Present pressure: Prize animals vanish and return wearing unfamiliar bells.",
+            "summary": "Location: Peat country west of Whitewindow's surface road. Livelihood: Limited peat cutting, grazing, and guide work. The listening ring lies in a protected patch within working land. Its stones were reset after later disturbance, and only part of the original effect persists. Visitors often hear nothing. Local families maintain paths because losing someone in the moss is a greater concern than disappointing a scholar.",
             "visibility": "public",
             "status": "active"
           }
@@ -268,48 +393,8 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 440,
-            "y": 295
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.visual",
-          "value": {
-            "status": "archived",
-            "variants": {
-              "player": {
-                "sha256": "8f3fbf798d3849bf6032be4557cf9186cb30b8d5a0dae234b3f4af45b76e7fc8",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Goatminster fantasy atlas map",
-                "caption": "Goatminster — illustrated local map.",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/goatminster.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 1
-                }
-              },
-              "dm": {
-                "sha256": "8f3fbf798d3849bf6032be4557cf9186cb30b8d5a0dae234b3f4af45b76e7fc8",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Goatminster fantasy atlas map",
-                "caption": "Goatminster — illustrated local map.",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/goatminster.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 1
-                }
-              }
-            }
+            "x": 150,
+            "y": 200
           }
         }
       ],
@@ -319,14 +404,14 @@
       }
     },
     {
-      "entityId": "location.caldris.lornesse.hollow-bell-monastery",
-      "name": "Hollow Bell Monastery",
+      "entityId": "location.caldris.lore.glasswinter-tarn",
+      "name": "Glasswinter Tarn",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "site",
-            "summary": "ruined monastery in Lornesse. Bell rings without clapper when avalanches threaten—or when goats enter.",
+            "summary": "An upland tarn in Lornesse, approached by a marked path and a viewing place on firm ground. Local notes record irregular acoustic phenomena during certain freezes. Conditions vary, and clear ice is not treated as proof that the surface can bear travellers.",
             "visibility": "public",
             "status": "active"
           }
@@ -334,74 +419,8 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 815,
+            "x": 600,
             "y": 150
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.lornesse",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.lornesse.kestrelwatch",
-      "name": "Kestrelwatch",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "settlement",
-            "summary": "This pass city controls caravans, mountain rescue, and the safest eastern crossing. Houses cluster behind snow walls and connect through covered lanes.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 820,
-            "y": 580
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.visual",
-          "value": {
-            "status": "archived",
-            "variants": {
-              "player": {
-                "sha256": "a1e9e19cb7fbcb7fc2e3a3f67177d1a6d8f68ae9b7559097b53f73e94f134e6e",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Kestrelwatch fantasy atlas map",
-                "caption": "Kestrelwatch — illustrated local map.",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/kestrelwatch.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 1
-                }
-              },
-              "dm": {
-                "sha256": "a1e9e19cb7fbcb7fc2e3a3f67177d1a6d8f68ae9b7559097b53f73e94f134e6e",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Kestrelwatch fantasy atlas map",
-                "caption": "Kestrelwatch — illustrated local map.",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/kestrelwatch.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 1
-                }
-              }
-            }
           }
         }
       ],
@@ -413,375 +432,363 @@
   ],
   "relationships": [
     {
-      "fromEntityId": "secret.caldris.lore.place-whitewindow.1",
-      "toEntityId": "location.caldris.lore.whitewindow",
+      "fromEntityId": "secret.caldris.lore.place-cairn-moss.1",
+      "toEntityId": "location.caldris.lore.cairn-moss",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.1809-the-first-high-market",
-      "toEntityId": "location.caldris.lore.whitewindow",
-      "qualifiedKind": "game.core.world.chronology.about",
+      "fromEntityId": "secret.caldris.lore.place-aunholt.1",
+      "toEntityId": "location.caldris.lore.aunholt",
+      "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.1835-the-guest-winter-at-whitewindow",
-      "toEntityId": "location.caldris.lore.whitewindow",
-      "qualifiedKind": "game.core.world.chronology.about",
+      "fromEntityId": "secret.caldris.lore.place-aunholt.2",
+      "toEntityId": "location.caldris.lore.aunholt",
+      "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
       "fromEntityId": "chronology.caldris.lore.1722-the-listening-stones-of-cairn-moss",
-      "toEntityId": "location.caldris.lore.whitewindow",
+      "toEntityId": "location.caldris.lore.cairn-moss",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.1648-the-winter-teeth",
-      "toEntityId": "location.caldris.lore.whitewindow",
+      "fromEntityId": "chronology.caldris.lore.0887-the-orchard-of-winter-apples",
+      "toEntityId": "location.caldris.lore.aunholt",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.1549-the-ford-of-sleeping-carts",
-      "toEntityId": "location.caldris.lore.whitewindow",
+      "fromEntityId": "chronology.caldris.lore.0899-the-valley-already-named",
+      "toEntityId": "location.caldris.lore.aunholt",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.1499-the-meadows-that-moved-uphill",
-      "toEntityId": "location.caldris.lore.whitewindow",
+      "fromEntityId": "chronology.caldris.lore.0874-the-singing-wood-of-seln",
+      "toEntityId": "location.caldris.lore.aunholt",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.1399-the-mapmakers-daughter",
-      "toEntityId": "location.caldris.lore.whitewindow",
+      "fromEntityId": "chronology.caldris.lore.0809-the-first-feast-of-two-harvests",
+      "toEntityId": "location.caldris.lore.aunholt",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.1299-the-griffin-above-juniper-gate",
-      "toEntityId": "location.caldris.lore.whitewindow",
+      "fromEntityId": "chronology.caldris.lore.0822-the-goat-path-and-the-painted-road",
+      "toEntityId": "location.caldris.lore.aunholt",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.1009-the-winter-of-the-pale-roofs",
-      "toEntityId": "location.caldris.lore.whitewindow",
+      "fromEntityId": "chronology.caldris.lore.0191-the-voices-beneath-glasswinter-tarn",
+      "toEntityId": "location.caldris.lore.glasswinter-tarn",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.0974-the-empty-chair-at-whitewindow",
-      "toEntityId": "location.caldris.lore.whitewindow",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.0709-the-workroom-of-mended-things",
-      "toEntityId": "location.caldris.lore.whitewindow",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.lore.0200-0100-place-the-lantern-hospice.1",
-      "toEntityId": "location.caldris.lore.the-lantern-hospice",
+      "fromEntityId": "fact.caldris.lore.0191-the-voices-beneath-glasswinter-tarn-account.1",
+      "toEntityId": "location.caldris.lore.glasswinter-tarn",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.0050-0000-place-swallowwatch-orchard.1",
-      "toEntityId": "location.caldris.lore.swallowwatch-orchard",
+      "fromEntityId": "secret.caldris.lore.0191-the-voices-beneath-glasswinter-tarn-gm-truth.1",
+      "toEntityId": "location.caldris.lore.glasswinter-tarn",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.0029-the-orchard-that-counted-birds",
-      "toEntityId": "location.caldris.lore.swallowwatch-orchard",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.lore.0029-the-orchard-that-counted-birds-account.1",
-      "toEntityId": "location.caldris.lore.swallowwatch-orchard",
+      "fromEntityId": "secret.caldris.lore.0191-the-voices-beneath-glasswinter-tarn-traces-and-stories.1",
+      "toEntityId": "location.caldris.lore.glasswinter-tarn",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.0029-the-orchard-that-counted-birds-gm-truth.1",
-      "toEntityId": "location.caldris.lore.swallowwatch-orchard",
+      "fromEntityId": "secret.caldris.lore.0200-0100-place-glasswinter-tarn.1",
+      "toEntityId": "location.caldris.lore.glasswinter-tarn",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.0029-the-orchard-that-counted-birds-traces-and-stories.1",
-      "toEntityId": "location.caldris.lore.swallowwatch-orchard",
+      "fromEntityId": "fact.caldris.atlas.connection.98b83c233ab1aa2b36a8",
+      "toEntityId": "location.caldris.lantern-sea.the-halfway-light",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.bellafont.cresset",
-      "toEntityId": "location.caldris.lore.swallowwatch-orchard",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.cairn-moss",
-      "toEntityId": "location.caldris.lore.whitewindow",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.whitewindow",
-      "toEntityId": "location.caldris.lornesse.goatminster",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.alderwick.dunwarren",
-      "toEntityId": "location.caldris.lornesse.kestrelwatch",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.dunmarrow.saint-veys-crutch",
-      "toEntityId": "location.caldris.lore.whitewindow",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.0d6f4e6c06b11fda2fd9",
-      "toEntityId": "location.caldris.lore.whitewindow",
+      "fromEntityId": "fact.caldris.atlas.closed.b1665bd55978c66e97c4",
+      "toEntityId": "location.caldris.league.the-sealed-hall",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.713801f383d24c07aa93",
-      "toEntityId": "location.caldris.lore.whitewindow",
+      "fromEntityId": "fact.caldris.atlas.closed.9e829fdbb3eb29859179",
+      "toEntityId": "location.caldris.lantern-sea.ilyrs-listening-caves",
       "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.a209550223b39b15c16e",
-      "toEntityId": "location.caldris.lornesse.kestrelwatch",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.b206ab91b97b325d1ca9",
-      "toEntityId": "location.caldris.lornesse.goatminster",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.df9f597cea5ebf8a56cb",
-      "toEntityId": "location.caldris.lornesse.copperdeep",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.e79496d51aa83657bfb7",
-      "toEntityId": "location.caldris.lornesse.goatminster",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.f7262615cbb1a9cc0c02",
-      "toEntityId": "location.caldris.lornesse.copperdeep",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.cf1f433afa9ef629f111",
-      "toEntityId": "location.caldris.lornesse.kestrelwatch",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.ec3dd50c8d34a4132ae3",
-      "toEntityId": "location.caldris.lore.swallowwatch-orchard",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.fff27e61d091e9e4f311",
-      "toEntityId": "location.caldris.lore.swallowwatch-orchard",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.290e02b245721468c050",
-      "toEntityId": "location.caldris.lore.the-lantern-hospice",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.60740e239e721d9df1cc",
-      "toEntityId": "location.caldris.lore.the-lantern-hospice",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.548b3c963d4e0f9b71f3",
-      "toEntityId": "location.caldris.lornesse.kestrelwatch",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.713801f383d24c07aa93",
-      "toEntityId": "location.caldris.lore.whitewindow",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.713801f383d24c07aa93",
-      "toEntityId": "location.caldris.lornesse.goatminster",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.93dec0e070213818c9d7",
-      "toEntityId": "location.caldris.lornesse.goatminster",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.93dec0e070213818c9d7",
-      "toEntityId": "location.caldris.lore.whitewindow",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.a209550223b39b15c16e",
-      "toEntityId": "location.caldris.lornesse.kestrelwatch",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.b554b5875458d8b51726",
-      "toEntityId": "location.caldris.lornesse.kestrelwatch",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.cbee53e15cffab28e88b",
-      "toEntityId": "location.caldris.lornesse.kestrelwatch",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.dd5ebb6db8aaeec05871",
-      "toEntityId": "location.caldris.lornesse.goatminster",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.e79496d51aa83657bfb7",
-      "toEntityId": "location.caldris.lornesse.goatminster",
-      "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
       "fromEntityId": "route.caldris.atlas.0d6f4e6c06b11fda2fd9",
-      "toEntityId": "location.caldris.lore.whitewindow",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.514fd2502412f7c7a2ca",
-      "toEntityId": "location.caldris.lornesse.copperdeep",
+      "toEntityId": "location.caldris.lore.cairn-moss",
       "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.5abb41a076d0683626d0",
-      "toEntityId": "location.caldris.lornesse.kestrelwatch",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.9f768f758dfb672045e0",
-      "toEntityId": "location.caldris.lornesse.copperdeep",
-      "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
       "fromEntityId": "route.caldris.atlas.a0d9e6319d986770ae04",
-      "toEntityId": "location.caldris.lore.whitewindow",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.afcbce188105a6a78b73",
-      "toEntityId": "location.caldris.lornesse.copperdeep",
+      "toEntityId": "location.caldris.lore.cairn-moss",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.b206ab91b97b325d1ca9",
-      "toEntityId": "location.caldris.lornesse.goatminster",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.c1934aeca489f0b98ec9",
-      "toEntityId": "location.caldris.lornesse.copperdeep",
+      "fromEntityId": "route.caldris.atlas.384f4f545f62ef8d1183",
+      "toEntityId": "location.caldris.lore.glasswinter-tarn",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.cb4f617379a5895fa8cd",
-      "toEntityId": "location.caldris.lornesse.goatminster",
+      "fromEntityId": "route.caldris.atlas.d61d8dc81c2c58ea51b9",
+      "toEntityId": "location.caldris.lore.glasswinter-tarn",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.29e94d68589cee989f16",
+      "toEntityId": "location.caldris.league.brokers-orchard",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.8414806005e1f5c701e5",
+      "toEntityId": "location.caldris.league.brokers-orchard",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.df9f597cea5ebf8a56cb",
-      "toEntityId": "location.caldris.lornesse.copperdeep",
-      "qualifiedKind": "game.core.world.route.from",
+      "fromEntityId": "location.caldris.carrowmere.gullstrand",
+      "toEntityId": "location.caldris.landmark.hanging-harbour",
+      "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.f7262615cbb1a9cc0c02",
-      "toEntityId": "location.caldris.lornesse.copperdeep",
-      "qualifiedKind": "game.core.world.route.from",
+      "fromEntityId": "location.caldris.carrowmere.saltmere",
+      "toEntityId": "location.caldris.landmark.hanging-harbour",
+      "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.fd9abb48f87d393cd218",
-      "toEntityId": "location.caldris.lornesse.kestrelwatch",
-      "qualifiedKind": "game.core.world.route.from",
+      "fromEntityId": "fact.caldris.landmark.hanging-harbour.custom",
+      "toEntityId": "location.caldris.landmark.hanging-harbour",
+      "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.4a2aba0d5456d1e83ca7",
-      "toEntityId": "location.caldris.lornesse.hollow-bell-monastery",
-      "qualifiedKind": "game.core.world.route.to",
+      "fromEntityId": "fact.caldris.landmark.hanging-harbour.lore",
+      "toEntityId": "location.caldris.landmark.hanging-harbour",
+      "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.ae38ac146d9d5fbb6790",
-      "toEntityId": "location.caldris.lornesse.hollow-bell-monastery",
-      "qualifiedKind": "game.core.world.route.from",
+      "fromEntityId": "fact.caldris.landmark.hanging-harbour.access.1ea62b52ca",
+      "toEntityId": "location.caldris.landmark.hanging-harbour",
+      "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.landmark.upward-fall.19",
-      "toEntityId": "location.caldris.lore.vey-lowlands",
+      "fromEntityId": "fact.caldris.landmark.hanging-harbour.access.4f18aae983",
+      "toEntityId": "location.caldris.landmark.hanging-harbour",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.hanging-harbour.gmtruth",
+      "toEntityId": "location.caldris.landmark.hanging-harbour",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.hanging-harbour.hooks",
+      "toEntityId": "location.caldris.landmark.hanging-harbour",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.rain-crown-of-orovant.custom",
+      "toEntityId": "location.caldris.landmark.rain-crown-of-orovant",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.rain-crown-of-orovant.hooks",
+      "toEntityId": "location.caldris.landmark.rain-crown-of-orovant",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.rain-crown-of-orovant.lore",
+      "toEntityId": "location.caldris.landmark.rain-crown-of-orovant",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.orchardback.access.2724281d1f",
+      "toEntityId": "location.caldris.landmark.orchardback",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.orchardback.custom",
+      "toEntityId": "location.caldris.landmark.orchardback",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.orchardback.gmtruth",
+      "toEntityId": "location.caldris.landmark.orchardback",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.orchardback.hooks",
+      "toEntityId": "location.caldris.landmark.orchardback",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.orchardback.lore",
+      "toEntityId": "location.caldris.landmark.orchardback",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.rain-crown-of-orovant.access.c8bb5b07e6",
+      "toEntityId": "location.caldris.landmark.rain-crown-of-orovant",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.rain-crown-of-orovant.gmtruth",
+      "toEntityId": "location.caldris.landmark.rain-crown-of-orovant",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.orchardback.access.0d8ecb0ed6",
+      "toEntityId": "location.caldris.landmark.orchardback",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.hanging-harbour.117",
+      "toEntityId": "location.caldris.landmark.hanging-harbour",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.landmark.upward-fall.421",
-      "toEntityId": "location.caldris.lore.vey-lowlands",
+      "fromEntityId": "chronology.caldris.landmark.hanging-harbour.258",
+      "toEntityId": "location.caldris.landmark.hanging-harbour",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.landmark.upward-fall.778",
-      "toEntityId": "location.caldris.lore.vey-lowlands",
+      "fromEntityId": "chronology.caldris.landmark.hanging-harbour.35",
+      "toEntityId": "location.caldris.landmark.hanging-harbour",
       "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.rain-crown-of-orovant.23",
+      "toEntityId": "location.caldris.landmark.rain-crown-of-orovant",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.rain-crown-of-orovant.366",
+      "toEntityId": "location.caldris.landmark.rain-crown-of-orovant",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.rain-crown-of-orovant.844",
+      "toEntityId": "location.caldris.landmark.rain-crown-of-orovant",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.orchardback.212",
+      "toEntityId": "location.caldris.landmark.orchardback",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.orchardback.6",
+      "toEntityId": "location.caldris.landmark.orchardback",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.orchardback.605",
+      "toEntityId": "location.caldris.landmark.orchardback",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.3ca6027dd49a55591f8d",
+      "toEntityId": "location.caldris.landmark.hanging-harbour",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.41506da5b3e4c1e42039",
+      "toEntityId": "location.caldris.landmark.hanging-harbour",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.622d0ef64eba8e69aa1b",
+      "toEntityId": "location.caldris.landmark.rain-crown-of-orovant",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.f0a70a55b5aa46f1e747",
+      "toEntityId": "location.caldris.landmark.rain-crown-of-orovant",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.hanging-harbour.approach.1ea62b52ca",
+      "toEntityId": "location.caldris.landmark.hanging-harbour",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.hanging-harbour.approach.4f18aae983",
+      "toEntityId": "location.caldris.landmark.hanging-harbour",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.orchardback.approach.0d8ecb0ed6",
+      "toEntityId": "location.caldris.landmark.orchardback",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.orchardback.approach.2724281d1f",
+      "toEntityId": "location.caldris.landmark.orchardback",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.rain-crown-of-orovant.approach.c8bb5b07e6",
+      "toEntityId": "location.caldris.landmark.rain-crown-of-orovant",
+      "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     }
   ]

@@ -3,6 +3,32 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
+      "entityId": "secret.caldris.quest.q23.the-ordinary-comet",
+      "name": "Q23 — The Ordinary Comet",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Hook: Tessaran astronomers predict a harmless comet while three factions claim it validates incompatible political prophecies. Layers: prophecy fraud → sincere cultural interpretations exploited by court → one observation really is impossible because an object moves against the comet. Objectives: 1. Protect observers, instruments, and public access during the comet's approach. 2. Separate measurement, interpretation, forgery, and political use. 3. Investigate the impossible companion observation without feeding harmful panic. Routes: observation, instrument checking, public teaching, debate, performance satire, guard work, court negotiation, magical study, or following the moving object. Clues: altered lens mount; playwright source for one prophecy; consistent measurements from rival schools; glass-locust flight; an object blinking in old Lantern signal intervals. Failure forward: prophecy panic causes policy changes, but later observation can correct or complica…",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    },
+    {
       "entityId": "secret.caldris.quest.q24.the-river-returns",
       "name": "Q24 — The River Returns",
       "components": [
@@ -495,36 +521,22 @@
         "containerEntityId": "location.caldris.atlas",
         "slot": "quest-seeds"
       }
-    },
-    {
-      "entityId": "secret.caldris.quest.q43.the-ox-chooses-a-corpse",
-      "name": "Q43 — The Ox Chooses a Corpse",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.knowledge.classification",
-          "value": {
-            "subjectKind": "event",
-            "sensitivity": "secret"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.secret",
-          "value": {
-            "status": "active",
-            "summary": "Thread: Independent social mystery. Hook: At the Saffron Ox market, a valuable breeding animal kneels before three bidders in turn; each receives an anonymous note predicting death before sunset. Layers: animal prophecy → scent-triggered trained response → poisoned account tablets share the same resin and would harm whoever moistens a stylus to calculate bids. Objectives: 1. Keep the named bidders and crowded market safe without causing a stampede. 2. Determine what controls the ox's behavior and how the poison would be delivered. 3. Identify the intended victim and motive before contracts make the scheme irreversible. Approaches and clues: Animal handling, scent comparison, market accounts, tablet makers, false bidding, protective isolation, public announcement, or following the note carrier can work. The ox also kneels at a resin-painted gate, proving behavior rather than foresight. Failure forward: A bidder falls ill but survives with rapid mundane care; their…",
-            "provenance": "Caldris quest atlas",
-            "visibility": "gm"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.atlas",
-        "slot": "quest-seeds"
-      }
     }
   ],
   "relationships": [
     {
+      "fromEntityId": "secret.caldris.quest.q23.the-ordinary-comet",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q23.the-ordinary-comet",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
       "fromEntityId": "secret.caldris.quest.q24.the-river-returns",
       "toEntityId": "location.caldris.atlas",
       "qualifiedKind": "game.core.world.knowledge.about",
@@ -748,18 +760,6 @@
     },
     {
       "fromEntityId": "secret.caldris.quest.q42.three-spoons-before-the-flood",
-      "toEntityId": "world.caldris",
-      "qualifiedKind": "game.core.world.knowledge.in-world",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.quest.q43.the-ox-chooses-a-corpse",
-      "toEntityId": "location.caldris.atlas",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.quest.q43.the-ox-chooses-a-corpse",
       "toEntityId": "world.caldris",
       "qualifiedKind": "game.core.world.knowledge.in-world",
       "value": {}

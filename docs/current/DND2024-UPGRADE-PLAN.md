@@ -203,7 +203,7 @@ the host selector only reads declared fields, compares values, counts, and rebui
 
 Locations presents the complete authorized directory as a flat, searchable list with 25 rows per
 page. Containment still governs detail and map reads. Caldris installation map anchors are bound
-to the eight clean image hashes in `install/caldris/map-anchors.json`; older labeled map bindings
+to the reviewed clean image hashes in `install/caldris/map-anchors.json`; older labeled map bindings
 are archived. A place without a ready local map opens its nearest ready ancestor and uses only
 an existing pin in that ancestor's coordinate frame. Never transplant child-map coordinates.
 Lore pages share the bounded table cache, expire after 60 seconds, and are retired on table or

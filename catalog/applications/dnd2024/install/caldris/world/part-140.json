@@ -3,6 +3,214 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
+      "entityId": "location.caldris.namarra.the-saffron-ox",
+      "name": "The Saffron Ox",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Dry-season cattle market and dye stop with orange awnings visible for miles across the flats. Present pressure: A prized breeding ox apparently predicts which bidder will die.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 780,
+            "y": 200
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.namarra",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.namarra.three-spoon-village",
+      "name": "Three Spoon Village",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Delta settlement famous for communal kitchens and three enormous wooden serving spoons carried during floods. Present pressure: One neighbourhood refuses the evacuation signal.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 340,
+            "y": 630
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.namarra",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.ordelain.aurent",
+      "name": "Aurent",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "Aurent spans both banks of the Aur with broad quays, palaces, law schools, grain exchanges, shaded courts, and public fountains. River cases can make or end political careers.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 510,
+            "y": 400
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.ordelain.inkfish-wharf",
+      "name": "Inkfish Wharf",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Mud-brick landing for scribes' ink, fish oil, reeds, and legal couriers, notorious for black-stained cats. Present pressure: Official documents fade to blank within days.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 420,
+            "y": 575
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.ordelain.malvar",
+      "name": "Malvar",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "Malvar is the kingdom's granary city and cattle market, built around enormous brick storehouses and a temple distribution complex.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 660,
+            "y": 220
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.ordelain.old-aur-island",
+      "name": "Old Aur Island",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "exposed foundation in Ordelain. River shift reveals River Throne palace and modern property crisis.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 375,
+            "y": 330
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.ordelain.pomegranate-court",
+      "name": "Pomegranate Court",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Shaded caravan court where fruit sellers, petition writers, and musicians share a long cistern. Present pressure: The cistern tastes of copper and rumors blame a curse.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 760,
+            "y": 525
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.ordelain.reed-judges-rest",
+      "name": "Reed Judge's Rest",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Small island courthouse and ferry inn that hears cases when the Aur changes local boundaries. Present pressure: The island is drifting downstream faster than precedent allows.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 595,
+            "y": 585
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "location"
+      }
+    },
+    {
       "entityId": "location.caldris.ordelain.the-bent-mile",
       "name": "The Bent Mile",
       "components": [
@@ -105,283 +313,51 @@
         "containerEntityId": "location.caldris.selucia",
         "slot": "location"
       }
-    },
-    {
-      "entityId": "location.caldris.selucia.candleport",
-      "name": "Candleport",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "settlement",
-            "summary": "Candleport climbs around a protected harbour beneath the royal citadel. Pilgrim bells, fishing boats, citrus markets, coffee houses, embassies, and parliament stairs crowd the waterfront.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 280,
-            "y": 675
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.selucia",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.selucia.mariselle",
-      "name": "Mariselle",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "settlement",
-            "summary": "Mariselle is an artistic and commercial port of tile workshops, theatres, rope yards, music schools, and crowded hillside neighbourhoods.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 510,
-            "y": 430
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.selucia",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.selucia.needle-current",
-      "name": "Needle Current",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "Narrow sea passage guided by shore needles, tide boards, and hereditary rowing pilots. Present pressure: The current reverses at the wrong hour.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 465,
-            "y": 680
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.selucia",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.selucia.orange-bell-island",
-      "name": "Orange Bell Island",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "orchard island in Selucia. Wedding venue, maritime claim, and bell tuned to warn of reef fog.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 820,
-            "y": 520
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.selucia",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.selucia.orangewake",
-      "name": "Orangewake",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "Fishing village, citrus garden, and storm refuge where boats return through floating orange peels. Present pressure: Nets fill with carefully folded paper boats instead of fish.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 725,
-            "y": 755
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.selucia",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.selucia.saint-orro",
-      "name": "Saint Orro",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "settlement",
-            "summary": "Saint Orro surrounds a fortified pilgrimage monastery and the islands' largest repair dock. The saint is remembered for rescuing enemies and criticizing their knots.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 750,
-            "y": 290
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.selucia",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.selucia.the-unfinished-lighthouse",
-      "name": "The Unfinished Lighthouse",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "coastal tower in Selucia. Each generation adds a storey; it already works too well.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 250,
-            "y": 800
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.selucia",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.selucia.the-unfinished-palace",
-      "name": "The Unfinished Palace",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "Roofless royal retreat abandoned after every architect disagreed, now used for weddings and public theatre. Present pressure: A noble claims one completed room as private property during festival week.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 555,
-            "y": 250
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.selucia",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.seven-lamps-league.aster-quay",
-      "name": "Aster Quay",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "settlement",
-            "summary": "Aster Quay is the League's diplomatic and financial centre, built around seven harbour basins and the sealed hall where the Lantern Concord ended. Printing houses, embassies, insurers, warehouses, and cafes fill narrow streets.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 165,
-            "y": 310
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.visual",
-          "value": {
-            "status": "archived",
-            "variants": {
-              "player": {
-                "sha256": "8f3844babf2ce1ee5f519072da30f398ae4efff69b82c530c718ed01d75c3764",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Aster Quay fantasy atlas map",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/aster-quay.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 3
-                }
-              },
-              "dm": {
-                "sha256": "8f3844babf2ce1ee5f519072da30f398ae4efff69b82c530c718ed01d75c3764",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Aster Quay fantasy atlas map",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/aster-quay.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 3
-                }
-              }
-            }
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.seven-lamps-league",
-        "slot": "location"
-      }
     }
   ],
   "relationships": [
+    {
+      "fromEntityId": "location.caldris.lore.reedname-landing",
+      "toEntityId": "location.caldris.namarra.three-spoon-village",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.namarra.mosquito-abbey",
+      "toEntityId": "location.caldris.namarra.the-saffron-ox",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.namarra.reedcrown",
+      "toEntityId": "location.caldris.namarra.the-saffron-ox",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.ordelain.aurent",
+      "toEntityId": "location.caldris.ordelain.inkfish-wharf",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.ordelain.aurent",
+      "toEntityId": "location.caldris.ordelain.malvar",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.ordelain.aurent",
+      "toEntityId": "location.caldris.ordelain.old-aur-island",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.ordelain.inkfish-wharf",
+      "toEntityId": "location.caldris.ordelain.reed-judges-rest",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
     {
       "fromEntityId": "location.caldris.ordelain.inkfish-wharf",
       "toEntityId": "location.caldris.ordelain.the-bent-mile",
@@ -391,6 +367,12 @@
     {
       "fromEntityId": "location.caldris.ordelain.inkfish-wharf",
       "toEntityId": "location.caldris.ordelain.vessa",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.ordelain.malvar",
+      "toEntityId": "location.caldris.ordelain.pomegranate-court",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
@@ -407,56 +389,8 @@
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.selucia.borrowed-bell-isle",
-      "toEntityId": "location.caldris.selucia.saint-orro",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.selucia.candleport",
-      "toEntityId": "location.caldris.selucia.needle-current",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.selucia.candleport",
-      "toEntityId": "location.caldris.selucia.the-unfinished-lighthouse",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.selucia.mariselle",
-      "toEntityId": "location.caldris.selucia.needle-current",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.selucia.mariselle",
-      "toEntityId": "location.caldris.selucia.orange-bell-island",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.selucia.mariselle",
-      "toEntityId": "location.caldris.selucia.saint-orro",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.selucia.mariselle",
-      "toEntityId": "location.caldris.selucia.the-unfinished-palace",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.selucia.orange-bell-island",
-      "toEntityId": "location.caldris.selucia.orangewake",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.carrowmere.gullstrand",
-      "toEntityId": "location.caldris.selucia.candleport",
+      "fromEntityId": "location.caldris.kethria.var-keth",
+      "toEntityId": "location.caldris.ordelain.malvar",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
@@ -467,14 +401,50 @@
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.namarra.saffron-quay",
-      "toEntityId": "location.caldris.selucia.orangewake",
-      "qualifiedKind": "game.core.world.location.connected-to",
+      "fromEntityId": "fact.caldris.atlas.connection.565855640d95ef5a10f7",
+      "toEntityId": "location.caldris.ordelain.malvar",
+      "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.231e99aa4729eb614d32",
-      "toEntityId": "location.caldris.seven-lamps-league.aster-quay",
+      "fromEntityId": "fact.caldris.atlas.connection.0ca916b6bbbdbfa88bca",
+      "toEntityId": "location.caldris.ordelain.inkfish-wharf",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.12b0c8d7f43b210b3a42",
+      "toEntityId": "location.caldris.ordelain.aurent",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.4422d0cb50a08ff1e4ba",
+      "toEntityId": "location.caldris.ordelain.aurent",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.4ecce1e93c2ac1ca782f",
+      "toEntityId": "location.caldris.ordelain.pomegranate-court",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.57f636de249274eb545e",
+      "toEntityId": "location.caldris.ordelain.inkfish-wharf",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.786640fd0ca259632e29",
+      "toEntityId": "location.caldris.ordelain.inkfish-wharf",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.92379accce9b78a214e7",
+      "toEntityId": "location.caldris.ordelain.malvar",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
@@ -485,56 +455,20 @@
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.0645bf52968d23d8dbb4",
-      "toEntityId": "location.caldris.selucia.needle-current",
+      "fromEntityId": "fact.caldris.atlas.connection.db11b973714014399efe",
+      "toEntityId": "location.caldris.namarra.the-saffron-ox",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.19194871bf90db5e1764",
-      "toEntityId": "location.caldris.selucia.candleport",
+      "fromEntityId": "fact.caldris.atlas.connection.070aa93f3a29b815d102",
+      "toEntityId": "location.caldris.ordelain.malvar",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.7143ab93ce1fd1e1fd48",
-      "toEntityId": "location.caldris.selucia.mariselle",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.762edd94824d3f2e1bda",
-      "toEntityId": "location.caldris.selucia.mariselle",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.90d89148c4559d61b13f",
-      "toEntityId": "location.caldris.selucia.candleport",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.987ab0d2fda88cb09132",
-      "toEntityId": "location.caldris.selucia.orange-bell-island",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.b3140a103cd2dc2b10bb",
-      "toEntityId": "location.caldris.selucia.mariselle",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.fbc0143482784c54e34c",
-      "toEntityId": "location.caldris.selucia.saint-orro",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.c37652440c506734d5e1",
-      "toEntityId": "location.caldris.seven-lamps-league.aster-quay",
+      "fromEntityId": "fact.caldris.atlas.connection.69e3a6bdafdbc513bc54",
+      "toEntityId": "location.caldris.ordelain.aurent",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
@@ -545,21 +479,27 @@
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.3e354f3064b421026c2f",
-      "toEntityId": "location.caldris.seven-lamps-league.aster-quay",
-      "qualifiedKind": "game.core.world.knowledge.about",
+      "fromEntityId": "route.caldris.atlas.12b0c8d7f43b210b3a42",
+      "toEntityId": "location.caldris.ordelain.aurent",
+      "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.0799f6fd0114bf1cb913",
-      "toEntityId": "location.caldris.seven-lamps-league.aster-quay",
+      "fromEntityId": "route.caldris.atlas.12b0c8d7f43b210b3a42",
+      "toEntityId": "location.caldris.ordelain.inkfish-wharf",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.231e99aa4729eb614d32",
-      "toEntityId": "location.caldris.seven-lamps-league.aster-quay",
+      "fromEntityId": "route.caldris.atlas.168a0afe55cbd714136e",
+      "toEntityId": "location.caldris.ordelain.inkfish-wharf",
       "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.168a0afe55cbd714136e",
+      "toEntityId": "location.caldris.ordelain.aurent",
+      "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
@@ -575,8 +515,38 @@
       "value": {}
     },
     {
+      "fromEntityId": "route.caldris.atlas.565855640d95ef5a10f7",
+      "toEntityId": "location.caldris.ordelain.aurent",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.565855640d95ef5a10f7",
+      "toEntityId": "location.caldris.ordelain.malvar",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.57f636de249274eb545e",
+      "toEntityId": "location.caldris.ordelain.inkfish-wharf",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
       "fromEntityId": "route.caldris.atlas.57f636de249274eb545e",
       "toEntityId": "location.caldris.ordelain.vessa",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.5b042090691086adede1",
+      "toEntityId": "location.caldris.ordelain.malvar",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.5b042090691086adede1",
+      "toEntityId": "location.caldris.ordelain.aurent",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
@@ -599,14 +569,44 @@
       "value": {}
     },
     {
+      "fromEntityId": "route.caldris.atlas.db7a3ef4b7709964a2e4",
+      "toEntityId": "location.caldris.ordelain.inkfish-wharf",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
       "fromEntityId": "route.caldris.atlas.1b677665479af7a2791b",
       "toEntityId": "location.caldris.ordelain.the-bent-mile",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
+      "fromEntityId": "route.caldris.atlas.1b677665479af7a2791b",
+      "toEntityId": "location.caldris.ordelain.inkfish-wharf",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
       "fromEntityId": "route.caldris.atlas.3b35c2df06f981e45055",
       "toEntityId": "location.caldris.ordelain.vessa",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.3b35c2df06f981e45055",
+      "toEntityId": "location.caldris.ordelain.pomegranate-court",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.4a1585f4931d2b3b9268",
+      "toEntityId": "location.caldris.namarra.the-saffron-ox",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.4ecce1e93c2ac1ca782f",
+      "toEntityId": "location.caldris.ordelain.pomegranate-court",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
@@ -618,97 +618,61 @@
     },
     {
       "fromEntityId": "route.caldris.atlas.786640fd0ca259632e29",
+      "toEntityId": "location.caldris.ordelain.inkfish-wharf",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.786640fd0ca259632e29",
       "toEntityId": "location.caldris.ordelain.the-bent-mile",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.762edd94824d3f2e1bda",
-      "toEntityId": "location.caldris.selucia.mariselle",
+      "fromEntityId": "route.caldris.atlas.895623bda5b183530740",
+      "toEntityId": "location.caldris.ordelain.pomegranate-court",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.762edd94824d3f2e1bda",
-      "toEntityId": "location.caldris.selucia.the-unfinished-palace",
+      "fromEntityId": "route.caldris.atlas.895623bda5b183530740",
+      "toEntityId": "location.caldris.ordelain.malvar",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.88e379bb652e34c1f931",
-      "toEntityId": "location.caldris.selucia.the-unfinished-lighthouse",
+      "fromEntityId": "route.caldris.atlas.92379accce9b78a214e7",
+      "toEntityId": "location.caldris.ordelain.malvar",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.88e379bb652e34c1f931",
-      "toEntityId": "location.caldris.selucia.candleport",
+      "fromEntityId": "route.caldris.atlas.92379accce9b78a214e7",
+      "toEntityId": "location.caldris.ordelain.pomegranate-court",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.90d89148c4559d61b13f",
-      "toEntityId": "location.caldris.selucia.candleport",
+      "fromEntityId": "route.caldris.atlas.a7cdc8d6c783c2d389a9",
+      "toEntityId": "location.caldris.namarra.the-saffron-ox",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.90d89148c4559d61b13f",
-      "toEntityId": "location.caldris.selucia.the-unfinished-lighthouse",
+      "fromEntityId": "route.caldris.atlas.c123f14b78bb69b431fe",
+      "toEntityId": "location.caldris.namarra.the-saffron-ox",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.eb4272c8592b9f569fa4",
-      "toEntityId": "location.caldris.selucia.the-unfinished-palace",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.eb4272c8592b9f569fa4",
-      "toEntityId": "location.caldris.selucia.mariselle",
+      "fromEntityId": "route.caldris.atlas.db11b973714014399efe",
+      "toEntityId": "location.caldris.namarra.the-saffron-ox",
       "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.landmark.orchardback",
-      "toEntityId": "location.caldris.selucia.mariselle",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.landmark.orchardback",
-      "toEntityId": "location.caldris.selucia.orangewake",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.landmark.orchardback.access.2724281d1f",
-      "toEntityId": "location.caldris.selucia.mariselle",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.landmark.orchardback.access.0d8ecb0ed6",
-      "toEntityId": "location.caldris.selucia.orangewake",
-      "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
       "fromEntityId": "chronology.caldris.landmark.orchardback.212",
       "toEntityId": "location.caldris.selucia.borrowed-bell-isle",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.orchardback.212",
-      "toEntityId": "location.caldris.selucia.mariselle",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.orchardback.212",
-      "toEntityId": "location.caldris.selucia.orangewake",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
@@ -719,32 +683,8 @@
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.landmark.orchardback.6",
-      "toEntityId": "location.caldris.selucia.mariselle",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.orchardback.6",
-      "toEntityId": "location.caldris.selucia.orangewake",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
       "fromEntityId": "chronology.caldris.landmark.orchardback.605",
       "toEntityId": "location.caldris.selucia.borrowed-bell-isle",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.orchardback.605",
-      "toEntityId": "location.caldris.selucia.mariselle",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.orchardback.605",
-      "toEntityId": "location.caldris.selucia.orangewake",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     }

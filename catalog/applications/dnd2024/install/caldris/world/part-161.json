@@ -3,14 +3,14 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
-      "entityId": "location.caldris.lore.the-hollow-mint",
-      "name": "The Hollow Mint",
+      "entityId": "location.caldris.bramblebridge.old-weir-mill",
+      "name": "Old Weir Mill",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "site",
-            "summary": "Former mint buildings in Highmead's old commercial quarter, now divided among licensed assayers, metalworkers, and small shops. The original furnaces survive only below one protected floor. The public weighing counter uses renewed standards rather than ancient coins as unquestioned authority.",
+            "summary": "Function and texture: Flour mill, eel wheel, narrow footbridge, flour everywhere. Current pressure: The wheel stops at the same minute each night despite steady water.",
             "visibility": "public",
             "status": "active"
           }
@@ -18,138 +18,8 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 775,
-            "y": 535
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.alderwick.highmead",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.lore.the-house-of-paired-seals",
-      "name": "The House of Paired Seals",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "A record and meeting house in Highmead containing copies of negotiations before the Three Banner War and later comparative work. Some originals are held elsewhere. Exhibits distinguish signatures, proposed terms, and provisions that were actually adopted.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 565,
-            "y": 290
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.alderwick.highmead",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.lore.the-house-of-salt-letters",
-      "name": "The House of Salt Letters",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "A copying and forwarding house in Leth Sarai, with dry storage for letters awaiting reliable carriers. Its procedures distinguish delivery, copying, and private storage. Some historical packets remain sealed because later custodians have found no legitimate recipient or permission to open them.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 375,
-            "y": 470
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.lore.leth-sarai",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.lore.the-house-of-two-hands",
-      "name": "The House of Two Hands",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "A craftspeople's teaching house in Istravel, with pottery benches, finishing tables, and copies of Nen Tal's documented work. Original objects rotate between collections; labels distinguish originals, teaching copies, and later reconstructions. Some teaching places are supported by renewed endowments.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 630,
-            "y": 660
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.lore.istravel",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.lore.the-last-measure-workshop",
-      "name": "The Last Measure Workshop",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "An instrument workshop in Willowrace whose later owners preserve copies of Orven's deposit lists and teaching arrangements. The benches and tools have changed repeatedly. A few documented components survive in protected storage, while working instruments continue to be altered for living players.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 265,
-            "y": 355
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.lore.willowrace",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.lore.the-last-mile-porch",
-      "name": "The Last Mile Porch",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "A covered waiting and message space at Bramblebridge's Lantern Road approach, supported by nearby food and lodging. Travellers mend straps, arrange deliveries, and compare current directions. Posted notices distinguish confirmed information from reports still awaiting a witness.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 135,
-            "y": 550
+            "x": 635,
+            "y": 200
           }
         }
       ],
@@ -159,14 +29,14 @@
       }
     },
     {
-      "entityId": "location.caldris.lore.the-listening-house",
-      "name": "The Listening House",
+      "entityId": "location.caldris.bramblebridge.pike-house",
+      "name": "Pike House",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "site",
-            "summary": "A much-repaired house used for visiting researchers and musicians. Some notebooks belong to other collections; the local inventory records where known copies went. Its garden contains descendants of propagated plants, subject to documented losses and replacements. Ysra is not assumed to live here in the present.",
+            "summary": "Function and texture: Magistrate's residence and hearing room, stern frontage, chaotic kitchen garden. Current pressure: Someone uses Magistrate Pike's seal while she is publicly holding it.",
             "visibility": "public",
             "status": "active"
           }
@@ -174,25 +44,25 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 325,
-            "y": 395
+            "x": 710,
+            "y": 295
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.lore.seln",
+        "containerEntityId": "location.caldris.bramblebridge",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.lore.the-names-house",
-      "name": "The Names House",
+      "entityId": "location.caldris.bramblebridge.the-bent-penny",
+      "name": "The Bent Penny",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "site",
-            "summary": "A small search archive and mediation office in Rookwater. Its records distinguish confirmed outcomes from unanswered inquiries. Later household correspondence supplements the post-war material, and restricted notes have custody rules governing their use.",
+            "summary": "Function and texture: Pawnbroker, repair counter, second-hand clothing, discreet messages. Current pressure: A supposedly worthless brooch belongs to three living claimants.",
             "visibility": "public",
             "status": "active"
           }
@@ -200,352 +70,557 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 360,
-            "y": 425
+            "x": 335,
+            "y": 700
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.lore.rookwater",
+        "containerEntityId": "location.caldris.bramblebridge",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.bramblebridge.the-crooked-saint",
+      "name": "The Crooked Saint",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Function and texture: Tiny bridge shrine repaired so often no original material remains. Current pressure: Travellers leave unfamiliar copper tokens that are legal nowhere nearby.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 715,
+            "y": 565
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bramblebridge",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.bramblebridge.tibbs-watch-post",
+      "name": "Tibb's Watch Post",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Function and texture: One-room civic watch office with maps, rejected poems, spare boots, and labelled string. Current pressure: A map drawn as a romantic gift accurately predicts a smuggler path Tibb has never walked.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 810,
+            "y": 430
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bramblebridge",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.gilded-kettle",
+      "name": "The Gilded Kettle",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "A welcoming Bramblebridge tavern that doesn't care whether its guests are prophesied for anything, so long as they help move benches and eat their dumplings before they cool.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "f43c2bc732b3cce3383ff19327aa54266e9460b41c770ab318d0dbfd75722e5e",
+                "mimeType": "image/png",
+                "width": 1447,
+                "height": 1087,
+                "alt": "The Gilded Kettle ground floor without baked labels or markers.",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/gilded-kettle-ground-floor-clean-v1.png",
+                  "reviewedOn": "2026-09-12",
+                  "version": 1
+                }
+              },
+              "dm": {
+                "sha256": "f43c2bc732b3cce3383ff19327aa54266e9460b41c770ab318d0dbfd75722e5e",
+                "mimeType": "image/png",
+                "width": 1447,
+                "height": 1087,
+                "alt": "The Gilded Kettle ground floor without baked labels or markers.",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/gilded-kettle-ground-floor-clean-v1.png",
+                  "reviewedOn": "2026-09-12",
+                  "version": 1
+                }
+              }
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.media.visual",
+          "value": {
+            "status": "active",
+            "attachments": [
+              {
+                "role": "illustration",
+                "visibility": [
+                  "player",
+                  "dm"
+                ],
+                "sha256": "cbcde4250262c0fac2ec9dc37c29fee36c72ffa7506dbfa3a16ff237bc8db6a1",
+                "mimeType": "image/png",
+                "width": 1536,
+                "height": 1024,
+                "alt": "A rain-darkened common room at the Gilded Kettle, warm and crowded, with wet cloaks and copper pots.",
+                "caption": "Prepared location illustration of the Gilded Kettle common room in rain; no depicted event is recorded as having occurred.",
+                "order": 10,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/gilded-kettle-rainy-common-room-v1.png",
+                  "reviewedOn": "2026-09-12",
+                  "version": 1
+                }
+              }
+            ]
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 280,
+            "y": 575
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bramblebridge",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.ashglass-house",
+      "name": "Ashglass House",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A glass workshop in Istravel with a small repair room and a collection of clearly labelled failed experiments. Most of its business is ordinary glass. Its modest enchanted vessels require careful handling, compatible materials, and occasional renewal by someone who understands their particular binding.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 350,
+            "y": 330
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lore.istravel",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.cinder-meadow",
+      "name": "Cinder Meadow",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A recovering meadow and nursery margin in Boughmeet's growing country. Later fires and planting changes have altered the ground. A few protected impressions are documented as surviving evidence of the ember herons; visitors can also see casts that are clearly labelled as copies.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 800,
+            "y": 245
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lore.boughmeet",
         "slot": "location"
       }
     }
   ],
   "relationships": [
     {
-      "fromEntityId": "secret.caldris.lore.place-the-listening-house.1",
-      "toEntityId": "location.caldris.lore.the-listening-house",
+      "fromEntityId": "secret.caldris.lore.0300-0200-place-ashglass-house.1",
+      "toEntityId": "location.caldris.lore.ashglass-house",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.0500-0400-place-the-hollow-mint.1",
-      "toEntityId": "location.caldris.lore.the-hollow-mint",
+      "fromEntityId": "secret.caldris.lore.0300-0200-place-cinder-meadow.1",
+      "toEntityId": "location.caldris.lore.cinder-meadow",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.0400-0300-place-the-house-of-two-hands.1",
-      "toEntityId": "location.caldris.lore.the-house-of-two-hands",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.lore.0300-0200-place-the-house-of-salt-letters.1",
-      "toEntityId": "location.caldris.lore.the-house-of-salt-letters",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.lore.0300-0200-place-the-last-measure-workshop.1",
-      "toEntityId": "location.caldris.lore.the-last-measure-workshop",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.lore.0100-0050-place-the-house-of-paired-seals.1",
-      "toEntityId": "location.caldris.lore.the-house-of-paired-seals",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.lore.0100-0050-place-the-names-house.1",
-      "toEntityId": "location.caldris.lore.the-names-house",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.lore.0050-0000-place-the-last-mile-porch.1",
-      "toEntityId": "location.caldris.lore.the-last-mile-porch",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.lore.0050-0000-place-the-last-mile-porch.2",
-      "toEntityId": "location.caldris.lore.the-last-mile-porch",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.lore.0050-0000-place-the-last-mile-porch.3",
-      "toEntityId": "location.caldris.lore.the-last-mile-porch",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.0015-the-porch-at-the-last-mile",
-      "toEntityId": "location.caldris.lore.the-last-mile-porch",
+      "fromEntityId": "chronology.caldris.lore.0267-the-birds-in-cinder-meadow",
+      "toEntityId": "location.caldris.lore.cinder-meadow",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.lore.0015-the-porch-at-the-last-mile-account.1",
-      "toEntityId": "location.caldris.lore.the-last-mile-porch",
+      "fromEntityId": "chronology.caldris.lore.0275-the-opening-of-ashglass-house",
+      "toEntityId": "location.caldris.lore.ashglass-house",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0267-the-birds-in-cinder-meadow-account.1",
+      "toEntityId": "location.caldris.lore.cinder-meadow",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.0015-the-porch-at-the-last-mile-gm-truth.1",
-      "toEntityId": "location.caldris.lore.the-last-mile-porch",
+      "fromEntityId": "fact.caldris.lore.0275-the-opening-of-ashglass-house-account.1",
+      "toEntityId": "location.caldris.lore.ashglass-house",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.0015-the-porch-at-the-last-mile-traces-and-stories.1",
-      "toEntityId": "location.caldris.lore.the-last-mile-porch",
+      "fromEntityId": "fact.caldris.lore.0275-the-opening-of-ashglass-house-account.2",
+      "toEntityId": "location.caldris.lore.ashglass-house",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.alderwick.highmead.house-of-the-ninth-angle",
-      "toEntityId": "location.caldris.lore.the-house-of-paired-seals",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.gilded-kettle",
-      "toEntityId": "location.caldris.lore.the-last-mile-porch",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.dunmere-steps",
-      "toEntityId": "location.caldris.lore.the-hollow-mint",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.bramblebridge",
-      "toEntityId": "location.caldris.lore.the-last-mile-porch",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.ashglass-house",
-      "toEntityId": "location.caldris.lore.the-house-of-two-hands",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.istravel",
-      "toEntityId": "location.caldris.lore.the-house-of-two-hands",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.lastlight-pier",
-      "toEntityId": "location.caldris.lore.the-house-of-salt-letters",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.rookwater",
-      "toEntityId": "location.caldris.lore.the-names-house",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.seln",
-      "toEntityId": "location.caldris.lore.the-listening-house",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.sunborrow-house",
-      "toEntityId": "location.caldris.lore.the-listening-house",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.the-hall-of-unsent-maps",
-      "toEntityId": "location.caldris.lore.the-house-of-salt-letters",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.af7bc95522604d65eff4",
-      "toEntityId": "location.caldris.lore.the-last-mile-porch",
+      "fromEntityId": "secret.caldris.lore.0267-the-birds-in-cinder-meadow-gm-truth.1",
+      "toEntityId": "location.caldris.lore.cinder-meadow",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.7c3fc96dae5375473e04",
-      "toEntityId": "location.caldris.lore.the-house-of-paired-seals",
+      "fromEntityId": "secret.caldris.lore.0267-the-birds-in-cinder-meadow-traces-and-stories.1",
+      "toEntityId": "location.caldris.lore.cinder-meadow",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.b967f8a17a9e98ca5768",
-      "toEntityId": "location.caldris.lore.the-last-measure-workshop",
+      "fromEntityId": "secret.caldris.lore.0275-the-opening-of-ashglass-house-gm-truth.1",
+      "toEntityId": "location.caldris.lore.ashglass-house",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.bfdaba5b1123558f5e58",
-      "toEntityId": "location.caldris.lore.the-hollow-mint",
+      "fromEntityId": "secret.caldris.lore.0275-the-opening-of-ashglass-house-traces-and-stories.1",
+      "toEntityId": "location.caldris.lore.ashglass-house",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.0e8cf8bef168251e8812",
-      "toEntityId": "location.caldris.lore.the-listening-house",
+      "fromEntityId": "location.caldris.atlas.bramble-east-gate",
+      "toEntityId": "location.caldris.bramblebridge.the-crooked-saint",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.atlas.bramble-east-gate",
+      "toEntityId": "location.caldris.bramblebridge.tibbs-watch-post",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.atlas.bramble-market",
+      "toEntityId": "location.caldris.bramblebridge.the-bent-penny",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.atlas.bramble-market",
+      "toEntityId": "location.caldris.gilded-kettle",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.atlas.weir-bridge",
+      "toEntityId": "location.caldris.bramblebridge.the-crooked-saint",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.atlas.weir-bridge",
+      "toEntityId": "location.caldris.bramblebridge.tibbs-watch-post",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.bramblebridge.little-quay",
+      "toEntityId": "location.caldris.bramblebridge.the-bent-penny",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.bramblebridge.old-weir-mill",
+      "toEntityId": "location.caldris.bramblebridge.pike-house",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.bramblebridge.pike-house",
+      "toEntityId": "location.caldris.bramblebridge.tibbs-watch-post",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.1f5825ce8de76186912b",
+      "toEntityId": "location.caldris.gilded-kettle",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.1d2dd4acdb8791b7dfa6",
-      "toEntityId": "location.caldris.lore.the-house-of-salt-letters",
+      "fromEntityId": "fact.caldris.atlas.connection.45e8894204d8cad6c9d3",
+      "toEntityId": "location.caldris.bramblebridge.pike-house",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.baad2a4f128e946d3db4",
-      "toEntityId": "location.caldris.lore.the-house-of-salt-letters",
+      "fromEntityId": "fact.caldris.atlas.connection.6ac5576aefa1a276c971",
+      "toEntityId": "location.caldris.bramblebridge.the-bent-penny",
       "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.b3b92d69d9c961638697",
+      "toEntityId": "location.caldris.bramblebridge.the-crooked-saint",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.c1ccae049f9312049afd",
+      "toEntityId": "location.caldris.bramblebridge.old-weir-mill",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.c4ac8fe0658f3617f180",
+      "toEntityId": "location.caldris.bramblebridge.tibbs-watch-post",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.4721a4b9152e7df7b54a",
+      "toEntityId": "location.caldris.lore.ashglass-house",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.0b65fcf42e785a6491b9",
+      "toEntityId": "location.caldris.bramblebridge.the-crooked-saint",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.1f5825ce8de76186912b",
+      "toEntityId": "location.caldris.gilded-kettle",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.6ba9fef8c55cd5978c4c",
+      "toEntityId": "location.caldris.gilded-kettle",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.a52d1ec6aaf2969fe55d",
+      "toEntityId": "location.caldris.bramblebridge.the-crooked-saint",
+      "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
       "fromEntityId": "route.caldris.atlas.af7bc95522604d65eff4",
-      "toEntityId": "location.caldris.lore.the-last-mile-porch",
-      "qualifiedKind": "game.core.world.route.to",
+      "toEntityId": "location.caldris.gilded-kettle",
+      "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
       "fromEntityId": "route.caldris.atlas.eaa93a91dd996996b629",
-      "toEntityId": "location.caldris.lore.the-last-mile-porch",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.06653be0490bcacf76f1",
-      "toEntityId": "location.caldris.lore.the-house-of-paired-seals",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.1609c2068171e5f8851e",
-      "toEntityId": "location.caldris.lore.the-house-of-paired-seals",
+      "toEntityId": "location.caldris.gilded-kettle",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.5a2377e9de9ab6187537",
-      "toEntityId": "location.caldris.lore.the-house-of-paired-seals",
+      "fromEntityId": "route.caldris.atlas.16ff38e32cea78cc0794",
+      "toEntityId": "location.caldris.bramblebridge.the-bent-penny",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.5cf13ddbbdd00d2976ae",
-      "toEntityId": "location.caldris.lore.the-hollow-mint",
+      "fromEntityId": "route.caldris.atlas.658f0d5efd93ee1d3118",
+      "toEntityId": "location.caldris.bramblebridge.the-bent-penny",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.7c3fc96dae5375473e04",
-      "toEntityId": "location.caldris.lore.the-house-of-paired-seals",
+      "fromEntityId": "route.caldris.atlas.6ac5576aefa1a276c971",
+      "toEntityId": "location.caldris.bramblebridge.the-bent-penny",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.a27d4c7a1e4281d10a13",
-      "toEntityId": "location.caldris.lore.the-hollow-mint",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.b0c7dedf963300a8246d",
-      "toEntityId": "location.caldris.lore.the-hollow-mint",
+      "fromEntityId": "route.caldris.atlas.6c8c697dc5a07b38a178",
+      "toEntityId": "location.caldris.bramblebridge.the-bent-penny",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.bfdaba5b1123558f5e58",
-      "toEntityId": "location.caldris.lore.the-hollow-mint",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.e54ce9498d1a32a28c40",
-      "toEntityId": "location.caldris.lore.the-house-of-paired-seals",
+      "fromEntityId": "route.caldris.atlas.b3b92d69d9c961638697",
+      "toEntityId": "location.caldris.bramblebridge.the-crooked-saint",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.eb14b2b9db8066b227fd",
-      "toEntityId": "location.caldris.lore.the-house-of-paired-seals",
+      "fromEntityId": "route.caldris.atlas.b3f53fa90e90db7e6072",
+      "toEntityId": "location.caldris.bramblebridge.the-crooked-saint",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.b967f8a17a9e98ca5768",
-      "toEntityId": "location.caldris.lore.the-last-measure-workshop",
+      "fromEntityId": "route.caldris.atlas.3a096f003e6d59ae8640",
+      "toEntityId": "location.caldris.bramblebridge.tibbs-watch-post",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.e99ced9ba78548d3183f",
-      "toEntityId": "location.caldris.lore.the-last-measure-workshop",
+      "fromEntityId": "route.caldris.atlas.3a096f003e6d59ae8640",
+      "toEntityId": "location.caldris.bramblebridge.pike-house",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.1d2dd4acdb8791b7dfa6",
-      "toEntityId": "location.caldris.lore.the-house-of-salt-letters",
+      "fromEntityId": "route.caldris.atlas.45e8894204d8cad6c9d3",
+      "toEntityId": "location.caldris.bramblebridge.pike-house",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.45e8894204d8cad6c9d3",
+      "toEntityId": "location.caldris.bramblebridge.tibbs-watch-post",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.461488e9105893ef86e6",
+      "toEntityId": "location.caldris.bramblebridge.tibbs-watch-post",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.464ff2cd59dc0c576da2",
+      "toEntityId": "location.caldris.bramblebridge.old-weir-mill",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.86ca7a999a96498cea0a",
+      "toEntityId": "location.caldris.bramblebridge.pike-house",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.86ca7a999a96498cea0a",
+      "toEntityId": "location.caldris.bramblebridge.old-weir-mill",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.bb763bf19f41571c4c67",
+      "toEntityId": "location.caldris.bramblebridge.tibbs-watch-post",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.c1ccae049f9312049afd",
+      "toEntityId": "location.caldris.bramblebridge.old-weir-mill",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.c1ccae049f9312049afd",
+      "toEntityId": "location.caldris.bramblebridge.pike-house",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.c4ac8fe0658f3617f180",
+      "toEntityId": "location.caldris.bramblebridge.tibbs-watch-post",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.d23420892dcbc04e6c73",
+      "toEntityId": "location.caldris.bramblebridge.old-weir-mill",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.e12131ed329b985be6bb",
+      "toEntityId": "location.caldris.bramblebridge.tibbs-watch-post",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.98800f1bba10c3311608",
+      "toEntityId": "location.caldris.lore.cinder-meadow",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.a654ac3518964ffb1d99",
+      "toEntityId": "location.caldris.lore.cinder-meadow",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
       "fromEntityId": "route.caldris.atlas.4721a4b9152e7df7b54a",
-      "toEntityId": "location.caldris.lore.the-house-of-two-hands",
-      "qualifiedKind": "game.core.world.route.to",
+      "toEntityId": "location.caldris.lore.ashglass-house",
+      "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
       "fromEntityId": "route.caldris.atlas.475bacfdff390e96b7b7",
-      "toEntityId": "location.caldris.lore.the-house-of-two-hands",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.57b3f1d2b27544c5df5c",
-      "toEntityId": "location.caldris.lore.the-house-of-salt-letters",
+      "toEntityId": "location.caldris.lore.ashglass-house",
       "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.64466e61f56708eb916e",
-      "toEntityId": "location.caldris.lore.the-house-of-salt-letters",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.70ee62c17dbb63e82816",
-      "toEntityId": "location.caldris.lore.the-house-of-salt-letters",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.85dffae999fb0268a198",
-      "toEntityId": "location.caldris.lore.the-house-of-salt-letters",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.baad2a4f128e946d3db4",
-      "toEntityId": "location.caldris.lore.the-house-of-salt-letters",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.0e8cf8bef168251e8812",
-      "toEntityId": "location.caldris.lore.the-listening-house",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.5e14e0f6dcb13ed244e0",
-      "toEntityId": "location.caldris.lore.the-listening-house",
-      "qualifiedKind": "game.core.world.route.from",
       "value": {}
     }
   ]

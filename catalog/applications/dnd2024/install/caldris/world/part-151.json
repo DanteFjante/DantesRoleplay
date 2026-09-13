@@ -3,14 +3,14 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
-      "entityId": "location.caldris.lore.leth-sarai",
-      "name": "Leth Sarai",
+      "entityId": "location.caldris.lore.boughmeet",
+      "name": "Boughmeet",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "settlement",
-            "summary": "A densely inhabited old quarter behind a rebuilt waterfront. Courtyards hold workshops, kitchens, and shared wells. Buildings have changed occupants and functions many times; old signs survive beneath paint or in reused lintels. The town trades in ordinary necessities as well as fine goods.",
+            "summary": "Location: On the southern approach to Harth Orchard. Livelihood: Grafting stock, seedlings, cider, and practical teaching. Plots bear names of villages that no longer exist. The oldest varieties persist through deliberate propagation, not immortal trees. A row of training pears grows against a warm stone wall, each labelled with both its market name and the name used by the person who brought it.",
             "visibility": "public",
             "status": "active"
           }
@@ -18,8 +18,8 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 160,
-            "y": 585
+            "x": 450,
+            "y": 650
           }
         },
         {
@@ -28,33 +28,33 @@
             "status": "archived",
             "variants": {
               "player": {
-                "sha256": "643314e6c07d09a2e27d061c07d6b10566bd9a4c591316a8eaaa61721f074344",
+                "sha256": "af63d061b8bc7929dad31eb142516cd4cbcc65f6728e888b08d3345dd0a6e140",
                 "mimeType": "image/png",
                 "width": 1448,
                 "height": 1086,
-                "alt": "Leth Sarai fantasy atlas map",
+                "alt": "Boughmeet fantasy atlas map",
                 "caption": "",
                 "order": 0,
                 "provenance": {
                   "kind": "generated",
                   "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/leth-sarai.png",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/boughmeet.png",
                   "reviewedOn": "2026-09-10",
                   "version": 3
                 }
               },
               "dm": {
-                "sha256": "643314e6c07d09a2e27d061c07d6b10566bd9a4c591316a8eaaa61721f074344",
+                "sha256": "af63d061b8bc7929dad31eb142516cd4cbcc65f6728e888b08d3345dd0a6e140",
                 "mimeType": "image/png",
                 "width": 1448,
                 "height": 1086,
-                "alt": "Leth Sarai fantasy atlas map",
+                "alt": "Boughmeet fantasy atlas map",
                 "caption": "",
                 "order": 0,
                 "provenance": {
                   "kind": "generated",
                   "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/leth-sarai.png",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/boughmeet.png",
                   "reviewedOn": "2026-09-10",
                   "version": 3
                 }
@@ -64,552 +64,112 @@
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.lore.serevan",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.lore.low-fen-redoubt",
-      "name": "Low Fen Redoubt",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "Overgrown wartime earthworks in the Vey Lowlands around the foundations of a former depot. Later drainage has altered parts of the site. Local households use nearby grazing while keeping known unstable pits marked; small finds are recorded inconsistently.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 290,
-            "y": 565
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.lore.vey-lowlands",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.lore.morrowstep-sanctuary",
-      "name": "Morrowstep Sanctuary",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "A small sanctuary above a coastal road serving the western approaches to Morrow Strait. Its guest rooms and workshop are used more often than its ceremonial hall. Different communities preserve different explanations of the unlit-lamp emblem.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 210,
-            "y": 680
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.lore.vey-lowlands",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.lore.nacre-quay",
-      "name": "Nacre Quay",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "settlement",
-            "summary": "Location: A sheltered coastal inlet south of Veymouth. Livelihood: Coastal cargo, fishing, rope work, and marine repair. The original night harbour is now a shallow boat basin within a larger, repeatedly rebuilt port. Old shell marks survive on stones reused in warehouses. Its rivalry with Veymouth is expressed as often through rowing contests and insulting pastries as through serious commercial competition.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 470,
-            "y": 885
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.lore.vey-lowlands",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.lore.namar-vale",
-      "name": "Namar Vale",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "settlement",
-            "summary": "A settlement of shaded yards, carriers' lodging, potteries, and leaf warehouses near irrigated cultivation. Fine imported goods pass through, but most residents earn a living from ordinary growing, carrying, repairs, and food. Old survey lines are preserved unevenly beneath later subdivisions.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 490,
-            "y": 530
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.visual",
-          "value": {
-            "status": "archived",
-            "variants": {
-              "player": {
-                "sha256": "7e8dbf0a0b6959324c015187f12f4841a2cd1488c3159a64a2ec1b4efaf9e84a",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Namar Vale fantasy atlas map",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/namar-vale.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 3
-                }
-              },
-              "dm": {
-                "sha256": "7e8dbf0a0b6959324c015187f12f4841a2cd1488c3159a64a2ec1b4efaf9e84a",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Namar Vale fantasy atlas map",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/namar-vale.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 3
-                }
-              }
-            }
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.lore.selvar",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.lore.old-merecross",
-      "name": "Old Merecross",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "Ancient ferry-settlement ruins near Bramblebridge, distinct from the living city of Merecross at the river confluence. Merecross is an archaeological layer beneath meadow and river silt near Bramblebridge, not a second thriving town. Some descendants of its inhabitants moved to the later bridge settlement. Drought exposes old ferry posts; exceptional floods reveal foundations and then conceal them again.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 650,
-            "y": 540
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.atlas.bramble-country",
+        "containerEntityId": "location.caldris.atlas.orchard-march",
         "slot": "location"
       }
     }
   ],
   "relationships": [
     {
-      "fromEntityId": "secret.caldris.lore.place-old-merecross.1",
-      "toEntityId": "location.caldris.lore.old-merecross",
+      "fromEntityId": "secret.caldris.lore.place-boughmeet.1",
+      "toEntityId": "location.caldris.lore.boughmeet",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.place-old-merecross.2",
-      "toEntityId": "location.caldris.lore.old-merecross",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.lore.place-leth-sarai.1",
-      "toEntityId": "location.caldris.lore.leth-sarai",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.lore.place-nacre-quay.1",
-      "toEntityId": "location.caldris.lore.nacre-quay",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.lore.place-namar-vale.1",
-      "toEntityId": "location.caldris.lore.namar-vale",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.lore.place-morrowstep-sanctuary.1",
-      "toEntityId": "location.caldris.lore.morrowstep-sanctuary",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.1735-the-night-harbour",
-      "toEntityId": "location.caldris.lore.nacre-quay",
+      "fromEntityId": "chronology.caldris.lore.1861-the-orchard-that-could-not-grow",
+      "toEntityId": "location.caldris.lore.boughmeet",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.1599-the-address-beneath-the-blue-paint",
-      "toEntityId": "location.caldris.lore.leth-sarai",
+      "fromEntityId": "chronology.caldris.lore.1622-the-orchards-long-sleep",
+      "toEntityId": "location.caldris.lore.boughmeet",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.1366-the-white-salt-marsh",
-      "toEntityId": "location.caldris.lore.nacre-quay",
+      "fromEntityId": "chronology.caldris.lore.1122-the-companions-of-the-late-blossom",
+      "toEntityId": "location.caldris.lore.boughmeet",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.1399-the-mapmakers-daughter",
-      "toEntityId": "location.caldris.lore.leth-sarai",
+      "fromEntityId": "chronology.caldris.lore.0887-the-orchard-of-winter-apples",
+      "toEntityId": "location.caldris.lore.boughmeet",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.1283-the-marriage-of-the-two-harbours",
-      "toEntityId": "location.caldris.lore.nacre-quay",
+      "fromEntityId": "chronology.caldris.lore.0809-the-first-feast-of-two-harvests",
+      "toEntityId": "location.caldris.lore.boughmeet",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.1187-the-lantern-at-the-end-of-the-pier",
-      "toEntityId": "location.caldris.lore.leth-sarai",
+      "fromEntityId": "chronology.caldris.lore.0527-the-gardens-of-the-farther-window",
+      "toEntityId": "location.caldris.lore.boughmeet",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.0948-the-pilgrimage-of-the-unlit-lamps",
-      "toEntityId": "location.caldris.lore.morrowstep-sanctuary",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.0987-the-dowry-of-maps",
-      "toEntityId": "location.caldris.lore.namar-vale",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.0848-the-market-of-borrowed-tongues",
-      "toEntityId": "location.caldris.lore.namar-vale",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.0735-the-night-market-at-ash-salt",
-      "toEntityId": "location.caldris.lore.nacre-quay",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.0551-the-quiet-archive-of-serevan",
-      "toEntityId": "location.caldris.lore.leth-sarai",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.lore.0100-0050-place-low-fen-redoubt.1",
-      "toEntityId": "location.caldris.lore.low-fen-redoubt",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.0089-the-grain-convoys-under-three-banners",
-      "toEntityId": "location.caldris.lore.low-fen-redoubt",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.lore.0089-the-grain-convoys-under-three-banners-account.1",
-      "toEntityId": "location.caldris.lore.low-fen-redoubt",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.lore.0089-the-grain-convoys-under-three-banners-gm-truth.1",
-      "toEntityId": "location.caldris.lore.low-fen-redoubt",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.lore.0089-the-grain-convoys-under-three-banners-traces-and-stories.1",
-      "toEntityId": "location.caldris.lore.low-fen-redoubt",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.alderwick.mallow-quay",
-      "toEntityId": "location.caldris.lore.old-merecross",
+      "fromEntityId": "location.caldris.lore.amberstile",
+      "toEntityId": "location.caldris.lore.boughmeet",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.bramblebridge",
-      "toEntityId": "location.caldris.lore.old-merecross",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.lanterns-end",
-      "toEntityId": "location.caldris.lore.morrowstep-sanctuary",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.istravel",
-      "toEntityId": "location.caldris.lore.leth-sarai",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lantern-sea.the-halfway-light",
-      "toEntityId": "location.caldris.lore.leth-sarai",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.istravel",
-      "toEntityId": "location.caldris.lore.namar-vale",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.leth-sarai",
-      "toEntityId": "location.caldris.seven-lamps-league.aster-quay",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.leth-sarai",
-      "toEntityId": "location.caldris.seven-lamps-league.low-lantern",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.nacre-quay",
-      "toEntityId": "location.caldris.seven-lamps-league.aster-quay",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.namar-vale",
-      "toEntityId": "location.caldris.ordelain.aurent",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.e091596615d964e67ca7",
-      "toEntityId": "location.caldris.lore.old-merecross",
+      "fromEntityId": "fact.caldris.atlas.connection.4ab12b21d51ba312ce1f",
+      "toEntityId": "location.caldris.lore.boughmeet",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.36044240e05b88643352",
-      "toEntityId": "location.caldris.lore.leth-sarai",
+      "fromEntityId": "fact.caldris.atlas.connection.4b70dcb13722b94506aa",
+      "toEntityId": "location.caldris.lore.boughmeet",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.8648f53bae02545eb614",
-      "toEntityId": "location.caldris.lore.leth-sarai",
+      "fromEntityId": "fact.caldris.atlas.connection.e6e79f58fb463b2bf864",
+      "toEntityId": "location.caldris.lore.boughmeet",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.358c89697a2d1c43c72e",
-      "toEntityId": "location.caldris.lore.namar-vale",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.0f2ab73979c4dcfe1c5c",
-      "toEntityId": "location.caldris.lore.leth-sarai",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.e846269bf8bc10b09ce4",
-      "toEntityId": "location.caldris.lore.nacre-quay",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.193fdc0af92afb7a942b",
-      "toEntityId": "location.caldris.lore.namar-vale",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.f0d21883ee6a53663216",
-      "toEntityId": "location.caldris.lore.leth-sarai",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.27e20e6a74180353b134",
-      "toEntityId": "location.caldris.lore.old-merecross",
+      "fromEntityId": "route.caldris.atlas.4ab12b21d51ba312ce1f",
+      "toEntityId": "location.caldris.lore.boughmeet",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.42ccc7cb3afe396eb696",
-      "toEntityId": "location.caldris.lore.old-merecross",
+      "fromEntityId": "route.caldris.atlas.4b70dcb13722b94506aa",
+      "toEntityId": "location.caldris.lore.boughmeet",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.973f717665786a867caf",
-      "toEntityId": "location.caldris.lore.old-merecross",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.e091596615d964e67ca7",
-      "toEntityId": "location.caldris.lore.old-merecross",
+      "fromEntityId": "route.caldris.atlas.62dc387bfb98ed1c238f",
+      "toEntityId": "location.caldris.lore.boughmeet",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.a5318d0b60805c652ea7",
-      "toEntityId": "location.caldris.lore.low-fen-redoubt",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.ac35eea22ad8068292bc",
-      "toEntityId": "location.caldris.lore.low-fen-redoubt",
+      "fromEntityId": "route.caldris.atlas.b34a90b003d3b82adff2",
+      "toEntityId": "location.caldris.lore.boughmeet",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.790a9b1a1581701d34a2",
-      "toEntityId": "location.caldris.lore.morrowstep-sanctuary",
+      "fromEntityId": "route.caldris.atlas.f88d34cc5c1dabfcd1c3",
+      "toEntityId": "location.caldris.lore.boughmeet",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.87ab3dae06328e3a8576",
-      "toEntityId": "location.caldris.lore.nacre-quay",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.9d6566363cda9a8296be",
-      "toEntityId": "location.caldris.lore.morrowstep-sanctuary",
+      "fromEntityId": "route.caldris.atlas.fad707f6f376d5187930",
+      "toEntityId": "location.caldris.lore.boughmeet",
       "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.ebc8ebc1a7f317181bda",
-      "toEntityId": "location.caldris.lore.nacre-quay",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.20b47a4b6a38df7d9c59",
-      "toEntityId": "location.caldris.lore.leth-sarai",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.36044240e05b88643352",
-      "toEntityId": "location.caldris.lore.leth-sarai",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.8648f53bae02545eb614",
-      "toEntityId": "location.caldris.lore.leth-sarai",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.f3c44f99e90d00fab13c",
-      "toEntityId": "location.caldris.lore.leth-sarai",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.landmark.glass-tide-palace",
-      "toEntityId": "location.caldris.lore.leth-sarai",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.landmark.glass-tide-palace.access.97942221d0",
-      "toEntityId": "location.caldris.lore.leth-sarai",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.glass-tide-palace.1256",
-      "toEntityId": "location.caldris.lore.leth-sarai",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.glass-tide-palace.1256",
-      "toEntityId": "location.caldris.lore.nacre-quay",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.glass-tide-palace.31",
-      "toEntityId": "location.caldris.lore.leth-sarai",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.glass-tide-palace.31",
-      "toEntityId": "location.caldris.lore.nacre-quay",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.glass-tide-palace.534",
-      "toEntityId": "location.caldris.lore.leth-sarai",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.glass-tide-palace.534",
-      "toEntityId": "location.caldris.lore.nacre-quay",
-      "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     }
   ]

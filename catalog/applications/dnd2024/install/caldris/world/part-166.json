@@ -1,0 +1,259 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.caldris",
+  "entities": [
+    {
+      "entityId": "location.caldris.lore.three-reed-bridge",
+      "name": "Three-Reed Bridge",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A rebuilt crossing outside Willowrace, connecting workshops with grazing and reed beds. Stone abutments support later spans; annual music gatherings still raise a portion of maintenance costs. Three pipe-shaped posts commemorate the dedication.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 710,
+            "y": 480
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lore.willowrace",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.windowmere-garden",
+      "name": "Windowmere Garden",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A small teaching garden within the Boughmeet nursery district. The walls have been rebuilt and the original plants replaced or propagated. Successful and failed trials receive equally legible labels.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 245,
+            "y": 385
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lore.boughmeet",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.north-bell-tower",
+      "name": "North Bell Tower",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "The North Bell Tower before noon, its bell rope and timber mechanism visible without revealing the mystery.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.media.visual",
+          "value": {
+            "status": "active",
+            "attachments": [
+              {
+                "role": "illustration",
+                "visibility": [
+                  "player",
+                  "dm"
+                ],
+                "sha256": "19b1280d6b62ccf77e4f0d887bb27b5637c1176d184afad194a07f5a7e85f521",
+                "mimeType": "image/png",
+                "width": 1536,
+                "height": 1024,
+                "alt": "The North Bell Tower before noon, its bell rope and timber mechanism visible without revealing the mystery.",
+                "caption": "Prepared location illustration of the North Bell Tower before noon; it reveals no solution and records no event as having occurred.",
+                "order": 10,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/north-bell-tower-before-noon-v1.png",
+                  "reviewedOn": "2026-09-12",
+                  "version": 1
+                }
+              }
+            ]
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 455,
+            "y": 220
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bramblebridge",
+        "slot": "location"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "secret.caldris.lore.place-windowmere-garden.1",
+      "toEntityId": "location.caldris.lore.windowmere-garden",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0527-the-gardens-of-the-farther-window",
+      "toEntityId": "location.caldris.lore.windowmere-garden",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0500-0400-place-three-reed-bridge.1",
+      "toEntityId": "location.caldris.lore.three-reed-bridge",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0459-the-bridge-of-three-versions",
+      "toEntityId": "location.caldris.lore.three-reed-bridge",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0459-the-bridge-of-three-versions-account.1",
+      "toEntityId": "location.caldris.lore.three-reed-bridge",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0459-the-bridge-of-three-versions-gm-truth.1",
+      "toEntityId": "location.caldris.lore.three-reed-bridge",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0459-the-bridge-of-three-versions-traces-and-stories.1",
+      "toEntityId": "location.caldris.lore.three-reed-bridge",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.bramblebridge.honest-weights-hall",
+      "toEntityId": "location.caldris.north-bell-tower",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.bramblebridge.old-weir-mill",
+      "toEntityId": "location.caldris.north-bell-tower",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.the-copper-kettle",
+      "toEntityId": "location.caldris.lore.windowmere-garden",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.the-orchard-of-departures",
+      "toEntityId": "location.caldris.lore.windowmere-garden",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.the-open-string-hall",
+      "toEntityId": "location.caldris.lore.three-reed-bridge",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.d23420892dcbc04e6c73",
+      "toEntityId": "location.caldris.north-bell-tower",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.a513854338053959bdc3",
+      "toEntityId": "location.caldris.lore.windowmere-garden",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.2e3dd3d0fe99f753e2c2",
+      "toEntityId": "location.caldris.north-bell-tower",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.b0b00e3c9cfc96913dde",
+      "toEntityId": "location.caldris.north-bell-tower",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.464ff2cd59dc0c576da2",
+      "toEntityId": "location.caldris.north-bell-tower",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.d23420892dcbc04e6c73",
+      "toEntityId": "location.caldris.north-bell-tower",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.0c4fb5c4741db6a4faf2",
+      "toEntityId": "location.caldris.lore.windowmere-garden",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.95902d670a3bb9e80c51",
+      "toEntityId": "location.caldris.lore.windowmere-garden",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.a513854338053959bdc3",
+      "toEntityId": "location.caldris.lore.windowmere-garden",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.b101864b8d41da3e7f77",
+      "toEntityId": "location.caldris.lore.windowmere-garden",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.2b3f8e25e975881e77cf",
+      "toEntityId": "location.caldris.lore.three-reed-bridge",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.e532dc1f63ab506b68ac",
+      "toEntityId": "location.caldris.lore.three-reed-bridge",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    }
+  ]
+}

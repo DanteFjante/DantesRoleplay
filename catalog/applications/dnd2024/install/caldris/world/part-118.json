@@ -3,6 +3,32 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
+      "entityId": "secret.caldris.quest.q13.the-choir-below-stone",
+      "name": "Q13 — The Choir Below Stone",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "Hook: Copperdeep miners hear formal knocking and choral tones below sealed Concord galleries. Layers: trapped ghosts → ventilation, old bell pipes, and active trespass → someone searches for a tithe chamber associated with dragon history. Objectives: 1. Map safe access and protect workers from collapse or bad air. 2. Determine the source of knocking, soot, and choral resonance. 3. Decide what evidence and access should remain sealed, studied, or made public. Routes: mining expertise, sound triangulation, old plans, rescue ropes, ventilation smoke, controlled breach, magical sensing, or following trespass supply lines. Clues: human boot soot; pipes tuned to warning intervals; fresh food scraps; tithe niche marks; one knocking sequence is an old shift code. Failure forward: a gallery collapse closes one route but exposes a safer archive escape tunnel. Aftermath: bell metal carries a Kethrian tithe mark, unrelated to Alderwick tolls.",
+            "provenance": "Caldris quest atlas",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "quest-seeds"
+      }
+    },
+    {
       "entityId": "secret.caldris.quest.q14.the-wrong-rescue-contract",
       "name": "Q14 — The Wrong Rescue Contract",
       "components": [
@@ -235,36 +261,22 @@
         "containerEntityId": "location.caldris.atlas",
         "slot": "quest-seeds"
       }
-    },
-    {
-      "entityId": "secret.caldris.quest.q23.the-ordinary-comet",
-      "name": "Q23 — The Ordinary Comet",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.knowledge.classification",
-          "value": {
-            "subjectKind": "event",
-            "sensitivity": "secret"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.secret",
-          "value": {
-            "status": "active",
-            "summary": "Hook: Tessaran astronomers predict a harmless comet while three factions claim it validates incompatible political prophecies. Layers: prophecy fraud → sincere cultural interpretations exploited by court → one observation really is impossible because an object moves against the comet. Objectives: 1. Protect observers, instruments, and public access during the comet's approach. 2. Separate measurement, interpretation, forgery, and political use. 3. Investigate the impossible companion observation without feeding harmful panic. Routes: observation, instrument checking, public teaching, debate, performance satire, guard work, court negotiation, magical study, or following the moving object. Clues: altered lens mount; playwright source for one prophecy; consistent measurements from rival schools; glass-locust flight; an object blinking in old Lantern signal intervals. Failure forward: prophecy panic causes policy changes, but later observation can correct or complica…",
-            "provenance": "Caldris quest atlas",
-            "visibility": "gm"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.atlas",
-        "slot": "quest-seeds"
-      }
     }
   ],
   "relationships": [
     {
+      "fromEntityId": "secret.caldris.quest.q13.the-choir-below-stone",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.quest.q13.the-choir-below-stone",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
       "fromEntityId": "secret.caldris.quest.q14.the-wrong-rescue-contract",
       "toEntityId": "location.caldris.atlas",
       "qualifiedKind": "game.core.world.knowledge.about",
@@ -368,18 +380,6 @@
     },
     {
       "fromEntityId": "secret.caldris.quest.q22.the-doubled-tithe",
-      "toEntityId": "world.caldris",
-      "qualifiedKind": "game.core.world.knowledge.in-world",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.quest.q23.the-ordinary-comet",
-      "toEntityId": "location.caldris.atlas",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.quest.q23.the-ordinary-comet",
       "toEntityId": "world.caldris",
       "qualifiedKind": "game.core.world.knowledge.in-world",
       "value": {}

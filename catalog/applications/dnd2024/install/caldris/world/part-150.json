@@ -3,40 +3,144 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
-      "entityId": "location.caldris.lore.hearthscar-shelter",
-      "name": "Hearthscar Shelter",
+      "entityId": "location.caldris.lantern-sea.the-halfway-light.keepers-court",
+      "name": "Four Keepers' Court",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "site",
-            "summary": "A maintained northern shelter on the lower alternative to a difficult pass. Human and animal accommodation are separate. Stores depend on deliveries and honest use. Older braces and wall scars remain visible among later work.",
-            "visibility": "public",
-            "status": "active"
+            "status": "active",
+            "summary": "Four modest keeper houses face a common house inside a low stone enclosure. Here the households eat, divide watches and settle maintenance arguments at a table with four equal places. No national banner flies above the others. Clerk Tomas Renn records every delivery and repair in duplicate so a delayed payment cannot become a claim of ownership. In bad weather the common room fills with wet coats, mending work and news carried by rescued crews.",
+            "visibility": "public"
           }
         },
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 315,
-            "y": 370
+            "x": 463,
+            "y": 388
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.atlas.roven-approaches",
+        "containerEntityId": "location.caldris.lantern-sea.the-halfway-light",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.lore.istravel",
-      "name": "Istravel",
+      "entityId": "location.caldris.lantern-sea.the-halfway-light.lamp-store",
+      "name": "The Lamp Store",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "A detached stone store holds sealed lamp-oil vessels, rope, spare fittings and repair tools away from the tower and living rooms. Two keepers count the reserve together when a delivery arrives. Its public tally matters: every state must see that the light can continue through a missed supply run. A cracked lid, damp wick or short shipment is ordinary work with serious consequences, and discrepancies are written down before blame travels ashore.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 610,
+            "y": 503
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lantern-sea.the-halfway-light",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lantern-sea.the-halfway-light.lifeboat-station",
+      "name": "The Rescue Shed",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "A broad shed and steep southern slip shelter rescue boats, oars, cork belts, blankets and hauling ropes. Coxswain Jessa Orr drills whoever is fit to pull, including visiting sailors. Crews are chosen by skill rather than flag. After a rescue, the boats are cleaned and the missing names entered before anyone discusses salvage. The ramp can be dangerous even when the eastern landing looks calm.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 464,
+            "y": 717
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lantern-sea.the-halfway-light",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lantern-sea.the-halfway-light.mariners-refuge",
+      "name": "The Open Door Refuge",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "interior",
+            "status": "active",
+            "summary": "A small refuge above the southeastern rocks offers dry bunks, hot broth and a place to recover before travelling on. Caretaker Orla Penn keeps spare clothes sorted by size, not origin, and refuses payment from people brought in by the lifeboat. A memorial garden beside the house remembers mariners whose names were learned too late. Messages to families wait in a tin box for a trusted ship; several former guests now send blankets every winter.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 756,
+            "y": 611
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lantern-sea.the-halfway-light",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lantern-sea.the-halfway-light.supply-jetty",
+      "name": "The Common Landing",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "status": "active",
+            "summary": "A timber jetty occupies the sheltered eastern cove. The supply cutter unloads oil, flour, mail and relief keepers here; visiting boats must leave room for rescue work. Boatkeeper Neri Sann reads the swell before allowing anyone onto the wet steps. There is no permanent customs post or passenger market. A scratched board lists supplies still needed from each of the four contributors, beside letters waiting for the next safe departure.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 772,
+            "y": 402
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lantern-sea.the-halfway-light",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.alderwake",
+      "name": "Alderwake",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "settlement",
-            "summary": "Active glassworkers occupy the upper terraces. Lower kilns have become gardens and storage. Part of the Night Garden lies beneath a later courtyard occupied by several households. Its pools retain only fragments of original lining, and its old sight lines are obstructed by new roofs.",
+            "summary": "Location: East of Harth's orchard branch, where a drovers' track meets the route toward the river. Livelihood: Livestock, cloth, lodging, and seasonal fairs. The ancient fairground becomes a small town whose widest lanes remain open for temporary stalls. On ordinary days it feels half empty. On fair days kitchens overflow into courtyards and children navigate by stall awnings rather than house numbers. The original fair bell is lost; successive bells inherit its name.",
             "visibility": "public",
             "status": "active"
           }
@@ -44,65 +148,25 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 630,
-            "y": 350
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.visual",
-          "value": {
-            "status": "archived",
-            "variants": {
-              "player": {
-                "sha256": "1c0873dc9e20c50a27b86bbf96ffa540d0c12d936a88ef5850e731e330161b07",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Istravel fantasy atlas map",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/istravel.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 3
-                }
-              },
-              "dm": {
-                "sha256": "1c0873dc9e20c50a27b86bbf96ffa540d0c12d936a88ef5850e731e330161b07",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Istravel fantasy atlas map",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/istravel.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 3
-                }
-              }
-            }
+            "x": 765,
+            "y": 440
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.lore.serevan",
+        "containerEntityId": "location.caldris.atlas.orchard-march",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.lore.juniper-gate",
-      "name": "Juniper Gate",
+      "entityId": "location.caldris.lore.amberstile",
+      "name": "Amberstile",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
-            "kind": "site",
-            "summary": "A guarded pass serving several jurisdictions. Parts of the old gate are incorporated into a shelter and customs yard. The displayed rebellion chain has replacement links from later repairs. Cliff paths lead to abandoned observation posts and nesting ledges.",
+            "kind": "settlement",
+            "summary": "A modest market town whose wax sheds serve candle makers, craftspeople, and local households. Seasonal trading fills a broad yard behind the old gate. The honey cakes sold to visitors are good enough that residents forgive the inaccurate stories printed on their wrappers.",
             "visibility": "public",
             "status": "active"
           }
@@ -110,25 +174,25 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 400,
-            "y": 185
+            "x": 660,
+            "y": 730
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.atlas.roven-approaches",
+        "containerEntityId": "location.caldris.atlas.orchard-march",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.lore.lanterns-end",
-      "name": "Lanterns' End",
+      "entityId": "location.caldris.lore.ash-salt",
+      "name": "Ash Salt",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
-            "kind": "site",
-            "summary": "Location: On the coast beyond Veymouth's river mouth, overlooking the approaches from Morrow Strait. Livelihood: Pilotage, sheep grazing, and maintenance of a coastal light. Successive towers stand on and beside the low observatory's foundations. Some carved sight lines still point usefully across the water; others refer to vanished sandbanks. The sea has eaten part of the old keeper's garden.",
+            "kind": "settlement",
+            "summary": "Working stalls, smokehouses, net sheds, and lamps arranged around a tidal landing. The market's busiest hours change with local water conditions. It is a place of honest work, occasional opportunism, and visitors who mistake informality for lawlessness.",
             "visibility": "public",
             "status": "active"
           }
@@ -136,8 +200,8 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 320,
-            "y": 780
+            "x": 750,
+            "y": 730
           }
         }
       ],
@@ -145,301 +209,389 @@
         "containerEntityId": "location.caldris.lore.vey-lowlands",
         "slot": "location"
       }
+    },
+    {
+      "entityId": "location.caldris.lore.bellwade",
+      "name": "Bellwade",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "An inland village facing a tidal marsh where fragments of its first site occasionally emerge. Some houses incorporate old lintels, though many claimed originals are later commemorations. The communal bell has been recast since its relocation, preserving portions of earlier metal and its inherited name.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 760,
+            "y": 270
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lore.vey-lowlands",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.bluecup-hollow",
+      "name": "Bluecup Hollow",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A small protected patch amid working land near the routes between the orchard country and the northern foothills. Propagated plants grow in a nearby nursery, but the wild pocket retains conditions difficult to reproduce elsewhere. The ancient companions' exact collecting spot is only approximately known.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 610,
+            "y": 730
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.chalklands",
+        "slot": "location"
+      }
     }
   ],
   "relationships": [
     {
-      "fromEntityId": "secret.caldris.lore.place-istravel.1",
-      "toEntityId": "location.caldris.lore.istravel",
+      "fromEntityId": "secret.caldris.lore.place-alderwake.1",
+      "toEntityId": "location.caldris.lore.alderwake",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.place-juniper-gate.1",
-      "toEntityId": "location.caldris.lore.juniper-gate",
+      "fromEntityId": "secret.caldris.lore.place-amberstile.1",
+      "toEntityId": "location.caldris.lore.amberstile",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.place-lanterns-end.1",
-      "toEntityId": "location.caldris.lore.lanterns-end",
+      "fromEntityId": "secret.caldris.lore.place-bellwade.1",
+      "toEntityId": "location.caldris.lore.bellwade",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.place-hearthscar-shelter.1",
-      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "fromEntityId": "secret.caldris.lore.place-ash-salt.1",
+      "toEntityId": "location.caldris.lore.ash-salt",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.1787-the-blackglass-pilot",
-      "toEntityId": "location.caldris.lore.lanterns-end",
+      "fromEntityId": "secret.caldris.lore.place-bluecup-hollow.1",
+      "toEntityId": "location.caldris.lore.bluecup-hollow",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1887-the-founding-of-alderwake-fair",
+      "toEntityId": "location.caldris.lore.alderwake",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.1583-the-blackglass-garden",
-      "toEntityId": "location.caldris.lore.istravel",
+      "fromEntityId": "chronology.caldris.lore.1674-the-broken-counter",
+      "toEntityId": "location.caldris.lore.alderwake",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.1599-the-address-beneath-the-blue-paint",
-      "toEntityId": "location.caldris.lore.istravel",
+      "fromEntityId": "chronology.caldris.lore.1709-the-first-lantern-league",
+      "toEntityId": "location.caldris.lore.alderwake",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.1383-the-open-gate-rebellion",
-      "toEntityId": "location.caldris.lore.juniper-gate",
+      "fromEntityId": "chronology.caldris.lore.1466-the-honey-road",
+      "toEntityId": "location.caldris.lore.amberstile",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.1415-avelines-last-winter",
-      "toEntityId": "location.caldris.lore.istravel",
+      "fromEntityId": "chronology.caldris.lore.1366-the-white-salt-marsh",
+      "toEntityId": "location.caldris.lore.bellwade",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.1215-the-book-of-roads-left-open",
-      "toEntityId": "location.caldris.lore.istravel",
+      "fromEntityId": "chronology.caldris.lore.1199-the-fair-beneath-the-sailcloth",
+      "toEntityId": "location.caldris.lore.alderwake",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.1174-the-road-of-bitter-leaves",
-      "toEntityId": "location.caldris.lore.istravel",
+      "fromEntityId": "chronology.caldris.lore.1087-the-silver-that-would-not-travel",
+      "toEntityId": "location.caldris.lore.alderwake",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.0987-the-dowry-of-maps",
-      "toEntityId": "location.caldris.lore.istravel",
+      "fromEntityId": "chronology.caldris.lore.1122-the-companions-of-the-late-blossom",
+      "toEntityId": "location.caldris.lore.bluecup-hollow",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.0835-the-parcel-that-had-arrived-somewhere-else",
-      "toEntityId": "location.caldris.lore.istravel",
+      "fromEntityId": "chronology.caldris.lore.0961-the-scent-of-a-house-that-was-gone",
+      "toEntityId": "location.caldris.lore.bluecup-hollow",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.0687-the-glassmakers-daughter-and-the-false-relics",
-      "toEntityId": "location.caldris.lore.istravel",
+      "fromEntityId": "chronology.caldris.lore.0909-the-fair-of-three-roads",
+      "toEntityId": "location.caldris.lore.alderwake",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.0527-the-gardens-of-the-farther-window",
-      "toEntityId": "location.caldris.lore.istravel",
+      "fromEntityId": "chronology.caldris.lore.0735-the-night-market-at-ash-salt",
+      "toEntityId": "location.caldris.lore.ash-salt",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.atlas.reth-road-fork",
-      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "fromEntityId": "location.caldris.alderwick.sevenpost-field",
+      "toEntityId": "location.caldris.lore.bluecup-hollow",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.lore.hearthscar-shelter",
-      "toEntityId": "location.caldris.lore.juniper-gate",
+      "fromEntityId": "location.caldris.alderwick.sourapple-ford",
+      "toEntityId": "location.caldris.lore.alderwake",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.lore.juniper-gate",
-      "toEntityId": "location.caldris.lore.whitewindow",
+      "fromEntityId": "location.caldris.alderwick.merecross",
+      "toEntityId": "location.caldris.lore.alderwake",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.9d6566363cda9a8296be",
-      "toEntityId": "location.caldris.lore.lanterns-end",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.dbda2166dece1734246d",
-      "toEntityId": "location.caldris.lore.hearthscar-shelter",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.aa562ab7517c2759cb3f",
-      "toEntityId": "location.caldris.lore.juniper-gate",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.5b408d28f160d82fe18f",
-      "toEntityId": "location.caldris.lore.istravel",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.closed.5551409834dcf7b6a7f3",
-      "toEntityId": "location.caldris.lore.juniper-gate",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.28188f2d28d056bd1101",
-      "toEntityId": "location.caldris.lore.istravel",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.6262a34380f99ac84e7b",
-      "toEntityId": "location.caldris.lore.lanterns-end",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.790a9b1a1581701d34a2",
-      "toEntityId": "location.caldris.lore.lanterns-end",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.9d6566363cda9a8296be",
-      "toEntityId": "location.caldris.lore.lanterns-end",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.a44655626a9b7859b6f7",
-      "toEntityId": "location.caldris.lore.lanterns-end",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.a65deea4688e362b5bc6",
-      "toEntityId": "location.caldris.lore.hearthscar-shelter",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.b093b3b2b986dabfc9c5",
-      "toEntityId": "location.caldris.lore.juniper-gate",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.b093b3b2b986dabfc9c5",
-      "toEntityId": "location.caldris.lore.hearthscar-shelter",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.b654a22621670954ae2a",
-      "toEntityId": "location.caldris.lore.hearthscar-shelter",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.dbda2166dece1734246d",
-      "toEntityId": "location.caldris.lore.hearthscar-shelter",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.dbda2166dece1734246d",
-      "toEntityId": "location.caldris.lore.juniper-gate",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.20b47a4b6a38df7d9c59",
-      "toEntityId": "location.caldris.lore.istravel",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.36044240e05b88643352",
-      "toEntityId": "location.caldris.lore.istravel",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.landmark.skyharp-of-roven",
-      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "fromEntityId": "location.caldris.bellafont.vintners-reach",
+      "toEntityId": "location.caldris.lore.amberstile",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.landmark.skyharp-of-roven.access.8106e482f5",
-      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "fromEntityId": "fact.caldris.atlas.connection.979765288b2b73af8de7",
+      "toEntityId": "location.caldris.lore.alderwake",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.1286",
-      "toEntityId": "location.caldris.lore.hearthscar-shelter",
-      "qualifiedKind": "game.core.world.chronology.about",
+      "fromEntityId": "fact.caldris.atlas.connection.a85e64d10c5dce967096",
+      "toEntityId": "location.caldris.lore.ash-salt",
+      "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.1286",
-      "toEntityId": "location.caldris.lore.juniper-gate",
-      "qualifiedKind": "game.core.world.chronology.about",
+      "fromEntityId": "fact.caldris.atlas.connection.3e867bed930c842685c1",
+      "toEntityId": "location.caldris.lore.amberstile",
+      "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.1258",
-      "toEntityId": "location.caldris.lore.hearthscar-shelter",
-      "qualifiedKind": "game.core.world.chronology.about",
+      "fromEntityId": "fact.caldris.atlas.connection.dd4ab48d62e3f93a7522",
+      "toEntityId": "location.caldris.lore.bluecup-hollow",
+      "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.1258",
-      "toEntityId": "location.caldris.lore.juniper-gate",
-      "qualifiedKind": "game.core.world.chronology.about",
+      "fromEntityId": "fact.caldris.atlas.connection.2a12addf740e9383955d",
+      "toEntityId": "location.caldris.lore.alderwake",
+      "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.287",
-      "toEntityId": "location.caldris.lore.hearthscar-shelter",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.287",
-      "toEntityId": "location.caldris.lore.juniper-gate",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.glass-tide-palace.1256",
-      "toEntityId": "location.caldris.lore.istravel",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.glass-tide-palace.31",
-      "toEntityId": "location.caldris.lore.istravel",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.glass-tide-palace.534",
-      "toEntityId": "location.caldris.lore.istravel",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.landmark.35596ebc6a54b5f4d31d",
-      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "fromEntityId": "route.caldris.atlas.921b0ea35bfe4cf87ad9",
+      "toEntityId": "location.caldris.lore.bluecup-hollow",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.landmark.56d7728699f796b122cb",
-      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "fromEntityId": "route.caldris.atlas.e7a2cfddc5f4782b0879",
+      "toEntityId": "location.caldris.lore.bluecup-hollow",
       "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.0676ac60ddb339ccb0d3",
+      "toEntityId": "location.caldris.lore.alderwake",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.4a18347503ae02483ca8",
+      "toEntityId": "location.caldris.lore.alderwake",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.4ab12b21d51ba312ce1f",
+      "toEntityId": "location.caldris.lore.amberstile",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.979765288b2b73af8de7",
+      "toEntityId": "location.caldris.lore.alderwake",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.ae266d23da2c568920b8",
+      "toEntityId": "location.caldris.lore.alderwake",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.b34a90b003d3b82adff2",
+      "toEntityId": "location.caldris.lore.amberstile",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.7f941aff563ffb44af1d",
+      "toEntityId": "location.caldris.lore.bellwade",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.e902950e726bc5080e7b",
+      "toEntityId": "location.caldris.lore.bellwade",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.5a2113d51ddfb4148ea2",
+      "toEntityId": "location.caldris.lore.ash-salt",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.719b5648bc3011f68877",
+      "toEntityId": "location.caldris.lore.ash-salt",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.9fcb0163ba4d4a2c766f",
+      "toEntityId": "location.caldris.lore.ash-salt",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.a85e64d10c5dce967096",
+      "toEntityId": "location.caldris.lore.ash-salt",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.landmark.crownroot-cathedral",
+      "toEntityId": "location.caldris.lore.amberstile",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.crownroot-cathedral.access.699a86203a",
+      "toEntityId": "location.caldris.lore.amberstile",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.crownroot-cathedral.1810",
+      "toEntityId": "location.caldris.lore.amberstile",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.crownroot-cathedral.27",
+      "toEntityId": "location.caldris.lore.amberstile",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.crownroot-cathedral.722",
+      "toEntityId": "location.caldris.lore.amberstile",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.77dd6854b428c4044ccc",
+      "toEntityId": "location.caldris.lore.amberstile",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.d343c660f076af484452",
+      "toEntityId": "location.caldris.lore.amberstile",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lantern-sea.the-halfway-light.beacon-tower",
+      "toEntityId": "location.caldris.lantern-sea.the-halfway-light.keepers-court",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lantern-sea.the-halfway-light.keepers-court",
+      "toEntityId": "location.caldris.lantern-sea.the-halfway-light.supply-jetty",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lantern-sea.the-halfway-light.keepers-court",
+      "toEntityId": "location.caldris.lantern-sea.the-halfway-light.lifeboat-station",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lantern-sea.the-halfway-light.fog-bell",
+      "toEntityId": "location.caldris.lantern-sea.the-halfway-light.keepers-court",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lantern-sea.the-halfway-light.cistern-gardens",
+      "toEntityId": "location.caldris.lantern-sea.the-halfway-light.keepers-court",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lantern-sea.the-halfway-light.keepers-court",
+      "toEntityId": "location.caldris.lantern-sea.the-halfway-light.lamp-store",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lantern-sea.the-halfway-light.lamp-store",
+      "toEntityId": "location.caldris.lantern-sea.the-halfway-light.mariners-refuge",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lantern-sea.the-halfway-light.lifeboat-station",
+      "toEntityId": "location.caldris.lantern-sea.the-halfway-light.mariners-refuge",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lantern-sea.the-halfway-light.mariners-refuge",
+      "toEntityId": "location.caldris.lantern-sea.the-halfway-light.supply-jetty",
+      "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     }
   ]

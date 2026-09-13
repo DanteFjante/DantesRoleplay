@@ -591,6 +591,72 @@
       }
     },
     {
+      "entityId": "location.caldris.tidecross",
+      "name": "Tidecross",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "status": "active",
+            "summary": "Tidecross fills the long island at the southern mouth of the Lantern Sea. One of the most common stops on journeys between Eredane and Solasca, it lives by pilotage, fresh water, repairs, cargo exchange and beds for people waiting on wind or passage. Several thousand permanent residents share steep streets with a shifting population of sailors, merchants, pilgrims and deck passengers. Merchant ships anchor beyond the quays; harbour ferries carry people and goods ashore. Fishing families still work the inner basin at dawn. The Common Quay charter promises one published tariff and a hearing to crews from either continent. Wealthy warehouse factors now want priority berths, while ferrymen and fishers defend the water stairs their grandparents built.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "6d1c187514e16f30bbaa3feadf1a810e95bfef25364d484ff1e229128c37b7a3",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Tidecross island harbour town: dense old streets, market square, fishing basin, merchant quays, ferry landings, shipyard and beacon.",
+                "caption": "A principal port of call between Eredane and Solasca. Interactive markers identify its districts and landmarks.",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "catalog/applications/dnd2024/assets/caldris/tidecross/tidecross-harbour.png",
+                  "reviewedOn": "2026-09-13",
+                  "version": 1
+                }
+              },
+              "dm": {
+                "sha256": "6d1c187514e16f30bbaa3feadf1a810e95bfef25364d484ff1e229128c37b7a3",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Tidecross island harbour town: dense old streets, market square, fishing basin, merchant quays, ferry landings, shipyard and beacon.",
+                "caption": "A principal port of call between Eredane and Solasca. Interactive markers identify its districts and landmarks.",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "catalog/applications/dnd2024/assets/caldris/tidecross/tidecross-harbour.png",
+                  "reviewedOn": "2026-09-13",
+                  "version": 1
+                }
+              }
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 645,
+            "y": 755
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "settlement"
+      }
+    },
+    {
       "entityId": "secret.caldris.campaign.bridge.a-wedding-if-convenient",
       "name": "Adventure bridge — A Wedding, If Convenient",
       "components": [
@@ -606,32 +672,6 @@
           "value": {
             "status": "active",
             "summary": "The couple's gift comes from an absent Namar village.",
-            "provenance": "Caldris campaign tapestry — independent adventure bridges",
-            "visibility": "gm"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.atlas",
-        "slot": "knowledge"
-      }
-    },
-    {
-      "entityId": "secret.caldris.campaign.bridge.chickens-of-commercial-intent",
-      "name": "Adventure bridge — Chickens of Commercial Intent",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.knowledge.classification",
-          "value": {
-            "subjectKind": "intention",
-            "sensitivity": "secret"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.secret",
-          "value": {
-            "status": "active",
-            "summary": "A farmer pays the party with a brooch claimed by three families, beginning an inheritance comedy.",
             "provenance": "Caldris campaign tapestry — independent adventure bridges",
             "visibility": "gm"
           }
@@ -820,18 +860,6 @@
     },
     {
       "fromEntityId": "fact.caldris.tension.young-officials-across-several-states-admire-the-lantern-concords-efficiency-while-knowing",
-      "toEntityId": "world.caldris",
-      "qualifiedKind": "game.core.world.knowledge.in-world",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.campaign.bridge.chickens-of-commercial-intent",
-      "toEntityId": "location.caldris.atlas",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.campaign.bridge.chickens-of-commercial-intent",
       "toEntityId": "world.caldris",
       "qualifiedKind": "game.core.world.knowledge.in-world",
       "value": {}

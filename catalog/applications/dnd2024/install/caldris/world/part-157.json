@@ -3,61 +3,14 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
-      "entityId": "actor.caldris.tibb-fallow",
-      "name": "Tibb Fallow",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.motive",
-          "value": {
-            "status": "active",
-            "summary": "A cringeworthy poet-watchman with an excellent map memory who longs to be respected for more than enthusiasm and refuses to falsify a report even when truth makes him ridiculous.",
-            "visibility": "public"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.media.visual",
-          "value": {
-            "status": "active",
-            "attachments": [
-              {
-                "role": "portrait",
-                "visibility": [
-                  "player",
-                  "dm"
-                ],
-                "sha256": "3ae0336e89155a4a00fb0d982ae903bf9ed1137cd292b097b252fd38c1501fa3",
-                "mimeType": "image/png",
-                "width": 1024,
-                "height": 1536,
-                "alt": "Tibb Fallow, a freckled junior watchman in a rain-dark green cloak, holding a map case and a handwritten sonnet.",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "Original Caldris storybook artwork generated with OpenAI image generation and reviewed by the project owner.",
-                  "source": "world/caldris/visuals/portrait-tibb-fallow-v1.png",
-                  "reviewedOn": "2026-08-30",
-                  "version": 1
-                }
-              }
-            ]
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.bramblebridge",
-        "slot": "occupant"
-      }
-    },
-    {
-      "entityId": "location.caldris.alderwick.button-hills.merebutton",
-      "name": "Merebutton",
+      "entityId": "location.caldris.lore.seln",
+      "name": "Seln",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "settlement",
-            "summary": "A muddy Button Hills sheep village of low stone cottages, stubborn families, and children who gather old coat buttons after rain. Years ago, rumours about an uncanny infant brought passing Tensor monks to its lanes.",
+            "summary": "Workshops stand among managed woodland. The original hollow trunks have died or changed; younger trees and carefully maintained structures preserve parts of the soundscape. The Listener's presence is intermittent and tied to the place, not guaranteed at every performance.",
             "visibility": "public",
             "status": "active"
           }
@@ -65,8 +18,8 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 280,
-            "y": 400
+            "x": 245,
+            "y": 735
           }
         },
         {
@@ -75,99 +28,33 @@
             "status": "archived",
             "variants": {
               "player": {
-                "sha256": "a9e019c59b05d7451338450993ba75d18d8687deaba46a698e3e09ec9fc0ae59",
+                "sha256": "b9fa8e5be32dce76015fa08b84b8dc8d1309bc3a4712c98bcbc019f98aff9ba1",
                 "mimeType": "image/png",
                 "width": 1448,
                 "height": 1086,
-                "alt": "Merebutton fantasy atlas map",
-                "caption": "Merebutton — illustrated local map.",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/merebutton.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 1
-                }
-              },
-              "dm": {
-                "sha256": "a9e019c59b05d7451338450993ba75d18d8687deaba46a698e3e09ec9fc0ae59",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Merebutton fantasy atlas map",
-                "caption": "Merebutton — illustrated local map.",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/merebutton.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 1
-                }
-              }
-            }
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.alderwick.the-button-hills",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.alderwick.highmead.house-of-the-ninth-angle",
-      "name": "House of the Ninth Angle",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "settlement",
-            "summary": "A severe chalk monastery in Highmead's Whitewall district where Tensor monks study breath, balance, gaze, muscle tension, and displaced weight in pursuit of perfect perception. Its hospitality and first-aid teaching are respected; its authority over novices is increasingly disputed.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 290,
-            "y": 205
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.visual",
-          "value": {
-            "status": "archived",
-            "variants": {
-              "player": {
-                "sha256": "a6e0ad639a9116aef8e4b5e451423a624d89587f7c6a39377e5830c30fad9b34",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "House of the Ninth Angle fantasy atlas map",
+                "alt": "Seln fantasy atlas map",
                 "caption": "",
                 "order": 0,
                 "provenance": {
                   "kind": "generated",
                   "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/house-of-the-ninth-angle.png",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/seln.png",
                   "reviewedOn": "2026-09-10",
                   "version": 3
                 }
               },
               "dm": {
-                "sha256": "a6e0ad639a9116aef8e4b5e451423a624d89587f7c6a39377e5830c30fad9b34",
+                "sha256": "b9fa8e5be32dce76015fa08b84b8dc8d1309bc3a4712c98bcbc019f98aff9ba1",
                 "mimeType": "image/png",
                 "width": 1448,
                 "height": 1086,
-                "alt": "House of the Ninth Angle fantasy atlas map",
+                "alt": "Seln fantasy atlas map",
                 "caption": "",
                 "order": 0,
                 "provenance": {
                   "kind": "generated",
                   "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/house-of-the-ninth-angle.png",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/seln.png",
                   "reviewedOn": "2026-09-10",
                   "version": 3
                 }
@@ -177,19 +64,19 @@
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.alderwick.highmead",
+        "containerEntityId": "location.caldris.lore.aunholt",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.atlas.bramble-east-gate",
-      "name": "Bramble East Gate",
+      "entityId": "location.caldris.lore.tallow-ford",
+      "name": "Tallow Ford",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
-            "kind": "site",
-            "summary": "The eastern town approach where local lanes divide toward the quarry country and the lower river road. It is a gateway into town, not an extension of the Lantern Road name.",
+            "kind": "settlement",
+            "summary": "A working caravan yard beside a newer bridge, with remnants of older crossings visible at low water. Local farms depend on visitors but must retain enough fodder for their own animals. Its largest stable incorporates tether stones from several building phases.",
             "visibility": "public",
             "status": "active"
           }
@@ -197,224 +84,25 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 870,
-            "y": 565
+            "x": 390,
+            "y": 805
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.bramblebridge",
+        "containerEntityId": "location.caldris.atlas.roven-approaches",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.atlas.bramble-market",
-      "name": "Bramble Market",
+      "entityId": "location.caldris.lore.the-closed-launch",
+      "name": "The Closed Launch",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "site",
-            "summary": "The central market square on the western approach to Bramblebridge's toll bridge, linking the road inns, weighing hall and civic lanes.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 435,
-            "y": 520
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.bramblebridge",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.atlas.weir-bridge",
-      "name": "Weir Bridge",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "status": "active",
-            "summary": "Weir Bridge and Bridge House approach without baked labels or markers.",
-            "visibility": "public"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.visual",
-          "value": {
-            "status": "active",
-            "variants": {
-              "player": {
-                "sha256": "a9de90d48d70135c65c166c6ef9b66f5fcdbd806344c8eda03e01329b187cd95",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Weir Bridge and Bridge House approach without baked labels or markers.",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/weir-bridge-bridge-house-map-v1.png",
-                  "reviewedOn": "2026-09-12",
-                  "version": 1
-                }
-              },
-              "dm": {
-                "sha256": "a9de90d48d70135c65c166c6ef9b66f5fcdbd806344c8eda03e01329b187cd95",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Weir Bridge and Bridge House approach without baked labels or markers.",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/weir-bridge-bridge-house-map-v1.png",
-                  "reviewedOn": "2026-09-12",
-                  "version": 1
-                }
-              }
-            }
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.media.visual",
-          "value": {
-            "status": "active",
-            "attachments": [
-              {
-                "role": "illustration",
-                "visibility": [
-                  "player",
-                  "dm"
-                ],
-                "sha256": "f494acf0eadbe8bf17cb3a34f31dc08e4c84b08d1474592b4f9b2495b0b870d2",
-                "mimeType": "image/png",
-                "width": 1536,
-                "height": 1024,
-                "alt": "A rainy approach to Weir Bridge and its modest toll barrier, with no named characters or secret markers.",
-                "caption": "Prepared location illustration of the rainy Weir Bridge toll approach; no depicted event is recorded as having occurred.",
-                "order": 10,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/weir-bridge-rainy-toll-v1.png",
-                  "reviewedOn": "2026-09-12",
-                  "version": 1
-                }
-              }
-            ]
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 655,
-            "y": 505
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.bramblebridge",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.bramblebridge.bramble-theatre-loft",
-      "name": "Bramble Theatre Loft",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "Function and texture: Amateur stage over a cooper's shop. Current pressure: The troupe's comic villain costume contains a real ministerial dispatch.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 235,
-            "y": 380
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.bramblebridge",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.bramblebridge.bridge-house",
-      "name": "Bridge House",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "Function and texture: Toll office, guard room, records cupboard, damp cells. Current pressure: New forms arrive bearing a seven-sided seal and contradictory chicken classifications.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 565,
-            "y": 490
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.bramblebridge",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.bramblebridge.honest-weights-hall",
-      "name": "Honest Weights Hall",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "Function and texture: Guild scales, public measures, arbitration room, and ceremonial giant spoon. Current pressure: One standard weight is hollow and contains a coded debt list.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 380,
-            "y": 400
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.bramblebridge",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.bramblebridge.little-quay",
-      "name": "Little Quay",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "Function and texture: Barge landing, fish tables, rope sheds, muddy children. Current pressure: An unmanned boat arrives with dry cargo during heavy rain.",
+            "summary": "A shipyard slip and small record shelter in Carrowmere associated with the historical Grain Fleet Refusal and later hearings. Working vessels and timber stores have changed repeatedly. Surviving measurements and contract copies are kept alongside later inspection records, rather than treated as substitutes for examining a current hull.",
             "visibility": "public",
             "status": "active"
           }
@@ -423,511 +111,473 @@
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
             "x": 600,
-            "y": 755
+            "y": 580
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.bramblebridge",
+        "containerEntityId": "location.caldris.carrowmere.gullstrand",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.bramblebridge.mallow-abbey.apiary",
-      "name": "Abbey Apiary",
+      "entityId": "location.caldris.lore.the-long-table-rooms",
+      "name": "The Long Table Rooms",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "site",
-            "status": "active",
-            "summary": "The abbey’s working hives and sheltered bee yard.",
-            "visibility": "public"
+            "summary": "Lodging and dining rooms in the Seven Lamps League used by small delegations, interpreters, and travellers conducting civic business. Meals and language services have stated prices. Informal discussion can prepare a formal case but confers no automatic authority over council proceedings.",
+            "visibility": "public",
+            "status": "active"
           }
         },
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 315,
-            "y": 265
+            "x": 575,
+            "y": 490
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.bramblebridge.mallow-abbey",
+        "containerEntityId": "location.caldris.seven-lamps-league.aster-quay",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.bramblebridge.mallow-abbey.archive-room",
-      "name": "Archive Room",
+      "entityId": "location.caldris.lore.the-mile-of-little-bridges",
+      "name": "The Mile of Little Bridges",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "site",
-            "status": "active",
-            "summary": "A dry stone room where local charters and copied records are stabilized.",
-            "visibility": "public"
+            "summary": "The route has a different count of spans after centuries of channel movement, rebuilding, and diversion. Some ancient abutments stand beside active crossings; others lie in grass away from the modern road. Its maintenance remains local and visible.",
+            "visibility": "public",
+            "status": "active"
           }
         },
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 580,
-            "y": 315
+            "x": 480,
+            "y": 590
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.bramblebridge.mallow-abbey",
+        "containerEntityId": "location.caldris.lore.aunholt",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.bramblebridge.mallow-abbey.chapel",
-      "name": "Abbey Chapel",
+      "entityId": "location.caldris.lore.the-seventh-hearth",
+      "name": "The Seventh Hearth",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "site",
-            "status": "active",
-            "summary": "The small working chapel at the center of Mallow Abbey.",
-            "visibility": "public"
+            "summary": "Repeated repairs have replaced nearly every timber, while the original hearthstone and threshold remain. The road bypassed it long ago. Brambles obscure the approach; inside, ordinary dust lies beside a carefully swept place at the table. Whether its spirit has remained awake continuously is left for later history to establish.",
+            "visibility": "public",
+            "status": "active"
           }
         },
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 485,
-            "y": 320
+            "x": 210,
+            "y": 170
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.bramblebridge.mallow-abbey",
+        "containerEntityId": "location.caldris.atlas.orchard-march",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.bramblebridge.mallow-abbey.hospice-wing",
-      "name": "Hospice Wing",
+      "entityId": "location.caldris.lore.the-south-turning",
+      "name": "The South Turning",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "site",
-            "status": "active",
-            "summary": "The abbey wing used for beds, remedies, and travelers needing quiet care.",
-            "visibility": "public"
+            "summary": "A much-rebuilt inn at a junction where visitors can choose the main road or the old local track toward the Seventh Hearth. A milestone in its yard gives a distance that ceased to be accurate centuries ago. Older inn cellars lie farther along the abandoned alignment.",
+            "visibility": "public",
+            "status": "active"
           }
         },
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 640,
-            "y": 360
+            "x": 385,
+            "y": 470
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.bramblebridge.mallow-abbey",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.bramblebridge.mallow-abbey.orchard",
-      "name": "Abbey Orchard",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "status": "active",
-            "summary": "An old orchard crossed by footpaths beside the abbey buildings.",
-            "visibility": "public"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 255,
-            "y": 560
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.bramblebridge.mallow-abbey",
+        "containerEntityId": "location.caldris.atlas.orchard-march",
         "slot": "location"
       }
     }
   ],
   "relationships": [
     {
-      "fromEntityId": "faction.caldris.bramblebridge-watch",
-      "toEntityId": "actor.caldris.tibb-fallow",
-      "qualifiedKind": "game.core.world.faction.member",
-      "value": {}
-    },
-    {
-      "fromEntityId": "faction.caldris.tensor-sect",
-      "toEntityId": "location.caldris.alderwick.highmead.house-of-the-ninth-angle",
-      "qualifiedKind": "game.core.world.faction.controls",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.ganji.button-hills-origin",
-      "toEntityId": "location.caldris.alderwick.button-hills.merebutton",
+      "fromEntityId": "secret.caldris.lore.place-the-seventh-hearth.1",
+      "toEntityId": "location.caldris.lore.the-seventh-hearth",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.alderwick.button-hills.merebutton",
-      "toEntityId": "location.caldris.alderwick.the-white-lamb-downs",
+      "fromEntityId": "secret.caldris.lore.place-the-seventh-hearth.2",
+      "toEntityId": "location.caldris.lore.the-seventh-hearth",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-tallow-ford.1",
+      "toEntityId": "location.caldris.lore.tallow-ford",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-the-south-turning.1",
+      "toEntityId": "location.caldris.lore.the-south-turning",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-seln.1",
+      "toEntityId": "location.caldris.lore.seln",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-the-mile-of-little-bridges.1",
+      "toEntityId": "location.caldris.lore.the-mile-of-little-bridges",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1549-the-ford-of-sleeping-carts",
+      "toEntityId": "location.caldris.lore.tallow-ford",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1009-the-winter-of-the-pale-roofs",
+      "toEntityId": "location.caldris.lore.tallow-ford",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0999-the-stonecutters-spring",
+      "toEntityId": "location.caldris.lore.tallow-ford",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0861-the-crown-carried-in-a-bread-cart",
+      "toEntityId": "location.caldris.lore.tallow-ford",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0874-the-singing-wood-of-seln",
+      "toEntityId": "location.caldris.lore.seln",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0809-the-first-feast-of-two-harvests",
+      "toEntityId": "location.caldris.lore.seln",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0599-the-last-lesson-in-seln",
+      "toEntityId": "location.caldris.lore.seln",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0609-the-festival-of-unfinished-journeys",
+      "toEntityId": "location.caldris.lore.seln",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0635-the-year-the-music-stayed-home",
+      "toEntityId": "location.caldris.lore.seln",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0050-0000-place-the-closed-launch.1",
+      "toEntityId": "location.caldris.lore.the-closed-launch",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0050-0000-place-the-long-table-rooms.1",
+      "toEntityId": "location.caldris.lore.the-long-table-rooms",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.boughmeet",
+      "toEntityId": "location.caldris.lore.the-south-turning",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.atlas.bramble-market",
-      "toEntityId": "location.caldris.bramblebridge.bridge-house",
+      "fromEntityId": "location.caldris.lore.harth-orchard",
+      "toEntityId": "location.caldris.lore.the-south-turning",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.atlas.bramble-market",
-      "toEntityId": "location.caldris.bramblebridge.honest-weights-hall",
+      "fromEntityId": "location.caldris.lore.saint-merets-rest",
+      "toEntityId": "location.caldris.lore.the-south-turning",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.atlas.bramble-market",
-      "toEntityId": "location.caldris.bramblebridge.little-quay",
+      "fromEntityId": "location.caldris.lore.the-seventh-hearth",
+      "toEntityId": "location.caldris.lore.the-south-turning",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.atlas.weir-bridge",
-      "toEntityId": "location.caldris.bramblebridge.bridge-house",
+      "fromEntityId": "location.caldris.lore.goats-ledger",
+      "toEntityId": "location.caldris.lore.the-mile-of-little-bridges",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.bramblebridge.bramble-theatre-loft",
-      "toEntityId": "location.caldris.bramblebridge.honest-weights-hall",
+      "fromEntityId": "location.caldris.lore.hazelstairs",
+      "toEntityId": "location.caldris.lore.tallow-ford",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.66dcc69ccee121e7bcf7",
-      "toEntityId": "location.caldris.alderwick.button-hills.merebutton",
+      "fromEntityId": "location.caldris.lore.reth-gate",
+      "toEntityId": "location.caldris.lore.tallow-ford",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.seln",
+      "toEntityId": "location.caldris.lore.the-mile-of-little-bridges",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.tallow-ford",
+      "toEntityId": "location.caldris.veyr-marches.redgate",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.carrowmere.gullstrand",
+      "toEntityId": "location.caldris.lore.the-closed-launch",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.the-long-table-rooms",
+      "toEntityId": "location.caldris.seven-lamps-league.aster-quay",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.3840ec10291ced6e9e86",
+      "toEntityId": "location.caldris.lore.the-south-turning",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.bb80046299442051b354",
-      "toEntityId": "location.caldris.alderwick.button-hills.merebutton",
+      "fromEntityId": "fact.caldris.atlas.connection.f021553c95a018216775",
+      "toEntityId": "location.caldris.lore.the-south-turning",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.0b65fcf42e785a6491b9",
-      "toEntityId": "location.caldris.atlas.weir-bridge",
+      "fromEntityId": "fact.caldris.atlas.connection.f88d34cc5c1dabfcd1c3",
+      "toEntityId": "location.caldris.lore.the-south-turning",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.9deae41607e9e7783845",
-      "toEntityId": "location.caldris.atlas.bramble-market",
+      "fromEntityId": "fact.caldris.atlas.connection.d2a2f814f1043e883eda",
+      "toEntityId": "location.caldris.lore.tallow-ford",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.f6943c2fb325e4a46467",
-      "toEntityId": "location.caldris.bramblebridge.bridge-house",
+      "fromEntityId": "fact.caldris.atlas.connection.dc8d626b8cc412e32767",
+      "toEntityId": "location.caldris.lore.tallow-ford",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.2e3dd3d0fe99f753e2c2",
-      "toEntityId": "location.caldris.bramblebridge.honest-weights-hall",
+      "fromEntityId": "fact.caldris.atlas.connection.3ae9e93df6719be1af28",
+      "toEntityId": "location.caldris.lore.the-mile-of-little-bridges",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.658f0d5efd93ee1d3118",
-      "toEntityId": "location.caldris.atlas.bramble-market",
+      "fromEntityId": "fact.caldris.atlas.connection.b642422efd8879a5285f",
+      "toEntityId": "location.caldris.lore.tallow-ford",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.6fc4c11360f831d3bd75",
-      "toEntityId": "location.caldris.atlas.bramble-market",
+      "fromEntityId": "fact.caldris.atlas.connection.1a97569b6048b4db8f8d",
+      "toEntityId": "location.caldris.lore.seln",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.bb763bf19f41571c4c67",
-      "toEntityId": "location.caldris.atlas.weir-bridge",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.eab496eff6b7a2d3948f",
-      "toEntityId": "location.caldris.bramblebridge.honest-weights-hall",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.f12faef5eb33182ca9e2",
-      "toEntityId": "location.caldris.atlas.bramble-market",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.726f997ef357836094a9",
-      "toEntityId": "location.caldris.alderwick.highmead.house-of-the-ninth-angle",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.862423084c4f31c274a4",
-      "toEntityId": "location.caldris.alderwick.button-hills.merebutton",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.bb80046299442051b354",
-      "toEntityId": "location.caldris.alderwick.button-hills.merebutton",
+      "fromEntityId": "route.caldris.atlas.443801fb266076d4ef4d",
+      "toEntityId": "location.caldris.lore.the-south-turning",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.0b65fcf42e785a6491b9",
-      "toEntityId": "location.caldris.atlas.weir-bridge",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.1f5825ce8de76186912b",
-      "toEntityId": "location.caldris.atlas.bramble-market",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.4934da7dc9f21f28f953",
-      "toEntityId": "location.caldris.bramblebridge.bridge-house",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.4934da7dc9f21f28f953",
-      "toEntityId": "location.caldris.atlas.bramble-market",
+      "fromEntityId": "route.caldris.atlas.f021553c95a018216775",
+      "toEntityId": "location.caldris.lore.the-south-turning",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.6ba9fef8c55cd5978c4c",
-      "toEntityId": "location.caldris.atlas.bramble-market",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.9deae41607e9e7783845",
-      "toEntityId": "location.caldris.atlas.bramble-market",
+      "fromEntityId": "route.caldris.atlas.f2e0f6e2d0cc609f445b",
+      "toEntityId": "location.caldris.lore.the-south-turning",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.9deae41607e9e7783845",
-      "toEntityId": "location.caldris.bramblebridge.bridge-house",
+      "fromEntityId": "route.caldris.atlas.fd9c2ca57160f6cc5117",
+      "toEntityId": "location.caldris.lore.the-south-turning",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.a52d1ec6aaf2969fe55d",
-      "toEntityId": "location.caldris.atlas.weir-bridge",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.a6d9fbf24b9d1a7270dd",
-      "toEntityId": "location.caldris.bramblebridge.bridge-house",
+      "fromEntityId": "route.caldris.atlas.3840ec10291ced6e9e86",
+      "toEntityId": "location.caldris.lore.the-seventh-hearth",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.a6d9fbf24b9d1a7270dd",
-      "toEntityId": "location.caldris.atlas.weir-bridge",
+      "fromEntityId": "route.caldris.atlas.3840ec10291ced6e9e86",
+      "toEntityId": "location.caldris.lore.the-south-turning",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.f6943c2fb325e4a46467",
-      "toEntityId": "location.caldris.atlas.weir-bridge",
+      "fromEntityId": "route.caldris.atlas.62dc387bfb98ed1c238f",
+      "toEntityId": "location.caldris.lore.the-south-turning",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.f6943c2fb325e4a46467",
-      "toEntityId": "location.caldris.bramblebridge.bridge-house",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.01c9e7157b3ea7763891",
-      "toEntityId": "location.caldris.bramblebridge.honest-weights-hall",
+      "fromEntityId": "route.caldris.atlas.6ae37201d2d56c533593",
+      "toEntityId": "location.caldris.lore.the-south-turning",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.01c9e7157b3ea7763891",
-      "toEntityId": "location.caldris.atlas.bramble-market",
+      "fromEntityId": "route.caldris.atlas.6ae37201d2d56c533593",
+      "toEntityId": "location.caldris.lore.the-seventh-hearth",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.16ff38e32cea78cc0794",
-      "toEntityId": "location.caldris.bramblebridge.little-quay",
+      "fromEntityId": "route.caldris.atlas.f88d34cc5c1dabfcd1c3",
+      "toEntityId": "location.caldris.lore.the-south-turning",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.2e3dd3d0fe99f753e2c2",
-      "toEntityId": "location.caldris.bramblebridge.honest-weights-hall",
+      "fromEntityId": "route.caldris.atlas.be8a297ac7986175a5d9",
+      "toEntityId": "location.caldris.lore.tallow-ford",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.658f0d5efd93ee1d3118",
-      "toEntityId": "location.caldris.atlas.bramble-market",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.6ac5576aefa1a276c971",
-      "toEntityId": "location.caldris.bramblebridge.little-quay",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.6c8c697dc5a07b38a178",
-      "toEntityId": "location.caldris.atlas.bramble-market",
+      "fromEntityId": "route.caldris.atlas.d2a2f814f1043e883eda",
+      "toEntityId": "location.caldris.lore.tallow-ford",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.b0b00e3c9cfc96913dde",
-      "toEntityId": "location.caldris.bramblebridge.honest-weights-hall",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.b3b92d69d9c961638697",
-      "toEntityId": "location.caldris.atlas.bramble-east-gate",
+      "fromEntityId": "route.caldris.atlas.4e6d30a7927b73bc6843",
+      "toEntityId": "location.caldris.lore.tallow-ford",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.b3f53fa90e90db7e6072",
-      "toEntityId": "location.caldris.atlas.bramble-east-gate",
+      "fromEntityId": "route.caldris.atlas.dc8d626b8cc412e32767",
+      "toEntityId": "location.caldris.lore.tallow-ford",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.dca88953ba4db6c1bd6a",
-      "toEntityId": "location.caldris.bramblebridge.honest-weights-hall",
+      "fromEntityId": "route.caldris.atlas.3ae9e93df6719be1af28",
+      "toEntityId": "location.caldris.lore.seln",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.dca88953ba4db6c1bd6a",
-      "toEntityId": "location.caldris.bramblebridge.bramble-theatre-loft",
+      "fromEntityId": "route.caldris.atlas.3ae9e93df6719be1af28",
+      "toEntityId": "location.caldris.lore.the-mile-of-little-bridges",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.eab496eff6b7a2d3948f",
-      "toEntityId": "location.caldris.bramblebridge.bramble-theatre-loft",
+      "fromEntityId": "route.caldris.atlas.3d02fc28ee579ceaf5c9",
+      "toEntityId": "location.caldris.lore.the-mile-of-little-bridges",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.eab496eff6b7a2d3948f",
-      "toEntityId": "location.caldris.bramblebridge.honest-weights-hall",
+      "fromEntityId": "route.caldris.atlas.d48fc258aa45fc41bdd9",
+      "toEntityId": "location.caldris.lore.the-mile-of-little-bridges",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.f12faef5eb33182ca9e2",
-      "toEntityId": "location.caldris.atlas.bramble-market",
+      "fromEntityId": "route.caldris.atlas.dc6fbd6a1fe31150b33c",
+      "toEntityId": "location.caldris.lore.the-mile-of-little-bridges",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.f12faef5eb33182ca9e2",
-      "toEntityId": "location.caldris.bramblebridge.honest-weights-hall",
+      "fromEntityId": "route.caldris.atlas.dc6fbd6a1fe31150b33c",
+      "toEntityId": "location.caldris.lore.seln",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.23dce63b77d9980a58c1",
-      "toEntityId": "location.caldris.bramblebridge.little-quay",
-      "qualifiedKind": "game.core.world.route.from",
+      "fromEntityId": "chronology.caldris.landmark.hanging-harbour.117",
+      "toEntityId": "location.caldris.lore.the-closed-launch",
+      "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.23dce63b77d9980a58c1",
-      "toEntityId": "location.caldris.atlas.bramble-market",
-      "qualifiedKind": "game.core.world.route.to",
+      "fromEntityId": "chronology.caldris.landmark.hanging-harbour.258",
+      "toEntityId": "location.caldris.lore.the-closed-launch",
+      "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.461488e9105893ef86e6",
-      "toEntityId": "location.caldris.atlas.weir-bridge",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.6fc4c11360f831d3bd75",
-      "toEntityId": "location.caldris.atlas.bramble-market",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.6fc4c11360f831d3bd75",
-      "toEntityId": "location.caldris.bramblebridge.little-quay",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.bb763bf19f41571c4c67",
-      "toEntityId": "location.caldris.atlas.weir-bridge",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.c4ac8fe0658f3617f180",
-      "toEntityId": "location.caldris.atlas.bramble-east-gate",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.e12131ed329b985be6bb",
-      "toEntityId": "location.caldris.atlas.bramble-east-gate",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.5a2377e9de9ab6187537",
-      "toEntityId": "location.caldris.alderwick.highmead.house-of-the-ninth-angle",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.7c3fc96dae5375473e04",
-      "toEntityId": "location.caldris.alderwick.highmead.house-of-the-ninth-angle",
-      "qualifiedKind": "game.core.world.route.from",
+      "fromEntityId": "chronology.caldris.landmark.hanging-harbour.35",
+      "toEntityId": "location.caldris.lore.the-closed-launch",
+      "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     }
   ]

@@ -3,51 +3,15 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
-      "entityId": "actor.caldris.king-torren-iv",
-      "name": "King Torren IV",
+      "entityId": "actor.caldris.chancellor-sera-vane",
+      "name": "Chancellor Sera Vane",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.motive",
           "value": {
             "status": "active",
-            "summary": "stern, attentive, exhausted monarch. Immediate want: fund forts without starving boroughs. Hidden depth: knows the mine decline is worse than published.",
-            "visibility": "party"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.dunmarrow",
-        "slot": "people"
-      }
-    },
-    {
-      "entityId": "actor.caldris.laleh-noon",
-      "name": "Laleh Noon",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.motive",
-          "value": {
-            "status": "active",
-            "summary": "cheerful puppet satirist. Immediate want: perform missing-village list safely. Hidden depth: receives scripts from an unknown black-scale patron.",
-            "visibility": "party"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.namarra",
-        "slot": "people"
-      }
-    },
-    {
-      "entityId": "actor.caldris.linnet-bowe",
-      "name": "Linnet Bowe",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.motive",
-          "value": {
-            "status": "active",
-            "summary": "Socially awkward button collector and gifted chalk-land surveyor who explains sinkholes at alarming length. Wants the Button Hills mapped safely; recognizes soil movement and old foundations; freezes when praised publicly. Corresponds with Nan Wimple in diagrams rather than letters. Respect for her work without forcing her into ceremony earns fierce loyalty.",
-            "visibility": "party"
+            "summary": "the higher official who wants a stronger peace. Queen Adela's Chancellor of Roads and Revenue, composed, funny in private, and increasingly willing to manipulate law. Vane fears a succession crisis will break the Lantern Sea Accord. She uses old Concord methods to centralize tolls, messages, and emergency authority, believing temporary control can prevent war. Vane is not formally a member of the Seventh Ledger. Her confidential adviser is. She can become an antagonist, reluctant ally, deposed reformer, or architect of a less coercive system depending on what the party proves and what alternatives they build.",
+            "visibility": "gm"
           }
         }
       ],
@@ -57,140 +21,14 @@
       }
     },
     {
-      "entityId": "actor.caldris.lord-pate-ospen",
-      "name": "Lord Pate Ospen",
+      "entityId": "actor.caldris.clerk-ollo-fen",
+      "name": "Clerk Ollo Fen",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.motive",
           "value": {
             "status": "active",
-            "summary": "Cringeworthy minor noble and enthusiastic host at the Courteous Ruin, forever practicing historical greetings. Wants claimants to honor guest law; knows family histories and recipes better than warfare; desperately needs the manor to matter. Corresponds with Sera Lark about pageants. He gives up his claim when the guest book can protect living families.",
-            "visibility": "party"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.veyr-marches",
-        "slot": "people"
-      }
-    },
-    {
-      "entityId": "actor.caldris.lysa-norn",
-      "name": "Lysa Norn",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.motive",
-          "value": {
-            "status": "active",
-            "summary": "eccentric funeral composer. Immediate want: win the Greyharrow choir trial. Hidden depth: one hymn encodes veteran testimony.",
-            "visibility": "party"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.dunmarrow",
-        "slot": "people"
-      }
-    },
-    {
-      "entityId": "actor.caldris.maela-dorn",
-      "name": "Maela Dorn",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.motive",
-          "value": {
-            "status": "active",
-            "summary": "Warm rogue and bath attendant who trades gossip for chores but will not reveal medical confidences. Wants the spring restored; knows underground service passages and social alliances; owes dangerous lenders for a relative's care. Friendly rival to Della Crookshaw over remedies. Clearing her debt honestly makes her stop facilitating small smuggling.",
-            "visibility": "party"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.lornesse",
-        "slot": "people"
-      }
-    },
-    {
-      "entityId": "actor.caldris.mara-bellward",
-      "name": "Mara Bellward",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.motive",
-          "value": {
-            "status": "active",
-            "summary": "Strict traditionalist and keeper of Borrowed Bell Isle who corrects provenance stories mid-sentence. Wants the disputed bell to remain until its rescue record is heard; recognizes bronze, inscriptions, and storm tones; fears compromise dishonors ancestors. Her mainland counterpart is a childhood pen friend. Shared public recitation can turn ownership into custodianship.",
-            "visibility": "party"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.selucia",
-        "slot": "people"
-      }
-    },
-    {
-      "entityId": "actor.caldris.marcher-alys-red",
-      "name": "Marcher Alys Red",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.motive",
-          "value": {
-            "status": "active",
-            "summary": "strict reform candidate. Immediate want: centralize emergency command. Hidden depth: genuinely wants faster flood response, not tyranny.",
-            "visibility": "party"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.veyr-marches",
-        "slot": "people"
-      }
-    },
-    {
-      "entityId": "actor.caldris.marta-sedge",
-      "name": "Marta Sedge",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.motive",
-          "value": {
-            "status": "active",
-            "summary": "Gentle grump and Latchwater sluice keeper who complains in exact measurements. Wants water theft stopped; can hear gate faults through a timber handle; carries guilt over ignoring an old miner's warning. Her estranged brother belongs to the Long Bench Union. Recovering the sealed workers' names matters more to her than punishing the culprit.",
-            "visibility": "party"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.dunmarrow",
-        "slot": "people"
-      }
-    },
-    {
-      "entityId": "actor.caldris.master-olin-vey",
-      "name": "Master Olin Vey",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.motive",
-          "value": {
-            "status": "active",
-            "summary": "Strict glassmaker with exquisite manners and an unexpectedly competitive interest in children's spinning tops. Wants the moth swarm understood before rivals close his furnace; knows heat, sand, glass flaws, and contracts; assumes apprentices conceal errors. Owes the Silver Pear Society money. He changes after an apprentice's observation proves more valuable than his reputation.",
-            "visibility": "party"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.bellafont",
-        "slot": "people"
-      }
-    },
-    {
-      "entityId": "actor.caldris.mina-glass",
-      "name": "Mina Glass",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.motive",
-          "value": {
-            "status": "active",
-            "summary": "eccentric lens maker. Immediate want: explain dragon joke in flawless glass. Hidden depth: unknowingly reproduced Ilyr's private mark.",
+            "summary": "cringy procedural prodigy. Immediate want: become indispensable. Hidden depth: can identify every counterfeit seal except the first one he made.",
             "visibility": "party"
           }
         }
@@ -201,32 +39,122 @@
       }
     },
     {
-      "entityId": "actor.caldris.mira-vey",
-      "name": "Mira Vey",
+      "entityId": "actor.caldris.colette-fane",
+      "name": "Colette Fane",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.motive",
           "value": {
             "status": "active",
-            "summary": "socially awkward brilliant forger. Immediate want: clear her name. Hidden depth: admires the counterfeit seal and knows its maker trained in Aster Quay.",
+            "summary": "dramatic orchard heiress. Immediate want: preserve one diseased grove. Hidden depth: grove marks a First Footprint line.",
             "visibility": "party"
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.ordelain",
+        "containerEntityId": "location.caldris.bellafont",
         "slot": "people"
       }
     },
     {
-      "entityId": "actor.caldris.nemi-oru",
-      "name": "Nemi Oru",
+      "entityId": "actor.caldris.cook-berto-sill",
+      "name": "Cook Berto Sill",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.motive",
           "value": {
             "status": "active",
-            "summary": "Quietly intense orchard diver who communicates care by sharpening other people's tools. Wants treasure seekers away from Drowned Door levees; can hold breath, read submerged masonry, and graft fruit trees; distrusts scholars after a theft. Has exchanged seeds with Cloud Apricot Farm. Returning credit and control over finds earns her expertise.",
+            "summary": "eccentric culinary genius. Immediate want: avoid being forced into royal service. Hidden depth: vanished voluntarily to help a dock strike kitchen.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.selucia",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.dockmaster-ina-ro",
+      "name": "Dockmaster Ina Ro",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "laid-back, formidable organizer. Immediate want: keep repair dock open. Hidden depth: knows Saint Orro relic is a very good ordinary rope.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.selucia",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.doctor-tal-oren",
+      "name": "Doctor Tal Oren",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "literal sky scholar. Immediate want: publish the comet's ordinary orbit. Hidden depth: has overlooked one genuinely impossible observation.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.tessarane",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.dom-peri",
+      "name": "Dom Peri",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "eccentric beekeeper-diplomat. Immediate want: save Honey Parliament hives. Hidden depth: met Ilyr Vaust and thought it a talkative noble.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.edrin-mott",
+      "name": "Edrin Mott",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "Literal scholar of posts, boundaries, and obsolete punctuation who answers questions in charter clauses. Wants the tenth post preserved until authenticated; compares tool marks and legal hands; misses obvious intimidation. Works uneasily with the Nine March Moot. Seeing procedure weaponized against a family makes him interpret law toward its purpose.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.veyr-marches",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.emon-saar",
+      "name": "Emon Saar",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "cringy shell merchant. Immediate want: seem important to real smugglers. Hidden depth: accidentally holds evidence of Annek's intermediaries.",
             "visibility": "party"
           }
         }
@@ -237,14 +165,32 @@
       }
     },
     {
-      "entityId": "actor.caldris.old-caro-redcup",
-      "name": "Old Caro Redcup",
+      "entityId": "actor.caldris.esi-rillan",
+      "name": "Esi Rillan",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.motive",
           "value": {
             "status": "active",
-            "summary": "Laid-back spring keeper who never hurries and somehow has water ready before anyone asks. Wants caravans to share diminishing water; knows hidden cisterns and burial etiquette; is physically unable to inspect the steep site alone. Once guided Karsh Veyru's copper agents without knowing it. He speaks only when offered practical aid, not interrogation.",
+            "summary": "Dry realist and Copper Rain vintner who answers dragon theories by asking who will repair the channel. Wants runoff stopped; knows terrace hydraulics and labour debts; her family benefited from the old tithe road. Distrusts Kethrian court archivists. She supports truth-telling if farmers receive restitution before spectacle.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.kethria",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.felis-kitewife",
+      "name": "Felis Kitewife",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "Earnest eccentric signal-kite maker who describes people by wind behavior. Wants the extra knots decoded; understands lift, fiber, and plateau weather; assumes every pattern is intentional. Supplies the Tessa Sky College but resents its condescension. Accepting an animal explanation lets her notice the genuine old warning.",
             "visibility": "party"
           }
         }
@@ -255,32 +201,14 @@
       }
     },
     {
-      "entityId": "actor.caldris.old-rami",
-      "name": "Old Rami",
+      "entityId": "actor.caldris.hesta-crumb",
+      "name": "Hesta Crumb",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.motive",
           "value": {
             "status": "active",
-            "summary": "laid-back ferryman-storyteller. Immediate want: keep Old Aur Island public. Hidden depth: remembers a foundation exposed in childhood.",
-            "visibility": "party"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.ordelain",
-        "slot": "people"
-      }
-    },
-    {
-      "entityId": "actor.caldris.osric-pell",
-      "name": "Osric Pell",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.motive",
-          "value": {
-            "status": "active",
-            "summary": "Strict royal forester with immaculate boots, severe eyebrows, and a private collection of badly carved wooden ducks. Wants storm timber recorded before anyone cuts it; knows oak age, charcoal fraud, and woodland law; cannot admit his deputy has been covering his mistakes. Owes Elowen Pike a fair hearing. Evidence that villagers protected saplings during hardship turns his suspicion into advocacy.",
+            "summary": "Cheerful meddler and Sourapple Ford cider-maker who introduces strangers by assigning them imaginary family resemblances. Wants the cattle crossing restored; reads river depth from reeds and animal behavior; fears her business made her dismiss upstream farmers. Trades honey with Brother Odo and argues warmly with Nessa. She yields on the ford only after seeing a workable route for the autumn drove.",
             "visibility": "party"
           }
         }
@@ -291,74 +219,92 @@
       }
     },
     {
-      "entityId": "actor.caldris.palen-sero",
-      "name": "Palen Sero",
+      "entityId": "actor.caldris.high-warden-cala-dorn",
+      "name": "High Warden Cala Dorn",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.motive",
           "value": {
             "status": "active",
-            "summary": "Overprepared road keeper whose emergency list includes spare jokes sorted by audience. Wants the Patient Stair made safe; reads wear, crowds, and mountain risk; sympathizes with the saboteur more than he admits. His dismissed colleague moved the markers. He opposes punishment if officials accept an enforceable maintenance plan.",
+            "summary": "dying pragmatic leader. Immediate want: prevent succession violence. Hidden depth: secretly favours the shepherd who refuses office.",
             "visibility": "party"
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.tessarane",
+        "containerEntityId": "location.caldris.veyr-marches",
         "slot": "people"
       }
     },
     {
-      "entityId": "actor.caldris.pell-gull",
-      "name": "Pell Gull",
+      "entityId": "actor.caldris.hobb-kett",
+      "name": "Hobb Kett",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.motive",
           "value": {
             "status": "active",
-            "summary": "laid-back salvage diver. Immediate want: identify warm water source. Hidden depth: found Concord stone under the breakwater.",
+            "summary": "laid-back peat guide. Immediate want: stop soldiers draining safe ground. Hidden depth: maps old Concord ventilation mounds.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.dunmarrow",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.iven-coil",
+      "name": "Iven Coil",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "Overprepared quarry signaler carrying chalk, bells, coloured cord, spare cord, and notes about the spare cord. Wants the seventh echo restored; maps sound precisely; panics in silence after surviving a collapse. His mentor works at Copperdeep. A nonverbal rescue plan lets him master rather than magically lose his fear.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lornesse",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.jessa-low",
+      "name": "Jessa Low",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "strict Dry Sock treasurer. Immediate want: prevent state seizure of aid books. Hidden depth: her immaculate accounts expose a cross-border courier cell.",
+            "visibility": "party"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.seven-lamps-league",
+        "slot": "people"
+      }
+    },
+    {
+      "entityId": "actor.caldris.joam-rill",
+      "name": "Joam Rill",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.motive",
+          "value": {
+            "status": "active",
+            "summary": "cringy shipyard poet-organizer. Immediate want: make safety demands memorable. Hidden depth: becomes eloquent only when speaking for others.",
             "visibility": "party"
           }
         }
       ],
       "containment": {
         "containerEntityId": "location.caldris.carrowmere",
-        "slot": "people"
-      }
-    },
-    {
-      "entityId": "actor.caldris.perrin-gull",
-      "name": "Perrin Gull",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.motive",
-          "value": {
-            "status": "active",
-            "summary": "Laid-back Gannet Mercy rescuer whose calm ends abruptly when anyone neglects rope care. Wants the unidentified survivor protected; reads currents and shock responses; privately dreads returning to the water after a failed rescue. Exchanges rescue reports with the Houses of Rescue. A companion admitting fear without shame helps him sail again.",
-            "visibility": "party"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.carrowmere",
-        "slot": "people"
-      }
-    },
-    {
-      "entityId": "actor.caldris.princess-elia",
-      "name": "Princess Elia",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.motive",
-          "value": {
-            "status": "active",
-            "summary": "strict naval legalist and bride. Immediate want: make marriage treaty explicit. Hidden depth: plans to publish side agreements both courts prefer hidden.",
-            "visibility": "party"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.selucia",
         "slot": "people"
       }
     }

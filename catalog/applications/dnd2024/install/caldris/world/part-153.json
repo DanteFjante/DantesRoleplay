@@ -3,14 +3,14 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
-      "entityId": "location.caldris.lore.rookwater",
-      "name": "Rookwater",
+      "entityId": "location.caldris.lore.harth-orchard",
+      "name": "Harth Orchard",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "settlement",
-            "summary": "A small settlement in the Vey Lowlands with a ferry landing, harness workshop, modest market, and houses repeatedly adapted to flooding. The working channel has shifted since its foundation. Public access to the water survives through later agreements that residents must still maintain and interpret.",
+            "summary": "The orchard boundaries have changed many times, but growers keep renewing the unpicked strip. The founding tree survives only through successive grafts. The guesthouse is now a small hospice whose garden contains the oldest known graft.",
             "visibility": "public",
             "status": "active"
           }
@@ -18,74 +18,8 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 530,
-            "y": 435
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.visual",
-          "value": {
-            "status": "archived",
-            "variants": {
-              "player": {
-                "sha256": "79baccf4f77c1af2ed44be00dee7989b0ca779381c90b898d845b6d40694efe7",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Rookwater fantasy atlas map",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/rookwater.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 3
-                }
-              },
-              "dm": {
-                "sha256": "79baccf4f77c1af2ed44be00dee7989b0ca779381c90b898d845b6d40694efe7",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Rookwater fantasy atlas map",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/rookwater.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 3
-                }
-              }
-            }
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.lore.vey-lowlands",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.lore.saint-merets-rest",
-      "name": "Saint Meret's Rest",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "A working hospice and archive built and rebuilt around the burial ground. Almost all early records survive as later copies; water damage, transcription mistakes, and well-intended corrections are normal. A few original wooden name boards were preserved in dry interior walls and rediscovered during repairs.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 265,
-            "y": 335
+            "x": 490,
+            "y": 300
           }
         }
       ],
@@ -95,14 +29,14 @@
       }
     },
     {
-      "entityId": "location.caldris.lore.sallowmere",
-      "name": "Sallowmere",
+      "entityId": "location.caldris.lore.hazelstairs",
+      "name": "Hazelstairs",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
-            "kind": "settlement",
-            "summary": "Location: A shallow lake west of the orchard country, linked to it by a local cart road. Livelihood: Fishing, reeds, copying, and a small guesthouse. The original teaching house is partly incorporated into a later library and partly a garden of low foundations. Its collection has been dispersed and reassembled more than once. A narrow room is still called the Spoon Room after an object that may now be a replacement of a replacement.",
+            "kind": "site",
+            "summary": "Terraces, cellar mouths, and fragments of the mill stand among summer grazing. Later shepherd shelters occupy some foundations. Streams have changed course and roots have shifted retaining walls; exploration requires care around unstable drops.",
             "visibility": "public",
             "status": "active"
           }
@@ -111,64 +45,24 @@
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
             "x": 180,
-            "y": 600
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.visual",
-          "value": {
-            "status": "archived",
-            "variants": {
-              "player": {
-                "sha256": "4a92972c9cecd42776e5113f88f3c01f887f024acf3910614ee7f4672ac5df15",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Sallowmere fantasy atlas map",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/sallowmere.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 3
-                }
-              },
-              "dm": {
-                "sha256": "4a92972c9cecd42776e5113f88f3c01f887f024acf3910614ee7f4672ac5df15",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Sallowmere fantasy atlas map",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/sallowmere.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 3
-                }
-              }
-            }
+            "y": 615
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.atlas.orchard-march",
+        "containerEntityId": "location.caldris.atlas.roven-approaches",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.lore.seln",
-      "name": "Seln",
+      "entityId": "location.caldris.lore.hearthscar-shelter",
+      "name": "Hearthscar Shelter",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
-            "kind": "settlement",
-            "summary": "Workshops stand among managed woodland. The original hollow trunks have died or changed; younger trees and carefully maintained structures preserve parts of the soundscape. The Listener's presence is intermittent and tied to the place, not guaranteed at every performance.",
+            "kind": "site",
+            "summary": "A maintained northern shelter on the lower alternative to a difficult pass. Human and animal accommodation are separate. Stores depend on deliveries and honest use. Older braces and wall scars remain visible among later work.",
             "visibility": "public",
             "status": "active"
           }
@@ -176,8 +70,34 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 245,
-            "y": 735
+            "x": 315,
+            "y": 370
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.roven-approaches",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.istravel",
+      "name": "Istravel",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "Active glassworkers occupy the upper terraces. Lower kilns have become gardens and storage. Part of the Night Garden lies beneath a later courtyard occupied by several households. Its pools retain only fragments of original lining, and its old sight lines are obstructed by new roofs.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 630,
+            "y": 350
           }
         },
         {
@@ -186,33 +106,33 @@
             "status": "archived",
             "variants": {
               "player": {
-                "sha256": "b9fa8e5be32dce76015fa08b84b8dc8d1309bc3a4712c98bcbc019f98aff9ba1",
+                "sha256": "1c0873dc9e20c50a27b86bbf96ffa540d0c12d936a88ef5850e731e330161b07",
                 "mimeType": "image/png",
                 "width": 1448,
                 "height": 1086,
-                "alt": "Seln fantasy atlas map",
+                "alt": "Istravel fantasy atlas map",
                 "caption": "",
                 "order": 0,
                 "provenance": {
                   "kind": "generated",
                   "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/seln.png",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/istravel.png",
                   "reviewedOn": "2026-09-10",
                   "version": 3
                 }
               },
               "dm": {
-                "sha256": "b9fa8e5be32dce76015fa08b84b8dc8d1309bc3a4712c98bcbc019f98aff9ba1",
+                "sha256": "1c0873dc9e20c50a27b86bbf96ffa540d0c12d936a88ef5850e731e330161b07",
                 "mimeType": "image/png",
                 "width": 1448,
                 "height": 1086,
-                "alt": "Seln fantasy atlas map",
+                "alt": "Istravel fantasy atlas map",
                 "caption": "",
                 "order": 0,
                 "provenance": {
                   "kind": "generated",
                   "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/seln.png",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/istravel.png",
                   "reviewedOn": "2026-09-10",
                   "version": 3
                 }
@@ -222,328 +142,390 @@
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.lore.aunholt",
+        "containerEntityId": "location.caldris.lore.serevan",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.juniper-gate",
+      "name": "Juniper Gate",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A guarded pass serving several jurisdictions. Parts of the old gate are incorporated into a shelter and customs yard. The displayed rebellion chain has replacement links from later repairs. Cliff paths lead to abandoned observation posts and nesting ledges.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 400,
+            "y": 185
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas.roven-approaches",
         "slot": "location"
       }
     }
   ],
   "relationships": [
     {
-      "fromEntityId": "secret.caldris.lore.place-saint-merets-rest.1",
-      "toEntityId": "location.caldris.lore.saint-merets-rest",
+      "fromEntityId": "secret.caldris.lore.place-harth-orchard.1",
+      "toEntityId": "location.caldris.lore.harth-orchard",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.place-saint-merets-rest.2",
-      "toEntityId": "location.caldris.lore.saint-merets-rest",
+      "fromEntityId": "secret.caldris.lore.place-harth-orchard.2",
+      "toEntityId": "location.caldris.lore.harth-orchard",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.place-sallowmere.1",
-      "toEntityId": "location.caldris.lore.sallowmere",
+      "fromEntityId": "secret.caldris.lore.place-hazelstairs.1",
+      "toEntityId": "location.caldris.lore.hazelstairs",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.place-seln.1",
-      "toEntityId": "location.caldris.lore.seln",
+      "fromEntityId": "secret.caldris.lore.place-istravel.1",
+      "toEntityId": "location.caldris.lore.istravel",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.1748-the-house-of-unfinished-spells",
-      "toEntityId": "location.caldris.lore.sallowmere",
+      "fromEntityId": "secret.caldris.lore.place-juniper-gate.1",
+      "toEntityId": "location.caldris.lore.juniper-gate",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-hearthscar-shelter.1",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1583-the-blackglass-garden",
+      "toEntityId": "location.caldris.lore.istravel",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.1609-the-last-copy-and-the-eastern-road",
-      "toEntityId": "location.caldris.lore.sallowmere",
+      "fromEntityId": "chronology.caldris.lore.1599-the-address-beneath-the-blue-paint",
+      "toEntityId": "location.caldris.lore.istravel",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.1532-the-quiet-fire-at-sallowmere",
-      "toEntityId": "location.caldris.lore.sallowmere",
+      "fromEntityId": "chronology.caldris.lore.1499-the-meadows-that-moved-uphill",
+      "toEntityId": "location.caldris.lore.hazelstairs",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1383-the-open-gate-rebellion",
+      "toEntityId": "location.caldris.lore.juniper-gate",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
       "fromEntityId": "chronology.caldris.lore.1415-avelines-last-winter",
-      "toEntityId": "location.caldris.lore.sallowmere",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.1315-the-school-with-no-master",
-      "toEntityId": "location.caldris.lore.sallowmere",
+      "toEntityId": "location.caldris.lore.istravel",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
       "fromEntityId": "chronology.caldris.lore.1215-the-book-of-roads-left-open",
-      "toEntityId": "location.caldris.lore.saint-merets-rest",
+      "toEntityId": "location.caldris.lore.istravel",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.1232-the-summer-of-the-travelling-stage",
-      "toEntityId": "location.caldris.lore.saint-merets-rest",
+      "fromEntityId": "chronology.caldris.lore.1266-the-winter-of-returned-keys",
+      "toEntityId": "location.caldris.lore.hazelstairs",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.1109-the-night-of-a-hundred-names",
-      "toEntityId": "location.caldris.lore.saint-merets-rest",
+      "fromEntityId": "chronology.caldris.lore.1174-the-road-of-bitter-leaves",
+      "toEntityId": "location.caldris.lore.istravel",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.0935-the-cellar-beneath-the-seventh-hearth",
-      "toEntityId": "location.caldris.lore.saint-merets-rest",
+      "fromEntityId": "chronology.caldris.lore.1122-the-companions-of-the-late-blossom",
+      "toEntityId": "location.caldris.lore.hazelstairs",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.0935-the-cellar-beneath-the-seventh-hearth",
-      "toEntityId": "location.caldris.lore.sallowmere",
+      "fromEntityId": "chronology.caldris.lore.1009-the-winter-of-the-pale-roofs",
+      "toEntityId": "location.caldris.lore.hazelstairs",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0987-the-dowry-of-maps",
+      "toEntityId": "location.caldris.lore.istravel",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
       "fromEntityId": "chronology.caldris.lore.0835-the-parcel-that-had-arrived-somewhere-else",
-      "toEntityId": "location.caldris.lore.sallowmere",
+      "toEntityId": "location.caldris.lore.istravel",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.0874-the-singing-wood-of-seln",
-      "toEntityId": "location.caldris.lore.seln",
+      "fromEntityId": "chronology.caldris.lore.0687-the-glassmakers-daughter-and-the-false-relics",
+      "toEntityId": "location.caldris.lore.istravel",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.0809-the-first-feast-of-two-harvests",
-      "toEntityId": "location.caldris.lore.seln",
+      "fromEntityId": "chronology.caldris.lore.0527-the-gardens-of-the-farther-window",
+      "toEntityId": "location.caldris.lore.istravel",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.0748-the-saint-with-three-birthplaces",
-      "toEntityId": "location.caldris.lore.saint-merets-rest",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.0648-the-library-in-the-laundry-loft",
-      "toEntityId": "location.caldris.lore.saint-merets-rest",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.0648-the-library-in-the-laundry-loft",
-      "toEntityId": "location.caldris.lore.sallowmere",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.0599-the-last-lesson-in-seln",
-      "toEntityId": "location.caldris.lore.seln",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.0609-the-festival-of-unfinished-journeys",
-      "toEntityId": "location.caldris.lore.saint-merets-rest",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.0609-the-festival-of-unfinished-journeys",
-      "toEntityId": "location.caldris.lore.seln",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.0635-the-year-the-music-stayed-home",
-      "toEntityId": "location.caldris.lore.seln",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.0511-the-feast-of-names-added-later",
-      "toEntityId": "location.caldris.lore.saint-merets-rest",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.0199-the-ferry-village-at-rookwater",
-      "toEntityId": "location.caldris.lore.rookwater",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.lore.0199-the-ferry-village-at-rookwater-account.1",
-      "toEntityId": "location.caldris.lore.rookwater",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.lore.0199-the-ferry-village-at-rookwater-gm-truth.1",
-      "toEntityId": "location.caldris.lore.rookwater",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.lore.0199-the-ferry-village-at-rookwater-traces-and-stories.1",
-      "toEntityId": "location.caldris.lore.rookwater",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.lore.0200-0100-place-rookwater.1",
-      "toEntityId": "location.caldris.lore.rookwater",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.boughmeet",
-      "toEntityId": "location.caldris.lore.sallowmere",
+      "fromEntityId": "location.caldris.atlas.reth-road-fork",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.lore.doorhaven",
-      "toEntityId": "location.caldris.lore.rookwater",
+      "fromEntityId": "location.caldris.lore.hearthscar-shelter",
+      "toEntityId": "location.caldris.lore.juniper-gate",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.lore.penns-reach",
-      "toEntityId": "location.caldris.lore.rookwater",
+      "fromEntityId": "location.caldris.lore.juniper-gate",
+      "toEntityId": "location.caldris.lore.whitewindow",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.lore.reedminster",
-      "toEntityId": "location.caldris.lore.rookwater",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.bluecup-hollow",
-      "toEntityId": "location.caldris.lore.saint-merets-rest",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.carrowmere.saltmere",
-      "toEntityId": "location.caldris.lore.sallowmere",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.fd9c2ca57160f6cc5117",
-      "toEntityId": "location.caldris.lore.saint-merets-rest",
+      "fromEntityId": "fact.caldris.atlas.connection.14190073001bed190dae",
+      "toEntityId": "location.caldris.lore.harth-orchard",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.9954eee67034316bffd0",
-      "toEntityId": "location.caldris.lore.rookwater",
+      "fromEntityId": "fact.caldris.atlas.connection.dbda2166dece1734246d",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.b5cfac36b8d0e8d56e00",
-      "toEntityId": "location.caldris.lore.rookwater",
+      "fromEntityId": "fact.caldris.atlas.connection.aa562ab7517c2759cb3f",
+      "toEntityId": "location.caldris.lore.juniper-gate",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.c2deda8ed1d8e85f6008",
-      "toEntityId": "location.caldris.lore.rookwater",
+      "fromEntityId": "fact.caldris.atlas.connection.5b408d28f160d82fe18f",
+      "toEntityId": "location.caldris.lore.istravel",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.02a9567ebcedb9b6c729",
-      "toEntityId": "location.caldris.lore.rookwater",
+      "fromEntityId": "fact.caldris.atlas.closed.5551409834dcf7b6a7f3",
+      "toEntityId": "location.caldris.lore.juniper-gate",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.1a97569b6048b4db8f8d",
-      "toEntityId": "location.caldris.lore.seln",
+      "fromEntityId": "fact.caldris.atlas.connection.28188f2d28d056bd1101",
+      "toEntityId": "location.caldris.lore.istravel",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.72f7f05fc3012bc6b0d9",
-      "toEntityId": "location.caldris.lore.sallowmere",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.f2e0f6e2d0cc609f445b",
-      "toEntityId": "location.caldris.lore.saint-merets-rest",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.fd9c2ca57160f6cc5117",
-      "toEntityId": "location.caldris.lore.saint-merets-rest",
+      "fromEntityId": "route.caldris.atlas.14190073001bed190dae",
+      "toEntityId": "location.caldris.lore.harth-orchard",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.4b70dcb13722b94506aa",
-      "toEntityId": "location.caldris.lore.sallowmere",
+      "fromEntityId": "route.caldris.atlas.443801fb266076d4ef4d",
+      "toEntityId": "location.caldris.lore.harth-orchard",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.fad707f6f376d5187930",
-      "toEntityId": "location.caldris.lore.sallowmere",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.f3648556fcfec6ec3153",
-      "toEntityId": "location.caldris.lore.rookwater",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.fc11cd6ddc8af445b3a0",
-      "toEntityId": "location.caldris.lore.rookwater",
+      "fromEntityId": "route.caldris.atlas.840e3615785c79a6fa35",
+      "toEntityId": "location.caldris.lore.harth-orchard",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.203440db45f36e63fad1",
-      "toEntityId": "location.caldris.lore.rookwater",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.c2deda8ed1d8e85f6008",
-      "toEntityId": "location.caldris.lore.rookwater",
+      "fromEntityId": "route.caldris.atlas.f021553c95a018216775",
+      "toEntityId": "location.caldris.lore.harth-orchard",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.3ae9e93df6719be1af28",
-      "toEntityId": "location.caldris.lore.seln",
+      "fromEntityId": "route.caldris.atlas.4e6d30a7927b73bc6843",
+      "toEntityId": "location.caldris.lore.hazelstairs",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.a65deea4688e362b5bc6",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.b093b3b2b986dabfc9c5",
+      "toEntityId": "location.caldris.lore.juniper-gate",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.dc6fbd6a1fe31150b33c",
-      "toEntityId": "location.caldris.lore.seln",
+      "fromEntityId": "route.caldris.atlas.b093b3b2b986dabfc9c5",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
       "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.b654a22621670954ae2a",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.dbda2166dece1734246d",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.dbda2166dece1734246d",
+      "toEntityId": "location.caldris.lore.juniper-gate",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.dc8d626b8cc412e32767",
+      "toEntityId": "location.caldris.lore.hazelstairs",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.20b47a4b6a38df7d9c59",
+      "toEntityId": "location.caldris.lore.istravel",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.36044240e05b88643352",
+      "toEntityId": "location.caldris.lore.istravel",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.landmark.skyharp-of-roven",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.skyharp-of-roven.access.8106e482f5",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.crownroot-cathedral.1810",
+      "toEntityId": "location.caldris.lore.harth-orchard",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.crownroot-cathedral.27",
+      "toEntityId": "location.caldris.lore.harth-orchard",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.crownroot-cathedral.722",
+      "toEntityId": "location.caldris.lore.harth-orchard",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.1286",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.1286",
+      "toEntityId": "location.caldris.lore.juniper-gate",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.1258",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.1258",
+      "toEntityId": "location.caldris.lore.juniper-gate",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.287",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.287",
+      "toEntityId": "location.caldris.lore.juniper-gate",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.glass-tide-palace.1256",
+      "toEntityId": "location.caldris.lore.istravel",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.glass-tide-palace.31",
+      "toEntityId": "location.caldris.lore.istravel",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.glass-tide-palace.534",
+      "toEntityId": "location.caldris.lore.istravel",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.35596ebc6a54b5f4d31d",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.56d7728699f796b122cb",
+      "toEntityId": "location.caldris.lore.hearthscar-shelter",
+      "qualifiedKind": "game.core.world.route.from",
       "value": {}
     }
   ]

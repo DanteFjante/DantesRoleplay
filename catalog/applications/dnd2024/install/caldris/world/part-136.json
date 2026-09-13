@@ -3,43 +3,14 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
-      "entityId": "location.caldris.landmark.orchardback",
-      "name": "The Orchardback",
+      "entityId": "location.caldris.kethria.karshs-sleeping-ridge",
+      "name": "Karsh's Sleeping Ridge",
       "components": [
-        {
-          "qualifiedTypeId": "game.core.media.visual",
-          "value": {
-            "status": "active",
-            "attachments": [
-              {
-                "sha256": "d036a3321ec18899eba2ef19be7a289bf09d3805e366097b3668b7afc4411085",
-                "mimeType": "image/png",
-                "width": 1536,
-                "height": 1024,
-                "alt": "An island-sized sea tortoise rests in a warm Selucian bay with a small terraced orchard growing in the weathered hollows of its shell. A caretaker shelter, light retaining walls and a rope pontoon serve a few workers and visitors. Its head and flippers remain clear of moorings. The atlas marks its presently observed resting bay, not a permanent island or a schedule of future movement.",
-                "caption": "The Orchardback",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "Generated with OpenAI image generation; visually reviewed for Caldris.",
-                  "source": "docs/world/caldris/landmarks/images/orchardback.png",
-                  "reviewedOn": "2026-09-05",
-                  "version": 1
-                },
-                "role": "setting",
-                "visibility": [
-                  "player",
-                  "dm"
-                ]
-              }
-            ]
-          }
-        },
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "site",
-            "summary": "An island-sized sea tortoise rests in a warm Selucian bay with a small terraced orchard growing in the weathered hollows of its shell. A caretaker shelter, light retaining walls and a rope pontoon serve a few workers and visitors. Its head and flippers remain clear of moorings. The atlas marks its presently observed resting bay, not a permanent island or a schedule of future movement.",
+            "summary": "volcanic mountain in Kethria. Copper tithe route and warm caves; climbing prohibited without three permits.",
             "visibility": "public",
             "status": "active"
           }
@@ -47,54 +18,25 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 490,
-            "y": 865
+            "x": 810,
+            "y": 160
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.selucia",
+        "containerEntityId": "location.caldris.kethria",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.landmark.rain-crown-of-orovant",
-      "name": "Rain Crown of Orovant",
+      "entityId": "location.caldris.kethria.snowgate",
+      "name": "Snowgate",
       "components": [
-        {
-          "qualifiedTypeId": "game.core.media.visual",
-          "value": {
-            "status": "active",
-            "attachments": [
-              {
-                "sha256": "401cced7107e4e2000e21d239a940714b526ed23230bba22315f064faff76d65",
-                "mimeType": "image/png",
-                "width": 1536,
-                "height": 1024,
-                "alt": "Seven enormous basalt fragments hover in a broken circle above an old cistern tower. Repaired copper-mesh veils gather dawn mist; fine threads of water fall into the public basin. The ancient hovering work gives the landmark its shape, while fog, mesh, cleaning and storage determine its modest water yield. A hillside path reaches the cistern, with no registered ascent to the suspended stones.",
-                "caption": "Rain Crown of Orovant",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "Generated with OpenAI image generation; visually reviewed for Caldris.",
-                  "source": "docs/world/caldris/landmarks/images/rain-crown-of-orovant.png",
-                  "reviewedOn": "2026-09-05",
-                  "version": 1
-                },
-                "role": "setting",
-                "visibility": [
-                  "player",
-                  "dm"
-                ]
-              }
-            ]
-          }
-        },
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
-            "kind": "site",
-            "summary": "Seven enormous basalt fragments hover in a broken circle above an old cistern tower. Repaired copper-mesh veils gather dawn mist; fine threads of water fall into the public basin. The ancient hovering work gives the landmark its shape, while fog, mesh, cleaning and storage determine its modest water yield. A hillside path reaches the cistern, with no registered ascent to the suspended stones.",
+            "kind": "settlement",
+            "summary": "Snowgate controls the northern pass and its avalanche shelters. Summer markets are brief and intense; winter life moves into connected stone halls.",
             "visibility": "public",
             "status": "active"
           }
@@ -102,51 +44,25 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 170,
-            "y": 815
+            "x": 440,
+            "y": 190
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.tessarane",
+        "containerEntityId": "location.caldris.kethria",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.lantern-sea.ilyrs-listening-caves",
-      "name": "Ilyr's Listening Caves",
+      "entityId": "location.caldris.kethria.the-door-valley",
+      "name": "The Door Valley",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "site",
-            "summary": "salt caverns in Lantern Sea. Dragon archive, echo riddles, shipwreck access, location uncertain.",
-            "visibility": "gm",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 795,
-            "y": 735
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.atlas.morrow-strait",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.lantern-sea.the-halfway-light",
-      "name": "The Halfway Light",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "lighthouse island in Lantern Sea. Maintained jointly by four states that agree it belongs to none of them.",
+            "summary": "terraced villages in Kethria. Every house door carved with a family water history.",
             "visibility": "public",
             "status": "active"
           }
@@ -154,25 +70,77 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 470,
+            "x": 340,
+            "y": 690
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.kethria",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.kethria.the-empty-saddle",
+      "name": "The Empty Saddle",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Caravanserai at a pass where travelers hang one unused saddle in memory of those lost to winter. Present pressure: Someone removes saddles bearing particular family marks.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 610,
+            "y": 285
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.kethria",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.kethria.var-keth",
+      "name": "Var Keth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "summary": "The capital occupies terraces above the confluence of three snowmelt canals. Copper roofs, carved doors, council courts, wrestling grounds, and fruit gardens define the city.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 505,
             "y": 470
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.atlas.morrow-strait",
+        "containerEntityId": "location.caldris.kethria",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.league.brokers-orchard",
-      "name": "Brokers' Orchard",
+      "entityId": "location.caldris.kethria.whisper-kiln",
+      "name": "Whisper Kiln",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "site",
-            "summary": "memorial garden in League. Trees planted for failed treaties; some bear unexpectedly sweet fruit.",
+            "summary": "Remote pottery works whose cooling vents make conversational sounds in mountain wind. Present pressure: Workers hear specific names whispered before accidents.",
             "visibility": "public",
             "status": "active"
           }
@@ -180,117 +148,54 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 720,
-            "y": 155
+            "x": 845,
+            "y": 795
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.seven-lamps-league",
+        "containerEntityId": "location.caldris.kethria",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.league.the-sealed-hall",
-      "name": "The Sealed Hall",
+      "entityId": "location.caldris.landmark.emberglass-whale",
+      "name": "Emberglass Whale",
       "components": [
         {
-          "qualifiedTypeId": "game.core.world.location",
+          "qualifiedTypeId": "game.core.media.visual",
           "value": {
-            "kind": "site",
-            "summary": "Concord ruin in League. Publicly empty since Year 1 AS; private maintenance invoices continue.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 785,
-            "y": 370
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.seven-lamps-league",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.lore.aunholt",
-      "name": "Aunholt",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "region",
-            "summary": "Hamlets, orchards, pasture, and irrigation channels occupy several sheltered terraces. The communal assembly roof has been rebuilt more than once, incorporating older supports where sound. Local maps record grazing turns, water rights, and winter shelters more thoroughly than distant commercial maps.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 245,
-            "y": 730
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.visual",
-          "value": {
-            "status": "archived",
-            "variants": {
-              "player": {
-                "sha256": "713940c3848c16440298cd4035cb8250bca61f42bd77ec077ae6b822d7f677d7",
+            "status": "active",
+            "attachments": [
+              {
+                "sha256": "67b2b7cb201e2cd367b6b7cb5bba48e425f34f33a510d173ee4ab073161b8d0e",
                 "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Aunholt fantasy atlas map",
-                "caption": "",
+                "width": 1536,
+                "height": 1024,
+                "alt": "A cathedral-sized whale fashioned from smoky volcanic glass lies across a copper-coloured mountain terrace. Its hollow ribs cast amber patterns on the ground; the rising tail is visible from distant carrying paths. Assayers and guides work beside the jaw, while the brittle interior remains outside the ordinary visitor route. Tool marks and joined ribs identify it as a crafted structure, though its makers' intended meaning is disputed.",
+                "caption": "Emberglass Whale",
                 "order": 0,
                 "provenance": {
                   "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/aunholt.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 3
-                }
-              },
-              "dm": {
-                "sha256": "713940c3848c16440298cd4035cb8250bca61f42bd77ec077ae6b822d7f677d7",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Aunholt fantasy atlas map",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/aunholt.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 3
-                }
+                  "credit": "Generated with OpenAI image generation; visually reviewed for Caldris.",
+                  "source": "docs/world/caldris/landmarks/images/emberglass-whale.png",
+                  "reviewedOn": "2026-09-05",
+                  "version": 1
+                },
+                "role": "setting",
+                "visibility": [
+                  "player",
+                  "dm"
+                ]
               }
-            }
+            ]
           }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.lornesse",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.lore.cairn-moss",
-      "name": "Cairn Moss",
-      "components": [
+        },
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "site",
-            "summary": "Location: Peat country west of Whitewindow's surface road. Livelihood: Limited peat cutting, grazing, and guide work. The listening ring lies in a protected patch within working land. Its stones were reset after later disturbance, and only part of the original effect persists. Visitors often hear nothing. Local families maintain paths because losing someone in the moss is a greater concern than disappointing a scholar.",
+            "summary": "A cathedral-sized whale fashioned from smoky volcanic glass lies across a copper-coloured mountain terrace. Its hollow ribs cast amber patterns on the ground; the rising tail is visible from distant carrying paths. Assayers and guides work beside the jaw, while the brittle interior remains outside the ordinary visitor route. Tool marks and joined ribs identify it as a crafted structure, though its makers' intended meaning is disputed.",
             "visibility": "public",
             "status": "active"
           }
@@ -298,535 +203,321 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 150,
-            "y": 200
+            "x": 180,
+            "y": 515
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.lornesse",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.lore.glasswinter-tarn",
-      "name": "Glasswinter Tarn",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "An upland tarn in Lornesse, approached by a marked path and a viewing place on firm ground. Local notes record irregular acoustic phenomena during certain freezes. Conditions vary, and clear ice is not treated as proof that the surface can bear travellers.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 600,
-            "y": 150
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.lornesse",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.lore.reedname-landing",
-      "name": "Reedname Landing",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "A modest public landing in Namarra with boat moorings, a covered waiting place, and a forwarding service. Its working records track changing channels and actual deliveries. The landing's visibility does not make confidential household lists public or settle the legal recognition of the communities its crews serve.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 515,
-            "y": 625
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.namarra",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.lore.selvar",
-      "name": "Selvar",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "region",
-            "summary": "Historic inland district east of Serevan on Solasca, connected by caravan roads, gardens and market towns including Namar Vale.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 205,
-            "y": 350
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.visual",
-          "value": {
-            "status": "archived",
-            "variants": {
-              "player": {
-                "sha256": "ff8e4b14de7f10f7ed094384124c931ece2977baae872a8cd9fe87618ea9a2f4",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Selvar fantasy atlas map",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/selvar.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 3
-                }
-              },
-              "dm": {
-                "sha256": "ff8e4b14de7f10f7ed094384124c931ece2977baae872a8cd9fe87618ea9a2f4",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Selvar fantasy atlas map",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/selvar.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 3
-                }
-              }
-            }
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.ordelain",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.lore.serevan",
-      "name": "Serevan",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "region",
-            "summary": "Historic coastal district of Solasca facing Morrow Strait, a crossing of the Lantern Sea; home to Leth Sarai and Istravel. Its old principality does not establish the present political borders.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 205,
-            "y": 870
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.visual",
-          "value": {
-            "status": "archived",
-            "variants": {
-              "player": {
-                "sha256": "c200e57f828e6583a61a61d90589c8ef6f093784a4563e742b26bf80a0cca990",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Serevan fantasy atlas map",
-                "caption": "Serevan",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/serevan.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 4
-                }
-              },
-              "dm": {
-                "sha256": "c200e57f828e6583a61a61d90589c8ef6f093784a4563e742b26bf80a0cca990",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Serevan fantasy atlas map",
-                "caption": "Serevan",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/serevan.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 4
-                }
-              }
-            }
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.seven-lamps-league",
+        "containerEntityId": "location.caldris.kethria",
         "slot": "location"
       }
     }
   ],
   "relationships": [
     {
-      "fromEntityId": "secret.caldris.lore.place-cairn-moss.1",
-      "toEntityId": "location.caldris.lore.cairn-moss",
+      "fromEntityId": "location.caldris.kethria.breadshield-monastery",
+      "toEntityId": "location.caldris.kethria.snowgate",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.kethria.breadshield-monastery",
+      "toEntityId": "location.caldris.kethria.var-keth",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.kethria.copper-rain-terrace",
+      "toEntityId": "location.caldris.kethria.the-empty-saddle",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.kethria.copperwell",
+      "toEntityId": "location.caldris.kethria.the-door-valley",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.kethria.copperwell",
+      "toEntityId": "location.caldris.kethria.whisper-kiln",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.kethria.snowgate",
+      "toEntityId": "location.caldris.kethria.the-empty-saddle",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.kethria.the-door-valley",
+      "toEntityId": "location.caldris.kethria.var-keth",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.277ba0928b403b436eb6",
+      "toEntityId": "location.caldris.kethria.the-door-valley",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.place-aunholt.1",
-      "toEntityId": "location.caldris.lore.aunholt",
+      "fromEntityId": "fact.caldris.atlas.connection.890a527e53b922e5c087",
+      "toEntityId": "location.caldris.kethria.snowgate",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.place-aunholt.2",
-      "toEntityId": "location.caldris.lore.aunholt",
+      "fromEntityId": "fact.caldris.atlas.connection.cec98ea2c2de4c1b2c63",
+      "toEntityId": "location.caldris.kethria.the-empty-saddle",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.1722-the-listening-stones-of-cairn-moss",
-      "toEntityId": "location.caldris.lore.cairn-moss",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.0887-the-orchard-of-winter-apples",
-      "toEntityId": "location.caldris.lore.aunholt",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.0899-the-valley-already-named",
-      "toEntityId": "location.caldris.lore.aunholt",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.0874-the-singing-wood-of-seln",
-      "toEntityId": "location.caldris.lore.aunholt",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.0809-the-first-feast-of-two-harvests",
-      "toEntityId": "location.caldris.lore.aunholt",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.0822-the-goat-path-and-the-painted-road",
-      "toEntityId": "location.caldris.lore.aunholt",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.0191-the-voices-beneath-glasswinter-tarn",
-      "toEntityId": "location.caldris.lore.glasswinter-tarn",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.lore.0191-the-voices-beneath-glasswinter-tarn-account.1",
-      "toEntityId": "location.caldris.lore.glasswinter-tarn",
+      "fromEntityId": "fact.caldris.atlas.connection.febc449aac9e5a11680d",
+      "toEntityId": "location.caldris.kethria.var-keth",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.0191-the-voices-beneath-glasswinter-tarn-gm-truth.1",
-      "toEntityId": "location.caldris.lore.glasswinter-tarn",
+      "fromEntityId": "fact.caldris.atlas.closed.47e02359e65637604337",
+      "toEntityId": "location.caldris.kethria.karshs-sleeping-ridge",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.0191-the-voices-beneath-glasswinter-tarn-traces-and-stories.1",
-      "toEntityId": "location.caldris.lore.glasswinter-tarn",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.lore.0200-0100-place-glasswinter-tarn.1",
-      "toEntityId": "location.caldris.lore.glasswinter-tarn",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.lore.0050-0000-place-reedname-landing.1",
-      "toEntityId": "location.caldris.lore.reedname-landing",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.0041-the-lists-carried-by-water",
-      "toEntityId": "location.caldris.lore.reedname-landing",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.lore.0041-the-lists-carried-by-water-account.1",
-      "toEntityId": "location.caldris.lore.reedname-landing",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.lore.0041-the-lists-carried-by-water-gm-truth.1",
-      "toEntityId": "location.caldris.lore.reedname-landing",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.lore.0041-the-lists-carried-by-water-traces-and-stories.1",
-      "toEntityId": "location.caldris.lore.reedname-landing",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.10daa0e0b27afde9e746",
-      "toEntityId": "location.caldris.lore.reedname-landing",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.8b236f1e75c1d54d9ce3",
-      "toEntityId": "location.caldris.lore.reedname-landing",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.a322f9024b928e01ddec",
-      "toEntityId": "location.caldris.lore.reedname-landing",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.98b83c233ab1aa2b36a8",
-      "toEntityId": "location.caldris.lantern-sea.the-halfway-light",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.closed.b1665bd55978c66e97c4",
-      "toEntityId": "location.caldris.league.the-sealed-hall",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.closed.9e829fdbb3eb29859179",
-      "toEntityId": "location.caldris.lantern-sea.ilyrs-listening-caves",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.0d6f4e6c06b11fda2fd9",
-      "toEntityId": "location.caldris.lore.cairn-moss",
+      "fromEntityId": "route.caldris.atlas.500eee28b10f7eec4f95",
+      "toEntityId": "location.caldris.kethria.snowgate",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.a0d9e6319d986770ae04",
-      "toEntityId": "location.caldris.lore.cairn-moss",
+      "fromEntityId": "route.caldris.atlas.890a527e53b922e5c087",
+      "toEntityId": "location.caldris.kethria.snowgate",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.384f4f545f62ef8d1183",
-      "toEntityId": "location.caldris.lore.glasswinter-tarn",
+      "fromEntityId": "route.caldris.atlas.277ba0928b403b436eb6",
+      "toEntityId": "location.caldris.kethria.the-door-valley",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.d61d8dc81c2c58ea51b9",
-      "toEntityId": "location.caldris.lore.glasswinter-tarn",
+      "fromEntityId": "route.caldris.atlas.3d2f340480be9662f280",
+      "toEntityId": "location.caldris.kethria.var-keth",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.29e94d68589cee989f16",
-      "toEntityId": "location.caldris.league.brokers-orchard",
+      "fromEntityId": "route.caldris.atlas.5cc3269462592feb3f75",
+      "toEntityId": "location.caldris.kethria.the-empty-saddle",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.8414806005e1f5c701e5",
-      "toEntityId": "location.caldris.league.brokers-orchard",
+      "fromEntityId": "route.caldris.atlas.5cc3269462592feb3f75",
+      "toEntityId": "location.caldris.kethria.snowgate",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.landmark.rain-crown-of-orovant.custom",
-      "toEntityId": "location.caldris.landmark.rain-crown-of-orovant",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.landmark.rain-crown-of-orovant.hooks",
-      "toEntityId": "location.caldris.landmark.rain-crown-of-orovant",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.landmark.rain-crown-of-orovant.lore",
-      "toEntityId": "location.caldris.landmark.rain-crown-of-orovant",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.landmark.orchardback.access.2724281d1f",
-      "toEntityId": "location.caldris.landmark.orchardback",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.landmark.orchardback.custom",
-      "toEntityId": "location.caldris.landmark.orchardback",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.landmark.orchardback.gmtruth",
-      "toEntityId": "location.caldris.landmark.orchardback",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.landmark.orchardback.hooks",
-      "toEntityId": "location.caldris.landmark.orchardback",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.landmark.orchardback.lore",
-      "toEntityId": "location.caldris.landmark.orchardback",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.landmark.rain-crown-of-orovant.access.c8bb5b07e6",
-      "toEntityId": "location.caldris.landmark.rain-crown-of-orovant",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.landmark.rain-crown-of-orovant.gmtruth",
-      "toEntityId": "location.caldris.landmark.rain-crown-of-orovant",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.landmark.orchardback.access.0d8ecb0ed6",
-      "toEntityId": "location.caldris.landmark.orchardback",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.rain-crown-of-orovant.23",
-      "toEntityId": "location.caldris.landmark.rain-crown-of-orovant",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.rain-crown-of-orovant.366",
-      "toEntityId": "location.caldris.landmark.rain-crown-of-orovant",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.rain-crown-of-orovant.844",
-      "toEntityId": "location.caldris.landmark.rain-crown-of-orovant",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.glass-tide-palace.1256",
-      "toEntityId": "location.caldris.lore.serevan",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.glass-tide-palace.31",
-      "toEntityId": "location.caldris.lore.serevan",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.glass-tide-palace.534",
-      "toEntityId": "location.caldris.lore.serevan",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.orchardback.212",
-      "toEntityId": "location.caldris.landmark.orchardback",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.orchardback.6",
-      "toEntityId": "location.caldris.landmark.orchardback",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.orchardback.605",
-      "toEntityId": "location.caldris.landmark.orchardback",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.landmark.622d0ef64eba8e69aa1b",
-      "toEntityId": "location.caldris.landmark.rain-crown-of-orovant",
+      "fromEntityId": "route.caldris.atlas.5e67f887eda38449e0a9",
+      "toEntityId": "location.caldris.kethria.the-door-valley",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.landmark.f0a70a55b5aa46f1e747",
-      "toEntityId": "location.caldris.landmark.rain-crown-of-orovant",
+      "fromEntityId": "route.caldris.atlas.7fde9d8c4a0d3d973b84",
+      "toEntityId": "location.caldris.kethria.the-empty-saddle",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.landmark.orchardback.approach.0d8ecb0ed6",
-      "toEntityId": "location.caldris.landmark.orchardback",
+      "fromEntityId": "route.caldris.atlas.a3fef9b212f673c7f80e",
+      "toEntityId": "location.caldris.kethria.var-keth",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.cec98ea2c2de4c1b2c63",
+      "toEntityId": "location.caldris.kethria.snowgate",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.cec98ea2c2de4c1b2c63",
+      "toEntityId": "location.caldris.kethria.the-empty-saddle",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.da13b91d5226a0a719a9",
+      "toEntityId": "location.caldris.kethria.var-keth",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.da13b91d5226a0a719a9",
+      "toEntityId": "location.caldris.kethria.the-door-valley",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.eacca519cce4e79bc437",
+      "toEntityId": "location.caldris.kethria.the-empty-saddle",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.febc449aac9e5a11680d",
+      "toEntityId": "location.caldris.kethria.the-door-valley",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.febc449aac9e5a11680d",
+      "toEntityId": "location.caldris.kethria.var-keth",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.7c739f2d575ce160d961",
+      "toEntityId": "location.caldris.kethria.whisper-kiln",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.dd9a10b96b304cd50fe0",
+      "toEntityId": "location.caldris.kethria.whisper-kiln",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.kethria.var-keth",
+      "toEntityId": "location.caldris.landmark.emberglass-whale",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.emberglass-whale.access.da0b776d65",
+      "toEntityId": "location.caldris.kethria.var-keth",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.landmark.orchardback.approach.2724281d1f",
-      "toEntityId": "location.caldris.landmark.orchardback",
+      "fromEntityId": "fact.caldris.landmark.emberglass-whale.access.da0b776d65",
+      "toEntityId": "location.caldris.landmark.emberglass-whale",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.landmark.rain-crown-of-orovant.approach.c8bb5b07e6",
-      "toEntityId": "location.caldris.landmark.rain-crown-of-orovant",
+      "fromEntityId": "fact.caldris.landmark.emberglass-whale.custom",
+      "toEntityId": "location.caldris.landmark.emberglass-whale",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.emberglass-whale.gmtruth",
+      "toEntityId": "location.caldris.landmark.emberglass-whale",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.emberglass-whale.hooks",
+      "toEntityId": "location.caldris.landmark.emberglass-whale",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.emberglass-whale.lore",
+      "toEntityId": "location.caldris.landmark.emberglass-whale",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.emberglass-whale.1338",
+      "toEntityId": "location.caldris.kethria.karshs-sleeping-ridge",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.emberglass-whale.1338",
+      "toEntityId": "location.caldris.kethria.var-keth",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.emberglass-whale.1338",
+      "toEntityId": "location.caldris.landmark.emberglass-whale",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.emberglass-whale.62",
+      "toEntityId": "location.caldris.kethria.karshs-sleeping-ridge",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.emberglass-whale.62",
+      "toEntityId": "location.caldris.kethria.var-keth",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.emberglass-whale.62",
+      "toEntityId": "location.caldris.landmark.emberglass-whale",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.emberglass-whale.681",
+      "toEntityId": "location.caldris.kethria.karshs-sleeping-ridge",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.emberglass-whale.681",
+      "toEntityId": "location.caldris.kethria.var-keth",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.emberglass-whale.681",
+      "toEntityId": "location.caldris.landmark.emberglass-whale",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.3b4bd62f3138222703fc",
+      "toEntityId": "location.caldris.kethria.var-keth",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.3b4bd62f3138222703fc",
+      "toEntityId": "location.caldris.landmark.emberglass-whale",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.6ef59a263fe0d196e074",
+      "toEntityId": "location.caldris.landmark.emberglass-whale",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.landmark.6ef59a263fe0d196e074",
+      "toEntityId": "location.caldris.kethria.var-keth",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.emberglass-whale.approach.da0b776d65",
+      "toEntityId": "location.caldris.landmark.emberglass-whale",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     }

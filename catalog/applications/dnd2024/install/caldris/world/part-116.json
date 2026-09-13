@@ -3,6 +3,32 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
+      "entityId": "secret.caldris.campaign.cozy.worker-breakfasts-in-copperdeep-or-gullstrand",
+      "name": "Cozy return",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "intention",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "worker breakfasts in Copperdeep or Gullstrand;",
+            "provenance": "Caldris campaign tapestry — cozy",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge"
+      }
+    },
+    {
       "entityId": "secret.caldris.campaign.ladder.a",
       "name": "Boss ladder — the toll conspiracy",
       "components": [
@@ -235,32 +261,6 @@
         "containerEntityId": "location.caldris.atlas",
         "slot": "knowledge"
       }
-    },
-    {
-      "entityId": "secret.caldris.campaign.volume.volume-iv",
-      "name": "Volume IV — Across the Lantern Sea (levels 6–7)",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.knowledge.classification",
-          "value": {
-            "subjectKind": "intention",
-            "sensitivity": "secret"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.secret",
-          "value": {
-            "status": "active",
-            "summary": "Volume IV — Across the Lantern Sea (levels 6–7) Travel to Solasca expands the World before the deepest plot becomes dominant. The journey includes shipboard comedy, genuine danger, and several unrelated social obligations. 1. A Wedding, If Convenient: find Cook Berto, resolve labour obligations, and decide whether hidden treaty clauses should become public before the ceremony. 2. The Compass of an Unbuilt Ship: investigate Tavaros's returned compass and its future date. 3. Three Resignation Letters: find missing League Chair Ansel Daro and determine which anticipated kidnapper received which letter. 4. The Flowers Inside the Sealed Hall: enter or observe the former Concord chamber without surrendering its archive to one state. 5. The Dry Sock Accounts: protect mutual-aid records that accidentally prove a courier network. Apparent completion: Celyn's Aster Quay cell is dismantled or divided. Higher reveal: Celyn answers to the Council of Margins, whose factions disagree. Fresh unr…",
-            "provenance": "Caldris campaign tapestry — six-volume shape",
-            "visibility": "gm"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.atlas",
-        "slot": "knowledge"
-      }
     }
   ],
   "relationships": [
@@ -373,13 +373,13 @@
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.campaign.volume.volume-iv",
+      "fromEntityId": "secret.caldris.campaign.cozy.worker-breakfasts-in-copperdeep-or-gullstrand",
       "toEntityId": "location.caldris.atlas",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.campaign.volume.volume-iv",
+      "fromEntityId": "secret.caldris.campaign.cozy.worker-breakfasts-in-copperdeep-or-gullstrand",
       "toEntityId": "world.caldris",
       "qualifiedKind": "game.core.world.knowledge.in-world",
       "value": {}

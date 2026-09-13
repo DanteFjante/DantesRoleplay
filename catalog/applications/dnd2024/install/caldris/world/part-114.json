@@ -3,6 +3,32 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
+      "entityId": "secret.caldris.campaign.bridge.chickens-of-commercial-intent",
+      "name": "Adventure bridge — Chickens of Commercial Intent",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "intention",
+            "sensitivity": "secret"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.secret",
+          "value": {
+            "status": "active",
+            "summary": "A farmer pays the party with a brooch claimed by three families, beginning an inheritance comedy.",
+            "provenance": "Caldris campaign tapestry — independent adventure bridges",
+            "visibility": "gm"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.atlas",
+        "slot": "knowledge"
+      }
+    },
+    {
       "entityId": "secret.caldris.campaign.bridge.the-comedy-crown",
       "name": "Adventure bridge — The Comedy Crown",
       "components": [
@@ -209,36 +235,22 @@
         "containerEntityId": "location.caldris.atlas",
         "slot": "knowledge"
       }
-    },
-    {
-      "entityId": "secret.caldris.campaign.bridge.the-ship-that-must-sail",
-      "name": "Adventure bridge — The Ship That Must Sail",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.knowledge.classification",
-          "value": {
-            "subjectKind": "intention",
-            "sensitivity": "secret"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.secret",
-          "value": {
-            "status": "active",
-            "summary": "A safely launched vessel carries a Selucian wedding delegation and an argument over seating.",
-            "provenance": "Caldris campaign tapestry — independent adventure bridges",
-            "visibility": "gm"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.atlas",
-        "slot": "knowledge"
-      }
     }
   ],
   "relationships": [
     {
+      "fromEntityId": "secret.caldris.campaign.bridge.chickens-of-commercial-intent",
+      "toEntityId": "location.caldris.atlas",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.campaign.bridge.chickens-of-commercial-intent",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
       "fromEntityId": "secret.caldris.campaign.bridge.the-comedy-crown",
       "toEntityId": "location.caldris.atlas",
       "qualifiedKind": "game.core.world.knowledge.about",
@@ -330,18 +342,6 @@
     },
     {
       "fromEntityId": "secret.caldris.campaign.bridge.the-shepherd-who-refused",
-      "toEntityId": "world.caldris",
-      "qualifiedKind": "game.core.world.knowledge.in-world",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.campaign.bridge.the-ship-that-must-sail",
-      "toEntityId": "location.caldris.atlas",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.campaign.bridge.the-ship-that-must-sail",
       "toEntityId": "world.caldris",
       "qualifiedKind": "game.core.world.knowledge.in-world",
       "value": {}

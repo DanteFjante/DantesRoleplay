@@ -33,6 +33,12 @@
           "x": 765,
           "y": 490,
           "basis": "Authored atlas coordinate retained after comparison with the clean image: roads, terrain and settlement frame are unchanged."
+        },
+        {
+          "locationId": "location.caldris.tidecross",
+          "x": 645,
+          "y": 755,
+          "basis": "Committed harbour placement on the long island at the southern mouth of the Lantern Sea; checked against the clean world atlas."
         }
       ]
     },
@@ -394,6 +400,140 @@
           "x": 255,
           "y": 560,
           "basis": "Opening site coordinate retained after checking its room or grounds against the clean artwork."
+        }
+      ]
+    },
+    {
+      "ownerLocationId": "location.caldris.tidecross",
+      "imagePath": "docs/world/caldris/harbour-islands/tidecross-harbour.png",
+      "imageSha256": "6d1c187514e16f30bbaa3feadf1a810e95bfef25364d484ff1e229128c37b7a3",
+      "anchors": [
+        {
+          "locationId": "location.caldris.tidecross.common-quay",
+          "x": 650,
+          "y": 540,
+          "basis": "Retained authored harbour coordinate on the exact committed clean island image."
+        },
+        {
+          "locationId": "location.caldris.tidecross.tide-market",
+          "x": 454,
+          "y": 492,
+          "basis": "Retained authored harbour coordinate on the exact committed clean island image."
+        },
+        {
+          "locationId": "location.caldris.tidecross.old-town",
+          "x": 386,
+          "y": 384,
+          "basis": "Retained authored harbour coordinate on the exact committed clean island image."
+        },
+        {
+          "locationId": "location.caldris.tidecross.north-ferry",
+          "x": 688,
+          "y": 307,
+          "basis": "Retained authored harbour coordinate on the exact committed clean island image."
+        },
+        {
+          "locationId": "location.caldris.tidecross.south-ferry",
+          "x": 785,
+          "y": 664,
+          "basis": "Retained authored harbour coordinate on the exact committed clean island image."
+        },
+        {
+          "locationId": "location.caldris.tidecross.fishing-basin",
+          "x": 620,
+          "y": 610,
+          "basis": "Retained authored harbour coordinate on the exact committed clean island image."
+        },
+        {
+          "locationId": "location.caldris.tidecross.shipyard",
+          "x": 490,
+          "y": 796,
+          "basis": "Retained authored harbour coordinate on the exact committed clean island image."
+        },
+        {
+          "locationId": "location.caldris.tidecross.exchange-hall",
+          "x": 613,
+          "y": 381,
+          "basis": "Retained authored harbour coordinate on the exact committed clean island image."
+        },
+        {
+          "locationId": "location.caldris.tidecross.lantern-inn",
+          "x": 471,
+          "y": 544,
+          "basis": "Retained authored harbour coordinate on the exact committed clean island image."
+        },
+        {
+          "locationId": "location.caldris.tidecross.mariners-shrine",
+          "x": 556,
+          "y": 210,
+          "basis": "Retained authored harbour coordinate on the exact committed clean island image."
+        },
+        {
+          "locationId": "location.caldris.tidecross.old-signal-tower",
+          "x": 465,
+          "y": 59,
+          "basis": "Retained authored harbour coordinate on the exact committed clean island image."
+        },
+        {
+          "locationId": "location.caldris.tidecross.harbour-beacon",
+          "x": 913,
+          "y": 484,
+          "basis": "Retained authored harbour coordinate on the exact committed clean island image."
+        }
+      ]
+    },
+    {
+      "ownerLocationId": "location.caldris.lantern-sea.the-halfway-light",
+      "imagePath": "docs/world/caldris/harbour-islands/halfway-light.png",
+      "imageSha256": "026c25aa78463710b362be65ac4510b03166f9503b24095ef59ab21d6899e1fd",
+      "anchors": [
+        {
+          "locationId": "location.caldris.lantern-sea.the-halfway-light.beacon-tower",
+          "x": 494,
+          "y": 119,
+          "basis": "Retained authored harbour coordinate on the exact committed clean island image."
+        },
+        {
+          "locationId": "location.caldris.lantern-sea.the-halfway-light.keepers-court",
+          "x": 463,
+          "y": 388,
+          "basis": "Retained authored harbour coordinate on the exact committed clean island image."
+        },
+        {
+          "locationId": "location.caldris.lantern-sea.the-halfway-light.supply-jetty",
+          "x": 772,
+          "y": 402,
+          "basis": "Retained authored harbour coordinate on the exact committed clean island image."
+        },
+        {
+          "locationId": "location.caldris.lantern-sea.the-halfway-light.lifeboat-station",
+          "x": 464,
+          "y": 717,
+          "basis": "Retained authored harbour coordinate on the exact committed clean island image."
+        },
+        {
+          "locationId": "location.caldris.lantern-sea.the-halfway-light.fog-bell",
+          "x": 154,
+          "y": 296,
+          "basis": "Retained authored harbour coordinate on the exact committed clean island image."
+        },
+        {
+          "locationId": "location.caldris.lantern-sea.the-halfway-light.mariners-refuge",
+          "x": 756,
+          "y": 611,
+          "basis": "Retained authored harbour coordinate on the exact committed clean island image."
+        },
+        {
+          "locationId": "location.caldris.lantern-sea.the-halfway-light.cistern-gardens",
+          "x": 457,
+          "y": 464,
+          "basis": "Retained authored harbour coordinate on the exact committed clean island image."
+        },
+        {
+          "locationId": "location.caldris.lantern-sea.the-halfway-light.lamp-store",
+          "x": 610,
+          "y": 503,
+          "basis": "Retained authored harbour coordinate on the exact committed clean island image."
         }
       ]
     }

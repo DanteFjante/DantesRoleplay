@@ -3,170 +3,14 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
-      "entityId": "location.caldris.seven-lamps-league.chairmans-nap",
-      "name": "Chairman's Nap",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "Roadside inn founded where a League chair once slept through a vote; meetings there cannot exceed one hour. Present pressure: Delegates exploit the rule to prevent testimony from remote villages.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 575,
-            "y": 260
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.seven-lamps-league",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.seven-lamps-league.glassharbor",
-      "name": "Glassharbor",
+      "entityId": "location.caldris.selucia.candleport",
+      "name": "Candleport",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "settlement",
-            "summary": "Glassharbor produces windows, mirrors, lenses, beads, bottles, and elaborate navigational lights. Its furnaces glow along a sheltered bay.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 165,
-            "y": 585
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.seven-lamps-league",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.seven-lamps-league.halfprice-bridge",
-      "name": "Halfprice Bridge",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "Merchant-funded toll bridge whose fee drops at sunset, producing a daily race of carts and insults. Present pressure: The bridge keeper abolishes the discount without council authority.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 630,
-            "y": 490
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.seven-lamps-league",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.seven-lamps-league.low-lantern",
-      "name": "Low Lantern",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "settlement",
-            "summary": "Low Lantern occupies marshy islands at the northern strait. Warehouses, rope bridges, customs houses, and cheap lodging make it less grand and more useful than the other League cities.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 165,
-            "y": 735
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.seven-lamps-league",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.seven-lamps-league.pepperglass-yard",
-      "name": "Pepperglass Yard",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "Courtyard where spice brokers use coloured glass tubes to compare powders without revealing recipes. Present pressure: Every sample smells faintly of smoke and buyers suspect adulteration.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 755,
-            "y": 655
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.seven-lamps-league",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.seven-lamps-league.the-fifth-warehouse",
-      "name": "The Fifth Warehouse",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "Neutral bonded store with four visible buildings and a famous joke about the missing fifth. Present pressure: Inventories show goods entering a warehouse no one can find.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 510,
-            "y": 590
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.seven-lamps-league",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.tessarane.blue-step",
-      "name": "Blue Step",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "settlement",
-            "summary": "Blue Step sits where the plateau road descends through blue-grey cliffs toward the Lantern Sea. It is a caravan, customs, and animal-remount city.",
+            "summary": "Candleport climbs around a protected harbour beneath the royal citadel. Pilgrim bells, fishing boats, citrus markets, coffee houses, embassies, and parliament stairs crowd the waterfront.",
             "visibility": "public",
             "status": "active"
           }
@@ -175,24 +19,24 @@
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
             "x": 280,
-            "y": 325
+            "y": 675
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.tessarane",
+        "containerEntityId": "location.caldris.selucia",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.tessarane.cloud-apricot-farm",
-      "name": "Cloud Apricot Farm",
+      "entityId": "location.caldris.selucia.mariselle",
+      "name": "Mariselle",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
-            "kind": "site",
-            "summary": "Sheltered highland orchard producing small pale fruit and hosting astronomers during clear winters. Present pressure: Every telescope points slightly wrong despite careful calibration.",
+            "kind": "settlement",
+            "summary": "Mariselle is an artistic and commercial port of tile workshops, theatres, rope yards, music schools, and crowded hillside neighbourhoods.",
             "visibility": "public",
             "status": "active"
           }
@@ -200,25 +44,25 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 680,
-            "y": 220
+            "x": 510,
+            "y": 430
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.tessarane",
+        "containerEntityId": "location.caldris.selucia",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.tessarane.kitewife-mesa",
-      "name": "Kitewife Mesa",
+      "entityId": "location.caldris.selucia.needle-current",
+      "name": "Needle Current",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "site",
-            "summary": "Windy plateau where couriers test signal kites and families dry cheese in woven cages. Present pressure: Kites return with extra knots that resemble military code.",
+            "summary": "Narrow sea passage guided by shore needles, tide boards, and hereditary rowing pilots. Present pressure: The current reverses at the wrong hour.",
             "visibility": "public",
             "status": "active"
           }
@@ -226,376 +70,162 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 380,
-            "y": 170
+            "x": 465,
+            "y": 680
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.tessarane",
+        "containerEntityId": "location.caldris.selucia",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.selucia.orange-bell-island",
+      "name": "Orange Bell Island",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "orchard island in Selucia. Wedding venue, maritime claim, and bell tuned to warn of reef fog.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 820,
+            "y": 520
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.selucia",
         "slot": "location"
       }
     }
   ],
   "relationships": [
     {
-      "fromEntityId": "location.caldris.league.brokers-orchard",
-      "toEntityId": "location.caldris.seven-lamps-league.chairmans-nap",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.seven-lamps-league.aster-quay",
-      "toEntityId": "location.caldris.seven-lamps-league.chairmans-nap",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.seven-lamps-league.chairmans-nap",
-      "toEntityId": "location.caldris.seven-lamps-league.halfprice-bridge",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.seven-lamps-league.glassharbor",
-      "toEntityId": "location.caldris.seven-lamps-league.the-fifth-warehouse",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.seven-lamps-league.halfprice-bridge",
-      "toEntityId": "location.caldris.seven-lamps-league.pepperglass-yard",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.seven-lamps-league.halfprice-bridge",
-      "toEntityId": "location.caldris.seven-lamps-league.the-fifth-warehouse",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.seven-lamps-league.low-lantern",
-      "toEntityId": "location.caldris.seven-lamps-league.pepperglass-yard",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.seven-lamps-league.low-lantern",
-      "toEntityId": "location.caldris.seven-lamps-league.the-fifth-warehouse",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.tessarane.blue-step",
-      "toEntityId": "location.caldris.tessarane.kitewife-mesa",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.ordelain.vessa",
-      "toEntityId": "location.caldris.seven-lamps-league.low-lantern",
+      "fromEntityId": "location.caldris.selucia.candleport",
+      "toEntityId": "location.caldris.selucia.needle-current",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
       "fromEntityId": "location.caldris.selucia.mariselle",
-      "toEntityId": "location.caldris.seven-lamps-league.low-lantern",
+      "toEntityId": "location.caldris.selucia.needle-current",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.086d70c081495da33810",
-      "toEntityId": "location.caldris.seven-lamps-league.the-fifth-warehouse",
+      "fromEntityId": "location.caldris.selucia.mariselle",
+      "toEntityId": "location.caldris.selucia.orange-bell-island",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.carrowmere.gullstrand",
+      "toEntityId": "location.caldris.selucia.candleport",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.0645bf52968d23d8dbb4",
+      "toEntityId": "location.caldris.selucia.needle-current",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.0d81fde3316fe979d5f4",
-      "toEntityId": "location.caldris.seven-lamps-league.chairmans-nap",
+      "fromEntityId": "fact.caldris.atlas.connection.19194871bf90db5e1764",
+      "toEntityId": "location.caldris.selucia.candleport",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.29e94d68589cee989f16",
-      "toEntityId": "location.caldris.seven-lamps-league.chairmans-nap",
+      "fromEntityId": "fact.caldris.atlas.connection.7143ab93ce1fd1e1fd48",
+      "toEntityId": "location.caldris.selucia.mariselle",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.602bc03cc3b108481376",
-      "toEntityId": "location.caldris.seven-lamps-league.halfprice-bridge",
+      "fromEntityId": "fact.caldris.atlas.connection.762edd94824d3f2e1bda",
+      "toEntityId": "location.caldris.selucia.mariselle",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.636588188a2213b6b9f3",
-      "toEntityId": "location.caldris.seven-lamps-league.halfprice-bridge",
+      "fromEntityId": "fact.caldris.atlas.connection.90d89148c4559d61b13f",
+      "toEntityId": "location.caldris.selucia.candleport",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.93cc64bc8b9facbbbaf8",
-      "toEntityId": "location.caldris.seven-lamps-league.the-fifth-warehouse",
+      "fromEntityId": "fact.caldris.atlas.connection.987ab0d2fda88cb09132",
+      "toEntityId": "location.caldris.selucia.orange-bell-island",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.a8f7ce474bcb67146e6b",
-      "toEntityId": "location.caldris.seven-lamps-league.pepperglass-yard",
+      "fromEntityId": "fact.caldris.atlas.connection.b3140a103cd2dc2b10bb",
+      "toEntityId": "location.caldris.selucia.mariselle",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.213a2a0f812687e95b9e",
-      "toEntityId": "location.caldris.tessarane.blue-step",
+      "fromEntityId": "route.caldris.atlas.762edd94824d3f2e1bda",
+      "toEntityId": "location.caldris.selucia.mariselle",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.88e379bb652e34c1f931",
+      "toEntityId": "location.caldris.selucia.candleport",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.90d89148c4559d61b13f",
+      "toEntityId": "location.caldris.selucia.candleport",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.eb4272c8592b9f569fa4",
+      "toEntityId": "location.caldris.selucia.mariselle",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.landmark.orchardback",
+      "toEntityId": "location.caldris.selucia.mariselle",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.landmark.orchardback.access.2724281d1f",
+      "toEntityId": "location.caldris.selucia.mariselle",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.f3c0954ae913e93948c1",
-      "toEntityId": "location.caldris.tessarane.blue-step",
-      "qualifiedKind": "game.core.world.knowledge.about",
+      "fromEntityId": "chronology.caldris.landmark.orchardback.212",
+      "toEntityId": "location.caldris.selucia.mariselle",
+      "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.eb545d810ffad0540f54",
-      "toEntityId": "location.caldris.seven-lamps-league.low-lantern",
-      "qualifiedKind": "game.core.world.knowledge.about",
+      "fromEntityId": "chronology.caldris.landmark.orchardback.6",
+      "toEntityId": "location.caldris.selucia.mariselle",
+      "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.1c77ee7aa00e9e049987",
-      "toEntityId": "location.caldris.seven-lamps-league.low-lantern",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.0799f6fd0114bf1cb913",
-      "toEntityId": "location.caldris.seven-lamps-league.chairmans-nap",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.0d81fde3316fe979d5f4",
-      "toEntityId": "location.caldris.seven-lamps-league.chairmans-nap",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.0d81fde3316fe979d5f4",
-      "toEntityId": "location.caldris.seven-lamps-league.halfprice-bridge",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.231e99aa4729eb614d32",
-      "toEntityId": "location.caldris.seven-lamps-league.chairmans-nap",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.afd2be74d01efe8e7336",
-      "toEntityId": "location.caldris.seven-lamps-league.halfprice-bridge",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.afd2be74d01efe8e7336",
-      "toEntityId": "location.caldris.seven-lamps-league.chairmans-nap",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.086d70c081495da33810",
-      "toEntityId": "location.caldris.seven-lamps-league.low-lantern",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.086d70c081495da33810",
-      "toEntityId": "location.caldris.seven-lamps-league.the-fifth-warehouse",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.29e94d68589cee989f16",
-      "toEntityId": "location.caldris.seven-lamps-league.chairmans-nap",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.389ff6a50440f95f0a31",
-      "toEntityId": "location.caldris.seven-lamps-league.the-fifth-warehouse",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.389ff6a50440f95f0a31",
-      "toEntityId": "location.caldris.seven-lamps-league.low-lantern",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.602bc03cc3b108481376",
-      "toEntityId": "location.caldris.seven-lamps-league.halfprice-bridge",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.602bc03cc3b108481376",
-      "toEntityId": "location.caldris.seven-lamps-league.the-fifth-warehouse",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.636588188a2213b6b9f3",
-      "toEntityId": "location.caldris.seven-lamps-league.halfprice-bridge",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.636588188a2213b6b9f3",
-      "toEntityId": "location.caldris.seven-lamps-league.pepperglass-yard",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.6ccb9af6f8504a614d35",
-      "toEntityId": "location.caldris.seven-lamps-league.pepperglass-yard",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.6ccb9af6f8504a614d35",
-      "toEntityId": "location.caldris.seven-lamps-league.low-lantern",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.8414806005e1f5c701e5",
-      "toEntityId": "location.caldris.seven-lamps-league.chairmans-nap",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.86c956097cd25cbe3e13",
-      "toEntityId": "location.caldris.seven-lamps-league.pepperglass-yard",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.86c956097cd25cbe3e13",
-      "toEntityId": "location.caldris.seven-lamps-league.halfprice-bridge",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.93cc64bc8b9facbbbaf8",
-      "toEntityId": "location.caldris.seven-lamps-league.glassharbor",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.93cc64bc8b9facbbbaf8",
-      "toEntityId": "location.caldris.seven-lamps-league.the-fifth-warehouse",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.a8f7ce474bcb67146e6b",
-      "toEntityId": "location.caldris.seven-lamps-league.low-lantern",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.a8f7ce474bcb67146e6b",
-      "toEntityId": "location.caldris.seven-lamps-league.pepperglass-yard",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.beb190945b8c59022779",
-      "toEntityId": "location.caldris.seven-lamps-league.the-fifth-warehouse",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.beb190945b8c59022779",
-      "toEntityId": "location.caldris.seven-lamps-league.halfprice-bridge",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.d54ecb57cf9632e8e539",
-      "toEntityId": "location.caldris.seven-lamps-league.the-fifth-warehouse",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.d54ecb57cf9632e8e539",
-      "toEntityId": "location.caldris.seven-lamps-league.glassharbor",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.1fb433c139c8930d5f5a",
-      "toEntityId": "location.caldris.tessarane.blue-step",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.213a2a0f812687e95b9e",
-      "toEntityId": "location.caldris.tessarane.blue-step",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.4b4c5add87eace9d01cf",
-      "toEntityId": "location.caldris.tessarane.blue-step",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.509d1c88ca26c4f8e4b0",
-      "toEntityId": "location.caldris.tessarane.blue-step",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.105f32b9819e4759af58",
-      "toEntityId": "location.caldris.tessarane.kitewife-mesa",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.105f32b9819e4759af58",
-      "toEntityId": "location.caldris.tessarane.blue-step",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.1697b1ff2e2f6553c961",
-      "toEntityId": "location.caldris.tessarane.cloud-apricot-farm",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.3b89a0a5a2b051d03fe1",
-      "toEntityId": "location.caldris.tessarane.cloud-apricot-farm",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.f3c0954ae913e93948c1",
-      "toEntityId": "location.caldris.tessarane.blue-step",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.f3c0954ae913e93948c1",
-      "toEntityId": "location.caldris.tessarane.kitewife-mesa",
-      "qualifiedKind": "game.core.world.route.to",
+      "fromEntityId": "chronology.caldris.landmark.orchardback.605",
+      "toEntityId": "location.caldris.selucia.mariselle",
+      "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     }
   ]

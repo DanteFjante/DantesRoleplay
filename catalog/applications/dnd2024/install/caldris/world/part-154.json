@@ -3,14 +3,40 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
-      "entityId": "location.caldris.lore.tallow-ford",
-      "name": "Tallow Ford",
+      "entityId": "location.caldris.lore.lanterns-end",
+      "name": "Lanterns' End",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Location: On the coast beyond Veymouth's river mouth, overlooking the approaches from Morrow Strait. Livelihood: Pilotage, sheep grazing, and maintenance of a coastal light. Successive towers stand on and beside the low observatory's foundations. Some carved sight lines still point usefully across the water; others refer to vanished sandbanks. The sea has eaten part of the old keeper's garden.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 320,
+            "y": 780
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lore.vey-lowlands",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.leth-sarai",
+      "name": "Leth Sarai",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "settlement",
-            "summary": "A working caravan yard beside a newer bridge, with remnants of older crossings visible at low water. Local farms depend on visitors but must retain enough fodder for their own animals. Its largest stable incorporates tether stones from several building phases.",
+            "summary": "A densely inhabited old quarter behind a rebuilt waterfront. Courtyards hold workshops, kitchens, and shared wells. Buildings have changed occupants and functions many times; old signs survive beneath paint or in reused lintels. The town trades in ordinary necessities as well as fine goods.",
             "visibility": "public",
             "status": "active"
           }
@@ -18,25 +44,65 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 390,
-            "y": 805
+            "x": 160,
+            "y": 585
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "archived",
+            "variants": {
+              "player": {
+                "sha256": "643314e6c07d09a2e27d061c07d6b10566bd9a4c591316a8eaaa61721f074344",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Leth Sarai fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/leth-sarai.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              },
+              "dm": {
+                "sha256": "643314e6c07d09a2e27d061c07d6b10566bd9a4c591316a8eaaa61721f074344",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Leth Sarai fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/leth-sarai.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              }
+            }
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.atlas.roven-approaches",
+        "containerEntityId": "location.caldris.lore.serevan",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.lore.the-closed-launch",
-      "name": "The Closed Launch",
+      "entityId": "location.caldris.lore.low-fen-redoubt",
+      "name": "Low Fen Redoubt",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "site",
-            "summary": "A shipyard slip and small record shelter in Carrowmere associated with the historical Grain Fleet Refusal and later hearings. Working vessels and timber stores have changed repeatedly. Surviving measurements and contract copies are kept alongside later inspection records, rather than treated as substitutes for examining a current hull.",
+            "summary": "Overgrown wartime earthworks in the Vey Lowlands around the foundations of a former depot. Later drainage has altered parts of the site. Local households use nearby grazing while keeping known unstable pits marked; small finds are recorded inconsistently.",
             "visibility": "public",
             "status": "active"
           }
@@ -44,77 +110,25 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 600,
-            "y": 580
+            "x": 290,
+            "y": 565
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.carrowmere.gullstrand",
+        "containerEntityId": "location.caldris.lore.vey-lowlands",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.lore.the-long-table-rooms",
-      "name": "The Long Table Rooms",
+      "entityId": "location.caldris.lore.morrowstep-sanctuary",
+      "name": "Morrowstep Sanctuary",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "site",
-            "summary": "Lodging and dining rooms in the Seven Lamps League used by small delegations, interpreters, and travellers conducting civic business. Meals and language services have stated prices. Informal discussion can prepare a formal case but confers no automatic authority over council proceedings.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 575,
-            "y": 490
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.seven-lamps-league.aster-quay",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.lore.the-mile-of-little-bridges",
-      "name": "The Mile of Little Bridges",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "The route has a different count of spans after centuries of channel movement, rebuilding, and diversion. Some ancient abutments stand beside active crossings; others lie in grass away from the modern road. Its maintenance remains local and visible.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 480,
-            "y": 590
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.lore.aunholt",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.lore.the-seventh-hearth",
-      "name": "The Seventh Hearth",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "Repeated repairs have replaced nearly every timber, while the original hearthstone and threshold remain. The road bypassed it long ago. Brambles obscure the approach; inside, ordinary dust lies beside a carefully swept place at the table. Whether its spirit has remained awake continuously is left for later history to establish.",
+            "summary": "A small sanctuary above a coastal road serving the western approaches to Morrow Strait. Its guest rooms and workshop are used more often than its ceremonial hall. Different communities preserve different explanations of the unlit-lamp emblem.",
             "visibility": "public",
             "status": "active"
           }
@@ -123,24 +137,24 @@
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
             "x": 210,
-            "y": 170
+            "y": 680
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.atlas.orchard-march",
+        "containerEntityId": "location.caldris.lore.vey-lowlands",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.lore.the-south-turning",
-      "name": "The South Turning",
+      "entityId": "location.caldris.lore.nacre-quay",
+      "name": "Nacre Quay",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
-            "kind": "site",
-            "summary": "A much-rebuilt inn at a junction where visitors can choose the main road or the old local track toward the Seventh Hearth. A milestone in its yard gives a distance that ceased to be accurate centuries ago. Older inn cellars lie farther along the abandoned alignment.",
+            "kind": "settlement",
+            "summary": "Location: A sheltered coastal inlet south of Veymouth. Livelihood: Coastal cargo, fishing, rope work, and marine repair. The original night harbour is now a shallow boat basin within a larger, repeatedly rebuilt port. Old shell marks survive on stones reused in warehouses. Its rivalry with Veymouth is expressed as often through rowing contests and insulting pastries as through serious commercial competition.",
             "visibility": "public",
             "status": "active"
           }
@@ -148,25 +162,25 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 385,
-            "y": 470
+            "x": 470,
+            "y": 885
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.atlas.orchard-march",
+        "containerEntityId": "location.caldris.lore.vey-lowlands",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.lore.the-unfinished-stair",
-      "name": "The Unfinished Stair",
+      "entityId": "location.caldris.lore.namar-vale",
+      "name": "Namar Vale",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
-            "kind": "site",
-            "summary": "A partly maintained ascent in the Veyr uplands, ending at abandoned gallery sockets above a ravine. The lower steps serve shepherds and surveyors. A sheltered burial shelf lies beyond the intended road alignment, and later walkers have marked a respectful route around its approach.",
+            "kind": "settlement",
+            "summary": "A settlement of shaded yards, carriers' lodging, potteries, and leaf warehouses near irrigated cultivation. Fine imported goods pass through, but most residents earn a living from ordinary growing, carrying, repairs, and food. Old survey lines are preserved unevenly beneath later subdivisions.",
             "visibility": "public",
             "status": "active"
           }
@@ -174,425 +188,415 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 845,
-            "y": 150
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.atlas.roven-approaches",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.lore.the-winter-latch",
-      "name": "The Winter Latch",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "A small maintained refuge near the lower approach to the Unfinished Stair in the Veyr uplands. Its walls incorporate stones placed during the old rescue. It serves a limited seasonal route and keeps an ordinary store of fuel, fodder, and food when local deliveries succeed.",
-            "visibility": "public",
-            "status": "active"
+            "x": 490,
+            "y": 530
           }
         },
         {
-          "qualifiedTypeId": "game.core.world.map.anchor",
+          "qualifiedTypeId": "game.core.world.map.visual",
           "value": {
-            "x": 785,
-            "y": 245
+            "status": "archived",
+            "variants": {
+              "player": {
+                "sha256": "7e8dbf0a0b6959324c015187f12f4841a2cd1488c3159a64a2ec1b4efaf9e84a",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Namar Vale fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/namar-vale.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              },
+              "dm": {
+                "sha256": "7e8dbf0a0b6959324c015187f12f4841a2cd1488c3159a64a2ec1b4efaf9e84a",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Namar Vale fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/namar-vale.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              }
+            }
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.atlas.roven-approaches",
+        "containerEntityId": "location.caldris.lore.selvar",
         "slot": "location"
       }
     }
   ],
   "relationships": [
     {
-      "fromEntityId": "secret.caldris.lore.place-the-seventh-hearth.1",
-      "toEntityId": "location.caldris.lore.the-seventh-hearth",
+      "fromEntityId": "secret.caldris.lore.place-lanterns-end.1",
+      "toEntityId": "location.caldris.lore.lanterns-end",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.place-the-seventh-hearth.2",
-      "toEntityId": "location.caldris.lore.the-seventh-hearth",
+      "fromEntityId": "secret.caldris.lore.place-leth-sarai.1",
+      "toEntityId": "location.caldris.lore.leth-sarai",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.place-tallow-ford.1",
-      "toEntityId": "location.caldris.lore.tallow-ford",
+      "fromEntityId": "secret.caldris.lore.place-nacre-quay.1",
+      "toEntityId": "location.caldris.lore.nacre-quay",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.place-the-south-turning.1",
-      "toEntityId": "location.caldris.lore.the-south-turning",
+      "fromEntityId": "secret.caldris.lore.place-namar-vale.1",
+      "toEntityId": "location.caldris.lore.namar-vale",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.place-the-mile-of-little-bridges.1",
-      "toEntityId": "location.caldris.lore.the-mile-of-little-bridges",
+      "fromEntityId": "secret.caldris.lore.place-morrowstep-sanctuary.1",
+      "toEntityId": "location.caldris.lore.morrowstep-sanctuary",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.1549-the-ford-of-sleeping-carts",
-      "toEntityId": "location.caldris.lore.tallow-ford",
+      "fromEntityId": "chronology.caldris.lore.1735-the-night-harbour",
+      "toEntityId": "location.caldris.lore.nacre-quay",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.1009-the-winter-of-the-pale-roofs",
-      "toEntityId": "location.caldris.lore.tallow-ford",
+      "fromEntityId": "chronology.caldris.lore.1787-the-blackglass-pilot",
+      "toEntityId": "location.caldris.lore.lanterns-end",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.0999-the-stonecutters-spring",
-      "toEntityId": "location.caldris.lore.tallow-ford",
+      "fromEntityId": "chronology.caldris.lore.1599-the-address-beneath-the-blue-paint",
+      "toEntityId": "location.caldris.lore.leth-sarai",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.0861-the-crown-carried-in-a-bread-cart",
-      "toEntityId": "location.caldris.lore.tallow-ford",
+      "fromEntityId": "chronology.caldris.lore.1366-the-white-salt-marsh",
+      "toEntityId": "location.caldris.lore.nacre-quay",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.0400-0300-place-the-unfinished-stair.1",
-      "toEntityId": "location.caldris.lore.the-unfinished-stair",
+      "fromEntityId": "chronology.caldris.lore.1399-the-mapmakers-daughter",
+      "toEntityId": "location.caldris.lore.leth-sarai",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1283-the-marriage-of-the-two-harbours",
+      "toEntityId": "location.caldris.lore.nacre-quay",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1187-the-lantern-at-the-end-of-the-pier",
+      "toEntityId": "location.caldris.lore.leth-sarai",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0948-the-pilgrimage-of-the-unlit-lamps",
+      "toEntityId": "location.caldris.lore.morrowstep-sanctuary",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0987-the-dowry-of-maps",
+      "toEntityId": "location.caldris.lore.namar-vale",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0848-the-market-of-borrowed-tongues",
+      "toEntityId": "location.caldris.lore.namar-vale",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0735-the-night-market-at-ash-salt",
+      "toEntityId": "location.caldris.lore.nacre-quay",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0551-the-quiet-archive-of-serevan",
+      "toEntityId": "location.caldris.lore.leth-sarai",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0100-0050-place-low-fen-redoubt.1",
+      "toEntityId": "location.caldris.lore.low-fen-redoubt",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.0300-0200-place-the-winter-latch.1",
-      "toEntityId": "location.caldris.lore.the-winter-latch",
+      "fromEntityId": "chronology.caldris.lore.0089-the-grain-convoys-under-three-banners",
+      "toEntityId": "location.caldris.lore.low-fen-redoubt",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0089-the-grain-convoys-under-three-banners-account.1",
+      "toEntityId": "location.caldris.lore.low-fen-redoubt",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.0050-0000-place-the-closed-launch.1",
-      "toEntityId": "location.caldris.lore.the-closed-launch",
+      "fromEntityId": "secret.caldris.lore.0089-the-grain-convoys-under-three-banners-gm-truth.1",
+      "toEntityId": "location.caldris.lore.low-fen-redoubt",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.0050-0000-place-the-long-table-rooms.1",
-      "toEntityId": "location.caldris.lore.the-long-table-rooms",
+      "fromEntityId": "secret.caldris.lore.0089-the-grain-convoys-under-three-banners-traces-and-stories.1",
+      "toEntityId": "location.caldris.lore.low-fen-redoubt",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.lore.boughmeet",
-      "toEntityId": "location.caldris.lore.the-south-turning",
+      "fromEntityId": "location.caldris.lore.lanterns-end",
+      "toEntityId": "location.caldris.lore.morrowstep-sanctuary",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.lore.harth-orchard",
-      "toEntityId": "location.caldris.lore.the-south-turning",
+      "fromEntityId": "location.caldris.lore.istravel",
+      "toEntityId": "location.caldris.lore.leth-sarai",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.lore.saint-merets-rest",
-      "toEntityId": "location.caldris.lore.the-south-turning",
+      "fromEntityId": "location.caldris.lantern-sea.the-halfway-light",
+      "toEntityId": "location.caldris.lore.leth-sarai",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.lore.the-seventh-hearth",
-      "toEntityId": "location.caldris.lore.the-south-turning",
+      "fromEntityId": "location.caldris.lore.istravel",
+      "toEntityId": "location.caldris.lore.namar-vale",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.lore.crowstep-shelter",
-      "toEntityId": "location.caldris.lore.the-winter-latch",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.goats-ledger",
-      "toEntityId": "location.caldris.lore.the-mile-of-little-bridges",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.hazelstairs",
-      "toEntityId": "location.caldris.lore.tallow-ford",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.reth-gate",
-      "toEntityId": "location.caldris.lore.tallow-ford",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.seln",
-      "toEntityId": "location.caldris.lore.the-mile-of-little-bridges",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.the-unfinished-stair",
-      "toEntityId": "location.caldris.lore.the-winter-latch",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.tallow-ford",
-      "toEntityId": "location.caldris.veyr-marches.redgate",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.carrowmere.gullstrand",
-      "toEntityId": "location.caldris.lore.the-closed-launch",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.the-long-table-rooms",
+      "fromEntityId": "location.caldris.lore.leth-sarai",
       "toEntityId": "location.caldris.seven-lamps-league.aster-quay",
       "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.3840ec10291ced6e9e86",
-      "toEntityId": "location.caldris.lore.the-south-turning",
+      "fromEntityId": "location.caldris.lore.leth-sarai",
+      "toEntityId": "location.caldris.seven-lamps-league.low-lantern",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.nacre-quay",
+      "toEntityId": "location.caldris.seven-lamps-league.aster-quay",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.namar-vale",
+      "toEntityId": "location.caldris.ordelain.aurent",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.9d6566363cda9a8296be",
+      "toEntityId": "location.caldris.lore.lanterns-end",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.f021553c95a018216775",
-      "toEntityId": "location.caldris.lore.the-south-turning",
+      "fromEntityId": "fact.caldris.atlas.connection.36044240e05b88643352",
+      "toEntityId": "location.caldris.lore.leth-sarai",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.f88d34cc5c1dabfcd1c3",
-      "toEntityId": "location.caldris.lore.the-south-turning",
+      "fromEntityId": "fact.caldris.atlas.connection.8648f53bae02545eb614",
+      "toEntityId": "location.caldris.lore.leth-sarai",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.d2a2f814f1043e883eda",
-      "toEntityId": "location.caldris.lore.tallow-ford",
+      "fromEntityId": "fact.caldris.atlas.connection.358c89697a2d1c43c72e",
+      "toEntityId": "location.caldris.lore.namar-vale",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.19034d126ae44268ce4e",
-      "toEntityId": "location.caldris.lore.the-winter-latch",
+      "fromEntityId": "fact.caldris.atlas.connection.0f2ab73979c4dcfe1c5c",
+      "toEntityId": "location.caldris.lore.leth-sarai",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.dc8d626b8cc412e32767",
-      "toEntityId": "location.caldris.lore.tallow-ford",
+      "fromEntityId": "fact.caldris.atlas.connection.e846269bf8bc10b09ce4",
+      "toEntityId": "location.caldris.lore.nacre-quay",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.3ae9e93df6719be1af28",
-      "toEntityId": "location.caldris.lore.the-mile-of-little-bridges",
+      "fromEntityId": "fact.caldris.atlas.connection.193fdc0af92afb7a942b",
+      "toEntityId": "location.caldris.lore.namar-vale",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.b642422efd8879a5285f",
-      "toEntityId": "location.caldris.lore.tallow-ford",
+      "fromEntityId": "fact.caldris.atlas.connection.f0d21883ee6a53663216",
+      "toEntityId": "location.caldris.lore.leth-sarai",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.443801fb266076d4ef4d",
-      "toEntityId": "location.caldris.lore.the-south-turning",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.f021553c95a018216775",
-      "toEntityId": "location.caldris.lore.the-south-turning",
+      "fromEntityId": "route.caldris.atlas.a5318d0b60805c652ea7",
+      "toEntityId": "location.caldris.lore.low-fen-redoubt",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.f2e0f6e2d0cc609f445b",
-      "toEntityId": "location.caldris.lore.the-south-turning",
+      "fromEntityId": "route.caldris.atlas.ac35eea22ad8068292bc",
+      "toEntityId": "location.caldris.lore.low-fen-redoubt",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.fd9c2ca57160f6cc5117",
-      "toEntityId": "location.caldris.lore.the-south-turning",
+      "fromEntityId": "route.caldris.atlas.6262a34380f99ac84e7b",
+      "toEntityId": "location.caldris.lore.lanterns-end",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.3840ec10291ced6e9e86",
-      "toEntityId": "location.caldris.lore.the-seventh-hearth",
+      "fromEntityId": "route.caldris.atlas.790a9b1a1581701d34a2",
+      "toEntityId": "location.caldris.lore.morrowstep-sanctuary",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.3840ec10291ced6e9e86",
-      "toEntityId": "location.caldris.lore.the-south-turning",
+      "fromEntityId": "route.caldris.atlas.790a9b1a1581701d34a2",
+      "toEntityId": "location.caldris.lore.lanterns-end",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.62dc387bfb98ed1c238f",
-      "toEntityId": "location.caldris.lore.the-south-turning",
+      "fromEntityId": "route.caldris.atlas.87ab3dae06328e3a8576",
+      "toEntityId": "location.caldris.lore.nacre-quay",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.6ae37201d2d56c533593",
-      "toEntityId": "location.caldris.lore.the-south-turning",
+      "fromEntityId": "route.caldris.atlas.9d6566363cda9a8296be",
+      "toEntityId": "location.caldris.lore.lanterns-end",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.6ae37201d2d56c533593",
-      "toEntityId": "location.caldris.lore.the-seventh-hearth",
+      "fromEntityId": "route.caldris.atlas.9d6566363cda9a8296be",
+      "toEntityId": "location.caldris.lore.morrowstep-sanctuary",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.f88d34cc5c1dabfcd1c3",
-      "toEntityId": "location.caldris.lore.the-south-turning",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.be8a297ac7986175a5d9",
-      "toEntityId": "location.caldris.lore.tallow-ford",
+      "fromEntityId": "route.caldris.atlas.a44655626a9b7859b6f7",
+      "toEntityId": "location.caldris.lore.lanterns-end",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.d2a2f814f1043e883eda",
-      "toEntityId": "location.caldris.lore.tallow-ford",
+      "fromEntityId": "route.caldris.atlas.ebc8ebc1a7f317181bda",
+      "toEntityId": "location.caldris.lore.nacre-quay",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.4e6d30a7927b73bc6843",
-      "toEntityId": "location.caldris.lore.tallow-ford",
+      "fromEntityId": "route.caldris.atlas.20b47a4b6a38df7d9c59",
+      "toEntityId": "location.caldris.lore.leth-sarai",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.86dccd5cca0b297c999e",
-      "toEntityId": "location.caldris.lore.the-winter-latch",
+      "fromEntityId": "route.caldris.atlas.36044240e05b88643352",
+      "toEntityId": "location.caldris.lore.leth-sarai",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.8648f53bae02545eb614",
+      "toEntityId": "location.caldris.lore.leth-sarai",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.887c41f3674887aad3c4",
-      "toEntityId": "location.caldris.lore.the-winter-latch",
+      "fromEntityId": "route.caldris.atlas.f3c44f99e90d00fab13c",
+      "toEntityId": "location.caldris.lore.leth-sarai",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.dc8d626b8cc412e32767",
-      "toEntityId": "location.caldris.lore.tallow-ford",
-      "qualifiedKind": "game.core.world.route.to",
+      "fromEntityId": "location.caldris.landmark.glass-tide-palace",
+      "toEntityId": "location.caldris.lore.leth-sarai",
+      "qualifiedKind": "game.core.world.location.connected-to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.19034d126ae44268ce4e",
-      "toEntityId": "location.caldris.lore.the-unfinished-stair",
-      "qualifiedKind": "game.core.world.route.from",
+      "fromEntityId": "fact.caldris.landmark.glass-tide-palace.access.97942221d0",
+      "toEntityId": "location.caldris.lore.leth-sarai",
+      "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.19034d126ae44268ce4e",
-      "toEntityId": "location.caldris.lore.the-winter-latch",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.fb5e90af1c40f36afc51",
-      "toEntityId": "location.caldris.lore.the-winter-latch",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.fb5e90af1c40f36afc51",
-      "toEntityId": "location.caldris.lore.the-unfinished-stair",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.3ae9e93df6719be1af28",
-      "toEntityId": "location.caldris.lore.the-mile-of-little-bridges",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.3d02fc28ee579ceaf5c9",
-      "toEntityId": "location.caldris.lore.the-mile-of-little-bridges",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.d48fc258aa45fc41bdd9",
-      "toEntityId": "location.caldris.lore.the-mile-of-little-bridges",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.dc6fbd6a1fe31150b33c",
-      "toEntityId": "location.caldris.lore.the-mile-of-little-bridges",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.1286",
-      "toEntityId": "location.caldris.lore.the-unfinished-stair",
+      "fromEntityId": "chronology.caldris.landmark.glass-tide-palace.1256",
+      "toEntityId": "location.caldris.lore.leth-sarai",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.landmark.hanging-harbour.117",
-      "toEntityId": "location.caldris.lore.the-closed-launch",
+      "fromEntityId": "chronology.caldris.landmark.glass-tide-palace.1256",
+      "toEntityId": "location.caldris.lore.nacre-quay",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.landmark.hanging-harbour.258",
-      "toEntityId": "location.caldris.lore.the-closed-launch",
+      "fromEntityId": "chronology.caldris.landmark.glass-tide-palace.31",
+      "toEntityId": "location.caldris.lore.leth-sarai",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.1258",
-      "toEntityId": "location.caldris.lore.the-unfinished-stair",
+      "fromEntityId": "chronology.caldris.landmark.glass-tide-palace.31",
+      "toEntityId": "location.caldris.lore.nacre-quay",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.287",
-      "toEntityId": "location.caldris.lore.the-unfinished-stair",
+      "fromEntityId": "chronology.caldris.landmark.glass-tide-palace.534",
+      "toEntityId": "location.caldris.lore.leth-sarai",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.landmark.hanging-harbour.35",
-      "toEntityId": "location.caldris.lore.the-closed-launch",
+      "fromEntityId": "chronology.caldris.landmark.glass-tide-palace.534",
+      "toEntityId": "location.caldris.lore.nacre-quay",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     }

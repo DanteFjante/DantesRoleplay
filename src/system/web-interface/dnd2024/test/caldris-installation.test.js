@@ -19,6 +19,8 @@ const atlas = await read('docs/world/caldris/maps/lore-atlas/atlas-gm.json');
 const packet = await read('catalog/applications/dnd2024/assets/caldris/measure-of-mercy/asset-import-manifest.json');
 const opening = await read(`${profile}/opening-state.json`);
 const reviewedMaps = await read(`${profile}/map-anchors.json`);
+const harbourManifests = await Promise.all(['tidecross-world-manifest.json', 'halfway-world-manifest.json']
+  .map(name => read(`docs/world/caldris/harbour-islands/${name}`)));
 
 test('Caldris installation includes the complete authored world in ordered bounded packages', () => {
   assert.equal(byId.size, entities.length, 'Each identity is declared once');
@@ -55,8 +57,11 @@ test('Caldris clean maps cover every direct child with anchors tied to the exact
   const mapAssets = packet.assets.filter(asset => asset.kind === 'map');
   const owners = new Set(mapAssets.map(asset => asset.ownerLocationId));
   assert.equal(owners.size, 8);
+  for (const manifest of harbourManifests) for (const entity of manifest.entities)
+    if (components(entity)['game.core.world.map.visual']) owners.add(entity.entityId);
+  assert.equal(owners.size, 10);
   assert.deepEqual(new Set(reviewedMaps.frames.map(frame => frame.ownerLocationId)), owners);
-  assert.equal(reviewedMaps.frames.flatMap(frame => frame.anchors).length, 55);
+  assert.equal(reviewedMaps.frames.flatMap(frame => frame.anchors).length, 76);
   for (const asset of mapAssets) {
     const entity = byId.get(asset.ownerLocationId);
     assert.deepEqual(components(entity)[asset.bindingPlan.componentId], asset.bindingPlan.valueTemplate, asset.ownerLocationId);
@@ -86,11 +91,37 @@ test('Caldris clean maps cover every direct child with anchors tied to the exact
     }
   }
   const visuals = entities.map(entity => ({ id: entity.entityId, value: components(entity)['game.core.world.map.visual'] })).filter(entry => entry.value);
-  assert.equal(visuals.filter(entry => entry.value.status === 'active').length, 8);
+  assert.equal(visuals.filter(entry => entry.value.status === 'active').length, 10);
   assert.equal(visuals.filter(entry => entry.value.status === 'archived').length, 42);
   for (const entry of visuals.filter(entry => !owners.has(entry.id))) assert.equal(entry.value.status, 'archived', entry.id);
   assert.equal(components(byId.get('location.caldris.solasca'))['game.core.world.location'].status, 'active');
-  assert.equal(entities.filter(entity => components(entity)['game.core.world.location']?.status === 'active').length, 275);
+  assert.equal(entities.filter(entity => components(entity)['game.core.world.location']?.status === 'active').length, 296);
+});
+
+test('Caldris includes the later committed harbour islands without replaying their old sea correction', () => {
+  const relationships = parts.flatMap(part => part.relationships);
+  for (const manifest of harbourManifests) {
+    for (const authored of manifest.entities) {
+      if (authored.entityId === 'location.caldris.atlas.lantern-sea') continue;
+      const entity = byId.get(authored.entityId);
+      assert.ok(entity, `Missing later authored harbour entity ${authored.entityId}`);
+      for (const component of authored.components)
+        assert.deepEqual(components(entity)[component.qualifiedTypeId], component.value);
+      assert.deepEqual(entity.containment, {
+        containerEntityId: authored.containment.containerEntityId, slot: authored.containment.slot,
+      });
+      assert.equal(entity.expectedRevision, undefined, 'Captured runtime revisions cannot become fresh setup preconditions');
+    }
+    for (const authored of manifest.relationships) {
+      const relationship = relationships.find(edge => edge.fromEntityId === authored.fromEntityId
+        && edge.toEntityId === authored.toEntityId && edge.qualifiedKind === authored.qualifiedKind);
+      assert.ok(relationship, 'Every harbour history, lore and walking relationship is retained');
+      assert.deepEqual(relationship.value, authored.value);
+      assert.equal(relationship.expectedRevision, undefined);
+    }
+  }
+  assert.deepEqual(components(byId.get('location.caldris.atlas.lantern-sea'))['game.core.world.map.anchor'], { x: 565, y: 490 });
+  assert.deepEqual(components(byId.get('location.caldris.tidecross'))['game.core.world.map.anchor'], { x: 645, y: 755 });
 });
 
 test('Caldris setup retains every committed authored record and selects its declared homebrew extension', async () => {

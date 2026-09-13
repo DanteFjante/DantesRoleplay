@@ -3,14 +3,14 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
-      "entityId": "location.caldris.lore.three-reed-bridge",
-      "name": "Three-Reed Bridge",
+      "entityId": "location.caldris.lore.rusk-hollow",
+      "name": "Rusk Hollow",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
-            "kind": "site",
-            "summary": "A rebuilt crossing outside Willowrace, connecting workshops with grazing and reed beds. Stone abutments support later spans; annual music gatherings still raise a portion of maintenance costs. Three pipe-shaped posts commemorate the dedication.",
+            "kind": "settlement",
+            "summary": "The original homes lie beneath pasture. A younger village occupies the hollow's sheltered edge, and shepherds still uncover hearthstones after heavy rain. The old kitchen can be entered through a collapsed smoke vent. Later building phases explain why a cellar may contain objects separated by centuries.",
             "visibility": "public",
             "status": "active"
           }
@@ -18,25 +18,65 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 710,
-            "y": 480
+            "x": 680,
+            "y": 570
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "archived",
+            "variants": {
+              "player": {
+                "sha256": "ce2d1f0b7bf81a16c005ca905efc33965fbe821e95f4572432eae6789b3cc286",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Rusk Hollow fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/rusk-hollow.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              },
+              "dm": {
+                "sha256": "ce2d1f0b7bf81a16c005ca905efc33965fbe821e95f4572432eae6789b3cc286",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Rusk Hollow fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/rusk-hollow.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              }
+            }
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.lore.willowrace",
+        "containerEntityId": "location.caldris.alderwick.the-button-hills",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.lore.windowmere-garden",
-      "name": "Windowmere Garden",
+      "entityId": "location.caldris.lore.saffron-court",
+      "name": "Saffron Court",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "site",
-            "summary": "A small teaching garden within the Boughmeet nursery district. The walls have been rebuilt and the original plants replaced or propagated. Successful and failed trials receive equally legible labels.",
+            "summary": "A busy courtyard market in Namar Vale with shared ovens, washing places, and a mixture of permanent and daily stalls. Its name remains grander than most of its meals. The reserved newcomer places survive through later lease renewals that vendors must occasionally defend.",
             "visibility": "public",
             "status": "active"
           }
@@ -44,8 +84,86 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 245,
-            "y": 385
+            "x": 335,
+            "y": 550
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lore.namar-vale",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.seven-scripts-court",
+      "name": "Seven Scripts Court",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "Small workrooms around a courtyard, occupied by translators, copyists, and several unrelated businesses. The old name survives despite changes in its languages and organisation. Its oldest records are mostly later copies with identifiable chains of transmission.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 680,
+            "y": 355
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lore.namar-vale",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.sunborrow-house",
+      "name": "Sunborrow House",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A communal workroom in Seln with two surviving enchanted panes, one unreliable, and an ordinary replacement where the third once stood. Its summer gathering frame was moved during a later rebuilding. Keepers maintain both fuel stores and an illumination rota.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 665,
+            "y": 665
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lore.seln",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.the-copper-kettle",
+      "name": "The Copper Kettle",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A modest inn near Boughmeet's orchard road, rebuilt around successive kitchens. Blue pottery fragments form a small hearth mosaic, with replacement pieces documented by later keepers. A working copy of Nivren's boot-drying charm hangs beside the wet-weather bench. Most visitors come for food and shelter rather than the old story.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 440,
+            "y": 190
           }
         }
       ],
@@ -55,247 +173,493 @@
       }
     },
     {
-      "entityId": "location.caldris.north-bell-tower",
-      "name": "North Bell Tower",
+      "entityId": "location.caldris.lore.the-dry-exchange",
+      "name": "The Dry Exchange",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "site",
-            "status": "active",
-            "summary": "The North Bell Tower before noon, its bell rope and timber mechanism visible without revealing the mystery.",
-            "visibility": "public"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.media.visual",
-          "value": {
-            "status": "active",
-            "attachments": [
-              {
-                "role": "illustration",
-                "visibility": [
-                  "player",
-                  "dm"
-                ],
-                "sha256": "19b1280d6b62ccf77e4f0d887bb27b5637c1176d184afad194a07f5a7e85f521",
-                "mimeType": "image/png",
-                "width": 1536,
-                "height": 1024,
-                "alt": "The North Bell Tower before noon, its bell rope and timber mechanism visible without revealing the mystery.",
-                "caption": "Prepared location illustration of the North Bell Tower before noon; it reveals no solution and records no event as having occurred.",
-                "order": 10,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/north-bell-tower-before-noon-v1.png",
-                  "reviewedOn": "2026-09-12",
-                  "version": 1
-                }
-              }
-            ]
+            "summary": "A covered trading hall in Brinefold with raised document rooms and a public counter for inspecting registered cargo pledges. Its rules have been revised under successive authorities. Carved fish on the older beam ends commemorate the early dispute over promises made against the same catch.",
+            "visibility": "public",
+            "status": "active"
           }
         },
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 455,
-            "y": 220
+            "x": 355,
+            "y": 325
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.bramblebridge",
+        "containerEntityId": "location.caldris.lore.brinefold",
         "slot": "location"
       }
     },
     {
-      "entityId": "actor.caldris.ganji.class-membership.monk",
-      "name": "Ganji monk membership",
+      "entityId": "location.caldris.lore.the-evening-market",
+      "name": "The Evening Market",
       "components": [
         {
-          "qualifiedTypeId": "dnd2024.character.class-membership",
+          "qualifiedTypeId": "game.core.world.location",
           "value": {
-            "classRef": {
-              "entityId": "dnd2024.content.class.monk.v1"
-            },
-            "level": 1
+            "kind": "site",
+            "summary": "A modest market yard in Brinefold where sailors, craftspeople, and households sell used equipment and small consignments after the working day. Inspection rules and fees reflect later amendments. Repaired awnings cover stalls carrying practical goods alongside occasional objects with unusual histories.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 650,
+            "y": 480
           }
         }
       ],
       "containment": {
-        "containerEntityId": "actor.caldris.ganji",
-        "slot": "class-membership"
+        "containerEntityId": "location.caldris.lore.brinefold",
+        "slot": "location"
       }
     },
     {
-      "entityId": "actor.caldris.ilvaeril",
-      "name": "Brother Ilvaeril",
+      "entityId": "location.caldris.lore.the-green-awning-yard",
+      "name": "The Green Awning Yard",
       "components": [
         {
-          "qualifiedTypeId": "game.core.world.motive",
+          "qualifiedTypeId": "game.core.world.location",
           "value": {
-            "status": "active",
-            "summary": "An elven monk of the Tensor Sect who quietly taught Ganji Elvish, feeling his ignorance of it improper. Now one of the three monks sent to bring Ganji home — genuinely fond of him, and uneasy about the errand.",
-            "visibility": "party"
+            "kind": "site",
+            "summary": "A freight assembly yard in Brinefold with repaired awnings, shared weighing space, and places rented by independent carriers. Its earliest arrangements have been replaced or renewed over time. The spring gathering survives intermittently when trade and local organisers can support it.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 320,
+            "y": 655
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.alderwick.highmead.house-of-the-ninth-angle",
-        "slot": "presence"
+        "containerEntityId": "location.caldris.lore.brinefold",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.the-hall-of-unsent-maps",
+      "name": "The Hall of Unsent Maps",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "site",
+            "summary": "A chart collection and copying business in Leth Sarai. Working extracts are updated as reports arrive; historical drafts retain their original qualifications. Restricted charts have custody records, and decorative copies are identified separately from surveys intended for travel.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 690,
+            "y": 670
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lore.leth-sarai",
+        "slot": "location"
       }
     }
   ],
   "relationships": [
     {
-      "fromEntityId": "actor.caldris.ganji",
-      "toEntityId": "actor.caldris.ganji.class-membership.monk",
-      "qualifiedKind": "dnd2024.character.has-class-membership",
-      "value": {}
-    },
-    {
-      "fromEntityId": "secret.caldris.lore.place-windowmere-garden.1",
-      "toEntityId": "location.caldris.lore.windowmere-garden",
+      "fromEntityId": "secret.caldris.lore.place-rusk-hollow.1",
+      "toEntityId": "location.caldris.lore.rusk-hollow",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.lore.0527-the-gardens-of-the-farther-window",
-      "toEntityId": "location.caldris.lore.windowmere-garden",
+      "fromEntityId": "secret.caldris.lore.place-rusk-hollow.2",
+      "toEntityId": "location.caldris.lore.rusk-hollow",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.place-seven-scripts-court.1",
+      "toEntityId": "location.caldris.lore.seven-scripts-court",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1822-the-year-of-two-springs",
+      "toEntityId": "location.caldris.lore.rusk-hollow",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.0500-0400-place-three-reed-bridge.1",
-      "toEntityId": "location.caldris.lore.three-reed-bridge",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.lore.0459-the-bridge-of-three-versions",
-      "toEntityId": "location.caldris.lore.three-reed-bridge",
+      "fromEntityId": "chronology.caldris.lore.0835-the-parcel-that-had-arrived-somewhere-else",
+      "toEntityId": "location.caldris.lore.seven-scripts-court",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.lore.0459-the-bridge-of-three-versions-account.1",
-      "toEntityId": "location.caldris.lore.three-reed-bridge",
+      "fromEntityId": "chronology.caldris.lore.0848-the-market-of-borrowed-tongues",
+      "toEntityId": "location.caldris.lore.seven-scripts-court",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0500-0400-place-sunborrow-house.1",
+      "toEntityId": "location.caldris.lore.sunborrow-house",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.0459-the-bridge-of-three-versions-gm-truth.1",
-      "toEntityId": "location.caldris.lore.three-reed-bridge",
+      "fromEntityId": "secret.caldris.lore.0500-0400-place-the-copper-kettle.1",
+      "toEntityId": "location.caldris.lore.the-copper-kettle",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "secret.caldris.lore.0459-the-bridge-of-three-versions-traces-and-stories.1",
-      "toEntityId": "location.caldris.lore.three-reed-bridge",
+      "fromEntityId": "chronology.caldris.lore.0483-the-winter-of-borrowed-sunlight",
+      "toEntityId": "location.caldris.lore.sunborrow-house",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0483-the-winter-of-borrowed-sunlight-account.1",
+      "toEntityId": "location.caldris.lore.sunborrow-house",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "location.caldris.bramblebridge.honest-weights-hall",
-      "toEntityId": "location.caldris.north-bell-tower",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.bramblebridge.old-weir-mill",
-      "toEntityId": "location.caldris.north-bell-tower",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.the-copper-kettle",
-      "toEntityId": "location.caldris.lore.windowmere-garden",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.the-orchard-of-departures",
-      "toEntityId": "location.caldris.lore.windowmere-garden",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.the-open-string-hall",
-      "toEntityId": "location.caldris.lore.three-reed-bridge",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.d23420892dcbc04e6c73",
-      "toEntityId": "location.caldris.north-bell-tower",
+      "fromEntityId": "secret.caldris.lore.0483-the-winter-of-borrowed-sunlight-gm-truth.1",
+      "toEntityId": "location.caldris.lore.sunborrow-house",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.a513854338053959bdc3",
-      "toEntityId": "location.caldris.lore.windowmere-garden",
+      "fromEntityId": "secret.caldris.lore.0483-the-winter-of-borrowed-sunlight-traces-and-stories.1",
+      "toEntityId": "location.caldris.lore.sunborrow-house",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.2e3dd3d0fe99f753e2c2",
-      "toEntityId": "location.caldris.north-bell-tower",
-      "qualifiedKind": "game.core.world.route.to",
+      "fromEntityId": "secret.caldris.lore.0400-0300-place-saffron-court.1",
+      "toEntityId": "location.caldris.lore.saffron-court",
+      "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.b0b00e3c9cfc96913dde",
-      "toEntityId": "location.caldris.north-bell-tower",
+      "fromEntityId": "secret.caldris.lore.0400-0300-place-the-dry-exchange.1",
+      "toEntityId": "location.caldris.lore.the-dry-exchange",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0375-the-kitchens-of-saffron-court",
+      "toEntityId": "location.caldris.lore.saffron-court",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0375-the-kitchens-of-saffron-court-account.1",
+      "toEntityId": "location.caldris.lore.saffron-court",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0375-the-kitchens-of-saffron-court-gm-truth.1",
+      "toEntityId": "location.caldris.lore.saffron-court",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0375-the-kitchens-of-saffron-court-traces-and-stories.1",
+      "toEntityId": "location.caldris.lore.saffron-court",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0300-0200-place-the-evening-market.1",
+      "toEntityId": "location.caldris.lore.the-evening-market",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0200-0100-place-the-hall-of-unsent-maps.1",
+      "toEntityId": "location.caldris.lore.the-hall-of-unsent-maps",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0100-0050-place-the-green-awning-yard.1",
+      "toEntityId": "location.caldris.lore.the-green-awning-yard",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.alderwick.button-hills.merebutton",
+      "toEntityId": "location.caldris.lore.rusk-hollow",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.rainbell-orchard",
+      "toEntityId": "location.caldris.lore.the-copper-kettle",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.boughmeet",
+      "toEntityId": "location.caldris.lore.the-copper-kettle",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.brinefold",
+      "toEntityId": "location.caldris.lore.the-green-awning-yard",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.namar-vale",
+      "toEntityId": "location.caldris.lore.saffron-court",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.saffron-court",
+      "toEntityId": "location.caldris.lore.seven-scripts-court",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.the-dry-exchange",
+      "toEntityId": "location.caldris.lore.the-evening-market",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.the-dry-exchange",
+      "toEntityId": "location.caldris.lore.the-green-awning-yard",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.the-evening-market",
+      "toEntityId": "location.caldris.lore.the-green-awning-yard",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.0c4fb5c4741db6a4faf2",
+      "toEntityId": "location.caldris.lore.the-copper-kettle",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.c7eda9054b955829747f",
+      "toEntityId": "location.caldris.lore.the-dry-exchange",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.4661767ebf19dfe0d10c",
+      "toEntityId": "location.caldris.lore.saffron-court",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.5cb105b24215a039b876",
+      "toEntityId": "location.caldris.lore.the-evening-market",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.f8e17fb223e341cdb223",
+      "toEntityId": "location.caldris.lore.the-green-awning-yard",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.862423084c4f31c274a4",
+      "toEntityId": "location.caldris.lore.rusk-hollow",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.464ff2cd59dc0c576da2",
-      "toEntityId": "location.caldris.north-bell-tower",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.d23420892dcbc04e6c73",
-      "toEntityId": "location.caldris.north-bell-tower",
+      "fromEntityId": "route.caldris.atlas.bb80046299442051b354",
+      "toEntityId": "location.caldris.lore.rusk-hollow",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
       "fromEntityId": "route.caldris.atlas.0c4fb5c4741db6a4faf2",
-      "toEntityId": "location.caldris.lore.windowmere-garden",
+      "toEntityId": "location.caldris.lore.the-copper-kettle",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.3b3664a2fbf864514fb5",
+      "toEntityId": "location.caldris.lore.the-copper-kettle",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.8ed9ba1d08fdfd56113b",
+      "toEntityId": "location.caldris.lore.the-copper-kettle",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
       "fromEntityId": "route.caldris.atlas.95902d670a3bb9e80c51",
-      "toEntityId": "location.caldris.lore.windowmere-garden",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.a513854338053959bdc3",
-      "toEntityId": "location.caldris.lore.windowmere-garden",
+      "toEntityId": "location.caldris.lore.the-copper-kettle",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.b101864b8d41da3e7f77",
-      "toEntityId": "location.caldris.lore.windowmere-garden",
+      "fromEntityId": "route.caldris.atlas.2308983b95b7fcc15ca9",
+      "toEntityId": "location.caldris.lore.the-evening-market",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.2b3f8e25e975881e77cf",
-      "toEntityId": "location.caldris.lore.three-reed-bridge",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.e532dc1f63ab506b68ac",
-      "toEntityId": "location.caldris.lore.three-reed-bridge",
+      "fromEntityId": "route.caldris.atlas.2308983b95b7fcc15ca9",
+      "toEntityId": "location.caldris.lore.the-dry-exchange",
       "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.2fe67036415229516b52",
+      "toEntityId": "location.caldris.lore.the-green-awning-yard",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.2fe67036415229516b52",
+      "toEntityId": "location.caldris.lore.the-dry-exchange",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.5cb105b24215a039b876",
+      "toEntityId": "location.caldris.lore.the-evening-market",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.5cb105b24215a039b876",
+      "toEntityId": "location.caldris.lore.the-green-awning-yard",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.c7eda9054b955829747f",
+      "toEntityId": "location.caldris.lore.the-dry-exchange",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.c7eda9054b955829747f",
+      "toEntityId": "location.caldris.lore.the-evening-market",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.e409c1a5835a6715c0f6",
+      "toEntityId": "location.caldris.lore.the-green-awning-yard",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.e409c1a5835a6715c0f6",
+      "toEntityId": "location.caldris.lore.the-evening-market",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.f8e17fb223e341cdb223",
+      "toEntityId": "location.caldris.lore.the-dry-exchange",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.f8e17fb223e341cdb223",
+      "toEntityId": "location.caldris.lore.the-green-awning-yard",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.1d2dd4acdb8791b7dfa6",
+      "toEntityId": "location.caldris.lore.the-hall-of-unsent-maps",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.4661767ebf19dfe0d10c",
+      "toEntityId": "location.caldris.lore.saffron-court",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.4661767ebf19dfe0d10c",
+      "toEntityId": "location.caldris.lore.seven-scripts-court",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.64466e61f56708eb916e",
+      "toEntityId": "location.caldris.lore.the-hall-of-unsent-maps",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.7be6939656c88b10726c",
+      "toEntityId": "location.caldris.lore.seven-scripts-court",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.7be6939656c88b10726c",
+      "toEntityId": "location.caldris.lore.saffron-court",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.0e8cf8bef168251e8812",
+      "toEntityId": "location.caldris.lore.sunborrow-house",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.5e14e0f6dcb13ed244e0",
+      "toEntityId": "location.caldris.lore.sunborrow-house",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.rain-crown-of-orovant.23",
+      "toEntityId": "location.caldris.lore.seven-scripts-court",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.rain-crown-of-orovant.366",
+      "toEntityId": "location.caldris.lore.seven-scripts-court",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.landmark.rain-crown-of-orovant.844",
+      "toEntityId": "location.caldris.lore.seven-scripts-court",
+      "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     }
   ]

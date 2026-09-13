@@ -3,6 +3,271 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
+      "entityId": "chronology.caldris.tidecross.ferry-stairs",
+      "name": "The Two Ferry Stairs Open",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Two Ferry Stairs Open",
+            "summary": "Dedicated north and south ferry stairs separated passenger boats from the busiest cargo quays. Reliable harbour transfers, interpreters, lodging and repairs strengthened Tidecross's place on the continental crossing. The increase in trade also raised rents and intensified the unresolved struggle over priority berths and the fishing basin.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -6307200,
+            "precision": "era",
+            "dateLabel": "The recent harbour expansion",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.tidecross",
+        "slot": "history"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.tidecross.first-pilots",
+      "name": "Fishing Stairs Become a Harbour",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "Fishing Stairs Become a Harbour",
+            "summary": "Fishing families began guiding passing vessels into the island's sheltered eastern water. Their landing stairs became a place to buy fresh fish, water and local pilotage. Travellers waiting on the crossing rented rooms above net stores; the settlement that became Tidecross grew around this everyday work.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -95000000,
+            "precision": "era",
+            "dateLabel": "The early harbour generations",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.tidecross",
+        "slot": "history"
+      }
+    },
+    {
+      "entityId": "chronology.caldris.tidecross.open-doors",
+      "name": "The Night of Open Doors",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.chronology",
+          "value": {
+            "status": "active",
+            "title": "The Night of Open Doors",
+            "summary": "A violent storm drove ships from both continents into shelter and flooded the lower harbour. Islanders opened houses and workshops to stranded crews. Ferrymen and fishers worked rescue boats together. The shared meal and returning-bell custom remember those who came home and those who did not; afterwards the town built the stronger breakwater and Returning Light.",
+            "calendarId": "caldris-common-era",
+            "occurredAtMinute": -26000000,
+            "precision": "era",
+            "dateLabel": "The generation of the great harbour storm",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.tidecross",
+        "slot": "history"
+      }
+    },
+    {
+      "entityId": "fact.caldris.tidecross.crossing-stop",
+      "name": "A Port Between Two Continents",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Tidecross is one of the most frequently used ports of call between Eredane and Solasca. Ships replenish water and provisions, exchange cargo, hire pilots and repair damage here. Some sailings transfer passengers to another vessel; many simply wait for a useful wind. Ocean passages still take days and depend on route and season. Small harbour ferries shuttle between shore, outer anchorages and neighbouring islets; they are not a shortcut that turns the crossing into a river journey.",
+            "provenance": "Tidecross harbour gazetteer; authored for the requested island port expansion.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.tidecross",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.tidecross.daily-life",
+      "name": "A Town That Lives by Arrivals",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The fishing auction starts before dawn, the market swells after each tender, and inn kitchens keep pots warm long after dark. Porters carry mixed cargoes through streets full of accents, sea chests and children sent to meet returning relatives. Fresh water comes from rain cisterns and supply vessels; wasteful captains pay more. During prolonged bad weather lodging spills into halls and private rooms, while the Mariners' House feeds stranded crews.",
+            "provenance": "Tidecross harbour gazetteer; authored for the requested island port expansion.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.tidecross",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.tidecross.present-pressure",
+      "name": "Who Owns the Water Stairs?",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Tidecross's prosperity is pressing against its charter. Warehouse factors propose guaranteed priority berths to pay for a new quay; fishers fear losing Netters' Basin, and ferrymen fear that ordinary passengers will be priced off the landing steps. The wardens have announced public hearings, not a settled decision. Missing tariff copies, an overbooked sailing or a damaged water shipment can turn an ordinary day into work for a party willing to listen.",
+            "provenance": "Tidecross harbour gazetteer; authored for the requested island port expansion.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.tidecross",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.tidecross.quay-charter",
+      "name": "The Common Quay Promise",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "The Common Quay charter guarantees crews from either continent the same published tariff, access to fresh water and a hearing before goods are seized. A council of harbour wardens answers to fishers, ferrymen, shipwrights, householders and warehouse factors. It makes Tidecross useful to rivals who will not trust each other's home ports. Neutral business is hard work: the wardens hear disputes every market day, and everyone watches who receives the next berth.",
+            "provenance": "Tidecross harbour gazetteer; authored for the requested island port expansion.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.tidecross",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "fact.caldris.tidecross.returning-bell",
+      "name": "The Bell for the Missing",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Tide Market's old ship bell is reserved for a vessel thought lost that finally comes home. Its first ringing followed the storm remembered as the Night of Open Doors, when islanders housed strangers from both continents without asking who would pay. Families still prepare a shared meal when the bell sounds. The custom is affectionate and practical: a returned crew may have lost wages, possessions and friends even when its ship survives.",
+            "provenance": "Tidecross harbour gazetteer; authored for the requested island port expansion.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "location",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.tidecross",
+        "slot": "lore"
+      }
+    },
+    {
+      "entityId": "location.caldris.alderwick",
+      "name": "Alderwick",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "status": "active",
+            "summary": "Alderwick regional terrain without baked labels or markers.",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "active",
+            "variants": {
+              "player": {
+                "sha256": "f1a67e8f1b362fa0f872b86bc0007abf0f2d512833bc907502a3f7a3f11e11c7",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Alderwick regional terrain without baked labels or markers.",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/alderwick-clean-v1.png",
+                  "reviewedOn": "2026-09-12",
+                  "version": 1
+                }
+              },
+              "dm": {
+                "sha256": "f1a67e8f1b362fa0f872b86bc0007abf0f2d512833bc907502a3f7a3f11e11c7",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Alderwick regional terrain without baked labels or markers.",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/alderwick-clean-v1.png",
+                  "reviewedOn": "2026-09-12",
+                  "version": 1
+                }
+              }
+            }
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 525,
+            "y": 530
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.eredane",
+        "slot": "location"
+      }
+    },
+    {
       "entityId": "location.caldris.atlas.morrow-strait",
       "name": "Morrow Strait",
       "components": [
@@ -595,348 +860,6 @@
         "containerEntityId": "location.caldris.solasca",
         "slot": "location"
       }
-    },
-    {
-      "entityId": "location.caldris.seven-lamps-league",
-      "name": "Seven Lamps League",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "region",
-            "summary": "Seven Lamps League is a merchant city league of Solasca. Its present pressure: The League's rotating chair has disappeared with the key to a sealed Concord archive.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 245,
-            "y": 390
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.visual",
-          "value": {
-            "status": "archived",
-            "variants": {
-              "player": {
-                "sha256": "65694c7fed182f3c5042fa41eb1f90208e3172d32e04ba3007fb4b93f1b21cc7",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Seven Lamps League fantasy atlas map",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/seven-lamps-league.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 3
-                }
-              },
-              "dm": {
-                "sha256": "65694c7fed182f3c5042fa41eb1f90208e3172d32e04ba3007fb4b93f1b21cc7",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Seven Lamps League fantasy atlas map",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/seven-lamps-league.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 3
-                }
-              }
-            }
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.solasca",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.tessarane",
-      "name": "Tessarane",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "region",
-            "summary": "Tessarane is a kingdom of Solasca. Its present pressure: Astronomers predict an ordinary comet; the court insists it confirms three incompatible prophecies.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 770,
-            "y": 440
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.visual",
-          "value": {
-            "status": "archived",
-            "variants": {
-              "player": {
-                "sha256": "8df1250adc70e1f36e7022f99b0ada186b961d9301ef2914697f26a8bb72293d",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Tessarane fantasy atlas map",
-                "caption": "Tessarane",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/tessarane.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 4
-                }
-              },
-              "dm": {
-                "sha256": "8df1250adc70e1f36e7022f99b0ada186b961d9301ef2914697f26a8bb72293d",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Tessarane fantasy atlas map",
-                "caption": "Tessarane",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/tessarane.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 4
-                }
-              }
-            }
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.solasca",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.veyr-marches",
-      "name": "Veyr Marches",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "region",
-            "summary": "Veyr Marches is a elective march confederacy of Eredane. Its present pressure: The High Warden is dying and the marches disagree whether one successor should command them all.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 500,
-            "y": 255
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.visual",
-          "value": {
-            "status": "archived",
-            "variants": {
-              "player": {
-                "sha256": "2ec120a96963518a963f0ae5e4d5574bf91cceb9c37b2360610a1469822b46a7",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Veyr Marches fantasy atlas map",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/veyr-marches.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 3
-                }
-              },
-              "dm": {
-                "sha256": "2ec120a96963518a963f0ae5e4d5574bf91cceb9c37b2360610a1469822b46a7",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Veyr Marches fantasy atlas map",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/veyr-marches.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 3
-                }
-              }
-            }
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.eredane",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "actor.caldris.ada-penn",
-      "name": "Ada Penn",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.motive",
-          "value": {
-            "status": "active",
-            "summary": "strict rescue-house keeper. Immediate want: expose false storm signals. Hidden depth: hid one refugee convoy record.",
-            "visibility": "party"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.carrowmere",
-        "slot": "people"
-      }
-    },
-    {
-      "entityId": "actor.caldris.ansel-daro",
-      "name": "Ansel Daro",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.motive",
-          "value": {
-            "status": "active",
-            "summary": "charming League Chair, currently missing. Immediate want: survive long enough to reveal archive truth. Hidden depth: wrote three resignations for three anticipated kidnappers.",
-            "visibility": "party"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.seven-lamps-league",
-        "slot": "people"
-      }
-    },
-    {
-      "entityId": "actor.caldris.architect-sola-mere",
-      "name": "Architect Sola Mere",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.motive",
-          "value": {
-            "status": "active",
-            "summary": "Cringeworthy palace guide with elaborate gestures, incorrect heroic poses, and excellent structural judgment. Wants the Unfinished Palace kept public; understands load paths and encoded measurements; longs for noble patronage. Directs pageants with Sera Lark by letter. Refusing a lucrative private commission becomes her proof of maturity.",
-            "visibility": "party"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.selucia",
-        "slot": "people"
-      }
-    },
-    {
-      "entityId": "actor.caldris.auditor-celyn-marr",
-      "name": "Auditor Celyn Marr",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.motive",
-          "value": {
-            "status": "active",
-            "summary": "the sponsor above the minister. A pleasant, forgettable policy adviser who never carries a weapon and rarely tells a direct lie. Celyn leads a Seventh Ledger restoration cell and supplied Vane with convincing analyses, forged precedents, and real evidence of approaching instability. Celyn views people as entries that should be made legible for their own protection. Celyn answers to a Council of Margins distributed across both continents. The Council itself is divided: restorationists want Concord authority, custodians want dangerous archives contained, and reformers want public standards without inherited debt. “The boss” becomes a political network, not an infinite line of stronger combatants.",
-            "visibility": "gm"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.alderwick",
-        "slot": "people"
-      }
-    },
-    {
-      "entityId": "actor.caldris.auntie-brin-sallow",
-      "name": "Auntie Brin Sallow",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.motive",
-          "value": {
-            "status": "active",
-            "summary": "Dry realist and elected Mackerel Crown harbour speaker who calls everyone “captain” when annoyed. Wants the fleet moving despite the dual seals; remembers customary law and every household's boat; fears compromise will look like weakness. Her rival speaker is her former closest friend. Shared danger can restore practical trust before affection.",
-            "visibility": "party"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.carrowmere",
-        "slot": "people"
-      }
-    },
-    {
-      "entityId": "actor.caldris.basto-inkhand",
-      "name": "Basto Inkhand",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.motive",
-          "value": {
-            "status": "active",
-            "summary": "Gentle grump and Inkfish Wharf maker whose hands, sleeves, and household goat are permanently black. Wants the fading-document panic stopped; understands pigments and paper; once sold poor ink during hardship and expects suspicion. Supplies the Vessa Open Archive League. He confesses his old fault when others distinguish it from the current sabotage.",
-            "visibility": "party"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.ordelain",
-        "slot": "people"
-      }
-    },
-    {
-      "entityId": "actor.caldris.bera-flint",
-      "name": "Bera Flint",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.motive",
-          "value": {
-            "status": "active",
-            "summary": "Tired authority and elected goat judge who prepares legal opinions while her decorated goat eats the ribbons. Wants missing animals returned without a border incident; understands grazing law and kinship networks; worries outsiders see her court as ridiculous. Respected by Oath Rope Lodges. Serious engagement with the ritual makes her an inventive negotiator.",
-            "visibility": "party"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.lornesse",
-        "slot": "people"
-      }
-    },
-    {
-      "entityId": "actor.caldris.borin-well",
-      "name": "Borin Well",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.motive",
-          "value": {
-            "status": "active",
-            "summary": "gentle grump smelter. Immediate want: stop copper theft. Hidden depth: hears Karsh speaking through furnace drafts—or thinks he does.",
-            "visibility": "party"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.kethria",
-        "slot": "people"
-      }
     }
   ],
   "relationships": [
@@ -959,8 +882,8 @@
       "value": {}
     },
     {
-      "fromEntityId": "faction.caldris.free-axle-companies",
-      "toEntityId": "location.caldris.veyr-marches",
+      "fromEntityId": "faction.caldris.company-of-weirs",
+      "toEntityId": "location.caldris.alderwick",
       "qualifiedKind": "game.core.world.faction.territory-controls",
       "value": {}
     },
@@ -995,14 +918,14 @@
       "value": {}
     },
     {
-      "fromEntityId": "faction.caldris.nine-march-moot",
-      "toEntityId": "location.caldris.veyr-marches",
+      "fromEntityId": "faction.caldris.oath-rope-lodges",
+      "toEntityId": "location.caldris.lornesse",
       "qualifiedKind": "game.core.world.faction.territory-controls",
       "value": {}
     },
     {
-      "fromEntityId": "faction.caldris.oath-rope-lodges",
-      "toEntityId": "location.caldris.lornesse",
+      "fromEntityId": "faction.caldris.quiet-bell-chapter",
+      "toEntityId": "location.caldris.alderwick",
       "qualifiedKind": "game.core.world.faction.territory-controls",
       "value": {}
     },
@@ -1037,44 +960,14 @@
       "value": {}
     },
     {
-      "fromEntityId": "faction.caldris.open-roof-society",
-      "toEntityId": "location.caldris.tessarane",
-      "qualifiedKind": "game.core.world.faction.territory-controls",
-      "value": {}
-    },
-    {
       "fromEntityId": "faction.caldris.selucian-dock-assemblies",
       "toEntityId": "location.caldris.selucia",
       "qualifiedKind": "game.core.world.faction.territory-controls",
       "value": {}
     },
     {
-      "fromEntityId": "faction.caldris.tessa-sky-college",
-      "toEntityId": "location.caldris.tessarane",
-      "qualifiedKind": "game.core.world.faction.territory-controls",
-      "value": {}
-    },
-    {
-      "fromEntityId": "faction.caldris.glassharbor-furnace-guilds",
-      "toEntityId": "location.caldris.seven-lamps-league",
-      "qualifiedKind": "game.core.world.faction.territory-controls",
-      "value": {}
-    },
-    {
       "fromEntityId": "faction.caldris.keepers-of-the-mountain-tithe",
       "toEntityId": "location.caldris.kethria",
-      "qualifiedKind": "game.core.world.faction.territory-controls",
-      "value": {}
-    },
-    {
-      "fromEntityId": "faction.caldris.league-chairs-secretariat",
-      "toEntityId": "location.caldris.seven-lamps-league",
-      "qualifiedKind": "game.core.world.faction.territory-controls",
-      "value": {}
-    },
-    {
-      "fromEntityId": "faction.caldris.low-lantern-dry-sock-fund",
-      "toEntityId": "location.caldris.seven-lamps-league",
       "qualifiedKind": "game.core.world.faction.territory-controls",
       "value": {}
     },
@@ -1115,24 +1008,6 @@
       "value": {}
     },
     {
-      "fromEntityId": "chronology.caldris.landmark.rain-crown-of-orovant.23",
-      "toEntityId": "location.caldris.tessarane",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.rain-crown-of-orovant.366",
-      "toEntityId": "location.caldris.tessarane",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.rain-crown-of-orovant.844",
-      "toEntityId": "location.caldris.tessarane",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
       "fromEntityId": "chronology.caldris.landmark.orchardback.212",
       "toEntityId": "location.caldris.selucia",
       "qualifiedKind": "game.core.world.chronology.about",
@@ -1147,6 +1022,102 @@
     {
       "fromEntityId": "chronology.caldris.landmark.orchardback.605",
       "toEntityId": "location.caldris.selucia",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tidecross.crossing-stop",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tidecross.crossing-stop",
+      "toEntityId": "location.caldris.tidecross",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tidecross.quay-charter",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tidecross.quay-charter",
+      "toEntityId": "location.caldris.tidecross",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tidecross.daily-life",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tidecross.daily-life",
+      "toEntityId": "location.caldris.tidecross",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tidecross.returning-bell",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tidecross.returning-bell",
+      "toEntityId": "location.caldris.tidecross",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tidecross.present-pressure",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.tidecross.present-pressure",
+      "toEntityId": "location.caldris.tidecross",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.tidecross.first-pilots",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.tidecross.first-pilots",
+      "toEntityId": "location.caldris.tidecross",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.tidecross.open-doors",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.tidecross.open-doors",
+      "toEntityId": "location.caldris.tidecross",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.tidecross.ferry-stairs",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.chronology.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.tidecross.ferry-stairs",
+      "toEntityId": "location.caldris.tidecross",
       "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     }

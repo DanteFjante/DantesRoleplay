@@ -17,6 +17,7 @@ SNAPSHOT = ROOT / 'data/exports/current'
 WORLD = 'world.caldris'
 CAMPAIGN = 'campaign.caldris.measure-of-mercy'
 SPACE = 'dnd2024-main'
+HARBOUR = ROOT / 'docs/world/caldris/harbour-islands'
 ALIASES = {
     'region.caldris.chalklands': 'location.caldris.atlas.chalklands',
     'location.caldris.button-hills': 'location.caldris.alderwick.the-button-hills',
@@ -117,7 +118,10 @@ def build():
     opening_media = read(HERE / 'opening-media.json')
     atlas = read(ROOT / 'docs/world/caldris/maps/lore-atlas/atlas-gm.json')
     packet = read(ROOT / 'catalog/applications/dnd2024/assets/caldris/measure-of-mercy/asset-import-manifest.json')
+    harbour_manifests=[read(HARBOUR/name) for name in ['tidecross-world-manifest.json','halfway-world-manifest.json']]
     new_map_owners = {asset['ownerLocationId'] for asset in packet['assets'] if asset['kind'] == 'map'}
+    new_map_owners.update(entity['entityId'] for manifest in harbour_manifests for entity in manifest['entities']
+                          if 'game.core.world.map.visual' in component_map(entity))
     opening_asset_owners = {asset['ownerLocationId'] for asset in packet['assets']}
     entities = {}
     for row in rows('system_ecs_entity'):
@@ -160,6 +164,19 @@ def build():
             replace_component(entity,'game.core.world.location',{key:place[key] for key in ['kind','summary','visibility']} | {'status':'active'})
         if place.get('x') is not None and place.get('y') is not None:
             replace_component(entity,'game.core.world.map.anchor',{'x':place['x'],'y':place['y']})
+
+    # These later committed harbour captures are authored content outside the
+    # earlier full export. Original request tokens/revisions are not replayed.
+    for manifest in harbour_manifests:
+        for authored in manifest['entities']:
+            identity=authored['entityId']
+            if identity=='location.caldris.atlas.lantern-sea':
+                continue  # The current reviewed clean-atlas anchor owns this record.
+            entity=entities.setdefault(identity,{'entityId':identity,'name':authored['name'],'components':[],'containment':None})
+            for component in authored['components']:
+                replace_component(entity,component['qualifiedTypeId'],component['value'])
+            if authored.get('containment'):
+                entity['containment']={key:authored['containment'][key] for key in ['containerEntityId','slot']}
 
     for identity,entity in entities.items():
         if entity['containment'] is None:
@@ -213,14 +230,21 @@ def build():
         key=(left,right,row[4])
         if key not in seen:
             relationships.append(relationship);seen.add(key)
-    for relationship in opening['relationships']:
+    authored_relationships=opening['relationships']+[relationship for manifest in harbour_manifests for relationship in manifest['relationships']]
+    for relationship in authored_relationships:
         relationship=remap(relationship)
+        relationship={key:relationship[key] for key in ['fromEntityId','toEntityId','qualifiedKind','value']}
         key=(relationship['fromEntityId'],relationship['toEntityId'],relationship['qualifiedKind'])
         if key not in seen:
             relationships.append(relationship);seen.add(key)
 
     # Resolve only referenced blob bytes from the committed capture or opening packet.
     media_by_hash={entry['sha256']:entry for entry in opening_media['media']}
+    for name in ['tidecross-harbour.png','halfway-light.png']:
+        path=HARBOUR/name
+        content=path.read_bytes()
+        digest=hashlib.sha256(content).hexdigest()
+        media_by_hash[digest]={'sourcePath':path.relative_to(ROOT).as_posix(),'sha256':digest,'mediaType':'image/png','byteLength':len(content)}
     blob_sources={entry['sha256']:entry for entry in read(SNAPSHOT/'manifest.json')['externalBlobs']}
     def hashes(value):
         if isinstance(value,dict):

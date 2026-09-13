@@ -3,22 +3,178 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
-      "entityId": "fact.caldris.dossier.kethria",
-      "name": "Polity dossier — Kethria",
+      "entityId": "fact.caldris.custom.bellafont.rain-letters",
+      "name": "Rain Letters",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.fact",
           "value": {
             "status": "active",
-            "summary": "Kethria — terraces above the copper valleys. Land and livelihood: terraced grain and fruit, copper, tin, mountain timber, snowmelt canals, Rule: Queen Arshala, valley councils, mine compacts, and a ritual office that records copper Character: precise hospitality, communal irrigation work, wrestling, carved doors, dry Magic: openly discussed but rarely seen; mountain monasteries keep dangerous texts while Old wound: the Crownmaking dynasty accepted a secret dragon bargain to prevent invasion. Current pressure: the copper tithe has continued for four centuries, but someone recently",
-            "provenance": "Caldris world bible — polity dossiers",
+            "summary": "Orchard workers leave anonymous encouragement in preserve jars at roadside shelters. Disagreement: Court poets claim to have invented it; workers insist the custom is older. Story use: A threatening message violates the form in ways that reveal its writer.",
+            "provenance": "Caldris history and lore atlas",
             "visibility": "public"
           }
         },
         {
           "qualifiedTypeId": "game.core.world.knowledge.classification",
           "value": {
-            "subjectKind": "state",
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.custom.bellafont.the-blunt-dessert",
+      "name": "The Blunt Dessert",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Difficult negotiations end with an intentionally ugly but delicious tart. Disagreement: Nobles debate its symbolism; cooks say it prevents people pretending appearance is substance. Story use: Refusing or praising it communicates more than formal speeches.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.bellafont",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.custom.carrowmere.blue-roof-reckoning",
+      "name": "Blue Roof Reckoning",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Families paint a rescued tile with the name of the wreck it came from. Disagreement: Some names belong to smuggling craft officially declared never to exist. Story use: A roof becomes an accidental archive of maritime secrets.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.carrowmere",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.custom.carrowmere.the-dry-admirals-toast",
+      "name": "The Dry Admiral's Toast",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Retired captains toast a voyage that never occurred, adding one implausible detail each year. Disagreement: One “joke” detail consistently matches covert wartime charts. Story use: Players must separate affectionate nonsense from encoded testimony.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.carrowmere",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.custom.dunmarrow.a-rook-owes-one-blow",
+      "name": "A Rook Owes One Blow",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Smiths pause after a rook perfectly copies a hammer rhythm. Disagreement: Miners say it remembers the dead; smiths say the pause prevents fatigue. Story use: A rook repeats a rhythm used only in a supposedly sealed workshop.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.dunmarrow",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.custom.dunmarrow.crutch-courtesy",
+      "name": "Crutch Courtesy",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "At mountain inns, the least mobile guest chooses the first seat and safest departure time. Disagreement: Escort captains treat it as quaint; locals treat it as survival law. Story use: Invoking courtesy can defeat a dangerous monopoly without drawing steel.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.dunmarrow",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.custom.kethria.the-shield-loaf",
+      "name": "The Shield Loaf",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "A household breaks its stamped winter loaf only after confirming neighbors also have bread. Disagreement: Wealthy homes treat it symbolically; mountain villages still conduct the check. Story use: Missing flour becomes a network of mutual aid rather than a solitary theft.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
             "sensitivity": "open"
           }
         }
@@ -29,22 +185,48 @@
       }
     },
     {
-      "entityId": "fact.caldris.dossier.lornesse",
-      "name": "Polity dossier — Lornesse",
+      "entityId": "fact.caldris.custom.kethria.the-unridden-saddle",
+      "name": "The Unridden Saddle",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.fact",
           "value": {
             "status": "active",
-            "summary": "Lornesse — mountains, bells, and things under stone. Land and livelihood: Lornspine valleys, silver, copper, slate, timber, goats, alpine pasture, Rule: Queen-Mother Eda serves as regent for a capable but underage king, advised by valley Character: careful speech, communal work, resonant bell traditions, cliffside hospitality, Magic: rune claims are mostly craft notation and property marks; genuine magic is rare and Old wound: Concord debt enforcers sealed entire mine communities during the Sundering. Current pressure: new chambers beneath Copperdeep contain fresh soot and a tithe niche too",
-            "provenance": "Caldris world bible — polity dossiers",
+            "summary": "One saddle remains empty on dangerous crossings so the dead or lost are not forgotten. Disagreement: Some survivors consider it comforting; others see a lie that prevents searches. Story use: Removing a saddle can be grief, evidence, or protection.",
+            "provenance": "Caldris history and lore atlas",
             "visibility": "public"
           }
         },
         {
           "qualifiedTypeId": "game.core.world.knowledge.classification",
           "value": {
-            "subjectKind": "state",
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.kethria",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.custom.lornesse.goat-judgment",
+      "name": "Goat Judgment",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Grazing disputes are argued before an elected “goat judge,” who announces a practical compromise. Disagreement: Outsiders think the goat decides; locals know the decorated animal keeps tempers down. Story use: An antagonist dismisses the ritual and loses community trust before a serious hearing.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
             "sensitivity": "open"
           }
         }
@@ -55,22 +237,48 @@
       }
     },
     {
-      "entityId": "fact.caldris.dossier.namarra",
-      "name": "Polity dossier — Namarra",
+      "entityId": "fact.caldris.custom.lornesse.the-missing-echo",
+      "name": "The Missing Echo",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.fact",
           "value": {
             "status": "active",
-            "summary": "Namarra — kingdom of a thousand channels. Land and livelihood: rice, grain, flax, dates, fish, salt, reeds, saffron, canal transport, Rule: King Javed II relies on canal councils, temple granaries, tax flotillas, and village Character: fast negotiation, layered hospitality, satirical puppetry, boat races, and a Magic: river blessings and protective marks are common culture; reliable magic is scarce and Old wound: Sundering-era refugees founded settlements never formally recognized by the Crown. Current pressure: several living villages have vanished from royal records while their crops",
-            "provenance": "Caldris world bible — polity dossiers",
+            "summary": "Workers stop immediately if a familiar echo fails to return. Disagreement: Priests call it mountain displeasure; engineers call it changing voids. Story use: Both interpretations point toward real danger through different evidence.",
+            "provenance": "Caldris history and lore atlas",
             "visibility": "public"
           }
         },
         {
           "qualifiedTypeId": "game.core.world.knowledge.classification",
           "value": {
-            "subjectKind": "state",
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.lornesse",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.custom.namarra.paper-boats-carry-small-truths",
+      "name": "Paper Boats Carry Small Truths",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Children float unsigned worries to a trusted downstream elder. Disagreement: Adults debate whether reading them violates privacy or fulfills the custom. Story use: A paper fleet contains unrelated fears plus one crucial warning.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
             "sensitivity": "open"
           }
         }
@@ -81,22 +289,48 @@
       }
     },
     {
-      "entityId": "fact.caldris.dossier.ordelain",
-      "name": "Polity dossier — Ordelain",
+      "entityId": "fact.caldris.custom.namarra.three-spoons-no-fourth",
+      "name": "Three Spoons, No Fourth",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.fact",
           "value": {
             "status": "active",
-            "summary": "Ordelain — the long river kingdom. Land and livelihood: the Aur's broad grain plain, paper reeds, cattle, ceramics, orchards, Rule: Queen Samira III, river judges, provincial governors, and hereditary canal offices. Character: formal debate, generosity at table, public storytelling, water-law jokes, and an Magic: licensed colleges study medicine, stars, law, and controlled ritual; unauthorized Old wound: Concord surveyors redirected the Aur, enriching some estates and drowning others. Current pressure: the river has returned toward its pre-Concord channel, reopening claims",
-            "provenance": "Caldris world bible — polity dossiers",
+            "summary": "Communal kitchens use three serving spoons for children, workers, and guests. Disagreement: Reformers want a fourth for officials; cooks consider officials guests. Story use: A seating dispute reveals who expects privilege during crisis.",
+            "provenance": "Caldris history and lore atlas",
             "visibility": "public"
           }
         },
         {
           "qualifiedTypeId": "game.core.world.knowledge.classification",
           "value": {
-            "subjectKind": "state",
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.namarra",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.custom.ordelain.black-pawed-testimony",
+      "name": "Black-Pawed Testimony",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "An ink-stained cat crossing a courtroom pauses proceedings for water. Disagreement: Judges insist it is hygiene, not luck; everyone still watches which party the cat approaches. Story use: A light comic beat exposes tampered ink on a litigant's sleeve.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
             "sensitivity": "open"
           }
         }
@@ -107,311 +341,199 @@
       }
     },
     {
-      "entityId": "fact.caldris.dossier.selucia",
-      "name": "Polity dossier — Selucia",
+      "entityId": "fact.caldris.custom.ordelain.curved-boundaries-are-wiser",
+      "name": "Curved Boundaries Are Wiser",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.fact",
           "value": {
             "status": "active",
-            "summary": "Selucia — islands bound by bells and sail. Land and livelihood: olives, citrus, fish, wine, ship repair, coral, ceramics, pilgrimage, Rule: King Matteo and an island parliament whose members arrive late whenever the wind makes Character: musical processions, neighbourly feuds, sea rescue, dramatic hospitality, and Magic: island saints and sea stories abound; actual spellcasters often work as healers, Old wound: one island was traded by treaty without its delegates present. Current pressure: a wedding between Selucian and Ordelaini houses may settle maritime claims,",
-            "provenance": "Caldris world bible — polity dossiers",
+            "summary": "Farmers preserve bends in hedges and paths even after rivers move. Disagreement: Lawyers call it superstition; flood workers recognize lost channels. Story use: A “nonsensical” boundary becomes a life-saving drainage map.",
+            "provenance": "Caldris history and lore atlas",
             "visibility": "public"
           }
         },
         {
           "qualifiedTypeId": "game.core.world.knowledge.classification",
           "value": {
-            "subjectKind": "state",
+            "subjectKind": "event",
             "sensitivity": "open"
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.selucia",
+        "containerEntityId": "location.caldris.ordelain",
         "slot": "knowledge"
-      }
-    },
-    {
-      "entityId": "fact.caldris.dossier.seven-lamps-league",
-      "name": "Polity dossier — Seven Lamps League",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.fact",
-          "value": {
-            "status": "active",
-            "summary": "Seven Lamps League — cities that agree commercially. Land and livelihood: three major ports and four smaller member cities around the Lantern Rule: rotating civic chair, member councils, merchant courts, dock assemblies, and enough Character: multilingual streets, professional hospitality, public satire, practical Magic: the League regulates magical services as trades while banning several forms of Old wound: Aster Quay hosted the final Concord negotiations and may have helped the last High Current pressure: the rotating Chair, Ansel Daro, vanished with a key to a sealed archive and",
-            "provenance": "Caldris world bible — polity dossiers",
-            "visibility": "public"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.knowledge.classification",
-          "value": {
-            "subjectKind": "state",
-            "sensitivity": "open"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.seven-lamps-league",
-        "slot": "knowledge"
-      }
-    },
-    {
-      "entityId": "fact.caldris.dossier.tessarane",
-      "name": "Polity dossier — Tessarane",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.fact",
-          "value": {
-            "status": "active",
-            "summary": "Tessarane — high roads and open skies. Land and livelihood: dry plateau, horse and sheep herding, wheat valleys, glass, astronomy, Rule: Queen Ione and a court that travels seasonally among three royal residences. Character: direct questions, long-distance hospitality, star lore, public recitation, fierce Magic: stars are studied scientifically, devotionally, and magically by rival institutions Old wound: Concord calendars once fixed tax dates without regard for plateau seasons. Current pressure: a harmless comet has become a dangerous political canvas.",
-            "provenance": "Caldris world bible — polity dossiers",
-            "visibility": "public"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.knowledge.classification",
-          "value": {
-            "subjectKind": "state",
-            "sensitivity": "open"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.tessarane",
-        "slot": "knowledge"
-      }
-    },
-    {
-      "entityId": "fact.caldris.dossier.veyr-marches",
-      "name": "Polity dossier — Veyr Marches",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.fact",
-          "value": {
-            "status": "active",
-            "summary": "Veyr Marches — many banners, one difficult road. Land and livelihood: eastern passes, mixed forest and pasture, horse breeding, timber, Rule: nine marches elect a High Warden for life while preserving separate laws and rival Character: practical pluralism, fierce local identity, excellent roadside food, competitive Magic: local customs vary widely; the Warden's law focuses on harmful acts rather than Old wound: several marches backed different sides in the war and later invented a story of Current pressure: the dying High Warden's likely successors include a strict reformer, a",
-            "provenance": "Caldris world bible — polity dossiers",
-            "visibility": "public"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.knowledge.classification",
-          "value": {
-            "subjectKind": "state",
-            "sensitivity": "open"
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.veyr-marches",
-        "slot": "knowledge"
-      }
-    },
-    {
-      "entityId": "location.caldris.alderwick.dunwarren",
-      "name": "Dunwarren",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "settlement",
-            "summary": "Dunwarren controls the eastern forest roads and supplies beams, charcoal, carts, and bow staves. Its walls incorporate living oaks protected by charter, making maintenance both impressive and botanically argumentative.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 780,
-            "y": 255
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.alderwick",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.alderwick.kings-patience-wood",
-      "name": "King's Patience Wood",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "Managed oak woodland supplying bridge beams, charcoal, pannage, and the kingdom's slowest official hunting lodge. Present pressure: Foresters and villagers dispute emergency cutting after storm damage.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 815,
-            "y": 445
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.alderwick",
-        "slot": "location"
       }
     }
   ],
   "relationships": [
     {
-      "fromEntityId": "fact.caldris.dossier.kethria",
-      "toEntityId": "location.caldris.kethria",
+      "fromEntityId": "fact.caldris.custom.bellafont.rain-letters",
+      "toEntityId": "location.caldris.bellafont",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.dossier.kethria",
+      "fromEntityId": "fact.caldris.custom.bellafont.rain-letters",
       "toEntityId": "world.caldris",
       "qualifiedKind": "game.core.world.knowledge.in-world",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.dossier.lornesse",
+      "fromEntityId": "fact.caldris.custom.bellafont.the-blunt-dessert",
+      "toEntityId": "location.caldris.bellafont",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.bellafont.the-blunt-dessert",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.carrowmere.blue-roof-reckoning",
+      "toEntityId": "location.caldris.carrowmere",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.carrowmere.blue-roof-reckoning",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.carrowmere.the-dry-admirals-toast",
+      "toEntityId": "location.caldris.carrowmere",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.carrowmere.the-dry-admirals-toast",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.dunmarrow.a-rook-owes-one-blow",
+      "toEntityId": "location.caldris.dunmarrow",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.dunmarrow.a-rook-owes-one-blow",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.dunmarrow.crutch-courtesy",
+      "toEntityId": "location.caldris.dunmarrow",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.dunmarrow.crutch-courtesy",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.lornesse.goat-judgment",
       "toEntityId": "location.caldris.lornesse",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.dossier.lornesse",
+      "fromEntityId": "fact.caldris.custom.lornesse.goat-judgment",
       "toEntityId": "world.caldris",
       "qualifiedKind": "game.core.world.knowledge.in-world",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.dossier.namarra",
+      "fromEntityId": "fact.caldris.custom.lornesse.the-missing-echo",
+      "toEntityId": "location.caldris.lornesse",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.lornesse.the-missing-echo",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.kethria.the-shield-loaf",
+      "toEntityId": "location.caldris.kethria",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.kethria.the-shield-loaf",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.kethria.the-unridden-saddle",
+      "toEntityId": "location.caldris.kethria",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.kethria.the-unridden-saddle",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.namarra.paper-boats-carry-small-truths",
       "toEntityId": "location.caldris.namarra",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.dossier.namarra",
+      "fromEntityId": "fact.caldris.custom.namarra.paper-boats-carry-small-truths",
       "toEntityId": "world.caldris",
       "qualifiedKind": "game.core.world.knowledge.in-world",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.dossier.ordelain",
+      "fromEntityId": "fact.caldris.custom.namarra.three-spoons-no-fourth",
+      "toEntityId": "location.caldris.namarra",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.namarra.three-spoons-no-fourth",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.ordelain.black-pawed-testimony",
       "toEntityId": "location.caldris.ordelain",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.dossier.ordelain",
+      "fromEntityId": "fact.caldris.custom.ordelain.black-pawed-testimony",
       "toEntityId": "world.caldris",
       "qualifiedKind": "game.core.world.knowledge.in-world",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.dossier.selucia",
-      "toEntityId": "location.caldris.selucia",
+      "fromEntityId": "fact.caldris.custom.ordelain.curved-boundaries-are-wiser",
+      "toEntityId": "location.caldris.ordelain",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.dossier.selucia",
+      "fromEntityId": "fact.caldris.custom.ordelain.curved-boundaries-are-wiser",
       "toEntityId": "world.caldris",
       "qualifiedKind": "game.core.world.knowledge.in-world",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.dossier.seven-lamps-league",
-      "toEntityId": "location.caldris.seven-lamps-league",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.dossier.seven-lamps-league",
-      "toEntityId": "world.caldris",
-      "qualifiedKind": "game.core.world.knowledge.in-world",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.dossier.tessarane",
-      "toEntityId": "location.caldris.tessarane",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.dossier.tessarane",
-      "toEntityId": "world.caldris",
-      "qualifiedKind": "game.core.world.knowledge.in-world",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.dossier.veyr-marches",
-      "toEntityId": "location.caldris.veyr-marches",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.dossier.veyr-marches",
-      "toEntityId": "world.caldris",
-      "qualifiedKind": "game.core.world.knowledge.in-world",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.alderwick.dunwarren",
-      "toEntityId": "location.caldris.alderwick.kings-patience-wood",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.7dccbdc09d4fc0bf5e6a",
-      "toEntityId": "location.caldris.alderwick.dunwarren",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.5e7872dcea04e57e9d65",
-      "toEntityId": "location.caldris.alderwick.dunwarren",
-      "qualifiedKind": "game.core.world.knowledge.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.7dccbdc09d4fc0bf5e6a",
-      "toEntityId": "location.caldris.alderwick.dunwarren",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.bc82303c2ab147a4dfb0",
-      "toEntityId": "location.caldris.alderwick.dunwarren",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.5e7872dcea04e57e9d65",
-      "toEntityId": "location.caldris.alderwick.dunwarren",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.5e7872dcea04e57e9d65",
-      "toEntityId": "location.caldris.alderwick.kings-patience-wood",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.fd59f029e3b63aa7efa6",
-      "toEntityId": "location.caldris.alderwick.kings-patience-wood",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.fd59f029e3b63aa7efa6",
-      "toEntityId": "location.caldris.alderwick.dunwarren",
-      "qualifiedKind": "game.core.world.route.to",
       "value": {}
     }
   ]

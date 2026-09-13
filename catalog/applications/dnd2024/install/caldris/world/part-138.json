@@ -3,40 +3,14 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
-      "entityId": "location.caldris.lornesse.lorn",
-      "name": "Lorn",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "settlement",
-            "summary": "Lorn fills a hanging valley beneath the royal monastery-fortress. Bells coordinate markets, avalanches, funerals, fire, court sessions, and lunch with patterns outsiders routinely confuse.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 670,
-            "y": 280
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.lornesse",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.lornesse.seven-echo-quarry",
-      "name": "Seven Echo Quarry",
+      "entityId": "location.caldris.lore.reedname-landing",
+      "name": "Reedname Landing",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "site",
-            "summary": "Slate quarry where each work call returns in a distinct echo used to measure the cliff. Present pressure: One echo has vanished, making blasting unsafe.",
+            "summary": "A modest public landing in Namarra with boat moorings, a covered waiting place, and a forwarding service. Its working records track changing channels and actual deliveries. The landing's visibility does not make confidential household lists public or settle the legal recognition of the communities its crews serve.",
             "visibility": "public",
             "status": "active"
           }
@@ -44,25 +18,157 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 290,
-            "y": 450
+            "x": 515,
+            "y": 625
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.lornesse",
+        "containerEntityId": "location.caldris.namarra",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.lornesse.stair-of-one-hundred-regrets",
-      "name": "Stair of One Hundred Regrets",
+      "entityId": "location.caldris.lore.selvar",
+      "name": "Selvar",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "summary": "Historic inland district east of Serevan on Solasca, connected by caravan roads, gardens and market towns including Namar Vale.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 205,
+            "y": 350
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "archived",
+            "variants": {
+              "player": {
+                "sha256": "ff8e4b14de7f10f7ed094384124c931ece2977baae872a8cd9fe87618ea9a2f4",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Selvar fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/selvar.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              },
+              "dm": {
+                "sha256": "ff8e4b14de7f10f7ed094384124c931ece2977baae872a8cd9fe87618ea9a2f4",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Selvar fantasy atlas map",
+                "caption": "",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/selvar.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 3
+                }
+              }
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.serevan",
+      "name": "Serevan",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "region",
+            "summary": "Historic coastal district of Solasca facing Morrow Strait, a crossing of the Lantern Sea; home to Leth Sarai and Istravel. Its old principality does not establish the present political borders.",
+            "visibility": "public",
+            "status": "active"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.anchor",
+          "value": {
+            "x": 205,
+            "y": 870
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "archived",
+            "variants": {
+              "player": {
+                "sha256": "c200e57f828e6583a61a61d90589c8ef6f093784a4563e742b26bf80a0cca990",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Serevan fantasy atlas map",
+                "caption": "Serevan",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/serevan.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 4
+                }
+              },
+              "dm": {
+                "sha256": "c200e57f828e6583a61a61d90589c8ef6f093784a4563e742b26bf80a0cca990",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Serevan fantasy atlas map",
+                "caption": "Serevan",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/serevan.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 4
+                }
+              }
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.seven-lamps-league",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "location.caldris.lore.swallowwatch-orchard",
+      "name": "Swallowwatch Orchard",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "site",
-            "summary": "pass stair in Lornesse. Actually 113 steps; travellers traditionally confess minor mistakes.",
+            "summary": "A working orchard and observation plot in Bellafont. Its notebooks compare weather, flowering, insect activity, birds, and yields across several decades. Trees and keepers have changed; corrections and gaps remain visible. Its observations address particular places and do not automatically explain every regional blight or failed migration.",
             "visibility": "public",
             "status": "active"
           }
@@ -70,25 +176,25 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 805,
+            "x": 830,
             "y": 785
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.lornesse",
+        "containerEntityId": "location.caldris.bellafont",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.lornesse.the-widows-incline",
-      "name": "The Widow's Incline",
+      "entityId": "location.caldris.lore.the-lantern-hospice",
+      "name": "The Lantern Hospice",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "site",
-            "summary": "A steep freight railway of ropes, brakes, and timber sledges run by a cooperative of miners' families. Present pressure: Brake ropes have been cut three times.",
+            "summary": "A roadside hospitality house in the Veyr Marches offering paid lodging and a limited number of supported places. Its rooms and stores have been rebuilt repeatedly. Conduct rules apply to patrons as well as guests, and its founders' refusal of exclusive sponsorship remains a debated tradition.",
             "visibility": "public",
             "status": "active"
           }
@@ -96,25 +202,25 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 480,
-            "y": 710
+            "x": 695,
+            "y": 825
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.lornesse",
+        "containerEntityId": "location.caldris.veyr-marches",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.lornesse.warmstone-baths",
-      "name": "Warmstone Baths",
+      "entityId": "location.caldris.lore.vey-lowlands",
+      "name": "Vey Lowlands",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
-            "kind": "site",
-            "summary": "Modest mineral baths used by miners, pilgrims, aching nobles, and relentless local gossips. Present pressure: The spring cools during the busiest healing season.",
+            "kind": "region",
+            "summary": "River and coastal country downstream of the Chalklands: Veymouth, Nacre Quay and Reedbank communities preserve the layered legacy of Low Vey and later local governments.",
             "visibility": "public",
             "status": "active"
           }
@@ -122,77 +228,65 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 650,
-            "y": 635
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.lornesse",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.namarra.drowned-door-orchard",
-      "name": "Drowned Door Orchard",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "Fruit trees grow on narrow levees around the upper frame of a submerged stone doorway. Present pressure: Divers seeking treasure destabilize the levee.",
-            "visibility": "public",
-            "status": "active"
+            "x": 760,
+            "y": 785
           }
         },
         {
-          "qualifiedTypeId": "game.core.world.map.anchor",
+          "qualifiedTypeId": "game.core.world.map.visual",
           "value": {
-            "x": 260,
-            "y": 355
+            "status": "archived",
+            "variants": {
+              "player": {
+                "sha256": "6a0511780f819293446fa6069e76bd141e0213cee13c30d765c82c1dd97aea58",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Vey Lowlands fantasy atlas map",
+                "caption": "Vey Lowlands",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/vey-lowlands.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 4
+                }
+              },
+              "dm": {
+                "sha256": "6a0511780f819293446fa6069e76bd141e0213cee13c30d765c82c1dd97aea58",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Vey Lowlands fantasy atlas map",
+                "caption": "Vey Lowlands",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/vey-lowlands.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 4
+                }
+              }
+            }
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.namarra",
+        "containerEntityId": "location.caldris.alderwick",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.namarra.mosquito-abbey",
-      "name": "Mosquito Abbey",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "Raised monastery studying fever seasons, drainage, and inexpensive nets amid relentless buzzing. Present pressure: Stored remedies are missing while nearby families fall ill.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 750,
-            "y": 425
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.namarra",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.namarra.namar",
-      "name": "Namar",
+      "entityId": "location.caldris.lore.whitewindow",
+      "name": "Whitewindow",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "settlement",
-            "summary": "Namar rises on islands and embankments where the delta branches. Boats are ordinary transport; addresses include both street and nearest landing.",
+            "summary": "Location: Northern stone hills reached by a branch road from the Chalklands. Livelihood: Metal fittings, stonework, repair contracts, and upland husbandry. Pale mineral seams give the outer cliff the appearance of narrow lit windows. Most trade takes place in a rebuilt guest hall with a very old floor. Interior neighbourhoods are homes, not an invitation to explore ancestral rooms. The hold imports food in good years as well as bad and regards reliable contracts as part of its winter defences.",
             "visibility": "public",
             "status": "active"
           }
@@ -200,51 +294,65 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 505,
-            "y": 425
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.namarra",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.namarra.reed-graves",
-      "name": "Reed Graves",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "brackish basin in Namarra. Sable Annek's domain and perfectly preserved archive debris.",
-            "visibility": "gm",
-            "status": "active"
+            "x": 280,
+            "y": 275
           }
         },
         {
-          "qualifiedTypeId": "game.core.world.map.anchor",
+          "qualifiedTypeId": "game.core.world.map.visual",
           "value": {
-            "x": 150,
-            "y": 770
+            "status": "archived",
+            "variants": {
+              "player": {
+                "sha256": "5c5f64f420523eb5565b791af9fb2582417ea8d2b6f3d84fccc3648071b5a7b1",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Whitewindow fantasy atlas map",
+                "caption": "Whitewindow — illustrated local map.",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/whitewindow.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 1
+                }
+              },
+              "dm": {
+                "sha256": "5c5f64f420523eb5565b791af9fb2582417ea8d2b6f3d84fccc3648071b5a7b1",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Whitewindow fantasy atlas map",
+                "caption": "Whitewindow — illustrated local map.",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/whitewindow.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 1
+                }
+              }
+            }
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.namarra",
+        "containerEntityId": "location.caldris.lornesse",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.namarra.reedcrown",
-      "name": "Reedcrown",
+      "entityId": "location.caldris.lornesse.copperdeep",
+      "name": "Copperdeep",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "settlement",
-            "summary": "Reedcrown guards royal granaries, seed stores, canal gates, and flood reserves behind immense reed and brick embankments.",
+            "summary": "Copperdeep descends through terraces around ancient mine mouths, smelters, baths, chapels, and workers' halls. Upper galleries are active; lower levels have been sealed for generations.",
             "visibility": "public",
             "status": "active"
           }
@@ -252,77 +360,65 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 550,
-            "y": 190
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.namarra",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.namarra.saffron-quay",
-      "name": "Saffron Quay",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "settlement",
-            "summary": "Saffron Quay is a warm-water export port for spice, cloth, rice, fish, and delta craft. Warehouses stand on pilings, and tide marks are painted as civic records.",
-            "visibility": "public",
-            "status": "active"
+            "x": 450,
+            "y": 535
           }
         },
         {
-          "qualifiedTypeId": "game.core.world.map.anchor",
+          "qualifiedTypeId": "game.core.world.map.visual",
           "value": {
-            "x": 615,
-            "y": 795
+            "status": "archived",
+            "variants": {
+              "player": {
+                "sha256": "734f3b861c2164831efdf8df3c070dc097ef3bc82e289b5e176be7842f86d10b",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Copperdeep fantasy atlas map",
+                "caption": "Copperdeep — illustrated local map.",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/copperdeep.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 1
+                }
+              },
+              "dm": {
+                "sha256": "734f3b861c2164831efdf8df3c070dc097ef3bc82e289b5e176be7842f86d10b",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Copperdeep fantasy atlas map",
+                "caption": "Copperdeep — illustrated local map.",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/copperdeep.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 1
+                }
+              }
+            }
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.namarra",
+        "containerEntityId": "location.caldris.lornesse",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.namarra.the-absent-villages",
-      "name": "The Absent Villages",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "site",
-            "summary": "delta settlements in Namarra. Living communities erased from records, linked by puppetry and trade.",
-            "visibility": "gm",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 785,
-            "y": 665
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.namarra",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.namarra.the-saffron-ox",
-      "name": "The Saffron Ox",
+      "entityId": "location.caldris.lornesse.goatminster",
+      "name": "Goatminster",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "site",
-            "summary": "Dry-season cattle market and dye stop with orange awnings visible for miles across the flats. Present pressure: A prized breeding ox apparently predicts which bidder will die.",
+            "summary": "High pasture village whose elected goat judge settles grazing disputes beneath a painted canopy. Present pressure: Prize animals vanish and return wearing unfamiliar bells.",
             "visibility": "public",
             "status": "active"
           }
@@ -330,25 +426,65 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 780,
-            "y": 200
+            "x": 440,
+            "y": 295
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.map.visual",
+          "value": {
+            "status": "archived",
+            "variants": {
+              "player": {
+                "sha256": "8f3fbf798d3849bf6032be4557cf9186cb30b8d5a0dae234b3f4af45b76e7fc8",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Goatminster fantasy atlas map",
+                "caption": "Goatminster — illustrated local map.",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/goatminster.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 1
+                }
+              },
+              "dm": {
+                "sha256": "8f3fbf798d3849bf6032be4557cf9186cb30b8d5a0dae234b3f4af45b76e7fc8",
+                "mimeType": "image/png",
+                "width": 1448,
+                "height": 1086,
+                "alt": "Goatminster fantasy atlas map",
+                "caption": "Goatminster — illustrated local map.",
+                "order": 0,
+                "provenance": {
+                  "kind": "generated",
+                  "credit": "OpenAI image generation",
+                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/goatminster.png",
+                  "reviewedOn": "2026-09-10",
+                  "version": 1
+                }
+              }
+            }
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.namarra",
+        "containerEntityId": "location.caldris.lornesse",
         "slot": "location"
       }
     },
     {
-      "entityId": "location.caldris.namarra.three-spoon-village",
-      "name": "Three Spoon Village",
+      "entityId": "location.caldris.lornesse.hollow-bell-monastery",
+      "name": "Hollow Bell Monastery",
       "components": [
         {
           "qualifiedTypeId": "game.core.world.location",
           "value": {
             "kind": "site",
-            "summary": "Delta settlement famous for communal kitchens and three enormous wooden serving spoons carried during floods. Present pressure: One neighbourhood refuses the evacuation signal.",
+            "summary": "ruined monastery in Lornesse. Bell rings without clapper when avalanches threaten—or when goats enter.",
             "visibility": "public",
             "status": "active"
           }
@@ -356,370 +492,400 @@
         {
           "qualifiedTypeId": "game.core.world.map.anchor",
           "value": {
-            "x": 340,
-            "y": 630
+            "x": 815,
+            "y": 150
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.namarra",
+        "containerEntityId": "location.caldris.lornesse",
         "slot": "location"
       }
     }
   ],
   "relationships": [
     {
-      "fromEntityId": "location.caldris.lore.glasswinter-tarn",
-      "toEntityId": "location.caldris.lornesse.lorn",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lornesse.copperdeep",
-      "toEntityId": "location.caldris.lornesse.seven-echo-quarry",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lornesse.copperdeep",
-      "toEntityId": "location.caldris.lornesse.the-widows-incline",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lornesse.copperdeep",
-      "toEntityId": "location.caldris.lornesse.warmstone-baths",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lornesse.goatminster",
-      "toEntityId": "location.caldris.lornesse.lorn",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lornesse.goatminster",
-      "toEntityId": "location.caldris.lornesse.seven-echo-quarry",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lornesse.hollow-bell-monastery",
-      "toEntityId": "location.caldris.lornesse.lorn",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lornesse.kestrelwatch",
-      "toEntityId": "location.caldris.lornesse.lorn",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lornesse.kestrelwatch",
-      "toEntityId": "location.caldris.lornesse.stair-of-one-hundred-regrets",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lornesse.kestrelwatch",
-      "toEntityId": "location.caldris.lornesse.warmstone-baths",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.reedname-landing",
-      "toEntityId": "location.caldris.namarra.mosquito-abbey",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.reedname-landing",
-      "toEntityId": "location.caldris.namarra.namar",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.reedname-landing",
-      "toEntityId": "location.caldris.namarra.saffron-quay",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.lore.reedname-landing",
-      "toEntityId": "location.caldris.namarra.three-spoon-village",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.namarra.drowned-door-orchard",
-      "toEntityId": "location.caldris.namarra.namar",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.namarra.mosquito-abbey",
-      "toEntityId": "location.caldris.namarra.the-saffron-ox",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.namarra.namar",
-      "toEntityId": "location.caldris.namarra.reedcrown",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.namarra.reedcrown",
-      "toEntityId": "location.caldris.namarra.the-saffron-ox",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.514fd2502412f7c7a2ca",
-      "toEntityId": "location.caldris.lornesse.seven-echo-quarry",
+      "fromEntityId": "secret.caldris.lore.place-whitewindow.1",
+      "toEntityId": "location.caldris.lore.whitewindow",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.cbee53e15cffab28e88b",
-      "toEntityId": "location.caldris.lornesse.lorn",
+      "fromEntityId": "chronology.caldris.lore.1809-the-first-high-market",
+      "toEntityId": "location.caldris.lore.whitewindow",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1835-the-guest-winter-at-whitewindow",
+      "toEntityId": "location.caldris.lore.whitewindow",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1722-the-listening-stones-of-cairn-moss",
+      "toEntityId": "location.caldris.lore.whitewindow",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1648-the-winter-teeth",
+      "toEntityId": "location.caldris.lore.whitewindow",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1549-the-ford-of-sleeping-carts",
+      "toEntityId": "location.caldris.lore.whitewindow",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1499-the-meadows-that-moved-uphill",
+      "toEntityId": "location.caldris.lore.whitewindow",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1399-the-mapmakers-daughter",
+      "toEntityId": "location.caldris.lore.whitewindow",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1299-the-griffin-above-juniper-gate",
+      "toEntityId": "location.caldris.lore.whitewindow",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.1009-the-winter-of-the-pale-roofs",
+      "toEntityId": "location.caldris.lore.whitewindow",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0974-the-empty-chair-at-whitewindow",
+      "toEntityId": "location.caldris.lore.whitewindow",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0709-the-workroom-of-mended-things",
+      "toEntityId": "location.caldris.lore.whitewindow",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "secret.caldris.lore.0200-0100-place-the-lantern-hospice.1",
+      "toEntityId": "location.caldris.lore.the-lantern-hospice",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.d61d8dc81c2c58ea51b9",
-      "toEntityId": "location.caldris.lornesse.lorn",
+      "fromEntityId": "secret.caldris.lore.0050-0000-place-reedname-landing.1",
+      "toEntityId": "location.caldris.lore.reedname-landing",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.fd9abb48f87d393cd218",
-      "toEntityId": "location.caldris.lornesse.warmstone-baths",
+      "fromEntityId": "secret.caldris.lore.0050-0000-place-swallowwatch-orchard.1",
+      "toEntityId": "location.caldris.lore.swallowwatch-orchard",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.ae38ac146d9d5fbb6790",
-      "toEntityId": "location.caldris.lornesse.lorn",
+      "fromEntityId": "chronology.caldris.lore.0029-the-orchard-that-counted-birds",
+      "toEntityId": "location.caldris.lore.swallowwatch-orchard",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "chronology.caldris.lore.0041-the-lists-carried-by-water",
+      "toEntityId": "location.caldris.lore.reedname-landing",
+      "qualifiedKind": "game.core.world.chronology.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.lore.0029-the-orchard-that-counted-birds-account.1",
+      "toEntityId": "location.caldris.lore.swallowwatch-orchard",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.02f18b6b0e081e0c21c2",
-      "toEntityId": "location.caldris.namarra.reedcrown",
+      "fromEntityId": "fact.caldris.lore.0041-the-lists-carried-by-water-account.1",
+      "toEntityId": "location.caldris.lore.reedname-landing",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.c123f14b78bb69b431fe",
-      "toEntityId": "location.caldris.namarra.reedcrown",
+      "fromEntityId": "secret.caldris.lore.0029-the-orchard-that-counted-birds-gm-truth.1",
+      "toEntityId": "location.caldris.lore.swallowwatch-orchard",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.c5c7b4f42565f17ec93b",
-      "toEntityId": "location.caldris.namarra.namar",
+      "fromEntityId": "secret.caldris.lore.0029-the-orchard-that-counted-birds-traces-and-stories.1",
+      "toEntityId": "location.caldris.lore.swallowwatch-orchard",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.db11b973714014399efe",
-      "toEntityId": "location.caldris.namarra.the-saffron-ox",
+      "fromEntityId": "secret.caldris.lore.0041-the-lists-carried-by-water-gm-truth.1",
+      "toEntityId": "location.caldris.lore.reedname-landing",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.79e3ce09d284206fd5a9",
-      "toEntityId": "location.caldris.namarra.namar",
+      "fromEntityId": "secret.caldris.lore.0041-the-lists-carried-by-water-traces-and-stories.1",
+      "toEntityId": "location.caldris.lore.reedname-landing",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.1c6da120e12fc9eca487",
-      "toEntityId": "location.caldris.namarra.saffron-quay",
+      "fromEntityId": "location.caldris.bellafont.cresset",
+      "toEntityId": "location.caldris.lore.swallowwatch-orchard",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.cairn-moss",
+      "toEntityId": "location.caldris.lore.whitewindow",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.lore.whitewindow",
+      "toEntityId": "location.caldris.lornesse.goatminster",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "location.caldris.dunmarrow.saint-veys-crutch",
+      "toEntityId": "location.caldris.lore.whitewindow",
+      "qualifiedKind": "game.core.world.location.connected-to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.0d6f4e6c06b11fda2fd9",
+      "toEntityId": "location.caldris.lore.whitewindow",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.closed.9546623f721161e311a9",
-      "toEntityId": "location.caldris.namarra.reed-graves",
+      "fromEntityId": "fact.caldris.atlas.connection.713801f383d24c07aa93",
+      "toEntityId": "location.caldris.lore.whitewindow",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.closed.d1f0bc1ec78aabad7e26",
-      "toEntityId": "location.caldris.namarra.the-absent-villages",
+      "fromEntityId": "fact.caldris.atlas.connection.b206ab91b97b325d1ca9",
+      "toEntityId": "location.caldris.lornesse.goatminster",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.548b3c963d4e0f9b71f3",
-      "toEntityId": "location.caldris.lornesse.stair-of-one-hundred-regrets",
+      "fromEntityId": "fact.caldris.atlas.connection.df9f597cea5ebf8a56cb",
+      "toEntityId": "location.caldris.lornesse.copperdeep",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.e79496d51aa83657bfb7",
+      "toEntityId": "location.caldris.lornesse.goatminster",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.f7262615cbb1a9cc0c02",
+      "toEntityId": "location.caldris.lornesse.copperdeep",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.10daa0e0b27afde9e746",
+      "toEntityId": "location.caldris.lore.reedname-landing",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.8b236f1e75c1d54d9ce3",
+      "toEntityId": "location.caldris.lore.reedname-landing",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.atlas.connection.a322f9024b928e01ddec",
+      "toEntityId": "location.caldris.lore.reedname-landing",
+      "qualifiedKind": "game.core.world.knowledge.about",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.ec3dd50c8d34a4132ae3",
+      "toEntityId": "location.caldris.lore.swallowwatch-orchard",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.a209550223b39b15c16e",
-      "toEntityId": "location.caldris.lornesse.stair-of-one-hundred-regrets",
+      "fromEntityId": "route.caldris.atlas.fff27e61d091e9e4f311",
+      "toEntityId": "location.caldris.lore.swallowwatch-orchard",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.b554b5875458d8b51726",
-      "toEntityId": "location.caldris.lornesse.lorn",
+      "fromEntityId": "route.caldris.atlas.290e02b245721468c050",
+      "toEntityId": "location.caldris.lore.the-lantern-hospice",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.cbee53e15cffab28e88b",
-      "toEntityId": "location.caldris.lornesse.lorn",
+      "fromEntityId": "route.caldris.atlas.60740e239e721d9df1cc",
+      "toEntityId": "location.caldris.lore.the-lantern-hospice",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.713801f383d24c07aa93",
+      "toEntityId": "location.caldris.lore.whitewindow",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.713801f383d24c07aa93",
+      "toEntityId": "location.caldris.lornesse.goatminster",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.93dec0e070213818c9d7",
+      "toEntityId": "location.caldris.lornesse.goatminster",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.93dec0e070213818c9d7",
+      "toEntityId": "location.caldris.lore.whitewindow",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
       "fromEntityId": "route.caldris.atlas.dd5ebb6db8aaeec05871",
-      "toEntityId": "location.caldris.lornesse.lorn",
-      "qualifiedKind": "game.core.world.route.from",
+      "toEntityId": "location.caldris.lornesse.goatminster",
+      "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
       "fromEntityId": "route.caldris.atlas.e79496d51aa83657bfb7",
-      "toEntityId": "location.caldris.lornesse.lorn",
+      "toEntityId": "location.caldris.lornesse.goatminster",
+      "qualifiedKind": "game.core.world.route.from",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.0d6f4e6c06b11fda2fd9",
+      "toEntityId": "location.caldris.lore.whitewindow",
       "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
       "fromEntityId": "route.caldris.atlas.514fd2502412f7c7a2ca",
-      "toEntityId": "location.caldris.lornesse.seven-echo-quarry",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.5abb41a076d0683626d0",
-      "toEntityId": "location.caldris.lornesse.warmstone-baths",
+      "toEntityId": "location.caldris.lornesse.copperdeep",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
       "fromEntityId": "route.caldris.atlas.9f768f758dfb672045e0",
-      "toEntityId": "location.caldris.lornesse.seven-echo-quarry",
+      "toEntityId": "location.caldris.lornesse.copperdeep",
+      "qualifiedKind": "game.core.world.route.to",
+      "value": {}
+    },
+    {
+      "fromEntityId": "route.caldris.atlas.a0d9e6319d986770ae04",
+      "toEntityId": "location.caldris.lore.whitewindow",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
       "fromEntityId": "route.caldris.atlas.afcbce188105a6a78b73",
-      "toEntityId": "location.caldris.lornesse.the-widows-incline",
-      "qualifiedKind": "game.core.world.route.from",
+      "toEntityId": "location.caldris.lornesse.copperdeep",
+      "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
       "fromEntityId": "route.caldris.atlas.b206ab91b97b325d1ca9",
-      "toEntityId": "location.caldris.lornesse.seven-echo-quarry",
-      "qualifiedKind": "game.core.world.route.to",
+      "toEntityId": "location.caldris.lornesse.goatminster",
+      "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
       "fromEntityId": "route.caldris.atlas.c1934aeca489f0b98ec9",
-      "toEntityId": "location.caldris.lornesse.warmstone-baths",
-      "qualifiedKind": "game.core.world.route.from",
+      "toEntityId": "location.caldris.lornesse.copperdeep",
+      "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
       "fromEntityId": "route.caldris.atlas.cb4f617379a5895fa8cd",
-      "toEntityId": "location.caldris.lornesse.seven-echo-quarry",
-      "qualifiedKind": "game.core.world.route.from",
+      "toEntityId": "location.caldris.lornesse.goatminster",
+      "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
       "fromEntityId": "route.caldris.atlas.df9f597cea5ebf8a56cb",
-      "toEntityId": "location.caldris.lornesse.warmstone-baths",
-      "qualifiedKind": "game.core.world.route.to",
+      "toEntityId": "location.caldris.lornesse.copperdeep",
+      "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
       "fromEntityId": "route.caldris.atlas.f7262615cbb1a9cc0c02",
-      "toEntityId": "location.caldris.lornesse.the-widows-incline",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.fd9abb48f87d393cd218",
-      "toEntityId": "location.caldris.lornesse.warmstone-baths",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.384f4f545f62ef8d1183",
-      "toEntityId": "location.caldris.lornesse.lorn",
+      "toEntityId": "location.caldris.lornesse.copperdeep",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
       "fromEntityId": "route.caldris.atlas.4a2aba0d5456d1e83ca7",
-      "toEntityId": "location.caldris.lornesse.lorn",
-      "qualifiedKind": "game.core.world.route.from",
+      "toEntityId": "location.caldris.lornesse.hollow-bell-monastery",
+      "qualifiedKind": "game.core.world.route.to",
       "value": {}
     },
     {
       "fromEntityId": "route.caldris.atlas.ae38ac146d9d5fbb6790",
-      "toEntityId": "location.caldris.lornesse.lorn",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.d61d8dc81c2c58ea51b9",
-      "toEntityId": "location.caldris.lornesse.lorn",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.4a1585f4931d2b3b9268",
-      "toEntityId": "location.caldris.namarra.the-saffron-ox",
+      "toEntityId": "location.caldris.lornesse.hollow-bell-monastery",
       "qualifiedKind": "game.core.world.route.from",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.4a1585f4931d2b3b9268",
-      "toEntityId": "location.caldris.namarra.reedcrown",
-      "qualifiedKind": "game.core.world.route.to",
+      "fromEntityId": "chronology.caldris.landmark.upward-fall.19",
+      "toEntityId": "location.caldris.lore.vey-lowlands",
+      "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.a7cdc8d6c783c2d389a9",
-      "toEntityId": "location.caldris.namarra.the-saffron-ox",
-      "qualifiedKind": "game.core.world.route.from",
+      "fromEntityId": "chronology.caldris.landmark.upward-fall.421",
+      "toEntityId": "location.caldris.lore.vey-lowlands",
+      "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.a7cdc8d6c783c2d389a9",
-      "toEntityId": "location.caldris.namarra.mosquito-abbey",
-      "qualifiedKind": "game.core.world.route.to",
+      "fromEntityId": "chronology.caldris.landmark.upward-fall.778",
+      "toEntityId": "location.caldris.lore.vey-lowlands",
+      "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.c123f14b78bb69b431fe",
-      "toEntityId": "location.caldris.namarra.reedcrown",
-      "qualifiedKind": "game.core.world.route.from",
+      "fromEntityId": "chronology.caldris.landmark.glass-tide-palace.1256",
+      "toEntityId": "location.caldris.lore.serevan",
+      "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.c123f14b78bb69b431fe",
-      "toEntityId": "location.caldris.namarra.the-saffron-ox",
-      "qualifiedKind": "game.core.world.route.to",
+      "fromEntityId": "chronology.caldris.landmark.glass-tide-palace.31",
+      "toEntityId": "location.caldris.lore.serevan",
+      "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.db11b973714014399efe",
-      "toEntityId": "location.caldris.namarra.mosquito-abbey",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.db11b973714014399efe",
-      "toEntityId": "location.caldris.namarra.the-saffron-ox",
-      "qualifiedKind": "game.core.world.route.to",
+      "fromEntityId": "chronology.caldris.landmark.glass-tide-palace.534",
+      "toEntityId": "location.caldris.lore.serevan",
+      "qualifiedKind": "game.core.world.chronology.about",
       "value": {}
     }
   ]

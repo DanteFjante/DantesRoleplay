@@ -258,10 +258,16 @@ function DndInformationHubContent({
   const [bootstrapGeneration, setBootstrapGeneration] = useState(0);
   const fallbackCurrentBootstrap = useRef<string | null>(null);
   const observedCurrentEpoch = useRef<string | null>(null);
+  const appliedInitialBootstrap = useRef<{ store: HubStore; envelope: ReadyHubEnvelope } | null>(null);
   useLayoutEffect(() => {
+    // Suspense replays layout effects when a hidden panel becomes visible.
+    // Revealing the hub must not restore its original bootstrap over newer reads.
+    if (appliedInitialBootstrap.current?.store === confirmedStore &&
+        appliedInitialBootstrap.current.envelope === initialEnvelope) return;
+    appliedInitialBootstrap.current = { store: confirmedStore, envelope: initialEnvelope };
     dispatch(tableActions.bootstrapCommitted({ scope: tableScope(initialEnvelope), envelope: initialEnvelope }));
     dispatch(hubActions.bootstrapCommitted({ scope: characterScope(initialEnvelope), party: initialEnvelope.party }));
-  }, [dispatch, initialEnvelope]);
+  }, [confirmedStore, dispatch, initialEnvelope]);
   // `envelope` is intentionally captured at the bootstrap boundary. Deferred
   // World/Campaign patches are not new Current authority and must not restart
   // this compatibility seed.
@@ -313,7 +319,12 @@ function DndInformationHubContent({
     readContent: (request, signal) => loadContent(request, signal, false),
   }), [confirmedStore, loadRules, loadContent]);
   const referenceGeneration = useHubSelector((state) => state.references.generation);
+  const appliedReferenceBootstrap = useRef<{ owner: ReferenceResourceOwner; scope: string; generation: number } | null>(null);
   useLayoutEffect(() => {
+    const previous = appliedReferenceBootstrap.current;
+    if (previous?.owner === referenceResources && previous.scope === currentCharacterScope &&
+        previous.generation === bootstrapGeneration) return;
+    appliedReferenceBootstrap.current = { owner: referenceResources, scope: currentCharacterScope, generation: bootstrapGeneration };
     referenceResources.replaceScope(envelope, bootstrapGeneration > 0);
     // Only an authorized scope/bootstrap replacement retires completed reference
     // reads. Loading an unrelated deferred section must not evict them.

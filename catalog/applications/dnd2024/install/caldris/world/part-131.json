@@ -3,887 +3,765 @@
   "rootEntityId": "world.caldris",
   "entities": [
     {
-      "entityId": "location.caldris.alderwick.merecross",
-      "name": "Merecross",
+      "entityId": "fact.caldris.custom.selucia.every-bell-was-borrowed",
+      "name": "Every Bell Was Borrowed",
       "components": [
         {
-          "qualifiedTypeId": "game.core.world.location",
+          "qualifiedTypeId": "game.core.world.fact",
           "value": {
-            "kind": "settlement",
-            "summary": "Merecross grew where the Mere meets the Lark and Weir rivers. Barges, paper, apples, wool, court business, and bridge tolls feed a city of stone quays and timber upper stories. Its seven public bridges are maintained by different institutions, producing beautiful views and spectacularly petty jurisdiction disputes.",
-            "visibility": "public",
-            "status": "active"
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.anchor",
-          "value": {
-            "x": 620,
-            "y": 570
-          }
-        }
-      ],
-      "containment": {
-        "containerEntityId": "location.caldris.alderwick",
-        "slot": "location"
-      }
-    },
-    {
-      "entityId": "location.caldris.atlas.bramble-country",
-      "name": "Bramble Country",
-      "components": [
-        {
-          "qualifiedTypeId": "game.core.world.location",
-          "value": {
-            "kind": "region",
             "status": "active",
-            "summary": "Bramble Country terrain without baked labels or markers.",
+            "summary": "Bell owners recite where each bell came from before storms. Disagreement: Some accounts are gifts, some salvage, and some polite theft. Story use: Provenance becomes an emotional mystery rather than a simple ownership check.",
+            "provenance": "Caldris history and lore atlas",
             "visibility": "public"
           }
         },
         {
-          "qualifiedTypeId": "game.core.world.map.visual",
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.selucia",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.custom.selucia.one-roofless-wedding-wish",
+      "name": "One Roofless Wedding Wish",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
           "value": {
             "status": "active",
-            "variants": {
-              "player": {
-                "sha256": "c4fc7b846d578a29841df334a1293ea8a6ddc103521c9621c04c56a321a060dc",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Bramble Country terrain without baked labels or markers.",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/bramble-country-clean-v1.png",
-                  "reviewedOn": "2026-09-12",
-                  "version": 1
-                }
-              },
-              "dm": {
-                "sha256": "c4fc7b846d578a29841df334a1293ea8a6ddc103521c9621c04c56a321a060dc",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Bramble Country terrain without baked labels or markers.",
-                "caption": "",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/bramble-country-clean-v1.png",
-                  "reviewedOn": "2026-09-12",
-                  "version": 1
-                }
-              }
-            }
+            "summary": "Couples at the Unfinished Palace make one promise that cannot depend on weather. Disagreement: Priests debate whether it is sacred; sailors say it is merely sensible. Story use: A disrupted wedding still matters because the central promise remains possible.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
           }
         },
         {
-          "qualifiedTypeId": "game.core.world.map.anchor",
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
           "value": {
-            "x": 510,
-            "y": 400
+            "subjectKind": "event",
+            "sensitivity": "open"
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.alderwick",
-        "slot": "location"
+        "containerEntityId": "location.caldris.selucia",
+        "slot": "knowledge"
       }
     },
     {
-      "entityId": "location.caldris.atlas.chalklands",
-      "name": "Chalklands",
+      "entityId": "fact.caldris.custom.seven-lamps-league.a-fifth-price-exists",
+      "name": "A Fifth Price Exists",
       "components": [
         {
-          "qualifiedTypeId": "game.core.world.location",
+          "qualifiedTypeId": "game.core.world.fact",
           "value": {
-            "kind": "region",
-            "summary": "The chalk uplands around Highmead and the Button Hills. Sheep tracks descend to the Lantern Road; older storehouses and commons survive beside working farms.",
-            "visibility": "public",
-            "status": "active"
+            "status": "active",
+            "summary": "Bargainers name four prices—coin, time, risk, and reputation—then ask what cost was omitted. Disagreement: Merchants enjoy the saying; labourers answer “the person doing the work.” Story use: The custom exposes hidden costs in apparently generous contracts.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
           }
         },
         {
-          "qualifiedTypeId": "game.core.world.map.anchor",
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
           "value": {
-            "x": 265,
-            "y": 250
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.visual",
-          "value": {
-            "status": "archived",
-            "variants": {
-              "player": {
-                "sha256": "a21458ffa9630bcf0c118c82876706081f4b42ed0f26f00b2d48ac5b01b8e3d4",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Chalklands fantasy atlas map",
-                "caption": "Chalklands",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/chalklands.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 4
-                }
-              },
-              "dm": {
-                "sha256": "a21458ffa9630bcf0c118c82876706081f4b42ed0f26f00b2d48ac5b01b8e3d4",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Chalklands fantasy atlas map",
-                "caption": "Chalklands",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/chalklands.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 4
-                }
-              }
-            }
+            "subjectKind": "event",
+            "sensitivity": "open"
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.alderwick",
-        "slot": "location"
+        "containerEntityId": "location.caldris.seven-lamps-league",
+        "slot": "knowledge"
       }
     },
     {
-      "entityId": "location.caldris.atlas.orchard-march",
-      "name": "Orchard March",
+      "entityId": "fact.caldris.custom.seven-lamps-league.lunch-suspends-certainty",
+      "name": "Lunch Suspends Certainty",
       "components": [
         {
-          "qualifiedTypeId": "game.core.world.location",
+          "qualifiedTypeId": "game.core.world.fact",
           "value": {
-            "kind": "region",
-            "summary": "The southern orchard country of Harth, Boughmeet and Sallowmere. Grafting nurseries, lake fisheries and old hospitality houses connect by local cart roads.",
-            "visibility": "public",
-            "status": "active"
+            "status": "active",
+            "summary": "During shared council meals, no statement may be entered as final minutes. Disagreement: Powerful delegates call it inefficient; smaller towns rely on the candid interval. Story use: Informal kindness produces evidence or compromise that formal debate could not.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
           }
         },
         {
-          "qualifiedTypeId": "game.core.world.map.anchor",
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
           "value": {
-            "x": 260,
-            "y": 650
-          }
-        },
-        {
-          "qualifiedTypeId": "game.core.world.map.visual",
-          "value": {
-            "status": "archived",
-            "variants": {
-              "player": {
-                "sha256": "61a7b9b14e575c3b568678d6866d7627a331744f04268487c23237bd35d10b56",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Orchard March fantasy atlas map",
-                "caption": "Orchard March",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/orchard-march.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 4
-                }
-              },
-              "dm": {
-                "sha256": "61a7b9b14e575c3b568678d6866d7627a331744f04268487c23237bd35d10b56",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Orchard March fantasy atlas map",
-                "caption": "Orchard March",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/orchard-march.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 4
-                }
-              }
-            }
+            "subjectKind": "event",
+            "sensitivity": "open"
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.alderwick",
-        "slot": "location"
+        "containerEntityId": "location.caldris.seven-lamps-league",
+        "slot": "knowledge"
       }
     },
     {
-      "entityId": "location.caldris.atlas.roven-approaches",
-      "name": "Roven Approaches",
+      "entityId": "fact.caldris.custom.tessarane.kites-do-not-lie-knots-do",
+      "name": "Kites Do Not Lie, Knots Do",
       "components": [
         {
-          "qualifiedTypeId": "game.core.world.location",
+          "qualifiedTypeId": "game.core.world.fact",
           "value": {
-            "kind": "region",
-            "summary": "Northern foothills where the Reth road divides between maintained shelters, Juniper Gate and the unfinished giant stair. The lower winter descent does not make the upper stair a through-road.",
-            "visibility": "public",
-            "status": "active"
+            "status": "active",
+            "summary": "Weather kites are trusted, but their cord knots are treated as human opinion. Disagreement: Scholars reverse the proverb when discussing measurements. Story use: Conflicting signals force players to inspect both nature and interpretation.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
           }
         },
         {
-          "qualifiedTypeId": "game.core.world.map.anchor",
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
           "value": {
-            "x": 480,
-            "y": 150
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.tessarane",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.custom.tessarane.the-patient-step",
+      "name": "The Patient Step",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "A traveler who needs rest places a blue cord on the stair; others pass without comment and may leave water. Disagreement: Court pilgrims romanticize what began as an accessibility practice. Story use: Respecting the custom earns trust; counterfeit cords hide a courier route.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
           }
         },
         {
-          "qualifiedTypeId": "game.core.world.map.visual",
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
           "value": {
-            "status": "archived",
-            "variants": {
-              "player": {
-                "sha256": "83cc1a3aa222032875ef1ee68cac269b5750ac1d8d1352ae02557565168a1c14",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Roven Approaches fantasy atlas map",
-                "caption": "Roven Approaches",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/roven-approaches.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 4
-                }
-              },
-              "dm": {
-                "sha256": "83cc1a3aa222032875ef1ee68cac269b5750ac1d8d1352ae02557565168a1c14",
-                "mimeType": "image/png",
-                "width": 1448,
-                "height": 1086,
-                "alt": "Roven Approaches fantasy atlas map",
-                "caption": "Roven Approaches",
-                "order": 0,
-                "provenance": {
-                  "kind": "generated",
-                  "credit": "OpenAI image generation",
-                  "source": "docs/world/caldris/maps/fantasy-atlas-v2/roven-approaches.png",
-                  "reviewedOn": "2026-09-10",
-                  "version": 4
-                }
-              }
-            }
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.tessarane",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.custom.veyr-marches.axle-truth",
+      "name": "Axle Truth",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "A host may ask one blunt question while helping repair a traveler's wheel. Disagreement: Free Axle companies argue whether answering is obligatory. Story use: The custom creates intimate conversation without magical truth enforcement.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "event",
+            "sensitivity": "open"
           }
         }
       ],
       "containment": {
         "containerEntityId": "location.caldris.veyr-marches",
-        "slot": "location"
+        "slot": "knowledge"
       }
     },
     {
-      "entityId": "location.caldris.bellafont.bellafont",
-      "name": "Bellafont",
+      "entityId": "fact.caldris.custom.veyr-marches.tenth-plate-supper",
+      "name": "Tenth-Plate Supper",
       "components": [
         {
-          "qualifiedTypeId": "game.core.world.location",
+          "qualifiedTypeId": "game.core.world.fact",
           "value": {
-            "kind": "settlement",
-            "summary": "The capital terraces down orchard hills toward a palace, cathedral gardens, cloth halls, fountains, and a river lined with laundry platforms. Manners are polished; civic debates are not.",
-            "visibility": "public",
-            "status": "active"
+            "status": "active",
+            "summary": "Nine guests set a tenth plate for an absent enemy, exile, or relative. Disagreement: Some marches honor reconciliation; others say it commemorates betrayal. Story use: The named absence reveals how a household remembers a political conflict.",
+            "provenance": "Caldris history and lore atlas",
+            "visibility": "public"
           }
         },
         {
-          "qualifiedTypeId": "game.core.world.map.anchor",
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
           "value": {
-            "x": 540,
-            "y": 400
+            "subjectKind": "event",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.veyr-marches",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.dossier.alderwick",
+      "name": "Polity dossier — Alderwick",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Alderwick — the kingdom of bridges and committees. Land and livelihood: green river valleys, beech hills, sheep uplands, flax, oats, apples, Rule: Queen Adela II governs through the Crown Council, shire courts, chartered towns, and Character: proud of fairness, compromise, practical engineering, and pies baked in extremely Magic: tolerated and licensed loosely in cities; public enchantment or mind influence is Old wound: Alderwick changed sides twice during the Three Banner War and remembers the second Current factions: Crown Council, Company of Weirs, Quiet Bell chapter, Honest Weights Guild, Campaign use: starting homeland, institutional humour, fair-minded people under corruptible",
+            "provenance": "Caldris world bible — polity dossiers",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "state",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.alderwick",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.dossier.bellafont",
+      "name": "Polity dossier — Bellafont",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Bellafont — orchards, cloth, and smiling competition. Land and livelihood: warm southern hills, orchards, vineyards, sheep, dyes, fine cloth, Rule: King Lucan and a dense web of landholding abbeys, city guilds, and irrigation courts. Character: graceful manners, devastating compliments, garden contests, amateur theatre, and Magic: small household charms are culturally accepted; formal practitioners cluster around Old wound: peasant water-right records were “lost” during Crownmaking consolidation. Current pressure: the pale-canker blight affects old orchards along a route marked by ancient",
+            "provenance": "Caldris world bible — polity dossiers",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "state",
+            "sensitivity": "open"
           }
         }
       ],
       "containment": {
         "containerEntityId": "location.caldris.bellafont",
-        "slot": "location"
+        "slot": "knowledge"
       }
     },
     {
-      "entityId": "location.caldris.bellafont.blue-apron-fair",
-      "name": "Blue Apron Fair",
+      "entityId": "fact.caldris.dossier.carrowmere",
+      "name": "Polity dossier — Carrowmere",
       "components": [
         {
-          "qualifiedTypeId": "game.core.world.location",
+          "qualifiedTypeId": "game.core.world.fact",
           "value": {
-            "kind": "site",
-            "summary": "Seasonal cloth-and-food market held in roofed lanes; stallholders wear indigo aprons to show neutral trading status. Present pressure: A ceremonial apron has been stolen before treaty negotiations.",
-            "visibility": "public",
-            "status": "active"
+            "status": "active",
+            "summary": "Carrowmere — salt, ships, and stubborn civic pride. Land and livelihood: tidal marshes, cliffs, oak ship timber, fisheries, salt pans, sailcloth, Rule: Queen Ysabet governs through port charters whose lawyers can remember insults for five Character: maritime humour, public argument, strong mutual-aid societies, elaborate rescue Magic: weather-workers are respected but scrutinized; sea charms flourish, most mundane. Old wound: a royal convoy abandoned refugee vessels during the war; the official account is Current pressure: shipwrights demand safe hours and injury support before fitting the autumn",
+            "provenance": "Caldris world bible — polity dossiers",
+            "visibility": "public"
           }
         },
         {
-          "qualifiedTypeId": "game.core.world.map.anchor",
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
           "value": {
-            "x": 470,
-            "y": 570
+            "subjectKind": "state",
+            "sensitivity": "open"
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.bellafont",
-        "slot": "location"
+        "containerEntityId": "location.caldris.carrowmere",
+        "slot": "knowledge"
       }
     },
     {
-      "entityId": "location.caldris.bellafont.cresset",
-      "name": "Cresset",
+      "entityId": "fact.caldris.dossier.dunmarrow",
+      "name": "Polity dossier — Dunmarrow",
       "components": [
         {
-          "qualifiedTypeId": "game.core.world.location",
+          "qualifiedTypeId": "game.core.world.fact",
           "value": {
-            "kind": "settlement",
-            "summary": "Cresset is a textile and dye city where canals turn fulling mills and entire streets change colour with the day's work.",
-            "visibility": "public",
-            "status": "active"
+            "status": "active",
+            "summary": "Dunmarrow — iron, peat, and austere kindness. Land and livelihood: cold moors, bog iron, deep mines, peat, hardy sheep, smoked fish, and Rule: King Torren IV shares power uneasily with fortress lords and elected borough provosts. Character: formal hospitality, blunt speech, excellent blankets, competitive funerary hymns, Magic: associated with mine safety, battlefield medicine, old moor traditions, and a small Old wound: northern levies suffered heavily in the Three Banner War and distrust southern Current pressure: ore runs thin while sealed Concord shafts show new airflow.",
+            "provenance": "Caldris world bible — polity dossiers",
+            "visibility": "public"
           }
         },
         {
-          "qualifiedTypeId": "game.core.world.map.anchor",
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
           "value": {
-            "x": 740,
-            "y": 600
+            "subjectKind": "state",
+            "sensitivity": "open"
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.bellafont",
-        "slot": "location"
+        "containerEntityId": "location.caldris.dunmarrow",
+        "slot": "knowledge"
       }
     },
     {
-      "entityId": "location.caldris.bellafont.greywife-orchard",
-      "name": "Greywife Orchard",
+      "entityId": "fact.caldris.dossier.kethria",
+      "name": "Polity dossier — Kethria",
       "components": [
         {
-          "qualifiedTypeId": "game.core.world.location",
+          "qualifiedTypeId": "game.core.world.fact",
           "value": {
-            "kind": "site",
-            "summary": "diseased orchard in Bellafont. Pale-canker centre and disputed pre-Crownmaking water right.",
-            "visibility": "public",
-            "status": "active"
+            "status": "active",
+            "summary": "Kethria — terraces above the copper valleys. Land and livelihood: terraced grain and fruit, copper, tin, mountain timber, snowmelt canals, Rule: Queen Arshala, valley councils, mine compacts, and a ritual office that records copper Character: precise hospitality, communal irrigation work, wrestling, carved doors, dry Magic: openly discussed but rarely seen; mountain monasteries keep dangerous texts while Old wound: the Crownmaking dynasty accepted a secret dragon bargain to prevent invasion. Current pressure: the copper tithe has continued for four centuries, but someone recently",
+            "provenance": "Caldris world bible — polity dossiers",
+            "visibility": "public"
           }
         },
         {
-          "qualifiedTypeId": "game.core.world.map.anchor",
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
           "value": {
-            "x": 240,
-            "y": 525
+            "subjectKind": "state",
+            "sensitivity": "open"
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.bellafont",
-        "slot": "location"
+        "containerEntityId": "location.caldris.kethria",
+        "slot": "knowledge"
       }
     },
     {
-      "entityId": "location.caldris.bellafont.mothglass-house",
-      "name": "Mothglass House",
+      "entityId": "fact.caldris.dossier.lornesse",
+      "name": "Polity dossier — Lornesse",
       "components": [
         {
-          "qualifiedTypeId": "game.core.world.location",
+          "qualifiedTypeId": "game.core.world.fact",
           "value": {
-            "kind": "site",
-            "summary": "Rural workshop producing fine window glass and maintaining mulberry hedges for silk moths. Present pressure: Night moths gather in impossible numbers around one furnace.",
-            "visibility": "public",
-            "status": "active"
+            "status": "active",
+            "summary": "Lornesse — mountains, bells, and things under stone. Land and livelihood: Lornspine valleys, silver, copper, slate, timber, goats, alpine pasture, Rule: Queen-Mother Eda serves as regent for a capable but underage king, advised by valley Character: careful speech, communal work, resonant bell traditions, cliffside hospitality, Magic: rune claims are mostly craft notation and property marks; genuine magic is rare and Old wound: Concord debt enforcers sealed entire mine communities during the Sundering. Current pressure: new chambers beneath Copperdeep contain fresh soot and a tithe niche too",
+            "provenance": "Caldris world bible — polity dossiers",
+            "visibility": "public"
           }
         },
         {
-          "qualifiedTypeId": "game.core.world.map.anchor",
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
           "value": {
-            "x": 820,
-            "y": 410
+            "subjectKind": "state",
+            "sensitivity": "open"
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.bellafont",
-        "slot": "location"
+        "containerEntityId": "location.caldris.lornesse",
+        "slot": "knowledge"
       }
     },
     {
-      "entityId": "location.caldris.bellafont.quince-ladder",
-      "name": "Quince Ladder",
+      "entityId": "fact.caldris.dossier.namarra",
+      "name": "Polity dossier — Namarra",
       "components": [
         {
-          "qualifiedTypeId": "game.core.world.location",
+          "qualifiedTypeId": "game.core.world.fact",
           "value": {
-            "kind": "site",
-            "summary": "Terraced orchard village reached by a stair-road wide enough for one mule and two strongly held opinions. Present pressure: Fruit trees flower twice and exhaust themselves before harvest.",
-            "visibility": "public",
-            "status": "active"
+            "status": "active",
+            "summary": "Namarra — kingdom of a thousand channels. Land and livelihood: rice, grain, flax, dates, fish, salt, reeds, saffron, canal transport, Rule: King Javed II relies on canal councils, temple granaries, tax flotillas, and village Character: fast negotiation, layered hospitality, satirical puppetry, boat races, and a Magic: river blessings and protective marks are common culture; reliable magic is scarce and Old wound: Sundering-era refugees founded settlements never formally recognized by the Crown. Current pressure: several living villages have vanished from royal records while their crops",
+            "provenance": "Caldris world bible — polity dossiers",
+            "visibility": "public"
           }
         },
         {
-          "qualifiedTypeId": "game.core.world.map.anchor",
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
           "value": {
-            "x": 680,
-            "y": 200
+            "subjectKind": "state",
+            "sensitivity": "open"
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.bellafont",
-        "slot": "location"
+        "containerEntityId": "location.caldris.namarra",
+        "slot": "knowledge"
       }
     },
     {
-      "entityId": "location.caldris.bellafont.the-honey-parliament",
-      "name": "The Honey Parliament",
+      "entityId": "fact.caldris.dossier.ordelain",
+      "name": "Polity dossier — Ordelain",
       "components": [
         {
-          "qualifiedTypeId": "game.core.world.location",
+          "qualifiedTypeId": "game.core.world.fact",
           "value": {
-            "kind": "site",
-            "summary": "monastery apiary in Bellafont. Beekeepers arbitrate land disputes with alarming success.",
-            "visibility": "public",
-            "status": "active"
+            "status": "active",
+            "summary": "Ordelain — the long river kingdom. Land and livelihood: the Aur's broad grain plain, paper reeds, cattle, ceramics, orchards, Rule: Queen Samira III, river judges, provincial governors, and hereditary canal offices. Character: formal debate, generosity at table, public storytelling, water-law jokes, and an Magic: licensed colleges study medicine, stars, law, and controlled ritual; unauthorized Old wound: Concord surveyors redirected the Aur, enriching some estates and drowning others. Current pressure: the river has returned toward its pre-Concord channel, reopening claims",
+            "provenance": "Caldris world bible — polity dossiers",
+            "visibility": "public"
           }
         },
         {
-          "qualifiedTypeId": "game.core.world.map.anchor",
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
           "value": {
-            "x": 195,
-            "y": 725
+            "subjectKind": "state",
+            "sensitivity": "open"
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.bellafont",
-        "slot": "location"
+        "containerEntityId": "location.caldris.ordelain",
+        "slot": "knowledge"
       }
     },
     {
-      "entityId": "location.caldris.bellafont.the-rain-parlour",
-      "name": "The Rain Parlour",
+      "entityId": "fact.caldris.dossier.selucia",
+      "name": "Polity dossier — Selucia",
       "components": [
         {
-          "qualifiedTypeId": "game.core.world.location",
+          "qualifiedTypeId": "game.core.world.fact",
           "value": {
-            "kind": "site",
-            "summary": "A roadside pavilion where orchard workers wait out storms, exchange songs, and leave jars of preserved fruit. Present pressure: Someone replaces friendly messages with threatening prophecies.",
-            "visibility": "public",
-            "status": "active"
+            "status": "active",
+            "summary": "Selucia — islands bound by bells and sail. Land and livelihood: olives, citrus, fish, wine, ship repair, coral, ceramics, pilgrimage, Rule: King Matteo and an island parliament whose members arrive late whenever the wind makes Character: musical processions, neighbourly feuds, sea rescue, dramatic hospitality, and Magic: island saints and sea stories abound; actual spellcasters often work as healers, Old wound: one island was traded by treaty without its delegates present. Current pressure: a wedding between Selucian and Ordelaini houses may settle maritime claims,",
+            "provenance": "Caldris world bible — polity dossiers",
+            "visibility": "public"
           }
         },
         {
-          "qualifiedTypeId": "game.core.world.map.anchor",
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
           "value": {
-            "x": 320,
-            "y": 300
+            "subjectKind": "state",
+            "sensitivity": "open"
           }
         }
       ],
       "containment": {
-        "containerEntityId": "location.caldris.bellafont",
-        "slot": "location"
+        "containerEntityId": "location.caldris.selucia",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.dossier.seven-lamps-league",
+      "name": "Polity dossier — Seven Lamps League",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Seven Lamps League — cities that agree commercially. Land and livelihood: three major ports and four smaller member cities around the Lantern Rule: rotating civic chair, member councils, merchant courts, dock assemblies, and enough Character: multilingual streets, professional hospitality, public satire, practical Magic: the League regulates magical services as trades while banning several forms of Old wound: Aster Quay hosted the final Concord negotiations and may have helped the last High Current pressure: the rotating Chair, Ansel Daro, vanished with a key to a sealed archive and",
+            "provenance": "Caldris world bible — polity dossiers",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "state",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.seven-lamps-league",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.dossier.tessarane",
+      "name": "Polity dossier — Tessarane",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Tessarane — high roads and open skies. Land and livelihood: dry plateau, horse and sheep herding, wheat valleys, glass, astronomy, Rule: Queen Ione and a court that travels seasonally among three royal residences. Character: direct questions, long-distance hospitality, star lore, public recitation, fierce Magic: stars are studied scientifically, devotionally, and magically by rival institutions Old wound: Concord calendars once fixed tax dates without regard for plateau seasons. Current pressure: a harmless comet has become a dangerous political canvas.",
+            "provenance": "Caldris world bible — polity dossiers",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "state",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.tessarane",
+        "slot": "knowledge"
+      }
+    },
+    {
+      "entityId": "fact.caldris.dossier.veyr-marches",
+      "name": "Polity dossier — Veyr Marches",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.fact",
+          "value": {
+            "status": "active",
+            "summary": "Veyr Marches — many banners, one difficult road. Land and livelihood: eastern passes, mixed forest and pasture, horse breeding, timber, Rule: nine marches elect a High Warden for life while preserving separate laws and rival Character: practical pluralism, fierce local identity, excellent roadside food, competitive Magic: local customs vary widely; the Warden's law focuses on harmful acts rather than Old wound: several marches backed different sides in the war and later invented a story of Current pressure: the dying High Warden's likely successors include a strict reformer, a",
+            "provenance": "Caldris world bible — polity dossiers",
+            "visibility": "public"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.world.knowledge.classification",
+          "value": {
+            "subjectKind": "state",
+            "sensitivity": "open"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "location.caldris.veyr-marches",
+        "slot": "knowledge"
       }
     }
   ],
   "relationships": [
     {
-      "fromEntityId": "location.caldris.bellafont.bellafont",
-      "toEntityId": "location.caldris.bellafont.blue-apron-fair",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.bellafont.bellafont",
-      "toEntityId": "location.caldris.bellafont.quince-ladder",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.bellafont.bellafont",
-      "toEntityId": "location.caldris.bellafont.the-rain-parlour",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.bellafont.blue-apron-fair",
-      "toEntityId": "location.caldris.bellafont.cresset",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.bellafont.blue-apron-fair",
-      "toEntityId": "location.caldris.bellafont.greywife-orchard",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.bellafont.cresset",
-      "toEntityId": "location.caldris.bellafont.mothglass-house",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.bellafont.greywife-orchard",
-      "toEntityId": "location.caldris.bellafont.the-honey-parliament",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.alderwick.dunwarren",
-      "toEntityId": "location.caldris.alderwick.merecross",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "location.caldris.alderwick.merecross",
-      "toEntityId": "location.caldris.bellafont.bellafont",
-      "qualifiedKind": "game.core.world.location.connected-to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "fact.caldris.atlas.connection.02154ba4f25dc7594732",
-      "toEntityId": "location.caldris.bellafont.blue-apron-fair",
+      "fromEntityId": "fact.caldris.custom.veyr-marches.axle-truth",
+      "toEntityId": "location.caldris.veyr-marches",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.0abab72b10a3502d19ae",
-      "toEntityId": "location.caldris.bellafont.greywife-orchard",
+      "fromEntityId": "fact.caldris.custom.veyr-marches.axle-truth",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.veyr-marches.tenth-plate-supper",
+      "toEntityId": "location.caldris.veyr-marches",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.3c4efd0eda8264a1d6ea",
-      "toEntityId": "location.caldris.bellafont.the-honey-parliament",
+      "fromEntityId": "fact.caldris.custom.veyr-marches.tenth-plate-supper",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.selucia.every-bell-was-borrowed",
+      "toEntityId": "location.caldris.selucia",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.4bf48ef01212f9f8dd96",
-      "toEntityId": "location.caldris.bellafont.bellafont",
+      "fromEntityId": "fact.caldris.custom.selucia.every-bell-was-borrowed",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.selucia.one-roofless-wedding-wish",
+      "toEntityId": "location.caldris.selucia",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.7703462447672ade3087",
-      "toEntityId": "location.caldris.bellafont.bellafont",
+      "fromEntityId": "fact.caldris.custom.selucia.one-roofless-wedding-wish",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.seven-lamps-league.a-fifth-price-exists",
+      "toEntityId": "location.caldris.seven-lamps-league",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.8c3484c525b7d76922bd",
-      "toEntityId": "location.caldris.bellafont.blue-apron-fair",
+      "fromEntityId": "fact.caldris.custom.seven-lamps-league.a-fifth-price-exists",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.seven-lamps-league.lunch-suspends-certainty",
+      "toEntityId": "location.caldris.seven-lamps-league",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.a1ce7b5268c32fc75181",
-      "toEntityId": "location.caldris.bellafont.cresset",
+      "fromEntityId": "fact.caldris.custom.seven-lamps-league.lunch-suspends-certainty",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.tessarane.kites-do-not-lie-knots-do",
+      "toEntityId": "location.caldris.tessarane",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.ec78e018c1fd0d7a3633",
-      "toEntityId": "location.caldris.bellafont.the-rain-parlour",
+      "fromEntityId": "fact.caldris.custom.tessarane.kites-do-not-lie-knots-do",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.custom.tessarane.the-patient-step",
+      "toEntityId": "location.caldris.tessarane",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.fff27e61d091e9e4f311",
-      "toEntityId": "location.caldris.bellafont.cresset",
+      "fromEntityId": "fact.caldris.custom.tessarane.the-patient-step",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.dossier.alderwick",
+      "toEntityId": "location.caldris.alderwick",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.daff088b43ea2f1a2fd4",
-      "toEntityId": "location.caldris.alderwick.merecross",
+      "fromEntityId": "fact.caldris.dossier.alderwick",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.dossier.bellafont",
+      "toEntityId": "location.caldris.bellafont",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.4187b6a47330c9b2303e",
-      "toEntityId": "location.caldris.alderwick.merecross",
+      "fromEntityId": "fact.caldris.dossier.bellafont",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.dossier.carrowmere",
+      "toEntityId": "location.caldris.carrowmere",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "fact.caldris.atlas.connection.79fc2665ec3751e76c49",
-      "toEntityId": "location.caldris.bellafont.bellafont",
+      "fromEntityId": "fact.caldris.dossier.carrowmere",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "fact.caldris.dossier.dunmarrow",
+      "toEntityId": "location.caldris.dunmarrow",
       "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.02154ba4f25dc7594732",
-      "toEntityId": "location.caldris.bellafont.blue-apron-fair",
-      "qualifiedKind": "game.core.world.route.from",
+      "fromEntityId": "fact.caldris.dossier.dunmarrow",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.02154ba4f25dc7594732",
-      "toEntityId": "location.caldris.bellafont.greywife-orchard",
-      "qualifiedKind": "game.core.world.route.to",
+      "fromEntityId": "fact.caldris.dossier.kethria",
+      "toEntityId": "location.caldris.kethria",
+      "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.0c5a42268d9df9d0844e",
-      "toEntityId": "location.caldris.bellafont.cresset",
-      "qualifiedKind": "game.core.world.route.from",
+      "fromEntityId": "fact.caldris.dossier.kethria",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.0c5a42268d9df9d0844e",
-      "toEntityId": "location.caldris.bellafont.blue-apron-fair",
-      "qualifiedKind": "game.core.world.route.to",
+      "fromEntityId": "fact.caldris.dossier.lornesse",
+      "toEntityId": "location.caldris.lornesse",
+      "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.4bf48ef01212f9f8dd96",
-      "toEntityId": "location.caldris.bellafont.bellafont",
-      "qualifiedKind": "game.core.world.route.from",
+      "fromEntityId": "fact.caldris.dossier.lornesse",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.4bf48ef01212f9f8dd96",
-      "toEntityId": "location.caldris.bellafont.blue-apron-fair",
-      "qualifiedKind": "game.core.world.route.to",
+      "fromEntityId": "fact.caldris.dossier.namarra",
+      "toEntityId": "location.caldris.namarra",
+      "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.685860a4cd9326a34556",
-      "toEntityId": "location.caldris.bellafont.blue-apron-fair",
-      "qualifiedKind": "game.core.world.route.from",
+      "fromEntityId": "fact.caldris.dossier.namarra",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.685860a4cd9326a34556",
-      "toEntityId": "location.caldris.bellafont.bellafont",
-      "qualifiedKind": "game.core.world.route.to",
+      "fromEntityId": "fact.caldris.dossier.ordelain",
+      "toEntityId": "location.caldris.ordelain",
+      "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.7703462447672ade3087",
-      "toEntityId": "location.caldris.bellafont.bellafont",
-      "qualifiedKind": "game.core.world.route.from",
+      "fromEntityId": "fact.caldris.dossier.ordelain",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.7703462447672ade3087",
-      "toEntityId": "location.caldris.bellafont.quince-ladder",
-      "qualifiedKind": "game.core.world.route.to",
+      "fromEntityId": "fact.caldris.dossier.selucia",
+      "toEntityId": "location.caldris.selucia",
+      "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.8c3484c525b7d76922bd",
-      "toEntityId": "location.caldris.bellafont.blue-apron-fair",
-      "qualifiedKind": "game.core.world.route.from",
+      "fromEntityId": "fact.caldris.dossier.selucia",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.8c3484c525b7d76922bd",
-      "toEntityId": "location.caldris.bellafont.cresset",
-      "qualifiedKind": "game.core.world.route.to",
+      "fromEntityId": "fact.caldris.dossier.seven-lamps-league",
+      "toEntityId": "location.caldris.seven-lamps-league",
+      "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.9eec41455d1b4a035f6a",
-      "toEntityId": "location.caldris.bellafont.greywife-orchard",
-      "qualifiedKind": "game.core.world.route.from",
+      "fromEntityId": "fact.caldris.dossier.seven-lamps-league",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.9eec41455d1b4a035f6a",
-      "toEntityId": "location.caldris.bellafont.blue-apron-fair",
-      "qualifiedKind": "game.core.world.route.to",
+      "fromEntityId": "fact.caldris.dossier.tessarane",
+      "toEntityId": "location.caldris.tessarane",
+      "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.cf7ca54baced2cc7c0e9",
-      "toEntityId": "location.caldris.bellafont.quince-ladder",
-      "qualifiedKind": "game.core.world.route.from",
+      "fromEntityId": "fact.caldris.dossier.tessarane",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.cf7ca54baced2cc7c0e9",
-      "toEntityId": "location.caldris.bellafont.bellafont",
-      "qualifiedKind": "game.core.world.route.to",
+      "fromEntityId": "fact.caldris.dossier.veyr-marches",
+      "toEntityId": "location.caldris.veyr-marches",
+      "qualifiedKind": "game.core.world.knowledge.about",
       "value": {}
     },
     {
-      "fromEntityId": "route.caldris.atlas.ec3dd50c8d34a4132ae3",
-      "toEntityId": "location.caldris.bellafont.cresset",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.ec78e018c1fd0d7a3633",
-      "toEntityId": "location.caldris.bellafont.bellafont",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.ec78e018c1fd0d7a3633",
-      "toEntityId": "location.caldris.bellafont.the-rain-parlour",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.f74be90c144d1ef62c75",
-      "toEntityId": "location.caldris.bellafont.the-rain-parlour",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.f74be90c144d1ef62c75",
-      "toEntityId": "location.caldris.bellafont.bellafont",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.fff27e61d091e9e4f311",
-      "toEntityId": "location.caldris.bellafont.cresset",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.0abab72b10a3502d19ae",
-      "toEntityId": "location.caldris.bellafont.greywife-orchard",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.0abab72b10a3502d19ae",
-      "toEntityId": "location.caldris.bellafont.the-honey-parliament",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.3c4efd0eda8264a1d6ea",
-      "toEntityId": "location.caldris.bellafont.the-honey-parliament",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.673d4b4c9a541a4da4f2",
-      "toEntityId": "location.caldris.bellafont.the-honey-parliament",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.a1ce7b5268c32fc75181",
-      "toEntityId": "location.caldris.bellafont.cresset",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.a1ce7b5268c32fc75181",
-      "toEntityId": "location.caldris.bellafont.mothglass-house",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.af4820ac9951a6375da2",
-      "toEntityId": "location.caldris.bellafont.mothglass-house",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.af4820ac9951a6375da2",
-      "toEntityId": "location.caldris.bellafont.cresset",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.ef007ec40e30bc125fb6",
-      "toEntityId": "location.caldris.bellafont.the-honey-parliament",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.ef007ec40e30bc125fb6",
-      "toEntityId": "location.caldris.bellafont.greywife-orchard",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.7dccbdc09d4fc0bf5e6a",
-      "toEntityId": "location.caldris.alderwick.merecross",
-      "qualifiedKind": "game.core.world.route.to",
-      "value": {}
-    },
-    {
-      "fromEntityId": "route.caldris.atlas.bc82303c2ab147a4dfb0",
-      "toEntityId": "location.caldris.alderwick.merecross",
-      "qualifiedKind": "game.core.world.route.from",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.crownroot-cathedral.1810",
-      "toEntityId": "location.caldris.atlas.orchard-march",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.crownroot-cathedral.27",
-      "toEntityId": "location.caldris.atlas.orchard-march",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.crownroot-cathedral.722",
-      "toEntityId": "location.caldris.atlas.orchard-march",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.lanternback-colossus.1880",
-      "toEntityId": "location.caldris.atlas.chalklands",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.lanternback-colossus.432",
-      "toEntityId": "location.caldris.atlas.chalklands",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.lanternback-colossus.44",
-      "toEntityId": "location.caldris.atlas.chalklands",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.1286",
-      "toEntityId": "location.caldris.atlas.roven-approaches",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.1258",
-      "toEntityId": "location.caldris.atlas.roven-approaches",
-      "qualifiedKind": "game.core.world.chronology.about",
-      "value": {}
-    },
-    {
-      "fromEntityId": "chronology.caldris.landmark.skyharp-of-roven.287",
-      "toEntityId": "location.caldris.atlas.roven-approaches",
-      "qualifiedKind": "game.core.world.chronology.about",
+      "fromEntityId": "fact.caldris.dossier.veyr-marches",
+      "toEntityId": "world.caldris",
+      "qualifiedKind": "game.core.world.knowledge.in-world",
       "value": {}
     }
   ]

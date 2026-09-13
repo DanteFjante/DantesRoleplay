@@ -249,11 +249,20 @@
         "catalog/applications/dnd2024/install/caldris/world/part-161.json",
         "catalog/applications/dnd2024/install/caldris/world/part-162.json",
         "catalog/applications/dnd2024/install/caldris/world/part-163.json",
-        "catalog/applications/dnd2024/install/caldris/world/part-164.json"
+        "catalog/applications/dnd2024/install/caldris/world/part-164.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-165.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-166.json",
+        "catalog/applications/dnd2024/install/caldris/world/part-167.json"
       ]
     }
   ],
   "media": [
+    {
+      "sourcePath": "docs/world/caldris/harbour-islands/halfway-light.png",
+      "sha256": "026c25aa78463710b362be65ac4510b03166f9503b24095ef59ab21d6899e1fd",
+      "mediaType": "image/png",
+      "byteLength": 3334303
+    },
     {
       "sourcePath": "catalog/applications/dnd2024/assets/caldris/measure-of-mercy/bramblebridge-clean-v1.png",
       "sha256": "0edb6b93e6c26fa4de8973cb1753bd72b165cab3a18092317170f6a16f058f57",
@@ -415,6 +424,12 @@
       "sha256": "6a0511780f819293446fa6069e76bd141e0213cee13c30d765c82c1dd97aea58",
       "mediaType": "image/png",
       "byteLength": 3173474
+    },
+    {
+      "sourcePath": "docs/world/caldris/harbour-islands/tidecross-harbour.png",
+      "sha256": "6d1c187514e16f30bbaa3feadf1a810e95bfef25364d484ff1e229128c37b7a3",
+      "mediaType": "image/png",
+      "byteLength": 3056587
     },
     {
       "sourcePath": "data/exports/current/objects/71/713940c3848c16440298cd4035cb8250bca61f42bd77ec077ae6b822d7f677d7.bin",
