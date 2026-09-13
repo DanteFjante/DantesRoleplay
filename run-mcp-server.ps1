@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-    Starts or checks the saved, byte-verified runtime release.
+    Sets up a fresh checkout, then starts or checks the saved runtime release.
 .DESCRIPTION
     Ordinary use needs no database, source-root, or role arguments. Local administration
     settings select the compatible host, frozen catalog, live database/blobs, and probe origins.
@@ -18,11 +18,11 @@ param([switch] $Restart, [string] $Profile, [switch] $Check)
 
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'src\system\web-interface\scripts\RuntimeLaunch.ps1')
+$explicitProfile = $PSBoundParameters.ContainsKey('Profile')
 if (-not $Profile) { $Profile = Join-Path $PSScriptRoot 'DantesRoleplay.MCPServer\data\runtime-launch.json' }
 $Profile = [IO.Path]::GetFullPath($Profile)
-if (-not (Test-Path -LiteralPath $Profile -PathType Leaf)) {
-    throw "No saved runtime release at $Profile. Configure a reviewed release with Save-RuntimeLaunchProfile; startup will not guess from an editable checkout."
-}
+. (Join-Path $PSScriptRoot 'src\system\web-interface\scripts\FirstRun.ps1')
+Initialize-FirstRunIfNeeded -RepositoryRoot $PSScriptRoot -ProfilePath $Profile -ExplicitProfile:$explicitProfile -Check:$Check
 $fingerprint = (Get-FileHash -LiteralPath $Profile -Algorithm SHA256).Hash
 $selection = Get-Content -LiteralPath $Profile -Raw | ConvertFrom-Json
 Assert-RuntimeLaunchProfile $selection

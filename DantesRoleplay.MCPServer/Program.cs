@@ -23,6 +23,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true)
     .AddEnvironmentVariables().AddCommandLine(args);
 
+if (FreshInstallationRequest.TryRead(builder.Configuration, out var installation))
+    return await FreshInstallation.RunAsync(installation, Console.Out, Console.Error);
+
 var developmentInformationScope = builder.Configuration["Information:DevelopmentScope"]
     ?? Environment.GetEnvironmentVariable("DANTESROLEPLAY_DEVELOPMENT_INFORMATION_SCOPE")
     ?? "local.*";
@@ -230,6 +233,7 @@ app.MapDantesRoleplayWeb();
 app.Lifetime.ApplicationStarted.Register(() =>
     ServerStartupDiagnostics.LogReady(app.Logger, app.Urls, startup.Elapsed));
 app.Run();
+return 0;
 
 async Task InitialiseStepAsync(string step, Func<Task> initialise)
 {

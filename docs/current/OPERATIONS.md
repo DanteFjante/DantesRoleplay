@@ -4,13 +4,25 @@ Use this guide to run the local service, connect an MCP client, and perform a co
 
 ## Run the service
 
-For the saved live release, use the ordinary launcher. The development launch profile below
-does not select a frozen release and is not a production restart workflow.
+The ordinary Windows launcher uses a saved, byte-verified release. On a new checkout where the
+default profile and runtime data are both absent, it first validates the .NET 10 SDK and Node.js
+22.13 or newer with `npm` on `PATH`. It then prepares one frozen host, source, and browser bundle, invokes
+the generic offline catalog installer, verifies the resulting runtime and readiness pins, and saves
+the default profile. This initialization does not contact an AI provider or import an existing game.
 
 ```powershell
+.\run-mcp-server.cmd
+# Equivalent PowerShell entry point:
 .\run-mcp-server.ps1
 .\run-mcp-server.ps1 -Restart
 ```
+
+After that first initialization, ordinary starts reuse the saved profile without changing it.
+Initialization fails closed when a database or other runtime data already exists, because the
+launcher cannot infer whether those files belong to a compatible release. Select or recover that
+runtime explicitly. An explicitly named missing `-Profile` remains an error and is never created;
+`-Check` only verifies an existing saved selection and never initializes, builds, installs, starts,
+or stops anything.
 
 For deliberate source development only: `dotnet run --project DantesRoleplay.MCPServer`.
 
@@ -22,11 +34,13 @@ http://127.0.0.1:6217/mcp
 
 The default development database is `DantesRoleplay.MCPServer/data/dantesroleplay.db`. It is runtime state and is not the authored catalog.
 
-The HTTP launch profile, direct executable configuration, and `run-mcp-server.ps1` listen on
-all IPv4 interfaces at port 6217. Router forwarding maps external TCP 80 to this device's TCP
-6217; internet visitors then open `http://<public-ip>/` without a port suffix. Allow inbound TCP
-6217 in Windows Firewall by running `enable-public-web-firewall.ps1` from an administrator
-PowerShell window. This rule also applies when the Ethernet connection uses the Public profile.
+Fresh first-run setup binds only to `127.0.0.1:6217`. Later launcher runs retain the exact listener
+from the saved profile. The development HTTP launch profile and direct executable configuration
+listen on all IPv4 interfaces at port 6217. For a deliberately reviewed public profile, router
+forwarding maps external TCP 80 to this device's TCP 6217; internet visitors then open
+`http://<public-ip>/` without a port suffix. Allow inbound TCP 6217 in Windows Firewall by running
+`enable-public-web-firewall.ps1` from an administrator PowerShell window. This rule also applies
+when the Ethernet connection uses the Public profile.
 
 Anonymous public website access is explicitly enabled in this checkout through
 `WebInterface:RemoteAccess:AllowAnonymousPublicAccess`. Direct network visitors receive only
@@ -63,6 +77,11 @@ backup without combining preservation with a catalog import:
 ```powershell
 .\roleplay.cmd backup
 ```
+
+When `--database` and its environment override are absent, Tools read the schema-version-1 default
+runtime launch profile and use its selected database before considering legacy development paths.
+This keeps the no-argument backup command aligned with a first-run installation. An explicit path or
+environment override still wins, and an invalid saved profile fails closed.
 
 The command uses SQLite's online backup API, verifies the copy with `integrity_check`, and never
 migrates or writes the source database. Use `--output <path>` when a reviewed release needs a named

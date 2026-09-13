@@ -1,10 +1,12 @@
+using System.Text.Json;
+
 namespace DantesRoleplay.Tools;
 
 /// <summary>
 /// Finds the database, so that running a tool from anywhere in the checkout works.
 ///
 /// Order: an explicit --database, then the DANTESROLEPLAY_DB environment variable, then a walk up
-/// from the current directory looking for the MCP server's data file. The walk is what makes this
+/// from the current directory looking for the saved runtime selection, then the legacy data file. The walk makes this
 /// usable — the alternative is every invocation carrying a relative path that is wrong from half
 /// the directories in the repository.
 ///
@@ -47,6 +49,8 @@ public static class DatabaseLocator
 
         while (directory is not null)
         {
+            var selected = ResolveSavedDatabase(directory.FullName);
+            if (selected is not null) return selected;
             foreach (var relative in KnownRelativePaths)
             {
                 var candidate = Path.Combine(directory.FullName, relative);
@@ -90,6 +94,8 @@ public static class DatabaseLocator
 
         while (directory is not null)
         {
+            var selected = ResolveSavedDatabase(directory.FullName);
+            if (selected is not null) return selected;
             var existing = Path.Combine(directory.FullName, KnownRelativePaths[0]);
 
             if (File.Exists(existing) || File.Exists(Path.Combine(directory.FullName, "DantesRoleplay.slnx")))
@@ -104,5 +110,38 @@ public static class DatabaseLocator
             "Could not find the DantesRoleplay repository root by walking up from "
             + $"'{Directory.GetCurrentDirectory()}'. Pass --database <path>, or set "
             + "DANTESROLEPLAY_DB.");
+    }
+
+    // Tools follow the same authoritative database selection as the launcher. A damaged
+    // selection must not silently redirect a backup/import to an unrelated legacy database.
+    internal static string? ResolveSavedDatabase(string directory)
+    {
+        foreach (var relative in new[]
+        {
+            Path.Combine("DantesRoleplay.MCPServer", "data", "runtime-launch.json"),
+            Path.Combine("data", "runtime-launch.json")
+        })
+        {
+            var profile = Path.Combine(directory, relative);
+            if (!File.Exists(profile)) continue;
+            try
+            {
+                using var document = JsonDocument.Parse(File.ReadAllBytes(profile));
+                var root = document.RootElement;
+                var database = root.GetProperty("database").GetString();
+                if (root.GetProperty("schemaVersion").GetInt32() != 1
+                    || string.IsNullOrWhiteSpace(database) || !Path.IsPathFullyQualified(database)
+                    || !File.Exists(database))
+                    throw new InvalidOperationException("The saved database path is missing or invalid.");
+                return Path.GetFullPath(database);
+            }
+            catch (Exception exception) when (exception is JsonException or InvalidOperationException
+                or KeyNotFoundException or FormatException or ArgumentException)
+            {
+                throw new InvalidOperationException(
+                    $"Cannot resolve the selected database from '{profile}'. Restore that profile or supply --database explicitly.", exception);
+            }
+        }
+        return null;
     }
 }

@@ -1,0 +1,13 @@
+{
+  "id": "dnd2024.encounter",
+  "owner": "dnd2024",
+  "description": "Reviewed D&D 2024 encounter component definitions.",
+  "allowedKinds": [
+    "component-definition",
+    "component-type"
+  ],
+  "aliases": [],
+  "enabled": true,
+  "reviewStatus": "reviewed",
+  "reviewNote": "Reviewed for the authored D&D 2024 component-definition catalog."
+}

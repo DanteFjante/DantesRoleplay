@@ -1,0 +1,109 @@
+{
+  "format": "dantesroleplay.installation/1",
+  "catalogRoot": "catalog",
+  "source": {
+    "allowedRootId": "installation-source"
+  },
+  "baseApplications": [
+    {
+      "id": "game",
+      "displayName": "Game Core",
+      "description": "Generic world, clock, and campaign state owners.",
+      "bases": []
+    }
+  ],
+  "application": {
+    "id": "dnd2024",
+    "displayName": "D&D 2024",
+    "description": "A modular D&D 2024 application.",
+    "bases": [
+      "game"
+    ],
+    "sources": [
+      {
+        "id": "dnd2024-core",
+        "allowedRootId": "installation-source",
+        "relativeRoot": "catalog/applications/dnd2024",
+        "includePattern": "**/*",
+        "trust": "trusted",
+        "precedence": 0,
+        "logicalIdentity": "dnd2024-core-catalog"
+      }
+    ],
+    "selectedSourceIds": [
+      "dnd2024-core"
+    ]
+  },
+  "stateSpaces": [
+    {
+      "id": "application-publication:dnd2024",
+      "scope": "application-publication",
+      "root": {
+        "entityId": "publication.dnd2024",
+        "name": "D&D 2024 publication",
+        "components": []
+      },
+      "worldPackages": []
+    },
+    {
+      "id": "dnd2024-main",
+      "scope": "runtime-state-space",
+      "root": {
+        "entityId": "world.dnd2024.starter",
+        "name": "The Lantern Vale",
+        "components": [
+          {
+            "qualifiedTypeId": "game.core.world.root",
+            "value": {
+              "status": "active",
+              "summary": "A small frontier valley prepared for a first D&D 2024 adventure.",
+              "visibility": "public"
+            }
+          }
+        ]
+      },
+      "worldPackages": [
+        "catalog/applications/dnd2024/install/starter-world.json"
+      ]
+    }
+  ],
+  "media": [],
+  "pages": [
+    {
+      "pageId": "home",
+      "owner": "system",
+      "bundlePath": "pages/home.zip"
+    },
+    {
+      "owner": "application",
+      "applicationId": "dnd2024",
+      "entityId": "web-page:dnd2024-play",
+      "title": "D&D 2024",
+      "navigationLabel": "D&D 2024",
+      "slug": "dnd2024-play",
+      "order": 100,
+      "visibility": "public",
+      "isIndexPage": true,
+      "bundlePath": "pages/dnd2024-play.zip"
+    }
+  ],
+  "runtime": {
+    "publishedApplications": [
+      "dnd2024"
+    ],
+    "environment": {
+      "Catalogs:PublishedApplications:0": "dnd2024",
+      "Knowledge:LocalPlayer:Enabled": "true",
+      "Knowledge:LocalPlayer:PrincipalId": "principal.ec1e7af98aa3227708fcd23ac92e2bd611023f4dde88380b5a79aaf4b32859e3",
+      "Knowledge:LocalPlayer:ApplicationId": "dnd2024",
+      "Knowledge:LocalPlayer:CampaignId": "campaign.dnd2024.starter",
+      "Knowledge:LocalPlayer:Role": "GameMaster",
+      "Knowledge:Completion:Enabled": "false",
+      "Retrieval:Embedding:Enabled": "false",
+      "InteractionOuter:Local:Enabled": "false",
+      "InteractionPlanning:Remote:Enabled": "false",
+      "ApplicationValidationWorker:Enabled": "false",
+      "Codex:ExecutablePath": "codex"
+    }
+  }
+}

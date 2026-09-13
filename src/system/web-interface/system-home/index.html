@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Dante's Roleplay</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; background: var(--system-color-canvas, #f3f5f7); color: var(--system-color-text, #17212b); font: 1rem/1.55 var(--system-font-sans, system-ui, sans-serif); }
+      header { border-bottom: 1px solid var(--system-color-border, #d4dbe1); background: var(--system-color-surface, #fff); }
+      .bar { width: min(72rem, calc(100% - 2rem)); margin: auto; padding: .8rem 0; display: grid; gap: .7rem; }
+      .brand { font: 700 1.05rem var(--system-font-display, Georgia, serif); }
+      main { width: min(72rem, calc(100% - 2rem)); margin: auto; padding: clamp(2rem, 7vw, 6rem) 0; }
+      section { max-width: 46rem; padding: clamp(1.5rem, 4vw, 3rem); border: 1px solid var(--system-color-border, #d4dbe1); border-radius: var(--system-radius-large, 1.25rem); background: var(--system-color-surface-raised, #f8fafb); box-shadow: var(--system-shadow-raised, 0 1rem 3rem rgba(31,43,53,.12)); }
+      h1 { margin: 0 0 .75rem; font: 700 clamp(2.2rem, 6vw, 4.5rem)/1 var(--system-font-display, Georgia, serif); }
+      p { margin: 0; color: var(--system-color-muted, #5d6874); font-size: 1.05rem; }
+      @media (min-width: 760px) { .bar { grid-template-columns: auto 1fr; align-items: center; } system-navigation { justify-self: end; } }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="bar">
+        <div class="brand">Dante's Roleplay</div>
+        <system-navigation></system-navigation>
+      </div>
+    </header>
+    <main>
+      <section>
+        <h1>Your table is ready.</h1>
+        <p>Choose a published application from the navigation to open its current world and campaign.</p>
+      </section>
+    </main>
+    <script type="module" src="/components/system-workspace.js"></script>
+  </body>
+</html>

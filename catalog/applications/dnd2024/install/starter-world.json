@@ -1,0 +1,114 @@
+{
+  "format": "dantesroleplay.world-package/1",
+  "rootEntityId": "world.dnd2024.starter",
+  "entities": [
+    {
+      "entityId": "location.dnd2024.starter.lantern-crossing",
+      "name": "Lantern Crossing",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.world.location",
+          "value": {
+            "kind": "settlement",
+            "status": "active",
+            "summary": "A welcoming riverside village where the road, ferry, and old lantern tower meet.",
+            "visibility": "public"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.dnd2024.starter",
+        "slot": "location"
+      }
+    },
+    {
+      "entityId": "campaign.dnd2024.starter",
+      "name": "The Lantern at the Crossing",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.campaign.root",
+          "value": {
+            "status": "active",
+            "title": "The Lantern at the Crossing",
+            "premise": "A quiet village needs help discovering why its old river lantern has begun shining at noon.",
+            "partyGoals": [
+              "Meet the people of Lantern Crossing and learn what changed at the tower."
+            ],
+            "toneAndBoundaries": [
+              "A warm, low-stakes starting adventure with room for discovery, conversation, and practical help."
+            ],
+            "rulesetScope": "dnd2024",
+            "creationMethod": "manual",
+            "reviewFingerprint": "dd292868994ef44a28737f4465753a1c79554b478a8e51ecb67171e6ead98d47"
+          }
+        },
+        {
+          "qualifiedTypeId": "game.core.campaign.current-scene",
+          "value": {
+            "location": {
+              "entityId": "location.dnd2024.starter.lantern-crossing"
+            }
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "world.dnd2024.starter",
+        "slot": "campaign"
+      }
+    },
+    {
+      "entityId": "actor.dnd2024.starter.guide",
+      "name": "Rowan",
+      "components": [],
+      "containment": {
+        "containerEntityId": "location.dnd2024.starter.lantern-crossing",
+        "slot": "presence"
+      }
+    },
+    {
+      "entityId": "campaign.dnd2024.starter.participation.guide",
+      "name": "Starter character participation",
+      "components": [
+        {
+          "qualifiedTypeId": "game.core.campaign.character-participation",
+          "value": {
+            "status": "active"
+          }
+        }
+      ],
+      "containment": {
+        "containerEntityId": "campaign.dnd2024.starter",
+        "slot": "character-participation"
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "fromEntityId": "campaign.dnd2024.starter",
+      "toEntityId": "world.dnd2024.starter",
+      "qualifiedKind": "game.core.campaign.in-world",
+      "value": {}
+    },
+    {
+      "fromEntityId": "campaign.dnd2024.starter",
+      "toEntityId": "campaign.dnd2024.starter.participation.guide",
+      "qualifiedKind": "game.core.campaign.has-character-participation",
+      "value": {}
+    },
+    {
+      "fromEntityId": "campaign.dnd2024.starter.participation.guide",
+      "toEntityId": "actor.dnd2024.starter.guide",
+      "qualifiedKind": "game.core.campaign.character-participation.for-actor",
+      "value": {}
+    },
+    {
+      "fromEntityId": "campaign.dnd2024.starter",
+      "toEntityId": "location.dnd2024.starter.lantern-crossing",
+      "qualifiedKind": "game.core.campaign.references",
+      "value": {
+        "role": "start",
+        "audience": "party"
+      }
+    }
+  ]
+}

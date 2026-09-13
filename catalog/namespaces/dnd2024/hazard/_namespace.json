@@ -2,7 +2,10 @@
   "id": "dnd2024.hazard",
   "owner": "dnd2024",
   "description": "Namespace for typed D&D 2024 trap and environmental-exposure lifecycle events.",
-  "allowedKinds": ["event-type"],
+  "allowedKinds": [
+    "component-type",
+    "event-type"
+  ],
   "aliases": [],
   "enabled": true,
   "reviewStatus": "reviewed",

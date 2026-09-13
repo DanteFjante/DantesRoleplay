@@ -41,6 +41,74 @@ public sealed class ComponentTypeRegistryTests : IDisposable
     }
 
     [Fact]
+    public void Fresh_baseline_restores_declared_current_version_without_fabricating_history_then_define_appends()
+    {
+        var application = ApplicationIdentifier.Parse("fixture-app");
+        using var db = _fixture.CreateContext();
+        new SqliteApplicationRegistry(db).Register(new(application, "Fixture", "", []));
+        var schemas = new BoundedJsonSchemaValidator();
+        var definition = new ComponentTypeDefinition(application, "fixture-app.stats", "{ \"type\" : \"object\" }");
+        var expected = schemas.Compile(definition.SchemaJson).SchemaHash;
+        var installer = new SqliteFreshComponentTypeBaselineInstaller(db, schemas);
+
+        var baseline = installer.Restore(definition, 3, expected);
+        var replay = installer.Restore(
+            definition with { SchemaJson = "{\"type\":\"object\"}" }, 3, expected);
+        var appended = new SqliteComponentTypeRegistry(db, schemas)
+            .Define(new(application, definition.QualifiedId, "{\"type\":\"array\"}"));
+
+        Assert.Equal(3, baseline.Version);
+        Assert.Equal(baseline, replay);
+        Assert.Equal(4, appended.Version);
+        var registry = new SqliteComponentTypeRegistry(db, schemas);
+        Assert.Null(registry.Get(definition.QualifiedId, 1));
+        Assert.Null(registry.Get(definition.QualifiedId, 2));
+        Assert.Equal(expected, registry.Get(definition.QualifiedId, 3)!.SchemaHash);
+    }
+
+    [Fact]
+    public void Fresh_baseline_refuses_to_replace_or_extend_an_existing_type()
+    {
+        var application = ApplicationIdentifier.Parse("fixture-app");
+        using var db = _fixture.CreateContext();
+        new SqliteApplicationRegistry(db).Register(new(application, "Fixture", "", []));
+        var schemas = new BoundedJsonSchemaValidator();
+        var registry = new SqliteComponentTypeRegistry(db, schemas);
+        var existing = registry.Define(new(application, "fixture-app.stats", "true"));
+        var replacement = new ComponentTypeDefinition(application, "fixture-app.stats", "false");
+        var hash = schemas.Compile(replacement.SchemaJson).SchemaHash;
+
+        Assert.Throws<InvalidOperationException>(() =>
+            new SqliteFreshComponentTypeBaselineInstaller(db, schemas).Restore(replacement, 3, hash));
+
+        Assert.Equal(existing, registry.Get("fixture-app.stats", 1));
+        Assert.Null(registry.Get("fixture-app.stats", 2));
+        Assert.Null(registry.Get("fixture-app.stats", 3));
+    }
+
+    [Fact]
+    public void Fresh_baseline_rejects_bad_schema_hash_unknown_owner_and_cross_namespace_without_writes()
+    {
+        var application = ApplicationIdentifier.Parse("fixture-app");
+        using var db = _fixture.CreateContext();
+        new SqliteApplicationRegistry(db).Register(new(application, "Fixture", "", []));
+        var schemas = new BoundedJsonSchemaValidator();
+        var installer = new SqliteFreshComponentTypeBaselineInstaller(db, schemas);
+        var valid = new ComponentTypeDefinition(application, "fixture-app.stats", "true");
+        var expected = schemas.Compile(valid.SchemaJson).SchemaHash;
+
+        Assert.Throws<ArgumentException>(() => installer.Restore(
+            valid with { SchemaJson = "{\"unsupported\":true}" }, 3, expected));
+        Assert.Throws<ArgumentException>(() => installer.Restore(valid, 3, new string('A', 64)));
+        Assert.Throws<ArgumentException>(() => installer.Restore(
+            new(ApplicationIdentifier.Parse("missing-app"), "missing-app.stats", "true"), 3, expected));
+        Assert.Throws<ArgumentException>(() => installer.Restore(
+            new(application, "other-app.stats", "true"), 3, expected));
+
+        Assert.Null(new SqliteComponentTypeRegistry(db, schemas).Get("fixture-app.stats", 3));
+    }
+
+    [Fact]
     public void Invalid_schema_unknown_application_and_cross_namespace_leave_no_type()
     {
         var application = ApplicationIdentifier.Parse("fixture-app");
