@@ -241,7 +241,17 @@ Automatic approval review blocked the attempted cleanup before enumeration/remov
 deleted. The checked inventory/removal helper is `.tmp/clean-detached-generated-after-delivery.ps1`
 (inventory-only by default). Keep cleanup pending and report its real outcome after delivery.
 
-Next: recover the valid first copied review, complete the two remaining copied reviews/activations
+Fresh copied Validate operation `31e754c1ac8d5b67fb7a8677e069afef` completed in 14.611 seconds with
+`valid` reviewed-query evidence, exact dependencies and the unchanged successful review. Inspect
+correctly rejected its audit guard: the writer retained the earlier generic unavailable runtime
+report after reviewed-query completion replaced the preparation. The writer correction omits that
+unrelated report for reviewed-query/procedure guards; verification remains strict. Keep the old
+operation unchanged and create a fresh validation using the existing review, without another AI call.
+The strengthened cold gateway regression reproduced the invalid Inspect result before the fix and
+now passes Validate, Inspect, validation replay, activation and activation replay with both readers
+and generic preparation enabled. Affected query, procedure and dream publication checks passed 3/3.
+
+Next: verify and activate the first copied candidate, complete the two remaining copied reviews/activations
 and final public checks, then authorize the sole writer to take fresh live preservation and
 publish. Live publication must use fresh live candidates, reviews and version checks, not copied
 database or review receipts; three additional bounded live reviews are authorized. Verify live

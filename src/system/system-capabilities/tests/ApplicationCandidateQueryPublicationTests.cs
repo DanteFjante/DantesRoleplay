@@ -175,7 +175,8 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
                 db, setup.Applications, setup.Activation, setup.Resolver, coldGate);
             var coldAuthoring = new SqliteApplicationAuthoringService(db, setup.Applications,
                 setup.Activation, setup.Activation, setup.Sources, policy, setup.Resolver,
-                new OperationLog(db), preparation: null, coldManuals, reviewedPureUpdates: null,
+                new OperationLog(db), new UnavailableGenericPreparation(), coldManuals,
+                reviewedPureUpdates: null,
                 reviewedProcedureUpdates: coldReviewedProcedure, reviewedQueryUpdates: coldReviewed);
             var coldGateway = new ApplicationCandidateCapabilityGateway(
                 CandidateCatalog(db, setup, coldAuthoring, coldReviews));
@@ -188,6 +189,29 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             Assert.True(validation.Outcome == "valid", validation.DiagnosticsJson);
             Assert.Equal(ApplicationCandidateReviewedQueryUpdateValidation.PreparationVersion,
                 validation.PreparationVersion);
+
+            var inspected = await coldGateway.InvokeAsync(principal, Application,
+                SystemCapabilityIds.ApplicationCandidateInspect, JsonSerializer.Serialize(new
+                {
+                    applicationId = Application.Value,
+                    candidateId = candidate.CandidateId,
+                    revision = candidate.Revision,
+                    sourceOperationId = (string?)null
+                }), null, "query-publication-inspect", default);
+            Assert.True(inspected.Ok, inspected.Error?.Code + ": " + inspected.Error?.Message);
+            using (var inspection = JsonDocument.Parse(
+                inspected.Data!.Value.GetProperty("dataJson").GetString()!))
+            {
+                var inspectedValidation = inspection.RootElement.GetProperty("validation");
+                Assert.Equal("valid", inspectedValidation.GetProperty("Outcome").GetString());
+                Assert.Equal(JsonValueKind.Null,
+                    inspectedValidation.GetProperty("RuntimeReport").ValueKind);
+            }
+            var validationReplay = await ValidateQueryAsync(coldGateway, principal, candidate,
+                "query-publication-validate");
+            Assert.True(validationReplay.Ok,
+                validationReplay.Error?.Code + ": " + validationReplay.Error?.Message);
+            Assert.Equal(validated.OperationId, validationReplay.OperationId);
 
             var activationArguments = JsonSerializer.Serialize(new
             {
@@ -401,6 +425,14 @@ public sealed partial class SqliteStandingGrantTargetResolverTests
             contentFingerprint = candidate.ContentFingerprint,
             samples = Array.Empty<object>()
         }), idempotencyKey, "codex");
+
+    private sealed class UnavailableGenericPreparation : IApplicationCandidatePreparation
+    {
+        public Task<ApplicationCandidateCheckResult> ValidateAsync(InteractionInvocationHost host,
+            ApplicationCandidateSnapshot candidate, CancellationToken cancellationToken = default) =>
+            Task.FromResult(new ApplicationCandidateCheckResult(ApplicationCandidateCheckStatus.Unavailable,
+                candidate.Candidate.ContentFingerprint, new string('D', 64), null, null, []));
+    }
 
     private void RegisterQueryNamespaces(SetupState setup)
     {

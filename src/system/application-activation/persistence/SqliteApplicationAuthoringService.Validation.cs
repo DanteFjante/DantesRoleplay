@@ -298,6 +298,10 @@ public sealed partial class SqliteApplicationAuthoringService
                 await new ApplicationCandidateReviewedPureUpdateValidation(reviewedPureUpdates)
                     .CompleteAsync(host, runtimeReport, validationRow, cancellationToken);
             db.Add(validationRow);
+            var reviewedContract = validationRow.PreparationVersion
+                    == ApplicationCandidateReviewedProcedureUpdateValidation.PreparationVersion
+                || validationRow.PreparationVersion
+                    == ApplicationCandidateReviewedQueryUpdateValidation.PreparationVersion;
             operation.GuardEvidenceJson = statefulReport is not null && validationRow.Outcome == "valid"
                 ? ApplicationCandidateOperationProof.StatefulValidationGuard(host, candidate, validationRow,
                     definitions, commandFingerprint, statefulReport)
@@ -305,7 +309,7 @@ public sealed partial class SqliteApplicationAuthoringService
                     ? ApplicationCandidateWorkflowOperationProof.Guard(host, candidate, validationRow,
                         definitions, commandFingerprint, workflowReport)
                 : ApplicationCandidateOperationProof.ValidationGuard(host, candidate, validationRow,
-                    definitions, commandFingerprint, runtimeReport);
+                    definitions, commandFingerprint, reviewedContract ? null : runtimeReport);
             await db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             return Receipt(operationId, commandFingerprint);
